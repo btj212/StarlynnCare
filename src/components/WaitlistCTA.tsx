@@ -44,12 +44,13 @@ export default function WaitlistCTA() {
           Join the Waitlist
         </p>
         <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.25rem)] leading-[1.2] tracking-[-0.5px] text-white mb-4">
-          Be first when Florida launches.
+          Be first when we launch in your state.
         </h2>
         <p className="text-white/65 text-base leading-[1.7] mb-8">
           We&apos;re building facility profiles for every memory care community in
-          Florida. Enter your email and we&apos;ll notify you when your area is live
-          — and send you our free guide:{" "}
+          California and Florida first, with more states coming soon. Enter your
+          email and we&apos;ll notify you when your area is live — and send you our
+          free guide:{" "}
           <em className="text-white/80 not-italic font-medium">
             &ldquo;7 things the tour won&apos;t show you.&rdquo;
           </em>
@@ -57,7 +58,7 @@ export default function WaitlistCTA() {
 
         {success ? (
           <div className="bg-teal/20 border border-teal/30 rounded-xl px-6 py-4 text-white text-base font-medium">
-            You&apos;re on the list. We&apos;ll be in touch when Florida launches.
+            You&apos;re on the list. We&apos;ll be in touch when your area goes live.
           </div>
         ) : (
           <form onSubmit={handleSubmit}>

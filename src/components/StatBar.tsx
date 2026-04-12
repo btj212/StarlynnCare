@@ -1,5 +1,5 @@
 const stats = [
-  { number: "694", label: "Florida nursing homes tracked" },
+  { number: "1,200+", label: "Memory care facilities tracked" },
   { number: "418,972", label: "Federal inspection records" },
   { number: "$0", label: "Referral commissions charged" },
   { number: "26K", label: "Monthly searches, no good answer" },

@@ -79,7 +79,7 @@ function HeroForm({ path }: HeroFormProps) {
         <p className="mt-2 text-sm text-amber">{error}</p>
       )}
       <p className="mt-3 text-sm text-muted">
-        Florida available now. More states coming soon.
+        Florida &amp; California available now. More states coming soon.
       </p>
     </form>
   );

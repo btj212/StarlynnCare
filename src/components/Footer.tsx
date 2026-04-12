@@ -74,7 +74,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-white/10 pt-6">
           <p className="text-[12px] text-white/30 leading-relaxed">
-            Data sourced from Florida AHCA public inspection records and CMS Care
+            Data sourced from Florida AHCA and California CDPH public inspection records and CMS Care
             Compare. StarlynnCare is not affiliated with any care facility or
             referral service.
           </p>

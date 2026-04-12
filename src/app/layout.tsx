@@ -19,11 +19,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Memory Care Facilities — Real Inspection Records | StarlynnCare",
   description:
-    "Find memory care facilities with real state inspection records, deficiency histories, and staffing data. No referral commissions. Florida available now.",
+    "Find memory care facilities with real state inspection records, deficiency histories, and staffing data. No referral commissions. California and Florida available now.",
   openGraph: {
     title: "Find memory care you can actually trust | StarlynnCare",
     description:
-      "Real inspection records. No commissions. Built for families searching for memory care in Florida.",
+      "Real inspection records. No commissions. Built for families searching for memory care in California and Florida.",
     url: "https://www.starlynncare.com",
     siteName: "StarlynnCare",
     type: "website",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Find memory care you can actually trust | StarlynnCare",
     description:
-      "Real inspection records. No commissions. Built for families searching for memory care in Florida.",
+      "Real inspection records. No commissions. Built for families searching for memory care in California and Florida.",
   },
   metadataBase: new URL("https://www.starlynncare.com"),
 };
