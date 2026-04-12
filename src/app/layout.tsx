@@ -45,8 +45,17 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
       <head>
-        {/* Google Tag Manager placeholder — replace GTM-XXXXXXX with your ID */}
-        {/* <script dangerouslySetInnerHTML={{ __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-XXXXXXX');` }} /> */}
+        {/* Google Analytics 4 — replace G-XXXXXXXXXX with your Measurement ID */}
+        {/* To activate: remove the surrounding comment block after adding your ID */}
+        {/*
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX" />
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-XXXXXXXXXX');
+        `}} />
+        */}
       </head>
       <body>{children}</body>
     </html>
