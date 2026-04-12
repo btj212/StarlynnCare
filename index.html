@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Starlynn Care — website coming soon." />
+    <title>Starlynn Care — Coming Soon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f6f4f1;
+        --fg: #1a1f1e;
+        --muted: #5c6563;
+        --accent: #2d6a5d;
+        --accent-soft: rgba(45, 106, 93, 0.12);
+        --card: #ffffff;
+        --shadow: 0 24px 60px rgba(26, 31, 30, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        height: 100%;
+      }
+
+      body {
+        min-height: 100%;
+        font-family: "DM Sans", system-ui, sans-serif;
+        font-optical-sizing: auto;
+        background: var(--bg);
+        color: var(--fg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1.25rem;
+        line-height: 1.6;
+      }
+
+      .noise {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.035;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        z-index: 0;
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 36rem;
+        width: 100%;
+        text-align: center;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 1.25rem;
+        padding: 2.75rem 2rem;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(26, 31, 30, 0.06);
+      }
+
+      .mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.875rem;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 600;
+        font-size: 1.125rem;
+        margin-bottom: 1.5rem;
+      }
+
+      h1 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 600;
+        font-size: clamp(1.75rem, 4vw, 2.125rem);
+        letter-spacing: -0.02em;
+        margin-bottom: 0.5rem;
+      }
+
+      .tagline {
+        color: var(--muted);
+        font-size: 1.0625rem;
+        margin-bottom: 1.75rem;
+      }
+
+      .badge {
+        display: inline-block;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        margin-bottom: 0;
+      }
+
+      footer {
+        position: relative;
+        z-index: 1;
+        margin-top: 2rem;
+        font-size: 0.875rem;
+        color: var(--muted);
+      }
+
+      footer a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <main>
+      <div class="card">
+        <div class="mark" aria-hidden="true">S</div>
+        <h1>Starlynn Care</h1>
+        <p class="tagline">
+          We’re preparing something new. Check back soon for updates.
+        </p>
+        <p class="badge">Coming soon</p>
+      </div>
+    </main>
+    <footer>
+      <span>starlynncare.com</span>
+    </footer>
+  </body>
+</html>
