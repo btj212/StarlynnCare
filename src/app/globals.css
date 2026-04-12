@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-navy: #1a365d;
+  --color-teal: #2c7a7b;
+  --color-teal-light: #e6fffa;
+  --color-teal-mid: #4a9fa0;
+  --color-warm-white: #faf9f7;
+  --color-ink: #1a1a2e;
+  --color-slate: #4a5568;
+  --color-muted: #718096;
+  --color-sc-border: #e2e8f0;
+  --color-amber: #b7791f;
+  --color-amber-light: #fffbeb;
+  --color-red-light: #fff5f5;
+  --color-red-badge: #fc8181;
+  --color-green: #276749;
+  --color-green-light: #f0fff4;
+  --color-footer-bg: #0f2235;
+
+  /* Typography */
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1), 0 16px 40px rgba(0, 0, 0, 0.08);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-warm-white);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animate-in utility used by useInView */
+.animate-fade-up {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+
+.animate-fade-up.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
