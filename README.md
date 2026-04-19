@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StarlynnCare
 
-## Getting Started
+Memory care quality transparency: primary-source CMS and state agency data, cited facility profiles, no paid placement.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) · **React 19** · **Tailwind CSS v4**
+- **Supabase** (Postgres + RLS) — `@supabase/supabase-js`
+- **Vercel** · optional **Upstash Redis** for the waitlist API
+
+Design tokens live in [`src/app/globals.css`](src/app/globals.css) (navy, teal, warm white, Playfair Display + Inter).
+
+## Local development
 
 ```bash
+npm install
+cp .env.local.example .env.local
+# Fill Supabase keys (and optional Upstash) — see docs/SUPABASE_MIGRATION.md
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database (Sprint 1)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a Supabase project (region **US East**).
+2. Run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) in the SQL Editor.
+3. Copy keys into `.env.local`.
+4. Verify: `npm run verify-schema`
 
-## Learn More
+Full steps: [`docs/SUPABASE_MIGRATION.md`](docs/SUPABASE_MIGRATION.md).
 
-To learn more about Next.js, take a look at the following resources:
+## Routes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Route | Purpose |
+|-------|---------|
+| `/` | Marketing home (editorial, primary-source positioning) |
+| `/florida` | Florida facility index (from `facilities` where `state_code = 'FL'`) |
+| `/facility/[slug]` | Facility profile (Florida slug; expands to city in URL later if needed) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run verify-schema` | Check Supabase tables after migration |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Next.js 16 notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [`docs/next16-routing-notes.md`](docs/next16-routing-notes.md).
+
+## Legacy components
+
+Earlier landing sections remain under [`src/components/`](src/components/) as reference; the live home page is implemented in [`src/app/page.tsx`](src/app/page.tsx) with new [`src/components/site/`](src/components/site/) chrome.

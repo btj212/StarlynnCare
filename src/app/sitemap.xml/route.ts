@@ -3,13 +3,20 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-static";
 
 export function GET() {
+  const lastmod = new Date().toISOString().split("T")[0];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.starlynncare.com</loc>
-    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.starlynncare.com/florida</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
 </urlset>`;
 

@@ -1,0 +1,148 @@
+/**
+ * Hand-written types mirroring StarlynnCare schema (supabase/migrations/0001_init.sql).
+ * Regenerate from Supabase later if desired.
+ */
+
+export type StateConfidence = "high" | "medium" | "low";
+
+export interface State {
+  id: number;
+  code: string;
+  name: string;
+  scraper_name: string | null;
+  last_successful_scrape: string | null;
+  confidence: StateConfidence | null;
+  sla_days: number | null;
+  notes: string | null;
+}
+
+export type OwnershipType = "for-profit" | "non-profit" | "government";
+
+export interface Facility {
+  id: string;
+  state_code: string;
+  name: string;
+  cms_id: string | null;
+  license_number: string | null;
+  license_type: string | null;
+  street: string | null;
+  city: string | null;
+  zip: string | null;
+  city_slug: string;
+  slug: string;
+  beds: number | null;
+  facility_type: string | null;
+  certification_type: string | null;
+  operator_name: string | null;
+  management_company: string | null;
+  ownership_type: OwnershipType | null;
+  phone: string | null;
+  website: string | null;
+  cms_star_rating: number | null;
+  last_inspection_date: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  source_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InspectionType =
+  | "standard"
+  | "complaint"
+  | "follow-up"
+  | "focused"
+  | string;
+
+export interface Inspection {
+  id: string;
+  facility_id: string;
+  inspection_date: string;
+  inspection_type: string | null;
+  is_complaint: boolean;
+  complaint_id: string | null;
+  total_deficiency_count: number | null;
+  civil_money_penalty_total: string | null;
+  special_focus: boolean;
+  source_url: string;
+  source_agency: string;
+  scrape_run_id: string | null;
+  raw_data: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export type DeficiencyScope = "isolated" | "pattern" | "widespread";
+
+export interface Deficiency {
+  id: string;
+  inspection_id: string;
+  ftag: string | null;
+  code: string | null;
+  category: string | null;
+  scope: DeficiencyScope | null;
+  severity: number | null;
+  scope_severity_code: string | null;
+  class: string | null;
+  immediate_jeopardy: boolean;
+  substandard_quality_of_care: boolean;
+  is_repeat: boolean;
+  description: string | null;
+  inspector_narrative: string | null;
+  harm_description: string | null;
+  residents_affected: number | null;
+  plan_of_correction: string | null;
+  poc_deadline: string | null;
+  cited_date: string | null;
+  corrected_date: string | null;
+  status: string | null;
+  civil_money_penalty: string | null;
+  created_at: string;
+}
+
+export type ScrapeRunStatus = "running" | "success" | "partial" | "failed";
+
+export interface ScrapeRun {
+  id: string;
+  state_code: string;
+  scraper_name: string;
+  started_at: string;
+  completed_at: string | null;
+  status: ScrapeRunStatus;
+  records_found: number | null;
+  records_new: number | null;
+  records_updated: number | null;
+  error_log: string | null;
+  evaluator_result: Record<string, unknown> | null;
+  repair_attempted: boolean;
+  repair_result: Record<string, unknown> | null;
+}
+
+export type ContentRunStatus =
+  | "running"
+  | "passed"
+  | "failed_quality_gate"
+  | "error";
+
+export interface ContentRun {
+  id: string;
+  facility_id: string;
+  started_at: string;
+  completed_at: string | null;
+  status: ContentRunStatus;
+  quality_gate_result: Record<string, unknown> | null;
+  generated_content: Record<string, unknown> | null;
+  published: boolean;
+}
+
+/** Fields commonly selected for list cards */
+export type FacilityListRow = Pick<
+  Facility,
+  | "id"
+  | "name"
+  | "city"
+  | "city_slug"
+  | "slug"
+  | "cms_star_rating"
+  | "beds"
+  | "last_inspection_date"
+>;

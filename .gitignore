@@ -30,11 +30,17 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (keep committed examples un-ignored)
 .env*
+!.env*.example
 
 # vercel
 .vercel
+
+# Python (scrapers)
+__pycache__/
+*.py[cod]
+scrapers/.venv/
 
 # typescript
 *.tsbuildinfo
