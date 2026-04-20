@@ -184,28 +184,33 @@ export default async function Home() {
 
               {/* Left: headline + copy + CTAs */}
               <div>
-                <h1 className="hero-enter font-[family-name:var(--font-serif)] text-4xl font-semibold leading-[1.15] tracking-tight text-navy md:text-5xl">
-                  Memory care quality, from the sources that regulate it.
+                <p className="hero-enter flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-teal">
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden />
+                  Memory care, Alameda County
+                </p>
+                <h1 className="hero-enter-delay mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold leading-[1.12] tracking-tight text-navy md:text-5xl">
+                  Know you made the{" "}
+                  <em className="not-italic text-teal">right</em>{" "}
+                  choice for Mom.
                 </h1>
                 <p className="hero-enter-delay mt-5 text-lg leading-relaxed text-slate">
-                  Facility profiles built from{" "}
-                  <strong className="font-medium text-ink">California CDSS</strong> and{" "}
-                  <strong className="font-medium text-ink">CMS</strong> primary
-                  records — not lead-gen ads. Every stat links to a source and
-                  carries an &ldquo;as of&rdquo; date.
+                  Choosing memory care is heavy enough without guessing which
+                  brochure is telling the truth. We pull the record every
+                  facility has to file — inspections, citations, complaints —
+                  so you can sign the paperwork with all the right information.
                 </p>
                 <div className="hero-enter-delay mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <Link
                     href="/california/alameda-county"
                     className="inline-flex items-center justify-center rounded-md bg-teal px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-mid"
                   >
-                    Browse Alameda County
+                    See who&rsquo;s earned your trust →
                   </Link>
                   <a
                     href="#how-it-works"
                     className="inline-flex items-center justify-center text-sm font-medium text-slate hover:text-ink transition-colors"
                   >
-                    How we source data
+                    How we know
                   </a>
                 </div>
               </div>
