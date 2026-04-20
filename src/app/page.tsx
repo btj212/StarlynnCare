@@ -46,28 +46,39 @@ async function loadStats(): Promise<{
 
 function SpecimenCard() {
   return (
-    <div className="relative rounded-2xl border border-sc-border bg-white shadow-card-hover overflow-hidden card-lift hero-enter-delay-2">
-      {/* Top accent line */}
-      <div className="h-1 w-full bg-gradient-to-r from-teal to-teal-mid" />
-
-      <div className="px-5 pt-4 pb-5">
-        {/* Facility header */}
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-              CA License 019201143
-            </p>
-            <h3 className="mt-0.5 font-[family-name:var(--font-serif)] text-lg font-semibold leading-snug text-navy">
-              Elegance Berkeley
-            </h3>
-            <p className="mt-0.5 text-xs text-muted">
-              2100 San Pablo Avenue · Berkeley, CA
-            </p>
-          </div>
-          <span className="shrink-0 inline-flex items-center rounded-full bg-teal-light px-2.5 py-0.5 text-xs font-semibold text-teal">
-            RCFE · Memory care
+    <div className="rounded-2xl border border-sc-border bg-white shadow-card-hover overflow-hidden card-lift hero-enter-delay-2">
+        {/* Street View photo */}
+        <div className="relative h-32 w-full overflow-hidden bg-sc-border/20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://fwvrupjgwvvzqiutwwdg.supabase.co/storage/v1/object/public/facility-photos/01915921-83be-4154-bcce-b49d82e0e81d.jpg"
+            alt="Exterior of Elegance Berkeley"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          <span className="absolute bottom-2 right-2 text-[9px] text-white/70">
+            © Google Street View
           </span>
         </div>
+
+        <div className="px-5 pt-4 pb-5">
+          {/* Facility header */}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
+                CA License 019201143
+              </p>
+              <h3 className="mt-0.5 font-[family-name:var(--font-serif)] text-lg font-semibold leading-snug text-navy">
+                Elegance Berkeley
+              </h3>
+              <p className="mt-0.5 text-xs text-muted">
+                2100 San Pablo Avenue · Berkeley, CA
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-center rounded-full bg-teal-light px-2.5 py-0.5 text-xs font-semibold text-teal">
+              RCFE · Memory care
+            </span>
+          </div>
 
         {/* Divider */}
         <div className="my-3.5 border-t border-sc-border/60" />

@@ -5,44 +5,68 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { regionFromSlug } from "@/lib/regions";
-import type { FacilityListRow, CareCategory } from "@/lib/types";
+import type { CareCategory } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 type PageProps = {
   params: Promise<{ state: string; city: string }>;
 };
 
-/**
- * SEO-optimized intro paragraphs for the 4 Alameda County launch cities.
- * Factual, family-oriented, no superlatives.
- */
 const CITY_INTRO: Record<string, { heading: string; body: string }> = {
   oakland: {
-    heading: "Memory care facilities in Oakland, CA — state records and inspection history",
+    heading: "Memory care in Oakland, CA — state records and inspection history",
     body:
-      "Oakland is Alameda County's largest city and home to several state-licensed residential care facilities for the elderly (RCFEs) that specialize in memory care for adults with Alzheimer's disease and related dementias. California's Community Care Licensing Division (CDSS) inspects these facilities annually; the inspection reports and any cited deficiencies appear on the individual facility pages below. Profiles are published only when verified CDSS licensing data is on file.",
+      "Oakland is Alameda County's largest city and home to several state-licensed RCFEs specializing in memory care. California CDSS inspects these facilities annually; inspection reports and cited deficiencies appear on each profile page.",
   },
   berkeley: {
-    heading: "Memory care facilities in Berkeley, CA — CDSS inspection records",
+    heading: "Memory care in Berkeley, CA — CDSS inspection records",
     body:
-      "Berkeley has two state-licensed, dedicated memory-care RCFEs—Silverado Senior Living and Elegance Berkeley—as well as several general RCFEs with memory-care capability. All are inspected at least annually by California CDSS evaluators. Deficiency citations, including those under Title 22 §87705 (dementia-specific care standards), appear on each facility's page so families can compare regulatory histories before scheduling tours.",
+      "Berkeley has two dedicated memory-care RCFEs — Silverado Senior Living and Elegance Berkeley — inspected at least annually by California CDSS evaluators. Deficiency citations, including those under Title 22 §87705, appear on each facility page.",
   },
   alameda: {
     heading: "Memory care in Alameda, CA — CDSS licensing and inspection data",
     body:
-      "The city of Alameda, on the island between Oakland and the Bay, is home to Oakmont of Mariner Point, an RCFE with a dedicated memory-care program. California CDSS licensing and inspection data for facilities in Alameda are compiled here from the CDSS Transparency API and updated with each new inspection cycle. Use the profiles below to review deficiency histories before contacting facilities directly.",
+      "The city of Alameda is home to Oakmont of Mariner Point, an RCFE with a dedicated memory-care program. Licensing and inspection data are sourced from the CDSS Transparency API.",
   },
   fremont: {
-    heading: "Memory care in Fremont, CA — Aegis, Ivy Park, Brookdale, and more",
+    heading: "Memory care in Fremont, CA — Aegis, Brookdale, and more",
     body:
-      "Fremont has the highest concentration of memory-care RCFEs in southern Alameda County, including Aegis Assisted Living of Fremont, Aegis Gardens, Brookdale North Fremont, and Ivy Park at Hayward (in adjacent Hayward). Combined, these facilities account for a significant portion of licensed memory-care capacity in the county. Inspection deficiency histories—including any Type A (actual-harm) citations—appear on each facility's profile page.",
+      "Fremont has the highest concentration of memory-care RCFEs in southern Alameda County, including Aegis Assisted Living, Aegis Gardens, and Brookdale North Fremont. Inspection histories — including any Type A citations — appear on each facility profile.",
   },
 };
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+const CATEGORY_LABEL: Record<CareCategory, string> = {
+  rcfe_memory_care: "RCFE · Memory care",
+  rcfe_general: "RCFE",
+  alf_memory_care: "ALF · Memory care",
+  alf_general: "ALF",
+  snf_general: "Nursing home",
+  snf_dementia_scu: "Nursing home · Dementia SCU",
+  ccrc: "CCRC",
+  unknown: "Pending categorization",
+};
+
+type FacilityCard = {
+  id: string;
+  name: string;
+  city: string | null;
+  city_slug: string;
+  slug: string;
+  street: string | null;
+  beds: number | null;
+  care_category: CareCategory;
+  photo_url: string | null;
+};
+
+type FacilityStats = {
+  facility_id: string;
+  inspections: number;
+  type_a: number;
+  type_b: number;
+};
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { state: stateSlug, city: regionSlug } = await params;
   const region = regionFromSlug(stateSlug, regionSlug);
   if (!region) return { title: "Region not found | StarlynnCare" };
@@ -57,181 +81,248 @@ export async function generateMetadata({
   };
 }
 
-const CATEGORY_LABEL: Record<CareCategory, string> = {
-  rcfe_memory_care: "RCFE · Memory care",
-  rcfe_general: "RCFE",
-  alf_memory_care: "ALF · Memory care",
-  alf_general: "ALF",
-  snf_general: "Nursing home",
-  snf_dementia_scu: "Nursing home · Dementia SCU",
-  ccrc: "CCRC",
-  unknown: "Pending categorization",
-};
-
-function groupByCity(facilities: FacilityListRow[]) {
-  const map = new Map<string, FacilityListRow[]>();
-  for (const f of facilities) {
-    const city = f.city?.trim() || "Unknown city";
-    if (!map.has(city)) map.set(city, []);
-    map.get(city)!.push(f);
-  }
-  return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-}
-
 export default async function RegionPage({ params }: PageProps) {
   const { state: stateSlug, city: regionSlug } = await params;
   const region = regionFromSlug(stateSlug, regionSlug);
   if (!region) notFound();
 
   const supabase = tryPublicSupabaseClient();
-  let facilities: FacilityListRow[] = [];
+  let facilities: FacilityCard[] = [];
+  let statsMap = new Map<string, FacilityStats>();
   let fetchError: string | null = null;
 
   if (!supabase) {
-    fetchError =
-      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.";
+    fetchError = "Supabase is not configured.";
   } else {
     const { data, error } = await supabase
       .from("facilities")
-      .select(
-        "id, name, city, city_slug, slug, cms_star_rating, beds, last_inspection_date, care_category, serves_memory_care, memory_care_designation, publishable",
-      )
+      .select("id, name, city, city_slug, slug, street, beds, care_category, photo_url")
       .eq("state_code", region.state.code)
       .eq("publishable", true)
       .in("city_slug", region.citySlugs as unknown as string[])
-      .order("city", { ascending: true })
       .order("name", { ascending: true });
-    if (error) fetchError = error.message;
-    else facilities = (data ?? []) as FacilityListRow[];
+
+    if (error) {
+      fetchError = error.message;
+    } else {
+      facilities = (data ?? []) as FacilityCard[];
+
+      // One aggregation query for all facilities' inspection/deficiency counts
+      if (facilities.length > 0) {
+        const ids = facilities.map((f) => f.id);
+        const { data: inspData } = await supabase
+          .from("inspections")
+          .select("id, facility_id")
+          .in("facility_id", ids);
+
+        const inspIds = (inspData ?? []).map((i) => i.id);
+        const inspByFacility = new Map<string, number>();
+        for (const i of inspData ?? []) {
+          inspByFacility.set(i.facility_id, (inspByFacility.get(i.facility_id) ?? 0) + 1);
+        }
+
+        const { data: defData } = await supabase
+          .from("deficiencies")
+          .select("inspection_id, class")
+          .in("inspection_id", inspIds.length ? inspIds : ["__none__"]);
+
+        // Build inspection→facility map
+        const inspFacMap = new Map<string, string>();
+        for (const i of inspData ?? []) inspFacMap.set(i.id, i.facility_id);
+
+        const typeAByFacility = new Map<string, number>();
+        const typeBByFacility = new Map<string, number>();
+        for (const d of defData ?? []) {
+          const fid = inspFacMap.get(d.inspection_id);
+          if (!fid) continue;
+          if (d.class === "Type A")
+            typeAByFacility.set(fid, (typeAByFacility.get(fid) ?? 0) + 1);
+          if (d.class === "Type B")
+            typeBByFacility.set(fid, (typeBByFacility.get(fid) ?? 0) + 1);
+        }
+
+        for (const fac of facilities) {
+          statsMap.set(fac.id, {
+            facility_id: fac.id,
+            inspections: inspByFacility.get(fac.id) ?? 0,
+            type_a: typeAByFacility.get(fac.id) ?? 0,
+            type_b: typeBByFacility.get(fac.id) ?? 0,
+          });
+        }
+      }
+    }
   }
 
-  const grouped = groupByCity(facilities);
   const count = facilities.length;
-  const memoryCareCount = facilities.filter((f) => f.serves_memory_care).length;
   const cityIntro = CITY_INTRO[regionSlug] ?? null;
-  const cityLabel =
-    region.kind === "county"
-      ? `${region.citySlugs
-          .map((s) =>
-            s
-              .split("-")
-              .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-              .join(" "),
-          )
-          .slice(0, 4)
-          .join(", ")}${region.citySlugs.length > 4 ? `, and ${region.citySlugs.length - 4} more` : ""}`
-      : region.name;
 
   return (
     <>
       <SiteNav />
       <main className="min-h-[60vh] border-b border-sc-border bg-warm-white">
-        <div className="mx-auto max-w-[1120px] px-6 py-14 md:px-8 md:py-20">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted">
-            <Link
-              href={`/${region.state.slug}`}
-              className="hover:text-teal"
-            >
+        <div className="mx-auto max-w-[1120px] px-6 py-10 md:px-8 md:py-14">
+
+          {/* ── Header ── */}
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+            <Link href={`/${region.state.slug}`} className="hover:text-teal">
               {region.state.name}
             </Link>{" "}
             · Memory care transparency
           </p>
-          <h1 className="mt-3 font-[family-name:var(--font-serif)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
+          <h1 className="mt-2 font-[family-name:var(--font-serif)] text-3xl font-semibold tracking-tight text-navy md:text-4xl md:leading-tight">
             {cityIntro ? cityIntro.heading : `Memory care in ${region.name}`}
           </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate">
-            {cityIntro
-              ? cityIntro.body
-              : "Profiles below are published only after a facility has verified state-agency data (CDSS for California RCFEs). Federal CMS data supplements the record when the facility also operates a skilled nursing wing."}
-          </p>
+          {cityIntro && (
+            <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate">
+              {cityIntro.body}
+            </p>
+          )}
 
-          {/* Honest coverage banner */}
-          <div className="mt-8 rounded-lg border border-teal/20 bg-teal-light/60 px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal">
-              What this page shows
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate">
-              Covering {cityLabel}.{" "}
+          {/* ── Compact coverage strip ── */}
+          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-teal/20 bg-teal-light/50 px-4 py-3 text-sm text-slate">
+            <span>
               <strong className="font-semibold text-ink">{count}</strong>{" "}
-              {count === 1 ? "facility" : "facilities"} currently publishable
-              {memoryCareCount > 0 && (
-                <>
-                  {" "}(of which{" "}
-                  <strong className="font-semibold text-ink">
-                    {memoryCareCount}
-                  </strong>{" "}
-                  serve memory care)
-                </>
-              )}
-              . Inspection and citation history populates each facility page as
-              the CDSS ingest runs. Facilities without verified state-agency
-              data are intentionally hidden until they have real records to
-              cite.
-            </p>
+              {count === 1 ? "facility" : "facilities"} with verified CDSS records
+            </span>
+            <span className="hidden sm:inline text-teal/40">·</span>
+            <span className="text-xs text-muted">
+              Profiles hidden until state-agency data is confirmed
+            </span>
           </div>
 
-          {fetchError ? (
-            <div
-              className="mt-10 rounded-lg border border-amber/30 bg-amber-light px-5 py-4 text-sm text-ink"
-              role="status"
-            >
+          {/* ── Error state ── */}
+          {fetchError && (
+            <div className="mt-8 rounded-lg border border-amber/30 bg-amber-light px-5 py-4 text-sm">
               <p className="font-semibold text-amber">Configuration</p>
-              <p className="mt-2 leading-relaxed text-slate">{fetchError}</p>
+              <p className="mt-2 text-slate">{fetchError}</p>
             </div>
-          ) : count === 0 ? (
-            <div className="mt-14 rounded-lg border border-sc-border bg-white px-6 py-10 shadow-card">
+          )}
+
+          {/* ── Empty state ── */}
+          {!fetchError && count === 0 && (
+            <div className="mt-10 rounded-lg border border-sc-border bg-white px-6 py-10 shadow-card">
               <p className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy">
                 No facilities published yet
               </p>
-              <p className="mt-3 max-w-xl leading-relaxed text-slate">
+              <p className="mt-3 max-w-xl text-slate leading-relaxed">
                 The CDSS ingest for {region.name} has not yet produced
                 verifiable records. This page will populate once the scraper
-                run completes — every profile must have real citation data
-                before it goes live.
+                run completes.
               </p>
             </div>
-          ) : (
-            <div className="mt-14 space-y-16">
-              {grouped.map(([city, rows]) => (
-                <section key={city}>
-                  <h2 className="border-b border-sc-border pb-3 font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
-                    {city}
-                  </h2>
-                  <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {rows.map((f) => (
-                      <li key={f.id}>
-                        <Link
-                          href={`/${region.state.slug}/${f.city_slug}/${f.slug}`}
-                          className="group block rounded-lg border border-sc-border bg-white p-5 shadow-card transition hover:border-teal/40 hover:shadow-card-hover"
+          )}
+
+          {/* ── Facility card grid ── */}
+          {!fetchError && count > 0 && (
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {facilities.map((f) => {
+                const stats = statsMap.get(f.id);
+                const hasTypeA = (stats?.type_a ?? 0) > 0;
+                const hasTypeB = !hasTypeA && (stats?.type_b ?? 0) > 0;
+                const href = `/${region.state.slug}/${f.city_slug}/${f.slug}`;
+
+                return (
+                  <Link
+                    key={f.id}
+                    href={href}
+                    className={`group flex flex-col overflow-hidden rounded-xl border bg-white shadow-card card-lift ${
+                      hasTypeA
+                        ? "border-red-200"
+                        : hasTypeB
+                        ? "border-orange-200"
+                        : "border-sc-border"
+                    }`}
+                  >
+                    {/* Photo or placeholder */}
+                    {f.photo_url ? (
+                      <div className="relative h-36 w-full overflow-hidden bg-sc-border/30">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={f.photo_url}
+                          alt={`Exterior of ${f.name}`}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                          loading="lazy"
+                        />
+                        {/* Severity ribbon over photo */}
+                        {hasTypeA && (
+                          <span className="absolute top-2 left-2 inline-flex items-center rounded px-2 py-0.5 text-[10px] font-bold bg-red-600 text-white shadow-sm">
+                            Type A on file
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex h-36 items-center justify-center bg-sc-border/20">
+                        <svg
+                          className="h-10 w-10 text-sc-border"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1}
                         >
-                          <span className="block font-semibold text-ink group-hover:text-teal">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"
+                          />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* Card body */}
+                    <div className="flex flex-1 flex-col p-4 gap-3">
+                      {/* Name + category */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-ink leading-snug group-hover:text-teal transition-colors">
                             {f.name}
-                          </span>
-                          <span className="mt-1 block text-xs font-medium text-teal">
-                            {CATEGORY_LABEL[f.care_category]}
-                          </span>
-                          {f.memory_care_designation && (
-                            <p className="mt-2 text-xs text-muted">
-                              {f.memory_care_designation}
+                          </p>
+                          {f.city && (
+                            <p className="mt-0.5 text-xs text-muted">
+                              {f.city}{f.beds != null ? ` · ${f.beds} beds` : ""}
                             </p>
                           )}
-                          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-                            {f.beds != null && <span>{f.beds} beds</span>}
-                            {f.cms_star_rating != null && (
-                              <span>CMS {f.cms_star_rating}★</span>
-                            )}
-                            {f.last_inspection_date && (
-                              <span>
-                                Last inspection {f.last_inspection_date}
+                        </div>
+                        <span className="shrink-0 inline-flex items-center rounded-full bg-teal-light px-2.5 py-0.5 text-[10px] font-semibold text-teal">
+                          {CATEGORY_LABEL[f.care_category]}
+                        </span>
+                      </div>
+
+                      {/* Stats row */}
+                      {stats && (
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                          <span className="text-muted">
+                            {stats.inspections} inspection{stats.inspections !== 1 ? "s" : ""} on file
+                          </span>
+                          {stats.type_a > 0 && (
+                            <span className="inline-flex items-center gap-1 font-semibold text-red-600">
+                              <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold bg-red-100">
+                                Type A
                               </span>
-                            )}
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
+                              {stats.type_a}
+                            </span>
+                          )}
+                          {stats.type_a === 0 && stats.type_b > 0 && (
+                            <span className="inline-flex items-center gap-1 font-medium text-orange-600">
+                              <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-orange-50">
+                                Type B
+                              </span>
+                              {stats.type_b}
+                            </span>
+                          )}
+                          {stats.type_a === 0 && stats.type_b === 0 && (
+                            <span className="text-teal font-medium">No citations on file</span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* CTA */}
+                      <p className="mt-auto pt-1 text-xs font-semibold text-teal group-hover:underline underline-offset-2">
+                        View full profile →
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
