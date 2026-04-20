@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { tryCreateServerSupabaseClient } from "@/lib/supabase/server";
+import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import type { FacilityListRow } from "@/lib/types";
 
-export const revalidate = 3600;
+/** Always query Postgres on request — avoids stale ISR/HTML from builds before CMS ingest. */
+export const dynamic = "force-dynamic";
 
 function groupByCity(facilities: FacilityListRow[]) {
   const map = new Map<string, FacilityListRow[]>();
@@ -17,7 +18,7 @@ function groupByCity(facilities: FacilityListRow[]) {
 }
 
 export default async function FloridaPage() {
-  const supabase = await tryCreateServerSupabaseClient();
+  const supabase = tryPublicSupabaseClient();
   let facilities: FacilityListRow[] = [];
   let fetchError: string | null = null;
 
@@ -81,15 +82,17 @@ export default async function FloridaPage() {
           ) : count === 0 ? (
             <div className="mt-14 rounded-lg border border-sc-border bg-white px-6 py-10 shadow-card">
               <p className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy">
-                No Florida facilities yet
+                No Florida facilities in this environment
               </p>
               <p className="mt-3 max-w-xl leading-relaxed text-slate">
-                This index will populate automatically after CMS and state data are
-                ingested (Sprint 2). The database and routes are ready—what you&apos;re
-                seeing is an intentional empty state, not a broken page.
-              </p>
-              <p className="mt-6 font-mono text-xs text-muted">
-                changelog: schema v2 deployed · awaiting CMS ingest
+                The app is reading Supabase, but <code className="font-mono text-sm">facilities</code>{" "}
+                returned no rows for <code className="font-mono text-sm">state_code = FL</code>. If
+                you already ran <code className="font-mono text-sm">cms_ingest.py</code>, the
+                most common cause is the <strong>live site (Vercel) pointing at a different
+                Supabase project</strong> than the database you ingested into. Match{" "}
+                <code className="font-mono text-sm">NEXT_PUBLIC_SUPABASE_URL</code> to the same
+                project as your <code className="font-mono text-sm">DATABASE_URL</code>, then
+                redeploy. Hard-refresh this page after deploy.
               </p>
             </div>
           ) : (

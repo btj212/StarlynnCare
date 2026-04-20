@@ -22,7 +22,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
 ## Fetch / Supabase (@supabase/ssr)
 
-Use **`createServerSupabaseClient()`** from `@/lib/supabase/server` in Server Components so cookies stay in sync with Auth (middleware refreshes sessions). The env var is **`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`** (Supabase’s new name for the public client key); **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** still works.
+- **Public data (facility lists, profiles):** use **`tryPublicSupabaseClient()`** — plain `createClient` + publishable key, **no cookies**. Same RLS as the browser; reliable on Vercel for anonymous `SELECT`s.
+- **Auth / session-aware routes:** use **`createServerSupabaseClient()`** so cookies stay in sync with Supabase Auth (middleware refreshes sessions).
+
+Env: **`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`** (or legacy **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**).
 
 Do not import **`SUPABASE_SERVICE_ROLE_KEY`** into Client Components.
 

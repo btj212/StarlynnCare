@@ -46,6 +46,34 @@ export async function createServerSupabaseClient() {
   });
 }
 
+/**
+ * Server-only client with the **publishable** key — **no cookies**.
+ * Use for anonymous public reads (`facilities`, etc.) under RLS.
+ * Prefer this over {@link createServerSupabaseClient} when you do not need the user session;
+ * cookie-based SSR can behave inconsistently on Vercel for simple `SELECT`s.
+ */
+export function createPublicSupabaseClient(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = getPublishableKey();
+  if (!url || !key) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or legacy NEXT_PUBLIC_SUPABASE_ANON_KEY)",
+    );
+  }
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+export function tryPublicSupabaseClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = getPublishableKey();
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 /** Same as createServerSupabaseClient but returns null when env is incomplete (CI / misconfig). */
 export async function tryCreateServerSupabaseClient(): Promise<SupabaseClient | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

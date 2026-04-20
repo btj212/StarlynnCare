@@ -3,10 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { tryCreateServerSupabaseClient } from "@/lib/supabase/server";
+import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import type { Facility } from "@/lib/types";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -14,7 +14,7 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await tryCreateServerSupabaseClient();
+  const supabase = tryPublicSupabaseClient();
   if (!supabase) {
     return {
       title: "Facility | StarlynnCare",
@@ -77,7 +77,7 @@ function JsonLd({
 
 export default async function FacilityPage({ params }: PageProps) {
   const { slug } = await params;
-  const supabase = await tryCreateServerSupabaseClient();
+  const supabase = tryPublicSupabaseClient();
 
   if (!supabase) {
     return (
