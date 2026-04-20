@@ -3,13 +3,19 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { FacilityCarousel, type CarouselFacility } from "@/components/site/FacilityCarousel";
+import type { BenchmarkTier } from "@/lib/benchmarks";
 
 export const revalidate = 3600;
 
-const asOf = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "long",
-  timeZone: "America/Los_Angeles",
-}).format(new Date());
+// ── Batch benchmark helpers ───────────────────────────────────────────────────
+
+function percentile(sorted: number[], p: number): number {
+  if (!sorted.length) return 0;
+  return sorted[Math.max(0, Math.ceil((p / 100) * sorted.length) - 1)];
+}
+function tier(v: number, p33: number, p66: number): BenchmarkTier {
+  return v <= p33 ? "strong" : v <= p66 ? "mixed" : "concerns";
+}
 
 async function loadHomeData(): Promise<{
   stats: { facilities: number; inspections: number; typeACitations: number };
@@ -23,98 +29,140 @@ async function loadHomeData(): Promise<{
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return fallback;
 
-  const [facResult, inspCountResult, typeACountResult] = await Promise.all([
-    supabase
-      .from("facilities")
-      .select("id, name, city, street, care_category, photo_url, slug, city_slug, state_code")
-      .eq("publishable", true)
-      .not("photo_url", "is", null)
-      .order("name"),
-    supabase.from("inspections").select("*", { count: "exact", head: true }),
-    supabase
-      .from("deficiencies")
-      .select("*", { count: "exact", head: true })
-      .eq("class", "Type A"),
-  ]);
+  // 1. All publishable facilities with photos
+  const { data: rawFacilities } = await supabase
+    .from("facilities")
+    .select("id, name, city, care_category, photo_url, slug, city_slug, state_code")
+    .eq("publishable", true)
+    .not("photo_url", "is", null)
+    .order("name");
 
-  const facilities = (facResult.data ?? []) as Array<{
-    id: string; name: string; city: string | null; street: string | null;
-    care_category: string; photo_url: string | null; slug: string;
-    city_slug: string; state_code: string;
+  const facilities = (rawFacilities ?? []) as Array<{
+    id: string; name: string; city: string | null;
+    care_category: string; photo_url: string | null;
+    slug: string; city_slug: string; state_code: string;
   }>;
+
+  const facIds = facilities.map((f) => f.id);
+
+  // 2. Counts for trust row
+  const [inspCountRes, typeACountRes] = await Promise.all([
+    supabase.from("inspections").select("*", { count: "exact", head: true }),
+    supabase.from("deficiencies").select("*", { count: "exact", head: true }).eq("class", "Type A"),
+  ]);
 
   const stats = {
     facilities: facilities.length || 14,
-    inspections: inspCountResult.count ?? 330,
-    typeACitations: typeACountResult.count ?? 14,
+    inspections: inspCountRes.count ?? 330,
+    typeACitations: typeACountRes.count ?? 14,
   };
 
   if (!facilities.length) return { stats, carouselFacilities: [] };
 
-  // Fetch inspection counts + deficiency counts per facility in 2 queries
-  const facIds = facilities.map((f) => f.id);
-  const [inspData, defData] = await Promise.all([
-    supabase.from("inspections").select("id, facility_id").in("facility_id", facIds),
-    supabase.from("deficiencies").select("inspection_id, class"),
-  ]);
+  // 3. All inspections for benchmark computation
+  const { data: inspData } = await supabase
+    .from("inspections")
+    .select("id, facility_id, is_complaint, raw_data")
+    .in("facility_id", facIds);
+  const inspList = inspData ?? [];
 
-  const inspList = inspData.data ?? [];
-  const defList = defData.data ?? [];
+  // 4. All deficiencies
+  const inspIds = inspList.map((i: { id: string }) => i.id);
+  const { data: defData } = await supabase
+    .from("deficiencies")
+    .select("inspection_id, class")
+    .in("inspection_id", inspIds.length ? inspIds : ["__none__"]);
+  const defList = defData ?? [];
 
-  const inspCountByFac = new Map<string, number>();
-  const inspFacMap = new Map<string, string>();
-  for (const i of inspList) {
-    inspCountByFac.set(i.facility_id, (inspCountByFac.get(i.facility_id) ?? 0) + 1);
-    inspFacMap.set(i.id, i.facility_id);
+  // 5. Compute per-facility stats
+  type FStats = {
+    nonComplaintInsp: number;
+    defCount: number;
+    typeACount: number;
+    complaintsWithOutcome: number;
+    substantiated: number;
+  };
+  const statsMap = new Map<string, FStats>();
+  for (const f of facilities) {
+    statsMap.set(f.id, {
+      nonComplaintInsp: 0, defCount: 0, typeACount: 0,
+      complaintsWithOutcome: 0, substantiated: 0,
+    });
   }
 
-  const typeAByFac = new Map<string, number>();
-  const typeBByFac = new Map<string, number>();
-  for (const d of defList) {
-    const fid = inspFacMap.get(d.inspection_id);
-    if (!fid) continue;
-    if (d.class === "Type A") typeAByFac.set(fid, (typeAByFac.get(fid) ?? 0) + 1);
-    if (d.class === "Type B") typeBByFac.set(fid, (typeBByFac.get(fid) ?? 0) + 1);
+  const defByInsp = new Map<string, { class: string | null }[]>();
+  for (const d of defList as { inspection_id: string; class: string | null }[]) {
+    const list = defByInsp.get(d.inspection_id) ?? [];
+    list.push(d);
+    defByInsp.set(d.inspection_id, list);
   }
 
-  // Fetch most recent narrative summary per facility
-  const summaryResults = await Promise.all(
-    facIds.map((fid) =>
-      supabase
-        .from("inspections")
-        .select("narrative_summary")
-        .eq("facility_id", fid)
-        .not("narrative_summary", "is", null)
-        .order("inspection_date", { ascending: false })
-        .limit(1)
-        .single(),
-    ),
-  );
-  const summaryByFac = new Map<string, string>();
-  facIds.forEach((fid, i) => {
-    const s = summaryResults[i]?.data?.narrative_summary;
-    if (s) summaryByFac.set(fid, s);
-  });
+  for (const insp of inspList as { id: string; facility_id: string; is_complaint: boolean; raw_data: unknown }[]) {
+    const s = statsMap.get(insp.facility_id);
+    if (!s) continue;
+    const defs = defByInsp.get(insp.id) ?? [];
+    if (!insp.is_complaint) {
+      s.nonComplaintInsp++;
+      s.defCount += defs.length;
+    }
+    for (const d of defs) {
+      if (d.class === "Type A") s.typeACount++;
+    }
+    if (insp.is_complaint) {
+      const outcome = (insp.raw_data as { outcome?: string } | null)?.outcome;
+      if (outcome) {
+        s.complaintsWithOutcome++;
+        if (outcome === "Substantiated") s.substantiated++;
+      }
+    }
+  }
+
+  // 6. County distributions → percentile thresholds
+  const allStats = Array.from(statsMap.values());
+  const dpiVals = allStats
+    .map((s) => (s.nonComplaintInsp > 0 ? s.defCount / s.nonComplaintInsp : 0))
+    .sort((a, b) => a - b);
+  const typeAVals = allStats.map((s) => s.typeACount).sort((a, b) => a - b);
+  const complaintRates = allStats
+    .filter((s) => s.complaintsWithOutcome > 0)
+    .map((s) => s.substantiated / s.complaintsWithOutcome)
+    .sort((a, b) => a - b);
+
+  const dpiP33 = percentile(dpiVals, 33);
+  const dpiP66 = percentile(dpiVals, 66);
+  const typeAP33 = percentile(typeAVals, 33);
+  const typeAP66 = percentile(typeAVals, 66);
+  const cmpP33 = percentile(complaintRates, 33);
+  const cmpP66 = percentile(complaintRates, 66);
 
   const STATE_SLUG: Record<string, string> = { CA: "california" };
 
   const carouselFacilities: CarouselFacility[] = facilities
     .filter((f) => !!f.photo_url)
-    .map((f) => ({
-      id: f.id,
-      name: f.name,
-      city: f.city,
-      street: f.street,
-      care_category: f.care_category as CarouselFacility["care_category"],
-      photo_url: f.photo_url!,
-      slug: f.slug,
-      city_slug: f.city_slug,
-      state_slug: STATE_SLUG[f.state_code] ?? f.state_code.toLowerCase(),
-      inspections: inspCountByFac.get(f.id) ?? 0,
-      type_a: typeAByFac.get(f.id) ?? 0,
-      type_b: typeBByFac.get(f.id) ?? 0,
-      recent_summary: summaryByFac.get(f.id) ?? null,
-    }));
+    .map((f) => {
+      const s = statsMap.get(f.id)!;
+      const dpi = s.nonComplaintInsp > 0 ? s.defCount / s.nonComplaintInsp : 0;
+      const cmpRate = s.complaintsWithOutcome > 0
+        ? s.substantiated / s.complaintsWithOutcome
+        : null;
+      return {
+        id: f.id,
+        name: f.name,
+        city: f.city,
+        care_category: f.care_category as CarouselFacility["care_category"],
+        photo_url: f.photo_url!,
+        slug: f.slug,
+        city_slug: f.city_slug,
+        state_slug: STATE_SLUG[f.state_code] ?? f.state_code.toLowerCase(),
+        inspections: s.nonComplaintInsp + s.complaintsWithOutcome,
+        type_a: s.typeACount,
+        dpi,
+        dpi_tier: tier(dpi, dpiP33, dpiP66),
+        type_a_tier: tier(s.typeACount, typeAP33, typeAP66),
+        complaint_rate: cmpRate,
+        complaint_tier: cmpRate !== null ? tier(cmpRate, cmpP33, cmpP66) : "informational",
+      };
+    });
 
   return { stats, carouselFacilities };
 }
@@ -136,10 +184,7 @@ export default async function Home() {
 
               {/* Left: headline + copy + CTAs */}
               <div>
-                <p className="hero-enter text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-                  As of {asOf}
-                </p>
-                <h1 className="hero-enter-delay mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold leading-[1.15] tracking-tight text-navy md:text-5xl">
+                <h1 className="hero-enter font-[family-name:var(--font-serif)] text-4xl font-semibold leading-[1.15] tracking-tight text-navy md:text-5xl">
                   Memory care quality, from the sources that regulate it.
                 </h1>
                 <p className="hero-enter-delay mt-5 text-lg leading-relaxed text-slate">
