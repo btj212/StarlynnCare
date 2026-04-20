@@ -3,6 +3,7 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { FacilityCarousel, type CarouselFacility } from "@/components/site/FacilityCarousel";
+import { ZipSearch } from "@/components/site/ZipSearch";
 import type { BenchmarkTier } from "@/lib/benchmarks";
 
 export const revalidate = 3600;
@@ -190,31 +191,35 @@ export default async function Home() {
                   <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden />
                   Your memory care resource
                 </p>
-                <h1 className="hero-enter-delay mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold leading-[1.12] tracking-tight text-navy md:text-5xl">
-                  Independent{" "}
-                  <span className="whitespace-nowrap">memory care</span> records{" "}
-                  <span className="whitespace-nowrap">you can <span className="text-teal">trust.</span></span>
+                <h1 className="hero-enter-delay mt-4 font-[family-name:var(--font-serif)] text-3xl font-semibold leading-[1.15] tracking-tight text-navy md:text-4xl">
+                  In memory care, everyone helping you choose is being paid by
+                  the place{" "}
+                  <span className="whitespace-nowrap">
+                    you&rsquo;re <span className="text-teal">choosing.</span>
+                  </span>
                 </h1>
-                <p className="hero-enter-delay mt-5 text-lg leading-relaxed text-slate">
-                  Choosing memory care is heavy enough without guessing which
-                  brochure is telling the truth. In a sea of brokers on
-                  commission and websites that want your phone number,
-                  StarlynnCare gives you the list you actually need — every
-                  licensed memory care facility near you, with inspections,
-                  citations, and analysis on each one.
-                </p>
-                <div className="hero-enter-delay mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Link
-                    href="/california/alameda-county"
-                    className="inline-flex items-center justify-center rounded-md bg-teal px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-mid"
-                  >
-                    Open the list →
-                  </Link>
+                <div className="hero-enter-delay mt-5 space-y-4 text-base leading-relaxed text-slate">
+                  <p>
+                    The brokers. The referral sites. The hospital discharge
+                    coordinator&rsquo;s handout. Every hand reaching out to help
+                    is collecting a fee from the facility you&rsquo;re trying
+                    to judge.
+                  </p>
+                  <p>
+                    StarlynnCare isn&rsquo;t. We publish the state inspection
+                    records, the questions the tours don&rsquo;t answer, and the
+                    ombudsman contacts — for every licensed{" "}
+                    <span className="whitespace-nowrap">memory care</span>{" "}
+                    facility near you.
+                  </p>
+                </div>
+                <div className="hero-enter-delay mt-8 flex flex-col gap-3">
+                  <ZipSearch />
                   <Link
                     href="/methodology"
-                    className="inline-flex items-center justify-center text-sm font-medium text-slate hover:text-ink transition-colors"
+                    className="inline-flex items-center text-sm font-medium text-slate hover:text-ink transition-colors"
                   >
-                    Our Methodology
+                    See how we rate facilities
                   </Link>
                 </div>
               </div>
@@ -233,7 +238,6 @@ export default async function Home() {
         <section className="border-b border-sc-border bg-white">
           <div className="mx-auto max-w-[1120px] px-6 py-8 md:px-8">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              {/* Source wordmarks */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted shrink-0">
                   Source data
@@ -247,164 +251,66 @@ export default async function Home() {
                   CMS Care Compare
                 </span>
               </div>
-
-              {/* Live stats */}
               <div className="flex flex-wrap gap-x-8 gap-y-2">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-navy tabular-nums">
-                    {stats.facilities}
-                  </p>
+                  <p className="text-2xl font-bold text-navy tabular-nums">{stats.facilities}</p>
                   <p className="text-xs text-muted">facilities profiled</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-navy tabular-nums">
-                    {stats.inspections}
-                  </p>
+                  <p className="text-2xl font-bold text-navy tabular-nums">{stats.inspections}</p>
                   <p className="text-xs text-muted">inspections indexed</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-red-600 tabular-nums">
-                    {stats.typeACitations}
-                  </p>
-                  <p className="text-xs text-muted">Type A citations on file</p>
+                  <p className="text-2xl font-bold text-red-600 tabular-nums">{stats.typeACitations}</p>
+                  <p className="text-xs text-muted">severe violations on file</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── How it works — product vocabulary ─────────────────────────────── */}
-        <section
-          id="how-it-works"
-          className="scroll-mt-16 border-b border-sc-border bg-warm-white"
-        >
+        {/* ── What you get ──────────────────────────────────────────────────── */}
+        <section id="how-it-works" className="scroll-mt-16 bg-warm-white">
           <div className="mx-auto max-w-[1120px] px-6 py-20 md:px-8 md:py-24">
             <h2 className="font-[family-name:var(--font-serif)] text-3xl font-semibold text-navy md:text-4xl">
-              Three steps. No hype.
+              What you get on every facility report
             </h2>
-            <p className="mt-3 max-w-2xl text-slate">
-              We ingest public datasets, join them into one facility record, and
-              run a quality-checked content chain — nothing publishes without
-              citations.
-            </p>
 
-            <ol className="mt-14 grid gap-10 md:grid-cols-3">
-              {/* Step 1: Ingest */}
-              <li className="space-y-4">
-                {/* Product fragment: license record chip */}
-                <div className="inline-flex flex-col gap-1 rounded-lg border border-sc-border bg-white px-4 py-3 shadow-card text-xs font-mono">
-                  <span className="text-[10px] font-sans font-semibold uppercase tracking-widest text-muted">
-                    CA license record
-                  </span>
-                  <span className="font-medium text-ink">019201143</span>
-                  <div className="flex gap-2 mt-0.5">
-                    <span className="inline-flex items-center rounded-full bg-green-light text-green px-2 py-0.5 text-[10px] font-semibold font-sans">
-                      Licensed
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-teal-light text-teal px-2 py-0.5 text-[10px] font-semibold font-sans">
-                      RCFE · Memory care
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-ink">Ingest</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate">
-                    California CDSS licensing records and CMS Care Compare data
-                    — no aggregators, no scraping of marketing sites.
-                  </p>
-                </div>
-              </li>
+            <div className="mt-12 divide-y divide-sc-border">
 
-              {/* Step 2: Join & cite */}
-              <li className="space-y-4">
-                {/* Product fragment: inspection citation row */}
-                <div className="inline-flex flex-col gap-1.5 rounded-lg border border-red-200 bg-white px-4 py-3 shadow-card text-xs">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-                    Inspection record
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[10px] font-semibold">
-                      Complaint
-                    </span>
-                    <span className="text-slate">Jul 30, 2024</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-700">
-                      Type A
-                    </span>
-                    <span className="font-mono text-slate">CCR §87355(e)</span>
-                  </div>
-                  <a
-                    href="https://www.ccld.dss.ca.gov/transparencyapi/api/FacilityReports?facNum=019201143&inx=12"
-                    className="text-[10px] text-teal hover:underline truncate"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    cdss.ca.gov · source ↗
-                  </a>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-ink">Join &amp; cite</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate">
-                    One facility profile with structured inspection and deficiency
-                    history. Each figure carries a source URL and an effective date.
-                  </p>
-                </div>
-              </li>
+              <div className="grid gap-3 py-10 md:grid-cols-[14rem_1fr] md:gap-12">
+                <h3 className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy">
+                  The inspection record.
+                </h3>
+                <p className="text-base leading-relaxed text-slate">
+                  State citations, deficiency history, corrective actions
+                  filed. The things the tour won&rsquo;t bring up.
+                </p>
+              </div>
 
-              {/* Step 3: Quality gate */}
-              <li className="space-y-4">
-                {/* Product fragment: benchmark summary */}
-                <div className="inline-flex flex-col gap-1.5 rounded-lg border border-sc-border bg-white px-4 py-3 shadow-card text-xs">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-                    At a glance
-                  </span>
-                  {[
-                    { label: "Compliance", tier: "Mixed", cls: "bg-amber-light text-amber border border-amber/30" },
-                    { label: "Severity", tier: "Concerns", cls: "bg-red-light text-red-600 border border-red-200" },
-                    { label: "Complaints", tier: "Strong", cls: "bg-teal-light text-teal border border-teal/20" },
-                  ].map(({ label, tier, cls }) => (
-                    <div key={label} className="flex items-center justify-between gap-3">
-                      <span className="text-slate">{label}</span>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}>
-                        {tier}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-ink">Quality gate</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate">
-                    Generated summaries pass an automated review — uncited claims
-                    and sales tone are rejected before anything goes live.
-                  </p>
-                </div>
-              </li>
-            </ol>
-          </div>
-        </section>
+              <div className="grid gap-3 py-10 md:grid-cols-[14rem_1fr] md:gap-12">
+                <h3 className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy">
+                  The questions to bring on the tour.
+                </h3>
+                <p className="text-base leading-relaxed text-slate">
+                  A checklist for this specific facility — staff ratios,
+                  skin-check protocols, shower frequency, activity director
+                  workload. The things families wish they&rsquo;d asked first.
+                </p>
+              </div>
 
-        {/* ── What we're not ────────────────────────────────────────────────── */}
-        <section className="bg-warm-white">
-          <div className="mx-auto max-w-[680px] px-6 py-20 md:px-8 md:py-24">
-            <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
-              What we&apos;re not
-            </h2>
-            <ul className="mt-6 space-y-4 text-slate">
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal" />
-                Not a referral service — we don&apos;t sell your contact info.
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal" />
-                Not paid placement — rankings reflect data, not sponsorships.
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal" />
-                Not opinion blogs — when we add narrative, it stays factual and
-                cited.
-              </li>
-            </ul>
+              <div className="grid gap-3 py-10 md:grid-cols-[14rem_1fr] md:gap-12">
+                <h3 className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy">
+                  The ombudsman contact.
+                </h3>
+                <p className="text-base leading-relaxed text-slate">
+                  The state-mandated family advocate assigned to every
+                  facility. Most families don&rsquo;t know they exist. One
+                  click to reach them.
+                </p>
+              </div>
+
+            </div>
           </div>
         </section>
       </main>
