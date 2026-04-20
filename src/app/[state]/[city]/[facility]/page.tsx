@@ -8,6 +8,37 @@ import { regionFromSlug } from "@/lib/regions";
 import { stateFromSlug } from "@/lib/states";
 import type { Facility, CareCategory } from "@/lib/types";
 
+type FacilityContent = {
+  headline?: string;
+  intro?: string;
+  memory_care_approach?: string;
+  neighborhood?: string;
+  what_families_should_know?: string;
+  generated_at?: string;
+  model?: string;
+};
+
+type InspectionRow = {
+  id: string;
+  inspection_date: string;
+  inspection_type: string | null;
+  is_complaint: boolean;
+  complaint_id: string | null;
+  total_deficiency_count: number | null;
+  raw_data: { outcome?: string; inspector_name?: string } | null;
+};
+
+type DeficiencyRow = {
+  id: string;
+  inspection_id: string;
+  class: string | null;   // "Type A" | "Type B"
+  code: string | null;    // section cited, e.g. "87705(c)(5)"
+  severity: number | null;
+  immediate_jeopardy: boolean;
+  description: string | null;
+  inspector_narrative: string | null;
+};
+
 export const dynamic = "force-dynamic";
 
 type PageProps = {
@@ -49,6 +80,38 @@ async function loadFacility(
   if (error) return { facility: null, error: error.message, configured: true };
   const row = (data ?? [])[0] as Facility | undefined;
   return { facility: row ?? null, error: null, configured: true };
+}
+
+async function loadInspections(
+  facilityId: string,
+): Promise<{ inspections: InspectionRow[]; deficiencies: DeficiencyRow[] }> {
+  const supabase = tryPublicSupabaseClient();
+  if (!supabase) return { inspections: [], deficiencies: [] };
+
+  const { data: inspData } = await supabase
+    .from("inspections")
+    .select(
+      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, raw_data",
+    )
+    .eq("facility_id", facilityId)
+    .order("inspection_date", { ascending: false })
+    .limit(50);
+
+  const inspections = (inspData ?? []) as InspectionRow[];
+  if (!inspections.length) return { inspections: [], deficiencies: [] };
+
+  const inspIds = inspections.map((i) => i.id);
+  const { data: defData } = await supabase
+    .from("deficiencies")
+    .select(
+      "id, inspection_id, class, code, severity, immediate_jeopardy, description, inspector_narrative",
+    )
+    .in("inspection_id", inspIds);
+
+  return {
+    inspections,
+    deficiencies: (defData ?? []) as DeficiencyRow[],
+  };
 }
 
 export async function generateMetadata({
@@ -170,9 +233,27 @@ export default async function FacilityPage({ params }: PageProps) {
   if (error) throw new Error(error);
   if (!facility) notFound();
 
+  const { inspections, deficiencies } = await loadInspections(facility.id);
+
+  // Group deficiencies by inspection
+  const defByInspection = new Map<string, DeficiencyRow[]>();
+  for (const d of deficiencies) {
+    const existing = defByInspection.get(d.inspection_id) ?? [];
+    existing.push(d);
+    defByInspection.set(d.inspection_id, existing);
+  }
+
+  const totalDeficiencies = deficiencies.length;
+  const typeACount = deficiencies.filter((d) => d.class === "Type A").length;
+  const dementiaCitations = deficiencies.filter((d) =>
+    /8770[56]/.test(d.code ?? ""),
+  ).length;
+
   const base =
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.starlynncare.com";
   const canonicalUrl = `${base.replace(/\/$/, "")}/${state.slug}/${facility.city_slug}/${facility.slug}`;
+
+  const content: FacilityContent | null = facility.content ?? null;
 
   const asOfFormatted = facility.updated_at
     ? new Intl.DateTimeFormat("en-US", {
@@ -242,6 +323,70 @@ export default async function FacilityPage({ params }: PageProps) {
             </p>
           )}
 
+          {/* ─────────────────────────── AI-generated content ─────────────────────── */}
+          {content && (
+            <div className="mt-12 space-y-10">
+              {content.intro && (
+                <section aria-labelledby="about-heading">
+                  <h2
+                    id="about-heading"
+                    className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+                  >
+                    About this facility
+                  </h2>
+                  <p className="mt-4 text-base leading-relaxed text-slate">
+                    {content.intro}
+                  </p>
+                </section>
+              )}
+
+              {content.memory_care_approach && (
+                <section aria-labelledby="mc-heading">
+                  <h2
+                    id="mc-heading"
+                    className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+                  >
+                    Memory care approach
+                  </h2>
+                  <p className="mt-4 text-base leading-relaxed text-slate">
+                    {content.memory_care_approach}
+                  </p>
+                </section>
+              )}
+
+              {content.neighborhood && (
+                <section aria-labelledby="location-heading">
+                  <h2
+                    id="location-heading"
+                    className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+                  >
+                    Location &amp; neighborhood
+                  </h2>
+                  <p className="mt-4 text-base leading-relaxed text-slate">
+                    {content.neighborhood}
+                  </p>
+                </section>
+              )}
+
+              {content.what_families_should_know && (
+                <section
+                  aria-labelledby="families-heading"
+                  className="rounded-lg border border-teal/20 bg-teal-light/50 px-6 py-6"
+                >
+                  <h2
+                    id="families-heading"
+                    className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy"
+                  >
+                    What families should know
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-slate">
+                    {content.what_families_should_know}
+                  </p>
+                </section>
+              )}
+            </div>
+          )}
+
           {/* ─────────────────────────────── State card ─────────────────────────────── */}
           <section className="mt-12" aria-labelledby="state-heading">
             <div className="flex items-baseline justify-between">
@@ -289,15 +434,148 @@ export default async function FacilityPage({ params }: PageProps) {
               >
                 Inspections &amp; citations
               </h3>
-              <div className="mt-3 rounded-lg border border-sc-border bg-white px-5 py-5 shadow-card">
-                <p className="text-sm font-medium text-ink">Not yet indexed</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate">
-                  Individual inspection and deficiency records are scraped in a
-                  separate CDSS pipeline. This section will populate with dated
-                  citations (including Type A/B classifications, scope, and
-                  inspector narrative) as that pipeline runs.
-                </p>
-              </div>
+
+              {inspections.length > 0 ? (
+                <div className="mt-3 space-y-4">
+                  {/* Summary strip */}
+                  <div className="flex flex-wrap gap-6 rounded-lg border border-sc-border bg-white px-5 py-4 shadow-card">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-navy">{inspections.length}</p>
+                      <p className="mt-0.5 text-xs text-muted">reports on file</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-navy">{totalDeficiencies}</p>
+                      <p className="mt-0.5 text-xs text-muted">total deficiencies</p>
+                    </div>
+                    {typeACount > 0 && (
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-red-600">{typeACount}</p>
+                        <p className="mt-0.5 text-xs text-muted">Type A (actual harm)</p>
+                      </div>
+                    )}
+                    {dementiaCitations > 0 && (
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-amber-600">{dementiaCitations}</p>
+                        <p className="mt-0.5 text-xs text-muted">dementia-care citations</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Per-inspection cards */}
+                  {inspections.map((insp) => {
+                    const defs = defByInspection.get(insp.id) ?? [];
+                    const outcome = insp.raw_data?.outcome;
+                    const inspector = insp.raw_data?.inspector_name;
+                    const dateFormatted = insp.inspection_date
+                      ? new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(
+                          new Date(insp.inspection_date + "T12:00:00"),
+                        )
+                      : insp.inspection_date;
+                    return (
+                      <details
+                        key={insp.id}
+                        className="group rounded-lg border border-sc-border bg-white shadow-card"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-3.5 gap-3">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            <span
+                              className={
+                                insp.is_complaint
+                                  ? "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700"
+                                  : insp.inspection_type === "other"
+                                  ? "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600"
+                                  : "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-teal-light text-teal"
+                              }
+                            >
+                              {insp.is_complaint
+                                ? "Complaint"
+                                : insp.inspection_type === "other"
+                                ? "Other visit"
+                                : "Inspection"}
+                            </span>
+                            <span className="text-sm font-medium text-ink">{dateFormatted}</span>
+                            {outcome && (
+                              <span
+                                className={
+                                  outcome === "Substantiated"
+                                    ? "text-xs font-semibold text-red-600"
+                                    : "text-xs text-muted"
+                                }
+                              >
+                                · {outcome}
+                              </span>
+                            )}
+                          </div>
+                          <span className="shrink-0 text-xs font-medium text-muted">
+                            {defs.length > 0
+                              ? `${defs.length} deficienc${defs.length === 1 ? "y" : "ies"}`
+                              : "No deficiencies"}
+                          </span>
+                        </summary>
+
+                        {(defs.length > 0 || inspector) && (
+                          <div className="border-t border-sc-border/50 px-5 py-4 space-y-4">
+                            {inspector && (
+                              <p className="text-xs text-muted">
+                                Inspector: <span className="text-ink">{inspector}</span>
+                              </p>
+                            )}
+                            {defs.map((def, di) => (
+                              <div key={def.id} className={di > 0 ? "pt-4 border-t border-sc-border/40" : ""}>
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <span
+                                    className={
+                                      def.class === "Type A"
+                                        ? "inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-red-100 text-red-700"
+                                        : "inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-orange-50 text-orange-600"
+                                    }
+                                  >
+                                    {def.class ?? "Deficiency"}
+                                  </span>
+                                  {def.code && (
+                                    <span className="text-xs font-mono text-slate">
+                                      CCR §{def.code}
+                                    </span>
+                                  )}
+                                  {def.immediate_jeopardy && (
+                                    <span className="text-xs font-bold text-red-700 uppercase">
+                                      Immediate jeopardy
+                                    </span>
+                                  )}
+                                </div>
+                                {def.description && (
+                                  <p className="text-sm text-slate leading-relaxed">
+                                    {def.description.length > 350
+                                      ? def.description.slice(0, 350) + "…"
+                                      : def.description}
+                                  </p>
+                                )}
+                                {def.inspector_narrative && (
+                                  <p className="mt-2 text-sm text-ink leading-relaxed">
+                                    {def.inspector_narrative.length > 500
+                                      ? def.inspector_narrative.slice(0, 500) + "…"
+                                      : def.inspector_narrative}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </details>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-3 rounded-lg border border-sc-border bg-white px-5 py-5 shadow-card">
+                  <p className="text-sm font-medium text-ink">Not yet indexed</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate">
+                    Individual inspection and deficiency records are scraped in a
+                    separate CDSS pipeline. This section will populate with dated
+                    citations (including Type A/B classifications, scope, and
+                    inspector narrative) as that pipeline runs.
+                  </p>
+                </div>
+              )}
             </section>
           </section>
 

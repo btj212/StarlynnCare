@@ -75,18 +75,35 @@ FACILITY_PROFILE_URL = (
 
 # Regex for Phase 1 memory-care identification.
 # Matches facility_name or licensee (case-insensitive, word-boundary anchored).
-# "legacy" is excluded — too common a facility name word without memory-care context.
-# "silverado" is a known memory-care brand, kept.
+#
+# Two categories:
+#   A) Explicit keywords in the facility name
+#   B) Known national/regional chains whose standard product includes a
+#      dedicated memory-care unit. Brand presence is sufficient evidence;
+#      Phase D (SS87705/87706 citation scan) will confirm or correct.
+#
+# "legacy" excluded — too common without memory-care context.
 MEMORY_CARE_RE = re.compile(
     r"\b("
-    r"memory\s*care|memory[-\s]care|memory\s+care"
+    # A: Explicit program descriptors
+    r"memory\s*care|memory[-\s]care"
     r"|dementia"
     r"|alzheimer"
-    r"|silverado"
-    r"|cognitive\s+care|cognitive\s+memory"
     r"|reminiscence"
-    r"|mind[s]?\s*\&?\s*motion"
+    r"|cognitive\s+care|cognitive\s+memory"
     r"|neurocognitive|neurodegenerative"
+    r"|mind[s]?\s*\&?\s*motion"
+    # B: Known chains — memory care is part of their standard offering
+    r"|silverado"                           # pure memory-care brand
+    r"|aegis"                               # Aegis Living — memory-care focused
+    r"|belmont\s+village"                   # Belmont Village — dedicated MC on every campus
+    r"|brookdale"                           # Clare Bridge MC program
+    r"|watermark\s+at|the\s+watermark"      # The Watermark — always has MC
+    r"|oakmont\s+of"                        # Oakmont Senior Living CA chain
+    r"|merrill\s+gardens"                   # Merrill Gardens MC program
+    r"|ivy\s+park"                          # Ivy Park by Atria — premium tier
+    r"|elegance\s+\w+"                      # Elegance (ex-Sunrise) — retains MC
+    r"|sunrise\s+senior\s+living|sunrise\s+of"  # Sunrise Reminiscence MC program
     r")\b",
     re.IGNORECASE,
 )

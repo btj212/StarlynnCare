@@ -63,6 +63,17 @@ export interface Facility {
   license_status: string | null;
   license_expiration: string | null;
   publishable: boolean;
+
+  // Added in migration 0003_facility_content.sql
+  content: {
+    headline?: string;
+    intro?: string;
+    memory_care_approach?: string;
+    neighborhood?: string;
+    what_families_should_know?: string;
+    generated_at?: string;
+    model?: string;
+  } | null;
 }
 
 export type InspectionType =

@@ -13,15 +13,47 @@ type PageProps = {
   params: Promise<{ state: string; city: string }>;
 };
 
+/**
+ * SEO-optimized intro paragraphs for the 4 Alameda County launch cities.
+ * Factual, family-oriented, no superlatives.
+ */
+const CITY_INTRO: Record<string, { heading: string; body: string }> = {
+  oakland: {
+    heading: "Memory care facilities in Oakland, CA — state records and inspection history",
+    body:
+      "Oakland is Alameda County's largest city and home to several state-licensed residential care facilities for the elderly (RCFEs) that specialize in memory care for adults with Alzheimer's disease and related dementias. California's Community Care Licensing Division (CDSS) inspects these facilities annually; the inspection reports and any cited deficiencies appear on the individual facility pages below. Profiles are published only when verified CDSS licensing data is on file.",
+  },
+  berkeley: {
+    heading: "Memory care facilities in Berkeley, CA — CDSS inspection records",
+    body:
+      "Berkeley has two state-licensed, dedicated memory-care RCFEs—Silverado Senior Living and Elegance Berkeley—as well as several general RCFEs with memory-care capability. All are inspected at least annually by California CDSS evaluators. Deficiency citations, including those under Title 22 §87705 (dementia-specific care standards), appear on each facility's page so families can compare regulatory histories before scheduling tours.",
+  },
+  alameda: {
+    heading: "Memory care in Alameda, CA — CDSS licensing and inspection data",
+    body:
+      "The city of Alameda, on the island between Oakland and the Bay, is home to Oakmont of Mariner Point, an RCFE with a dedicated memory-care program. California CDSS licensing and inspection data for facilities in Alameda are compiled here from the CDSS Transparency API and updated with each new inspection cycle. Use the profiles below to review deficiency histories before contacting facilities directly.",
+  },
+  fremont: {
+    heading: "Memory care in Fremont, CA — Aegis, Ivy Park, Brookdale, and more",
+    body:
+      "Fremont has the highest concentration of memory-care RCFEs in southern Alameda County, including Aegis Assisted Living of Fremont, Aegis Gardens, Brookdale North Fremont, and Ivy Park at Hayward (in adjacent Hayward). Combined, these facilities account for a significant portion of licensed memory-care capacity in the county. Inspection deficiency histories—including any Type A (actual-harm) citations—appear on each facility's profile page.",
+  },
+};
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { state: stateSlug, city: regionSlug } = await params;
   const region = regionFromSlug(stateSlug, regionSlug);
   if (!region) return { title: "Region not found | StarlynnCare" };
+  const cityIntro = CITY_INTRO[regionSlug] ?? null;
   return {
-    title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
-    description: `Memory care facility profiles in ${region.name}, built from state (CDSS) and federal (CMS) primary sources.`,
+    title: cityIntro
+      ? `${cityIntro.heading} | StarlynnCare`
+      : `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
+    description: cityIntro
+      ? cityIntro.body.slice(0, 200)
+      : `Memory care facility profiles in ${region.name}, built from state (CDSS) and federal (CMS) primary sources.`,
   };
 }
 
@@ -76,6 +108,7 @@ export default async function RegionPage({ params }: PageProps) {
   const grouped = groupByCity(facilities);
   const count = facilities.length;
   const memoryCareCount = facilities.filter((f) => f.serves_memory_care).length;
+  const cityIntro = CITY_INTRO[regionSlug] ?? null;
   const cityLabel =
     region.kind === "county"
       ? `${region.citySlugs
@@ -104,13 +137,12 @@ export default async function RegionPage({ params }: PageProps) {
             · Memory care transparency
           </p>
           <h1 className="mt-3 font-[family-name:var(--font-serif)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
-            Memory care in {region.name}
+            {cityIntro ? cityIntro.heading : `Memory care in ${region.name}`}
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate">
-            Profiles below are published only after a facility has verified
-            state-agency data (CDSS for California RCFEs). Federal CMS data
-            supplements the record when the facility also operates a skilled
-            nursing wing.
+            {cityIntro
+              ? cityIntro.body
+              : "Profiles below are published only after a facility has verified state-agency data (CDSS for California RCFEs). Federal CMS data supplements the record when the facility also operates a skilled nursing wing."}
           </p>
 
           {/* Honest coverage banner */}
