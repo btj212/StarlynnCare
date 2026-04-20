@@ -59,6 +59,8 @@ export type CarouselFacility = {
   dpi_tier: BenchmarkTier;
   type_a_tier: BenchmarkTier;
   complaint_rate: number | null;
+  complaint_substantiated: number;
+  complaint_total: number;
   complaint_tier: BenchmarkTier;
 };
 
@@ -126,13 +128,17 @@ export function FacilityCarousel({ facilities }: { facilities: CarouselFacility[
 function CardInner({ f }: { f: CarouselFacility }) {
   const cfg = TIER_CFG;
   const dpiDisplay =
-    f.dpi > 0 ? `${f.dpi.toFixed(2)} per inspection` : "0 per inspection";
+    f.dpi > 0
+      ? `${f.dpi.toFixed(2)} citations per inspection`
+      : "0 citations per inspection";
   const typeADisplay =
-    f.type_a === 1 ? "1 Type A citation" : `${f.type_a} Type A citations`;
+    f.type_a === 0
+      ? "No severe violations"
+      : `${f.type_a} severe violation${f.type_a === 1 ? "" : "s"} (Type A)`;
   const complaintDisplay =
-    f.complaint_rate !== null
-      ? `${Math.round(f.complaint_rate * 100)}% substantiated`
-      : "No complaints on file";
+    f.complaint_total === 0
+      ? "No complaints filed"
+      : `${f.complaint_substantiated} of ${f.complaint_total} complaint${f.complaint_total === 1 ? "" : "s"} substantiated`;
 
   return (
     <div className="px-5 pt-5 pb-4">
@@ -177,7 +183,7 @@ function CardInner({ f }: { f: CarouselFacility }) {
               className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg[f.dpi_tier].dot}`}
               aria-hidden
             />
-            Compliance record
+            Violations per visit
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="font-medium text-ink">{dpiDisplay}</span>
@@ -196,7 +202,7 @@ function CardInner({ f }: { f: CarouselFacility }) {
               className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg[f.type_a_tier].dot}`}
               aria-hidden
             />
-            Severity record
+            Severe violations
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="font-medium text-ink">{typeADisplay}</span>
@@ -215,7 +221,7 @@ function CardInner({ f }: { f: CarouselFacility }) {
               className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg[f.complaint_tier].dot}`}
               aria-hidden
             />
-            Complaint pattern
+            Complaints filed
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="font-medium text-ink">{complaintDisplay}</span>

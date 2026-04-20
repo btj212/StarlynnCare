@@ -364,49 +364,49 @@ export default async function FacilityPage({ params }: PageProps) {
               </p>
               <div className="mt-4 rounded-lg border border-sc-border bg-white px-5 pt-2 pb-4 shadow-card">
                 <BenchmarkRow
-                  label="Compliance record"
-                  explanation="Deficiencies per routine inspection"
+                  label="Violations per visit"
+                  explanation="How many citations inspectors found per routine visit, on average"
                   thisValue={
                     benchmarks.deficienciesPerInspection.value.toFixed(2) +
-                    " per inspection"
+                    " citations per inspection"
                   }
-                  context={`County median: ${benchmarks.deficienciesPerInspection.countyMedian.toFixed(2)}`}
+                  context={`County median: ${benchmarks.deficienciesPerInspection.countyMedian.toFixed(2)} citations`}
                   tier={benchmarks.deficienciesPerInspection.tier}
                 />
                 <BenchmarkRow
-                  label="Severity record"
-                  explanation="Type A citations indicate actual or imminent harm"
+                  label="Severe violations"
+                  explanation="Violations where the state found actual or imminent risk of harm to a resident (called 'Type A' in state records)"
                   thisValue={
                     benchmarks.typeACount.value === 0
-                      ? "No Type A citations"
-                      : `${benchmarks.typeACount.value} Type A citation${benchmarks.typeACount.value === 1 ? "" : "s"}`
+                      ? "No severe violations on file"
+                      : `${benchmarks.typeACount.value} severe violation${benchmarks.typeACount.value === 1 ? "" : "s"} (Type A)`
                   }
-                  context={`County range: ${benchmarks.typeACount.countyRange[0]}–${benchmarks.typeACount.countyRange[1]}`}
+                  context={`County range: ${benchmarks.typeACount.countyRange[0]}–${benchmarks.typeACount.countyRange[1]} severe violations`}
                   tier={benchmarks.typeACount.tier}
                 />
                 <BenchmarkRow
-                  label="Dementia-care specificity"
-                  explanation="Whether CDSS cited §87705 or §87706 (dementia-care regulations) in the last 5 years"
+                  label="Memory care rule violations"
+                  explanation="Whether the state cited this facility for violating dementia-specific care regulations (§87705 or §87706) in the last 5 years"
                   thisValue={
                     benchmarks.dementiaCitation.hasCitation
                       ? benchmarks.dementiaCitation.mostRecentDate
-                        ? `Citation on file — most recent ${new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(new Date(benchmarks.dementiaCitation.mostRecentDate + "T12:00:00"))}`
-                        : "Citation on file"
-                      : "No dementia-care citations in past 5 years"
+                        ? `Cited — most recent ${new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(new Date(benchmarks.dementiaCitation.mostRecentDate + "T12:00:00"))}`
+                        : "Memory care rule violation on file"
+                      : "No memory care rule violations in past 5 years"
                   }
                   tier="informational"
                 />
                 <BenchmarkRow
-                  label="Complaint pattern"
-                  explanation="Share of complaints that CDSS found to be substantiated"
+                  label="Complaints filed"
+                  explanation="Of all complaints submitted to the state, how many were investigated and confirmed"
                   thisValue={
-                    benchmarks.complaintSubstantiation.value === null
-                      ? "No complaints with a recorded outcome"
-                      : `${Math.round(benchmarks.complaintSubstantiation.value * 100)}% substantiated (${benchmarks.complaintSubstantiation.substantiated} of ${benchmarks.complaintSubstantiation.total})`
+                    benchmarks.complaintSubstantiation.total === 0
+                      ? "No complaints filed"
+                      : `${benchmarks.complaintSubstantiation.substantiated} of ${benchmarks.complaintSubstantiation.total} complaint${benchmarks.complaintSubstantiation.total === 1 ? "" : "s"} substantiated`
                   }
                   context={
-                    benchmarks.complaintSubstantiation.value !== null
-                      ? `County avg: ${Math.round(benchmarks.complaintSubstantiation.countyAvg * 100)}%`
+                    benchmarks.complaintSubstantiation.total > 0
+                      ? `County avg: ${Math.round(benchmarks.complaintSubstantiation.countyAvg * 100)}% substantiation rate`
                       : undefined
                   }
                   tier={benchmarks.complaintSubstantiation.tier}

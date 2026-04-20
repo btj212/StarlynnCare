@@ -11,12 +11,10 @@ export function SiteNav() {
           StarlynnCare
         </Link>
         <nav className="flex items-center gap-5 text-sm font-medium text-slate">
-          <Link
-            href="/california/alameda-county"
-            className="hidden transition-colors hover:text-teal sm:inline"
-          >
-            Alameda County
-          </Link>
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-sc-border bg-warm-white px-2.5 py-0.5 text-xs font-medium text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden />
+            Alameda County, CA
+          </span>
           <Link
             href="/#how-it-works"
             className="hidden transition-colors hover:text-teal md:inline"

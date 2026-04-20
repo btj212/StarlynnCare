@@ -160,6 +160,8 @@ async function loadHomeData(): Promise<{
         dpi_tier: tier(dpi, dpiP33, dpiP66),
         type_a_tier: tier(s.typeACount, typeAP33, typeAP66),
         complaint_rate: cmpRate,
+        complaint_substantiated: s.substantiated,
+        complaint_total: s.complaintsWithOutcome,
         complaint_tier: cmpRate !== null ? tier(cmpRate, cmpP33, cmpP66) : "informational",
       };
     });
