@@ -187,11 +187,7 @@ export default async function Home() {
 
               {/* Left: headline + copy + CTAs */}
               <div>
-                <p className="hero-enter flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-teal">
-                  <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden />
-                  Your memory care resource
-                </p>
-                <h1 className="hero-enter-delay mt-4 font-[family-name:var(--font-serif)] text-3xl font-semibold leading-[1.15] tracking-tight text-navy md:text-4xl">
+                <h1 className="hero-enter font-[family-name:var(--font-serif)] text-3xl font-semibold leading-[1.15] tracking-tight text-navy md:text-4xl">
                   In memory care, everyone helping you choose is being paid by
                   the place{" "}
                   <span className="whitespace-nowrap">
