@@ -190,8 +190,7 @@ export default async function Home() {
                 </p>
                 <h1 className="hero-enter-delay mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold leading-[1.12] tracking-tight text-navy md:text-5xl">
                   A clear place to start.{" "}
-                  <em className="italic">Independent</em> memory care records
-                  you can{" "}
+                  Memory care records you can{" "}
                   <span className="text-teal">trust.</span>
                 </h1>
                 <p className="hero-enter-delay mt-5 text-lg leading-relaxed text-slate">
