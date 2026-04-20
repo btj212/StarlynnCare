@@ -182,20 +182,20 @@ export default async function Home() {
       <main>
         {/* ── Hero ──────────────────────────────────────────────────────────── */}
         <section className="border-b border-sc-border bg-warm-white overflow-hidden">
-          <div className="mx-auto max-w-[1120px] px-6 py-16 md:px-8 md:py-24">
+          <div className="mx-auto max-w-[1120px] px-6 py-14 md:px-8 md:py-20">
             <div className="grid gap-12 md:grid-cols-2 md:gap-16 md:items-center">
 
               {/* Left: headline + copy + CTAs */}
               <div>
                 <h1 className="hero-enter font-[family-name:var(--font-serif)] text-3xl font-semibold leading-[1.15] tracking-tight text-navy md:text-4xl">
-                  Real data &amp; reviews of licensed{" "}
+                  Real data + reviews of licensed{" "}
                   <span className="whitespace-nowrap">memory care</span>{" "}
                   facilities near you.
                   <span className="mt-2 block text-xl font-normal text-muted md:text-2xl">
-                    No paid ads. No aggressive sales tactics.
+                    No paid ads · No aggressive sales tactics.
                   </span>
                 </h1>
-                <div className="hero-enter-delay mt-5 text-base leading-relaxed text-slate">
+                <div className="hero-enter-delay mt-5 text-lg leading-relaxed text-slate">
                   <p>
                     State inspection records, citation history, and verified
                     family experiences — for every licensed{" "}
@@ -208,7 +208,7 @@ export default async function Home() {
                   <ZipSearch />
                   <Link
                     href="/methodology"
-                    className="inline-flex items-center text-sm font-medium text-slate hover:text-ink transition-colors"
+                    className="inline-flex items-center text-sm font-medium text-slate underline underline-offset-2 decoration-slate/40 hover:text-ink hover:decoration-ink/40 transition-colors"
                   >
                     See how we rate facilities
                   </Link>
