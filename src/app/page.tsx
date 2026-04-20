@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { FacilityCarousel, type CarouselFacility } from "@/components/site/FacilityCarousel";
 
 export const revalidate = 3600;
 
@@ -10,152 +11,119 @@ const asOf = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Los_Angeles",
 }).format(new Date());
 
-async function loadStats(): Promise<{
-  facilities: number;
-  inspections: number;
-  typeACitations: number;
+async function loadHomeData(): Promise<{
+  stats: { facilities: number; inspections: number; typeACitations: number };
+  carouselFacilities: CarouselFacility[];
 }> {
-  const supabase = tryPublicSupabaseClient();
-  if (!supabase) return { facilities: 14, inspections: 330, typeACitations: 14 };
+  const fallback = {
+    stats: { facilities: 14, inspections: 330, typeACitations: 14 },
+    carouselFacilities: [],
+  };
 
-  const [{ count: facilities }, { count: inspections }, { count: typeACitations }] =
-    await Promise.all([
-      supabase
-        .from("facilities")
-        .select("*", { count: "exact", head: true })
-        .eq("publishable", true),
+  const supabase = tryPublicSupabaseClient();
+  if (!supabase) return fallback;
+
+  const [facResult, inspCountResult, typeACountResult] = await Promise.all([
+    supabase
+      .from("facilities")
+      .select("id, name, city, street, care_category, photo_url, slug, city_slug, state_code")
+      .eq("publishable", true)
+      .not("photo_url", "is", null)
+      .order("name"),
+    supabase.from("inspections").select("*", { count: "exact", head: true }),
+    supabase
+      .from("deficiencies")
+      .select("*", { count: "exact", head: true })
+      .eq("class", "Type A"),
+  ]);
+
+  const facilities = (facResult.data ?? []) as Array<{
+    id: string; name: string; city: string | null; street: string | null;
+    care_category: string; photo_url: string | null; slug: string;
+    city_slug: string; state_code: string;
+  }>;
+
+  const stats = {
+    facilities: facilities.length || 14,
+    inspections: inspCountResult.count ?? 330,
+    typeACitations: typeACountResult.count ?? 14,
+  };
+
+  if (!facilities.length) return { stats, carouselFacilities: [] };
+
+  // Fetch inspection counts + deficiency counts per facility in 2 queries
+  const facIds = facilities.map((f) => f.id);
+  const [inspData, defData] = await Promise.all([
+    supabase.from("inspections").select("id, facility_id").in("facility_id", facIds),
+    supabase.from("deficiencies").select("inspection_id, class"),
+  ]);
+
+  const inspList = inspData.data ?? [];
+  const defList = defData.data ?? [];
+
+  const inspCountByFac = new Map<string, number>();
+  const inspFacMap = new Map<string, string>();
+  for (const i of inspList) {
+    inspCountByFac.set(i.facility_id, (inspCountByFac.get(i.facility_id) ?? 0) + 1);
+    inspFacMap.set(i.id, i.facility_id);
+  }
+
+  const typeAByFac = new Map<string, number>();
+  const typeBByFac = new Map<string, number>();
+  for (const d of defList) {
+    const fid = inspFacMap.get(d.inspection_id);
+    if (!fid) continue;
+    if (d.class === "Type A") typeAByFac.set(fid, (typeAByFac.get(fid) ?? 0) + 1);
+    if (d.class === "Type B") typeBByFac.set(fid, (typeBByFac.get(fid) ?? 0) + 1);
+  }
+
+  // Fetch most recent narrative summary per facility
+  const summaryResults = await Promise.all(
+    facIds.map((fid) =>
       supabase
         .from("inspections")
-        .select("*", { count: "exact", head: true }),
-      supabase
-        .from("deficiencies")
-        .select("*", { count: "exact", head: true })
-        .eq("class", "Type A"),
-    ]);
-
-  return {
-    facilities: facilities ?? 14,
-    inspections: inspections ?? 330,
-    typeACitations: typeACitations ?? 14,
-  };
-}
-
-// ── Specimen card ────────────────────────────────────────────────────────────
-// Real data: Elegance Berkeley, CA license 019201143
-// Data sourced from CDSS Community Care Licensing Division, verified April 2026.
-
-function SpecimenCard() {
-  return (
-    <div className="rounded-2xl border border-sc-border bg-white shadow-card-hover overflow-hidden card-lift hero-enter-delay-2">
-        {/* Street View photo */}
-        <div className="relative h-32 w-full overflow-hidden bg-sc-border/20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://fwvrupjgwvvzqiutwwdg.supabase.co/storage/v1/object/public/facility-photos/01915921-83be-4154-bcce-b49d82e0e81d.jpg"
-            alt="Exterior of Elegance Berkeley"
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          <span className="absolute bottom-2 right-2 text-[9px] text-white/70">
-            © Google Street View
-          </span>
-        </div>
-
-        <div className="px-5 pt-4 pb-5">
-          {/* Facility header */}
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-                CA License 019201143
-              </p>
-              <h3 className="mt-0.5 font-[family-name:var(--font-serif)] text-lg font-semibold leading-snug text-navy">
-                Elegance Berkeley
-              </h3>
-              <p className="mt-0.5 text-xs text-muted">
-                2100 San Pablo Avenue · Berkeley, CA
-              </p>
-            </div>
-            <span className="shrink-0 inline-flex items-center rounded-full bg-teal-light px-2.5 py-0.5 text-xs font-semibold text-teal">
-              RCFE · Memory care
-            </span>
-          </div>
-
-        {/* Divider */}
-        <div className="my-3.5 border-t border-sc-border/60" />
-
-        {/* At a glance rows — abbreviated */}
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted">
-          At a glance
-        </p>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate">Compliance record</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-ink font-medium">0.25 per inspection</span>
-              <span className="inline-flex items-center rounded-full bg-red-light border border-red-200 px-2 py-0.5 text-[10px] font-semibold text-red-600">
-                Concerns
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate">Severity record</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-ink font-medium">2 Type A citations</span>
-              <span className="inline-flex items-center rounded-full bg-red-light border border-red-200 px-2 py-0.5 text-[10px] font-semibold text-red-600">
-                Concerns
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate">Complaint pattern</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-ink font-medium">39% substantiated</span>
-              <span className="inline-flex items-center rounded-full bg-red-light border border-red-200 px-2 py-0.5 text-[10px] font-semibold text-red-600">
-                Concerns
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="my-3.5 border-t border-sc-border/60" />
-
-        {/* A real citation chip */}
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-700">
-              Type A
-            </span>
-            <span className="text-[10px] font-mono text-slate">CCR §87355(e)</span>
-            <span className="text-[10px] text-muted">· Jul 30, 2024</span>
-          </div>
-          <p className="mt-1.5 text-xs text-slate leading-relaxed line-clamp-2">
-            Staff background check documentation missing for the Executive Director;
-            $100/day civil penalty assessed until corrected.
-          </p>
-        </div>
-
-        {/* Source footer */}
-        <div className="mt-3 flex items-center justify-between">
-          <p className="text-[10px] text-muted">
-            Source: CA CDSS · as of {asOf}
-          </p>
-          <Link
-            href="/california/berkeley/elegance-berkeley-201143"
-            className="text-[10px] font-semibold text-teal hover:underline underline-offset-2"
-          >
-            View full profile →
-          </Link>
-        </div>
-      </div>
-    </div>
+        .select("narrative_summary")
+        .eq("facility_id", fid)
+        .not("narrative_summary", "is", null)
+        .order("inspection_date", { ascending: false })
+        .limit(1)
+        .single(),
+    ),
   );
+  const summaryByFac = new Map<string, string>();
+  facIds.forEach((fid, i) => {
+    const s = summaryResults[i]?.data?.narrative_summary;
+    if (s) summaryByFac.set(fid, s);
+  });
+
+  const STATE_SLUG: Record<string, string> = { CA: "california" };
+
+  const carouselFacilities: CarouselFacility[] = facilities
+    .filter((f) => !!f.photo_url)
+    .map((f) => ({
+      id: f.id,
+      name: f.name,
+      city: f.city,
+      street: f.street,
+      care_category: f.care_category as CarouselFacility["care_category"],
+      photo_url: f.photo_url!,
+      slug: f.slug,
+      city_slug: f.city_slug,
+      state_slug: STATE_SLUG[f.state_code] ?? f.state_code.toLowerCase(),
+      inspections: inspCountByFac.get(f.id) ?? 0,
+      type_a: typeAByFac.get(f.id) ?? 0,
+      type_b: typeBByFac.get(f.id) ?? 0,
+      recent_summary: summaryByFac.get(f.id) ?? null,
+    }));
+
+  return { stats, carouselFacilities };
 }
+
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
-  const stats = await loadStats();
+  const { stats, carouselFacilities } = await loadHomeData();
 
   return (
     <>
@@ -197,10 +165,12 @@ export default async function Home() {
                 </div>
               </div>
 
-              {/* Right: real facility specimen card */}
-              <div className="hidden md:block">
-                <SpecimenCard />
-              </div>
+              {/* Right: rotating facility carousel */}
+              {carouselFacilities.length > 0 && (
+                <div className="hidden md:block">
+                  <FacilityCarousel facilities={carouselFacilities} />
+                </div>
+              )}
             </div>
           </div>
         </section>
