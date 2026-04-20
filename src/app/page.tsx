@@ -200,8 +200,7 @@ export default async function Home() {
                     State inspection records, citation history, and verified
                     family experiences — for every licensed{" "}
                     <span className="whitespace-nowrap">memory care</span>{" "}
-                    facility near you. Every claim is sourced, dated, and free
-                    to access.
+                    facility near you.
                   </p>
                 </div>
                 <div className="hero-enter-delay mt-8 flex flex-col gap-3">
