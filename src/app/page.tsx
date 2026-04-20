@@ -198,9 +198,7 @@ export default async function Home() {
                 <div className="hero-enter-delay mt-5 text-lg leading-relaxed text-slate">
                   <p>
                     State inspection records, citation history, and verified
-                    family experiences — for every licensed{" "}
-                    <span className="whitespace-nowrap">memory care</span>{" "}
-                    facility near you.
+                    family experiences. Every claim sourced and dated.
                   </p>
                 </div>
                 <div className="hero-enter-delay mt-8 flex flex-col gap-3">
