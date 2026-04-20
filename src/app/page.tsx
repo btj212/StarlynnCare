@@ -191,7 +191,6 @@ export default async function Home() {
                   Your memory care resource
                 </p>
                 <h1 className="hero-enter-delay mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold leading-[1.12] tracking-tight text-navy md:text-5xl">
-                  A clear place to start.{" "}
                   Independent memory care records you can{" "}
                   <span className="text-teal">trust.</span>
                 </h1>
