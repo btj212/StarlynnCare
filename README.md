@@ -46,6 +46,19 @@ Full steps: [`docs/SUPABASE_MIGRATION.md`](docs/SUPABASE_MIGRATION.md).
 | `npm run build` | Production build |
 | `npm run verify-schema` | Check Supabase tables after migration |
 
+## CMS ingest (Sprint 2)
+
+Python scrapers live in [`scrapers/`](scrapers/). Add **`DATABASE_URL`** (Postgres URI from Supabase → Database → Connection string) to `.env.local`, then:
+
+```bash
+cd scrapers && python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python cms_ingest.py --dry-run   # ~694 FL rows from CMS API
+python cms_ingest.py             # Upsert into `facilities` + `scrape_runs`
+```
+
+See [`scrapers/README.md`](scrapers/README.md).
+
 ## Next.js 16 notes
 
 See [`docs/next16-routing-notes.md`](docs/next16-routing-notes.md).
