@@ -358,7 +358,7 @@ def insert_inspection(
                 psycopg.types.json.Jsonb({
                     "outcome": parsed["outcome"],
                     "inspector_name": parsed["inspector_name"],
-                    "narrative": parsed["narrative_text"][:4000],
+                    "narrative": parsed["narrative_text"][:10000],
                     "raw_html_len": parsed["raw_html_len"],
                 }),
             ),

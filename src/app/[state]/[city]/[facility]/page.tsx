@@ -27,6 +27,7 @@ type InspectionRow = {
   is_complaint: boolean;
   complaint_id: string | null;
   total_deficiency_count: number | null;
+  narrative_summary: string | null;
   raw_data: { outcome?: string; inspector_name?: string; narrative?: string } | null;
 };
 
@@ -93,7 +94,7 @@ async function loadInspections(
   const { data: inspData } = await supabase
     .from("inspections")
     .select(
-      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, raw_data",
+      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, raw_data",
     )
     .eq("facility_id", facilityId)
     .order("inspection_date", { ascending: false })
@@ -563,15 +564,18 @@ export default async function FacilityPage({ params }: PageProps) {
                     const defs = defByInspection.get(insp.id) ?? [];
                     const outcome = insp.raw_data?.outcome;
                     const inspector = insp.raw_data?.inspector_name;
-                    // Strip leading page-number sequences ("1 2 3 4 ... 32 ") from narrative
-                    const rawNarrative = insp.raw_data?.narrative ?? "";
-                    const narrative = rawNarrative
-                      .replace(/^[\d\s]+(?=\S{4})/, "")
+                    // Strip leading CDSS page-number sequences ("1 2 3 4 ... 32 ")
+                    // These are form line numbers embedded by the CDSS HTML export.
+                    const rawNarrative = (insp.raw_data?.narrative ?? "")
+                      .replace(/^(\d+\s+)+/, "")
+                      .replace(/^\*\*\*report continues from LIC9099\*\*\*\s*/i, "")
                       .trim();
+                    const summary = insp.narrative_summary ?? null;
                     const hasBody =
                       defs.length > 0 ||
                       !!inspector ||
-                      !!narrative ||
+                      !!rawNarrative ||
+                      !!summary ||
                       !!outcome;
                     const dateFormatted = insp.inspection_date
                       ? new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(
@@ -648,13 +652,23 @@ export default async function FacilityPage({ params }: PageProps) {
                               </p>
                             )}
 
-                            {/* Narrative text */}
-                            {narrative && (
+                            {/* AI summary — shown first if available */}
+                            {summary && (
                               <p className="text-sm text-slate leading-relaxed">
-                                {narrative.length > 500
-                                  ? narrative.slice(0, 500) + "…"
-                                  : narrative}
+                                {summary}
                               </p>
+                            )}
+
+                            {/* Raw inspector narrative — always available, nested under disclosure */}
+                            {rawNarrative && (
+                              <details className="mt-1">
+                                <summary className="cursor-pointer list-none text-xs font-medium text-teal hover:underline underline-offset-2">
+                                  {summary ? "View full inspector notes" : "Inspector notes"}
+                                </summary>
+                                <p className="mt-2 text-sm text-slate leading-relaxed whitespace-pre-line border-l-2 border-sc-border pl-3">
+                                  {rawNarrative}
+                                </p>
+                              </details>
                             )}
 
                             {/* Deficiency entries */}
