@@ -188,25 +188,20 @@ export default async function Home() {
               {/* Left: headline + copy + CTAs */}
               <div>
                 <h1 className="hero-enter font-[family-name:var(--font-serif)] text-3xl font-semibold leading-[1.15] tracking-tight text-navy md:text-4xl">
-                  In memory care, everyone helping you choose is being paid by
-                  the place{" "}
-                  <span className="whitespace-nowrap">
-                    you&rsquo;re <span className="text-teal">choosing.</span>
+                  Real data &amp; reviews of licensed{" "}
+                  <span className="whitespace-nowrap">memory care</span>{" "}
+                  facilities near you.
+                  <span className="mt-2 block text-xl font-normal text-muted md:text-2xl">
+                    No paid ads. No aggressive sales tactics.
                   </span>
                 </h1>
-                <div className="hero-enter-delay mt-5 space-y-4 text-base leading-relaxed text-slate">
+                <div className="hero-enter-delay mt-5 text-base leading-relaxed text-slate">
                   <p>
-                    The brokers. The referral sites. The hospital discharge
-                    coordinator&rsquo;s handout. Every hand reaching out to help
-                    is collecting a fee from the facility you&rsquo;re trying
-                    to judge.
-                  </p>
-                  <p>
-                    StarlynnCare isn&rsquo;t. We publish the state inspection
-                    records, the questions the tours don&rsquo;t answer, and the
-                    ombudsman contacts — for every licensed{" "}
+                    State inspection records, citation history, and verified
+                    family experiences — for every licensed{" "}
                     <span className="whitespace-nowrap">memory care</span>{" "}
-                    facility near you.
+                    facility near you. Every claim is sourced, dated, and free
+                    to access.
                   </p>
                 </div>
                 <div className="hero-enter-delay mt-8 flex flex-col gap-3">
