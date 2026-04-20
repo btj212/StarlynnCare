@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { BenchmarkTier } from "@/lib/benchmarks";
 
 interface BenchmarkRowProps {
@@ -13,29 +12,25 @@ interface BenchmarkRowProps {
 
 const TIER_CONFIG: Record<
   BenchmarkTier,
-  { label: string; barClass: string; badgeClass: string; dotClass: string }
+  { label: string; badgeClass: string; dotClass: string }
 > = {
   strong: {
     label: "Strong",
-    barClass: "bg-teal",
     badgeClass: "bg-teal-light text-teal border border-teal/20",
     dotClass: "bg-teal",
   },
   mixed: {
     label: "Mixed",
-    barClass: "bg-amber",
     badgeClass: "bg-amber-light text-amber border border-amber/30",
     dotClass: "bg-amber",
   },
   concerns: {
     label: "Concerns",
-    barClass: "bg-red-400",
     badgeClass: "bg-red-light text-red-600 border border-red-200",
     dotClass: "bg-red-400",
   },
   informational: {
     label: "For reference",
-    barClass: "bg-slate-300",
     badgeClass: "bg-sc-border text-slate border border-sc-border",
     dotClass: "bg-slate-400",
   },
@@ -66,26 +61,17 @@ export function BenchmarkRow({
         </div>
       </div>
 
-      {/* Right: values + tier badge */}
+      {/* Right: values + tier badge — no inline ? link */}
       <div className="flex flex-1 items-center justify-between gap-3 pl-5 sm:pl-0">
         <div>
           <p className="text-sm font-semibold text-ink">{thisValue}</p>
           {context && <p className="text-xs text-muted mt-0.5">{context}</p>}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.badgeClass}`}
-          >
-            {cfg.label}
-          </span>
-          <Link
-            href="/methodology"
-            className="text-xs text-muted hover:text-teal underline-offset-2 hover:underline"
-            title="How we calculate this"
-          >
-            ?
-          </Link>
-        </div>
+        <span
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold shrink-0 ${cfg.badgeClass}`}
+        >
+          {cfg.label}
+        </span>
       </div>
     </div>
   );

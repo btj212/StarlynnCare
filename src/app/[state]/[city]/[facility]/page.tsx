@@ -360,15 +360,9 @@ export default async function FacilityPage({ params }: PageProps) {
               <p className="mt-1 text-sm text-muted">
                 Four independent signals drawn from state inspection records.
                 No composite score — each metric tells a different part of the
-                story.{" "}
-                <Link
-                  href="/methodology"
-                  className="font-medium text-teal underline-offset-2 hover:underline"
-                >
-                  How we calculate this →
-                </Link>
+                story.
               </p>
-              <div className="mt-4 rounded-lg border border-sc-border bg-white px-5 py-2 shadow-card">
+              <div className="mt-4 rounded-lg border border-sc-border bg-white px-5 pt-2 pb-4 shadow-card">
                 <BenchmarkRow
                   label="Compliance record"
                   explanation="Deficiencies per routine inspection"
@@ -417,6 +411,29 @@ export default async function FacilityPage({ params }: PageProps) {
                   }
                   tier={benchmarks.complaintSubstantiation.tier}
                 />
+
+                {/* Methodology footnote — clearly separate from the tier badges */}
+                <div className="mt-3 flex items-center gap-1.5 border-t border-sc-border/40 pt-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="h-3.5 w-3.5 shrink-0 text-blue-400"
+                    aria-hidden
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <Link
+                    href="/methodology"
+                    className="text-xs text-blue-500 hover:text-blue-600 underline-offset-2 hover:underline"
+                  >
+                    How we calculate these ratings
+                  </Link>
+                </div>
               </div>
             </section>
           )}
