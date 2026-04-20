@@ -191,30 +191,29 @@ export default async function Home() {
                 <h1 className="hero-enter-delay mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold leading-[1.12] tracking-tight text-navy md:text-5xl">
                   A clear place to start.
                   <br />
-                  Independent records you can{" "}
-                  <em className="italic text-teal">trust.</em>
+                  <em className="italic">Independent</em> records you can trust.
                 </h1>
                 <p className="hero-enter-delay mt-5 text-lg leading-relaxed text-slate">
-                  Choosing memory care is hard enough without guessing which
+                  Choosing memory care is heavy enough without guessing which
                   brochure is telling the truth. In a sea of brokers on
                   commission and websites that want your phone number,
-                  StarlynnCare gives you the list that should have existed
-                  already — every licensed memory care facility near you, with
-                  the inspections, records, and reviews on each one.
+                  StarlynnCare gives you the list you actually need — every
+                  licensed memory care facility near you, with inspections,
+                  citations, and analysis on each one.
                 </p>
                 <div className="hero-enter-delay mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <Link
                     href="/california/alameda-county"
                     className="inline-flex items-center justify-center rounded-md bg-teal px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-mid"
                   >
-                    See who&rsquo;s earned your trust →
+                    Open the list →
                   </Link>
-                  <a
-                    href="#how-it-works"
+                  <Link
+                    href="/methodology"
                     className="inline-flex items-center justify-center text-sm font-medium text-slate hover:text-ink transition-colors"
                   >
-                    How we know
-                  </a>
+                    Our Methodology
+                  </Link>
                 </div>
               </div>
 
