@@ -9,7 +9,7 @@
   --color-warm-white: #faf9f7;
   --color-ink: #1a1a2e;
   --color-slate: #4a5568;
-  --color-muted: #718096;
+  --color-muted: #5a6a7e;
   --color-sc-border: #e2e8f0;
   --color-amber: #b7791f;
   --color-amber-light: #fffbeb;
@@ -51,4 +51,28 @@ body {
 .animate-fade-up.in-view {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Hero entrance */
+@keyframes hero-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-enter {
+  animation: hero-fade-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-enter-delay {
+  animation: hero-fade-in 600ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+.hero-enter-delay-2 {
+  animation: hero-fade-in 600ms cubic-bezier(0.16, 1, 0.3, 1) 240ms both;
+}
+
+/* Card hover lift */
+.card-lift {
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.card-lift:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
 }
