@@ -18,6 +18,16 @@ export interface State {
 
 export type OwnershipType = "for-profit" | "non-profit" | "government";
 
+export type CareCategory =
+  | "rcfe_memory_care"
+  | "rcfe_general"
+  | "alf_memory_care"
+  | "alf_general"
+  | "snf_general"
+  | "snf_dementia_scu"
+  | "ccrc"
+  | "unknown";
+
 export interface Facility {
   id: string;
   state_code: string;
@@ -45,6 +55,14 @@ export interface Facility {
   source_url: string | null;
   created_at: string;
   updated_at: string;
+
+  // Added in migration 0002_alameda_beachhead.sql
+  care_category: CareCategory;
+  serves_memory_care: boolean;
+  memory_care_designation: string | null;
+  license_status: string | null;
+  license_expiration: string | null;
+  publishable: boolean;
 }
 
 export type InspectionType =
@@ -145,4 +163,8 @@ export type FacilityListRow = Pick<
   | "cms_star_rating"
   | "beds"
   | "last_inspection_date"
+  | "care_category"
+  | "serves_memory_care"
+  | "memory_care_designation"
+  | "publishable"
 >;

@@ -8,17 +8,23 @@ This project uses **Next.js 16 App Router** with **React 19**. Summary of patter
 
 ## ISR / revalidation
 
-Export **`export const revalidate = <seconds>`** from a route segment to cache the page and refresh in the background (stale-while-revalidate). Used on `/florida` and `/facility/[slug]` so Vercel can serve cached HTML and refresh periodically.
+Export **`export const revalidate = <seconds>`** from a route segment to cache the page and refresh in the background (stale-while-revalidate). Currently we run **`export const dynamic = "force-dynamic"`** on all facility-data routes (`/[state]`, `/[state]/[city]`, `/[state]/[city]/[facility]`) so anonymous public `SELECT`s always hit Postgres fresh and don't go stale before the CDSS ingest runs.
 
 ## Dynamic routes
 
-`/facility/[slug]` uses `params` as a **Promise** in Next.js 15+ — await `params` in the page component:
+We use nested dynamic segments for facility URLs: `/[state]/[city]/[facility]` — for example `/california/oakland/magnolia-ridge`. `params` is a **Promise** in Next.js 15+ and must be awaited:
 
 ```tsx
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ state: string; city: string; facility: string }>;
+}) {
+  const { state, city, facility } = await params;
 }
 ```
+
+State and region (county/city) slugs are validated against `src/lib/states.ts` and `src/lib/regions.ts` — unknown slugs return `notFound()`.
 
 ## Fetch / Supabase (@supabase/ssr)
 

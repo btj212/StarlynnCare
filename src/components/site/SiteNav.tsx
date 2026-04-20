@@ -11,15 +11,21 @@ export function SiteNav() {
           StarlynnCare
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium text-slate">
-          <Link href="/florida" className="transition-colors hover:text-teal">
-            Florida
+          <Link
+            href="/california/alameda-county"
+            className="transition-colors hover:text-teal"
+          >
+            Alameda County
           </Link>
-          <a
-            href="#how-it-works"
+          <Link href="/california" className="transition-colors hover:text-teal">
+            California
+          </Link>
+          <Link
+            href="/#how-it-works"
             className="hidden transition-colors hover:text-teal sm:inline"
           >
             How it works
-          </a>
+          </Link>
         </nav>
       </div>
     </header>

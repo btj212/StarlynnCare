@@ -29,10 +29,10 @@ export default function Home() {
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
-                href="/florida"
+                href="/california/alameda-county"
                 className="inline-flex items-center justify-center rounded-md bg-teal px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-mid"
               >
-                Browse Florida facilities
+                Browse Alameda County memory care
               </Link>
               <a
                 href="#how-it-works"
@@ -67,8 +67,8 @@ export default function Home() {
                 </span>
                 <h3 className="font-semibold text-ink">Ingest</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate">
-                  CMS Provider Information and Florida AHCA public records—no
-                  aggregators, no scraping of marketing sites.
+                  California CDSS licensing records and CMS Care Compare data
+                  —no aggregators, no scraping of marketing sites.
                 </p>
               </li>
               <li className="relative pl-8">

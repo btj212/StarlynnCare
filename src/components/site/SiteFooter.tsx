@@ -17,8 +17,17 @@ export function SiteFooter() {
           </div>
           <div className="flex flex-col gap-3 text-sm">
             <span className="font-medium text-white/90">Explore</span>
-            <Link href="/florida" className="text-white/75 hover:text-white">
-              Florida facilities
+            <Link
+              href="/california/alameda-county"
+              className="text-white/75 hover:text-white"
+            >
+              Alameda County memory care
+            </Link>
+            <Link
+              href="/california"
+              className="text-white/75 hover:text-white"
+            >
+              California
             </Link>
             <Link href="/" className="text-white/75 hover:text-white">
               Home

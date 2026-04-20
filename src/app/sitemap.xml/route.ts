@@ -13,7 +13,13 @@ export function GET() {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.starlynncare.com/florida</loc>
+    <loc>https://www.starlynncare.com/california</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.starlynncare.com/california/alameda-county</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

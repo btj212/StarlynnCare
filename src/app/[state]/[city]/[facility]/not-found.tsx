@@ -9,16 +9,18 @@ export default function FacilityNotFound() {
       <main className="border-b border-sc-border bg-warm-white px-6 py-24 md:px-8">
         <div className="mx-auto max-w-[680px] text-center">
           <h1 className="font-[family-name:var(--font-serif)] text-3xl font-semibold text-navy">
-            Facility not found
+            Facility not published
           </h1>
           <p className="mt-4 text-slate">
-            There is no Florida facility with that URL slug in the database yet.
+            Either this facility is not in our database yet, or it has not been
+            marked publishable because we do not yet have verified state-agency
+            data for it.
           </p>
           <Link
-            href="/florida"
+            href="/california/alameda-county"
             className="mt-8 inline-block font-semibold text-teal underline-offset-4 hover:underline"
           >
-            Browse Florida facilities
+            Browse Alameda County memory care
           </Link>
         </div>
       </main>
