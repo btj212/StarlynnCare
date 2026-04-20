@@ -6,6 +6,8 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { regionFromSlug } from "@/lib/regions";
 import { stateFromSlug } from "@/lib/states";
+import { loadBenchmarks } from "@/lib/benchmarks";
+import { BenchmarkRow } from "@/components/facility/BenchmarkRow";
 import type { Facility, CareCategory } from "@/lib/types";
 
 type FacilityContent = {
@@ -25,7 +27,7 @@ type InspectionRow = {
   is_complaint: boolean;
   complaint_id: string | null;
   total_deficiency_count: number | null;
-  raw_data: { outcome?: string; inspector_name?: string } | null;
+  raw_data: { outcome?: string; inspector_name?: string; narrative?: string } | null;
 };
 
 type DeficiencyRow = {
@@ -39,7 +41,7 @@ type DeficiencyRow = {
   inspector_narrative: string | null;
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 type PageProps = {
   params: Promise<{ state: string; city: string; facility: string }>;
@@ -233,7 +235,10 @@ export default async function FacilityPage({ params }: PageProps) {
   if (error) throw new Error(error);
   if (!facility) notFound();
 
-  const { inspections, deficiencies } = await loadInspections(facility.id);
+  const [{ inspections, deficiencies }, benchmarks] = await Promise.all([
+    loadInspections(facility.id),
+    loadBenchmarks(facility.id, state.code),
+  ]);
 
   // Group deficiencies by inspection
   const defByInspection = new Map<string, DeficiencyRow[]>();
@@ -321,6 +326,98 @@ export default async function FacilityPage({ params }: PageProps) {
             <p className="mt-3 text-sm text-muted">
               Record last updated {asOfFormatted}.
             </p>
+          )}
+
+          {/* ──────────────────────────── Exterior photo ─────────────────────────── */}
+          {facility.photo_url && (
+            <div className="mt-8 overflow-hidden rounded-xl border border-sc-border shadow-card">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={facility.photo_url}
+                alt={`Exterior view of ${facility.name}`}
+                width={800}
+                height={500}
+                className="w-full object-cover"
+                loading="lazy"
+              />
+              <p className="px-4 py-2 text-xs text-muted bg-warm-white border-t border-sc-border/60">
+                {facility.photo_attribution ?? "© Google Street View"} ·{" "}
+                Exterior view only — not a facility-provided image
+              </p>
+            </div>
+          )}
+
+          {/* ───────────────────────── At a glance dashboard ────────────────────── */}
+          {benchmarks && (
+            <section className="mt-10" aria-labelledby="glance-heading">
+              <h2
+                id="glance-heading"
+                className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+              >
+                At a glance
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Four independent signals drawn from state inspection records.
+                No composite score — each metric tells a different part of the
+                story.{" "}
+                <Link
+                  href="/methodology"
+                  className="font-medium text-teal underline-offset-2 hover:underline"
+                >
+                  How we calculate this →
+                </Link>
+              </p>
+              <div className="mt-4 rounded-lg border border-sc-border bg-white px-5 py-2 shadow-card">
+                <BenchmarkRow
+                  label="Compliance record"
+                  explanation="Deficiencies per routine inspection"
+                  thisValue={
+                    benchmarks.deficienciesPerInspection.value.toFixed(2) +
+                    " per inspection"
+                  }
+                  context={`County median: ${benchmarks.deficienciesPerInspection.countyMedian.toFixed(2)}`}
+                  tier={benchmarks.deficienciesPerInspection.tier}
+                />
+                <BenchmarkRow
+                  label="Severity record"
+                  explanation="Type A citations indicate actual or imminent harm"
+                  thisValue={
+                    benchmarks.typeACount.value === 0
+                      ? "No Type A citations"
+                      : `${benchmarks.typeACount.value} Type A citation${benchmarks.typeACount.value === 1 ? "" : "s"}`
+                  }
+                  context={`County range: ${benchmarks.typeACount.countyRange[0]}–${benchmarks.typeACount.countyRange[1]}`}
+                  tier={benchmarks.typeACount.tier}
+                />
+                <BenchmarkRow
+                  label="Dementia-care specificity"
+                  explanation="Whether CDSS cited §87705 or §87706 (dementia-care regulations) in the last 5 years"
+                  thisValue={
+                    benchmarks.dementiaCitation.hasCitation
+                      ? benchmarks.dementiaCitation.mostRecentDate
+                        ? `Citation on file — most recent ${new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(new Date(benchmarks.dementiaCitation.mostRecentDate + "T12:00:00"))}`
+                        : "Citation on file"
+                      : "No dementia-care citations in past 5 years"
+                  }
+                  tier="informational"
+                />
+                <BenchmarkRow
+                  label="Complaint pattern"
+                  explanation="Share of complaints that CDSS found to be substantiated"
+                  thisValue={
+                    benchmarks.complaintSubstantiation.value === null
+                      ? "No complaints with a recorded outcome"
+                      : `${Math.round(benchmarks.complaintSubstantiation.value * 100)}% substantiated (${benchmarks.complaintSubstantiation.substantiated} of ${benchmarks.complaintSubstantiation.total})`
+                  }
+                  context={
+                    benchmarks.complaintSubstantiation.value !== null
+                      ? `County avg: ${Math.round(benchmarks.complaintSubstantiation.countyAvg * 100)}%`
+                      : undefined
+                  }
+                  tier={benchmarks.complaintSubstantiation.tier}
+                />
+              </div>
+            </section>
           )}
 
           {/* ─────────────────────────── AI-generated content ─────────────────────── */}
@@ -466,6 +563,16 @@ export default async function FacilityPage({ params }: PageProps) {
                     const defs = defByInspection.get(insp.id) ?? [];
                     const outcome = insp.raw_data?.outcome;
                     const inspector = insp.raw_data?.inspector_name;
+                    // Strip leading page-number sequences ("1 2 3 4 ... 32 ") from narrative
+                    const rawNarrative = insp.raw_data?.narrative ?? "";
+                    const narrative = rawNarrative
+                      .replace(/^[\d\s]+(?=\S{4})/, "")
+                      .trim();
+                    const hasBody =
+                      defs.length > 0 ||
+                      !!inspector ||
+                      !!narrative ||
+                      !!outcome;
                     const dateFormatted = insp.inspection_date
                       ? new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(
                           new Date(insp.inspection_date + "T12:00:00"),
@@ -476,7 +583,9 @@ export default async function FacilityPage({ params }: PageProps) {
                         key={insp.id}
                         className="group rounded-lg border border-sc-border bg-white shadow-card"
                       >
-                        <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-3.5 gap-3">
+                        <summary
+                          className={`flex list-none items-center justify-between px-5 py-3.5 gap-3 ${hasBody ? "cursor-pointer" : "cursor-default"}`}
+                        >
                           <div className="flex flex-wrap items-center gap-2 min-w-0">
                             <span
                               className={
@@ -513,52 +622,96 @@ export default async function FacilityPage({ params }: PageProps) {
                           </span>
                         </summary>
 
-                        {(defs.length > 0 || inspector) && (
-                          <div className="border-t border-sc-border/50 px-5 py-4 space-y-4">
+                        {hasBody && (
+                          <div className="border-t border-sc-border/50 px-5 py-4 space-y-3">
                             {inspector && (
                               <p className="text-xs text-muted">
-                                Inspector: <span className="text-ink">{inspector}</span>
+                                Inspector:{" "}
+                                <span className="text-ink">{inspector}</span>
                               </p>
                             )}
-                            {defs.map((def, di) => (
-                              <div key={def.id} className={di > 0 ? "pt-4 border-t border-sc-border/40" : ""}>
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  <span
+
+                            {/* Outcome explanation for complaints with no deficiencies */}
+                            {outcome && defs.length === 0 && (
+                              <p
+                                className={
+                                  outcome === "Substantiated"
+                                    ? "text-sm font-semibold text-red-600"
+                                    : "text-sm text-slate"
+                                }
+                              >
+                                {outcome === "Unsubstantiated"
+                                  ? "Unsubstantiated — CDSS investigated and did not find violations."
+                                  : outcome === "Substantiated"
+                                  ? "Substantiated — CDSS found violations related to this complaint."
+                                  : `Outcome: ${outcome}`}
+                              </p>
+                            )}
+
+                            {/* Narrative text */}
+                            {narrative && (
+                              <p className="text-sm text-slate leading-relaxed">
+                                {narrative.length > 500
+                                  ? narrative.slice(0, 500) + "…"
+                                  : narrative}
+                              </p>
+                            )}
+
+                            {/* Deficiency entries */}
+                            {defs.length > 0 && (
+                              <div className="space-y-4 pt-1">
+                                {defs.map((def, di) => (
+                                  <div
+                                    key={def.id}
                                     className={
-                                      def.class === "Type A"
-                                        ? "inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-red-100 text-red-700"
-                                        : "inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-orange-50 text-orange-600"
+                                      di > 0
+                                        ? "pt-4 border-t border-sc-border/40"
+                                        : ""
                                     }
                                   >
-                                    {def.class ?? "Deficiency"}
-                                  </span>
-                                  {def.code && (
-                                    <span className="text-xs font-mono text-slate">
-                                      CCR §{def.code}
-                                    </span>
-                                  )}
-                                  {def.immediate_jeopardy && (
-                                    <span className="text-xs font-bold text-red-700 uppercase">
-                                      Immediate jeopardy
-                                    </span>
-                                  )}
-                                </div>
-                                {def.description && (
-                                  <p className="text-sm text-slate leading-relaxed">
-                                    {def.description.length > 350
-                                      ? def.description.slice(0, 350) + "…"
-                                      : def.description}
-                                  </p>
-                                )}
-                                {def.inspector_narrative && (
-                                  <p className="mt-2 text-sm text-ink leading-relaxed">
-                                    {def.inspector_narrative.length > 500
-                                      ? def.inspector_narrative.slice(0, 500) + "…"
-                                      : def.inspector_narrative}
-                                  </p>
-                                )}
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                      <span
+                                        className={
+                                          def.class === "Type A"
+                                            ? "inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-red-100 text-red-700"
+                                            : "inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-orange-50 text-orange-600"
+                                        }
+                                      >
+                                        {def.class ?? "Deficiency"}
+                                      </span>
+                                      {def.code && (
+                                        <span className="text-xs font-mono text-slate">
+                                          CCR §{def.code}
+                                        </span>
+                                      )}
+                                      {def.immediate_jeopardy && (
+                                        <span className="text-xs font-bold text-red-700 uppercase">
+                                          Immediate jeopardy
+                                        </span>
+                                      )}
+                                    </div>
+                                    {def.description && (
+                                      <p className="text-sm text-slate leading-relaxed">
+                                        {def.description.length > 350
+                                          ? def.description.slice(0, 350) +
+                                            "…"
+                                          : def.description}
+                                      </p>
+                                    )}
+                                    {def.inspector_narrative && (
+                                      <p className="mt-2 text-sm text-ink leading-relaxed">
+                                        {def.inspector_narrative.length > 500
+                                          ? def.inspector_narrative.slice(
+                                              0,
+                                              500,
+                                            ) + "…"
+                                          : def.inspector_narrative}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
-                            ))}
+                            )}
                           </div>
                         )}
                       </details>

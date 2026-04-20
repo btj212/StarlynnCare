@@ -64,6 +64,10 @@ export interface Facility {
   license_expiration: string | null;
   publishable: boolean;
 
+  // Added in migration 0004_facility_photos.sql
+  photo_url: string | null;
+  photo_attribution: string | null;
+
   // Added in migration 0003_facility_content.sql
   content: {
     headline?: string;
