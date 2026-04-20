@@ -11,8 +11,8 @@ export function SiteFooter() {
               StarlynnCare
             </p>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/75">
-              Primary-source inspection and deficiency data. No paid placement.
-              No referral commissions.
+              Answers to questions you wish you asked on the tour — for every
+              licensed memory care facility near you.
             </p>
           </div>
           <div className="flex flex-col gap-3 text-sm">
