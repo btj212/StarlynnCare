@@ -69,20 +69,21 @@ def ensure_bucket() -> bool:
     )
     if r.status_code == 200:
         return True
-    if r.status_code == 404:
-        # Create it as a public bucket so Next.js can use the public URL directly
-        r2 = requests.post(
-            f"{SUPABASE_URL}/storage/v1/bucket",
-            headers=headers,
-            json={"id": BUCKET, "name": BUCKET, "public": True},
-            timeout=10,
-        )
-        if r2.status_code in (200, 201):
-            print(f"  ✓ Created storage bucket '{BUCKET}'")
-            return True
-        print(f"  ✗ Could not create bucket: {r2.status_code} {r2.text}")
-        return False
-    print(f"  ✗ Bucket check failed: {r.status_code} {r.text}")
+    # Supabase returns 400 or 404 for non-existent bucket — try to create it either way
+    r2 = requests.post(
+        f"{SUPABASE_URL}/storage/v1/bucket",
+        headers=headers,
+        json={"id": BUCKET, "name": BUCKET, "public": True},
+        timeout=10,
+    )
+    if r2.status_code in (200, 201):
+        print(f"  ✓ Created storage bucket '{BUCKET}'")
+        return True
+    # If creation fails with "already exists", that's fine
+    body = r2.json() if r2.headers.get("Content-Type", "").startswith("application/json") else {}
+    if "already exists" in str(body).lower() or r2.status_code == 409:
+        return True
+    print(f"  ✗ Could not create bucket: {r2.status_code} {r2.text}")
     return False
 
 
