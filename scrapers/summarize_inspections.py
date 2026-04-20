@@ -75,11 +75,16 @@ Rules:
 2. State what kind of visit it was (routine inspection, complaint investigation, follow-up, etc.)
    if clear from the text.
 3. State what was found — or, for unsubstantiated complaints, clearly say no violation was found.
-4. If a death, serious injury, or substantiated harm is described, say so plainly. Do not soften it.
-5. Do NOT invent facts not in the source text.
-6. Do NOT name specific residents (R1, R2), staff (S1, S2), or inspector names.
-7. Do NOT use phrases like "the report states" or "according to the document". Just state the facts.
-8. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
+4. If a death, injury, or harm is described, state what happened factually. Do not soften it and
+   do not amplify it. Let the facts carry the weight — the Type A/B classification already signals
+   severity to the reader.
+5. Do NOT use evaluative adjectives: "serious", "severe", "significant", "alarming", "concerning",
+   "critical", "grave", "egregious", "troubling", "notable", or similar. Describe what happened,
+   not how bad it is.
+6. Do NOT invent facts not in the source text.
+7. Do NOT name specific residents (R1, R2), staff (S1, S2), or inspector names.
+8. Do NOT use phrases like "the report states" or "according to the document". Just state the facts.
+9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
 
 USER_TEMPLATE = """Inspection type: {inspection_type}
 Is complaint: {is_complaint}

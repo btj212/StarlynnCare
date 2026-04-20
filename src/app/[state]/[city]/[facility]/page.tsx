@@ -582,14 +582,39 @@ export default async function FacilityPage({ params }: PageProps) {
                           new Date(insp.inspection_date + "T12:00:00"),
                         )
                       : insp.inspection_date;
+
+                    // Determine worst deficiency class for header callout
+                    const hasTypeA = defs.some((d) => d.class === "Type A");
+                    const hasTypeB = defs.some((d) => d.class === "Type B");
+
+                    // Deficiency count label + color based on worst severity
+                    const defLabel =
+                      defs.length === 0
+                        ? null
+                        : defs.length === 1
+                        ? "1 deficiency"
+                        : `${defs.length} deficiencies`;
+                    const defBadgeClass = hasTypeA
+                      ? "text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-full px-2.5 py-0.5"
+                      : hasTypeB
+                      ? "text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded-full px-2.5 py-0.5"
+                      : "text-xs font-medium text-muted";
+
                     return (
                       <details
                         key={insp.id}
-                        className="group rounded-lg border border-sc-border bg-white shadow-card"
+                        className={`group rounded-lg border bg-white shadow-card ${
+                          hasTypeA
+                            ? "border-red-200"
+                            : hasTypeB
+                            ? "border-orange-200"
+                            : "border-sc-border"
+                        }`}
                       >
                         <summary
                           className={`flex list-none items-center justify-between px-5 py-3.5 gap-3 ${hasBody ? "cursor-pointer" : "cursor-default"}`}
                         >
+                          {/* Left cluster: visit type + date + outcome + severity badges */}
                           <div className="flex flex-wrap items-center gap-2 min-w-0">
                             <span
                               className={
@@ -618,12 +643,29 @@ export default async function FacilityPage({ params }: PageProps) {
                                 · {outcome}
                               </span>
                             )}
+                            {/* Severity callout — visible without expanding */}
+                            {hasTypeA && (
+                              <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-red-100 text-red-700">
+                                Type A
+                              </span>
+                            )}
+                            {!hasTypeA && hasTypeB && (
+                              <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-orange-50 text-orange-600">
+                                Type B
+                              </span>
+                            )}
                           </div>
-                          <span className="shrink-0 text-xs font-medium text-muted">
-                            {defs.length > 0
-                              ? `${defs.length} deficienc${defs.length === 1 ? "y" : "ies"}`
-                              : "No deficiencies"}
-                          </span>
+
+                          {/* Right: deficiency count, colored by severity */}
+                          {defLabel ? (
+                            <span className={`shrink-0 ${defBadgeClass}`}>
+                              {defLabel}
+                            </span>
+                          ) : (
+                            <span className="shrink-0 text-xs text-muted/60">
+                              No deficiencies
+                            </span>
+                          )}
                         </summary>
 
                         {hasBody && (
