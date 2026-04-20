@@ -1,25 +1,79 @@
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 
 /**
- * Server-side Supabase client using the **anon** key (respects RLS).
- * Use in Server Components and Route Handlers for public reads.
+ * New dashboard: "Publishable key" (replaces the old "anon" label for browser/server reads).
+ * We still accept NEXT_PUBLIC_SUPABASE_ANON_KEY for older projects.
  */
-export function getPublicClient(): SupabaseClient {
+export function getPublishableKey(): string | undefined {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+}
+
+/**
+ * Server Components & Route Handlers — uses cookies so Auth sessions refresh correctly.
+ * Prefer this over a plain `createClient` for anything that runs in Next.js App Router.
+ */
+export async function createServerSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) {
+  const key = getPublishableKey();
+  if (!url || !key) {
     throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or legacy NEXT_PUBLIC_SUPABASE_ANON_KEY)",
     );
   }
-  return createClient(url, anon, {
-    auth: { persistSession: false, autoRefreshToken: false },
+
+  const cookieStore = await cookies();
+
+  return createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          );
+        } catch {
+          /* Called from a Server Component; middleware refreshes sessions. */
+        }
+      },
+    },
+  });
+}
+
+/** Same as createServerSupabaseClient but returns null when env is incomplete (CI / misconfig). */
+export async function tryCreateServerSupabaseClient(): Promise<SupabaseClient | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = getPublishableKey();
+  if (!url || !key) return null;
+  const cookieStore = await cookies();
+
+  return createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          );
+        } catch {
+          /* ignore */
+        }
+      },
+    },
   });
 }
 
 /**
  * Server-only client using the **service role** key (bypasses RLS).
- * Never import into Client Components or expose to the browser.
+ * For scrapers and trusted server code only — never import into Client Components.
  */
 export function getServiceClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,19 +84,6 @@ export function getServiceClient(): SupabaseClient {
     );
   }
   return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
-
-/**
- * Returns a public client if env is configured; otherwise null.
- * Use for graceful degradation when Supabase env vars are missing (e.g. CI).
- */
-export function tryPublicClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) return null;
-  return createClient(url, anon, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

@@ -5,7 +5,7 @@ Memory care quality transparency: primary-source CMS and state agency data, cite
 ## Stack
 
 - **Next.js 16** (App Router) · **React 19** · **Tailwind CSS v4**
-- **Supabase** (Postgres + RLS) — `@supabase/supabase-js`
+- **Supabase** (Postgres + RLS) — `@supabase/supabase-js` + `@supabase/ssr` (cookie-backed server client + middleware)
 - **Vercel** · optional **Upstash Redis** for the waitlist API
 
 Design tokens live in [`src/app/globals.css`](src/app/globals.css) (navy, teal, warm white, Playfair Display + Inter).

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { tryPublicClient } from "@/lib/supabase/server";
+import { tryCreateServerSupabaseClient } from "@/lib/supabase/server";
 import type { Facility } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -14,7 +14,7 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = tryPublicClient();
+  const supabase = await tryCreateServerSupabaseClient();
   if (!supabase) {
     return {
       title: "Facility | StarlynnCare",
@@ -77,7 +77,7 @@ function JsonLd({
 
 export default async function FacilityPage({ params }: PageProps) {
   const { slug } = await params;
-  const supabase = tryPublicClient();
+  const supabase = await tryCreateServerSupabaseClient();
 
   if (!supabase) {
     return (
@@ -88,7 +88,8 @@ export default async function FacilityPage({ params }: PageProps) {
             <p className="font-semibold text-amber">Configuration</p>
             <p className="mt-2">
               Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and
-              NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.
+              NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in .env.local (legacy
+              NEXT_PUBLIC_SUPABASE_ANON_KEY still works).
             </p>
           </div>
         </main>

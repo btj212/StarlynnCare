@@ -20,9 +20,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 }
 ```
 
-## Fetch / Supabase
+## Fetch / Supabase (@supabase/ssr)
 
-Server Components call Supabase with the **anon** key for public reads. Do not import the **service role** key into Client Components.
+Use **`createServerSupabaseClient()`** from `@/lib/supabase/server` in Server Components so cookies stay in sync with Auth (middleware refreshes sessions). The env var is **`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`** (Supabase’s new name for the public client key); **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** still works.
+
+Do not import **`SUPABASE_SERVICE_ROLE_KEY`** into Client Components.
 
 ## Cache Components
 

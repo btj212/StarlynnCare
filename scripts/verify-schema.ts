@@ -1,7 +1,7 @@
 /**
  * Verifies Supabase connectivity and table access after running 0001_init.sql.
  *
- * - Anon key: must read states, facilities, inspections, deficiencies (RLS allows SELECT).
+ * - Publishable (or legacy anon) key: must read states, facilities, inspections, deficiencies.
  * - Service role: must read scrape_runs, content_runs (no public SELECT policy on those tables).
  *
  * Usage: copy `.env.local.example` → `.env.local`, fill keys, then:
@@ -15,7 +15,9 @@ import path from "path";
 config({ path: path.resolve(process.cwd(), ".env.local") });
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const publishable =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function fail(msg: string): never {
@@ -25,9 +27,13 @@ function fail(msg: string): never {
 
 async function main() {
   if (!url) fail("NEXT_PUBLIC_SUPABASE_URL is missing in .env.local");
-  if (!anon) fail("NEXT_PUBLIC_SUPABASE_ANON_KEY is missing in .env.local");
+  if (!publishable) {
+    fail(
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or legacy NEXT_PUBLIC_SUPABASE_ANON_KEY) is missing in .env.local",
+    );
+  }
 
-  const publicClient = createClient(url, anon, {
+  const publicClient = createClient(url, publishable, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
@@ -38,7 +44,7 @@ async function main() {
     "deficiencies",
   ] as const;
 
-  console.log("Checking public (anon) SELECT on RLS-readable tables…");
+  console.log("Checking public (publishable / anon) SELECT on RLS-readable tables…");
   for (const table of publicTables) {
     const { error, count } = await publicClient
       .from(table)

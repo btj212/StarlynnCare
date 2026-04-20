@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { tryPublicClient } from "@/lib/supabase/server";
+import { tryCreateServerSupabaseClient } from "@/lib/supabase/server";
 import type { FacilityListRow } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -17,13 +17,13 @@ function groupByCity(facilities: FacilityListRow[]) {
 }
 
 export default async function FloridaPage() {
-  const supabase = tryPublicClient();
+  const supabase = await tryCreateServerSupabaseClient();
   let facilities: FacilityListRow[] = [];
   let fetchError: string | null = null;
 
   if (!supabase) {
     fetchError =
-      "Supabase environment variables are not set. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local (see .env.local.example).";
+      "Supabase environment variables are not set. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to .env.local (see .env.local.example). Legacy NEXT_PUBLIC_SUPABASE_ANON_KEY is still supported.";
   } else {
     const { data, error } = await supabase
       .from("facilities")

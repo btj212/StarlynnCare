@@ -4,15 +4,17 @@
 
 1. Go to [supabase.com](https://supabase.com) → **New project**.
 2. **Region:** choose **US East (N. Virginia)** — `us-east-1`.
-3. Save the **Project URL**, **anon public** key, and **service_role** key (Settings → API).
+3. Save the **Project URL**, the **Publishable** (client) key, and the **service_role** key.
+   - The publishable key is what the new Supabase UI shows (it replaces the old “anon public” label; it is the same role for RLS-scoped reads from the browser/SSR).
+   - The **service_role** key is hidden under **Reveal** — use only on the server or in scrapers.
 
 ## 2. Add keys locally
 
 Copy `.env.local.example` to `.env.local` and fill in:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- `SUPABASE_SERVICE_ROLE_KEY` — the third key in the dashboard (service role, secret)
 
 Never commit `.env.local`.
 
