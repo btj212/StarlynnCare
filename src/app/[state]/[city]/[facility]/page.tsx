@@ -8,6 +8,7 @@ import { regionFromSlug } from "@/lib/regions";
 import { stateFromSlug } from "@/lib/states";
 import { loadBenchmarks } from "@/lib/benchmarks";
 import { BenchmarkRow } from "@/components/facility/BenchmarkRow";
+import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import type { Facility, CareCategory } from "@/lib/types";
 
 type FacilityContent = {
@@ -890,6 +891,11 @@ export default async function FacilityPage({ params }: PageProps) {
               )}
             </ul>
           </section>
+
+          {/* ── Family reviews ──────────────────────────────────────── */}
+          <div className="mt-14 border-t border-sc-border pt-14">
+            <ReviewsSection facilityId={facility.id} />
+          </div>
 
           <p className="mt-14 text-center text-sm text-muted">
             <Link
