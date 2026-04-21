@@ -168,6 +168,12 @@ def main() -> None:
         action="store_true",
         help="Re-fetch even facilities that already have a photo_url",
     )
+    parser.add_argument(
+        "--license",
+        type=str,
+        default=None,
+        help="Only fetch photo for this license number.",
+    )
     args = parser.parse_args()
 
     # Validate env
@@ -187,6 +193,7 @@ def main() -> None:
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             where_photo = "" if args.refetch else "AND photo_url IS NULL"
+            where_license = f"AND license_number = '{args.license}'" if args.license else ""
             cur.execute(f"""
                 SELECT id, name, street, city, zip, state_code
                 FROM facilities
@@ -194,6 +201,7 @@ def main() -> None:
                   AND state_code = 'CA'
                   AND street IS NOT NULL
                   {where_photo}
+                  {where_license}
                 ORDER BY name
             """)
             facilities = cur.fetchall()

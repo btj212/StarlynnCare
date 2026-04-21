@@ -605,6 +605,10 @@ def main() -> None:
         "--smoke", action="store_true",
         help="Process only the first 3 facilities.",
     )
+    parser.add_argument(
+        "--license", type=str, default=None,
+        help="Process only the facility with this license number.",
+    )
     args = parser.parse_args()
 
     load_env()
@@ -629,6 +633,8 @@ def main() -> None:
         """
         if args.publishable:
             query += " AND publishable = true"
+        if args.license:
+            query += f" AND license_number = '{args.license}'"
         query += " ORDER BY city, name"
 
         with conn.cursor() as cur:

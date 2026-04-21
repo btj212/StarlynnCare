@@ -225,6 +225,8 @@ Tour questions rules (critical — violations will fail the quality gate):
 - Do NOT generate a question about family notification or communication protocols
   unless there is a specific complaint in the data explicitly related to a communication
   failure. A generic "how do you notify families" question will fail the quality gate.
+- Do NOT generate a question about fall management or fall prevention unless there is
+  a specific deficiency or complaint about falls in the source data.
 """
 
 GENERATION_HUMAN_TEMPLATE = """\
@@ -253,7 +255,7 @@ Inspection history (from CDSS Transparency API)
   Type B deficiencies    : {type_b_count}  (potential for harm citations)
   Dementia-care citations: {dementia_citation_count}  (§87705 or §87706)
   Complaints on file     : {complaint_count}
-  Most recent inspection : {last_inspection_date}
+  Most recent inspection : {last_inspection_date}  ← use this exact date; do not change the year
 
 GOLD-STANDARD EXAMPLE (Silverado Berkeley — do not reproduce directly, use as style/tone guide)
 -----------------------------------------------------------------------------------------------
@@ -323,7 +325,7 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         "license_status": fac["license_status"] or "(not in data)",
         "license_expiration": fac["license_expiration"] or "(not in data)",
         "serves_mc": "Yes" if fac.get("care_category") == "rcfe_memory_care" else "No",
-        "mc_designation": fac["memory_care_designation"] or "(none)",
+        "mc_designation": fac["memory_care_designation"] or "(none — memory care is operator-advertised, not formally designated in CDSS licensing data)",
         "inspection_count": fac["inspection_count"],
         "deficiency_count": deficiency_count,
         "type_a_count": type_a_count,

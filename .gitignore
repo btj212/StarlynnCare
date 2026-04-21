@@ -45,3 +45,5 @@ scrapers/.venv/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.xhawk/
+.claude/settings.local.json
