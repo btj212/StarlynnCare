@@ -138,11 +138,14 @@ def load_facilities(
         WHERE f.publishable = true AND f.state_code = 'CA'
     """
     if name_filter:
-        query += f" AND LOWER(f.name) LIKE LOWER('%{name_filter}%')"
+        query += " AND LOWER(f.name) LIKE LOWER(%(name_filter)s)"
+        params = {"name_filter": f"%{name_filter}%"}
+    else:
+        params = {}
     query += " ORDER BY f.city, f.name"
 
     with conn.cursor() as cur:
-        cur.execute(query)
+        cur.execute(query, params)
         cols = [d[0] for d in cur.description]
         return [dict(zip(cols, row)) for row in cur.fetchall()]
 
@@ -227,6 +230,9 @@ Tour questions rules (critical — violations will fail the quality gate):
   failure. A generic "how do you notify families" question will fail the quality gate.
 - Do NOT generate a question about fall management or fall prevention unless there is
   a specific deficiency or complaint about falls in the source data.
+- Do NOT generate a question about staffing ratios, staff counts, or number of caregivers
+  unless staffing data appears explicitly in the source data. For small facilities (6 beds),
+  staffing ratio questions are always generic — do not generate them.
 """
 
 GENERATION_HUMAN_TEMPLATE = """\
