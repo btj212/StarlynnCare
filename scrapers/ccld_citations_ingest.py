@@ -66,6 +66,15 @@ IMMEDIATE_JEOPARDY_RE = re.compile(
     r"\bimmediate\s+(danger|jeopardy|threat|risk)\b", re.IGNORECASE
 )
 
+# Matches citations referenced in complaint narratives before "is being cited on the attached LIC 9099D"
+# e.g. "California Code of Regulations, Title 22 Sec 87468.1(11) Personal Rights ... is being cited"
+NARRATIVE_CITATION_RE = re.compile(
+    r"(?:California Code of Regulations[,\s]+Title 22[,\s]+)?Sec(?:tion)?s?\s+"
+    r"([\d]+(?:\.[0-9]+)*(?:\([a-zA-Z0-9]+\))*)"
+    r"[^\n]{0,200}?is being cited",
+    re.IGNORECASE | re.DOTALL,
+)
+
 
 # ---------------------------------------------------------------------------
 # Env
@@ -282,6 +291,28 @@ def parse_report(
             )
 
     narrative_text = " ".join(narrative_parts).strip()
+
+    # ── Narrative-derived citations (Substantiated complaints) ───────────────
+    # When a complaint is substantiated, the formal deficiency is on a separate
+    # LIC 9099D sub-page not yet fetched by this scraper. The main narrative
+    # always references the cited section with "is being cited on the attached
+    # LIC 9099D". Extract those so the deficiency isn't silently lost.
+    if outcome == "Substantiated" and not deficiencies:
+        for m in NARRATIVE_CITATION_RE.finditer(narrative_text):
+            section = m.group(1).strip()
+            deficiencies.append({
+                "type": "Type B",          # conservative default; 9099D would have the true class
+                "section": section,
+                "regulatory_text": f"CCR Title 22 §{section}",
+                "deficiency_statement": (
+                    f"Cited on LIC 9099D — extracted from complaint narrative. "
+                    f"Full deficiency text available on the state CCLD website."
+                ),
+                "severity": None,
+                "immediate_jeopardy": False,
+                "class": "Type B",
+                "narrative_derived": True,
+            })
 
     # §87705/87706 detection
     has_dementia_citation = any(

@@ -250,7 +250,15 @@ export default async function FacilityPage({ params }: PageProps) {
     defByInspection.set(d.inspection_id, existing);
   }
 
-  const totalDeficiencies = deficiencies.length;
+  // Substantiated complaints with no deficiency records in DB are scraper gaps —
+  // the citation lives on a separate LIC 9099D sub-page. Count them as 1 deficiency each.
+  const substantiatedWithMissingDefs = inspections.filter(
+    (i) => i.is_complaint &&
+      i.raw_data?.outcome === "Substantiated" &&
+      (defByInspection.get(i.id) ?? []).length === 0,
+  );
+
+  const totalDeficiencies = deficiencies.length + substantiatedWithMissingDefs.length;
   const typeACount = deficiencies.filter((d) => d.class === "Type A").length;
   const dementiaCitations = deficiencies.filter((d) =>
     /8770[56]/.test(d.code ?? ""),
@@ -604,10 +612,17 @@ export default async function FacilityPage({ params }: PageProps) {
                     // Determine worst deficiency class for header callout
                     const hasTypeA = defs.some((d) => d.class === "Type A");
                     const hasTypeB = defs.some((d) => d.class === "Type B");
+                    // Substantiated complaints with no DB deficiency records = scraper gap
+                    const isSubstantiatedGap =
+                      insp.is_complaint &&
+                      insp.raw_data?.outcome === "Substantiated" &&
+                      defs.length === 0;
 
                     // Deficiency count label + color based on worst severity
                     const defLabel =
-                      defs.length === 0
+                      isSubstantiatedGap
+                        ? "Citation on file"
+                        : defs.length === 0
                         ? null
                         : defs.length === 1
                         ? "1 deficiency"
@@ -616,6 +631,8 @@ export default async function FacilityPage({ params }: PageProps) {
                       ? "text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-full px-2.5 py-0.5"
                       : hasTypeB
                       ? "text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded-full px-2.5 py-0.5"
+                      : isSubstantiatedGap
+                      ? "text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5"
                       : "text-xs font-medium text-muted";
 
                     return (
@@ -626,6 +643,8 @@ export default async function FacilityPage({ params }: PageProps) {
                             ? "border-red-200"
                             : hasTypeB
                             ? "border-orange-200"
+                            : isSubstantiatedGap
+                            ? "border-amber-200"
                             : "border-sc-border"
                         }`}
                       >
@@ -683,8 +702,7 @@ export default async function FacilityPage({ params }: PageProps) {
                             <span className="shrink-0 text-xs text-muted/60">
                               No deficiencies
                             </span>
-                          )}
-                        </summary>
+                          )}                        </summary>
 
                         {hasBody && (
                           <div className="border-t border-sc-border/50 px-5 py-4 space-y-3">
@@ -695,19 +713,19 @@ export default async function FacilityPage({ params }: PageProps) {
                               </p>
                             )}
 
-                            {/* Outcome explanation for complaints with no deficiencies */}
-                            {outcome && defs.length === 0 && (
+                            {/* Outcome explanation for complaints */}
+                            {outcome && (defs.length === 0 || isSubstantiatedGap) && (
                               <p
                                 className={
                                   outcome === "Substantiated"
-                                    ? "text-sm font-semibold text-red-600"
+                                    ? "text-sm font-semibold text-amber-700"
                                     : "text-sm text-slate"
                                 }
                               >
                                 {outcome === "Unsubstantiated"
                                   ? "Unsubstantiated — CDSS investigated and did not find violations."
                                   : outcome === "Substantiated"
-                                  ? "Substantiated — CDSS found violations related to this complaint."
+                                  ? "Substantiated — CDSS found a violation and issued a citation. Full citation details are on file with the state."
                                   : `Outcome: ${outcome}`}
                               </p>
                             )}
