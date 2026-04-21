@@ -211,7 +211,10 @@ Memory care approach section rules (critical — violations will fail the qualit
   of compliance. This is enough for a factual, useful paragraph.
 
 Tour questions rules (critical — violations will fail the quality gate):
-- Generate exactly 4-6 questions.
+- Generate 4-5 questions. Prefer exactly 4 unless 5 naturally follows from distinct facts
+  in the source data. NEVER write a 5th question just to reach a higher count — it will
+  always come out generic and fail the quality gate. Stop at 4 if you have used all the
+  specific facts available.
 - Each question MUST reference at least one concrete fact from the source data — a specific
   Title 22 section cited, a substantiated complaint, the number of Type A deficiencies,
   inspection recency, bed count, operator name, or memory-care designation.
@@ -220,8 +223,8 @@ Tour questions rules (critical — violations will fail the quality gate):
 - Order by urgency: Type A citations first, then substantiated complaints, then recent
   deficiencies, then operational gaps, then strengths-verification questions last.
 - Each question is a single sentence ending in "?". No preamble, no follow-up sub-bullets.
-- If the facility has zero deficiencies and zero complaints, generate questions that probe
-  the state of compliance, staffing, and care practices — still grounded in source data
+- If the facility has zero deficiencies and zero complaints, generate 4 questions that probe
+  the state of compliance and care practices — still grounded in source data
   (e.g., license status, beds, memory-care designation, inspection recency).
 - Do NOT end any question with "before making a placement decision" or similar generic closes.
 - Do NOT reference the LIC 809 form, the LIC 810 form, or any state form by number.
@@ -230,16 +233,19 @@ Tour questions rules (critical — violations will fail the quality gate):
   failure. A generic "how do you notify families" question will fail the quality gate.
 - Do NOT generate a question about fall management or fall prevention unless there is
   a specific deficiency or complaint about falls in the source data.
-- Do NOT generate a question about staffing ratios, staff counts, or number of caregivers
-  unless staffing data appears explicitly in the source data. For small facilities (6 beds),
-  staffing ratio questions are always generic — do not generate them.
+- Do NOT generate ANY question about staffing ratios, staff counts, number of caregivers,
+  overnight coverage, supervisor availability, or caregiver-to-resident ratios. These topics
+  require staffing data that is never in state inspection records. This ban is absolute —
+  not even "how do you handle staffing if a caregiver is sick?" is acceptable.
+- Do NOT generate a question about care plan updates, care plan reviews, or supervision
+  continuity unless such a topic is specifically cited in the deficiency or complaint data.
 """
 
 GENERATION_HUMAN_TEMPLATE = """\
 Generate a StarlynnCare content block for the following facility. Return ONLY valid
 JSON with these exact keys: headline, memory_care_approach, tour_questions, generated_at, model.
 
-tour_questions must be a JSON array of 4-6 strings (questions), not a prose paragraph.
+tour_questions must be a JSON array of 4-5 strings (questions), not a prose paragraph.
 
 SOURCE DATA
 -----------
@@ -261,7 +267,7 @@ Inspection history (from CDSS Transparency API)
   Type B deficiencies    : {type_b_count}  (potential for harm citations)
   Dementia-care citations: {dementia_citation_count}  (§87705 or §87706)
   Complaints on file     : {complaint_count}
-  Most recent inspection : {last_inspection_date}  ← use this exact date; do not change the year
+  Most recent inspection : {last_inspection_date}  ← CRITICAL: use this EXACT date. Do NOT change the year. Today is {today}.
 
 GOLD-STANDARD EXAMPLE (Silverado Berkeley — do not reproduce directly, use as style/tone guide)
 -----------------------------------------------------------------------------------------------
@@ -277,7 +283,7 @@ Your task is to review a generated facility content block and flag any claims th
   1. Are factually inconsistent with the source data provided.
   2. Are promotional, unverifiable, or misleading.
   3. Violate StarlynnCare's honesty rules (no made-up citations, no pricing,
-     no staffing ratios not in the data, no superlatives).
+     no staffing ratios, no staffing coverage questions, no superlatives).
   4. Reference form numbers (LIC 809, LIC 810, etc.).
 
 Additionally, validate the tour_questions array:
@@ -286,7 +292,7 @@ Additionally, validate the tour_questions array:
      date, bed count, operator name, or memory-care designation). Flag any question
      that could apply to any facility without modification.
   6. Each question must end in "?".
-  7. There must be between 4 and 6 questions.
+  7. There must be between 4 and 5 questions.
   8. No question may close with "before making a placement decision" or similar generic phrases.
 
 Do NOT flag:
@@ -314,6 +320,18 @@ Does the generated content pass the StarlynnCare quality gate? Reply with JSON o
 # ---------------------------------------------------------------------------
 
 
+def _format_operator(raw: str | None) -> str:
+    """Convert 'Last, First' DB format to 'First Last' for readable prompts."""
+    if not raw:
+        return "(not in data)"
+    # If it looks like "Last, First Middle" flip it; otherwise return as-is
+    if "," in raw:
+        parts = [p.strip() for p in raw.split(",", 1)]
+        if len(parts) == 2 and parts[1]:
+            return f"{parts[1]} {parts[0]}"
+    return raw
+
+
 def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
     deficiency_count = fac["deficiency_count"]
     type_a_count = fac["type_a_count"]
@@ -326,7 +344,7 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         "zip": fac["zip"] or "",
         "phone": fac["phone"] or "(not in data)",
         "beds": fac["beds"] or "(not in data)",
-        "operator": fac["operator_name"] or "(not in data)",
+        "operator": _format_operator(fac["operator_name"]),
         "license_number": fac["license_number"] or "(not in data)",
         "license_status": fac["license_status"] or "(not in data)",
         "license_expiration": fac["license_expiration"] or "(not in data)",
@@ -339,6 +357,7 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         "dementia_citation_count": fac["dementia_citation_count"],
         "complaint_count": fac["complaint_count"],
         "last_inspection_date": fac["last_inspection_date"] or "(none on record)",
+        "today": datetime.now(timezone.utc).strftime("%B %d, %Y"),
         "example_json": json.dumps(SILVERADO_SEED_CONTENT, indent=2),
     }
 
