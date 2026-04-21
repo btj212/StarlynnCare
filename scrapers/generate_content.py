@@ -192,6 +192,8 @@ Additional rules:
   unless you have been given explicit comparative data.
 - Do NOT speculate or use words like "likely," "probably," "appears to," or "suggests" to
   infer facts not directly in the source data.
+- Do NOT write that the facility's name "indicates," "suggests," or "implies" any particular
+  care focus or approach. The name is not a data source.
 
 Memory care approach section rules (critical — violations will fail the quality gate):
 - Do NOT name proprietary care programs (e.g., "Traditions," "Connections," "Reminiscence,"

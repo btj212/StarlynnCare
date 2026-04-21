@@ -53,14 +53,45 @@ type PageProps = {
 };
 
 const CATEGORY_LABEL: Record<CareCategory, string> = {
-  rcfe_memory_care: "RCFE · Memory care",
-  rcfe_general: "RCFE",
-  alf_memory_care: "ALF · Memory care",
-  alf_general: "ALF",
-  snf_general: "Skilled nursing",
-  snf_dementia_scu: "Skilled nursing · Dementia Special Care Unit",
-  ccrc: "Continuing Care Retirement Community",
+  rcfe_memory_care: "Residential Care Facility for the Elderly (RCFE) · Memory Care",
+  rcfe_general: "Residential Care Facility for the Elderly (RCFE)",
+  alf_memory_care: "Assisted Living Facility (ALF) · Memory Care",
+  alf_general: "Assisted Living Facility (ALF)",
+  snf_general: "Skilled Nursing Facility (SNF)",
+  snf_dementia_scu: "Skilled Nursing Facility (SNF) · Dementia Special Care Unit",
+  ccrc: "Continuing Care Retirement Community (CCRC)",
   unknown: "Pending categorization",
+};
+
+const LICENSE_TYPE_INFO: Partial<Record<CareCategory, { title: string; body: string }>> = {
+  rcfe_memory_care: {
+    title: "What is an RCFE with Memory Care?",
+    body: "A Residential Care Facility for the Elderly (RCFE) is a non-medical residential care home licensed by California CDSS under Health & Safety Code §1560. Residents receive help with daily living activities such as bathing, dressing, and medication management. An RCFE with a Memory Care designation is additionally required by California Title 22 (§87705 and §87706) to provide specialized staff training in dementia care, individualized care plans for residents with cognitive impairment, and appropriate supervision protocols — requirements that go beyond a standard RCFE license.",
+  },
+  rcfe_general: {
+    title: "What is an RCFE?",
+    body: "A Residential Care Facility for the Elderly (RCFE) is a non-medical residential care home licensed by California CDSS under Health & Safety Code §1560. Residents receive assistance with daily living activities such as bathing, dressing, meals, and medication management in a home-like setting. RCFEs are not hospitals or skilled nursing facilities — they do not provide round-the-clock medical care.",
+  },
+  alf_memory_care: {
+    title: "What is an ALF with Memory Care?",
+    body: "An Assisted Living Facility (ALF) provides residential care and personal assistance in a community setting. An ALF with a Memory Care designation maintains a dedicated program for residents living with Alzheimer's disease or other dementias, with specialized staff training, secured environments, and dementia-specific care protocols as required by state regulation.",
+  },
+  alf_general: {
+    title: "What is an ALF?",
+    body: "An Assisted Living Facility (ALF) provides residential care and personal assistance in a community setting. Residents receive help with daily activities while maintaining as much independence as possible. ALFs are not medical facilities — they do not provide the level of clinical care found in skilled nursing facilities.",
+  },
+  snf_general: {
+    title: "What is a Skilled Nursing Facility (SNF)?",
+    body: "A Skilled Nursing Facility (SNF) provides around-the-clock licensed nursing care. SNFs are licensed by California CDSS and also certified by the federal Centers for Medicare & Medicaid Services (CMS). They serve residents who need ongoing medical supervision, rehabilitation services, or complex care management that cannot be provided in a residential care setting.",
+  },
+  snf_dementia_scu: {
+    title: "What is a Skilled Nursing Facility with a Dementia Special Care Unit?",
+    body: "A Skilled Nursing Facility (SNF) with a Dementia Special Care Unit (SCU) provides around-the-clock licensed nursing care in a unit specifically designed for residents with Alzheimer's disease or related dementias. Federal and state regulations require the facility to disclose specific SCU practices, including programming, staffing, and physical environment — look for the facility's SCU disclosure form.",
+  },
+  ccrc: {
+    title: "What is a CCRC?",
+    body: "A Continuing Care Retirement Community (CCRC) offers multiple levels of care on a single campus — typically independent living, assisted living, and skilled nursing. Residents often enter under a long-term contract and can transition between care levels as their needs change. CCRCs in California are regulated by the California Department of Social Services.",
+  },
 };
 
 const STATE_AGENCY_LABEL: Record<string, string> = {
@@ -317,12 +348,30 @@ export default async function FacilityPage({ params }: PageProps) {
             <span className="inline-flex items-center rounded-full bg-teal-light px-3 py-1 text-xs font-semibold text-teal">
               {CATEGORY_LABEL[facility.care_category]}
             </span>
-            {facility.memory_care_designation && (
-              <span className="text-sm text-slate">
-                {facility.memory_care_designation}
-              </span>
-            )}
           </div>
+
+          {LICENSE_TYPE_INFO[facility.care_category] && (
+            <details className="mt-3 group">
+              <summary className="cursor-pointer list-none text-xs text-muted hover:text-teal transition-colors inline-flex items-center gap-1 select-none">
+                <svg
+                  aria-hidden="true"
+                  className="h-3 w-3 shrink-0 transition-transform group-open:rotate-90"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                {LICENSE_TYPE_INFO[facility.care_category]!.title}
+              </summary>
+              <p className="mt-2 text-sm leading-relaxed text-slate max-w-prose pl-4 border-l-2 border-sc-border">
+                {LICENSE_TYPE_INFO[facility.care_category]!.body}
+              </p>
+            </details>
+          )}
 
           {(facility.street || facility.city || facility.zip) && (
             <p className="mt-4 text-slate leading-relaxed">
@@ -354,13 +403,18 @@ export default async function FacilityPage({ params }: PageProps) {
                 loading="lazy"
               />
               <p className="px-4 py-2 text-xs text-muted bg-warm-white border-t border-sc-border/60">
-                {facility.photo_attribution ?? "© Google Street View"} ·{" "}
-                Exterior view only — not a facility-provided image
+                {facility.photo_attribution ?? "© Google Street View"}
               </p>
             </div>
           )}
 
           {/* ───────────────────────── At a glance dashboard ────────────────────── */}
+          <QuickFacts
+            facility={facility}
+            lastInspectionDate={
+              inspections.find((i) => !i.is_complaint)?.inspection_date ?? null
+            }
+          />
           {benchmarks && (
             <section className="mt-10" aria-labelledby="glance-heading">
               <h2
@@ -450,14 +504,7 @@ export default async function FacilityPage({ params }: PageProps) {
             </section>
           )}
 
-          {/* ─────────────────────────── Quick facts + AI content ─────────────────── */}
-          <QuickFacts
-            facility={facility}
-            lastInspectionDate={
-              inspections.find((i) => !i.is_complaint)?.inspection_date ?? null
-            }
-          />
-
+          {/* ─────────────────────────── AI content ─────────────────── */}
           {content && (
             <div className="mt-10 space-y-8">
               {content.memory_care_approach && (
@@ -893,39 +940,7 @@ export default async function FacilityPage({ params }: PageProps) {
             )}
           </section>
 
-          {/* ─────────────────────────────── Sources ─────────────────────────────── */}
-          <section className="mt-14" aria-labelledby="sources-heading">
-            <h2
-              id="sources-heading"
-              className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
-            >
-              Sources
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate">
-              StarlynnCare lists only the primary sources actually used to
-              produce this record.
-            </p>
-            <ul className="mt-6 space-y-3 text-sm text-slate">
-              {facility.source_url && (
-                <li className="flex gap-2">
-                  <span className="text-teal" aria-hidden>·</span>
-                  <a
-                    href={facility.source_url}
-                    className="break-all font-medium text-teal underline-offset-4 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {facility.source_url}
-                  </a>
-                </li>
-              )}
-              {!facility.source_url && (
-                <li className="italic text-muted">
-                  Source URL will appear once the scrape run logs it.
-                </li>
-              )}
-            </ul>
-          </section>
+          {/* Sources section hidden — primary source URL available in state records */}
 
           {/* ── Family reviews ──────────────────────────────────────── */}
           <div className="mt-14 border-t border-sc-border pt-14">
