@@ -222,6 +222,9 @@ Tour questions rules (critical — violations will fail the quality gate):
   (e.g., license status, beds, memory-care designation, inspection recency).
 - Do NOT end any question with "before making a placement decision" or similar generic closes.
 - Do NOT reference the LIC 809 form, the LIC 810 form, or any state form by number.
+- Do NOT generate a question about family notification or communication protocols
+  unless there is a specific complaint in the data explicitly related to a communication
+  failure. A generic "how do you notify families" question will fail the quality gate.
 """
 
 GENERATION_HUMAN_TEMPLATE = """\
@@ -247,6 +250,7 @@ Inspection history (from CDSS Transparency API)
   Total reports on file  : {inspection_count}
   Total deficiencies     : {deficiency_count}
   Type A deficiencies    : {type_a_count}  (actual harm citations)
+  Type B deficiencies    : {type_b_count}  (potential for harm citations)
   Dementia-care citations: {dementia_citation_count}  (§87705 or §87706)
   Complaints on file     : {complaint_count}
   Most recent inspection : {last_inspection_date}
@@ -303,6 +307,10 @@ Does the generated content pass the StarlynnCare quality gate? Reply with JSON o
 
 
 def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
+    deficiency_count = fac["deficiency_count"]
+    type_a_count = fac["type_a_count"]
+    type_b_count = deficiency_count - type_a_count
+
     return {
         "name": fac["name"],
         "street": fac["street"] or "(not in data)",
@@ -317,8 +325,9 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         "serves_mc": "Yes" if fac.get("care_category") == "rcfe_memory_care" else "No",
         "mc_designation": fac["memory_care_designation"] or "(none)",
         "inspection_count": fac["inspection_count"],
-        "deficiency_count": fac["deficiency_count"],
-        "type_a_count": fac["type_a_count"],
+        "deficiency_count": deficiency_count,
+        "type_a_count": type_a_count,
+        "type_b_count": type_b_count,
         "dementia_citation_count": fac["dementia_citation_count"],
         "complaint_count": fac["complaint_count"],
         "last_inspection_date": fac["last_inspection_date"] or "(none on record)",
