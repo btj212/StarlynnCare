@@ -8,6 +8,8 @@ import { regionFromSlug } from "@/lib/regions";
 import { stateFromSlug } from "@/lib/states";
 import { loadBenchmarks } from "@/lib/benchmarks";
 import { BenchmarkRow } from "@/components/facility/BenchmarkRow";
+import { QuickFacts } from "@/components/facility/QuickFacts";
+import { TourQuestions } from "@/components/facility/TourQuestions";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import type { Facility, CareCategory } from "@/lib/types";
 
@@ -17,6 +19,7 @@ type FacilityContent = {
   memory_care_approach?: string;
   neighborhood?: string;
   what_families_should_know?: string;
+  tour_questions?: string[];
   generated_at?: string;
   model?: string;
 };
@@ -447,10 +450,55 @@ export default async function FacilityPage({ params }: PageProps) {
             </section>
           )}
 
-          {/* ─────────────────────────── AI-generated content ─────────────────────── */}
+          {/* ─────────────────────────── Quick facts + AI content ─────────────────── */}
+          <QuickFacts
+            facility={facility}
+            lastInspectionDate={
+              inspections.find((i) => !i.is_complaint)?.inspection_date ?? null
+            }
+          />
+
           {content && (
-            <div className="mt-12 space-y-10">
-              {content.intro && (
+            <div className="mt-10 space-y-8">
+              {content.memory_care_approach && (
+                <section aria-labelledby="mc-heading">
+                  <h2
+                    id="mc-heading"
+                    className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+                  >
+                    Memory care context
+                  </h2>
+                  <p className="mt-4 text-base leading-relaxed text-slate">
+                    {content.memory_care_approach}
+                  </p>
+                </section>
+              )}
+
+              {/* New structured tour questions — hide legacy what_families_should_know when present */}
+              {content.tour_questions && content.tour_questions.length > 0 ? (
+                <TourQuestions
+                  questions={content.tour_questions}
+                  facilityName={facility.name}
+                />
+              ) : content.what_families_should_know ? (
+                <section
+                  aria-labelledby="families-heading"
+                  className="rounded-lg border border-teal/20 bg-teal-light/50 px-6 py-6"
+                >
+                  <h2
+                    id="families-heading"
+                    className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy"
+                  >
+                    What families should know
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-slate">
+                    {content.what_families_should_know}
+                  </p>
+                </section>
+              ) : null}
+
+              {/* Legacy intro + neighborhood — shown only for facilities not yet regenerated */}
+              {!content.tour_questions && content.intro && (
                 <section aria-labelledby="about-heading">
                   <h2
                     id="about-heading"
@@ -464,21 +512,7 @@ export default async function FacilityPage({ params }: PageProps) {
                 </section>
               )}
 
-              {content.memory_care_approach && (
-                <section aria-labelledby="mc-heading">
-                  <h2
-                    id="mc-heading"
-                    className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
-                  >
-                    Memory care approach
-                  </h2>
-                  <p className="mt-4 text-base leading-relaxed text-slate">
-                    {content.memory_care_approach}
-                  </p>
-                </section>
-              )}
-
-              {content.neighborhood && (
+              {!content.tour_questions && content.neighborhood && (
                 <section aria-labelledby="location-heading">
                   <h2
                     id="location-heading"
@@ -488,23 +522,6 @@ export default async function FacilityPage({ params }: PageProps) {
                   </h2>
                   <p className="mt-4 text-base leading-relaxed text-slate">
                     {content.neighborhood}
-                  </p>
-                </section>
-              )}
-
-              {content.what_families_should_know && (
-                <section
-                  aria-labelledby="families-heading"
-                  className="rounded-lg border border-teal/20 bg-teal-light/50 px-6 py-6"
-                >
-                  <h2
-                    id="families-heading"
-                    className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy"
-                  >
-                    What families should know
-                  </h2>
-                  <p className="mt-3 text-sm leading-relaxed text-slate">
-                    {content.what_families_should_know}
                   </p>
                 </section>
               )}

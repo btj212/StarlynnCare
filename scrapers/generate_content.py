@@ -46,49 +46,33 @@ QUALITY_GATE_MODEL = "claude-opus-4-5"
 # ---------------------------------------------------------------------------
 SILVERADO_BERKELEY_SLUG = "silverado-senior-living-berkeley-200938"
 
-SILVERADO_SEED_CONTENT: dict[str, str] = {
+SILVERADO_SEED_CONTENT: dict = {
     "headline": "Dedicated Memory Care in Berkeley's Elmwood District",
-    "intro": (
-        "Silverado Senior Living–Berkeley is a state-licensed residential care facility "
-        "for the elderly (RCFE) at 2235 Sacramento Street in Berkeley's Elmwood neighborhood, "
-        "operating as a dedicated memory-care community for adults living with Alzheimer's "
-        "disease, Lewy body dementia, frontotemporal dementia, and related conditions. "
-        "Licensed for 90 residents, it is one of the few facilities in Alameda County "
-        "operated solely for memory care—meaning every staff member, program, and physical "
-        "detail is designed around cognitive decline rather than general assisted living."
-    ),
     "memory_care_approach": (
-        "Silverado operates under what the company calls an Integrated Memory Care (IMC) "
-        "philosophy, which prioritizes purposeful activity, family involvement, and a "
-        "home-like physical environment. The facility is organized into \"neighborhoods\"—"
-        "smaller clusters of rooms that reduce overstimulation and support a consistent "
-        "daily routine. Secure outdoor courtyards allow residents to walk freely. "
-        "California CDSS evaluators cited Silverado Berkeley under Title 22 §87705(c)(5) "
-        "in April 2024 for delayed annual medical reassessments for some residents with "
-        "dementia—a Type B citation (potential for harm). The facility corrected the "
-        "deficiency; families should ask specifically about how the care-plan reassessment "
-        "schedule is managed for their loved one."
+        "Silverado Senior Living–Berkeley is a California-licensed RCFE dedicated entirely "
+        "to memory care, licensed for 90 residents. California Title 22 requires facilities "
+        "serving dementia residents to meet specific standards under §87705 and §87706, "
+        "covering care plans, staff training, and resident supervision. CDSS cited Silverado "
+        "Berkeley under §87705(c)(5) in April 2024 for delayed annual medical reassessments "
+        "for residents with dementia — a Type B citation (potential for harm). The facility "
+        "corrected the deficiency. State records show four inspections and four total "
+        "deficiencies (all Type B, none Type A) across the period on file. Six complaints "
+        "were also investigated during this period."
     ),
-    "neighborhood": (
-        "The Sacramento Street address sits at the northern edge of the Elmwood shopping "
-        "district, roughly halfway between the UC Berkeley campus and the Rockridge BART "
-        "station (about 0.9 miles east). Street parking is generally available on Sacramento "
-        "Street and adjacent residential blocks. By car the facility is a short drive from "
-        "Highway 13 (Warren Freeway) and Highway 24. The East Bay's mild, year-round climate "
-        "makes outdoor family visits on the courtyard comfortable most days."
-    ),
-    "what_families_should_know": (
-        "Between 2021 and 2025, CDSS completed four annual inspections and investigated six "
-        "complaints at Silverado Berkeley. The facility accumulated four deficiencies total "
-        "across that period—all Type B (potential for harm rather than documented harm)—"
-        "including one citation under the dementia-specific care standards (§87705). "
-        "No Type A citations (actual harm) were issued. This record is below average for "
-        "the county's memory-care facilities, where Type A citations are more common. "
-        "StarlynnCare lists only what state records confirm; bed availability, current "
-        "staffing ratios, and monthly costs are not in these records—always ask the "
-        "facility directly and request a copy of the most recent LIC 809 inspection report "
-        "before making a placement decision."
-    ),
+    "tour_questions": [
+        "The April 2024 inspection cited a delay in annual medical reassessments under "
+        "§87705(c)(5) — what is the current process for ensuring care plans are reviewed "
+        "on schedule, and who is responsible for tracking deadlines?",
+        "Six complaints were filed with CDSS during the inspection period on file — what "
+        "were the subjects of those complaints, and which were substantiated?",
+        "California Title 22 §87705 requires dementia-specific staff training — how do you "
+        "verify that all staff who interact with residents have completed the required "
+        "training, including overnight and weekend staff?",
+        "What is the staff-to-resident ratio on evening and weekend shifts, and how does "
+        "staffing change when a primary caregiver calls out sick?",
+        "What is the process for notifying families within 24 hours when a resident's "
+        "condition, medication, or care plan changes between scheduled reviews?",
+    ],
     "generated_at": "2026-04-19T00:00:00Z",
     "model": "human-authored",
 }
@@ -192,7 +176,7 @@ Your writing style:
 - Helpful to families in crisis. Address the real anxieties: safety, staff quality,
   inspection history, how to visit, what to ask.
 - Plain English. No jargon, no legalese.
-- Length targets: headline ≤ 80 chars; each prose field 80-180 words.
+- Length targets: headline ≤ 80 chars; memory_care_approach 80-160 words.
 
 Honesty rules (never violate these):
 1. Do not invent any fact not present in the source data.
@@ -202,18 +186,6 @@ Honesty rules (never violate these):
    CDSS severity type (Type A = actual harm; Type B = potential for harm).
 4. Do not state or imply pricing, bed availability, staffing ratios, or awards
    unless they appear in the source data (they almost never do).
-5. Always close `what_families_should_know` with a sentence encouraging families
-   to contact the facility directly and request the most recent LIC 809 report.
-
-Neighborhood section rules (critical — violations will fail the quality gate):
-- Only state facts directly supported by the street address and city provided.
-- You may say the facility is "in [city]" or "on [street name]" and nothing more geographic.
-- Do NOT invent distances to airports, BART stations, highways, landmarks, shopping
-  districts, parks, or any other points of interest. Do NOT describe the surrounding
-  area with adjectives like "quiet," "suburban," "walkable," "marina," or similar
-  unless those exact words appear in the source data.
-- You may note that the East Bay generally has mild weather year-round.
-- Keep to 2-3 sentences. If you have nothing factual to add beyond city and street, say so plainly.
 
 Additional rules:
 - Do NOT make comparative claims ("one of the largest," "among the few," "higher than average")
@@ -232,12 +204,29 @@ Memory care approach section rules (critical — violations will fail the qualit
   (3) any specific §87705 or §87706 citations from the inspection data as evidence of the
   facility's regulated dementia-care obligations, (4) the inspection history as a measure
   of compliance. This is enough for a factual, useful paragraph.
+
+Tour questions rules (critical — violations will fail the quality gate):
+- Generate exactly 4-6 questions.
+- Each question MUST reference at least one concrete fact from the source data — a specific
+  Title 22 section cited, a substantiated complaint, the number of Type A deficiencies,
+  inspection recency, bed count, operator name, or memory-care designation.
+- NO generic questions. Every question must only make sense for THIS specific facility. A
+  question that could apply to any facility will fail the quality gate.
+- Order by urgency: Type A citations first, then substantiated complaints, then recent
+  deficiencies, then operational gaps, then strengths-verification questions last.
+- Each question is a single sentence ending in "?". No preamble, no follow-up sub-bullets.
+- If the facility has zero deficiencies and zero complaints, generate questions that probe
+  the state of compliance, staffing, and care practices — still grounded in source data
+  (e.g., license status, beds, memory-care designation, inspection recency).
+- Do NOT end any question with "before making a placement decision" or similar generic closes.
+- Do NOT reference the LIC 809 form, the LIC 810 form, or any state form by number.
 """
 
 GENERATION_HUMAN_TEMPLATE = """\
 Generate a StarlynnCare content block for the following facility. Return ONLY valid
-JSON with these exact keys: headline, intro, memory_care_approach, neighborhood,
-what_families_should_know, generated_at, model.
+JSON with these exact keys: headline, memory_care_approach, tour_questions, generated_at, model.
+
+tour_questions must be a JSON array of 4-6 strings (questions), not a prose paragraph.
 
 SOURCE DATA
 -----------
@@ -275,9 +264,16 @@ Your task is to review a generated facility content block and flag any claims th
   2. Are promotional, unverifiable, or misleading.
   3. Violate StarlynnCare's honesty rules (no made-up citations, no pricing,
      no staffing ratios not in the data, no superlatives).
-  4. Invent geographic details (distances, landmarks, neighborhood descriptions)
-     not directly present in the source data — the street address and city are
-     the ONLY permitted geographic facts.
+  4. Reference form numbers (LIC 809, LIC 810, etc.).
+
+Additionally, validate the tour_questions array:
+  5. Each question must reference at least one concrete fact from the source data
+     (a specific Title 22 section, a Type A/B citation, a complaint count, inspection
+     date, bed count, operator name, or memory-care designation). Flag any question
+     that could apply to any facility without modification.
+  6. Each question must end in "?".
+  7. There must be between 4 and 6 questions.
+  8. No question may close with "before making a placement decision" or similar generic phrases.
 
 Do NOT flag:
 - Inspection dates that appear to be in 2025 or 2026. These are real dates from
@@ -488,7 +484,11 @@ def main() -> None:
         print(f"  ✓ Quality gate passed")
         if args.dry_run:
             print(f"  headline: {content.get('headline','')}")
-            print(f"  intro (first 120): {content.get('intro','')[:120]}…")
+            print(f"  memory_care_approach (first 120): {content.get('memory_care_approach','')[:120]}…")
+            tqs = content.get("tour_questions", [])
+            print(f"  tour_questions ({len(tqs)}):")
+            for q in tqs:
+                print(f"    - {q[:100]}…" if len(q) > 100 else f"    - {q}")
             stats["written"] += 1
             continue
 
