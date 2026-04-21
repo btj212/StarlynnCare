@@ -134,13 +134,9 @@ export function ReviewForm({ facilityId }: { facilityId: string }) {
       {/* ── Email opt-in ── */}
       <div className="rounded-xl border border-sc-border bg-white p-6 shadow-card space-y-2">
         <label htmlFor="reviewer_email" className="block text-sm font-semibold text-ink">
-          Get notified when your review is approved{" "}
+          Email{" "}
           <span className="text-muted text-xs font-normal">(optional)</span>
         </label>
-        <p className="text-xs text-muted">
-          We&apos;ll email you when your review goes live. No spam — we may also send occasional
-          updates from StarlynnCare.
-        </p>
         <input
           id="reviewer_email"
           name="reviewer_email"
