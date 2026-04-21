@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   description:
     "Find memory care facilities with real state inspection records, deficiency histories, and staffing data. No referral commissions. Starting in Alameda County, California.",
   openGraph: {
-    title: "Find memory care you can actually trust | StarlynnCare",
+    title: "Find memory care you can trust | StarlynnCare",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care in Alameda County, California.",
     url: "https://www.starlynncare.com",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Find memory care you can actually trust | StarlynnCare",
+    title: "Find memory care you can trust | StarlynnCare",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care in Alameda County, California.",
   },
