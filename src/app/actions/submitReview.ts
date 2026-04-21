@@ -19,6 +19,7 @@ export async function submitReview(
   const reviewerRelationship = (formData.get("reviewer_relationship") as string | null) ?? "";
   const residencyPeriod = (formData.get("residency_period") as string | null)?.trim() ?? "";
   const overallSummary = (formData.get("overall_summary") as string | null)?.trim() ?? "";
+  const reviewerEmail = (formData.get("reviewer_email") as string | null)?.trim() ?? "";
 
   const fieldErrors: Record<string, string> = {};
 
@@ -28,6 +29,9 @@ export async function submitReview(
     fieldErrors.reviewer_relationship = "Please select your relationship to the resident.";
   }
   if (overallSummary.length > 2000) fieldErrors.overall_summary = "Summary must be 2,000 characters or fewer.";
+  if (reviewerEmail && !/^[^@]+@[^@]+\.[^@]+$/.test(reviewerEmail)) {
+    fieldErrors.reviewer_email = "Please enter a valid email address.";
+  }
 
   // Validate ratings
   const ratings: Record<string, number> = {};
@@ -65,6 +69,7 @@ export async function submitReview(
     reviewer_relationship: reviewerRelationship,
     residency_period: residencyPeriod || null,
     overall_summary: overallSummary || null,
+    reviewer_email: reviewerEmail || null,
     status: "pending",
 
     rating_staff_engagement: ratings.staff_engagement,

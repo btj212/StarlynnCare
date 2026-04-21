@@ -58,3 +58,8 @@ CREATE POLICY "reviews_select_published"
 CREATE POLICY "reviews_insert_pending"
   ON reviews FOR INSERT
   WITH CHECK (status = 'pending');
+
+-- Optional email capture for notification + contact (not exposed via RLS reads)
+ALTER TABLE reviews
+  ADD COLUMN IF NOT EXISTS reviewer_email text
+    CHECK (reviewer_email IS NULL OR (reviewer_email ~* '^[^@]+@[^@]+\.[^@]+$' AND char_length(reviewer_email) <= 254));

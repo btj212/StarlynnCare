@@ -131,6 +131,29 @@ export function ReviewForm({ facilityId }: { facilityId: string }) {
         ))}
       </div>
 
+      {/* ── Email opt-in ── */}
+      <div className="rounded-xl border border-sc-border bg-white p-6 shadow-card space-y-2">
+        <label htmlFor="reviewer_email" className="block text-sm font-semibold text-ink">
+          Get notified when your review is approved{" "}
+          <span className="text-muted text-xs font-normal">(optional)</span>
+        </label>
+        <p className="text-xs text-muted">
+          We&apos;ll email you when your review goes live. No spam — we may also send occasional
+          updates from StarlynnCare.
+        </p>
+        <input
+          id="reviewer_email"
+          name="reviewer_email"
+          type="email"
+          maxLength={254}
+          className="w-full rounded-md border border-sc-border px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-teal focus:outline-none focus:ring-1 focus:ring-teal/30"
+          placeholder="your@email.com"
+        />
+        {state.fieldErrors?.reviewer_email && (
+          <p className="text-xs text-red-600">{state.fieldErrors.reviewer_email}</p>
+        )}
+      </div>
+
       {/* ── Overall summary ── */}
       <div className="rounded-xl border border-sc-border bg-white p-6 shadow-card space-y-2">
         <label htmlFor="overall_summary" className="block text-sm font-semibold text-ink">

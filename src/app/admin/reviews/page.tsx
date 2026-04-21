@@ -134,6 +134,11 @@ export default async function AdminReviewsPage({
                       {" · "}
                       {date}
                     </p>
+                    {(review as AdminReview & { reviewer_email?: string }).reviewer_email && (
+                      <p className="text-xs text-teal font-medium">
+                        ✉ {(review as AdminReview & { reviewer_email?: string }).reviewer_email}
+                      </p>
+                    )}
                     <p className="text-xs font-medium text-teal">
                       <a
                         href={`/${review.state_slug}/${review.city_slug}/${review.facility_slug}`}
