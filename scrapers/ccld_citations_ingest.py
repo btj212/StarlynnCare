@@ -188,21 +188,38 @@ def parse_report(
         complaint_id = None
 
     outcome: str | None = None
+    outcomes_seen: list[str] = []   # tracks each allegation outcome for mixed detection
     inspector_name: str | None = None
     narrative_parts: list[str] = []
     deficiencies: list[dict[str, Any]] = []
+    # Actual visit date extracted from the HTML header table (DATE: MM/DD/YYYY)
+    visit_date: date | None = None
 
     for i, tbl in enumerate(tables):
         txt = table_text(tbl)
         c = cells(tbl)
 
+        # ── Actual visit date from the header table ──────────────────────
+        # CDSS header tables contain "DATE:" followed by MM/DD/YYYY.
+        # This is the actual inspector visit date, distinct from REPORTDATE.
+        if visit_date is None and "DATE:" in txt:
+            m_date = re.search(r"\bDATE:\s*(\d{1,2}/\d{1,2}/\d{4})", txt)
+            if m_date:
+                visit_date = parse_date_cdss(m_date.group(1))
+
         # ── Outcome (complaints) ─────────────────────────────────────────
         if txt.strip() in ("Substantiated", "Unsubstantiated", "Inconclusive"):
-            outcome = txt.strip()
+            o = txt.strip()
+            if o not in outcomes_seen:
+                outcomes_seen.append(o)
+            outcome = o   # last one wins for backward compat; resolved below
 
         # ── Outcome embedded in cell (e.g. "Unsubstantiated | Est...") ──
         if c and c[0].strip() in ("Substantiated", "Unsubstantiated", "Inconclusive"):
-            outcome = c[0].strip()
+            o = c[0].strip()
+            if o not in outcomes_seen:
+                outcomes_seen.append(o)
+            outcome = o
 
         # ── Inspector name ───────────────────────────────────────────────
         if "LICENSING EVALUATOR NAME" in txt and inspector_name is None:
@@ -225,79 +242,156 @@ def parse_report(
                 if not re.match(r"^\d+$", cell_txt):
                     narrative_parts.append(cell_txt)
 
-        # ── Deficiency tables (Type A / Type B) ─────────────────────────
-        # Each deficiency table has a blank spacer cell first (Lotus Domino img),
-        # so "Type A" / "Type B" may appear at index 0 or 1.
-        type_cell = c[0] if c and c[0] in ("Type A", "Type B") else (
-            c[1] if len(c) > 1 and c[1] in ("Type A", "Type B") else None
-        )
-        if type_cell is not None:
-            deficiency_type = type_cell  # "Type A" or "Type B"
+        # ── Deficiency tables (new CDSS format) ─────────────────────────
+        # Modern CDSS format: one table per deficiency *page*, identified by
+        # c[0] == "Deficiency Type POC Due Date / Section Number".
+        # Each deficiency occupies 10 cells (2 rows × 5 cols) starting at c[3],
+        # with a second deficiency at c[13], third at c[23], etc.
+        #
+        # Cell layout within each 10-cell block (0-indexed from block start):
+        #   +0  "Type A/B MM/DD/YYYY Section Cited CCR XXXXX"
+        #   +1  line numbers (skip)
+        #   +2  regulatory text (the rule that was violated)
+        #   +3  line numbers (skip)
+        #   +4  POC text (skip)
+        #   +5  empty spacer
+        #   +6  line numbers (skip)
+        #   +7  deficiency statement ("This requirement is not met because...")
+        #   +8  line numbers (skip)
+        #   +9  empty spacer
+        if c and re.match(r"^Deficiency Type\b", c[0], re.IGNORECASE):
+            TYPE_SECTION_RE = re.compile(
+                r"^(Type [AB])\s+\d{1,2}/\d{1,2}/\d{4}\s+Section Cited\s+CCR\s+"
+                r"([\d]+(?:\.[0-9]+)*(?:\([a-zA-Z0-9]+\))*)",
+                re.IGNORECASE,
+            )
+            BLOCK_SIZE = 10
+            BLOCK_START = 3  # data starts after the 3-cell header row
 
-            # Section cited: look for "CCR" then the section number
-            section: str | None = None
+            for block_offset in range(BLOCK_START, len(c), BLOCK_SIZE):
+                type_sec_raw = c[block_offset] if block_offset < len(c) else ""
+                m_ts = TYPE_SECTION_RE.match(type_sec_raw)
+                if not m_ts:
+                    break  # no more deficiency blocks in this table
+
+                deficiency_type = m_ts.group(1)   # "Type A" or "Type B"
+                section = m_ts.group(2)            # e.g. "87465(g)"
+
+                reg_idx  = block_offset + 2
+                stmt_idx = block_offset + 7
+
+                # Strip Lotus line-number sequences ("1 2 3 4 5 6 7")
+                LINE_NUM_RE = re.compile(r"^\d+(?:\s+\d+)*$")
+
+                def clean_cell(val: str) -> str:
+                    return "" if LINE_NUM_RE.match(val.strip()) else val.strip()
+
+                regulatory_text = clean_cell(c[reg_idx]) if reg_idx < len(c) else ""
+                raw_stmt = clean_cell(c[stmt_idx]) if stmt_idx < len(c) else ""
+
+                # Strip the standard CDSS divider preamble when present
+                split_marker = "This requirement is not met as evidenced by:"
+                if split_marker in raw_stmt:
+                    deficiency_statement = raw_stmt.split(split_marker, 1)[1].strip()
+                else:
+                    deficiency_statement = raw_stmt
+
+                immediate = bool(
+                    IMMEDIATE_JEOPARDY_RE.search(regulatory_text)
+                    or IMMEDIATE_JEOPARDY_RE.search(deficiency_statement)
+                )
+                severity = (4 if immediate else 3) if deficiency_type == "Type A" else 2
+
+                deficiencies.append({
+                    "type": deficiency_type,
+                    "section": section,
+                    "regulatory_text": regulatory_text,
+                    "deficiency_statement": deficiency_statement,
+                    "severity": severity,
+                    "immediate_jeopardy": immediate,
+                    "class": deficiency_type,
+                })
+
+        # ── Deficiency tables (legacy format fallback) ───────────────────
+        # Older reports may have a separate table per deficiency where
+        # c[0] or c[1] is exactly "Type A" or "Type B".
+        LEGACY_DEF_RE = re.compile(r"^(Type [AB])$")
+        legacy_type = None
+        if c and LEGACY_DEF_RE.match(c[0]):
+            legacy_type = c[0]
+        elif len(c) > 1 and LEGACY_DEF_RE.match(c[1]):
+            legacy_type = c[1]
+
+        if legacy_type is not None:
+            section = None
             for j, cell in enumerate(c):
-                if cell == "CCR" and j + 1 < len(c):
+                if cell.strip() == "CCR" and j + 1 < len(c):
                     section = c[j + 1].strip()
                     break
 
-            # Next table holds the regulatory text and deficiency statement
             regulatory_text = ""
             deficiency_statement = ""
             if i + 1 < len(tables):
                 desc_cells = [
                     x for x in cells(tables[i + 1])
-                    if not re.match(r"^\d+$", x)  # strip Lotus row numbers
+                    if not re.match(r"^\d+$", x)
                 ]
                 desc_full = " ".join(desc_cells)
-
-                # Split on the standard CDSS divider phrase
                 split_marker = "This requirement is not met as evidenced by:"
                 if split_marker in desc_full:
                     parts = desc_full.split(split_marker, 1)
                     regulatory_text = parts[0].strip()
-                    remainder = parts[1]
-                    # Strip leading spaces, "Deficient Practice Statement", and row numbers
-                    remainder = re.sub(
-                        r"^\s*Deficient Practice Statement(\s+\d+)*\s*", "", remainder
-                    ).strip()
-                    deficiency_statement = remainder
-                else:
-                    # No standard split marker — strip statement header if present, then store all
                     deficiency_statement = re.sub(
-                        r"^\s*Deficient Practice Statement(\s+\d+)*\s*", "", desc_full
+                        r"^\s*Deficient Practice Statement(\s+\d+)*\s*", "",
+                        parts[1]
+                    ).strip()
+                else:
+                    deficiency_statement = re.sub(
+                        r"^\s*Deficient Practice Statement(\s+\d+)*\s*", "",
+                        desc_full
                     ).strip()
 
-            # Severity mapping
             immediate = bool(
                 IMMEDIATE_JEOPARDY_RE.search(regulatory_text)
                 or IMMEDIATE_JEOPARDY_RE.search(deficiency_statement)
             )
-            if deficiency_type == "Type A":
-                severity = 4 if immediate else 3
-            else:
-                severity = 2  # Type B = potential for harm
+            severity = (4 if immediate else 3) if legacy_type == "Type A" else 2
 
-            deficiencies.append(
-                {
-                    "type": deficiency_type,        # "Type A" or "Type B"
-                    "section": section,              # e.g. "87705(c)(5)"
-                    "regulatory_text": regulatory_text,
-                    "deficiency_statement": deficiency_statement,
-                    "severity": severity,
-                    "immediate_jeopardy": immediate,
-                    "class": deficiency_type,        # stored in class column
-                }
-            )
+            deficiencies.append({
+                "type": legacy_type,
+                "section": section,
+                "regulatory_text": regulatory_text,
+                "deficiency_statement": deficiency_statement,
+                "severity": severity,
+                "immediate_jeopardy": immediate,
+                "class": legacy_type,
+            })
 
     narrative_text = " ".join(narrative_parts).strip()
+
+    # ── Resolve mixed-outcome complaints ────────────────────────────────────
+    # When a single CDSS report has multiple allegations with different outcomes,
+    # store "Mixed" so the UI can display an honest label instead of whichever
+    # allegation outcome happened to be parsed last.
+    unique_outcomes = list(dict.fromkeys(outcomes_seen))  # preserve order, dedupe
+    if len(unique_outcomes) > 1:
+        outcome = "Mixed"
+    elif unique_outcomes:
+        outcome = unique_outcomes[0]
+
+    # ── Use actual visit date when available ─────────────────────────────────
+    # visit_date is extracted from the "DATE: MM/DD/YYYY" field in the HTML
+    # header table — this is when the inspector physically visited, which can
+    # differ from REPORTDATE (the administrative case-open or report-filing date).
+    if visit_date is not None:
+        inspection_date = visit_date
 
     # ── Narrative-derived citations (Substantiated complaints) ───────────────
     # When a complaint is substantiated, the formal deficiency is on a separate
     # LIC 9099D sub-page not yet fetched by this scraper. The main narrative
     # always references the cited section with "is being cited on the attached
     # LIC 9099D". Extract those so the deficiency isn't silently lost.
-    if outcome == "Substantiated" and not deficiencies:
+    if outcome in ("Substantiated", "Mixed") and not deficiencies:
         for m in NARRATIVE_CITATION_RE.finditer(narrative_text):
             section = m.group(1).strip()
             deficiencies.append({
@@ -326,6 +420,7 @@ def parse_report(
         "is_complaint": is_complaint,
         "complaint_id": complaint_id,
         "outcome": outcome,
+        "outcomes_seen": unique_outcomes,  # per-allegation outcomes for raw_data
         "inspector_name": inspector_name,
         "narrative_text": narrative_text,
         "deficiencies": deficiencies,
@@ -388,6 +483,7 @@ def insert_inspection(
                 scrape_run_id,
                 psycopg.types.json.Jsonb({
                     "outcome": parsed["outcome"],
+                    "outcomes_seen": parsed.get("outcomes_seen", []),
                     "inspector_name": parsed["inspector_name"],
                     "narrative": parsed["narrative_text"][:10000],
                     "raw_html_len": parsed["raw_html_len"],
@@ -476,6 +572,7 @@ def process_facility(
     conn: psycopg.Connection,
     scrape_run_id: str,
     dry_run: bool = False,
+    refetch: bool = False,
 ) -> dict[str, int]:
     fac_id = facility["id"]
     fac_name = facility["name"]
@@ -515,7 +612,17 @@ def process_facility(
 
     already_ingested: set[str] = set()
     if not dry_run:
-        already_ingested = get_already_ingested_urls(conn, fac_id)
+        if refetch:
+            # Delete all existing inspections (cascades to deficiencies) and start clean
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM inspections WHERE facility_id = %s",
+                    (fac_id,),
+                )
+            conn.commit()
+            print(f"  -- Cleared existing inspections for refetch")
+        else:
+            already_ingested = get_already_ingested_urls(conn, fac_id)
 
     promoted = False
     for inx in range(1, count + 1):
@@ -609,6 +716,14 @@ def main() -> None:
         "--license", type=str, default=None,
         help="Process only the facility with this license number.",
     )
+    parser.add_argument(
+        "--refetch", action="store_true",
+        help=(
+            "Re-parse and overwrite already-ingested reports. "
+            "Deletes existing inspections + deficiencies for targeted facilities "
+            "and re-inserts from scratch. Use with --license to limit scope."
+        ),
+    )
     args = parser.parse_args()
 
     load_env()
@@ -689,7 +804,7 @@ def main() -> None:
             stats = process_facility(fac, None, scrape_run_id, dry_run=True)
         else:
             with psycopg.connect(dsn) as conn:
-                stats = process_facility(fac, conn, scrape_run_id, dry_run=False)
+                stats = process_facility(fac, conn, scrape_run_id, dry_run=False, refetch=args.refetch)
 
         for k in totals:
             if k in stats:
