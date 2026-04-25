@@ -789,9 +789,14 @@ export default async function FacilityPage({ params }: PageProps) {
 
                             {/* AI summary — shown first if available */}
                             {summary && (
-                              <p className="text-sm text-slate leading-relaxed">
-                                {summary}
-                              </p>
+                              <div className="rounded-md border border-teal/20 bg-teal-light/35 px-3 py-2.5">
+                                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-teal">
+                                  Plain-language summary
+                                </p>
+                                <p className="text-sm leading-relaxed text-slate">
+                                  {summary}
+                                </p>
+                              </div>
                             )}
 
                             {/* Raw inspector narrative — always available, nested under disclosure */}
@@ -840,22 +845,28 @@ export default async function FacilityPage({ params }: PageProps) {
                                       )}
                                     </div>
                                     {def.description && (
-                                      <p className="text-sm text-slate leading-relaxed">
-                                        {def.description.length > 350
-                                          ? def.description.slice(0, 350) +
-                                            "…"
-                                          : def.description}
-                                      </p>
+                                      <div className="mt-2 rounded border-l-[3px] border-slate-300 bg-slate-50 px-3 py-2">
+                                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                          Regulation
+                                        </p>
+                                        <p className="text-xs italic leading-relaxed text-slate">
+                                          {def.description.length > 350
+                                            ? def.description.slice(0, 350) + "…"
+                                            : def.description}
+                                        </p>
+                                      </div>
                                     )}
                                     {def.inspector_narrative && (
-                                      <p className="mt-2 text-sm text-ink leading-relaxed">
-                                        {def.inspector_narrative.length > 500
-                                          ? def.inspector_narrative.slice(
-                                              0,
-                                              500,
-                                            ) + "…"
-                                          : def.inspector_narrative}
-                                      </p>
+                                      <div className="mt-2 rounded border-l-[3px] border-amber-400 bg-amber-50/60 px-3 py-2">
+                                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                                          Inspector finding
+                                        </p>
+                                        <p className="text-sm leading-relaxed text-ink">
+                                          {def.inspector_narrative.length > 500
+                                            ? def.inspector_narrative.slice(0, 500) + "…"
+                                            : def.inspector_narrative}
+                                        </p>
+                                      </div>
                                     )}
                                   </div>
                                 ))}
