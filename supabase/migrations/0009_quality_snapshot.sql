@@ -132,11 +132,12 @@ begin
   end if;
 
   -- ── 2. Metrics + percentiles ───────────────────────────
+  -- "Has inspections" now includes any visit type (routine or complaint)
+  -- so that a facility with only complaint investigations still scores.
   select exists(
     select 1 from inspections
-    where  facility_id  = p_facility_id
+    where  facility_id      = p_facility_id
       and  inspection_date >= v_since36
-      and  not is_complaint
   ) into v_has_insp;
 
   with
@@ -147,7 +148,11 @@ begin
     where  id = any(v_peers)
   ),
   window_defs as (
-    -- All non-complaint deficiencies in 36-month window for all peers
+    -- ALL deficiencies in 36-month window — complaints included.
+    -- For California RCFEs most serious violations surface through
+    -- complaint investigations, so excluding them would inflate grades.
+    -- The Frequency denominator (insp_counts) still uses only routine
+    -- visits so complaint investigations do not deflate that metric.
     select i.facility_id,
            i.inspection_date,
            coalesce(
@@ -164,9 +169,10 @@ begin
     join   inspections  i on i.id = d.inspection_id
     where  i.facility_id     = any(v_peers)
       and  i.inspection_date >= v_since36
-      and  not i.is_complaint
   ),
   insp_counts as (
+    -- Frequency denominator: routine visits only (not complaints) so
+    -- a heavily-complained facility is not unfairly penalised twice.
     select facility_id,
            count(*)::numeric as n
     from   inspections
@@ -273,7 +279,6 @@ begin
     join   inspections  i on i.id = d.inspection_id
     where  i.facility_id = p_facility_id
       and  date_trunc('month', i.inspection_date)::date = m.ms
-      and  not i.is_complaint
   ) fac_m on true
   left join lateral (
     select percentile_cont(0.5) within group (order by ps.s) as med
@@ -291,7 +296,6 @@ begin
       left join deficiencies d2 on d2.inspection_id = i2.id
       where  i2.facility_id     = any(v_peers)
         and  date_trunc('month', i2.inspection_date)::date = m.ms
-        and  not i2.is_complaint
       group  by i2.facility_id
     ) ps
   ) peer_m on true;
@@ -325,7 +329,6 @@ begin
     join   inspections  i on i.id = d.inspection_id
     where  i.facility_id     = p_facility_id
       and  i.inspection_date >= v_since36
-      and  not i.is_complaint
     group  by eff_sev, eff_scope
   ) h
   where h.eff_sev   between 1 and 4
@@ -344,7 +347,6 @@ begin
     and  i.inspection_date >= v_since36
     and  d.inspector_narrative is not null
     and  d.inspector_narrative <> ''
-    and  not i.is_complaint
   order  by
     coalesce(d.severity,
              case when d.immediate_jeopardy then 4

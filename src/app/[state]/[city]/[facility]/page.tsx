@@ -515,60 +515,12 @@ export default async function FacilityPage({ params }: PageProps) {
           <RegulatoryBaseline facility={facility} />
 
           {/* ─────────────────────────── AI content ─────────────────── */}
-          {content && (
-            <div className="mt-10 space-y-8">
-              {/* New structured tour questions — hide legacy what_families_should_know when present */}
-              {content.tour_questions && content.tour_questions.length > 0 ? (
-                <TourQuestions
-                  questions={content.tour_questions}
-                  facilityName={facility.name}
-                />
-              ) : content.what_families_should_know ? (
-                <section
-                  aria-labelledby="families-heading"
-                  className="rounded-lg border border-teal/20 bg-teal-light/50 px-6 py-6"
-                >
-                  <h2
-                    id="families-heading"
-                    className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy"
-                  >
-                    What families should know
-                  </h2>
-                  <p className="mt-3 text-sm leading-relaxed text-slate">
-                    {content.what_families_should_know}
-                  </p>
-                </section>
-              ) : null}
-
-              {/* Legacy intro + neighborhood — shown only for facilities not yet regenerated */}
-              {!content.tour_questions && content.intro && (
-                <section aria-labelledby="about-heading">
-                  <h2
-                    id="about-heading"
-                    className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
-                  >
-                    About this facility
-                  </h2>
-                  <p className="mt-4 text-base leading-relaxed text-slate">
-                    {content.intro}
-                  </p>
-                </section>
-              )}
-
-              {!content.tour_questions && content.neighborhood && (
-                <section aria-labelledby="location-heading">
-                  <h2
-                    id="location-heading"
-                    className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
-                  >
-                    Location &amp; neighborhood
-                  </h2>
-                  <p className="mt-4 text-base leading-relaxed text-slate">
-                    {content.neighborhood}
-                  </p>
-                </section>
-              )}
-            </div>
+          {/* Only show structured tour questions — generic AI paragraphs removed */}
+          {content?.tour_questions && content.tour_questions.length > 0 && (
+            <TourQuestions
+              questions={content.tour_questions}
+              facilityName={facility.name}
+            />
           )}
 
           {/* ─────────────────────────────── State card ─────────────────────────────── */}

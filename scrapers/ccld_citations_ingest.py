@@ -200,10 +200,19 @@ def parse_report(
         c = cells(tbl)
 
         # ── Actual visit date from the header table ──────────────────────
-        # CDSS header tables contain "DATE:" followed by MM/DD/YYYY.
-        # This is the actual inspector visit date, distinct from REPORTDATE.
-        if visit_date is None and "DATE:" in txt:
-            m_date = re.search(r"\bDATE:\s*(\d{1,2}/\d{1,2}/\d{4})", txt)
+        # CDSS header tables contain a standalone "DATE:" cell followed by
+        # MM/DD/YYYY — this is when the inspector was on site, distinct from
+        # "Report Date:" (the report completion/signing date).
+        #
+        # Bug: r"\bDATE:" matches the "Date:" inside "Report Date: 10/06/2025"
+        # because \b is a word-boundary, not a start-of-word assertion.
+        # Fix: use a negative lookbehind so we only match when DATE is NOT
+        # preceded by a letter (i.e. it IS standalone).
+        if visit_date is None and "DATE" in txt.upper():
+            m_date = re.search(
+                r"(?<![A-Za-z])DATE:\s*(\d{1,2}/\d{1,2}/\d{4})",
+                txt, re.IGNORECASE
+            )
             if m_date:
                 visit_date = parse_date_cdss(m_date.group(1))
 
@@ -380,11 +389,23 @@ def parse_report(
         outcome = unique_outcomes[0]
 
     # ── Use actual visit date when available ─────────────────────────────────
-    # visit_date is extracted from the "DATE: MM/DD/YYYY" field in the HTML
-    # header table — this is when the inspector physically visited, which can
-    # differ from REPORTDATE (the administrative case-open or report-filing date).
+    # Primary source: standalone "DATE: MM/DD/YYYY" field in the HTML header.
+    # Fallback: "On MM/DD/YYYY" at the start of the inspector narrative —
+    # present in nearly all CDSS reports and reflects the actual visit date even
+    # when the header only carries a "Report Date:" (completion date).
     if visit_date is not None:
         inspection_date = visit_date
+    else:
+        # Derive from narrative: "On MM/DD/YYYY ..." or "On MM/DD/YY ..."
+        full_narrative = " ".join(narrative_parts)
+        m_narr = re.search(
+            r"\bOn\s+(\d{1,2}/\d{1,2}/\d{2,4})",
+            full_narrative, re.IGNORECASE
+        )
+        if m_narr:
+            narrative_date = parse_date_cdss(m_narr.group(1))
+            if narrative_date is not None:
+                inspection_date = narrative_date
 
     # ── Narrative-derived citations (Substantiated complaints) ───────────────
     # When a complaint is substantiated, the formal deficiency is on a separate
