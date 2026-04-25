@@ -19,6 +19,12 @@
   --color-green-light: #f0fff4;
   --color-footer-bg: #0f2235;
 
+  /* Quality Snapshot tokens */
+  --color-bad: #b5532e;         /* terracotta — negative signal */
+  --color-good: #6b8f71;        /* sage — positive signal */
+  --color-accent: #c8a26b;      /* warm gold — grade card accent */
+  --color-qs-muted: #9a938a;    /* warm grey — peer median, secondary text */
+
   /* Typography */
   --font-serif: "Playfair Display", Georgia, serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;

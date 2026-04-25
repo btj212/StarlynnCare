@@ -11,6 +11,7 @@ import { BenchmarkRow } from "@/components/facility/BenchmarkRow";
 import { QuickFacts } from "@/components/facility/QuickFacts";
 import { TourQuestions } from "@/components/facility/TourQuestions";
 import { RegulatoryBaseline } from "@/components/facility/RegulatoryBaseline";
+import { QualitySnapshot } from "@/components/facility/QualitySnapshot";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import type { Facility, CareCategory } from "@/lib/types";
 
@@ -417,6 +418,10 @@ export default async function FacilityPage({ params }: PageProps) {
               inspections.find((i) => !i.is_complaint)?.inspection_date ?? null
             }
           />
+
+          {/* ─────────────────────────── Quality snapshot ────────────────────────── */}
+          <QualitySnapshot facilityId={facility.id} />
+
           {benchmarks && (
             <section className="mt-10" aria-labelledby="glance-heading">
               <h2
