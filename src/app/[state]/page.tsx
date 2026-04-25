@@ -35,29 +35,39 @@ export default async function StatePage({ params }: PageProps) {
   const cities = regions.filter((r) => r.kind === "city");
 
   const supabase = tryPublicSupabaseClient();
-  const countsByCity = new Map<string, number>();
+  // Track 7+ bed facilities (medium/large/unknown tier) and small (≤6) separately
+  const countsByCity = new Map<string, number>();         // 7+ bed publishable
+  const smallCountsByCity = new Map<string, number>();    // ≤6 bed publishable
   let totalPublishable = 0;
   let fetchError: string | null = null;
 
   if (supabase) {
     const { data, error } = await supabase
       .from("facilities")
-      .select("city_slug")
+      .select("city_slug, capacity_tier")
       .eq("state_code", state.code)
       .eq("publishable", true);
-    if (error) fetchError = error.message;
-    else {
+    if (error) {
+      fetchError = error.message;
+    } else {
       for (const row of data ?? []) {
-        const slug = (row as { city_slug: string | null }).city_slug ?? "";
+        const slug = (row as { city_slug: string | null; capacity_tier: string | null }).city_slug ?? "";
+        const tier = (row as { city_slug: string | null; capacity_tier: string | null }).capacity_tier ?? "unknown";
         if (!slug) continue;
-        countsByCity.set(slug, (countsByCity.get(slug) ?? 0) + 1);
         totalPublishable += 1;
+        if (tier === "small") {
+          smallCountsByCity.set(slug, (smallCountsByCity.get(slug) ?? 0) + 1);
+        } else {
+          countsByCity.set(slug, (countsByCity.get(slug) ?? 0) + 1);
+        }
       }
     }
   }
 
   const countyCount = (region: Region) =>
     region.citySlugs.reduce((n, s) => n + (countsByCity.get(s) ?? 0), 0);
+  const countySmallCount = (region: Region) =>
+    region.citySlugs.reduce((n, s) => n + (smallCountsByCity.get(s) ?? 0), 0);
 
   return (
     <>
@@ -107,6 +117,7 @@ export default async function StatePage({ params }: PageProps) {
               <ul className="mt-6 grid gap-4 sm:grid-cols-2">
                 {counties.map((region) => {
                   const n = countyCount(region);
+                  const small = countySmallCount(region);
                   return (
                     <li key={region.slug}>
                       <Link
@@ -117,9 +128,18 @@ export default async function StatePage({ params }: PageProps) {
                           {region.name}
                         </span>
                         <p className="mt-2 text-sm text-muted">
-                          {n > 0
-                            ? `${n} publishable ${n === 1 ? "facility" : "facilities"}`
-                            : "Indexing in progress"}
+                          {n > 0 ? (
+                            <>
+                              {n} {n === 1 ? "facility" : "facilities"}
+                              {small > 0 && (
+                                <span className="ml-1.5 text-xs">
+                                  · {small} small care home{small !== 1 ? "s" : ""}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            "Indexing in progress"
+                          )}
                         </p>
                       </Link>
                     </li>
@@ -139,22 +159,35 @@ export default async function StatePage({ params }: PageProps) {
               </h2>
               <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {cities
-                  .filter((c) => (countsByCity.get(c.slug) ?? 0) > 0)
-                  .map((region) => (
-                    <li key={region.slug}>
-                      <Link
-                        href={`/${state.slug}/${region.slug}`}
-                        className="group block rounded-md border border-sc-border bg-white px-4 py-3 text-sm transition hover:border-teal/40"
-                      >
-                        <span className="font-medium text-ink group-hover:text-teal">
-                          {region.name}
-                        </span>
-                        <span className="ml-2 text-muted">
-                          {countsByCity.get(region.slug)}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
+                  .filter(
+                    (c) =>
+                      (countsByCity.get(c.slug) ?? 0) > 0 ||
+                      (smallCountsByCity.get(c.slug) ?? 0) > 0
+                  )
+                  .map((region) => {
+                    const n = countsByCity.get(region.slug) ?? 0;
+                    const small = smallCountsByCity.get(region.slug) ?? 0;
+                    return (
+                      <li key={region.slug}>
+                        <Link
+                          href={`/${state.slug}/${region.slug}`}
+                          className="group block rounded-md border border-sc-border bg-white px-4 py-3 text-sm transition hover:border-teal/40"
+                        >
+                          <span className="font-medium text-ink group-hover:text-teal">
+                            {region.name}
+                          </span>
+                          {n > 0 && (
+                            <span className="ml-2 text-muted">{n}</span>
+                          )}
+                          {small > 0 && (
+                            <span className="ml-1 text-xs text-muted/70">
+                              +{small} small
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
               </ul>
             </section>
           )}

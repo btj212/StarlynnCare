@@ -30,9 +30,35 @@ Memory-care identification
 --------------------------
 Pass 1 (name regex): flag rcfe_memory_care if the facility name or licensee
 contains any of the canonical memory-care keywords.
-Pass 2 (citation scan, Phase D): flag facilities cited under §87705/§87706.
+Pass 2 (citation scan, Phase D): flag facilities cited under Title 22 §87705
+  (dementia-care requirements) or §87706 (dementia-advertising requirements).
+  Run mc_disclosure_ingest.py after the citation ingest to update
+  memory_care_disclosure_filed based on these citations.
 Pass 3 (manual): only manually-confirmed facilities get publishable = true
   UNLESS --force-publish is set.
+
+Regulatory note — §1569.626 vs §1569.627 (common confusion)
+------------------------------------------------------------
+•  HSC §1569.626 — dementia TRAINING requirements for direct-care staff.
+   This section sets the 12-hour dementia-care training clock. It does not
+   create a disclosure obligation that we can query.
+
+•  HSC §1569.627 — dementia DISCLOSURE requirement.
+   Any RCFE that *advertises* special care, special programming, or a special
+   environment for persons with dementia must disclose special features in its
+   plan of operation filed with CDSS. This is the canonical "memory-care
+   facility" designation signal. CDSS does not currently publish a structured
+   list of these filings (as of April 2026), so we rely on the §87705/§87706
+   citation scan (mc_disclosure_ingest.py) as a proxy until they do.
+
+Capacity tiers (migration 0008)
+--------------------------------
+facilities.capacity_tier is a generated column derived from beds:
+  'small'   beds ≤ 6   — board-and-care, single-family-home conversions
+  'medium'  7–49 beds  — small/medium freestanding RCFE
+  'large'   ≥ 50 beds  — community-style, purpose-built buildings
+  'unknown' beds IS NULL
+This column is computed by Postgres; do not write it from this script.
 """
 
 from __future__ import annotations
@@ -517,6 +543,7 @@ def upsert_facilities(
 def print_summary(rows: list[dict[str, Any]]) -> None:
     status_counts: dict[str, int] = {}
     cat_counts: dict[str, int] = {}
+    tier_counts: dict[str, int] = {"small": 0, "medium": 0, "large": 0, "unknown": 0}
     mc_count = 0
     publishable_count = 0
 
@@ -529,6 +556,16 @@ def print_summary(rows: list[dict[str, Any]]) -> None:
             mc_count += 1
         if r.get("publishable"):
             publishable_count += 1
+        # Compute tier from beds (mirrors the generated column logic in migration 0008)
+        beds = r.get("beds")
+        if beds is None:
+            tier_counts["unknown"] += 1
+        elif beds <= 6:
+            tier_counts["small"] += 1
+        elif beds <= 49:
+            tier_counts["medium"] += 1
+        else:
+            tier_counts["large"] += 1
 
     print(f"\n{'='*60}")
     print(f"Alameda County RCFE summary ({len(rows)} total records)")
@@ -539,6 +576,11 @@ def print_summary(rows: list[dict[str, Any]]) -> None:
     print(f"\nBy care category:")
     for c, n in sorted(cat_counts.items()):
         print(f"  {c:<28} {n:>4}")
+    print(f"\nBy capacity tier (≤6 / 7–49 / 50+):")
+    print(f"  small   (≤6 beds)    {tier_counts['small']:>4}")
+    print(f"  medium  (7–49 beds)  {tier_counts['medium']:>4}")
+    print(f"  large   (50+ beds)   {tier_counts['large']:>4}")
+    print(f"  unknown (no beds)    {tier_counts['unknown']:>4}")
     print(f"\nServes memory care (name-matched): {mc_count}")
     print(f"Publishable (LICENSED + memory-care): {publishable_count}")
     print(f"{'='*60}\n")

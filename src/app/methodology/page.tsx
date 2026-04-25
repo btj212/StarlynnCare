@@ -164,6 +164,84 @@ export default function MethodologyPage() {
             </p>
           </Section>
 
+          {/* ── How we organize facilities ── */}
+          <Section id="organization-heading" title="How we organize facilities">
+            <p>
+              California's RCFE licensing regulations create two natural axes for
+              organizing facilities that we use on every city and county listing page.
+            </p>
+
+            <p className="font-semibold text-ink">Axis 1 — Capacity tier</p>
+            <p>
+              The ≤6-bed threshold in{" "}
+              <a
+                href="https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=HSC&sectionNum=1569.2."
+                className="font-medium text-teal underline-offset-4 hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                HSC §1569.2
+              </a>{" "}
+              is the regulatory line that separates residential board-and-care
+              homes from larger facilities:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-sm">
+              <li>
+                <span className="font-medium text-ink">≤ 6 beds ("small")</span> —
+                Typically a single-family home converted to care use. Owner-operated.
+                These facilities receive fewer routine CDSS inspections by design, so
+                a short inspection history does not mean a good track record — it
+                means less inspector attention. We hide them by default and offer a
+                "Show small care homes" toggle.
+              </li>
+              <li>
+                <span className="font-medium text-ink">7–49 beds ("medium")</span> —
+                Small to medium freestanding RCFEs. Subject to CDSS annual inspection
+                cycle and all Title 22 requirements.
+              </li>
+              <li>
+                <span className="font-medium text-ink">50+ beds ("large")</span> —
+                Community-style facilities, often purpose-built buildings operated by
+                regional or national chains. Typically have a dedicated memory-care wing.
+              </li>
+            </ul>
+
+            <p className="font-semibold text-ink">Axis 2 — Memory-care designation</p>
+            <p>
+              California{" "}
+              <a
+                href="https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=HSC&sectionNum=1569.627."
+                className="font-medium text-teal underline-offset-4 hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                HSC §1569.627
+              </a>{" "}
+              requires any RCFE that advertises or promotes special care, special
+              programming, or a special environment for persons with dementia to
+              disclose the special features of its program in the plan of operation
+              filed with CDSS. This filing is the canonical regulatory signal that
+              a facility is operating a dementia program — better than relying on
+              what the facility puts on its own website.
+            </p>
+            <p>
+              Until CDSS publishes a machine-readable list of these filings, we
+              identify memory-care facilities through two proxies: (1) a facility
+              name or licensee name that contains a recognized dementia-program
+              keyword or known memory-care chain name, and (2) any CDSS citation
+              under Title 22 §87705 or §87706 — the dementia-care-specific
+              regulations — which constitutes regulatory confirmation that the
+              facility operates a dementia program.
+            </p>
+
+            <p>
+              By default, each listing page shows only{" "}
+              <strong>7+ bed facilities with a confirmed memory-care signal</strong>.
+              The "Show small care homes (≤6 beds)" toggle on each page reveals
+              the smaller board-and-care segment for families who want it.
+            </p>
+          </Section>
+
           {/* ── Four metrics ── */}
           <Section id="metrics-heading" title="The four metrics">
             <p>

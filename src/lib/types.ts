@@ -64,6 +64,21 @@ export interface Facility {
   license_expiration: string | null;
   publishable: boolean;
 
+  // Added in migration 0008_capacity_tier_and_mc_disclosure.sql
+  /**
+   * Derived from beds: 'small' (≤6), 'medium' (7–49), 'large' (50+), 'unknown'.
+   * Generated column — never write directly.
+   */
+  capacity_tier: "small" | "medium" | "large" | "unknown";
+  /**
+   * True if the facility has filed a §1569.627 dementia-care disclosure with CDSS,
+   * or been confirmed via §87705/§87706 citation scan.
+   * UI: mcSignal = memory_care_disclosure_filed || serves_memory_care.
+   */
+  memory_care_disclosure_filed: boolean;
+  /** Provenance string for memory_care_disclosure_filed. */
+  memory_care_disclosure_source: string | null;
+
   // Added in migration 0004_facility_photos.sql
   photo_url: string | null;
   photo_attribution: string | null;
@@ -182,4 +197,6 @@ export type FacilityListRow = Pick<
   | "serves_memory_care"
   | "memory_care_designation"
   | "publishable"
+  | "capacity_tier"
+  | "memory_care_disclosure_filed"
 >;
