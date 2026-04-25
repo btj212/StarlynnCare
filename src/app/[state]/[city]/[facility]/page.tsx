@@ -10,6 +10,7 @@ import { loadBenchmarks } from "@/lib/benchmarks";
 import { BenchmarkRow } from "@/components/facility/BenchmarkRow";
 import { QuickFacts } from "@/components/facility/QuickFacts";
 import { TourQuestions } from "@/components/facility/TourQuestions";
+import { RegulatoryBaseline } from "@/components/facility/RegulatoryBaseline";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import type { Facility, CareCategory } from "@/lib/types";
 
@@ -504,23 +505,12 @@ export default async function FacilityPage({ params }: PageProps) {
             </section>
           )}
 
+          {/* ─────────────────────────── Regulatory baseline ────────────── */}
+          <RegulatoryBaseline facility={facility} />
+
           {/* ─────────────────────────── AI content ─────────────────── */}
           {content && (
             <div className="mt-10 space-y-8">
-              {content.memory_care_approach && (
-                <section aria-labelledby="mc-heading">
-                  <h2
-                    id="mc-heading"
-                    className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
-                  >
-                    Memory care context
-                  </h2>
-                  <p className="mt-4 text-base leading-relaxed text-slate">
-                    {content.memory_care_approach}
-                  </p>
-                </section>
-              )}
-
               {/* New structured tour questions — hide legacy what_families_should_know when present */}
               {content.tour_questions && content.tour_questions.length > 0 ? (
                 <TourQuestions
