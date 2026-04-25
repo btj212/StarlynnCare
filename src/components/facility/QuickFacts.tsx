@@ -91,7 +91,7 @@ export function QuickFacts({ facility, lastInspectionDate }: QuickFactsProps) {
                     clipRule="evenodd"
                   />
                 </svg>
-                Certified
+                Yes
               </span>
             ) : (
               <span className="text-muted text-sm">Not listed</span>

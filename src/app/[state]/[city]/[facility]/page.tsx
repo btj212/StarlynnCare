@@ -33,6 +33,7 @@ type InspectionRow = {
   complaint_id: string | null;
   total_deficiency_count: number | null;
   narrative_summary: string | null;
+  source_url: string | null;
   raw_data: { outcome?: string; inspector_name?: string; narrative?: string } | null;
 };
 
@@ -96,7 +97,7 @@ const LICENSE_TYPE_INFO: Partial<Record<CareCategory, { title: string; body: str
 };
 
 const STATE_AGENCY_LABEL: Record<string, string> = {
-  CA: "California CDSS · Community Care Licensing Division",
+  CA: "California Dept. of Social Services · Community Care Licensing",
 };
 
 async function loadFacility(
@@ -130,7 +131,7 @@ async function loadInspections(
   const { data: inspData } = await supabase
     .from("inspections")
     .select(
-      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, raw_data",
+      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, raw_data",
     )
     .eq("facility_id", facilityId)
     .order("inspection_date", { ascending: false })
@@ -777,9 +778,11 @@ export default async function FacilityPage({ params }: PageProps) {
                                 }
                               >
                                 {outcome === "Unsubstantiated"
-                                  ? "Unsubstantiated — CDSS investigated and did not find violations."
+                                  ? "Unsubstantiated — the California Department of Social Services (CDSS) investigated and did not find a violation."
                                   : outcome === "Substantiated"
                                   ? "Substantiated — CDSS found a violation and issued a citation. Full citation details are on file with the state."
+                                  : outcome === "Mixed"
+                                  ? "Mixed — CDSS found some allegations substantiated and others unsubstantiated during this investigation."
                                   : `Outcome: ${outcome}`}
                               </p>
                             )}
@@ -856,6 +859,23 @@ export default async function FacilityPage({ params }: PageProps) {
                                     )}
                                   </div>
                                 ))}
+                              </div>
+                            )}
+
+                            {/* Link to official CDSS report */}
+                            {insp.source_url && (
+                              <div className="mt-3 border-t border-sc-border/40 pt-3">
+                                <a
+                                  href={insp.source_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-teal hover:underline underline-offset-2"
+                                >
+                                  View official CDSS report
+                                  <svg aria-hidden className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0113.75 17h-8.5A2.25 2.25 0 013 14.75v-8.5A2.25 2.25 0 015.25 4h4a.75.75 0 010 1.5h-4a.75.75 0 00-.75.75zm6.5-3a.75.75 0 000 1.5h2.69l-6.72 6.72a.75.75 0 001.06 1.06l6.72-6.72v2.69a.75.75 0 001.5 0V2.75a.75.75 0 00-.75-.75h-4.5z" clipRule="evenodd" />
+                                  </svg>
+                                </a>
                               </div>
                             )}
                           </div>

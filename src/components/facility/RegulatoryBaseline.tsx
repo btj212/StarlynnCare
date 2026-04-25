@@ -165,8 +165,8 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
         The rules that apply to this facility
       </h2>
       <p className="mt-1 text-sm text-muted">
-        What California requires — not marketing language. Expand any item to
-        see the regulation and what to ask.
+        California Title 22 requirements for this facility, with the specific
+        regulation and a suggested question for each.
       </p>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-sc-border bg-white shadow-card">
@@ -184,7 +184,7 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
           {isMc ? (
             <>
               <p className="text-sm leading-relaxed text-slate">
-                Because this facility markets dementia or Alzheimer's care, state
+                Because this facility markets dementia or Alzheimer&apos;s care, state
                 law mandates higher training standards:
               </p>
               <ul className="mt-3 space-y-2 text-sm text-slate">
@@ -214,7 +214,7 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
               </ul>
               <p className="mt-3 text-xs text-muted">
                 Training must cover individualized care plans, behavioral
-                expressions, appropriate supervision, and the facility's
+                expressions, appropriate supervision, and the facility&apos;s
                 dementia care philosophy.
               </p>
             </>
@@ -276,7 +276,7 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
           <div className="mt-3 rounded-md border border-sc-border/60 bg-sc-border/10 px-3 py-2">
             <p className="text-xs text-slate">
               <strong className="text-ink">Violation pattern to watch for:</strong> A facility
-              that documents a staff member as "on call" but with that person
+              that documents a staff member as &quot;on call&quot; but with that person
               physically off-site — when the law requires on-premises presence —
               is in violation of this section.
             </p>
@@ -351,7 +351,7 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
 
         {/* Card 4 — Reporting obligations */}
         <Card
-          question="What must this facility report to CDSS — and how fast?"
+          question="What must this facility report to the state — and how fast?"
           icon={<IconReport />}
           cite="22 CCR §87211 / WIC §15630"
         >
@@ -365,7 +365,7 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
               {
                 event: "Abuse with serious bodily injury",
                 deadline:
-                  "2-hour phone report + 2-hour written report — to CDSS, Adult Protective Services, and law enforcement",
+                  "2-hour phone report + 2-hour written report — to the California Department of Social Services (CDSS), Adult Protective Services, and law enforcement",
                 color: "text-red-600",
               },
               {
@@ -417,7 +417,7 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
               <strong className="text-ink">Your enforcement lever:</strong> Incidents that aren&apos;t
               reported on time are themselves a separate violation. If you
               believe a reportable event wasn&apos;t filed, you can submit a
-              complaint directly to CDSS.
+              complaint directly to the California Department of Social Services (CDSS).
             </p>
           </div>
         </Card>
