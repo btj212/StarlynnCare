@@ -249,8 +249,12 @@ export function FacilityListClient({
       (f.capacity_tier === "medium" || f.capacity_tier === "unknown"),
   );
   const nonMc = filtered.filter(
-    (f) => !f.memory_care_disclosure_filed && !f.serves_memory_care,
+    (f) =>
+      !f.memory_care_disclosure_filed &&
+      !f.serves_memory_care &&
+      f.capacity_tier !== "small",
   );
+  const smallHomes = filtered.filter((f) => f.capacity_tier === "small");
 
   return (
     <div>
@@ -305,7 +309,7 @@ export function FacilityListClient({
                   : "bg-white border border-sc-border text-slate hover:border-navy/30 hover:text-ink"
               }`}
             >
-              {showSmall ? "Hide" : "Show"} small homes ({hiddenSmallCount})
+              {showSmall ? "Hide" : "Show"} ≤6-bed homes ({hiddenSmallCount})
             </button>
           )}
         </div>
@@ -367,6 +371,20 @@ export function FacilityListClient({
               </p>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {nonMc.map((f) => (
+                  <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {showSmall && smallHomes.length > 0 && (
+            <section className="mt-12">
+              <SectionHead title="Residential care homes · ≤6 beds" count={smallHomes.length} />
+              <p className="mt-1.5 text-xs text-muted">
+                Single-family-home conversions. Owner-operated. Receive fewer routine state inspections by design — inspect the home yourself before committing.
+              </p>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {smallHomes.map((f) => (
                   <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
                 ))}
               </div>
