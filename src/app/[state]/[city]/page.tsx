@@ -5,7 +5,15 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
-import { regionFromSlug } from "@/lib/regions";
+import { resolveListingRegion } from "@/lib/resolveListingRegion";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { canonicalFor } from "@/lib/seo/canonical";
+import {
+  buildBreadcrumbList,
+  buildCollectionPageSchema,
+  buildItemListSchema,
+  buildWebPageWithReviewer,
+} from "@/lib/seo/schema";
 import type { CareCategory } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -17,11 +25,26 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { state: stateSlug, city: regionSlug } = await params;
-  const region = regionFromSlug(stateSlug, regionSlug);
+  const supabase = tryPublicSupabaseClient();
+  const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
   if (!region) return { title: "Region not found | StarlynnCare" };
+  const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
+  const desc = `State inspection records, citation history, and quality grades for every licensed memory care facility in ${region.name}. Built from primary CDSS data.`;
   return {
     title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
-    description: `State inspection records, citation history, and quality grades for every licensed memory care facility in ${region.name}. Built from primary CDSS data.`,
+    description: desc,
+    alternates: { canonical },
+    openGraph: {
+      title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
+      description: desc,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
+      description: desc,
+    },
   };
 }
 
@@ -32,10 +55,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function RegionPage({ params }: PageProps) {
   const { state: stateSlug, city: regionSlug } = await params;
 
-  const region = regionFromSlug(stateSlug, regionSlug);
-  if (!region) notFound();
-
   const supabase = tryPublicSupabaseClient();
+  const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
+  if (!region) notFound();
   let facilities: ListFacility[] = [];
   let fetchError: string | null = null;
 
@@ -123,8 +145,40 @@ export default async function RegionPage({ params }: PageProps) {
   const visibleCount = facilities.filter((f) => f.capacity_tier !== "small").length;
   const totalCount = facilities.length;
 
+  const pageUrl = canonicalFor(`/${region.state.slug}/${region.slug}`);
+  const pageTitle = `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`;
+  const pageDesc = `State inspection records, citation history, and quality grades for every licensed memory care facility in ${region.name}. Built from primary CDSS data.`;
+  const itemListFacilities = facilities.map((f) => ({
+    name: f.name,
+    url: canonicalFor(`/${region.state.slug}/${f.city_slug}/${f.slug}`),
+    identifier: f.id,
+  }));
+  const regionJsonLd = [
+    buildBreadcrumbList([
+      { name: "Home", url: canonicalFor("/") },
+      { name: region.state.name, url: canonicalFor(`/${region.state.slug}`) },
+      { name: `Memory care in ${region.name}`, url: pageUrl },
+    ]),
+    buildWebPageWithReviewer({
+      name: pageTitle,
+      url: pageUrl,
+      description: pageDesc,
+    }),
+    buildCollectionPageSchema({
+      name: `Memory care in ${region.name}`,
+      url: pageUrl,
+      region,
+    }),
+    buildItemListSchema(
+      `Memory care facilities in ${region.name}`,
+      pageUrl,
+      itemListFacilities,
+    ),
+  ];
+
   return (
     <>
+      <JsonLd objects={regionJsonLd} />
       <SiteNav />
       <main className="min-h-[60vh] border-b border-sc-border bg-warm-white">
         <div className="mx-auto max-w-[1120px] px-6 py-10 md:px-8 md:py-14">

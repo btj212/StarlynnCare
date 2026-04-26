@@ -50,6 +50,12 @@ export function SiteFooter() {
             <Link href="/" className="text-white/75 hover:text-white">
               Home
             </Link>
+            <Link href="/data" className="text-white/75 hover:text-white">
+              Dataset overview
+            </Link>
+            <Link href="/methodology" className="text-white/75 hover:text-white">
+              Methodology
+            </Link>
           </div>
         </div>
         <p className="mt-12 border-t border-white/10 pt-8 text-xs text-white/50">

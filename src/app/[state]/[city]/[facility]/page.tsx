@@ -14,6 +14,15 @@ import { RegulatoryBaseline } from "@/components/facility/RegulatoryBaseline";
 import type { CitationRecord } from "@/components/facility/RegulatoryBaseline";
 import { QualitySnapshot } from "@/components/facility/QualitySnapshot";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { canonicalFor } from "@/lib/seo/canonical";
+import {
+  buildBreadcrumbList,
+  buildFaqPageSchema,
+  buildLocalBusinessForFacility,
+  buildReviewSchema,
+} from "@/lib/seo/schema";
+import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import type { Facility, CareCategory } from "@/lib/types";
 
 type FacilityContent = {
@@ -168,42 +177,31 @@ export async function generateMetadata({
   const { facility } = await loadFacility(state.code, citySlug, facilitySlug);
   if (!facility) return { title: "Facility not found | StarlynnCare" };
 
+  const canonical = canonicalFor(
+    `/${state.slug}/${facility.city_slug}/${facility.slug}`,
+  );
+  const desc = `Memory care profile for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""}, built from state and federal primary sources.`;
+
   return {
     title: `${facility.name} | StarlynnCare`,
-    description: `Memory care profile for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""}, built from state and federal primary sources.`,
-  };
-}
-
-function JsonLd({
-  facility,
-  stateName,
-  canonicalUrl,
-}: {
-  facility: Facility;
-  stateName: string;
-  canonicalUrl: string;
-}) {
-  const structured = {
-    "@context": "https://schema.org",
-    "@type": ["LocalBusiness", "MedicalOrganization"],
-    name: facility.name,
-    url: canonicalUrl,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: facility.street ?? undefined,
-      addressLocality: facility.city ?? undefined,
-      postalCode: facility.zip ?? undefined,
-      addressRegion: stateName,
-      addressCountry: "US",
+    description: desc,
+    alternates: { canonical },
+    openGraph: {
+      title: `${facility.name} | StarlynnCare`,
+      description: desc,
+      url: canonical,
+      type: "website",
+      ...(facility.photo_url
+        ? { images: [{ url: facility.photo_url, alt: facility.name }] }
+        : {}),
     },
-    telephone: facility.phone ?? undefined,
+    twitter: {
+      card: facility.photo_url ? "summary_large_image" : "summary",
+      title: `${facility.name} | StarlynnCare`,
+      description: desc,
+      ...(facility.photo_url ? { images: [facility.photo_url] } : {}),
+    },
   };
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(structured) }}
-    />
-  );
 }
 
 function FieldRow({
@@ -276,9 +274,10 @@ export default async function FacilityPage({ params }: PageProps) {
   if (error) throw new Error(error);
   if (!facility) notFound();
 
-  const [{ inspections, deficiencies }, benchmarks] = await Promise.all([
+  const [{ inspections, deficiencies }, benchmarks, reviews] = await Promise.all([
     loadInspections(facility.id),
     loadBenchmarks(facility.id, state.code),
+    loadPublishedReviews(facility.id),
   ]);
 
   // Group deficiencies by inspection
@@ -317,9 +316,9 @@ export default async function FacilityPage({ params }: PageProps) {
     }))
     .filter((c) => c.date);
 
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.starlynncare.com";
-  const canonicalUrl = `${base.replace(/\/$/, "")}/${state.slug}/${facility.city_slug}/${facility.slug}`;
+  const canonicalUrl = canonicalFor(
+    `/${state.slug}/${facility.city_slug}/${facility.slug}`,
+  );
 
   const content: FacilityContent | null = facility.content ?? null;
 
@@ -339,13 +338,33 @@ export default async function FacilityPage({ params }: PageProps) {
     : `/${state.slug}/${facility.city_slug}`;
   const backLabel = region ? region.name : facility.city ?? state.name;
 
+  const businessId = `${canonicalUrl}#business`;
+  const breadcrumbTrail = [
+    { name: "Home", url: canonicalFor("/") },
+    { name: state.name, url: canonicalFor(`/${state.slug}`) },
+    {
+      name: backLabel,
+      url: canonicalFor(backHref),
+    },
+    { name: facility.name, url: canonicalUrl },
+  ];
+
+  const tourQs = content?.tour_questions?.filter((q) => q.trim()) ?? [];
+  const jsonLdObjects: object[] = [
+    buildLocalBusinessForFacility(facility, state, {
+      canonicalUrl,
+      reviews: reviews.length ? reviews : undefined,
+    }),
+    buildBreadcrumbList(breadcrumbTrail),
+    ...reviews.map((r) => buildReviewSchema(r, businessId)),
+  ];
+  if (tourQs.length) {
+    jsonLdObjects.push(buildFaqPageSchema(tourQs, canonicalUrl));
+  }
+
   return (
     <>
-      <JsonLd
-        facility={facility}
-        stateName={state.name}
-        canonicalUrl={canonicalUrl}
-      />
+      <JsonLd objects={jsonLdObjects} />
       <SiteNav />
       <main className="border-b border-sc-border bg-warm-white">
         <article className="mx-auto max-w-[760px] px-6 py-14 md:px-8 md:py-20">
@@ -917,7 +936,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
           {/* ── Family reviews ──────────────────────────────────────── */}
           <div className="mt-14 border-t border-sc-border pt-14">
-            <ReviewsSection facilityId={facility.id} />
+            <ReviewsSection facilityId={facility.id} initialReviews={reviews} />
           </div>
 
           <p className="mt-14 text-center text-sm text-muted">

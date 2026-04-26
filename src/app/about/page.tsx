@@ -3,16 +3,48 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { canonicalFor } from "@/lib/seo/canonical";
+import { buildBreadcrumbList, buildWebPageWithReviewer } from "@/lib/seo/schema";
+
+const ABOUT_PATH = "/about";
+const aboutCanonical = canonicalFor(ABOUT_PATH);
+const aboutDesc =
+  "We build StarlynnCare as a husband-and-wife team: real California CDSS inspection data for memory care, explained for families. No referral commissions.";
 
 export const metadata: Metadata = {
   title: "About | StarlynnCare",
-  description:
-    "We're a husband-and-wife team combining frontline healthcare experience with the tools and storytelling needed to make complex information actually useful for families navigating memory care.",
+  description: aboutDesc,
+  alternates: { canonical: aboutCanonical },
+  openGraph: {
+    title: "About | StarlynnCare",
+    description: aboutDesc,
+    url: aboutCanonical,
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "About | StarlynnCare",
+    description: aboutDesc,
+  },
 };
 
 export default function AboutPage() {
+  const aboutJsonLd = [
+    buildBreadcrumbList([
+      { name: "Home", url: canonicalFor("/") },
+      { name: "About", url: aboutCanonical },
+    ]),
+    buildWebPageWithReviewer({
+      name: "About | StarlynnCare",
+      url: aboutCanonical,
+      description: aboutDesc,
+    }),
+  ];
+
   return (
     <>
+      <JsonLd objects={aboutJsonLd} />
       <SiteNav />
       <main className="bg-warm-white">
 

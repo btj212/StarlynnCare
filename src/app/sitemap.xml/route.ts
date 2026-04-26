@@ -41,23 +41,44 @@ export async function GET() {
   }
 
   const staticUrls = [
-    { loc: SITE, priority: "1.0", changefreq: "weekly" },
-    { loc: `${SITE}/california`, priority: "0.9", changefreq: "weekly" },
+    { loc: SITE, priority: "1.0", changefreq: "weekly" as const },
+    { loc: `${SITE}/california`, priority: "0.9", changefreq: "weekly" as const },
+    { loc: `${SITE}/methodology`, priority: "0.75", changefreq: "monthly" as const },
+    { loc: `${SITE}/about`, priority: "0.75", changefreq: "monthly" as const },
+    { loc: `${SITE}/data`, priority: "0.8", changefreq: "monthly" as const },
     ...CITY_PAGES.map((slug) => ({
       loc: `${SITE}/california/${slug}`,
       priority: "0.85",
-      changefreq: "weekly",
+      changefreq: "weekly" as const,
     })),
   ];
+
+  const citySlugs = [...new Set(facilities.map((f) => f.city_slug))].sort();
+  const cityHubUrls = citySlugs.map((slug) => ({
+    loc: `${SITE}/california/${slug}`,
+    priority: "0.85",
+    changefreq: "weekly" as const,
+  }));
 
   const facilityUrls = facilities.map((f) => ({
     loc: `${SITE}/california/${f.city_slug}/${f.slug}`,
     priority: "0.8",
-    changefreq: "monthly",
+    changefreq: "monthly" as const,
     lastmod: f.updated_at ? f.updated_at.split("T")[0] : today,
   }));
 
-  const allUrls = [...staticUrls, ...facilityUrls];
+  const seen = new Set<string>();
+  const allUrls: Array<{
+    loc: string;
+    priority: string;
+    changefreq: string;
+    lastmod?: string;
+  }> = [];
+  for (const u of [...staticUrls, ...cityHubUrls, ...facilityUrls]) {
+    if (seen.has(u.loc)) continue;
+    seen.add(u.loc);
+    allUrls.push(u);
+  }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

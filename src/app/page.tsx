@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -5,8 +6,22 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { FacilityCarousel, type CarouselFacility } from "@/components/site/FacilityCarousel";
 import { ZipSearch } from "@/components/site/ZipSearch";
 import type { CareCategory } from "@/lib/types";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { canonicalFor } from "@/lib/seo/canonical";
+import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
+import { buildOrganizationSchema, buildWebSiteSchema } from "@/lib/seo/schema";
 
 export const revalidate = 3600;
+
+const homeCanonical = canonicalFor("/");
+
+export const metadata: Metadata = {
+  alternates: { canonical: homeCanonical },
+  openGraph: {
+    url: homeCanonical,
+    type: "website",
+  },
+};
 
 const STATE_SLUG: Record<string, string> = { CA: "california" };
 const CAROUSEL_SIZE = 10;
@@ -102,8 +117,11 @@ async function loadHomeData(): Promise<{
 export default async function Home() {
   const { stats, carouselFacilities } = await loadHomeData();
 
+  const homeJsonLd = [buildOrganizationSchema(), buildWebSiteSchema()];
+
   return (
     <>
+      <JsonLd objects={homeJsonLd} />
       <SiteNav />
       <main>
         {/* ── Hero ──────────────────────────────────────────────────────────── */}
@@ -135,6 +153,12 @@ export default async function Home() {
                   >
                     See how we rate facilities
                   </Link>
+                  <p
+                    id="governance-home"
+                    className="max-w-md text-sm leading-relaxed text-slate border-l-2 border-teal/40 pl-4"
+                  >
+                    {GOVERNANCE_24_WORDS}
+                  </p>
                 </div>
               </div>
 
@@ -164,6 +188,12 @@ export default async function Home() {
                   <span className="h-2 w-2 rounded-full bg-navy" aria-hidden />
                   CMS Care Compare
                 </span>
+                <Link
+                  href="/data"
+                  className="inline-flex items-center gap-1.5 rounded border border-teal/30 bg-teal-light/50 px-3 py-1 text-xs font-semibold text-teal hover:bg-teal-light transition-colors"
+                >
+                  Dataset overview
+                </Link>
               </div>
               <div className="flex flex-wrap gap-x-8 gap-y-2">
                 <div className="text-center">

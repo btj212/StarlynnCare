@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 // Bay Area coverage (county hubs). Expand as we add counties.
@@ -174,12 +175,12 @@ export function ZipSearch() {
       {status === "not-covered" && (
         <p className="text-xs text-muted">
           We don&apos;t cover that zip yet —{" "}
-          <a
+          <Link
             href="/california/alameda-county"
             className="text-teal underline underline-offset-2 hover:text-teal-mid"
           >
             browse Alameda County
-          </a>{" "}
+          </Link>{" "}
           or{" "}
           <a
             href="mailto:hello@starlynncare.com"

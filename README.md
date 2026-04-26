@@ -38,8 +38,15 @@ Full steps: [`docs/SUPABASE_MIGRATION.md`](docs/SUPABASE_MIGRATION.md).
 | `/[state]` | State hub — lists covered counties + cities |
 | `/[state]/[city]` | Region (county or city) memory-care comparison; only `publishable = true` facilities |
 | `/[state]/[city]/[facility]` | Facility profile — Federal (CMS) + State (CDSS) cards, explicit "not yet indexed" when data is pending |
+| `/data` | Dataset overview + `Dataset` JSON-LD (inspection corpus description) |
+| `/llms.txt` | AI crawler hints + governance statement |
 
 State and region slugs are validated in [`src/lib/states.ts`](src/lib/states.ts) and [`src/lib/regions.ts`](src/lib/regions.ts). Current beachhead: **Alameda County, California** → `/california/alameda-county`.
+
+## SEO / GEO
+
+- **Conventions (required for new pages):** [`docs/SEO_GEO_CONVENTIONS.md`](docs/SEO_GEO_CONVENTIONS.md) — canonical URLs, `JsonLd` + `schema.ts` builders, no fabricated ratings/geo.
+- **Manual QA log:** [`docs/SEO_VALIDATION_LOG.md`](docs/SEO_VALIDATION_LOG.md) — Rich Results / Schema.org checks after changes.
 
 ## Scripts
 

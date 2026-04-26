@@ -6,6 +6,13 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { stateFromSlug } from "@/lib/states";
 import { regionsForState, type Region } from "@/lib/regions";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { canonicalFor } from "@/lib/seo/canonical";
+import {
+  buildBreadcrumbList,
+  buildStateHubCollectionPage,
+  buildWebPageWithReviewer,
+} from "@/lib/seo/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +26,23 @@ export async function generateMetadata({
   const { state: stateSlug } = await params;
   const state = stateFromSlug(stateSlug);
   if (!state) return { title: "State not found | StarlynnCare" };
+  const canonical = canonicalFor(`/${state.slug}`);
+  const desc = `Memory care facility profiles in ${state.name}, built from state and federal primary sources.`;
   return {
     title: `${state.name} memory care | StarlynnCare`,
-    description: `Memory care facility profiles in ${state.name}, built from state and federal primary sources.`,
+    description: desc,
+    alternates: { canonical },
+    openGraph: {
+      title: `${state.name} memory care | StarlynnCare`,
+      description: desc,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: `${state.name} memory care | StarlynnCare`,
+      description: desc,
+    },
   };
 }
 
@@ -69,8 +90,29 @@ export default async function StatePage({ params }: PageProps) {
   const countySmallCount = (region: Region) =>
     region.citySlugs.reduce((n, s) => n + (smallCountsByCity.get(s) ?? 0), 0);
 
+  const statePageUrl = canonicalFor(`/${state.slug}`);
+  const statePageTitle = `${state.name} memory care | StarlynnCare`;
+  const statePageDesc = `Memory care facility profiles in ${state.name}, built from state and federal primary sources.`;
+  const stateJsonLd = [
+    buildBreadcrumbList([
+      { name: "Home", url: canonicalFor("/") },
+      { name: `${state.name} memory care`, url: statePageUrl },
+    ]),
+    buildWebPageWithReviewer({
+      name: statePageTitle,
+      url: statePageUrl,
+      description: statePageDesc,
+    }),
+    buildStateHubCollectionPage({
+      name: `Memory care in ${state.name}`,
+      url: statePageUrl,
+      state,
+    }),
+  ];
+
   return (
     <>
+      <JsonLd objects={stateJsonLd} />
       <SiteNav />
       <main className="min-h-[60vh] border-b border-sc-border bg-warm-white">
         <div className="mx-auto max-w-[1120px] px-6 py-14 md:px-8 md:py-20">

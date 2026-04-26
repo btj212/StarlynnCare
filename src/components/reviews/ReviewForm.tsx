@@ -155,7 +155,7 @@ export function ReviewForm({ facilityId }: { facilityId: string }) {
         <label htmlFor="overall_summary" className="block text-sm font-semibold text-ink">
           Overall experience <span className="text-muted text-xs font-normal">(optional)</span>
         </label>
-        <p className="text-xs text-muted">Anything families should know that the categories don't cover.</p>
+        <p className="text-xs text-muted">Anything families should know that the categories don&apos;t cover.</p>
         <textarea
           id="overall_summary"
           name="overall_summary"

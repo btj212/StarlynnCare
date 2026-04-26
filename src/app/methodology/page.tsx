@@ -2,11 +2,31 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { canonicalFor } from "@/lib/seo/canonical";
+import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
+import { buildBreadcrumbList, buildWebPageWithReviewer } from "@/lib/seo/schema";
+
+const METHODOLOGY_PATH = "/methodology";
+const methodologyCanonical = canonicalFor(METHODOLOGY_PATH);
+const methodologyDesc =
+  "Our methodology: primary data sources, how we compute each metric, tier thresholds, and why we do not publish a single composite score.";
 
 export const metadata: Metadata = {
   title: "How We Rate Facilities | StarlynnCare",
-  description:
-    "Our methodology: primary data sources, how we compute each metric, tier thresholds, and why we do not publish a single composite score.",
+  description: methodologyDesc,
+  alternates: { canonical: methodologyCanonical },
+  openGraph: {
+    title: "How We Rate Facilities | StarlynnCare",
+    description: methodologyDesc,
+    url: methodologyCanonical,
+    type: "article",
+  },
+  twitter: {
+    card: "summary",
+    title: "How We Rate Facilities | StarlynnCare",
+    description: methodologyDesc,
+  },
 };
 
 function Section({
@@ -89,8 +109,21 @@ function TierKey() {
 }
 
 export default function MethodologyPage() {
+  const methodologyJsonLd = [
+    buildBreadcrumbList([
+      { name: "Home", url: canonicalFor("/") },
+      { name: "Methodology", url: methodologyCanonical },
+    ]),
+    buildWebPageWithReviewer({
+      name: "How We Rate Facilities | StarlynnCare",
+      url: methodologyCanonical,
+      description: methodologyDesc,
+    }),
+  ];
+
   return (
     <>
+      <JsonLd objects={methodologyJsonLd} />
       <SiteNav />
       <main className="border-b border-sc-border bg-warm-white">
         <article className="mx-auto max-w-[760px] px-6 py-14 md:px-8 md:py-20">
@@ -111,13 +144,30 @@ export default function MethodologyPage() {
             signals and let families weigh them.
           </p>
 
+          <section
+            id="no-paid-placement"
+            className="mt-8 rounded-lg border border-teal/25 bg-teal-light/40 px-5 py-4 text-sm leading-relaxed text-slate"
+            aria-label="Editorial independence"
+          >
+            <p className="font-semibold text-navy">Editorial independence</p>
+            <p className="mt-2">{GOVERNANCE_24_WORDS}</p>
+            <p className="mt-3">
+              <Link
+                href="/data"
+                className="font-medium text-teal underline-offset-2 hover:underline"
+              >
+                Dataset overview →
+              </Link>
+            </p>
+          </section>
+
           {/* ── Sources ── */}
           <Section id="sources-heading" title="Primary data sources">
             <p>
               Facility licensing, inspection, and complaint data are drawn from
               the{" "}
               <a
-                href="https://www.cdss.ca.gov/inforesources/cdss-programs/community-care-licensing"
+                href="https://www.ccld.dss.ca.gov/"
                 className="font-medium text-teal underline-offset-4 hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -140,7 +190,7 @@ export default function MethodologyPage() {
             </ul>
             <p>
               Data is refreshed via automated scrapers. Each facility record
-              shows a "last updated" date reflecting the most recent ingest run.
+              shows a &ldquo;last updated&rdquo; date reflecting the most recent ingest run.
             </p>
           </Section>
 
@@ -167,7 +217,7 @@ export default function MethodologyPage() {
           {/* ── How we organize facilities ── */}
           <Section id="organization-heading" title="How we organize facilities">
             <p>
-              California's RCFE licensing regulations create two natural axes for
+              California&rsquo;s RCFE licensing regulations create two natural axes for
               organizing facilities that we use on every city and county listing page.
             </p>
 
@@ -187,20 +237,20 @@ export default function MethodologyPage() {
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">
               <li>
-                <span className="font-medium text-ink">≤ 6 beds ("small")</span> —
+                <span className="font-medium text-ink">≤ 6 beds (&ldquo;small&rdquo;)</span> —
                 Typically a single-family home converted to care use. Owner-operated.
                 These facilities receive fewer routine CDSS inspections by design, so
                 a short inspection history does not mean a good track record — it
                 means less inspector attention. We hide them by default and offer a
-                "Show small care homes" toggle.
+                &ldquo;Show small care homes&rdquo; toggle.
               </li>
               <li>
-                <span className="font-medium text-ink">7–49 beds ("medium")</span> —
+                <span className="font-medium text-ink">7–49 beds (&ldquo;medium&rdquo;)</span> —
                 Small to medium freestanding RCFEs. Subject to CDSS annual inspection
                 cycle and all Title 22 requirements.
               </li>
               <li>
-                <span className="font-medium text-ink">50+ beds ("large")</span> —
+                <span className="font-medium text-ink">50+ beds (&ldquo;large&rdquo;)</span> —
                 Community-style facilities, often purpose-built buildings operated by
                 regional or national chains. Typically have a dedicated memory-care wing.
               </li>
@@ -237,7 +287,7 @@ export default function MethodologyPage() {
             <p>
               By default, each listing page shows only{" "}
               <strong>7+ bed facilities with a confirmed memory-care signal</strong>.
-              The "Show small care homes (≤6 beds)" toggle on each page reveals
+              The &ldquo;Show small care homes (≤6 beds)&rdquo; toggle on each page reveals
               the smaller board-and-care segment for families who want it.
             </p>
           </Section>
@@ -245,7 +295,7 @@ export default function MethodologyPage() {
           {/* ── Four metrics ── */}
           <Section id="metrics-heading" title="The four metrics">
             <p>
-              Each facility profile shows an "At a glance" panel with four rows.
+              Each facility profile shows an &ldquo;At a glance&rdquo; panel with four rows.
               Here is exactly how each is computed.
             </p>
             <div className="space-y-4 mt-2">
@@ -280,8 +330,8 @@ export default function MethodologyPage() {
           <Section id="tiers-heading" title="Tier color key">
             <p>
               All numeric metrics are compared against the current county
-              distribution using 33rd and 66th percentile cutoffs. "Strong"
-              means better than most peers; "Concerns" means worse than most peers.
+              distribution using 33rd and 66th percentile cutoffs. &ldquo;Strong&rdquo;
+              means better than most peers; &ldquo;Concerns&rdquo; means worse than most peers.
               These are relative assessments within the current sample, not absolute
               benchmarks.
             </p>
@@ -289,10 +339,10 @@ export default function MethodologyPage() {
           </Section>
 
           {/* ── Why no composite ── */}
-          <Section id="no-composite-heading" title="Why we don't publish a composite score">
+          <Section id="no-composite-heading" title="Why we don&rsquo;t publish a composite score">
             <p>
               A composite score implies that one weighting of metrics is
-              universally correct. It isn't. A family with a parent who has
+              universally correct. It isn&apos;t. A family with a parent who has
               advanced dementia may weight §87705 citations more heavily than
               a family whose parent is largely independent. A family that has
               already toured three facilities and spoken to staff may weight a
@@ -316,7 +366,7 @@ export default function MethodologyPage() {
             <ul className="list-disc pl-5 space-y-2 text-sm">
               <li>
                 Inspection records reflect conditions at the time of a specific
-                visit. They are not a real-time assessment of today's care quality.
+                visit. They are not a real-time assessment of today&rsquo;s care quality.
               </li>
               <li>
                 Facilities that have improved since a citation was issued will

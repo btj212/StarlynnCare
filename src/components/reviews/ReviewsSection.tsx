@@ -1,24 +1,12 @@
-import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { ReviewCard, type Review } from "./ReviewCard";
 import { ReviewForm } from "./ReviewForm";
 import { REVIEW_CATEGORIES } from "./categories";
+import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 
 interface CategoryAvg {
   key: string;
   label: string;
   avg: number;
-}
-
-async function loadReviews(facilityId: string): Promise<Review[]> {
-  const supabase = tryPublicSupabaseClient();
-  if (!supabase) return [];
-  const { data } = await supabase
-    .from("reviews")
-    .select("*")
-    .eq("facility_id", facilityId)
-    .eq("status", "published")
-    .order("created_at", { ascending: false });
-  return (data ?? []) as Review[];
 }
 
 function computeCategoryAverages(reviews: Review[]): CategoryAvg[] {
@@ -50,8 +38,18 @@ function ScoreBar({ value }: { value: number }) {
   );
 }
 
-export async function ReviewsSection({ facilityId }: { facilityId: string }) {
-  const reviews = await loadReviews(facilityId);
+export async function ReviewsSection({
+  facilityId,
+  initialReviews,
+}: {
+  facilityId: string;
+  /** When provided (e.g. from the facility page), avoids a duplicate Supabase round-trip. */
+  initialReviews?: Review[];
+}) {
+  const reviews =
+    initialReviews !== undefined
+      ? initialReviews
+      : await loadPublishedReviews(facilityId);
   const categoryAverages = computeCategoryAverages(reviews);
 
   return (

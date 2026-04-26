@@ -18,9 +18,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.starlynncare.com"),
   title: "Memory Care Facilities — Real Inspection Records | StarlynnCare",
   description:
-    "Find memory care facilities with real state inspection records, deficiency histories, and staffing data. No referral commissions. Starting in Alameda County, California.",
+    "California memory care with real CDSS inspection records, citations, and quality context. No referral commissions.",
   openGraph: {
     title: "Find memory care you can trust | StarlynnCare",
     description:
@@ -35,7 +36,6 @@ export const metadata: Metadata = {
     description:
       "Real inspection records. No commissions. Built for families searching for memory care in Alameda County, California.",
   },
-  metadataBase: new URL("https://www.starlynncare.com"),
 };
 
 export default function RootLayout({
