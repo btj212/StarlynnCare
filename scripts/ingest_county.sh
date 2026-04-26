@@ -31,13 +31,13 @@ PYTHONUNBUFFERED=1 python3 -u scrapers/ccld_rcfe_ingest.py --county "$COUNTY_UPP
 PYTHONUNBUFFERED=1 python3 -u scrapers/geocode_facilities.py --state CA 2>&1 | tee -a "$LOG_FILE"
 
 # 3) Inspections + deficiencies (statewide; skips already-ingested inspections by source_url)
-PYTHONUNBUFFERED=1 python3 -u scrapers/ccld_citations_ingest.py --state CA 2>&1 | tee -a "$LOG_FILE"
+PYTHONUNBUFFERED=1 python3 -u scrapers/ccld_citations_ingest.py 2>&1 | tee -a "$LOG_FILE"
 
 # 4) Memory-care disclosure flags (from §87705/§87706 citations)
 PYTHONUNBUFFERED=1 python3 -u scrapers/mc_disclosure_ingest.py 2>&1 | tee -a "$LOG_FILE"
 
 # 5) Narrative summaries (only missing summaries by default)
-PYTHONUNBUFFERED=1 python3 -u scrapers/summarize_inspections.py --state CA 2>&1 | tee -a "$LOG_FILE"
+PYTHONUNBUFFERED=1 python3 -u scrapers/summarize_inspections.py 2>&1 | tee -a "$LOG_FILE"
 
 # 6) Tour questions (Haiku + quality gate; skips facilities with existing content by default)
 PYTHONUNBUFFERED=1 python3 -u scrapers/generate_content.py 2>&1 | tee -a "$LOG_FILE"
