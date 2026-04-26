@@ -10,7 +10,6 @@ import { loadBenchmarks } from "@/lib/benchmarks";
 import { BenchmarkRow } from "@/components/facility/BenchmarkRow";
 import { QuickFacts } from "@/components/facility/QuickFacts";
 import { TourQuestions } from "@/components/facility/TourQuestions";
-import { FacilityMap } from "@/components/facility/FacilityMap";
 import { RegulatoryBaseline } from "@/components/facility/RegulatoryBaseline";
 import type { CitationRecord } from "@/components/facility/RegulatoryBaseline";
 import { QualitySnapshot } from "@/components/facility/QualitySnapshot";
@@ -405,9 +404,6 @@ export default async function FacilityPage({ params }: PageProps) {
                 .join(" · ")}
             </p>
           )}
-
-          {/* ───────────────────────── Location map ──────────────────────────── */}
-          <FacilityMap facility={facility} />
 
           {/* ───────────────────────── At a glance dashboard ────────────────────── */}
           <QuickFacts
