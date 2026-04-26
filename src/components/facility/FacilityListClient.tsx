@@ -12,6 +12,9 @@ export type ListFacility = {
   id: string;
   name: string;
   city: string | null;
+  /** Street line from CDSS (optional; used for schema on listing pages). */
+  street: string | null;
+  zip: string | null;
   city_slug: string;
   slug: string;
   beds: number | null;

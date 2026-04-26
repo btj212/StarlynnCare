@@ -68,7 +68,7 @@ export default async function RegionPage({ params }: PageProps) {
     const { data: rawFacilities, error } = await supabase
       .from("facilities")
       .select(
-        "id, name, city, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, capacity_tier",
+        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, capacity_tier",
       )
       .eq("state_code", region.state.code)
       .eq("publishable", true)
@@ -79,7 +79,8 @@ export default async function RegionPage({ params }: PageProps) {
       fetchError = error.message;
     } else {
       const raw = (rawFacilities ?? []) as Array<{
-        id: string; name: string; city: string | null; city_slug: string;
+        id: string; name: string; city: string | null; street: string | null;
+        zip: string | null; city_slug: string;
         slug: string; beds: number | null; care_category: string;
         photo_url: string | null; serves_memory_care: boolean;
         memory_care_disclosure_filed: boolean;
@@ -125,6 +126,8 @@ export default async function RegionPage({ params }: PageProps) {
           id: f.id,
           name: f.name,
           city: f.city,
+          street: f.street,
+          zip: f.zip,
           city_slug: f.city_slug,
           slug: f.slug,
           beds: f.beds,
@@ -151,7 +154,11 @@ export default async function RegionPage({ params }: PageProps) {
   const itemListFacilities = facilities.map((f) => ({
     name: f.name,
     url: canonicalFor(`/${region.state.slug}/${f.city_slug}/${f.slug}`),
-    identifier: f.id,
+    facilityId: f.id,
+    street: f.street,
+    city: f.city,
+    postalCode: f.zip,
+    addressRegion: region.state.name,
   }));
   const regionJsonLd = [
     buildBreadcrumbList([

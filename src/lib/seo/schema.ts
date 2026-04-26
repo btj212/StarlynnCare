@@ -201,7 +201,56 @@ export function buildFaqPageSchema(
   };
 }
 
-export type ItemListFacility = { name: string; url: string; identifier?: string };
+export type ItemListFacility = {
+  name: string;
+  url: string;
+  /** Internal UUID for PropertyValue identifier (not a bare string on LocalBusiness). */
+  facilityId?: string;
+  street?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  /** e.g. "California" or "CA" */
+  addressRegion?: string | null;
+};
+
+function itemListLocalBusiness(f: ItemListFacility): object {
+  const street = f.street?.trim() || undefined;
+  const locality = f.city?.trim() || undefined;
+  const postal = f.postalCode?.trim() || undefined;
+  const region = f.addressRegion?.trim() || undefined;
+
+  const hasAddress = Boolean(street || locality || postal || region);
+
+  const address = hasAddress
+    ? {
+        "@type": "PostalAddress",
+        ...(street ? { streetAddress: street } : {}),
+        ...(locality ? { addressLocality: locality } : {}),
+        ...(postal ? { postalCode: postal } : {}),
+        ...(region ? { addressRegion: region } : {}),
+        addressCountry: "US",
+      }
+    : undefined;
+
+  const idBlock =
+    f.facilityId?.trim() != null
+      ? {
+          identifier: {
+            "@type": "PropertyValue",
+            propertyID: "starlynncare_facility_id",
+            value: f.facilityId.trim(),
+          },
+        }
+      : {};
+
+  return {
+    "@type": "LocalBusiness",
+    name: f.name,
+    url: f.url,
+    ...(address ? { address } : {}),
+    ...idBlock,
+  };
+}
 
 export function buildItemListSchema(
   pageName: string,
@@ -217,12 +266,7 @@ export function buildItemListSchema(
     itemListElement: facilities.map((f, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      item: {
-        "@type": "LocalBusiness",
-        name: f.name,
-        url: f.url,
-        ...(f.identifier ? { identifier: f.identifier } : {}),
-      },
+      item: itemListLocalBusiness(f),
     })),
   };
 }

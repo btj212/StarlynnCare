@@ -53,6 +53,11 @@ export default function RootLayout({
           gtag('js', new Date());
           gtag('config', 'G-19JKWKER15');
         `}} />
+        <script
+          src="https://analytics.ahrefs.com/analytics.js"
+          data-key="IjDNyQvSmnNGFMK02hdywA"
+          async
+        />
       </head>
       <body>
         <ClerkProvider>{children}</ClerkProvider>
