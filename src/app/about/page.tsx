@@ -70,27 +70,14 @@ export default function AboutPage() {
                 </div>
                 <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
                   <p>
-                    Star is a Registered Nurse with a career built around protecting
-                    vulnerable people — from immunizations and wound care to chronic
-                    disease management, foot care, and public health case management.
-                    She&rsquo;s worked directly with patients across community and
-                    clinical settings, with a focus on preventative care and patient
-                    education.
-                  </p>
-                  <p>
-                    Most recently, Star served as a Nurse Surveyor for the California
-                    Department of Public Health, where she conducted onsite inspections,
-                    audits, and investigations of healthcare facilities to ensure
-                    compliance with state and federal regulations. She investigated
-                    complaints, evaluated quality of care, and held facilities
-                    accountable for the safety of the people in their charge.
-                  </p>
-                  <p>
-                    That work showed her how much families don&rsquo;t know about
-                    the places caring for their loved ones — and how hard it is to
-                    find out. She&rsquo;s now building StarlynnCare with her husband
-                    to give families the kind of inside view she wishes every loved
-                    one had.
+                    Star is a Registered Nurse with a career spent caring for
+                    vulnerable people — wound care, immunizations, chronic disease
+                    management, and public health case management. As a Nurse Surveyor
+                    for the California Department of Public Health, she walked into
+                    facilities and saw the violations firsthand: the citations, the
+                    patterns, the things families never hear about. StarlynnCare aims
+                    to help families access and easily understand this information
+                    when they&rsquo;re making important care decisions.
                   </p>
                 </div>
               </div>
