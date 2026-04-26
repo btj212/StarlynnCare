@@ -390,12 +390,6 @@ export default async function Home() {
     },
   ];
 
-  const statFootnotes = [
-    "Sourced from CA CDSS Community Care Licensing",
-    "Cross-validated against CMS Care Compare",
-    ...(stats.lastRefreshed ? [`Last refreshed ${stats.lastRefreshed}`] : []),
-  ];
-
   const COMING_COUNTIES = ["Los Angeles County", "San Diego County", "Orange County", "Sacramento County"];
 
   const EDITORIAL_CARDS = [
@@ -458,7 +452,6 @@ export default async function Home() {
           season={season}
           year={year}
           statItems={statItems}
-          statFootnotes={statFootnotes}
           counties={counties}
           topCities={topCities}
           gradeCardFacility={gradeCardFacility}
@@ -552,7 +545,7 @@ export default async function Home() {
               label="§ 01 · The Public Record"
               title={<>The California facility data you need, <em>curated + analyzed for you.</em></>}
             />
-            <StatBlock stats={statItems} footnotes={statFootnotes} />
+            <StatBlock stats={statItems} />
           </div>
         </section>
 
@@ -633,19 +626,16 @@ export default async function Home() {
                   n: "Step 01",
                   t: "Pull the public record",
                   p: "Inspection reports, deficiency findings, and complaint outcomes pulled directly from CDSS Community Care Licensing — weekly, with archived snapshots.",
-                  pull: "Source · CA CDSS / CMS Care Compare",
                 },
                 {
                   n: "Step 02",
                   t: "Weight five signals",
                   p: "Severity (35%), repeat-citation rate (25%), complaint outcomes (15%), staffing-related deficiencies (15%), verified family experience (10%).",
-                  pull: "Methodology — peer-reviewed",
                 },
                 {
                   n: "Step 03",
                   t: "Publish, with footnotes",
                   p: "Each grade renders with the citation numbers, dates, and resolution status that produced it. No black box. Every claim is link-traceable.",
-                  pull: "Inspect any profile to verify",
                 },
               ].map((s, i) => (
                 <div
@@ -654,12 +644,7 @@ export default async function Home() {
                 >
                   <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust mb-3">{s.n}</div>
                   <h4 className="font-[family-name:var(--font-display)] text-[26px] font-normal leading-[1.1] tracking-[-0.005em] m-0 mb-2.5">{s.t}</h4>
-                  <p className="text-[15px] text-ink-2 m-0 mb-4 leading-relaxed">{s.p}</p>
-                  <div
-                    className="pt-3.5 border-t border-dashed border-paper-rule font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.04em]"
-                  >
-                    {s.pull}
-                  </div>
+                  <p className="text-[15px] text-ink-2 m-0 leading-relaxed">{s.p}</p>
                 </div>
               ))}
             </div>

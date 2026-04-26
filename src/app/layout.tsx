@@ -27,11 +27,11 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.starlynncare.com"),
-  title: "Memory Care Facilities — Real Inspection Records | StarlynnCare",
+  title: "Find the Best Memory Care Facilities — Based on Real Inspection Data | StarlynnCare",
   description:
     "California memory care with real CDSS inspection records, citations, and quality context. No referral commissions.",
   openGraph: {
-    title: "Find memory care you can trust | StarlynnCare",
+    title: "Find the Best Memory Care Facilities — Based on Real Inspection Data",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care in Alameda County, California.",
     url: "https://www.starlynncare.com",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Find memory care you can trust | StarlynnCare",
+    title: "Find the Best Memory Care Facilities — Based on Real Inspection Data",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care in Alameda County, California.",
   },

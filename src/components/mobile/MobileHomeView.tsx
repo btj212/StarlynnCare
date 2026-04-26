@@ -34,7 +34,7 @@ export function MobileHomeView({
   season,
   year,
   statItems,
-  statFootnotes,
+
   counties,
   topCities,
   gradeCardFacility,
@@ -47,7 +47,6 @@ export function MobileHomeView({
   season: string;
   year: number;
   statItems: StatItem[];
-  statFootnotes: string[];
   counties: MobileCounty[];
   topCities: MobileCity[];
   gradeCardFacility: MobileGradeFacility | null;
@@ -109,15 +108,6 @@ export function MobileHomeView({
           </div>
         ))}
       </div>
-      {statFootnotes.length > 0 && (
-        <div className="px-[18px] pb-4 font-[family-name:var(--font-mono)] text-[10.5px] leading-relaxed text-ink-3 tracking-[0.04em]">
-          {statFootnotes.map((f, i) => (
-            <span key={i} className="block">
-              <span className="text-rust">▸</span> {f}
-            </span>
-          ))}
-        </div>
-      )}
 
       <section className="m-section">
         <div className="label">§ 02 · How We Grade</div>
