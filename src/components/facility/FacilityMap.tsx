@@ -3,7 +3,7 @@
  *
  * Server Component — renders a plain <img> tag; zero client JS.
  *
- * Setup: add NEXT_PUBLIC_MAPBOX_TOKEN=pk.xxx to .env.local
+ * Setup: add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.xxx to .env.local
  * (free tier: mapbox.com — public tokens start with "pk.")
  *
  * If the token is absent or the facility has no coordinates, renders null.
@@ -18,7 +18,7 @@ interface FacilityMapProps {
 export function FacilityMap({ facility }: FacilityMapProps) {
   const lat = facility.latitude ? parseFloat(facility.latitude) : null;
   const lon = facility.longitude ? parseFloat(facility.longitude) : null;
-  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
   if (!lat || !lon) return null;
   if (!token) return null;
