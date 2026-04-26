@@ -1,5 +1,8 @@
 import type { Facility, CareCategory } from "@/lib/types";
 
+/** Lightweight citation record passed from the page. */
+export type CitationRecord = { code: string; date: string };
+
 const MC_CATEGORIES: CareCategory[] = [
   "rcfe_memory_care",
   "alf_memory_care",
@@ -9,6 +12,33 @@ const MC_CATEGORIES: CareCategory[] = [
 function isMcFacility(facility: Facility): boolean {
   return (
     MC_CATEGORIES.includes(facility.care_category) || facility.serves_memory_care
+  );
+}
+
+/** Find the most recent citation date matching any of the given code patterns. */
+function latestCitationDate(
+  citations: CitationRecord[],
+  patterns: RegExp[],
+): string | null {
+  const matches = citations
+    .filter((c) => patterns.some((re) => re.test(c.code)))
+    .map((c) => c.date)
+    .sort()
+    .reverse();
+  return matches[0] ?? null;
+}
+
+/** Format an ISO date string to "MMM YYYY". */
+function fmtCiteDate(iso: string): string {
+  const d = new Date(iso + "T12:00:00Z");
+  return d.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+function CitedTag({ date }: { date: string }) {
+  return (
+    <span className="ml-2 inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+      Cited {fmtCiteDate(date)}
+    </span>
   );
 }
 
@@ -69,10 +99,11 @@ type CardProps = {
   defaultOpen?: boolean;
   icon: React.ReactNode;
   cite: string;
+  citedDate?: string | null;
   children: React.ReactNode;
 };
 
-function Card({ question, defaultOpen = false, icon, cite, children }: CardProps) {
+function Card({ question, defaultOpen = false, icon, cite, citedDate, children }: CardProps) {
   return (
     <details
       open={defaultOpen}
@@ -85,6 +116,7 @@ function Card({ question, defaultOpen = false, icon, cite, children }: CardProps
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-semibold text-ink leading-snug">
             {question}
+            {citedDate && <CitedTag date={citedDate} />}
           </span>
           <span className="mt-0.5 block">
             <RegChip cite={cite} />
@@ -151,35 +183,47 @@ const IconEnforce = () => (
   </svg>
 );
 
-export function RegulatoryBaseline({ facility }: { facility: Facility }) {
+export function RegulatoryBaseline({
+  facility,
+  citations = [],
+}: {
+  facility: Facility;
+  citations?: CitationRecord[];
+}) {
   const isMc = isMcFacility(facility);
   const nightStaffing = nightStaffingFromBeds(facility.beds);
   const bedLabel = facility.beds != null ? `${facility.beds} licensed beds` : null;
 
-  return (
-    <section aria-labelledby="reg-baseline-heading" className="mt-10">
-      <h2
-        id="reg-baseline-heading"
-        className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
-      >
-        The rules that apply to this facility
-      </h2>
-      <p className="mt-1 text-sm text-muted">
-        California Title 22 requirements for this facility, with the specific
-        regulation and a suggested question for each.
-      </p>
+  // Find the most recent citation date for each card's regulation sections
+  const trainingCited = latestCitationDate(citations, [/8770[56]/]);
+  const staffingCited = latestCitationDate(citations, [/87415/]);
+  const healthCited = latestCitationDate(citations, [/8761[2-5]/]);
+  const reportingCited = latestCitationDate(citations, [/87211/]);
+  const enforceCited = latestCitationDate(citations, [/877[6-7]\d/]);
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-sc-border bg-white shadow-card">
-        {/* Card 1 — Staff training */}
+  // Cards sorted: cited ones bubble to top, within that preserve original order
+  type CardData = {
+    id: string;
+    citedDate: string | null;
+    node: React.ReactNode;
+  };
+
+  const allCards: CardData[] = [
+    {
+      id: "training",
+      citedDate: trainingCited,
+      node: (
         <Card
+          key="training"
           question={
             isMc
               ? "What dementia-care training must staff complete?"
               : "What training are all staff required to complete?"
           }
-          defaultOpen={true}
+          defaultOpen={!trainingCited}
           icon={<IconTraining />}
           cite={isMc ? "22 CCR §87705 / HSC §1569.625" : "22 CCR §87411"}
+          citedDate={trainingCited}
         >
           {isMc ? (
             <>
@@ -255,12 +299,18 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
               : "Ask when the last staff training was completed and how it's tracked."}
           </TourCta>
         </Card>
-
-        {/* Card 2 — Night staffing (dynamic by bed count) */}
+      ),
+    },
+    {
+      id: "staffing",
+      citedDate: staffingCited,
+      node: (
         <Card
+          key="staffing"
           question="How many staff must be on duty overnight?"
           icon={<IconStaff />}
           cite="22 CCR §87415"
+          citedDate={staffingCited}
         >
           {bedLabel && (
             <p className="mb-2 text-xs text-muted">
@@ -286,12 +336,18 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
             and confirm whether on-call staff are on premises or off-site.
           </TourCta>
         </Card>
-
-        {/* Card 3 — Health conditions */}
+      ),
+    },
+    {
+      id: "health",
+      citedDate: healthCited,
+      node: (
         <Card
+          key="health"
           question="What health conditions can this facility legally accept or refuse?"
           icon={<IconHealth />}
           cite="22 CCR §87612–87615"
+          citedDate={healthCited}
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -348,12 +404,18 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
             change after admission.
           </TourCta>
         </Card>
-
-        {/* Card 4 — Reporting obligations */}
+      ),
+    },
+    {
+      id: "reporting",
+      citedDate: reportingCited,
+      node: (
         <Card
+          key="reporting"
           question="What must this facility report to the state — and how fast?"
           icon={<IconReport />}
           cite="22 CCR §87211 / WIC §15630"
+          citedDate={reportingCited}
         >
           <ul className="space-y-2.5 text-sm text-slate">
             {[
@@ -421,12 +483,18 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
             </p>
           </div>
         </Card>
-
-        {/* Card 5 — Enforcement chain + anchor CTA */}
+      ),
+    },
+    {
+      id: "enforce",
+      citedDate: enforceCited,
+      node: (
         <Card
+          key="enforce"
           question="How does CDSS enforce these rules?"
           icon={<IconEnforce />}
           cite="22 CCR §87755–87777 / HSC §1569.58"
+          citedDate={enforceCited}
         >
           <ol className="space-y-2 text-sm text-slate">
             {[
@@ -493,6 +561,36 @@ export function RegulatoryBaseline({ facility }: { facility: Facility }) {
             </a>
           </div>
         </Card>
+      ),
+    },
+  ];
+
+  // Bubble cards with citations to the top; within each group keep original order.
+  const sorted = [
+    ...allCards.filter((c) => c.citedDate !== null),
+    ...allCards.filter((c) => c.citedDate === null),
+  ];
+
+  return (
+    <section aria-labelledby="reg-baseline-heading" className="mt-10">
+      <h2
+        id="reg-baseline-heading"
+        className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+      >
+        The rules that apply to this facility
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        California Title 22 requirements for this facility, with the specific
+        regulation and a suggested question for each.
+        {allCards.some((c) => c.citedDate) && (
+          <span className="ml-1 text-amber-700 font-medium">
+            Rules this facility has been cited for are shown first.
+          </span>
+        )}
+      </p>
+
+      <div className="mt-4 overflow-hidden rounded-lg border border-sc-border bg-white shadow-card">
+        {sorted.map((c) => c.node)}
       </div>
     </section>
   );

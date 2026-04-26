@@ -10,7 +10,9 @@ import { loadBenchmarks } from "@/lib/benchmarks";
 import { BenchmarkRow } from "@/components/facility/BenchmarkRow";
 import { QuickFacts } from "@/components/facility/QuickFacts";
 import { TourQuestions } from "@/components/facility/TourQuestions";
+import { FacilityMap } from "@/components/facility/FacilityMap";
 import { RegulatoryBaseline } from "@/components/facility/RegulatoryBaseline";
+import type { CitationRecord } from "@/components/facility/RegulatoryBaseline";
 import { QualitySnapshot } from "@/components/facility/QualitySnapshot";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import type { Facility, CareCategory } from "@/lib/types";
@@ -307,6 +309,15 @@ export default async function FacilityPage({ params }: PageProps) {
     inspections.find((i) => (defByInspection.get(i.id) ?? []).length > 0)
       ?.inspection_date ?? null;
 
+  // Citation records for RegulatoryBaseline relevance ordering
+  const citationHistory: CitationRecord[] = deficiencies
+    .filter((d) => d.code)
+    .map((d) => ({
+      code: d.code!,
+      date: inspections.find((i) => i.id === d.inspection_id)?.inspection_date ?? "",
+    }))
+    .filter((c) => c.date);
+
   const base =
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.starlynncare.com";
   const canonicalUrl = `${base.replace(/\/$/, "")}/${state.slug}/${facility.city_slug}/${facility.slug}`;
@@ -395,6 +406,9 @@ export default async function FacilityPage({ params }: PageProps) {
             </p>
           )}
 
+          {/* ───────────────────────── Location map ──────────────────────────── */}
+          <FacilityMap facility={facility} />
+
           {/* ───────────────────────── At a glance dashboard ────────────────────── */}
           <QuickFacts
             facility={facility}
@@ -405,7 +419,7 @@ export default async function FacilityPage({ params }: PageProps) {
           />
 
           {/* ─────────────────────────── Quality snapshot ────────────────────────── */}
-          <QualitySnapshot facilityId={facility.id} updatedAt={asOfFormatted} />
+          <QualitySnapshot facilityId={facility.id} updatedAt={asOfFormatted} careCategory={facility.care_category} />
 
           {benchmarks && (
             <section className="mt-10" aria-labelledby="glance-heading">
@@ -497,7 +511,7 @@ export default async function FacilityPage({ params }: PageProps) {
           )}
 
           {/* ─────────────────────────── Regulatory baseline ────────────── */}
-          <RegulatoryBaseline facility={facility} />
+          <RegulatoryBaseline facility={facility} citations={citationHistory} />
 
           {/* ─────────────────────────── AI content ─────────────────── */}
           {/* Only show structured tour questions — generic AI paragraphs removed */}

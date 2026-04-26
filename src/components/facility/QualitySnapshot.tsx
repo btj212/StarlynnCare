@@ -64,6 +64,20 @@ type SnapshotPayload = {
 // Helpers
 // ─────────────────────────────────────────────────────────────────
 
+/** Map care_category to a readable peer-set label. */
+const CARE_LABEL: Record<string, string> = {
+  rcfe_memory_care: "RCFE memory care",
+  rcfe_general: "RCFE",
+  alf_memory_care: "ALF memory care",
+  alf_general: "ALF",
+  snf_general: "SNF",
+  snf_dementia_scu: "SNF dementia care",
+  ccrc: "CCRC",
+};
+function careLabel(careCategory: string | undefined): string {
+  return careCategory ? (CARE_LABEL[careCategory] ?? "care") : "care";
+}
+
 /** Convert a 0–100 "higher is better" percentile to a short label. */
 function pctLabel(pct: number | null): string {
   if (pct === null) return "—";
@@ -169,8 +183,20 @@ function GradeCard({ payload }: { payload: SnapshotPayload }) {
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-[--color-qs-muted] mb-3">
               Quality grade
-              <span className="ml-1.5 normal-case font-normal tracking-normal text-[--color-qs-muted]">
+              <span className="ml-1.5 normal-case font-normal tracking-normal text-[--color-qs-muted] group-hover:underline underline-offset-2">
                 · click to show how this was calculated
+                <svg
+                  aria-hidden="true"
+                  className="inline ml-1 h-3 w-3 -translate-y-px"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               </span>
             </p>
             <div className="space-y-3">
@@ -320,8 +346,15 @@ function TrajectorySparkline({
     return d.toLocaleString("en-US", { month: "short", year: "2-digit" });
   };
 
+  // Total weighted score (sum of all facility monthly scores in window)
+  const totalScore = series.reduce((sum, p) => sum + p.facility_score, 0);
+  const lastActiveSeries = [...series].reverse().find((p) => p.facility_score > 0);
+  const lastActiveMonth = lastActiveSeries
+    ? fmtMonth(lastActiveSeries.month)
+    : null;
+
   return (
-    <div className="rounded-xl border border-[--color-sc-border] bg-white px-5 pt-4 pb-3 shadow-card">
+    <div className="rounded-xl border border-[--color-sc-border] bg-white px-5 pt-4 pb-4 shadow-card">
       <div className="flex items-baseline justify-between mb-1">
         <p className="text-xs font-semibold text-[--color-ink]">
           Citation severity over time
@@ -369,6 +402,24 @@ function TrajectorySparkline({
         <span className="text-[9px] text-[--color-qs-muted]">
           {fmtMonth(lastMonth)}
         </span>
+      </div>
+
+      {/* Summary data lines — fill card height to match heatmap */}
+      <div className="mt-3 border-t border-black/5 pt-2.5 flex gap-6">
+        <div>
+          <p className="text-[10px] text-[--color-qs-muted]">Weighted score (24mo)</p>
+          <p className="text-sm font-semibold tabular-nums text-[--color-ink]">
+            {totalScore.toFixed(0)}
+          </p>
+        </div>
+        {lastActiveMonth && (
+          <div>
+            <p className="text-[10px] text-[--color-qs-muted]">Last citation</p>
+            <p className="text-sm font-semibold text-[--color-ink]">
+              {lastActiveMonth}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -551,25 +602,6 @@ function HeatmapGrid({ heatmap }: { heatmap: SnapshotPayload["heatmap"] }) {
           ))}
         </svg>
       )}
-
-      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-        {SEV_ROWS.map((sev) => (
-          <span
-            key={sev}
-            className="inline-flex items-center gap-1 text-[9px]"
-            style={{ color: sev === 4 ? "#c8a26b" : "#9a938a" }}
-          >
-            <span
-              className="inline-block w-2 h-2 rounded-sm"
-              style={{
-                backgroundColor: sev === 4 ? "#c8a26b" : "#e2e8f0",
-                border: sev === 4 ? "1px solid #c8a26b" : "none",
-              }}
-            />
-            {SEV_SHORT[sev]}: {SEV_LABELS[sev]}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
@@ -603,9 +635,11 @@ function NoInspectionsState({ peerN }: { peerN: number }) {
 export async function QualitySnapshot({
   facilityId,
   updatedAt,
+  careCategory,
 }: {
   facilityId: string;
   updatedAt?: string | null;
+  careCategory?: string;
 }) {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return null;
@@ -649,18 +683,31 @@ export async function QualitySnapshot({
       <p className="mt-1 text-sm text-[--color-muted]">
         Compared to{" "}
         <strong className="font-medium text-[--color-ink]">{peer_set.n}</strong>{" "}
-        California {payload.facility.license_type ?? "care"} facilities
+        California {careLabel(careCategory)} facilities
         {peer_set.fallback_level === 0 ? " of similar size" : ""}, over the last 36 months.
-        {tooSmallPeerSet && (
-          <span className="text-[--color-qs-muted]">
-            {" "}Small sample — percentiles are less stable.
-          </span>
-        )}
         {peer_set.fallback_level > 0 && (
           <span className="text-[--color-qs-muted]">
             {" "}Bed-size filter relaxed due to small peer set.
           </span>
         )}
+      </p>
+      {tooSmallPeerSet && (
+        <p className="mt-0.5 text-xs text-[--color-qs-muted]">
+          Small peer set — interpret percentiles as ranges, not exact ranks.
+        </p>
+      )}
+
+      {/* Source attribution */}
+      <p className="mt-2 text-xs text-[--color-qs-muted]">
+        Source: California Department of Social Services, Community Care Licensing Division.{" "}
+        <a
+          href="https://www.ccld.dss.ca.gov/carefacilitysearch/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-[--color-ink] hover:underline underline-offset-2"
+        >
+          View raw inspection records →
+        </a>
       </p>
 
       {!has_inspections ? (
@@ -681,6 +728,11 @@ export async function QualitySnapshot({
           </div>
         </>
       )}
+
+      {/* Independence statement */}
+      <p className="mt-5 text-xs italic text-[--color-qs-muted]">
+        StarlynnCare receives no payment from any facility listed on this site.
+      </p>
     </section>
   );
 }
