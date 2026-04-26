@@ -390,8 +390,17 @@ function TrajectorySparkline({
         <span className="text-[9px] text-[--color-qs-muted]">
           {fmtMonth(firstMonth)}
         </span>
-        <span className="text-[9px] text-[--color-qs-muted]">
-          — peer median
+        <span className="inline-flex items-center gap-1 text-[9px] text-[--color-qs-muted]">
+          <svg width="18" height="6" aria-hidden="true" overflow="visible">
+            <line
+              x1="0" y1="3" x2="18" y2="3"
+              stroke="#9a938a"
+              strokeWidth="1.5"
+              strokeDasharray="4 3"
+              opacity="0.8"
+            />
+          </svg>
+          peer median
         </span>
         <span className="text-[9px] text-[--color-qs-muted]">
           {fmtMonth(lastMonth)}
