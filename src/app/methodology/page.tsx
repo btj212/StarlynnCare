@@ -147,11 +147,11 @@ export default function MethodologyPage() {
           {/* ── Coverage ── */}
           <Section id="coverage-heading" title="Current coverage">
             <p>
-              StarlynnCare currently covers <strong>Alameda County,
-              California</strong> — specifically RCFEs (Residential Care
-              Facilities for the Elderly) that serve residents with memory care
-              needs. This is a deliberate geographic beachhead; we add new
-              counties as data quality and coverage allow.
+              StarlynnCare currently covers the <strong>San Francisco Bay Area</strong>{" "}
+              — starting with <strong>Alameda County</strong> and expanding to{" "}
+              <strong>Contra Costa</strong>, <strong>San Mateo</strong>, and{" "}
+              <strong>Santa Clara</strong> counties. We add new counties as data
+              quality and coverage allow.
             </p>
             <p>
               Only facilities with an active California license and at least one
@@ -159,8 +159,8 @@ export default function MethodologyPage() {
               fields are held back until the next ingest run resolves them.
             </p>
             <p className="text-sm text-muted">
-              Sample size for current benchmarks: 14 publishable Alameda County
-              RCFEs. Percentile thresholds will shift as coverage expands.
+              Benchmarks and peer sets are recomputed dynamically as coverage expands.
+              Percentile thresholds will shift as more counties and facilities are added.
             </p>
           </Section>
 

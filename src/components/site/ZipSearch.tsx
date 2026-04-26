@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-// Only Alameda County covered today; routing will expand as coverage grows.
+// Bay Area coverage (county hubs). Expand as we add counties.
 const COVERED_ZIPS: Record<string, string> = {
   // Alameda County zip codes
   "94501": "/california/alameda-county",
@@ -60,6 +60,74 @@ const COVERED_ZIPS: Record<string, string> = {
   "94710": "/california/alameda-county",
   "94712": "/california/alameda-county",
   "94720": "/california/alameda-county",
+
+  // Contra Costa County (common)
+  "94509": "/california/contra-costa-county",
+  "94513": "/california/contra-costa-county",
+  "94519": "/california/contra-costa-county",
+  "94520": "/california/contra-costa-county",
+  "94521": "/california/contra-costa-county",
+  "94523": "/california/contra-costa-county",
+  "94526": "/california/contra-costa-county",
+  "94530": "/california/contra-costa-county",
+  "94531": "/california/contra-costa-county",
+  "94549": "/california/contra-costa-county",
+  "94553": "/california/contra-costa-county",
+  "94556": "/california/contra-costa-county",
+  "94563": "/california/contra-costa-county",
+  "94565": "/california/contra-costa-county",
+  "94572": "/california/contra-costa-county",
+  "94575": "/california/contra-costa-county",
+  "94583": "/california/contra-costa-county",
+  "94595": "/california/contra-costa-county",
+  "94596": "/california/contra-costa-county",
+  "94597": "/california/contra-costa-county",
+  "94598": "/california/contra-costa-county",
+  "94801": "/california/contra-costa-county",
+  "94804": "/california/contra-costa-county",
+
+  // San Mateo County (common)
+  "94010": "/california/san-mateo-county",
+  "94014": "/california/san-mateo-county",
+  "94015": "/california/san-mateo-county",
+  "94044": "/california/san-mateo-county",
+  "94061": "/california/san-mateo-county",
+  "94063": "/california/san-mateo-county",
+  "94065": "/california/san-mateo-county",
+  "94066": "/california/san-mateo-county",
+  "94070": "/california/san-mateo-county",
+  "94074": "/california/san-mateo-county",
+  "94080": "/california/san-mateo-county",
+  "94128": "/california/san-mateo-county",
+  "94401": "/california/san-mateo-county",
+  "94402": "/california/san-mateo-county",
+  "94403": "/california/san-mateo-county",
+
+  // Santa Clara County (common)
+  "94022": "/california/santa-clara-county",
+  "94024": "/california/santa-clara-county",
+  "94040": "/california/santa-clara-county",
+  "94041": "/california/santa-clara-county",
+  "94043": "/california/santa-clara-county",
+  "94085": "/california/santa-clara-county",
+  "94086": "/california/santa-clara-county",
+  "94087": "/california/santa-clara-county",
+  "94089": "/california/santa-clara-county",
+  "94301": "/california/santa-clara-county",
+  "94303": "/california/santa-clara-county",
+  "94306": "/california/santa-clara-county",
+  "95008": "/california/santa-clara-county",
+  "95014": "/california/santa-clara-county",
+  "95020": "/california/santa-clara-county",
+  "95030": "/california/santa-clara-county",
+  "95032": "/california/santa-clara-county",
+  "95035": "/california/santa-clara-county",
+  "95037": "/california/santa-clara-county",
+  "95110": "/california/santa-clara-county",
+  "95112": "/california/santa-clara-county",
+  "95123": "/california/santa-clara-county",
+  "95124": "/california/santa-clara-county",
+  "95125": "/california/santa-clara-county",
 };
 
 export function ZipSearch() {
@@ -124,7 +192,7 @@ export function ZipSearch() {
       )}
 
       {status === "idle" && (
-        <p className="text-xs text-muted">Currently covering Alameda County, CA</p>
+        <p className="text-xs text-muted">Currently covering the Bay Area (CA)</p>
       )}
     </div>
   );

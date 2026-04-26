@@ -55,6 +55,71 @@ const ALAMEDA_COUNTY_CITIES = [
   "union-city",
 ] as const;
 
+// Contra Costa County (major incorporated places; keep slugs aligned with ccld_rcfe_ingest.py slugify())
+const CONTRA_COSTA_COUNTY_CITIES = [
+  "antioch",
+  "brentwood",
+  "concord",
+  "danville",
+  "el-cerrito",
+  "hercules",
+  "lafayette",
+  "martinez",
+  "moraga",
+  "oakley",
+  "orinda",
+  "pinole",
+  "pittsburg",
+  "pleasant-hill",
+  "richmond",
+  "san-pablo",
+  "san-ramon",
+  "walnut-creek",
+] as const;
+
+// San Mateo County
+const SAN_MATEO_COUNTY_CITIES = [
+  "atherton",
+  "belmont",
+  "brisbane",
+  "burlingame",
+  "colma",
+  "daly-city",
+  "east-palo-alto",
+  "foster-city",
+  "half-moon-bay",
+  "hillsborough",
+  "menlo-park",
+  "millbrae",
+  "pacifica",
+  "portola-valley",
+  "redwood-city",
+  "san-bruno",
+  "san-carlos",
+  "san-mateo",
+  "south-san-francisco",
+  "woodside",
+] as const;
+
+// Santa Clara County
+const SANTA_CLARA_COUNTY_CITIES = [
+  "campbell",
+  "cupertino",
+  "gilroy",
+  "los-altos",
+  "los-altos-hills",
+  "los-gatos",
+  "milpitas",
+  "monte-sereno",
+  "morgan-hill",
+  "mountain-view",
+  "palo-alto",
+  "san-jose",
+  "santa-clara",
+  "saratoga",
+  "sunnyvale",
+] as const;
+
 export const REGIONS: ReadonlyArray<Region> = [
   {
     slug: "alameda-county",
@@ -64,6 +129,60 @@ export const REGIONS: ReadonlyArray<Region> = [
     citySlugs: ALAMEDA_COUNTY_CITIES,
   },
   ...ALAMEDA_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "contra-costa-county",
+    name: "Contra Costa County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: CONTRA_COSTA_COUNTY_CITIES,
+  },
+  ...CONTRA_COSTA_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "san-mateo-county",
+    name: "San Mateo County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SAN_MATEO_COUNTY_CITIES,
+  },
+  ...SAN_MATEO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "santa-clara-county",
+    name: "Santa Clara County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SANTA_CLARA_COUNTY_CITIES,
+  },
+  ...SANTA_CLARA_COUNTY_CITIES.map<Region>((slug) => ({
     slug,
     name: slug
       .split("-")

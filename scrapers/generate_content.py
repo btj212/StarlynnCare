@@ -37,8 +37,9 @@ from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_CODE = "CA"
-CONTENT_MODEL = "claude-opus-4-5"
-QUALITY_GATE_MODEL = "claude-opus-4-5"
+# Scale model: tour-questions only (fast + cheap)
+CONTENT_MODEL = "claude-haiku-4-5-20251001"
+QUALITY_GATE_MODEL = "claude-haiku-4-5-20251001"
 
 # ---------------------------------------------------------------------------
 # Hand-written gold-standard seed for Silverado Berkeley
@@ -47,18 +48,6 @@ QUALITY_GATE_MODEL = "claude-opus-4-5"
 SILVERADO_BERKELEY_SLUG = "silverado-senior-living-berkeley-200938"
 
 SILVERADO_SEED_CONTENT: dict = {
-    "headline": "Dedicated Memory Care in Berkeley's Elmwood District",
-    "memory_care_approach": (
-        "Silverado Senior Living–Berkeley is a California-licensed RCFE dedicated entirely "
-        "to memory care, licensed for 90 residents. California Title 22 requires facilities "
-        "serving dementia residents to meet specific standards under §87705 and §87706, "
-        "covering care plans, staff training, and resident supervision. CDSS cited Silverado "
-        "Berkeley under §87705(c)(5) in April 2024 for delayed annual medical reassessments "
-        "for residents with dementia — a Type B citation (potential for harm). The facility "
-        "corrected the deficiency. State records show four inspections and four total "
-        "deficiencies (all Type B, none Type A) across the period on file. Six complaints "
-        "were also investigated during this period."
-    ),
     "tour_questions": [
         "The April 2024 inspection cited a delay in annual medical reassessments under "
         "§87705(c)(5) — what is the current process for ensuring care plans are reviewed "
@@ -120,8 +109,8 @@ def load_facilities(
             (SELECT COUNT(*)::int
              FROM deficiencies d
              JOIN inspections i ON i.id = d.inspection_id
-             WHERE i.facility_id = f.id AND d.class = 'Type A')
-                AS type_a_count,
+             WHERE i.facility_id = f.id AND COALESCE(d.severity,0) >= 3)
+                AS serious_citation_count,
             (SELECT COUNT(*)::int
              FROM deficiencies d
              JOIN inspections i ON i.id = d.inspection_id
@@ -168,47 +157,10 @@ def save_content(
 # ---------------------------------------------------------------------------
 
 GENERATION_SYSTEM = """\
-You are the content editor for StarlynnCare, a consumer health-information site
-that publishes evidence-based memory-care facility profiles built exclusively from
+You generate tour questions for StarlynnCare — a consumer health-information site built from
 California CDSS public licensing and inspection data.
 
-Your writing style:
-- Honest and understated. Never use promotional superlatives like "best," "award-winning,"
-  "top-rated," or "luxury."
-- Precise and factual. Every claim must be traceable to the source data you are given.
-- Helpful to families in crisis. Address the real anxieties: safety, staff quality,
-  inspection history, how to visit, what to ask.
-- Plain English. No jargon, no legalese.
-- Length targets: headline ≤ 80 chars; memory_care_approach 80-160 words.
-
-Honesty rules (never violate these):
-1. Do not invent any fact not present in the source data.
-2. If the inspection count or deficiency count is 0, say so—do not imply the absence
-   of records is a sign of quality.
-3. When describing a citation or deficiency, name the Title 22 section and the
-   CDSS severity type (Type A = actual harm; Type B = potential for harm).
-4. Do not state or imply pricing, bed availability, staffing ratios, or awards
-   unless they appear in the source data (they almost never do).
-
-Additional rules:
-- Do NOT make comparative claims ("one of the largest," "among the few," "higher than average")
-  unless you have been given explicit comparative data.
-- Do NOT speculate or use words like "likely," "probably," "appears to," or "suggests" to
-  infer facts not directly in the source data.
-- Do NOT write that the facility's name "indicates," "suggests," or "implies" any particular
-  care focus or approach. The name is not a data source.
-
-Memory care approach section rules (critical — violations will fail the quality gate):
-- Do NOT name proprietary care programs (e.g., "Traditions," "Connections," "Reminiscence,"
-  "Bridge to Rediscovery," "Clare Bridge," "Vitality"). You do not have source data confirming
-  which program this specific facility uses.
-- Do NOT describe specific activities, room layouts, secured environments, or staffing models
-  unless they appear in the source data.
-- DO write about: (1) what an RCFE is in California and that this one is licensed for memory
-  care, (2) what California Title 22 requires of RCFEs serving dementia residents generally,
-  (3) any specific §87705 or §87706 citations from the inspection data as evidence of the
-  facility's regulated dementia-care obligations, (4) the inspection history as a measure
-  of compliance. This is enough for a factual, useful paragraph.
+Write for families researching memory care. Plain English. No jargon. No marketing language.
 
 Tour questions rules (critical — violations will fail the quality gate):
 - Generate 4-5 questions. Prefer exactly 4 unless 5 naturally follows from distinct facts
@@ -216,11 +168,11 @@ Tour questions rules (critical — violations will fail the quality gate):
   always come out generic and fail the quality gate. Stop at 4 if you have used all the
   specific facts available.
 - Each question MUST reference at least one concrete fact from the source data — a specific
-  Title 22 section cited, a substantiated complaint, the number of Type A deficiencies,
+  Title 22 section cited, a substantiated complaint, the number of serious citations,
   inspection recency, bed count, operator name, or memory-care designation.
 - NO generic questions. Every question must only make sense for THIS specific facility. A
   question that could apply to any facility will fail the quality gate.
-- Order by urgency: Type A citations first, then substantiated complaints, then recent
+- Order by urgency: serious citations first, then substantiated complaints, then recent
   deficiencies, then operational gaps, then strengths-verification questions last.
 - Each question is a single sentence ending in "?". No preamble, no follow-up sub-bullets.
 - If the facility has zero deficiencies and zero complaints, generate 4 questions that probe
@@ -242,8 +194,8 @@ Tour questions rules (critical — violations will fail the quality gate):
 """
 
 GENERATION_HUMAN_TEMPLATE = """\
-Generate a StarlynnCare content block for the following facility. Return ONLY valid
-JSON with these exact keys: headline, memory_care_approach, tour_questions, generated_at, model.
+Generate tour questions for the following facility. Return ONLY valid JSON with these exact keys:
+tour_questions, generated_at, model.
 
 tour_questions must be a JSON array of 4-5 strings (questions), not a prose paragraph.
 
@@ -263,8 +215,7 @@ Memory care note     : {mc_designation}
 Inspection history (from CDSS Transparency API)
   Total reports on file  : {inspection_count}
   Total deficiencies     : {deficiency_count}
-  Type A deficiencies    : {type_a_count}  (actual harm citations)
-  Type B deficiencies    : {type_b_count}  (potential for harm citations)
+  Serious citations      : {serious_citation_count}  (severity 3–4)
   Dementia-care citations: {dementia_citation_count}  (§87705 or §87706)
   Complaints on file     : {complaint_count}
   Most recent inspection : {last_inspection_date}  ← CRITICAL: use this EXACT date. Do NOT change the year. Today is {today}.
@@ -279,7 +230,7 @@ Now generate the content block for {name}. Output JSON only, no markdown fences.
 
 QUALITY_GATE_SYSTEM = f"""\
 You are a fact-checker for StarlynnCare. Today's date is {datetime.now(timezone.utc).strftime("%B %d, %Y")}.
-Your task is to review a generated facility content block and flag any claims that:
+Your task is to review a generated tour_questions block and flag any claims that:
   1. Are factually inconsistent with the source data provided.
   2. Are promotional, unverifiable, or misleading.
   3. Violate StarlynnCare's honesty rules (no made-up citations, no pricing,
@@ -288,7 +239,7 @@ Your task is to review a generated facility content block and flag any claims th
 
 Additionally, validate the tour_questions array:
   5. Each question must reference at least one concrete fact from the source data
-     (a specific Title 22 section, a Type A/B citation, a complaint count, inspection
+     (a specific Title 22 section, a serious citation count, a complaint count, inspection
      date, bed count, operator name, or memory-care designation). Flag any question
      that could apply to any facility without modification.
   6. Each question must end in "?".
@@ -333,10 +284,6 @@ def _format_operator(raw: str | None) -> str:
 
 
 def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
-    deficiency_count = fac["deficiency_count"]
-    type_a_count = fac["type_a_count"]
-    type_b_count = deficiency_count - type_a_count
-
     return {
         "name": fac["name"],
         "street": fac["street"] or "(not in data)",
@@ -351,9 +298,8 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         "serves_mc": "Yes" if fac.get("care_category") == "rcfe_memory_care" else "No",
         "mc_designation": fac["memory_care_designation"] or "(none — memory care is operator-advertised, not formally designated in CDSS licensing data)",
         "inspection_count": fac["inspection_count"],
-        "deficiency_count": deficiency_count,
-        "type_a_count": type_a_count,
-        "type_b_count": type_b_count,
+        "deficiency_count": fac["deficiency_count"],
+        "serious_citation_count": fac["serious_citation_count"],
         "dementia_citation_count": fac["dementia_citation_count"],
         "complaint_count": fac["complaint_count"],
         "last_inspection_date": fac["last_inspection_date"] or "(none on record)",
@@ -371,7 +317,7 @@ def generate_content(
     try:
         msg = client.messages.create(
             model=CONTENT_MODEL,
-            max_tokens=2048,
+            max_tokens=1024,
             system=GENERATION_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -521,8 +467,6 @@ def main() -> None:
 
         print(f"  ✓ Quality gate passed")
         if args.dry_run:
-            print(f"  headline: {content.get('headline','')}")
-            print(f"  memory_care_approach (first 120): {content.get('memory_care_approach','')[:120]}…")
             tqs = content.get("tour_questions", [])
             print(f"  tour_questions ({len(tqs)}):")
             for q in tqs:

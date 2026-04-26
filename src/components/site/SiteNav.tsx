@@ -13,7 +13,7 @@ export function SiteNav() {
         <nav className="flex items-center gap-5 text-sm font-medium text-slate">
           <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-sc-border bg-warm-white px-2.5 py-0.5 text-xs font-medium text-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden />
-            Alameda County, CA
+            Bay Area, CA
           </span>
           <Link
             href="/#how-it-works"
@@ -34,7 +34,7 @@ export function SiteNav() {
             About
           </Link>
           <Link
-            href="/california/alameda-county"
+            href="/california"
             className="inline-flex items-center rounded-full bg-teal px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-teal-mid"
           >
             Browse facilities

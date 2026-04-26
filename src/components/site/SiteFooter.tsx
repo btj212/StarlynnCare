@@ -24,6 +24,24 @@ export function SiteFooter() {
               Alameda County memory care
             </Link>
             <Link
+              href="/california/contra-costa-county"
+              className="text-white/75 hover:text-white"
+            >
+              Contra Costa County memory care
+            </Link>
+            <Link
+              href="/california/san-mateo-county"
+              className="text-white/75 hover:text-white"
+            >
+              San Mateo County memory care
+            </Link>
+            <Link
+              href="/california/santa-clara-county"
+              className="text-white/75 hover:text-white"
+            >
+              Santa Clara County memory care
+            </Link>
+            <Link
               href="/california"
               className="text-white/75 hover:text-white"
             >

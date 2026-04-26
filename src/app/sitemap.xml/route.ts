@@ -8,6 +8,9 @@ const SITE = "https://www.starlynncare.com";
 // City pages we want explicitly in the sitemap (priority hubs)
 const CITY_PAGES = [
   "alameda-county",
+  "contra-costa-county",
+  "san-mateo-county",
+  "santa-clara-county",
   "oakland",
   "berkeley",
   "alameda",

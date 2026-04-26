@@ -216,9 +216,12 @@ def parse_date_cdss(val: str | None) -> date | None:
 # ---------------------------------------------------------------------------
 
 
-def fetch_alameda_rcfe_roster(limit: int | None = None) -> list[dict[str, Any]]:
+def fetch_county_rcfe_roster(
+    county_filter: str,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
     """
-    Pull all Alameda County RCFE records from the CA Open Data CKAN datastore.
+    Pull all county RCFE records from the CA Open Data CKAN datastore.
     CKAN's county_name values are UPPERCASE — the filter must match exactly.
     """
     page_size = 500
@@ -228,7 +231,7 @@ def fetch_alameda_rcfe_roster(limit: int | None = None) -> list[dict[str, Any]]:
     while True:
         params: dict[str, Any] = {
             "resource_id": CKAN_RESOURCE_ID,
-            "filters": json.dumps({"county_name": COUNTY_FILTER}),
+            "filters": json.dumps({"county_name": county_filter}),
             "limit": page_size,
             "offset": offset,
         }
@@ -596,6 +599,11 @@ def main() -> None:
         description="CDSS CCLD Alameda County RCFE ingest → StarlynnCare facilities"
     )
     parser.add_argument(
+        "--county",
+        default=COUNTY_FILTER,
+        help='County to ingest (CKAN county_name, uppercase recommended). Example: "CONTRA COSTA". Default: ALAMEDA.',
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Fetch CKAN data and print summary; do not write to Postgres.",
@@ -629,8 +637,9 @@ def main() -> None:
 
     # ── Step 1: CKAN roster ──────────────────────────────────────────────
     limit = 10 if args.smoke else None
-    print(f"Fetching Alameda County RCFE roster from CA Open Data …")
-    ckan_rows = fetch_alameda_rcfe_roster(limit=limit)
+    county = str(args.county or COUNTY_FILTER).strip().upper()
+    print(f"Fetching {county.title()} County RCFE roster from CA Open Data …")
+    ckan_rows = fetch_county_rcfe_roster(county_filter=county, limit=limit)
     print(f"CKAN rows received: {len(ckan_rows)}")
 
     # ── Step 2: Transparency API metrics ────────────────────────────────
@@ -660,7 +669,7 @@ def main() -> None:
         else:
             facility_rows.append(row)
     if skipped_geo:
-        print(f"Skipped {skipped_geo} records with city outside Alameda County")
+        print(f"Skipped {skipped_geo} records due to county/city sanity filters")
 
     print_summary(facility_rows)
 
