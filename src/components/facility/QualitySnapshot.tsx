@@ -729,9 +729,21 @@ export async function QualitySnapshot({
         </>
       )}
 
-      {/* Independence statement */}
-      <p className="mt-5 text-xs italic text-[--color-qs-muted]">
-        StarlynnCare receives no payment from any facility listed on this site.
+      {/* Anchor link down to the full inspection record */}
+      <p className="mt-5">
+        <a
+          href="#inspections-heading"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[--color-teal] hover:underline underline-offset-2"
+        >
+          View inspections &amp; citations
+          <svg aria-hidden className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fillRule="evenodd"
+              d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </a>
       </p>
     </section>
   );
