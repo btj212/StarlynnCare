@@ -12,6 +12,9 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { buildOrganizationSchema, buildWebSiteSchema, buildFaqSchemaFromPairs } from "@/lib/seo/schema";
 import { HOME_FAQS } from "@/lib/content/homeFaqs";
+import { ordinalSuffix } from "@/lib/format/ordinalSuffix";
+import { MobileHomeView } from "@/components/mobile/MobileHomeView";
+import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 import type { CareCategory } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -76,21 +79,6 @@ type HomeData = {
 };
 
 const STATE_SLUG: Record<string, string> = { CA: "california" };
-
-function ordinalSuffix(n: number): string {
-  const v = n % 100;
-  if (v >= 11 && v <= 13) return "th";
-  switch (n % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    default:
-      return "th";
-  }
-}
 
 const KNOWN_COUNTIES: Array<{ name: string; slug: string }> = [
   { name: "Alameda County", slug: "alameda-county" },
@@ -464,10 +452,30 @@ export default async function Home() {
   return (
     <>
       <JsonLd objects={homeJsonLd} />
-      <GovernanceBar />
-      <SiteNav />
 
-      <main>
+      <div className="m-app md:hidden">
+        <MobileHomeView
+          season={season}
+          year={year}
+          statItems={statItems}
+          statFootnotes={statFootnotes}
+          counties={counties}
+          topCities={topCities}
+          gradeCardFacility={gradeCardFacility}
+          firstReview={sampleReviews[0] ?? null}
+          editorials={EDITORIAL_CARDS}
+          mobileFaqs={HOME_FAQS.slice(0, 4)}
+          lastRefreshed={stats.lastRefreshed}
+          countyCountLive={counties.length}
+        />
+      </div>
+      <MobileStickyCtaBar />
+
+      <div className="hidden md:block">
+        <GovernanceBar />
+        <SiteNav />
+
+        <main>
         {/* ── § 00 · Hero ──────────────────────────────────────────────────── */}
         <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14 md:py-16">
@@ -889,9 +897,10 @@ export default async function Home() {
             </Link>
           </div>
         </section>
-      </main>
+        </main>
 
-      <SiteFooter />
+        <SiteFooter />
+      </div>
     </>
   );
 }

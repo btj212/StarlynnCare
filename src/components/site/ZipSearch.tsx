@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { emitZipSearchSubmit } from "@/lib/analytics/gtagEvents";
 
 // Bay Area coverage (county hubs). Expand as we add counties.
 const COVERED_ZIPS: Record<string, string> = {
@@ -131,7 +132,11 @@ const COVERED_ZIPS: Record<string, string> = {
   "95125": "/california/santa-clara-county",
 };
 
-export function ZipSearch({ variant = "default" }: { variant?: "default" | "editorial" }) {
+export function ZipSearch({
+  variant = "default",
+}: {
+  variant?: "default" | "editorial" | "mobileShell";
+}) {
   const router = useRouter();
   const [zip, setZip] = useState("");
   const [status, setStatus] = useState<"idle" | "not-covered">("idle");
@@ -141,10 +146,51 @@ export function ZipSearch({ variant = "default" }: { variant?: "default" | "edit
     const clean = zip.trim();
     const dest = COVERED_ZIPS[clean];
     if (dest) {
+      emitZipSearchSubmit({ zip: clean });
       router.push(dest);
     } else {
       setStatus("not-covered");
     }
+  }
+
+  if (variant === "mobileShell") {
+    return (
+      <div className="w-full min-w-0 space-y-2">
+        <form onSubmit={handleSubmit} className="m-search w-full min-w-0" style={{ borderRadius: 0, fontSize: 16 }}>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{5}"
+            maxLength={5}
+            value={zip}
+            onChange={(e) => {
+              setZip(e.target.value.replace(/\D/g, ""));
+              setStatus("idle");
+            }}
+            placeholder="Enter ZIP or city"
+            className="min-h-[48px] border-0 bg-transparent px-3.5 font-[family-name:var(--font-sans)] text-ink placeholder:text-ink-4 outline-none"
+            aria-label="ZIP or city"
+            style={{ background: "var(--color-paper)" }}
+          />
+          <button
+            type="submit"
+            className="min-h-[48px] min-w-[44px] border-0 px-4 font-medium text-[14px] font-[family-name:var(--font-sans)] inline-flex items-center justify-center gap-1.5"
+            style={{ background: "var(--color-ink)", color: "var(--color-paper)" }}
+          >
+            Search <span aria-hidden>→</span>
+          </button>
+        </form>
+        {status === "not-covered" && (
+          <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.04em] px-0.5">
+            ZIP not in coverage yet —{" "}
+            <Link href="/california" className="text-rust underline underline-offset-2">
+              browse California
+            </Link>
+            .
+          </p>
+        )}
+      </div>
+    );
   }
 
   if (variant === "editorial") {

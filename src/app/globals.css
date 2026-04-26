@@ -1,18 +1,19 @@
 @import "tailwindcss";
+@import "../styles/mobile-shell.css";
 
 @theme {
-  /* ── Editorial palette (warm) ─────────────────────────────────────────── */
-  --color-paper:       #F6EBDB;   /* warm paper — body bg */
-  --color-paper-2:     #F0DFC4;   /* slightly deeper paper — section alt bg */
+  /* ── Editorial palette (mobile brief §2 + desktop) ─────────────────────── */
+  --color-paper:       #F4EEE2;   /* primary background */
+  --color-paper-2:     #EEE6D4;   /* card / inset */
   --color-paper-rule:  #D9CFB8;   /* thin rule lines */
   --color-ink:         #1A2620;   /* deep editorial ink */
   --color-ink-2:       #2E3A33;
   --color-ink-3:       #5A6660;
   --color-ink-4:       #8A938C;
-  --color-teal:        #2A5C4F;   /* anchor teal */
+  --color-teal:        #1F5C5A;   /* anchor teal (brief) */
   --color-teal-deep:   #143F3D;
   --color-teal-soft:   #D6E4DF;
-  --color-rust:        #C25A35;   /* warm rust accent */
+  --color-rust:        #B8533A;   /* editorial rust (brief) */
   --color-rust-soft:   #EFD6CB;
   --color-gold:        #C4923B;
   --color-gold-soft:   #EBDDB8;
@@ -26,12 +27,12 @@
 
   /* ── Legacy aliases (keep so existing class names still resolve) ──────── */
   --color-navy:        #1A2620;   /* → ink */
-  --color-warm-white:  #F6EBDB;   /* → paper */
+  --color-warm-white:  #F4EEE2;   /* → paper */
   --color-slate:       #5A6660;   /* → ink-3 */
   --color-muted:       #8A938C;   /* → ink-4 */
   --color-sc-border:   #D9CFB8;   /* → paper-rule */
   --color-teal-light:  #D6E4DF;   /* → teal-soft */
-  --color-teal-mid:    #2A5C4F;   /* → teal */
+  --color-teal-mid:    #1F5C5A;   /* → teal */
   --color-footer-bg:   #1A2620;   /* → ink */
   --color-amber:       #C4923B;   /* → gold */
   --color-amber-light: #EBDDB8;   /* → gold-soft */
