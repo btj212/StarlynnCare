@@ -55,15 +55,16 @@ type PageProps = {
   params: Promise<{ state: string; city: string; facility: string }>;
 };
 
-const CATEGORY_LABEL: Record<CareCategory, string> = {
-  rcfe_memory_care: "Residential Care Facility for the Elderly (RCFE) · Memory Care",
-  rcfe_general: "Residential Care Facility for the Elderly (RCFE)",
-  alf_memory_care: "Assisted Living Facility (ALF) · Memory Care",
-  alf_general: "Assisted Living Facility (ALF)",
-  snf_general: "Skilled Nursing Facility (SNF)",
-  snf_dementia_scu: "Skilled Nursing Facility (SNF) · Dementia Special Care Unit",
-  ccrc: "Continuing Care Retirement Community (CCRC)",
-  unknown: "Pending categorization",
+// Short pill label — used in the combined pill + (?) explainer
+const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
+  rcfe_memory_care: "RCFE · Memory Care",
+  rcfe_general: "RCFE",
+  alf_memory_care: "ALF · Memory Care",
+  alf_general: "ALF",
+  snf_general: "SNF",
+  snf_dementia_scu: "SNF · Dementia SCU",
+  ccrc: "CCRC",
+  unknown: "Care facility",
 };
 
 const LICENSE_TYPE_INFO: Partial<Record<CareCategory, { title: string; body: string }>> = {
@@ -301,6 +302,11 @@ export default async function FacilityPage({ params }: PageProps) {
     /8770[56]/.test(d.code ?? ""),
   ).length;
 
+  // Most recent inspection that had at least one recorded deficiency
+  const lastCitationDate =
+    inspections.find((i) => (defByInspection.get(i.id) ?? []).length > 0)
+      ?.inspection_date ?? null;
+
   const base =
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.starlynncare.com";
   const canonicalUrl = `${base.replace(/\/$/, "")}/${state.slug}/${facility.city_slug}/${facility.slug}`;
@@ -348,33 +354,35 @@ export default async function FacilityPage({ params }: PageProps) {
           </h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center rounded-full bg-teal-light px-3 py-1 text-xs font-semibold text-teal">
-              {CATEGORY_LABEL[facility.care_category]}
-            </span>
+            {LICENSE_TYPE_INFO[facility.care_category] ? (
+              <details className="group inline">
+                <summary className="list-none cursor-pointer select-none">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-teal-light px-3 py-1 text-xs font-semibold text-teal">
+                    {SHORT_CATEGORY_LABEL[facility.care_category]}
+                    <svg
+                      aria-hidden="true"
+                      className="h-3 w-3 opacity-50"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0ZM8.94 6.94a.75.75 0 1 1-1.061-1.061 3 3 0 1 1 2.871 5.026v.345a.75.75 0 0 1-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 1 0 8.94 6.94ZM10 15a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed text-slate max-w-prose border-l-2 border-sc-border pl-3">
+                  {LICENSE_TYPE_INFO[facility.care_category]!.body}
+                </p>
+              </details>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-teal-light px-3 py-1 text-xs font-semibold text-teal">
+                {SHORT_CATEGORY_LABEL[facility.care_category]}
+              </span>
+            )}
           </div>
-
-          {LICENSE_TYPE_INFO[facility.care_category] && (
-            <details className="mt-3 group">
-              <summary className="cursor-pointer list-none text-xs text-muted hover:text-teal transition-colors inline-flex items-center gap-1 select-none">
-                <svg
-                  aria-hidden="true"
-                  className="h-3 w-3 shrink-0 transition-transform group-open:rotate-90"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {LICENSE_TYPE_INFO[facility.care_category]!.title}
-              </summary>
-              <p className="mt-2 text-sm leading-relaxed text-slate max-w-prose pl-4 border-l-2 border-sc-border">
-                {LICENSE_TYPE_INFO[facility.care_category]!.body}
-              </p>
-            </details>
-          )}
 
           {(facility.street || facility.city || facility.zip) && (
             <p className="mt-4 text-slate leading-relaxed">
@@ -387,40 +395,17 @@ export default async function FacilityPage({ params }: PageProps) {
             </p>
           )}
 
-          {asOfFormatted && (
-            <p className="mt-3 text-sm text-muted">
-              Record last updated {asOfFormatted}.
-            </p>
-          )}
-
-          {/* ──────────────────────────── Exterior photo ─────────────────────────── */}
-          {facility.photo_url && (
-            <div className="mt-8 overflow-hidden rounded-xl border border-sc-border shadow-card">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={facility.photo_url}
-                alt={`Exterior view of ${facility.name}`}
-                width={800}
-                height={500}
-                className="w-full object-cover"
-                loading="lazy"
-              />
-              <p className="px-4 py-2 text-xs text-muted bg-warm-white border-t border-sc-border/60">
-                {facility.photo_attribution ?? "© Google Street View"}
-              </p>
-            </div>
-          )}
-
           {/* ───────────────────────── At a glance dashboard ────────────────────── */}
           <QuickFacts
             facility={facility}
             lastInspectionDate={
               inspections.find((i) => !i.is_complaint)?.inspection_date ?? null
             }
+            lastCitationDate={lastCitationDate}
           />
 
           {/* ─────────────────────────── Quality snapshot ────────────────────────── */}
-          <QualitySnapshot facilityId={facility.id} />
+          <QualitySnapshot facilityId={facility.id} updatedAt={asOfFormatted} />
 
           {benchmarks && (
             <section className="mt-10" aria-labelledby="glance-heading">

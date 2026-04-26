@@ -3,6 +3,7 @@ import type { Facility } from "@/lib/types";
 interface QuickFactsProps {
   facility: Facility;
   lastInspectionDate?: string | null;
+  lastCitationDate?: string | null;
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -15,22 +16,6 @@ function formatDate(iso: string | null | undefined): string {
   });
 }
 
-function LicenseStatusPill({ status }: { status: string | null }) {
-  if (!status) return null;
-  const lower = status.toLowerCase();
-  const isActive = lower === "licensed" || lower === "active";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none ${
-        isActive
-          ? "bg-teal-light text-teal border border-teal/20"
-          : "bg-amber-50 text-amber-700 border border-amber-200"
-      }`}
-    >
-      {status}
-    </span>
-  );
-}
 
 interface FactItemProps {
   label: string;
@@ -48,7 +33,7 @@ function FactItem({ label, value }: FactItemProps) {
   );
 }
 
-export function QuickFacts({ facility, lastInspectionDate }: QuickFactsProps) {
+export function QuickFacts({ facility, lastInspectionDate, lastCitationDate }: QuickFactsProps) {
   const phone = facility.phone;
   const formattedPhone = phone
     ? phone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3").replace(/\D+$/, "")
@@ -63,16 +48,6 @@ export function QuickFacts({ facility, lastInspectionDate }: QuickFactsProps) {
         <FactItem
           label="Licensed beds"
           value={facility.beds != null ? String(facility.beds) : "—"}
-        />
-        <FactItem
-          label="License status"
-          value={
-            facility.license_status ? (
-              <LicenseStatusPill status={facility.license_status} />
-            ) : (
-              "—"
-            )
-          }
         />
         <FactItem
           label="Memory care"
@@ -101,6 +76,10 @@ export function QuickFacts({ facility, lastInspectionDate }: QuickFactsProps) {
         <FactItem
           label="Last inspection"
           value={formatDate(lastInspectionDate ?? facility.last_inspection_date)}
+        />
+        <FactItem
+          label="Last citation"
+          value={lastCitationDate ? formatDate(lastCitationDate) : "None on record"}
         />
         {facility.operator_name && (
           <FactItem label="Operated by" value={facility.operator_name} />

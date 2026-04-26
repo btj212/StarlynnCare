@@ -5,11 +5,12 @@
  * Single Supabase RPC call: facility_snapshot(p_facility_id).
  *
  * Layout (in order):
- *   1. Grade card  — large letter + 4 sub-bars; <details> reveals "show the math"
- *   2. Percentile bullet strip — 4 horizontal bars (severity/repeats/frequency/trajectory)
- *   3. Two-up row — trajectory sparkline (left) + scope×severity heatmap (right)
- *   4. Pull quote — most severe inspector narrative
- *   5. Peer attribution footnote
+ *   1. Grade card  — large letter + 4 merged bars (with descriptions + median tick);
+ *                    <details> expands a "show the math" panel
+ *   2. Two-up row  — trajectory sparkline (left) + scope×severity heatmap (right)
+ *
+ * The standalone BulletStrip and PullQuote components have been removed.
+ * Peer count and "updated" badge live in the section header.
  */
 
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
@@ -106,8 +107,15 @@ function pctColor(pct: number | null): string {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Grade Card
+// Grade Card (merged with percentile strip)
 // ─────────────────────────────────────────────────────────────────
+
+const METRIC_ROWS: [string, keyof SnapshotPayload["metrics"], string][] = [
+  ["Severity", "severity", "Weighted citations per bed"],
+  ["Repeats", "repeats", "Repeat deficiencies as share of total"],
+  ["Frequency", "frequency", "Deficiencies per inspection"],
+  ["Trajectory", "trajectory", "Improving or worsening vs. prior year"],
+];
 
 function GradeCard({ payload }: { payload: SnapshotPayload }) {
   const { grade, metrics, facility, peer_set } = payload;
@@ -118,7 +126,6 @@ function GradeCard({ payload }: { payload: SnapshotPayload }) {
 
   const noData = !payload.has_inspections;
 
-  // "Show the math" narrative
   const mathText = letter
     ? [
         `${facility.name} scores ${letter}.`,
@@ -140,13 +147,9 @@ function GradeCard({ payload }: { payload: SnapshotPayload }) {
             : "Quality grade — click to learn more"
         }
       >
-        {/* The visible card */}
         <div
-          className="mt-8 flex flex-col sm:flex-row sm:items-center gap-5 rounded-xl border p-5 shadow-card transition-shadow group-hover:shadow-card-hover"
-          style={{
-            borderColor: `${color}33`,
-            backgroundColor: bg,
-          }}
+          className="mt-5 flex flex-col sm:flex-row sm:items-start gap-5 rounded-xl border p-5 shadow-card transition-shadow group-hover:shadow-card-hover"
+          style={{ borderColor: `${color}33`, backgroundColor: bg }}
         >
           {/* Large grade letter */}
           <div
@@ -162,45 +165,62 @@ function GradeCard({ payload }: { payload: SnapshotPayload }) {
             </span>
           </div>
 
-          {/* Sub-bars + label */}
+          {/* Bars with descriptions and median ticks */}
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-[--color-qs-muted] mb-3">
               Quality grade
-              <span className="ml-1.5 text-[--color-qs-muted] normal-case font-normal tracking-normal">
+              <span className="ml-1.5 normal-case font-normal tracking-normal text-[--color-qs-muted]">
                 · click to show how this was calculated
               </span>
             </p>
-            <div className="space-y-2">
-              {(
-                [
-                  ["Severity", metrics.severity.percentile],
-                  ["Repeats", metrics.repeats.percentile],
-                  ["Frequency", metrics.frequency.percentile],
-                  ["Trajectory", metrics.trajectory.percentile],
-                ] as [string, number | null][]
-              ).map(([label, pct]) => (
-                <div key={label} className="flex items-center gap-2">
-                  <span className="w-20 text-xs text-[--color-qs-muted] shrink-0">
-                    {label}
-                  </span>
-                  <div className="flex-1 h-1.5 rounded-full bg-black/8 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${pct ?? 0}%`,
-                        backgroundColor: pctColor(pct),
-                      }}
-                    />
+            <div className="space-y-3">
+              {METRIC_ROWS.map(([label, key, desc]) => {
+                const pct = metrics[key].percentile;
+                const fillColor = pctColor(pct);
+                return (
+                  <div key={label}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 text-xs text-[--color-qs-muted] shrink-0">
+                        {label}
+                      </span>
+                      {/* Track with overflow-hidden for fill + absolute median tick on top */}
+                      <div className="relative flex-1">
+                        <div className="h-1.5 rounded-full bg-black/8 overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${pct ?? 0}%`,
+                              backgroundColor: fillColor,
+                            }}
+                          />
+                        </div>
+                        {/* Median tick at 50% — outside overflow-hidden so it renders on top */}
+                        <div
+                          className="absolute top-0 h-1.5 w-0.5 -translate-x-1/2 rounded-full"
+                          style={{
+                            left: "50%",
+                            backgroundColor: "rgba(154,147,138,0.45)",
+                          }}
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <span
+                        className="w-10 text-right text-xs font-semibold tabular-nums shrink-0"
+                        style={{ color: fillColor }}
+                      >
+                        {pct !== null ? `${pct}th` : "—"}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 pl-[5.5rem] text-[10px] text-[--color-qs-muted]">
+                      {desc}
+                    </p>
                   </div>
-                  <span
-                    className="text-xs font-medium tabular-nums w-8 text-right"
-                    style={{ color: pctColor(pct) }}
-                  >
-                    {pct !== null ? `${pct}` : "—"}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            <p className="mt-3 text-[10px] text-[--color-qs-muted]/70">
+              Tick mark at 50% = peer median · higher percentile = better facility
+            </p>
           </div>
         </div>
       </summary>
@@ -228,84 +248,12 @@ function GradeCard({ payload }: { payload: SnapshotPayload }) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Percentile Bullet Strip
-// ─────────────────────────────────────────────────────────────────
-
-function BulletStrip({ metrics }: { metrics: SnapshotPayload["metrics"] }) {
-  const rows: [string, string, SnapshotMetric][] = [
-    ["Severity", "Weighted citations per bed", metrics.severity],
-    ["Repeats", "Repeat deficiencies as share of total", metrics.repeats],
-    ["Frequency", "Deficiencies per inspection", metrics.frequency],
-    ["Trajectory", "Improving or worsening vs. prior year", metrics.trajectory],
-  ];
-
-  return (
-    <div className="mt-5 rounded-xl border border-[--color-sc-border] bg-white px-5 py-4 shadow-card">
-      <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-[--color-qs-muted]">
-        Percentile within peer group — higher is better
-      </p>
-      <div className="space-y-3">
-        {rows.map(([label, desc, metric]) => {
-          const pct = metric.percentile;
-          const fillColor = pctColor(pct);
-          const markerLeft = pct !== null ? `${pct}%` : "50%";
-
-          return (
-            <div key={label}>
-              <div className="flex items-baseline justify-between mb-1">
-                <span className="text-xs font-medium text-[--color-ink]">
-                  {label}
-                </span>
-                <span className="text-[10px] text-[--color-qs-muted] hidden sm:block">
-                  {desc}
-                </span>
-                <span
-                  className="text-xs font-semibold tabular-nums"
-                  style={{ color: fillColor }}
-                >
-                  {pct !== null ? `${pct}th` : "—"}
-                </span>
-              </div>
-              {/* Bar */}
-              <div className="relative h-2 rounded-full bg-black/6">
-                {/* Peer median tick at 50% */}
-                <div
-                  className="absolute top-0 w-px h-2 bg-[--color-qs-muted]/50"
-                  style={{ left: "50%" }}
-                  aria-hidden="true"
-                />
-                {/* Facility marker */}
-                {pct !== null && (
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow-sm"
-                    style={{
-                      left: markerLeft,
-                      transform: "translate(-50%, -50%)",
-                      backgroundColor: fillColor,
-                    }}
-                    aria-label={`${pct}th percentile`}
-                  />
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <p className="mt-3 text-[10px] text-[--color-qs-muted]">
-        Tick mark at 50% = peer median.
-      </p>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────
 // Trajectory Sparkline (inline SVG)
 // ─────────────────────────────────────────────────────────────────
 
 function TrajectorySparkline({
   series,
   trajectoryPct,
-  trajectoryValue,
 }: {
   series: SnapshotPayload["trajectory_series"];
   trajectoryPct: number | null;
@@ -320,7 +268,6 @@ function TrajectorySparkline({
   const plotW = W - PAD_LEFT - PAD_RIGHT;
   const plotH = H - PAD_TOP - PAD_BOTTOM;
 
-  // Check if there's actually any data to show
   const hasData = series.some(
     (p) => p.facility_score > 0 || p.peer_median_score > 0,
   );
@@ -354,7 +301,6 @@ function TrajectorySparkline({
     )
     .join(" ");
 
-  // Determine direction arrow
   const first6 = series.slice(0, 6).reduce((a, b) => a + b.facility_score, 0);
   const last6 = series.slice(-6).reduce((a, b) => a + b.facility_score, 0);
   const improving = last6 < first6;
@@ -366,7 +312,6 @@ function TrajectorySparkline({
       : "#b5532e";
   const arrowLabel = stable ? "stable" : improving ? "↓ improving" : "↑ worsening";
 
-  // First + last month labels
   const firstMonth = series[0]?.month ?? "";
   const lastMonth = series[series.length - 1]?.month ?? "";
   const fmtMonth = (m: string) => {
@@ -381,10 +326,7 @@ function TrajectorySparkline({
         <p className="text-xs font-semibold text-[--color-ink]">
           Citation severity over time
         </p>
-        <span
-          className="text-xs font-medium"
-          style={{ color: arrowColor }}
-        >
+        <span className="text-xs font-medium" style={{ color: arrowColor }}>
           {arrowLabel}
         </span>
       </div>
@@ -399,7 +341,6 @@ function TrajectorySparkline({
         aria-hidden="true"
         overflow="visible"
       >
-        {/* Peer median — dashed */}
         <polyline
           points={medianPoints}
           fill="none"
@@ -408,7 +349,6 @@ function TrajectorySparkline({
           strokeDasharray="4 3"
           opacity="0.6"
         />
-        {/* Facility line — solid */}
         <polyline
           points={facilityPoints}
           fill="none"
@@ -419,7 +359,6 @@ function TrajectorySparkline({
         />
       </svg>
 
-      {/* X-axis labels */}
       <div className="flex justify-between mt-0.5">
         <span className="text-[9px] text-[--color-qs-muted]">
           {fmtMonth(firstMonth)}
@@ -440,7 +379,7 @@ function TrajectorySparkline({
 // ─────────────────────────────────────────────────────────────────
 
 const SCOPES = ["isolated", "pattern", "widespread"] as const;
-const SEV_ROWS = [4, 3, 2, 1] as const; // top = most severe
+const SEV_ROWS = [4, 3, 2, 1] as const;
 
 const SEV_LABELS: Record<number, string> = {
   4: "Sev 4 · IJ",
@@ -456,7 +395,6 @@ const SEV_SHORT: Record<number, string> = {
   1: "S1",
 };
 
-/** Severity + scope → CMS A–L cell code. */
 function cellCode(sev: number, scope: string): string {
   const col = SCOPES.indexOf(scope as (typeof SCOPES)[number]);
   if (col === -1) return "";
@@ -469,24 +407,18 @@ function cellCode(sev: number, scope: string): string {
   return codes[sev]?.[col] ?? "";
 }
 
-/** Count → fill color (paper → bad). */
 function heatFill(count: number, sev: number): string {
-  if (count === 0) return "#faf7f2"; // paper
+  if (count === 0) return "#faf7f2";
   if (sev === 4) {
-    if (count >= 2) return "#8b3318"; // dark bad
-    return "#b5532e"; // bad
+    if (count >= 2) return "#8b3318";
+    return "#b5532e";
   }
   if (count >= 4) return "#cc7b5a";
   if (count >= 2) return "#dda89d";
-  return "#eed6cf"; // very light
+  return "#eed6cf";
 }
 
-function HeatmapGrid({
-  heatmap,
-}: {
-  heatmap: SnapshotPayload["heatmap"];
-}) {
-  // Index the data by severity+scope
+function HeatmapGrid({ heatmap }: { heatmap: SnapshotPayload["heatmap"] }) {
   const lookup = new Map<string, { count: number; tags: string[] | null }>();
   for (const cell of heatmap) {
     lookup.set(`${cell.severity}-${cell.scope}`, {
@@ -530,7 +462,6 @@ function HeatmapGrid({
           aria-label="Scope and severity heatmap of inspector findings"
           style={{ maxHeight: 180 }}
         >
-          {/* Column headers */}
           {SCOPES.map((scope, ci) => (
             <text
               key={scope}
@@ -545,7 +476,6 @@ function HeatmapGrid({
             </text>
           ))}
 
-          {/* Rows */}
           {SEV_ROWS.map((sev, ri) =>
             SCOPES.map((scope, ci) => {
               const key = `${sev}-${scope}`;
@@ -569,7 +499,6 @@ function HeatmapGrid({
                     stroke={isIJ ? "#c8a26b" : "#e2e8f0"}
                     strokeWidth={isIJ ? "1.5" : "0.5"}
                   />
-                  {/* CMS code */}
                   <text
                     x={x + 5}
                     y={y + 12}
@@ -580,7 +509,6 @@ function HeatmapGrid({
                   >
                     {code}
                   </text>
-                  {/* Count */}
                   {cell.count > 0 && (
                     <text
                       x={x + COL_W / 2}
@@ -594,7 +522,6 @@ function HeatmapGrid({
                       {cell.count}
                     </text>
                   )}
-                  {/* Tooltip via SVG title */}
                   {tagList && (
                     <title>
                       {sev === 4 ? "Immediate Jeopardy" : `Severity ${sev}`},{" "}
@@ -607,10 +534,8 @@ function HeatmapGrid({
             }),
           )}
 
-          {/* Row labels */}
           {SEV_ROWS.map((sev, ri) => (
             <g key={`label-${sev}`}>
-              {/* Short label for mobile */}
               <text
                 x={LABEL_W - 6}
                 y={HEAD_H + ri * ROW_H + ROW_H / 2 + 3}
@@ -619,7 +544,6 @@ function HeatmapGrid({
                 fill={sev === 4 ? "#c8a26b" : "#9a938a"}
                 fontWeight={sev === 4 ? "600" : "400"}
                 fontFamily="inherit"
-                className="hidden-sm"
               >
                 {SEV_LABELS[sev]}
               </text>
@@ -628,7 +552,6 @@ function HeatmapGrid({
         </svg>
       )}
 
-      {/* Legend */}
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
         {SEV_ROWS.map((sev) => (
           <span
@@ -648,49 +571,6 @@ function HeatmapGrid({
         ))}
       </div>
     </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────
-// Pull Quote
-// ─────────────────────────────────────────────────────────────────
-
-function PullQuote({
-  quote,
-}: {
-  quote: SnapshotPayload["pull_quote"];
-}) {
-  if (!quote) return null;
-
-  const dateFormatted = new Intl.DateTimeFormat("en-US", {
-    dateStyle: "long",
-    timeZone: "UTC",
-  }).format(new Date(quote.date + "T12:00:00Z"));
-
-  const text =
-    quote.text.length > 420
-      ? quote.text.slice(0, 420).trimEnd() + "…"
-      : quote.text;
-
-  return (
-    <figure className="mt-6 rounded-xl border-l-4 border-[--color-bad] bg-white px-6 py-5 shadow-card">
-      <blockquote className="font-[family-name:var(--font-serif)] text-[0.9375rem] leading-relaxed text-[--color-ink] italic">
-        &ldquo;{text}&rdquo;
-      </blockquote>
-      <figcaption className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-[--color-qs-muted]">
-        <span>Inspector finding</span>
-        <span aria-hidden>·</span>
-        <time dateTime={quote.date}>{dateFormatted}</time>
-        {quote.tag && (
-          <>
-            <span aria-hidden>·</span>
-            <span className="font-mono text-[9px] bg-black/5 px-1.5 py-0.5 rounded">
-              {quote.tag}
-            </span>
-          </>
-        )}
-      </figcaption>
-    </figure>
   );
 }
 
@@ -722,8 +602,10 @@ function NoInspectionsState({ peerN }: { peerN: number }) {
 
 export async function QualitySnapshot({
   facilityId,
+  updatedAt,
 }: {
   facilityId: string;
+  updatedAt?: string | null;
 }) {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return null;
@@ -745,57 +627,50 @@ export async function QualitySnapshot({
 
   if (!payload) return null;
 
-  const { has_inspections, peer_set, metrics, trajectory_series, heatmap, pull_quote } =
-    payload;
+  const { has_inspections, peer_set, metrics, trajectory_series, heatmap } = payload;
 
   const tooSmallPeerSet = peer_set.n < 10;
 
   return (
     <section aria-labelledby="qs-heading" className="mt-10">
-      <h2
-        id="qs-heading"
-        className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-[--color-navy]"
-      >
-        Quality snapshot
-      </h2>
-      <p className="mt-1 text-sm text-[--color-muted]">
-        How this facility compares to peers over the last 36 months.
-        No marketing language — numbers from state inspection records only.
-      </p>
-
-      {/* Limited peer set banner */}
-      {tooSmallPeerSet && (
-        <div className="mt-3 flex items-start gap-2 rounded-lg border border-[--color-amber]/40 bg-[--color-amber-light] px-4 py-2.5 text-xs text-[--color-amber]">
-          <svg
-            aria-hidden
-            className="mt-0.5 h-3.5 w-3.5 shrink-0"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>
-            Limited peer set ({peer_set.n} facilities) — interpret with caution.
-            Percentiles are less stable with small samples.
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2
+          id="qs-heading"
+          className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-[--color-navy]"
+        >
+          Quality snapshot
+        </h2>
+        {updatedAt && (
+          <span className="shrink-0 rounded-md bg-black/5 px-2 py-0.5 text-[11px] text-[--color-qs-muted]">
+            Updated {updatedAt}
           </span>
-        </div>
-      )}
+        )}
+      </div>
+      <p className="mt-1 text-sm text-[--color-muted]">
+        Compared to{" "}
+        <strong className="font-medium text-[--color-ink]">{peer_set.n}</strong>{" "}
+        California {payload.facility.license_type ?? "care"} facilities
+        {peer_set.fallback_level === 0 ? " of similar size" : ""}, over the last 36 months.
+        {tooSmallPeerSet && (
+          <span className="text-[--color-qs-muted]">
+            {" "}Small sample — percentiles are less stable.
+          </span>
+        )}
+        {peer_set.fallback_level > 0 && (
+          <span className="text-[--color-qs-muted]">
+            {" "}Bed-size filter relaxed due to small peer set.
+          </span>
+        )}
+      </p>
 
       {!has_inspections ? (
         <NoInspectionsState peerN={peer_set.n} />
       ) : (
         <>
-          {/* 1. Grade card */}
+          {/* 1. Grade card (merged with percentile strip) */}
           <GradeCard payload={payload} />
 
-          {/* 2. Percentile bullet strip */}
-          <BulletStrip metrics={metrics} />
-
-          {/* 3. Two-up row: sparkline + heatmap */}
+          {/* 2. Two-up row: sparkline + heatmap */}
           <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TrajectorySparkline
               series={trajectory_series}
@@ -804,26 +679,8 @@ export async function QualitySnapshot({
             />
             <HeatmapGrid heatmap={heatmap} />
           </div>
-
-          {/* 4. Pull quote */}
-          <PullQuote quote={pull_quote} />
         </>
       )}
-
-      {/* 5. Peer attribution footnote */}
-      <p className="mt-4 text-xs text-[--color-qs-muted]">
-        Compared to{" "}
-        <strong className="font-medium text-[--color-ink]">{peer_set.n}</strong>{" "}
-        California {payload.facility.license_type ?? "care"} facilities
-        {peer_set.fallback_level === 0 ? " of similar size" : ""}.
-        {peer_set.fallback_level > 0 && (
-          <span>
-            {" "}
-            Bed-size filter relaxed due to small peer set (fallback level{" "}
-            {peer_set.fallback_level}).
-          </span>
-        )}
-      </p>
     </section>
   );
 }
