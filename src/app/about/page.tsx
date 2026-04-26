@@ -1,0 +1,151 @@
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { SiteNav } from "@/components/site/SiteNav";
+import { SiteFooter } from "@/components/site/SiteFooter";
+
+export const metadata: Metadata = {
+  title: "About | StarlynnCare",
+  description:
+    "We're a husband-and-wife team combining frontline healthcare experience with the tools and storytelling needed to make complex information actually useful for families navigating memory care.",
+};
+
+export default function AboutPage() {
+  return (
+    <>
+      <SiteNav />
+      <main className="bg-warm-white">
+
+        {/* ── Hero ─────────────────────────────────────────────────────────── */}
+        <section className="border-b border-sc-border">
+          <div className="mx-auto max-w-[760px] px-6 py-14 md:px-8 md:py-20">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted">
+              <Link href="/" className="hover:text-teal transition-colors">
+                StarlynnCare
+              </Link>{" "}
+              · About
+            </p>
+            <h1 className="mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
+              About StarlynnCare
+            </h1>
+            <p className="mt-5 text-lg leading-relaxed text-slate max-w-[620px]">
+              Choosing a care facility for someone you love is one of the hardest
+              decisions a family can make — and one of the least transparent.
+              We started StarlynnCare to change that.
+            </p>
+            <p className="mt-4 text-lg leading-relaxed text-slate max-w-[620px]">
+              We&rsquo;re a husband-and-wife team combining decades of frontline
+              healthcare experience with the tools and storytelling needed to make
+              complex information actually useful. Our goal is simple: help families
+              ask the right questions, understand what they&rsquo;re seeing, and
+              trust the people they&rsquo;re trusting.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Founders ─────────────────────────────────────────────────────── */}
+        <section className="border-b border-sc-border">
+          <div className="mx-auto max-w-[1000px] px-6 py-16 md:px-8 md:py-20">
+            <div className="grid gap-10 md:grid-cols-2 md:gap-12">
+
+              {/* Star */}
+              <div className="flex flex-col items-center text-center md:items-start md:text-left">
+                <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-full border-2 border-sc-border bg-sc-border/20 shadow-card">
+                  <Image
+                    src="/images/about/star.png"
+                    alt="Star Lynn Jones, RN — Co-Founder of StarlynnCare"
+                    fill
+                    className="object-cover object-top"
+                    sizes="144px"
+                    priority
+                  />
+                </div>
+                <div className="mt-5">
+                  <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
+                    Star Lynn Jones, RN
+                  </h2>
+                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-teal">
+                    Co-Founder
+                  </p>
+                </div>
+                <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
+                  <p>
+                    Star is a Registered Nurse with a career built around protecting
+                    vulnerable people — from immunizations and wound care to chronic
+                    disease management, foot care, and public health case management.
+                    She&rsquo;s worked directly with patients across community and
+                    clinical settings, with a focus on preventative care and patient
+                    education.
+                  </p>
+                  <p>
+                    Most recently, Star served as a Nurse Surveyor for the California
+                    Department of Public Health, where she conducted onsite inspections,
+                    audits, and investigations of healthcare facilities to ensure
+                    compliance with state and federal regulations. She investigated
+                    complaints, evaluated quality of care, and held facilities
+                    accountable for the safety of the people in their charge.
+                  </p>
+                  <p>
+                    That work showed her how much families don&rsquo;t know about
+                    the places caring for their loved ones — and how hard it is to
+                    find out. She&rsquo;s now building StarlynnCare with her husband
+                    to give families the kind of inside view she wishes every loved
+                    one had.
+                  </p>
+                </div>
+              </div>
+
+              {/* Blake */}
+              <div className="flex flex-col items-center text-center md:items-start md:text-left">
+                <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-full border-2 border-sc-border bg-sc-border/20 shadow-card">
+                  <Image
+                    src="/images/about/blake-jones.png"
+                    alt="Blake Jones — Co-Founder of StarlynnCare"
+                    fill
+                    className="object-cover object-top"
+                    sizes="144px"
+                    priority
+                  />
+                </div>
+                <div className="mt-5">
+                  <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
+                    Blake Jones
+                  </h2>
+                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-teal">
+                    Co-Founder
+                  </p>
+                </div>
+                <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
+                  <p>
+                    Blake is a marketer and storyteller currently pursuing his MBA
+                    at UC Berkeley&rsquo;s Haas School of Business, with a focus on
+                    operations, marketing, and strategy. He&rsquo;s spent over a
+                    decade leading creative production for brands.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* ── Footer CTA ───────────────────────────────────────────────────── */}
+        <section>
+          <div className="mx-auto max-w-[760px] px-6 py-14 md:px-8 md:py-16">
+            <p className="text-base leading-relaxed text-slate">
+              Questions, corrections, or just want to talk?{" "}
+              <a
+                href="mailto:hello@starlynncare.com"
+                className="font-medium text-teal underline-offset-4 hover:underline"
+              >
+                hello@starlynncare.com
+              </a>
+            </p>
+          </div>
+        </section>
+
+      </main>
+      <SiteFooter />
+    </>
+  );
+}

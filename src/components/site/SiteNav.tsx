@@ -28,6 +28,12 @@ export function SiteNav() {
             Methodology
           </Link>
           <Link
+            href="/about"
+            className="hidden transition-colors hover:text-teal md:inline"
+          >
+            About
+          </Link>
+          <Link
             href="/california/alameda-county"
             className="inline-flex items-center rounded-full bg-teal px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-teal-mid"
           >
