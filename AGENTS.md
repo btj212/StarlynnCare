@@ -12,3 +12,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 4. **Never fabricate:** no `aggregateRating` without published reviews; no `geo` without real lat/lng; no fake CDSS `sameAs` without a license number.
 
 Full details: [`docs/SEO_GEO_CONVENTIONS.md`](docs/SEO_GEO_CONVENTIONS.md).
+
+## Editorial design system checklist (hub pages)
+
+When adding or editing a **state, county, or city hub page** (any route under `/[state]`) or the homepage:
+
+1. **Governance bar**: include `<GovernanceBar />` above `<SiteNav />`. Never on Clerk/auth pages.
+2. **Section headers**: use `<SectionHead label="§ N · Label" title={<>…<em>…</em></>}>` from `src/components/editorial/SectionHead.tsx`.
+3. **Stat grids**: use `<StatBlock stats={StatItem[]} footnotes={string[]}>` from `src/components/editorial/StatBlock.tsx`. Every cell must have a real `src` (CDSS, policy, etc.).
+4. **Data citations**: attach `<DataFootnote source="…" refreshed="…" />` to any sentence with a numeric claim.
+5. **No placeholder numbers**: all stats must come from Supabase or a confirmed constant. Never ship prototype mock data.
+6. **Fonts**: use `font-[family-name:var(--font-display)]` for headlines, `font-[family-name:var(--font-mono)]` for data/citations.
+
+Full details: [`docs/SEO_GEO_CONVENTIONS.md#8-editorial-design-system-v1`](docs/SEO_GEO_CONVENTIONS.md).
+

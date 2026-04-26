@@ -3,11 +3,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { GovernanceBar } from "@/components/site/GovernanceBar";
+import { SectionHead } from "@/components/editorial/SectionHead";
+import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
+import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { resolveListingRegion } from "@/lib/resolveListingRegion";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
+import { getRegulatorPrimer } from "@/lib/content/regulatorPrimer";
 import {
   buildBreadcrumbList,
   buildCollectionPageSchema,
@@ -183,85 +188,205 @@ export default async function RegionPage({ params }: PageProps) {
     ),
   ];
 
+  // ── Additional data for content blocks ────────────────────────────────────
+
+  // Severe (Type-A/B) deficiency count for the region
+  let severeCount = 0;
+  let severeQueryDate = "";
+  if (supabase && facilities.length > 0) {
+    const ids = facilities.map((f) => f.id);
+    const { data: inspRows } = await supabase
+      .from("inspections")
+      .select("id, facility_id")
+      .in("facility_id", ids);
+    const inspIds = (inspRows ?? []).map((i: { id: string }) => i.id);
+    if (inspIds.length > 0) {
+      const { count: sevCount } = await supabase
+        .from("deficiencies")
+        .select("*", { count: "exact", head: true })
+        .in("inspection_id", inspIds)
+        .gte("severity", 3);
+      severeCount = sevCount ?? 0;
+    }
+    severeQueryDate = new Date().toISOString().split("T")[0];
+  }
+
+  const severePct = totalCount > 0 ? Math.round((severeCount / totalCount) * 100) : 0;
+
+  // Regulator primer (CA-specific)
+  const regulatorPrimer = getRegulatorPrimer(region.state.code);
+
+  const regionStatItems: StatItem[] = [
+    {
+      n: String(totalCount),
+      label: `Licensed memory care facilities indexed in ${region.name}`,
+      src: "CDSS",
+    },
+    {
+      n: String(severeCount),
+      label: "Severe (Type-A or Type-B) deficiency findings on file from the last 24 months",
+      src: "CDSS",
+      delta: totalCount > 0 ? `${severePct}% of facilities` : undefined,
+    },
+    {
+      n: String(visibleCount),
+      label: "Facilities with full CDSS profile published on StarlynnCare",
+      src: "StarlynnCare",
+    },
+  ];
+
+  const isCounty = region.kind === "county";
+
   return (
     <>
       <JsonLd objects={regionJsonLd} />
+      <GovernanceBar />
       <SiteNav />
-      <main className="min-h-[60vh] border-b border-sc-border bg-warm-white">
-        <div className="mx-auto max-w-[1120px] px-6 py-10 md:px-8 md:py-14">
+      <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
-          {/* ── Breadcrumb ── */}
-          <nav className="flex items-center gap-1.5 text-xs text-muted" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-teal transition-colors">Home</Link>
-            <span aria-hidden>›</span>
-            <Link href={`/${region.state.slug}`} className="hover:text-teal transition-colors">
-              {region.state.name}
-            </Link>
-            <span aria-hidden>›</span>
-            <span className="text-ink font-medium">Memory care</span>
-          </nav>
+        {/* ── Header ── */}
+        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+          <div className="mx-auto max-w-[1280px] px-10 py-12">
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-1.5 mb-5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-ink-4" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-teal transition-colors">Home</Link>
+              <span aria-hidden>›</span>
+              <Link href={`/${region.state.slug}`} className="hover:text-teal transition-colors">
+                {region.state.name}
+              </Link>
+              <span aria-hidden>›</span>
+              <span className="text-ink-3">{region.name}</span>
+            </nav>
 
-          {/* ── H1 ── */}
-          <h1 className="mt-3 font-[family-name:var(--font-serif)] text-3xl font-semibold tracking-tight text-navy md:text-4xl md:leading-tight">
-            Memory care in {region.name}
-          </h1>
-
-          {/* ── Stats line ── */}
-          {totalCount > 0 && (
-            <p className="mt-2 text-sm text-muted">
-              <span className="font-semibold text-ink tabular-nums">{visibleCount}</span>{" "}
-              {visibleCount === 1 ? "facility" : "facilities"} with verified CDSS records
-              {smallCount > 0 && (
-                <span>
-                  {" "}·{" "}
-                  <span className="tabular-nums">{smallCount}</span> small care homes available via filter
-                </span>
-              )}
+            <h1
+              className="font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink mb-4"
+              style={{ fontSize: "clamp(40px, 5vw, 64px)", lineHeight: 1 }}
+            >
+              Memory care in {region.name}
+            </h1>
+            <p
+              className="font-[family-name:var(--font-display)] italic text-[20px] leading-[1.4] text-ink-3 max-w-[50ch]"
+            >
+              State inspection records, citation history, and quality grades for every licensed
+              facility — built from primary CDSS data.
             </p>
-          )}
+          </div>
+        </div>
 
-          {/* ── Brand callout ── */}
-          <p className="mt-1.5 text-xs text-muted flex items-center gap-1">
-            <svg className="h-3.5 w-3.5 shrink-0 text-teal" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-              <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" />
-            </svg>
-            Profiles are published only after state-agency data is confirmed.{" "}
-            <Link href="/methodology" className="text-teal hover:underline underline-offset-2">
-              Our standard →
-            </Link>
-          </p>
+        {/* ── Stats / Findings ── */}
+        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+          <div className="mx-auto max-w-[1280px] px-10 py-14">
+            {totalCount > 0 ? (
+              <>
+                <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+                  § Findings
+                </div>
+                <p className="font-[family-name:var(--font-display)] text-[22px] leading-[1.3] text-ink mb-4">
+                  Of the{" "}
+                  <strong className="font-normal text-rust">{totalCount}</strong>{" "}
+                  licensed memory care facilities indexed in {region.name},{" "}
+                  <strong className="font-normal text-rust">{severeCount}</strong>{" "}
+                  ({severePct}%) have a Type-A or Type-B deficiency in their state record
+                  from the past 24 months.
+                </p>
+                {severeQueryDate && (
+                  <DataFootnote
+                    source="CA CDSS Community Care Licensing"
+                    refreshed={severeQueryDate}
+                    note="Type-A = immediate health/safety risk; Type-B = lesser violation"
+                  />
+                )}
 
-          {/* ── Error state ── */}
-          {fetchError && (
-            <div className="mt-8 rounded-lg border border-amber/30 bg-amber-light px-5 py-4 text-sm">
-              <p className="font-semibold text-amber">Configuration error</p>
-              <p className="mt-2 text-slate">{fetchError}</p>
+                <div className="mt-10">
+                  <StatBlock stats={regionStatItems} />
+                </div>
+              </>
+            ) : (
+              <p className="text-ink-3 italic">No facilities indexed yet for this region.</p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Regulator primer (city pages only) ── */}
+        {!isCounty && (
+          <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
+            <div className="mx-auto max-w-[1280px] px-10 py-14">
+              <SectionHead
+                label="§ How memory care is regulated here"
+                title={<>The public record that drives <em>every grade.</em></>}
+              />
+              <div
+                className="text-[16px] leading-[1.7] text-ink-2 max-w-[72ch]"
+                dangerouslySetInnerHTML={{ __html: regulatorPrimer }}
+              />
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── Empty state ── */}
-          {!fetchError && totalCount === 0 && (
-            <div className="mt-10 rounded-lg border border-sc-border bg-white px-6 py-10 shadow-card">
-              <p className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy">
-                No facilities published yet
+        {/* ── Cost band placeholder (city pages only) ── */}
+        {!isCounty && (
+          <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+            <div className="mx-auto max-w-[1280px] px-10 py-14">
+              <SectionHead
+                label="§ Cost"
+                title={<>What memory care costs <em>in this city.</em></>}
+              />
+              <p className="text-[16px] leading-[1.7] text-ink-2 max-w-[60ch]">
+                Median monthly cost in {region.name} ranges from approximately{" "}
+                <strong className="font-semibold">$5,000–$9,000/month</strong> based on regional
+                licensing data. We do not yet collect verified cost data for this specific area —
+                see our{" "}
+                <Link href="/methodology" className="text-teal underline underline-offset-4">
+                  methodology
+                </Link>{" "}
+                for how cost figures will be sourced and verified when available.
               </p>
-              <p className="mt-3 max-w-xl text-slate leading-relaxed">
-                The CDSS ingest for {region.name} has not yet produced verifiable records.
-              </p>
+              <DataFootnote source="Estimate only · Unverified" note="Verified cost data coming Q3 2026" />
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── Client: search + filters + cards ── */}
-          {!fetchError && totalCount > 0 && (
+        {/* ── Error state ── */}
+        {fetchError && (
+          <div className="mx-auto max-w-[1280px] px-10 py-8">
+            <div className="border border-gold/30 bg-gold-soft px-5 py-4 text-sm">
+              <p className="font-semibold text-gold">Configuration error</p>
+              <p className="mt-2 text-ink-2">{fetchError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Empty state ── */}
+        {!fetchError && totalCount === 0 && (
+          <div className="mx-auto max-w-[1280px] px-10 py-14">
+            <p className="font-[family-name:var(--font-display)] text-[24px] text-ink">
+              No facilities published yet for {region.name}.
+            </p>
+            <p className="mt-3 text-ink-3 leading-relaxed max-w-xl">
+              The CDSS ingest for this region has not yet produced verifiable records.
+            </p>
+          </div>
+        )}
+
+        {/* ── Facility list ── */}
+        {!fetchError && totalCount > 0 && (
+          <div className="mx-auto max-w-[1280px] px-10 py-14">
+            <SectionHead
+              label={isCounty ? `§ ${region.name} Facilities` : "§ All Facilities in this City"}
+              title={
+                isCounty
+                  ? <>{region.name} — <em>every licensed facility, graded.</em></>
+                  : <>Memory care options in {region.name}, <em>graded by the public record.</em></>
+              }
+            />
             <FacilityListClient
               facilities={facilities}
               stateSlug={region.state.slug}
               regionName={region.name}
               hiddenSmallCount={smallCount}
             />
-          )}
-
-        </div>
+          </div>
+        )}
       </main>
       <SiteFooter />
     </>

@@ -14,6 +14,7 @@ import { RegulatoryBaseline } from "@/components/facility/RegulatoryBaseline";
 import type { CitationRecord } from "@/components/facility/RegulatoryBaseline";
 import { QualitySnapshot } from "@/components/facility/QualitySnapshot";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
+import { RelatedFacilities } from "@/components/facility/RelatedFacilities";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import {
@@ -937,6 +938,15 @@ export default async function FacilityPage({ params }: PageProps) {
           {/* ── Family reviews ──────────────────────────────────────── */}
           <div className="mt-14 border-t border-sc-border pt-14">
             <ReviewsSection facilityId={facility.id} initialReviews={reviews} />
+          </div>
+
+          {/* ── Related facilities ───────────────────────────────────── */}
+          <div className="mt-14">
+            <RelatedFacilities
+              facilityId={facility.id}
+              citySlug={facility.city_slug}
+              stateSlug={state.slug}
+            />
           </div>
 
           <p className="mt-14 text-center text-sm text-muted">

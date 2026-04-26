@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { GovernanceBar } from "@/components/site/GovernanceBar";
+import { SectionHead } from "@/components/editorial/SectionHead";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { stateFromSlug } from "@/lib/states";
 import { regionsForState, type Region } from "@/lib/regions";
@@ -113,93 +115,93 @@ export default async function StatePage({ params }: PageProps) {
   return (
     <>
       <JsonLd objects={stateJsonLd} />
+      <GovernanceBar />
       <SiteNav />
-      <main className="min-h-[60vh] border-b border-sc-border bg-warm-white">
-        <div className="mx-auto max-w-[1120px] px-6 py-14 md:px-8 md:py-20">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted">
-            {state.name} · Memory care transparency
-          </p>
-          <h1 className="mt-3 font-[family-name:var(--font-serif)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
-            Memory care in {state.name}
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate">
-            StarlynnCare covers {state.name} county-by-county. Each region below
-            lists publishable facility profiles — only facilities with verified
-            state-agency data are shown.
-          </p>
+      <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
-          <div className="mt-8 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-l-2 border-teal pl-5 text-sm text-slate">
-            <span>
-              <strong className="font-semibold text-ink">
-                {totalPublishable}
-              </strong>{" "}
-              facilities live
-            </span>
-            <span className="text-muted">{state.name} only</span>
-          </div>
-
-          {fetchError && (
-            <div
-              className="mt-8 rounded-lg border border-amber/30 bg-amber-light px-5 py-4 text-sm text-ink"
-              role="status"
+        {/* ── Header ── */}
+        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+          <div className="mx-auto max-w-[1280px] px-10 py-12">
+            <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.18em] text-rust mb-3">
+              {state.name} · Memory care transparency
+            </p>
+            <h1
+              className="font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink mb-4"
+              style={{ fontSize: "clamp(40px, 5vw, 64px)", lineHeight: 1 }}
             >
-              <p className="font-semibold text-amber">Configuration</p>
-              <p className="mt-2 leading-relaxed text-slate">{fetchError}</p>
+              Memory care in {state.name}
+            </h1>
+            <p className="font-[family-name:var(--font-display)] italic text-[20px] leading-[1.4] text-ink-3 max-w-[50ch]">
+              StarlynnCare covers {state.name} county-by-county. Each region below
+              lists publishable facility profiles — only facilities with verified
+              state-agency data are shown.
+            </p>
+            <div className="mt-5 flex flex-wrap items-baseline gap-6 border-l-2 border-teal pl-5 font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-[0.04em]">
+              <span>
+                <strong className="font-semibold text-ink text-[18px]">{totalPublishable}</strong>{" "}
+                facilities live
+              </span>
+              <span className="text-ink-4">{state.name} only</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-[1280px] px-10 py-14">
+          {fetchError && (
+            <div className="mb-8 border border-gold/30 bg-gold-soft px-5 py-4 text-sm">
+              <p className="font-semibold text-gold">Configuration</p>
+              <p className="mt-2 text-ink-2">{fetchError}</p>
             </div>
           )}
 
           {counties.length > 0 && (
-            <section className="mt-14" aria-labelledby="counties-heading">
-              <h2
-                id="counties-heading"
-                className="border-b border-sc-border pb-3 font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
-              >
-                Counties we cover
-              </h2>
-              <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+            <section aria-labelledby="counties-heading">
+              <SectionHead
+                label="§ Counties we cover"
+                title={<>Browse by county, <em>or jump to a city below.</em></>}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
                 {counties.map((region) => {
                   const n = countyCount(region);
                   const small = countySmallCount(region);
                   return (
-                    <li key={region.slug}>
-                      <Link
-                        href={`/${state.slug}/${region.slug}`}
-                        className="group block rounded-lg border border-sc-border bg-white p-5 shadow-card transition hover:border-teal/40 hover:shadow-card-hover"
-                      >
-                        <span className="font-semibold text-ink group-hover:text-teal">
-                          {region.name}
-                        </span>
-                        <p className="mt-2 text-sm text-muted">
-                          {n > 0 ? (
-                            <>
-                              {n} {n === 1 ? "facility" : "facilities"}
-                              {small > 0 && (
-                                <span className="ml-1.5 text-xs">
-                                  · {small} small care home{small !== 1 ? "s" : ""}
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            "Indexing in progress"
-                          )}
-                        </p>
-                      </Link>
-                    </li>
+                    <Link
+                      key={region.slug}
+                      href={`/${state.slug}/${region.slug}`}
+                      className="block border border-paper-rule p-5 no-underline text-ink hover:border-teal transition-colors"
+                      style={{ background: "var(--color-paper-2)" }}
+                    >
+                      <span className="font-[family-name:var(--font-display)] text-[22px] leading-none tracking-[-0.005em]">
+                        {region.name}
+                      </span>
+                      <p className="mt-2 font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-[0.04em]">
+                        {n > 0 ? (
+                          <>
+                            {n} {n === 1 ? "facility" : "facilities"}
+                            {small > 0 && (
+                              <span className="ml-1.5 text-[10.5px]">
+                                · {small} small care home{small !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          "Indexing in progress"
+                        )}
+                      </p>
+                    </Link>
                   );
                 })}
-              </ul>
+              </div>
             </section>
           )}
 
           {cities.length > 0 && (
-            <section className="mt-14" aria-labelledby="cities-heading">
-              <h2
-                id="cities-heading"
-                className="border-b border-sc-border pb-3 font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
-              >
-                Cities
-              </h2>
-              <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <section className="mt-16" aria-labelledby="cities-heading">
+              <SectionHead
+                label="§ Cities"
+                title={<>All cities in {state.name} <em>with live profiles.</em></>}
+              />
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {cities
                   .filter(
                     (c) =>
@@ -210,27 +212,23 @@ export default async function StatePage({ params }: PageProps) {
                     const n = countsByCity.get(region.slug) ?? 0;
                     const small = smallCountsByCity.get(region.slug) ?? 0;
                     return (
-                      <li key={region.slug}>
-                        <Link
-                          href={`/${state.slug}/${region.slug}`}
-                          className="group block rounded-md border border-sc-border bg-white px-4 py-3 text-sm transition hover:border-teal/40"
-                        >
-                          <span className="font-medium text-ink group-hover:text-teal">
-                            {region.name}
-                          </span>
-                          {n > 0 && (
-                            <span className="ml-2 text-muted">{n}</span>
-                          )}
-                          {small > 0 && (
-                            <span className="ml-1 text-xs text-muted/70">
-                              +{small} small
-                            </span>
-                          )}
-                        </Link>
-                      </li>
+                      <Link
+                        key={region.slug}
+                        href={`/${state.slug}/${region.slug}`}
+                        className="flex justify-between items-center px-4 py-3 border border-paper-rule no-underline text-ink hover:text-teal hover:border-teal transition-colors"
+                        style={{ background: "var(--color-paper)" }}
+                      >
+                        <span className="font-[family-name:var(--font-display)] text-[18px] leading-none tracking-[-0.005em]">
+                          {region.name}
+                        </span>
+                        <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4">
+                          {n > 0 ? n : ""}
+                          {small > 0 ? ` +${small}` : ""}
+                        </span>
+                      </Link>
                     );
                   })}
-              </ul>
+              </div>
             </section>
           )}
         </div>
