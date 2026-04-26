@@ -86,24 +86,6 @@ function pctLabel(pct: number | null): string {
   return `${pct}th percentile`;
 }
 
-/** Grade letter → CSS colour token (as inline style hex). */
-function gradeColor(letter: string | undefined): string {
-  if (!letter) return "#9a938a"; // qs-muted
-  if (letter.startsWith("A")) return "#6b8f71"; // good
-  if (letter.startsWith("B")) return "#c8a26b"; // accent
-  if (letter.startsWith("C")) return "#b7791f"; // amber
-  return "#b5532e"; // bad (D / F)
-}
-
-/** Grade letter → lighter background hex. */
-function gradeBg(letter: string | undefined): string {
-  if (!letter) return "#f5f3f0";
-  if (letter.startsWith("A")) return "#edf4ee";
-  if (letter.startsWith("B")) return "#fdf6ec";
-  if (letter.startsWith("C")) return "#fffbeb";
-  return "#fdf1ed"; // D / F
-}
-
 /** Percentile → bar fill colour. */
 function pctColor(pct: number | null): string {
   if (pct === null) return "#9a938a";
@@ -113,157 +95,66 @@ function pctColor(pct: number | null): string {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Grade Card (merged with percentile strip)
+// Percentile Strip (replaces GradeCard — no letter grade)
 // ─────────────────────────────────────────────────────────────────
 
-// Trajectory is intentionally excluded from the grade card bars — a facility
-// with zero deficiencies in both windows has delta=0, which ranks as "median"
-// and would unfairly penalise clean facilities.  Trend context is shown in
-// the sparkline below instead.
+// Trajectory is intentionally excluded from the bars — a facility with zero
+// deficiencies in both windows has delta=0, which ranks as "median" and would
+// unfairly penalise clean facilities.  Trend context is in the sparkline.
 const METRIC_ROWS: [string, keyof SnapshotPayload["metrics"], string][] = [
   ["Severity", "severity", "Weighted citations per bed"],
   ["Repeats", "repeats", "Repeat deficiencies as share of total"],
   ["Frequency", "frequency", "Deficiencies per inspection"],
 ];
 
-function GradeCard({ payload }: { payload: SnapshotPayload }) {
-  const { grade, metrics, facility, peer_set } = payload;
-  const letter = grade?.letter;
-  const composite = grade?.composite_percentile ?? null;
-  const color = gradeColor(letter);
-  const bg = gradeBg(letter);
-
-  const noData = !payload.has_inspections;
-
-  const mathText = letter
-    ? [
-        `${facility.name} scores ${letter}.`,
-        `Better than ${composite}% of comparable California ${facility.license_type ?? "care"} facilities.`,
-        `Severity: ${pctLabel(metrics.severity.percentile)}.`,
-        `Repeats: ${pctLabel(metrics.repeats.percentile)}.`,
-        `Frequency: ${pctLabel(metrics.frequency.percentile)}.`,
-      ].join(" ")
-    : null;
+function PercentileStrip({ payload }: { payload: SnapshotPayload }) {
+  const { metrics, peer_set } = payload;
 
   return (
-    <details className="group w-full">
-      <summary
-        className="list-none cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-offset-2"
-        aria-label={
-          letter
-            ? `Grade ${letter} — click to show how this grade was calculated`
-            : "Quality grade — click to learn more"
-        }
-      >
-        <div
-          className="mt-5 flex flex-col sm:flex-row sm:items-start gap-5 rounded-xl border p-5 shadow-card transition-shadow group-hover:shadow-card-hover"
-          style={{ borderColor: `${color}33`, backgroundColor: bg }}
-        >
-          {/* Large grade letter */}
-          <div
-            className="flex-shrink-0 w-24 h-24 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: `${color}18` }}
-          >
-            <span
-              className="font-[family-name:var(--font-sans)] font-bold leading-none select-none"
-              style={{ fontSize: "6rem", color, lineHeight: 1 }}
-              aria-hidden="true"
-            >
-              {noData ? "—" : (letter ?? "—")}
-            </span>
-          </div>
-
-          {/* Bars with descriptions and median ticks */}
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[--color-qs-muted] mb-3">
-              Quality grade
-              <span className="ml-1.5 normal-case font-normal tracking-normal text-[--color-qs-muted] group-hover:underline underline-offset-2">
-                · click to show how this was calculated
-                <svg
-                  aria-hidden="true"
-                  className="inline ml-1 h-3 w-3 -translate-y-px"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-            </p>
-            <div className="space-y-3">
-              {METRIC_ROWS.map(([label, key, desc]) => {
-                const pct = metrics[key].percentile;
-                const fillColor = pctColor(pct);
-                return (
-                  <div key={label}>
-                    <div className="flex items-center gap-2">
-                      <span className="w-20 text-xs text-[--color-qs-muted] shrink-0">
-                        {label}
-                      </span>
-                      {/* Track with overflow-hidden for fill + absolute median tick on top */}
-                      <div className="relative flex-1">
-                        <div className="h-1.5 rounded-full bg-black/8 overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${pct ?? 0}%`,
-                              backgroundColor: fillColor,
-                            }}
-                          />
-                        </div>
-                        {/* Median tick at 50% — outside overflow-hidden so it renders on top */}
-                        <div
-                          className="absolute top-0 h-1.5 w-0.5 -translate-x-1/2 rounded-full"
-                          style={{
-                            left: "50%",
-                            backgroundColor: "rgba(154,147,138,0.45)",
-                          }}
-                          aria-hidden="true"
-                        />
-                      </div>
-                      <span
-                        className="w-10 text-right text-xs font-semibold tabular-nums shrink-0"
-                        style={{ color: fillColor }}
-                      >
-                        {pct !== null ? `${pct}th` : "—"}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 pl-[5.5rem] text-[10px] text-[--color-qs-muted]">
-                      {desc}
-                    </p>
+    <div className="mt-5 rounded-xl border border-[--color-sc-border] bg-white px-5 py-5 shadow-card">
+      <p className="text-xs font-semibold text-[--color-ink] mb-0.5">
+        Peer comparison
+      </p>
+      <p className="text-[10px] text-[--color-qs-muted] mb-4">
+        Percentile vs {peer_set.n} similar California {peer_set.definition.split("(")[0].trim()} facilities · higher = better
+      </p>
+      <div className="space-y-3">
+        {METRIC_ROWS.map(([label, key, desc]) => {
+          const pct = metrics[key].percentile;
+          const fillColor = pctColor(pct);
+          return (
+            <div key={label}>
+              <div className="flex items-center gap-2">
+                <span className="w-20 text-xs text-[--color-qs-muted] shrink-0">{label}</span>
+                <div className="relative flex-1">
+                  <div className="h-1.5 rounded-full bg-black/8 overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${pct ?? 0}%`, backgroundColor: fillColor }}
+                    />
                   </div>
-                );
-              })}
+                  <div
+                    className="absolute top-0 h-1.5 w-0.5 -translate-x-1/2 rounded-full"
+                    style={{ left: "50%", backgroundColor: "rgba(154,147,138,0.45)" }}
+                    aria-hidden="true"
+                  />
+                </div>
+                <span
+                  className="w-10 text-right text-xs font-semibold tabular-nums shrink-0"
+                  style={{ color: fillColor }}
+                >
+                  {pct !== null ? `${pct}th` : "—"}
+                </span>
+              </div>
+              <p className="mt-0.5 pl-[5.5rem] text-[10px] text-[--color-qs-muted]">{desc}</p>
             </div>
-            <p className="mt-3 text-[10px] text-[--color-qs-muted]/70">
-              Tick mark at 50% = peer median · higher percentile = better facility
-            </p>
-          </div>
-        </div>
-      </summary>
-
-      {/* "Show the math" expanded panel */}
-      <div
-        className="mt-2 rounded-lg border px-5 py-4 text-sm leading-relaxed text-[--color-ink]"
-        style={{ borderColor: `${color}33`, backgroundColor: bg }}
-      >
-        {mathText ? (
-          <p>{mathText}</p>
-        ) : (
-          <p className="text-[--color-qs-muted]">
-            No inspection data in the past 36 months — grade not available.
-          </p>
-        )}
-        <p className="mt-2 text-xs text-[--color-qs-muted]">
-          Each metric is converted to a 0–100 percentile within the peer set
-          (higher = better). The composite grade averages all four. Peer set:{" "}
-          {peer_set.definition} ({peer_set.n} facilities).
-        </p>
+          );
+        })}
       </div>
-    </details>
+      <p className="mt-3 text-[10px] text-[--color-qs-muted]/70">
+        Tick mark at 50% = peer median
+      </p>
+    </div>
   );
 }
 
@@ -675,7 +566,7 @@ export async function QualitySnapshot({
           id="qs-heading"
           className="font-[family-name:var(--font-sans)] text-2xl font-semibold text-[--color-navy]"
         >
-          Quality snapshot
+          Inspection comparison
         </h2>
         {updatedAt && (
           <span className="shrink-0 rounded-md bg-black/5 px-2 py-0.5 text-[11px] text-[--color-qs-muted]">
@@ -717,8 +608,8 @@ export async function QualitySnapshot({
         <NoInspectionsState peerN={peer_set.n} />
       ) : (
         <>
-          {/* 1. Grade card (merged with percentile strip) */}
-          <GradeCard payload={payload} />
+          {/* 1. Percentile comparison strip */}
+          <PercentileStrip payload={payload} />
 
           {/* 2. Two-up row: sparkline + heatmap */}
           <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">

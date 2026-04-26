@@ -12,7 +12,6 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { buildOrganizationSchema, buildWebSiteSchema, buildFaqSchemaFromPairs } from "@/lib/seo/schema";
 import { HOME_FAQS } from "@/lib/content/homeFaqs";
-import { ordinalSuffix } from "@/lib/format/ordinalSuffix";
 import { MobileHomeView } from "@/components/mobile/MobileHomeView";
 import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 import type { CareCategory } from "@/lib/types";
@@ -250,17 +249,7 @@ function GradeBar({ label, pct, warn = false }: { label: string; pct: number | n
 function FacilityGradeCardSample({ facility }: { facility: GradeCardFacility }) {
   const stateSlug = STATE_SLUG[facility.state_code] ?? facility.state_code.toLowerCase();
   const profileUrl = `/${stateSlug}/${facility.city_slug}/${facility.slug}`;
-  const grade = facility.grade ?? "?";
   const composite = facility.composite != null ? Math.round(facility.composite) : null;
-
-  const gradeColors: Record<string, { letter: string; bg: string; border: string }> = {
-    A: { letter: "#2F6B3A", bg: "#DCE9D6", border: "var(--color-grade-a)" },
-    B: { letter: "#5C8C3D", bg: "#E5EBD3", border: "var(--color-grade-b)" },
-    C: { letter: "#C4923B", bg: "var(--color-gold-soft)", border: "var(--color-grade-c)" },
-    D: { letter: "#B8533A", bg: "var(--color-rust-soft)", border: "var(--color-grade-d)" },
-    F: { letter: "#8E2A1F", bg: "#E8C9C2", border: "var(--color-grade-f)" },
-  };
-  const gradeStyle = gradeColors[grade[0]] ?? { letter: "#8A938C", bg: "var(--color-paper-2)", border: "var(--color-paper-rule)" };
 
   return (
     <div className="border border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
@@ -295,36 +284,11 @@ function FacilityGradeCardSample({ facility }: { facility: GradeCardFacility }) 
         )}
       </div>
 
-      {/* Grade row */}
-      <div
-        className="grid gap-6 p-4 sm:p-6 items-center grid-cols-1 md:grid-cols-[minmax(0,7.5rem)_1fr]"
-        style={{ background: "var(--color-paper)" }}
-      >
-        <div
-          className="text-center py-3.5 px-2 rounded-[2px] border max-w-[8rem] mx-auto w-full md:max-w-none md:mx-0"
-          style={{ background: gradeStyle.bg, borderColor: gradeStyle.border }}
-        >
-          <div
-            className="font-[family-name:var(--font-display)] text-[52px] sm:text-[64px] leading-[0.9] tracking-[-0.02em]"
-            style={{ color: gradeStyle.letter }}
-          >
-            {grade}
-          </div>
-          {composite != null && (
-            <div
-              className="font-[family-name:var(--font-mono)] text-[11px] mt-1 tracking-[0.08em]"
-              style={{ color: gradeStyle.letter }}
-            >
-              {composite}
-              {ordinalSuffix(composite)} pct
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col gap-3">
-          <GradeBar label="Severity" pct={facility.sev_pct} />
-          <GradeBar label="Repeat rate" pct={facility.rep_pct} />
-          <GradeBar label="Frequency" pct={facility.freq_pct} warn />
-        </div>
+      {/* Percentile bars */}
+      <div className="flex flex-col gap-3 p-4 sm:p-6" style={{ background: "var(--color-paper)" }}>
+        <GradeBar label="Severity" pct={facility.sev_pct} />
+        <GradeBar label="Repeat rate" pct={facility.rep_pct} />
+        <GradeBar label="Frequency" pct={facility.freq_pct} warn />
       </div>
 
       {/* Foot */}
@@ -549,7 +513,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ── § 02 · How We Grade ──────────────────────────────────────────── */}
+        {/* ── § 02 · The Record ───────────────────────────────────────────── */}
         <section
           id="methodology"
           className="border-b border-paper-rule"
@@ -557,20 +521,18 @@ export default async function Home() {
         >
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
             <SectionHead
-              label="§ 02 · How We Grade"
-              title={<>One letter grade. <em>Transparent scoring.</em></>}
+              label="§ 02 · The Record"
+              title={<>Five data signals. <em>Compared to peers.</em></>}
             />
 
             <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1fr_1.05fr]">
               {/* Explainer */}
               <div>
                 <h3 className="font-[family-name:var(--font-display)] text-[26px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.01em] m-0 mb-4">
-                  A grade you can trace to a citation number.
+                  Data you can trace to a citation number.
                 </h3>
                 <p className="text-ink-2 mb-4 leading-relaxed">
-                  Each facility receives a single A–F grade derived from five weighted inputs — every one of them
-                  tied to a primary state record or an identity-verified family review. Click into any profile
-                  and you can read the underlying CDSS report, dated.
+                  Each facility shows its inspection record directly from California CDSS — every citation, severity level, and repeat violation. We compare each facility against hundreds of similar California facilities so you can see what&apos;s normal and what stands out.
                 </p>
                 <p className="text-ink-2 mb-6 leading-relaxed">
                   The methodology is published and version-controlled. We change it in public.{" "}
@@ -578,35 +540,9 @@ export default async function Home() {
                     Read the full methodology →
                   </Link>
                 </p>
-
-                {/* A–F legend */}
-                <div className="grid grid-cols-5 gap-1 sm:gap-1.5 mt-6 min-w-0 w-full">
-                  {(["A", "B", "C", "D", "F"] as const).map((g) => {
-                    const colors: Record<string, { bg: string; color: string }> = {
-                      A: { bg: "#DCE9D6", color: "var(--color-grade-a)" },
-                      B: { bg: "#E5EBD3", color: "var(--color-grade-b)" },
-                      C: { bg: "var(--color-gold-soft)", color: "var(--color-grade-c)" },
-                      D: { bg: "var(--color-rust-soft)", color: "var(--color-grade-d)" },
-                      F: { bg: "#E8C9C2", color: "var(--color-grade-f)" },
-                    };
-                    return (
-                      <div
-                        key={g}
-                        className="min-w-0 py-2 sm:py-2.5 text-center font-[family-name:var(--font-display)] text-[17px] sm:text-[22px] border border-paper-rule"
-                        style={{ background: colors[g].bg, color: colors[g].color }}
-                      >
-                        {g}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center mt-2 font-[family-name:var(--font-mono)] text-[9.5px] sm:text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
-                  <span>Top 10% statewide</span>
-                  <span>Bottom 10%</span>
-                </div>
               </div>
 
-              {/* Sample grade card */}
+              {/* Sample facility card */}
               {gradeCardFacility ? (
                 <FacilityGradeCardSample facility={gradeCardFacility} />
               ) : (
@@ -614,7 +550,7 @@ export default async function Home() {
                   className="border border-paper-rule p-10 flex items-center justify-center text-ink-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em]"
                   style={{ background: "var(--color-paper-2)", minHeight: 260 }}
                 >
-                  Facility grade card
+                  Facility data card
                 </div>
               )}
             </div>
@@ -629,13 +565,13 @@ export default async function Home() {
                 },
                 {
                   n: "Step 02",
-                  t: "Weight five signals",
-                  p: "Severity (35%), repeat-citation rate (25%), complaint outcomes (15%), staffing-related deficiencies (15%), verified family experience (10%).",
+                  t: "Compare to peers",
+                  p: "Each facility's citations are benchmarked against similar California facilities — same license type, comparable bed count, same 36-month window.",
                 },
                 {
                   n: "Step 03",
                   t: "Publish, with footnotes",
-                  p: "Each grade renders with the citation numbers, dates, and resolution status that produced it. No black box. Every claim is link-traceable.",
+                  p: "Each profile shows citation numbers, dates, and severity levels. No black box. Every data point links to its source record.",
                 },
               ].map((s, i) => (
                 <div

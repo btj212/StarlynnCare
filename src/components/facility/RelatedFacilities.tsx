@@ -84,15 +84,6 @@ export async function RelatedFacilities({
   const related = await loadRelated(facilityId, citySlug, stateSlug);
   if (related.length === 0) return null;
 
-  const gradeColor = (letter: string | null) => {
-    if (!letter) return { text: "var(--color-ink-4)", bg: "var(--color-paper-2)" };
-    if (letter.startsWith("A")) return { text: "var(--color-grade-a)", bg: "#DCE9D6" };
-    if (letter.startsWith("B")) return { text: "var(--color-grade-b)", bg: "#E5EBD3" };
-    if (letter.startsWith("C")) return { text: "var(--color-grade-c)", bg: "var(--color-gold-soft)" };
-    if (letter.startsWith("D")) return { text: "var(--color-grade-d)", bg: "var(--color-rust-soft)" };
-    return { text: "var(--color-grade-f)", bg: "#E8C9C2" };
-  };
-
   return (
     <section className="border-t border-paper-rule pt-12 mt-12">
       <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
@@ -105,35 +96,24 @@ export async function RelatedFacilities({
       </h2>
 
       <div className="grid gap-0 border-t border-ink md:grid-cols-3">
-        {related.map((f) => {
-          const { text: gradeText, bg: gradeBg } = gradeColor(f.grade);
-          return (
-            <Link
-              key={f.id}
-              href={`/${stateSlug}/${f.city_slug}/${f.slug}`}
-              className="flex items-start gap-4 px-5 py-5 border-r border-b border-paper-rule last:border-r-0 no-underline text-ink hover:bg-paper-2 transition-colors"
-            >
-              {/* Grade badge */}
-              <div
-                className="w-12 h-12 flex items-center justify-center font-[family-name:var(--font-sans)] font-bold text-[24px] leading-none shrink-0 border"
-                style={{ background: gradeBg, color: gradeText, borderColor: gradeText }}
-              >
-                {f.grade ?? "?"}
-              </div>
-              <div>
-                <p className="font-[family-name:var(--font-sans)] font-semibold text-[18px] leading-[1.15] tracking-[-0.005em] m-0">
-                  {f.name}
+        {related.map((f) => (
+          <Link
+            key={f.id}
+            href={`/${stateSlug}/${f.city_slug}/${f.slug}`}
+            className="flex items-start gap-4 px-5 py-5 border-r border-b border-paper-rule last:border-r-0 no-underline text-ink hover:bg-paper-2 transition-colors"
+          >
+            <div>
+              <p className="font-[family-name:var(--font-sans)] font-semibold text-[18px] leading-[1.15] tracking-[-0.005em] m-0">
+                {f.name}
+              </p>
+              {f.city && (
+                <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em] mt-1">
+                  {f.city}
                 </p>
-                {f.city && (
-                  <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em] mt-1">
-                    {f.city}
-                    {f.composite != null && ` · ${Math.round(f.composite)}th pct`}
-                  </p>
-                )}
-              </div>
-            </Link>
-          );
-        })}
+              )}
+            </div>
+          </Link>
+        ))}
       </div>
     </section>
   );
