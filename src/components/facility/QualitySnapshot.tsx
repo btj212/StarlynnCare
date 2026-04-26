@@ -104,14 +104,6 @@ function gradeBg(letter: string | undefined): string {
   return "#fdf1ed"; // D / F
 }
 
-/** Narrative description of a trajectory metric value. */
-function trajectoryLabel(value: number, pct: number | null): string {
-  if (pct === null) return "no data";
-  if (value < -0.01) return "improving";
-  if (value > 0.01) return "worsening";
-  return "stable";
-}
-
 /** Percentile → bar fill colour. */
 function pctColor(pct: number | null): string {
   if (pct === null) return "#9a938a";
@@ -124,11 +116,14 @@ function pctColor(pct: number | null): string {
 // Grade Card (merged with percentile strip)
 // ─────────────────────────────────────────────────────────────────
 
+// Trajectory is intentionally excluded from the grade card bars — a facility
+// with zero deficiencies in both windows has delta=0, which ranks as "median"
+// and would unfairly penalise clean facilities.  Trend context is shown in
+// the sparkline below instead.
 const METRIC_ROWS: [string, keyof SnapshotPayload["metrics"], string][] = [
   ["Severity", "severity", "Weighted citations per bed"],
   ["Repeats", "repeats", "Repeat deficiencies as share of total"],
   ["Frequency", "frequency", "Deficiencies per inspection"],
-  ["Trajectory", "trajectory", "Improving or worsening vs. prior year"],
 ];
 
 function GradeCard({ payload }: { payload: SnapshotPayload }) {
@@ -147,7 +142,6 @@ function GradeCard({ payload }: { payload: SnapshotPayload }) {
         `Severity: ${pctLabel(metrics.severity.percentile)}.`,
         `Repeats: ${pctLabel(metrics.repeats.percentile)}.`,
         `Frequency: ${pctLabel(metrics.frequency.percentile)}.`,
-        `Trajectory: ${trajectoryLabel(metrics.trajectory.value, metrics.trajectory.percentile)}.`,
       ].join(" ")
     : null;
 

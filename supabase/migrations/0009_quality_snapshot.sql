@@ -235,8 +235,12 @@ begin
 
   -- ── 3. Grade ──────────────────────────────────────────
   if v_sev_pct is not null and v_has_insp then
+    -- Trajectory excluded from composite: when a facility has zero deficiencies
+    -- in both windows the delta is 0, which ranks as "median" and unfairly
+    -- penalises perfectly clean facilities.  Trajectory is still computed and
+    -- shown in the sparkline as contextual information.
     v_composite := round(
-      (v_sev_pct + v_rep_pct + v_freq_pct + v_traj_pct)::numeric / 4
+      (v_sev_pct + v_rep_pct + v_freq_pct)::numeric / 3
     )::int;
     v_letter := case
       when v_composite >= 90 then 'A'
