@@ -56,7 +56,7 @@ export async function ReviewsSection({
     <section className="space-y-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
+          <h2 className="font-[family-name:var(--font-sans)] text-2xl font-semibold text-navy">
             Family reviews
           </h2>
           <p className="mt-1 text-sm text-muted">

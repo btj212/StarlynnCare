@@ -21,15 +21,15 @@ export function SectionHead({ label, title, deck, invert = false }: SectionHeadP
     : "font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.18em] text-rust border-t-2 border-ink pt-2.5";
 
   const titleCls = invert
-    ? "font-[family-name:var(--font-display)] font-normal text-[clamp(36px,4vw,56px)] leading-[1.04] tracking-[-0.015em] text-paper m-0 [&_em]:italic [&_em]:text-gold"
-    : "font-[family-name:var(--font-display)] font-normal text-[clamp(36px,4vw,56px)] leading-[1.04] tracking-[-0.015em] text-ink m-0 [&_em]:italic [&_em]:text-rust";
+    ? "font-[family-name:var(--font-display)] font-normal text-[clamp(28px,5vw,56px)] leading-[1.04] tracking-[-0.015em] text-paper m-0 [&_em]:italic [&_em]:text-gold"
+    : "font-[family-name:var(--font-display)] font-normal text-[clamp(28px,5vw,56px)] leading-[1.04] tracking-[-0.015em] text-ink m-0 [&_em]:italic [&_em]:text-rust";
 
   const deckCls = invert
     ? "mt-3 text-[17px] leading-relaxed text-paper/75"
     : "mt-3 text-[17px] leading-relaxed text-ink-3";
 
   return (
-    <div className="grid gap-12 mb-12 items-end md:grid-cols-[1fr_2fr]">
+    <div className="grid gap-6 mb-8 items-end md:gap-12 md:mb-12 md:grid-cols-[1fr_2fr]">
       <div className={labelCls}>{label}</div>
       <div>
         <h2 className={titleCls}>{title}</h2>

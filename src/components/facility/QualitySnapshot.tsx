@@ -165,7 +165,7 @@ function GradeCard({ payload }: { payload: SnapshotPayload }) {
             style={{ backgroundColor: `${color}18` }}
           >
             <span
-              className="font-[family-name:var(--font-serif)] leading-none select-none"
+              className="font-[family-name:var(--font-sans)] font-bold leading-none select-none"
               style={{ fontSize: "6rem", color, lineHeight: 1 }}
               aria-hidden="true"
             >
@@ -616,7 +616,7 @@ function HeatmapGrid({ heatmap }: { heatmap: SnapshotPayload["heatmap"] }) {
 function NoInspectionsState({ peerN }: { peerN: number }) {
   return (
     <div className="mt-8 rounded-xl border border-[--color-sc-border] bg-white px-6 py-8 text-center shadow-card">
-      <p className="text-2xl font-[family-name:var(--font-serif)] text-[--color-qs-muted]">
+      <p className="text-2xl font-[family-name:var(--font-sans)] text-[--color-qs-muted]">
         —
       </p>
       <p className="mt-2 text-sm text-[--color-qs-muted]">
@@ -673,7 +673,7 @@ export async function QualitySnapshot({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2
           id="qs-heading"
-          className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-[--color-navy]"
+          className="font-[family-name:var(--font-sans)] text-2xl font-semibold text-[--color-navy]"
         >
           Quality snapshot
         </h2>

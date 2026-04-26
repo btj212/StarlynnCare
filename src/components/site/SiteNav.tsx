@@ -20,10 +20,10 @@ export async function SiteNav() {
 
   return (
     <header className="sticky top-0 z-40 bg-paper border-b border-paper-rule">
-      <div className="mx-auto max-w-[1280px] px-10 py-[22px] flex items-center justify-between gap-6">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-3.5 md:py-[22px] flex flex-nowrap items-center justify-between gap-3 sm:gap-6 min-w-0">
 
         {/* Brand mark */}
-        <Link href="/" className="flex items-baseline gap-2.5 no-underline" aria-label="StarlynnCare home">
+        <Link href="/" className="flex items-baseline gap-2 sm:gap-2.5 no-underline min-w-0 shrink" aria-label="StarlynnCare home">
           {/* Radial-gradient sphere */}
           <span
             className="inline-block w-[22px] h-[22px] rounded-full relative top-[3px] shrink-0"
@@ -34,7 +34,7 @@ export async function SiteNav() {
             aria-hidden
           />
           <span
-            className="font-[family-name:var(--font-display)] text-[28px] tracking-[-0.01em] text-ink"
+            className="font-[family-name:var(--font-display)] text-[22px] sm:text-[26px] md:text-[28px] tracking-[-0.01em] text-ink"
           >
             Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
           </span>
@@ -46,7 +46,7 @@ export async function SiteNav() {
         </Link>
 
         {/* Nav */}
-        <nav className="flex items-center gap-7 text-[14.5px]" aria-label="Site navigation">
+        <nav className="flex items-center gap-2 sm:gap-5 md:gap-7 text-[14px] md:text-[14.5px] shrink-0" aria-label="Site navigation">
           <Link href="/data" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
             The Data
           </Link>
@@ -60,9 +60,11 @@ export async function SiteNav() {
           {/* Primary CTA */}
           <Link
             href="/california"
-            className="inline-flex items-center gap-2 bg-teal text-white px-[18px] py-[10px] rounded-full text-[14px] font-medium hover:bg-teal-deep transition-colors no-underline"
+            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-teal text-white px-3 py-2 sm:px-[18px] sm:py-[10px] rounded-full text-[12px] sm:text-[14px] font-medium hover:bg-teal-deep transition-colors no-underline whitespace-nowrap"
+            aria-label={`Browse ${countLabel} California memory care facilities`}
           >
-            Browse {countLabel} facilities
+            <span className="sm:hidden">Browse all</span>
+            <span className="hidden sm:inline">Browse {countLabel} facilities</span>
             <span aria-hidden>→</span>
           </Link>
         </nav>

@@ -379,7 +379,7 @@ export default async function FacilityPage({ params }: PageProps) {
             </Link>
           </p>
 
-          <h1 className="mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
+          <h1 className="mt-4 font-[family-name:var(--font-sans)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
             {facility.name}
           </h1>
 
@@ -441,7 +441,7 @@ export default async function FacilityPage({ params }: PageProps) {
             <section className="mt-10" aria-labelledby="glance-heading">
               <h2
                 id="glance-heading"
-                className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+                className="font-[family-name:var(--font-sans)] text-2xl font-semibold text-navy"
               >
                 At a glance
               </h2>
@@ -543,7 +543,7 @@ export default async function FacilityPage({ params }: PageProps) {
             <div className="flex items-baseline justify-between">
               <h2
                 id="state-heading"
-                className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+                className="font-[family-name:var(--font-sans)] text-2xl font-semibold text-navy"
               >
                 State records
               </h2>
@@ -886,7 +886,7 @@ export default async function FacilityPage({ params }: PageProps) {
             <div className="flex items-baseline justify-between">
               <h2
                 id="federal-heading"
-                className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+                className="font-[family-name:var(--font-sans)] text-2xl font-semibold text-navy"
               >
                 Federal summary
               </h2>

@@ -33,7 +33,7 @@ export function TourQuestions({ questions, facilityName }: TourQuestionsProps) {
         <div className="flex-1 min-w-0">
           <h2
             id="tour-questions-heading"
-            className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy leading-snug"
+            className="font-[family-name:var(--font-sans)] text-xl font-semibold text-navy leading-snug"
           >
             Questions to ask on your tour
           </h2>

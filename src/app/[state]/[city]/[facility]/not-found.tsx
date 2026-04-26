@@ -8,7 +8,7 @@ export default function FacilityNotFound() {
       <SiteNav />
       <main className="border-b border-sc-border bg-warm-white px-6 py-24 md:px-8">
         <div className="mx-auto max-w-[680px] text-center">
-          <h1 className="font-[family-name:var(--font-serif)] text-3xl font-semibold text-navy">
+          <h1 className="font-[family-name:var(--font-sans)] text-3xl font-semibold text-navy">
             Facility not published
           </h1>
           <p className="mt-4 text-slate">

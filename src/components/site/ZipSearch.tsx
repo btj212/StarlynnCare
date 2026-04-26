@@ -152,7 +152,7 @@ export function ZipSearch({ variant = "default" }: { variant?: "default" | "edit
       <div className="space-y-2">
         <form
           onSubmit={handleSubmit}
-          className="flex items-stretch border-[1.5px] border-ink max-w-[460px]"
+          className="flex w-full max-w-[460px] min-w-0 flex-col border-[1.5px] border-ink sm:flex-row sm:items-stretch"
           style={{ borderRadius: 0, fontSize: 16 }}
         >
           <input
@@ -166,13 +166,13 @@ export function ZipSearch({ variant = "default" }: { variant?: "default" | "edit
               setStatus("idle");
             }}
             placeholder="Enter a city or ZIP code"
-            className="flex-1 border-0 bg-transparent px-[18px] py-4 font-[family-name:var(--font-sans)] text-ink placeholder:text-ink-4 outline-none"
+            className="w-full min-w-0 flex-1 border-0 bg-transparent px-4 py-3.5 sm:px-[18px] sm:py-4 font-[family-name:var(--font-sans)] text-ink placeholder:text-ink-4 outline-none"
             aria-label="City or ZIP code"
             style={{ background: "var(--color-paper)" }}
           />
           <button
             type="submit"
-            className="border-0 px-[22px] font-medium text-[15px] flex items-center gap-2"
+            className="border-0 px-5 py-3.5 sm:px-[22px] sm:py-0 font-medium text-[14px] sm:text-[15px] flex w-full shrink-0 items-center justify-center gap-2 sm:w-auto"
             style={{ background: "var(--color-ink)", color: "var(--color-paper)" }}
           >
             Find facilities <span aria-hidden>→</span>

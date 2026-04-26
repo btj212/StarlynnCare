@@ -99,7 +99,7 @@ export async function RelatedFacilities({
         Related in this city
       </div>
       <h2
-        className="font-[family-name:var(--font-display)] font-normal text-[28px] leading-[1.1] tracking-[-0.01em] text-ink mb-8"
+        className="font-[family-name:var(--font-sans)] font-semibold text-[28px] leading-[1.1] tracking-[-0.01em] text-ink mb-8"
       >
         Other memory care options <em>nearby.</em>
       </h2>
@@ -115,13 +115,13 @@ export async function RelatedFacilities({
             >
               {/* Grade badge */}
               <div
-                className="w-12 h-12 flex items-center justify-center font-[family-name:var(--font-display)] text-[24px] leading-none shrink-0 border"
+                className="w-12 h-12 flex items-center justify-center font-[family-name:var(--font-sans)] font-bold text-[24px] leading-none shrink-0 border"
                 style={{ background: gradeBg, color: gradeText, borderColor: gradeText }}
               >
                 {f.grade ?? "?"}
               </div>
               <div>
-                <p className="font-[family-name:var(--font-display)] text-[18px] leading-[1.15] tracking-[-0.005em] m-0">
+                <p className="font-[family-name:var(--font-sans)] font-semibold text-[18px] leading-[1.15] tracking-[-0.005em] m-0">
                   {f.name}
                 </p>
                 {f.city && (

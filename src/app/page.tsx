@@ -77,6 +77,21 @@ type HomeData = {
 
 const STATE_SLUG: Record<string, string> = { CA: "california" };
 
+function ordinalSuffix(n: number): string {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return "th";
+  switch (n % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+}
+
 const KNOWN_COUNTIES: Array<{ name: string; slug: string }> = [
   { name: "Alameda County", slug: "alameda-county" },
   { name: "Contra Costa County", slug: "contra-costa-county" },
@@ -224,19 +239,21 @@ function GradeBar({ label, pct, warn = false }: { label: string; pct: number | n
   const w = pct != null ? Math.min(100, Math.max(0, pct)) : 0;
   const fillColor = warn ? "var(--color-gold)" : "var(--color-grade-a)";
   return (
-    <div className="grid items-center gap-2.5 text-[13px]" style={{ gridTemplateColumns: "100px 1fr 50px" }}>
-      <span className="text-ink-2">{label}</span>
+    <div className="flex flex-col gap-1.5 text-[13px] min-w-0 sm:grid sm:grid-cols-[minmax(0,5.5rem)_1fr_2.75rem] sm:items-center sm:gap-2.5">
+      <div className="flex items-center justify-between gap-2 min-w-0 sm:contents">
+        <span className="text-ink-2 shrink-0">{label}</span>
+        <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 text-right tracking-[0.04em] tabular-nums sm:order-3">
+          {pct != null ? Math.round(pct) : "—"}
+        </span>
+      </div>
       <span
-        className="h-1.5 relative"
+        className="h-1.5 relative min-w-0 sm:order-2"
         style={{ background: "var(--color-paper-2)", borderRadius: 0 }}
       >
         <span
           className="absolute left-0 top-0 bottom-0"
           style={{ width: `${w}%`, background: fillColor }}
         />
-      </span>
-      <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 text-right tracking-[0.04em]">
-        {pct != null ? Math.round(pct) : "—"}
       </span>
     </div>
   );
@@ -261,12 +278,11 @@ function FacilityGradeCardSample({ facility }: { facility: GradeCardFacility }) 
     <div className="border border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
       {/* Top bar */}
       <div
-        className="grid gap-4 p-[22px] items-start border-b border-paper-rule"
-        style={{ gridTemplateColumns: "1fr auto" }}
+        className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[1fr_auto] sm:p-[22px] items-start border-b border-paper-rule"
       >
         <div>
           <h3
-            className="font-[family-name:var(--font-display)] text-[26px] leading-[1.05] tracking-[-0.005em] m-0 mb-1"
+            className="font-[family-name:var(--font-display)] text-[22px] sm:text-[26px] leading-[1.05] tracking-[-0.005em] m-0 mb-1"
           >
             {facility.name}
           </h3>
@@ -283,7 +299,7 @@ function FacilityGradeCardSample({ facility }: { facility: GradeCardFacility }) 
         </div>
         {composite != null && (
           <div
-            className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] px-2.5 py-1"
+            className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] px-2.5 py-1 justify-self-start sm:justify-self-end"
             style={{ background: "var(--color-teal-soft)", color: "var(--color-teal-deep)" }}
           >
             Top {100 - composite}%
@@ -293,15 +309,15 @@ function FacilityGradeCardSample({ facility }: { facility: GradeCardFacility }) 
 
       {/* Grade row */}
       <div
-        className="grid gap-6 p-6 items-center"
-        style={{ gridTemplateColumns: "130px 1fr", background: "var(--color-paper)" }}
+        className="grid gap-6 p-4 sm:p-6 items-center grid-cols-1 md:grid-cols-[minmax(0,7.5rem)_1fr]"
+        style={{ background: "var(--color-paper)" }}
       >
         <div
-          className="text-center py-3.5 px-2 rounded-[2px] border"
+          className="text-center py-3.5 px-2 rounded-[2px] border max-w-[8rem] mx-auto w-full md:max-w-none md:mx-0"
           style={{ background: gradeStyle.bg, borderColor: gradeStyle.border }}
         >
           <div
-            className="font-[family-name:var(--font-display)] text-[64px] leading-[0.9] tracking-[-0.02em]"
+            className="font-[family-name:var(--font-display)] text-[52px] sm:text-[64px] leading-[0.9] tracking-[-0.02em]"
             style={{ color: gradeStyle.letter }}
           >
             {grade}
@@ -311,7 +327,8 @@ function FacilityGradeCardSample({ facility }: { facility: GradeCardFacility }) 
               className="font-[family-name:var(--font-mono)] text-[11px] mt-1 tracking-[0.08em]"
               style={{ color: gradeStyle.letter }}
             >
-              {composite}th pct
+              {composite}
+              {ordinalSuffix(composite)} pct
             </div>
           )}
         </div>
@@ -324,11 +341,11 @@ function FacilityGradeCardSample({ facility }: { facility: GradeCardFacility }) 
 
       {/* Foot */}
       <div
-        className="flex justify-between items-center px-[22px] py-3.5 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11.5px] tracking-[0.06em] text-ink-3"
+        className="flex flex-col gap-2 items-start sm:flex-row sm:justify-between sm:items-center px-4 sm:px-[22px] py-3.5 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] sm:text-[11.5px] tracking-[0.06em] text-ink-3"
         style={{ background: "var(--color-paper-2)" }}
       >
-        <span>Source: CA CDSS · Community Care Licensing</span>
-        <Link href={profileUrl} className="text-teal no-underline font-medium hover:text-teal-deep">
+        <span className="text-balance">Source: CA CDSS · Community Care Licensing</span>
+        <Link href={profileUrl} className="text-teal no-underline font-medium hover:text-teal-deep shrink-0">
           View full profile →
         </Link>
       </div>
@@ -453,20 +470,22 @@ export default async function Home() {
       <main>
         {/* ── § 00 · Hero ──────────────────────────────────────────────────── */}
         <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
-          <div className="mx-auto max-w-[1280px] px-10 py-14 md:py-16">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14 md:py-16">
             {/* Eyebrow */}
-            <div className="flex items-center gap-3.5 mb-7 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.18em] text-rust">
-              <span className="h-px w-9 bg-rust opacity-60" aria-hidden />
-              California Edition · Vol. 02 · {season} {year}
-              <span className="h-px flex-1 bg-rust opacity-60" aria-hidden />
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6 sm:mb-7 font-[family-name:var(--font-mono)] text-[10.5px] sm:text-[11.5px] uppercase tracking-[0.18em] text-rust">
+              <span className="h-px w-6 sm:w-9 shrink-0 bg-rust opacity-60" aria-hidden />
+              <span className="min-w-0 flex-1 basis-[min(100%,14rem)] sm:flex-none sm:basis-auto">
+                California Edition · Vol. 02 · {season} {year}
+              </span>
+              <span className="h-px min-w-[2rem] flex-1 basis-0 bg-rust opacity-60 max-sm:hidden" aria-hidden />
             </div>
 
-            <div className="grid gap-16 items-start md:grid-cols-[1.15fr_1fr]">
+            <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1.15fr_1fr]">
               {/* Left: copy */}
               <div>
                 <h1
-                  className="font-[family-name:var(--font-display)] font-normal leading-[0.98] tracking-[-0.02em] text-ink mb-6"
-                  style={{ fontSize: "clamp(48px, 6.5vw, 84px)", maxWidth: "16ch" }}
+                  className="font-[family-name:var(--font-display)] font-normal leading-[0.98] tracking-[-0.02em] text-ink mb-5 sm:mb-6 max-w-none md:max-w-[16ch]"
+                  style={{ fontSize: "clamp(32px, 5vw + 0.5rem, 84px)" }}
                 >
                   The <em className="italic text-rust">best</em> memory care
                   in California, <span
@@ -475,15 +494,12 @@ export default async function Home() {
                   >ranked by the state&rsquo;s own inspectors.</span>
                 </h1>
 
-                <p
-                  className="font-[family-name:var(--font-display)] italic text-[22px] leading-[1.4] text-ink-3 mb-8"
-                  style={{ maxWidth: "36ch" }}
-                >
+                <p className="font-[family-name:var(--font-display)] italic text-[18px] sm:text-[22px] leading-[1.45] text-ink-3 mb-6 sm:mb-8 max-w-[40ch]">
                   No paid ads. No sales calls. Every claim sourced and dated to a public state record.
                 </p>
 
                 {/* ZIP search */}
-                <div className="max-w-[460px]">
+                <div className="w-full max-w-[460px] min-w-0">
                   <ZipSearch variant="editorial" />
                 </div>
 
@@ -512,10 +528,6 @@ export default async function Home() {
                     priority
                   />
                 </div>
-                <p className="mt-2.5 flex justify-between font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.12em] text-ink-3">
-                  <span>Illus · Starlynn Original</span>
-                  <span>CA Edition {year}</span>
-                </p>
               </div>
             </div>
           </div>
@@ -527,7 +539,7 @@ export default async function Home() {
           className="border-b border-paper-rule"
           style={{ background: "var(--color-paper-2)" }}
         >
-          <div className="mx-auto max-w-[1280px] px-10 py-20">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
             <SectionHead
               label="§ 01 · The Public Record"
               title={<>The California facility data you need, <em>curated + analyzed for you.</em></>}
@@ -542,16 +554,16 @@ export default async function Home() {
           className="border-b border-paper-rule"
           style={{ background: "var(--color-paper)" }}
         >
-          <div className="mx-auto max-w-[1280px] px-10 py-20">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
             <SectionHead
               label="§ 02 · How We Grade"
               title={<>One letter grade. <em>Transparent scoring.</em></>}
             />
 
-            <div className="grid gap-16 items-start md:grid-cols-[1fr_1.05fr]">
+            <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1fr_1.05fr]">
               {/* Explainer */}
               <div>
-                <h3 className="font-[family-name:var(--font-display)] text-[32px] font-normal leading-[1.1] tracking-[-0.01em] m-0 mb-4">
+                <h3 className="font-[family-name:var(--font-display)] text-[26px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.01em] m-0 mb-4">
                   A grade you can trace to a citation number.
                 </h3>
                 <p className="text-ink-2 mb-4 leading-relaxed">
@@ -567,7 +579,7 @@ export default async function Home() {
                 </p>
 
                 {/* A–F legend */}
-                <div className="flex gap-1.5 mt-6">
+                <div className="grid grid-cols-5 gap-1 sm:gap-1.5 mt-6 min-w-0 w-full">
                   {(["A", "B", "C", "D", "F"] as const).map((g) => {
                     const colors: Record<string, { bg: string; color: string }> = {
                       A: { bg: "#DCE9D6", color: "var(--color-grade-a)" },
@@ -579,7 +591,7 @@ export default async function Home() {
                     return (
                       <div
                         key={g}
-                        className="flex-1 py-2.5 text-center font-[family-name:var(--font-display)] text-[22px] border border-paper-rule"
+                        className="min-w-0 py-2 sm:py-2.5 text-center font-[family-name:var(--font-display)] text-[17px] sm:text-[22px] border border-paper-rule"
                         style={{ background: colors[g].bg, color: colors[g].color }}
                       >
                         {g}
@@ -587,7 +599,7 @@ export default async function Home() {
                     );
                   })}
                 </div>
-                <div className="flex justify-between mt-2 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center mt-2 font-[family-name:var(--font-mono)] text-[9.5px] sm:text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
                   <span>Top 10% statewide</span>
                   <span>Bottom 10%</span>
                 </div>
@@ -607,7 +619,7 @@ export default async function Home() {
             </div>
 
             {/* 3-step methodology */}
-            <div className="mt-16 grid border-t border-paper-rule md:grid-cols-3">
+            <div className="mt-16 grid grid-cols-1 border-t border-paper-rule md:grid-cols-3">
               {[
                 {
                   n: "Step 01",
@@ -628,7 +640,10 @@ export default async function Home() {
                   pull: "Inspect any profile to verify",
                 },
               ].map((s, i) => (
-                <div key={i} className="p-8 border-r border-paper-rule last:border-r-0">
+                <div
+                  key={i}
+                  className="p-6 sm:p-8 border-b border-paper-rule last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
+                >
                   <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust mb-3">{s.n}</div>
                   <h4 className="font-[family-name:var(--font-display)] text-[26px] font-normal leading-[1.1] tracking-[-0.005em] m-0 mb-2.5">{s.t}</h4>
                   <p className="text-[15px] text-ink-2 m-0 mb-4 leading-relaxed">{s.p}</p>
@@ -649,7 +664,7 @@ export default async function Home() {
           className="border-b border-paper-rule"
           style={{ background: "var(--color-paper-2)" }}
         >
-          <div className="mx-auto max-w-[1280px] px-10 py-20">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
             <SectionHead
               label="§ 03 · Browse California"
               title={<>Start with your county, <em>or jump to your city.</em></>}
@@ -664,30 +679,28 @@ export default async function Home() {
                     <Link
                       key={c.slug}
                       href={`/california/${c.slug}`}
-                      className="grid gap-3.5 py-4 px-1 border-b border-paper-rule no-underline text-ink hover:bg-paper transition-colors"
-                      style={{ gridTemplateColumns: "32px 1fr auto auto" }}
+                      className="flex flex-col gap-2 py-4 px-1 border-b border-paper-rule no-underline text-ink hover:bg-paper transition-colors min-w-0 sm:grid sm:grid-cols-[32px_1fr_auto_auto] sm:items-center sm:gap-3.5"
                     >
                       <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.04em]">
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <span className="font-[family-name:var(--font-display)] text-[22px] leading-none tracking-[-0.005em]">
+                      <span className="font-[family-name:var(--font-display)] text-[20px] sm:text-[22px] leading-tight tracking-[-0.005em] min-w-0">
                         {c.name}
                       </span>
-                      <span className="font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-[0.04em] self-center">
+                      <span className="font-[family-name:var(--font-mono)] text-[11px] sm:text-[12px] text-ink-3 tracking-[0.04em] sm:self-center">
                         {c.count} fac · {c.cities} cities
                       </span>
-                      <span className="font-[family-name:var(--font-mono)] text-rust self-center">→</span>
+                      <span className="font-[family-name:var(--font-mono)] text-rust sm:self-center sm:justify-self-end">→</span>
                     </Link>
                   ))}
                   {COMING_COUNTIES.map((name) => (
                     <div
                       key={name}
-                      className="grid gap-3.5 py-4 px-1 border-b border-paper-rule opacity-40"
-                      style={{ gridTemplateColumns: "32px 1fr auto" }}
+                      className="flex flex-col gap-2 py-4 px-1 border-b border-paper-rule opacity-40 min-w-0 sm:grid sm:grid-cols-[32px_1fr_auto] sm:items-center sm:gap-3.5"
                     >
                       <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.04em]">—</span>
-                      <span className="font-[family-name:var(--font-display)] text-[22px] leading-none tracking-[-0.005em]">{name}</span>
-                      <span className="font-[family-name:var(--font-mono)] text-[10.5px] text-ink-4 tracking-[0.04em] self-center">Q2 2026</span>
+                      <span className="font-[family-name:var(--font-display)] text-[20px] sm:text-[22px] leading-tight tracking-[-0.005em] min-w-0">{name}</span>
+                      <span className="font-[family-name:var(--font-mono)] text-[10.5px] text-ink-4 tracking-[0.04em] sm:self-center">Q2 2026</span>
                     </div>
                   ))}
                 </div>
@@ -702,7 +715,7 @@ export default async function Home() {
               {/* Top cities */}
               <div>
                 <p className="smallcaps mb-3.5">Popular cities · By facility count</p>
-                <div style={{ columns: "3", columnGap: "32px" }}>
+                <div className="columns-1 sm:columns-2 lg:columns-3 [column-gap:2rem]">
                   {topCities.map((c) => (
                     <Link
                       key={c.slug}
@@ -725,17 +738,14 @@ export default async function Home() {
           className="border-b border-paper-rule"
           style={{ background: "var(--color-ink)", color: "var(--color-paper)" }}
         >
-          <div className="mx-auto max-w-[1280px] px-10 py-20">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
             <SectionHead
               invert
               label="§ 04 · The Reports"
               title={<>An editorial desk for memory care, <em>backed by primary-source data.</em></>}
             />
 
-            <div
-              className="grid gap-8"
-              style={{ gridTemplateColumns: "1.4fr 1fr 1fr" }}
-            >
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
               {EDITORIAL_CARDS.map((e, i) => {
                 const inner = (
                   <div className={`flex flex-col gap-3.5 border-t pt-6 ${e.live ? "opacity-100" : "opacity-70"}`} style={{ borderColor: "rgba(255,255,255,0.2)" }}>
@@ -748,14 +758,21 @@ export default async function Home() {
                         <div style={{ position: "absolute", left: 24, top: 24 }} className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] text-gold">
                           STARLYNN ANNUAL · {year}
                         </div>
-                        <div style={{ position: "absolute", right: 24, bottom: 24, color: "#EBDDB8" }} className="font-[family-name:var(--font-display)] text-[40px] leading-none tracking-[-0.02em] text-right">
+                        <div
+                          className="absolute right-4 bottom-4 sm:right-6 sm:bottom-6 md:right-8 md:bottom-8 font-[family-name:var(--font-display)] text-[28px] sm:text-[36px] md:text-[40px] leading-none tracking-[-0.02em] text-right"
+                          style={{ color: "#EBDDB8" }}
+                        >
                           <span>The State of<br />Memory Care<br /></span>
                           <em style={{ color: "#fff" }}>in California</em>
                         </div>
                       </div>
                     )}
                     <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] text-gold">{e.kind}</span>
-                    <h3 className="font-[family-name:var(--font-display)] font-normal leading-[1.05] tracking-[-0.01em] m-0" style={{ fontSize: i === 0 ? 42 : 26, color: "var(--color-paper)" }}>
+                    <h3
+                      className={`font-[family-name:var(--font-display)] font-normal leading-[1.05] tracking-[-0.01em] m-0 text-paper ${
+                        i === 0 ? "text-[clamp(1.5rem,4.5vw,2.625rem)]" : "text-[1.375rem] sm:text-[1.625rem]"
+                      }`}
+                    >
                       {e.title}
                     </h3>
                     <p className="text-[14.5px] leading-[1.5] m-0" style={{ color: "rgba(255,255,255,0.72)" }}>
@@ -766,12 +783,17 @@ export default async function Home() {
                     </div>
                   </div>
                 );
+                const spanCls = i === 0 ? "md:col-span-2 xl:col-span-1" : "";
                 return e.live && e.href ? (
-                  <Link key={i} href={e.href} className="no-underline hover:opacity-90 transition-opacity">
+                  <Link
+                    key={i}
+                    href={e.href}
+                    className={`no-underline hover:opacity-90 transition-opacity min-w-0 ${spanCls}`}
+                  >
                     {inner}
                   </Link>
                 ) : (
-                  <div key={i} aria-label={`Coming soon: ${e.title}`}>
+                  <div key={i} className={`min-w-0 ${spanCls}`} aria-label={`Coming soon: ${e.title}`}>
                     {inner}
                   </div>
                 );
@@ -783,14 +805,14 @@ export default async function Home() {
         {/* ── § 05 · Verified Family Experience ───────────────────────────── */}
         {sampleReviews.length > 0 && (
           <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
-            <div className="mx-auto max-w-[1280px] px-10 py-20">
+            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
               <SectionHead
                 label="§ 05 · Verified Family Experience"
                 title={<>From people who have actually <em>moved a parent in.</em></>}
               />
-              <div className="grid border-t-2 border-ink md:grid-cols-3">
+              <div className="grid grid-cols-1 divide-y divide-paper-rule border-t-2 border-ink md:grid-cols-3 md:divide-x md:divide-y-0">
                 {sampleReviews.map((r) => (
-                  <div key={r.id} className="px-7 py-8 border-r border-paper-rule last:border-r-0">
+                  <div key={r.id} className="px-4 py-7 sm:px-7 sm:py-8 min-w-0">
                     <p
                       className="font-[family-name:var(--font-display)] text-[22px] leading-[1.3] tracking-[-0.005em] text-ink m-0 mb-5"
                       style={{ position: "relative" }}
@@ -833,7 +855,7 @@ export default async function Home() {
           className="border-b border-paper-rule"
           style={{ background: "var(--color-paper)" }}
         >
-          <div className="mx-auto max-w-[1280px] px-10 py-20">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
             <SectionHead
               label="§ 06 · Common Questions"
               title={<>What families and clinicians <em>ask us first.</em></>}
@@ -845,7 +867,7 @@ export default async function Home() {
         {/* ── CTA strip ────────────────────────────────────────────────────── */}
         <section style={{ background: "var(--color-rust)", borderTop: 0 }}>
           <div
-            className="mx-auto max-w-[1280px] px-10 py-16 grid gap-10 items-center md:grid-cols-[1fr_auto]"
+            className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-16 grid gap-10 items-center md:grid-cols-[1fr_auto]"
           >
             <div>
               <h2
@@ -860,7 +882,7 @@ export default async function Home() {
             </div>
             <Link
               href="/california"
-              className="inline-flex items-center gap-2 bg-ink text-paper px-[18px] py-[10px] rounded-full text-[14px] font-medium hover:bg-black transition-colors no-underline whitespace-nowrap"
+              className="inline-flex w-full sm:w-auto justify-center items-center gap-2 bg-ink text-paper px-[18px] py-[10px] rounded-full text-[14px] font-medium hover:bg-black transition-colors no-underline whitespace-nowrap"
             >
               Search {stats.facilities > 0 ? stats.facilities.toLocaleString() : ""} facilities
               <span aria-hidden>→</span>

@@ -575,7 +575,7 @@ export function RegulatoryBaseline({
     <section aria-labelledby="reg-baseline-heading" className="mt-10">
       <h2
         id="reg-baseline-heading"
-        className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy"
+        className="font-[family-name:var(--font-sans)] text-2xl font-semibold text-navy"
       >
         The rules that apply to this facility
       </h2>

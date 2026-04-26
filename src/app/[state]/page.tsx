@@ -121,7 +121,7 @@ export default async function StatePage({ params }: PageProps) {
 
         {/* ── Header ── */}
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-          <div className="mx-auto max-w-[1280px] px-10 py-12">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-12">
             <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.18em] text-rust mb-3">
               {state.name} · Memory care transparency
             </p>
@@ -146,7 +146,7 @@ export default async function StatePage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="mx-auto max-w-[1280px] px-10 py-14">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
           {fetchError && (
             <div className="mb-8 border border-gold/30 bg-gold-soft px-5 py-4 text-sm">
               <p className="font-semibold text-gold">Configuration</p>

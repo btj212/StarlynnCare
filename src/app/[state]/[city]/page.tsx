@@ -246,7 +246,7 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── Header ── */}
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-          <div className="mx-auto max-w-[1280px] px-10 py-12">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-12">
             {/* Breadcrumb */}
             <nav className="flex items-center gap-1.5 mb-5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-ink-4" aria-label="Breadcrumb">
               <Link href="/" className="hover:text-teal transition-colors">Home</Link>
@@ -275,7 +275,7 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── Stats / Findings ── */}
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-          <div className="mx-auto max-w-[1280px] px-10 py-14">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
             {totalCount > 0 ? (
               <>
                 <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
@@ -310,7 +310,7 @@ export default async function RegionPage({ params }: PageProps) {
         {/* ── Regulator primer (city pages only) ── */}
         {!isCounty && (
           <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
-            <div className="mx-auto max-w-[1280px] px-10 py-14">
+            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
               <SectionHead
                 label="§ How memory care is regulated here"
                 title={<>The public record that drives <em>every grade.</em></>}
@@ -326,7 +326,7 @@ export default async function RegionPage({ params }: PageProps) {
         {/* ── Cost band placeholder (city pages only) ── */}
         {!isCounty && (
           <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-            <div className="mx-auto max-w-[1280px] px-10 py-14">
+            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
               <SectionHead
                 label="§ Cost"
                 title={<>What memory care costs <em>in this city.</em></>}
@@ -348,7 +348,7 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── Error state ── */}
         {fetchError && (
-          <div className="mx-auto max-w-[1280px] px-10 py-8">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-8">
             <div className="border border-gold/30 bg-gold-soft px-5 py-4 text-sm">
               <p className="font-semibold text-gold">Configuration error</p>
               <p className="mt-2 text-ink-2">{fetchError}</p>
@@ -358,7 +358,7 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── Empty state ── */}
         {!fetchError && totalCount === 0 && (
-          <div className="mx-auto max-w-[1280px] px-10 py-14">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
             <p className="font-[family-name:var(--font-display)] text-[24px] text-ink">
               No facilities published yet for {region.name}.
             </p>
@@ -370,7 +370,7 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── Facility list ── */}
         {!fetchError && totalCount > 0 && (
-          <div className="mx-auto max-w-[1280px] px-10 py-14">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
             <SectionHead
               label={isCounty ? `§ ${region.name} Facilities` : "§ All Facilities in this City"}
               title={

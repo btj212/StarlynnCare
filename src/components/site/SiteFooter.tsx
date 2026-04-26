@@ -25,7 +25,7 @@ export async function SiteFooter() {
 
   return (
     <footer className="bg-paper border-t-2 border-ink pt-12 pb-8">
-      <div className="mx-auto max-w-[1280px] px-10">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10">
 
         {/* 4-column grid */}
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr] mb-10">
@@ -96,7 +96,7 @@ export async function SiteFooter() {
         </div>
 
         {/* Foot meta */}
-        <div className="flex justify-between items-center pt-6 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-ink-4 flex-wrap gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center pt-6 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-ink-4 sm:flex-wrap sm:gap-3">
           <span>© {year} StarlynnCare, PBC · A California Public Benefit Corporation</span>
           <span>
             {lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · CMS Care Compare
