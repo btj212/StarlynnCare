@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { CareCategory } from "@/lib/types";
-import type { BenchmarkTier } from "@/lib/benchmarks";
 
-const CATEGORY_LABEL: Record<CareCategory, string> = {
+const CATEGORY_LABEL: Partial<Record<CareCategory, string>> = {
   rcfe_memory_care: "RCFE · Memory care",
   rcfe_general: "RCFE",
   alf_memory_care: "ALF · Memory care",
@@ -13,33 +12,6 @@ const CATEGORY_LABEL: Record<CareCategory, string> = {
   snf_general: "Nursing home",
   snf_dementia_scu: "Nursing home · Dementia SCU",
   ccrc: "CCRC",
-  unknown: "Care facility",
-};
-
-const TIER_CFG: Record<
-  BenchmarkTier,
-  { label: string; badge: string; dot: string }
-> = {
-  strong: {
-    label: "Strong",
-    badge: "bg-teal-light text-teal border border-teal/20",
-    dot: "bg-teal",
-  },
-  mixed: {
-    label: "Mixed",
-    badge: "bg-amber-light text-amber border border-amber/30",
-    dot: "bg-amber",
-  },
-  concerns: {
-    label: "Concerns",
-    badge: "bg-red-light text-red-600 border border-red-200",
-    dot: "bg-red-500",
-  },
-  informational: {
-    label: "—",
-    badge: "bg-sc-border/40 text-muted border border-sc-border",
-    dot: "bg-muted",
-  },
 };
 
 export type CarouselFacility = {
@@ -51,20 +23,42 @@ export type CarouselFacility = {
   slug: string;
   city_slug: string;
   state_slug: string;
-  // raw stats
-  inspections: number;
-  type_a: number;
-  // benchmark tiers
-  dpi: number;
-  dpi_tier: BenchmarkTier;
-  type_a_tier: BenchmarkTier;
-  complaint_rate: number | null;
-  complaint_substantiated: number;
-  complaint_total: number;
-  complaint_tier: BenchmarkTier;
+  grade: string | null;
+  composite: number | null;
+  sev_pct: number | null;
+  rep_pct: number | null;
+  freq_pct: number | null;
 };
 
-const INTERVAL_MS = 3000;
+function gradeColor(letter: string | null): string {
+  if (!letter) return "#9a938a";
+  if (letter.startsWith("A")) return "#6b8f71";
+  if (letter.startsWith("B")) return "#c8a26b";
+  if (letter.startsWith("C")) return "#c8a26b";
+  return "#b5532e";
+}
+
+function gradeBg(letter: string | null): string {
+  if (!letter) return "#f5f2ec";
+  if (letter.startsWith("A")) return "#f0f5f1";
+  if (letter.startsWith("B")) return "#fdf8f0";
+  return "#fdf3f0";
+}
+
+function barColor(pct: number | null): string {
+  if (pct === null) return "#9a938a";
+  if (pct >= 65) return "#6b8f71";
+  if (pct <= 35) return "#b5532e";
+  return "#c8a26b";
+}
+
+const METRIC_BARS: [string, keyof Pick<CarouselFacility, "sev_pct" | "rep_pct" | "freq_pct">][] = [
+  ["Severity", "sev_pct"],
+  ["Repeats", "rep_pct"],
+  ["Frequency", "freq_pct"],
+];
+
+const INTERVAL_MS = 4000;
 
 export function FacilityCarousel({ facilities }: { facilities: CarouselFacility[] }) {
   const n = facilities.length;
@@ -80,43 +74,50 @@ export function FacilityCarousel({ facilities }: { facilities: CarouselFacility[
   }, [advance]);
 
   const pct = `${(index / n) * 100}%`;
+  const current = facilities[index];
+  const href = `/${current.state_slug}/${current.city_slug}/${current.slug}`;
 
   return (
     <div className="rounded-2xl border border-sc-border bg-white shadow-card-hover overflow-hidden hero-enter-delay-2">
-      {/* Slide track — all cards inline, move the track */}
+      {/* Slide track */}
       <div
         className="carousel-track"
-        style={{
-          width: `${n * 100}%`,
-          transform: `translateX(-${pct})`,
-        }}
+        style={{ width: `${n * 100}%`, transform: `translateX(-${pct})` }}
       >
-        {facilities.map((f) => (
+        {facilities.map((f, i) => (
           <div key={f.id} style={{ width: `${100 / n}%` }}>
-            <CardInner f={f} />
+            <Link
+              href={`/${f.state_slug}/${f.city_slug}/${f.slug}`}
+              className="block px-5 pt-5 pb-4 hover:bg-sc-border/5 transition-colors"
+              tabIndex={i === index ? 0 : -1}
+              aria-label={`View ${f.name} quality profile`}
+            >
+              <CardInner f={f} />
+            </Link>
           </div>
         ))}
       </div>
 
-      {/* Dot indicators + link — outside the sliding track so they stay fixed */}
-      <div className="flex items-center justify-between px-5 pb-4 pt-0 border-t border-sc-border/50">
-        <div className="flex gap-1">
+      {/* Dots + link */}
+      <div className="flex items-center justify-between px-5 pb-4 pt-3 border-t border-sc-border/50">
+        <div className="flex gap-1.5 items-center">
           {facilities.map((_, i) => (
             <button
               key={i}
               onClick={() => setIndex(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`rounded-full transition-all duration-300 ${
                 i === index
-                  ? "w-4 bg-teal"
-                  : "w-1.5 bg-sc-border hover:bg-teal/40"
+                  ? "h-1.5 w-4 bg-teal"
+                  : "h-1.5 w-1.5 bg-sc-border hover:bg-teal/40"
               }`}
               aria-label={`View ${facilities[i].name}`}
             />
           ))}
         </div>
         <Link
-          href={`/${facilities[index].state_slug}/${facilities[index].city_slug}/${facilities[index].slug}`}
-          className="text-xs font-semibold text-teal hover:underline underline-offset-2"
+          href={href}
+          className="text-xs font-semibold text-teal hover:underline underline-offset-2 shrink-0"
+          tabIndex={0}
         >
           View full profile →
         </Link>
@@ -126,23 +127,13 @@ export function FacilityCarousel({ facilities }: { facilities: CarouselFacility[
 }
 
 function CardInner({ f }: { f: CarouselFacility }) {
-  const cfg = TIER_CFG;
-  const dpiDisplay =
-    f.dpi > 0
-      ? `${f.dpi.toFixed(2)} citations per inspection`
-      : "0 citations per inspection";
-  const typeADisplay =
-    f.type_a === 0
-      ? "No severe violations"
-      : `${f.type_a} severe violation${f.type_a === 1 ? "" : "s"} (Type A)`;
-  const complaintDisplay =
-    f.complaint_total === 0
-      ? "No complaints filed"
-      : `${f.complaint_substantiated} of ${f.complaint_total} complaint${f.complaint_total === 1 ? "" : "s"} substantiated`;
+  const color = gradeColor(f.grade);
+  const bg = gradeBg(f.grade);
+  const hasGrade = f.grade !== null;
 
   return (
-    <div className="px-5 pt-5 pb-4">
-      {/* Header: small square photo + name + badge */}
+    <>
+      {/* Header: photo + name + category */}
       <div className="flex items-start gap-3">
         <div className="shrink-0 h-14 w-14 rounded-lg overflow-hidden bg-sc-border/20">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -159,7 +150,7 @@ function CardInner({ f }: { f: CarouselFacility }) {
               {f.name}
             </h3>
             <span className="shrink-0 inline-flex items-center rounded-full bg-teal-light px-2 py-0.5 text-[10px] font-semibold text-teal">
-              {CATEGORY_LABEL[f.care_category]}
+              {CATEGORY_LABEL[f.care_category] ?? "Care facility"}
             </span>
           </div>
           {f.city && (
@@ -168,74 +159,65 @@ function CardInner({ f }: { f: CarouselFacility }) {
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="my-3.5 border-t border-sc-border/60" />
-
-      {/* AT A GLANCE rows */}
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted">
-        At a glance
-      </p>
-      <div className="space-y-2.5">
-        {/* Compliance */}
-        <div className="flex items-center justify-between gap-3 text-xs">
-          <span className="flex items-center gap-1.5 text-slate">
-            <span
-              className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg[f.dpi_tier].dot}`}
-              aria-hidden
-            />
-            Violations per visit
+      {/* Grade + metric bars */}
+      <div
+        className="mt-3.5 flex items-stretch gap-4 rounded-xl px-4 py-3.5"
+        style={{ backgroundColor: bg }}
+      >
+        {/* Grade letter */}
+        <div className="flex flex-col items-center justify-center shrink-0 w-12">
+          <span
+            className="font-[family-name:var(--font-serif)] text-[2.5rem] font-semibold leading-none"
+            style={{ color }}
+          >
+            {f.grade ?? "—"}
           </span>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="font-medium text-ink">{dpiDisplay}</span>
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cfg[f.dpi_tier].badge}`}
-            >
-              {cfg[f.dpi_tier].label}
+          {f.composite !== null && (
+            <span className="mt-1 text-[9px] font-medium text-center leading-tight" style={{ color: "#9a938a" }}>
+              {f.composite}th
+              <br />pct
             </span>
-          </div>
+          )}
         </div>
 
-        {/* Severity */}
-        <div className="flex items-center justify-between gap-3 text-xs">
-          <span className="flex items-center gap-1.5 text-slate">
-            <span
-              className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg[f.type_a_tier].dot}`}
-              aria-hidden
-            />
-            Severe violations
-          </span>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="font-medium text-ink">{typeADisplay}</span>
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cfg[f.type_a_tier].badge}`}
-            >
-              {cfg[f.type_a_tier].label}
-            </span>
-          </div>
-        </div>
+        {/* Vertical divider */}
+        <div className="w-px self-stretch rounded-full" style={{ backgroundColor: `${color}30` }} />
 
-        {/* Complaints */}
-        <div className="flex items-center justify-between gap-3 text-xs">
-          <span className="flex items-center gap-1.5 text-slate">
-            <span
-              className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg[f.complaint_tier].dot}`}
-              aria-hidden
-            />
-            Complaints filed
-          </span>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="font-medium text-ink">{complaintDisplay}</span>
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cfg[f.complaint_tier].badge}`}
-            >
-              {cfg[f.complaint_tier].label}
-            </span>
-          </div>
+        {/* Metric bars */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-2.5">
+          {hasGrade ? (
+            METRIC_BARS.map(([label, key]) => {
+              const val = f[key];
+              return (
+                <div key={key}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-muted leading-none">{label}</span>
+                    {val !== null && (
+                      <span
+                        className="text-[10px] font-semibold leading-none tabular-nums"
+                        style={{ color: barColor(val) }}
+                      >
+                        {val}<span className="font-normal opacity-70">th</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="h-[3px] w-full rounded-full overflow-hidden" style={{ backgroundColor: `${color}20` }}>
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${val ?? 0}%`,
+                        backgroundColor: barColor(val),
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-[11px] text-muted">No inspection data on file</p>
+          )}
         </div>
       </div>
-
-      {/* Spacer so dots row aligns consistently */}
-      <div className="mt-4" />
-    </div>
+    </>
   );
 }
