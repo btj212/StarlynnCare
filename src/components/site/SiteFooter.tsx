@@ -1,66 +1,107 @@
 import Link from "next/link";
+import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
-export function SiteFooter() {
+async function getLastRefreshed(): Promise<string | null> {
+  const supabase = tryPublicSupabaseClient();
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("facilities")
+    .select("updated_at")
+    .eq("publishable", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .single();
+  if (!data?.updated_at) return null;
+  const d = new Date(data.updated_at as string);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * 4-column editorial footer with brand description, data links, methodology links, and about links.
+ */
+export async function SiteFooter() {
+  const lastRefreshed = await getLastRefreshed();
   const year = new Date().getFullYear();
+
   return (
-    <footer className="bg-footer-bg text-white">
-      <div className="mx-auto max-w-[1120px] px-6 py-14 md:px-8">
-        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+    <footer className="bg-paper border-t-2 border-ink pt-12 pb-8">
+      <div className="mx-auto max-w-[1280px] px-10">
+
+        {/* 4-column grid */}
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr] mb-10">
+
+          {/* Brand block */}
           <div>
-            <p className="font-[family-name:var(--font-serif)] text-xl font-semibold">
-              StarlynnCare
+            <div className="flex items-baseline gap-2.5 mb-4">
+              <span
+                className="inline-block w-[20px] h-[20px] rounded-full relative top-[2px] shrink-0"
+                style={{
+                  background: "radial-gradient(circle at 35% 35%, #C4923B 0 30%, #B8533A 31% 60%, #143F3D 61% 100%)",
+                  boxShadow: "inset 0 0 0 1px #1A2620",
+                }}
+                aria-hidden
+              />
+              <span className="font-[family-name:var(--font-display)] text-[24px] text-ink">
+                Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
+              </span>
+            </div>
+            <p className="text-[13.5px] text-ink-3 leading-relaxed max-w-[36ch] mb-3">
+              An independent civic-data publisher. We grade every licensed memory care facility in
+              California against the state&rsquo;s own public inspection record.
             </p>
-            <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/75">
-              Answers to questions you wish you asked on the tour — for every
-              licensed memory care facility near you.
+            <p className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-rust">
+              No referral fees. No paid placement. Period.
             </p>
           </div>
-          <div className="flex flex-col gap-3 text-sm">
-            <span className="font-medium text-white/90">Explore</span>
-            <Link
-              href="/california/alameda-county"
-              className="text-white/75 hover:text-white"
-            >
-              Alameda County memory care
-            </Link>
-            <Link
-              href="/california/contra-costa-county"
-              className="text-white/75 hover:text-white"
-            >
-              Contra Costa County memory care
-            </Link>
-            <Link
-              href="/california/san-mateo-county"
-              className="text-white/75 hover:text-white"
-            >
-              San Mateo County memory care
-            </Link>
-            <Link
-              href="/california/santa-clara-county"
-              className="text-white/75 hover:text-white"
-            >
-              Santa Clara County memory care
-            </Link>
-            <Link
-              href="/california"
-              className="text-white/75 hover:text-white"
-            >
-              California
-            </Link>
-            <Link href="/" className="text-white/75 hover:text-white">
-              Home
-            </Link>
-            <Link href="/data" className="text-white/75 hover:text-white">
-              Dataset overview
-            </Link>
-            <Link href="/methodology" className="text-white/75 hover:text-white">
+
+          {/* The Data */}
+          <div>
+            <h5 className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust font-semibold mb-3.5">
+              The Data
+            </h5>
+            <nav className="flex flex-col gap-1 text-[14px]" aria-label="Data links">
+              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">All California facilities</Link>
+              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">By county (4 live)</Link>
+              <Link href="/data" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Dataset overview</Link>
+              <Link href="/llms.txt" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors flex items-center gap-1">
+                llms.txt <span className="text-rust text-[10px]">↗</span>
+              </Link>
+            </nav>
+          </div>
+
+          {/* Methodology */}
+          <div>
+            <h5 className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust font-semibold mb-3.5">
               Methodology
-            </Link>
+            </h5>
+            <nav className="flex flex-col gap-1 text-[14px]" aria-label="Methodology links">
+              <Link href="/methodology" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">How we grade</Link>
+              <Link href="/methodology#cdss" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Source records (CDSS)</Link>
+              <Link href="/methodology#no-paid-placement" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Editorial standards</Link>
+              <Link href="/methodology#corrections" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Corrections policy</Link>
+            </nav>
+          </div>
+
+          {/* About */}
+          <div>
+            <h5 className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust font-semibold mb-3.5">
+              About
+            </h5>
+            <nav className="flex flex-col gap-1 text-[14px]" aria-label="About links">
+              <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Our editorial desk</Link>
+              <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">For discharge planners</Link>
+              <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Press &amp; citations</Link>
+            </nav>
           </div>
         </div>
-        <p className="mt-12 border-t border-white/10 pt-8 text-xs text-white/50">
-          © {year} StarlynnCare. Data citations appear on each facility page.
-        </p>
+
+        {/* Foot meta */}
+        <div className="flex justify-between items-center pt-6 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-ink-4 flex-wrap gap-3">
+          <span>© {year} StarlynnCare, PBC · A California Public Benefit Corporation</span>
+          <span>
+            {lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · CMS Care Compare
+          </span>
+        </div>
       </div>
     </footer>
   );

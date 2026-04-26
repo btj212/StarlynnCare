@@ -201,6 +201,26 @@ export function buildFaqPageSchema(
   };
 }
 
+/**
+ * Build a FAQPage schema from Q+A pairs with real answers.
+ * Used on the homepage and hub pages where we have full answer text.
+ */
+export function buildFaqSchemaFromPairs(
+  items: Array<{ q: string; a: string }>,
+  pageUrl: string,
+): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    url: pageUrl,
+    mainEntity: items.map(({ q, a }) => ({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a },
+    })),
+  };
+}
+
 export type ItemListFacility = {
   name: string;
   url: string;

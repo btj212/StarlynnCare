@@ -131,7 +131,7 @@ const COVERED_ZIPS: Record<string, string> = {
   "95125": "/california/santa-clara-county",
 };
 
-export function ZipSearch() {
+export function ZipSearch({ variant = "default" }: { variant?: "default" | "editorial" }) {
   const router = useRouter();
   const [zip, setZip] = useState("");
   const [status, setStatus] = useState<"idle" | "not-covered">("idle");
@@ -145,6 +145,50 @@ export function ZipSearch() {
     } else {
       setStatus("not-covered");
     }
+  }
+
+  if (variant === "editorial") {
+    return (
+      <div className="space-y-2">
+        <form
+          onSubmit={handleSubmit}
+          className="flex items-stretch border-[1.5px] border-ink max-w-[460px]"
+          style={{ borderRadius: 0, fontSize: 16 }}
+        >
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{5}"
+            maxLength={5}
+            value={zip}
+            onChange={(e) => {
+              setZip(e.target.value.replace(/\D/g, ""));
+              setStatus("idle");
+            }}
+            placeholder="Enter a city or ZIP code"
+            className="flex-1 border-0 bg-transparent px-[18px] py-4 font-[family-name:var(--font-sans)] text-ink placeholder:text-ink-4 outline-none"
+            aria-label="City or ZIP code"
+            style={{ background: "var(--color-paper)" }}
+          />
+          <button
+            type="submit"
+            className="border-0 px-[22px] font-medium text-[15px] flex items-center gap-2"
+            style={{ background: "var(--color-ink)", color: "var(--color-paper)" }}
+          >
+            Find facilities <span aria-hidden>→</span>
+          </button>
+        </form>
+        {status === "not-covered" && (
+          <p className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3 tracking-[0.04em]">
+            ZIP not covered yet —{" "}
+            <Link href="/california" className="text-rust underline underline-offset-2">
+              browse California
+            </Link>
+            .
+          </p>
+        )}
+      </div>
+    );
   }
 
   return (
