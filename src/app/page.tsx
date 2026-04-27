@@ -467,7 +467,7 @@ export default async function Home() {
                   Data you can trace to a citation number.
                 </h3>
                 <p className="text-ink-2 mb-4 leading-relaxed">
-                  Each facility shows its inspection record directly from California CDSS — every citation, severity level, and repeat violation. We compare each facility against hundreds of similar California facilities so you can see what&apos;s normal and what stands out.
+                  Each facility shows its inspection record for the past five years directly from California CDSS — every citation, severity level, and repeat violation. We compare each facility against hundreds of similar California facilities so you can see what&apos;s normal and what stands out.
                 </p>
                 <p className="text-ink-2 mb-6 leading-relaxed">
                   The methodology is published and version-controlled. We change it in public.{" "}
