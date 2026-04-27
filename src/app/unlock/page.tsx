@@ -1,33 +1,9 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "StarlynnCare — Coming Soon",
   robots: { index: false, follow: false },
 };
-
-async function unlock(formData: FormData) {
-  "use server";
-  const password = formData.get("password") as string;
-  const from = (formData.get("from") as string) || "/";
-  const sitePassword = process.env.SITE_UNLOCK_PASSWORD;
-
-  if (sitePassword && password === sitePassword) {
-    const cookieStore = await cookies();
-    cookieStore.set("sl_auth", sitePassword, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: "/",
-    });
-    redirect(from.startsWith("/") ? from : "/");
-  }
-
-  // Wrong password — bounce back with error flag
-  redirect(`/unlock?from=${encodeURIComponent(from)}&error=1`);
-}
 
 type Props = { searchParams: Promise<{ from?: string; error?: string }> };
 
@@ -50,16 +26,20 @@ export default async function UnlockPage({ searchParams }: Props) {
 
         <div
           className="rounded-xl border px-8 py-8"
-          style={{ borderColor: "var(--color-paper-rule)", background: "var(--color-paper-2)" }}
+          style={{
+            borderColor: "var(--color-paper-rule)",
+            background: "var(--color-paper-2)",
+          }}
         >
           <p
             className="text-[15px] leading-relaxed mb-6 text-center"
             style={{ color: "var(--color-ink-2)" }}
           >
-            This site is in private preview. Enter the access password to continue.
+            This site is in private preview. Enter the access password to
+            continue.
           </p>
 
-          <form action={unlock}>
+          <form action="/api/unlock" method="POST">
             <input type="hidden" name="from" value={from} />
 
             <input
@@ -70,7 +50,9 @@ export default async function UnlockPage({ searchParams }: Props) {
               placeholder="Password"
               className="w-full border rounded-lg px-4 py-3 text-[15px] outline-none mb-3"
               style={{
-                borderColor: error ? "var(--color-rust)" : "var(--color-paper-rule)",
+                borderColor: error
+                  ? "var(--color-rust)"
+                  : "var(--color-paper-rule)",
                 background: "var(--color-paper)",
                 color: "var(--color-ink)",
               }}

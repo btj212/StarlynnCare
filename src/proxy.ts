@@ -9,6 +9,7 @@ const UNLOCK_COOKIE = "sl_auth";
 function isPublicPath(pathname: string): boolean {
   return (
     pathname.startsWith("/unlock") ||
+    pathname.startsWith("/api/unlock") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     /\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$/.test(pathname)
