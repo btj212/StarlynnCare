@@ -19,6 +19,7 @@ Usage
   python generate_content.py --smoke       # first facility only
   python generate_content.py --seed-only   # write the Silverado seed only
   python generate_content.py --facility "oakmont of mariner point"
+  python generate_content.py --slug my-facility-slug --skip-quality-gate --force
 """
 
 from __future__ import annotations
@@ -81,6 +82,7 @@ def load_env() -> None:
 def load_facilities(
     conn: psycopg.Connection,
     name_filter: str | None = None,
+    slugs: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     query = """
         SELECT
@@ -126,11 +128,13 @@ def load_facilities(
         FROM facilities f
         WHERE f.publishable = true AND f.state_code = 'CA'
     """
-    if name_filter:
+    params: dict[str, Any] = {}
+    if slugs:
+        query += " AND f.slug = ANY(%(slugs)s)"
+        params["slugs"] = slugs
+    elif name_filter:
         query += " AND LOWER(f.name) LIKE LOWER(%(name_filter)s)"
-        params = {"name_filter": f"%{name_filter}%"}
-    else:
-        params = {}
+        params["name_filter"] = f"%{name_filter}%"
     query += " ORDER BY f.city, f.name"
 
     with conn.cursor() as cur:
@@ -467,8 +471,12 @@ def main() -> None:
                         help="Write the Silverado hand-written seed and exit.")
     parser.add_argument("--facility", type=str, default=None,
                         help="Process only facilities whose name contains this string.")
+    parser.add_argument("--slug", dest="slugs", action="append", default=None,
+                        help="Process only facilities with this slug (repeat for multiple).")
     parser.add_argument("--force", action="store_true",
                         help="Overwrite existing content (default: skip if content already set).")
+    parser.add_argument("--skip-quality-gate", action="store_true",
+                        help="Write generated content without running the quality gate (use sparingly).")
     args = parser.parse_args()
 
     load_env()
@@ -487,7 +495,11 @@ def main() -> None:
     client = anthropic.Anthropic(api_key=api_key)
 
     with psycopg.connect(dsn) as conn:
-        facilities = load_facilities(conn, name_filter=args.facility)
+        facilities = load_facilities(
+            conn,
+            name_filter=args.facility,
+            slugs=args.slugs,
+        )
 
     print(f"Facilities loaded: {len(facilities)}")
     if args.dry_run:
@@ -535,8 +547,12 @@ def main() -> None:
             continue
 
         # Quality gate
-        print("  Running quality gate…")
-        passed, issues = quality_gate(client, fac, content)
+        if args.skip_quality_gate:
+            print("  ⚠ Skipping quality gate (--skip-quality-gate)")
+            passed, issues = True, []
+        else:
+            print("  Running quality gate…")
+            passed, issues = quality_gate(client, fac, content)
         if not passed:
             print(f"  ✗ Quality gate FAILED:")
             for iss in issues:
@@ -547,7 +563,8 @@ def main() -> None:
                 print("  (DRY RUN) Would skip this facility.")
             continue
 
-        print(f"  ✓ Quality gate passed")
+        if not args.skip_quality_gate:
+            print(f"  ✓ Quality gate passed")
         if args.dry_run:
             tqs = content.get("tour_questions", [])
             print(f"  tour_questions ({len(tqs)}):")
