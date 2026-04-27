@@ -95,6 +95,38 @@ TRANSPARENCY_ALL_URL = (
 TRANSPARENCY_CACHE = Path("/tmp/ccld_facility_all_cache.json")
 TRANSPARENCY_CACHE_TTL_HOURS = 24
 
+# Network hardening
+HTTP_TIMEOUT_SECS = 30
+HTTP_MAX_RETRIES = 6
+
+
+def _get_with_retries(
+    url: str,
+    *,
+    params: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
+    timeout: int = HTTP_TIMEOUT_SECS,
+    max_retries: int = HTTP_MAX_RETRIES,
+) -> requests.Response:
+    last_exc: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            resp = requests.get(url, params=params, headers=headers, timeout=timeout)
+            if resp.status_code in (429, 500, 502, 503, 504):
+                raise requests.HTTPError(f"HTTP {resp.status_code}", response=resp)
+            resp.raise_for_status()
+            return resp
+        except Exception as e:  # noqa: BLE001 - intentional broad retry boundary
+            last_exc = e
+            sleep = min(20.0, 0.8 * (2 ** attempt))
+            if isinstance(e, requests.HTTPError) and getattr(e, "response", None) is not None:
+                ra = e.response.headers.get("Retry-After")
+                if ra and ra.isdigit():
+                    sleep = min(60.0, float(ra))
+            print(f"Retrying request ({attempt+1}/{max_retries}) after {sleep:.1f}s: {url}", file=sys.stderr)
+            time.sleep(sleep)
+    raise RuntimeError(f"Request failed after {max_retries} attempts: {url}") from last_exc
+
 FACILITY_PROFILE_URL = (
     "https://www.ccld.dss.ca.gov/carefacilitysearch/?rewrite=FacDetail&facNum={}"
 )
@@ -235,13 +267,12 @@ def fetch_county_rcfe_roster(
             "limit": page_size,
             "offset": offset,
         }
-        resp = requests.get(
+        resp = _get_with_retries(
             CKAN_DATASTORE_URL,
             params=params,
-            timeout=30,
+            timeout=HTTP_TIMEOUT_SECS,
             headers={"User-Agent": "StarlynnCare/RCFE-ingest (contact@starlynncare.com)"},
         )
-        resp.raise_for_status()
         payload = resp.json()
 
         if not payload.get("success"):
@@ -286,12 +317,11 @@ def load_transparency_all(force_refresh: bool = False) -> dict[str, dict[str, An
             raw = json.load(f)
     else:
         print(f"Downloading Transparency API data (~30 MB) from {TRANSPARENCY_ALL_URL} …")
-        resp = requests.get(
+        resp = _get_with_retries(
             TRANSPARENCY_ALL_URL,
             timeout=120,
             headers={"User-Agent": "StarlynnCare/RCFE-ingest"},
         )
-        resp.raise_for_status()
         raw = resp.json()
         with open(TRANSPARENCY_CACHE, "w") as f:
             json.dump(raw, f)

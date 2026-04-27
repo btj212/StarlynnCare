@@ -60,6 +60,36 @@ SOURCE_AGENCY = "California CDSS / Community Care Licensing Division"
 
 REQUEST_DELAY_SECS = 0.6
 
+# Network hardening
+HTTP_TIMEOUT_SECS = 30
+HTTP_MAX_RETRIES = 6
+
+
+def _get_with_retries(
+    url: str,
+    *,
+    timeout: int = HTTP_TIMEOUT_SECS,
+    max_retries: int = HTTP_MAX_RETRIES,
+) -> requests.Response:
+    last_exc: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            r = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
+            # Some facilities return 400 for invalid inx; callers handle it.
+            if r.status_code in (429, 500, 502, 503, 504):
+                raise requests.HTTPError(f"HTTP {r.status_code}", response=r)
+            return r
+        except Exception as e:  # noqa: BLE001 - intentional broad retry boundary
+            last_exc = e
+            sleep = min(20.0, 0.8 * (2 ** attempt))
+            if isinstance(e, requests.HTTPError) and getattr(e, "response", None) is not None:
+                ra = e.response.headers.get("Retry-After")
+                if ra and ra.isdigit():
+                    sleep = min(60.0, float(ra))
+            print(f"Retrying request ({attempt+1}/{max_retries}) after {sleep:.1f}s: {url}", file=sys.stderr)
+            time.sleep(sleep)
+    raise RuntimeError(f"Request failed after {max_retries} attempts: {url}") from last_exc
+
 # Regex that detects dementia-care regulation citations in section numbers
 DEMENTIA_SECTION_RE = re.compile(r"8770[56]")
 IMMEDIATE_JEOPARDY_RE = re.compile(
@@ -138,7 +168,7 @@ def find_cell_after(tbl_cells: list[str], label: str) -> str | None:
 def fetch_report_index(fac_num: str) -> dict[str, Any]:
     """Return {COUNT, REPORTARRAY} for a facility."""
     url = f"{TRANSPARENCY_BASE}/FacilityReports/{fac_num}"
-    r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+    r = _get_with_retries(url, timeout=20)
     r.raise_for_status()
     return r.json()
 
@@ -151,7 +181,7 @@ def fetch_report_index(fac_num: str) -> dict[str, Any]:
 def fetch_report_html(fac_num: str, inx: int) -> str | None:
     """Fetch HTML for report at position inx. Returns None on 4xx."""
     url = f"{TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx={inx}"
-    r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    r = _get_with_retries(url, timeout=30)
     if r.status_code == 400:
         return None
     r.raise_for_status()
