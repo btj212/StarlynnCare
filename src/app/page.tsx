@@ -13,10 +13,35 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { buildOrganizationSchema, buildWebSiteSchema, buildFaqSchemaFromPairs } from "@/lib/seo/schema";
 import { HOME_FAQS } from "@/lib/content/homeFaqs";
 import { MobileHomeView } from "@/components/mobile/MobileHomeView";
+import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
+import {
+  SampleFacilityRotationProvider,
+  SyncedHomeSampleCardDesktop,
+} from "@/components/home/SampleFacilityRotation";
+import { HomeFaq } from "@/components/home/HomeFaq";
 import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 import type { CareCategory } from "@/lib/types";
 
 export const revalidate = 3600;
+
+/** Homepage §02 rotates through this many publishable facilities (hourly reshuffle). */
+const SAMPLE_CARD_ROTATION_COUNT = 10;
+
+/** Deterministic shuffle — same cohort for the ~1h ISR window. */
+function seededShuffle<T>(items: T[], seed: number): T[] {
+  let s = seed >>> 0;
+  if (s === 0) s = 0x9e3779b9;
+  const out = [...items];
+  const rnd = () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 const homeCanonical = canonicalFor("/");
 
@@ -29,23 +54,6 @@ export const metadata: Metadata = {
 };
 
 // ── Types ────────────────────────────────────────────────────────────────────
-
-type GradeCardFacility = {
-  id: string;
-  name: string;
-  city: string | null;
-  state_code: string;
-  slug: string;
-  city_slug: string;
-  license_number?: string | null;
-  beds?: number | null;
-  care_category: CareCategory;
-  grade: string | null;
-  composite: number | null;
-  sev_pct: number | null;
-  rep_pct: number | null;
-  freq_pct: number | null;
-};
 
 type CountyRow = {
   name: string;
@@ -63,7 +71,8 @@ type HomeData = {
     severeCitations: number;
     lastRefreshed: string | null;
   };
-  gradeCardFacility: GradeCardFacility | null;
+  /** Rotating §02 sample cards — random cohort, reshuffled hourly */
+  gradeCardFacilities: HomeSampleFacility[];
   counties: CountyRow[];
   topCities: CityRow[];
   sampleReviews: Array<{
@@ -77,8 +86,6 @@ type HomeData = {
   }>;
 };
 
-const STATE_SLUG: Record<string, string> = { CA: "california" };
-
 const KNOWN_COUNTIES: Array<{ name: string; slug: string }> = [
   { name: "Alameda County", slug: "alameda-county" },
   { name: "Contra Costa County", slug: "contra-costa-county" },
@@ -89,7 +96,7 @@ const KNOWN_COUNTIES: Array<{ name: string; slug: string }> = [
 async function loadHomeData(): Promise<HomeData> {
   const fallback: HomeData = {
     stats: { facilities: 0, inspections: 0, severeCitations: 0, lastRefreshed: null },
-    gradeCardFacility: null,
+    gradeCardFacilities: [],
     counties: [],
     topCities: [],
     sampleReviews: [],
@@ -113,40 +120,57 @@ async function loadHomeData(): Promise<HomeData> {
     ? new Date(lastUpdated).toISOString().split("T")[0]
     : null;
 
-  // Top-graded facility for the grade card section (pick one randomly from top 20% each hour)
-  const { data: topFacilities } = await supabase
+  const { data: idRows } = await supabase
     .from("facilities")
-    .select("id, name, city, state_code, slug, city_slug, license_number, beds, care_category")
-    .eq("publishable", true)
-    .order("name")
-    .limit(200);
+    .select("id")
+    .eq("publishable", true);
 
-  let gradeCardFacility: GradeCardFacility | null = null;
-  if (topFacilities && topFacilities.length > 0) {
-    // Deterministic daily rotation: pick based on day-of-year
-    const dayOfYear = Math.floor((Date.now() / 86400000) % topFacilities.length);
-    const picked = topFacilities[dayOfYear % topFacilities.length] as {
-      id: string; name: string; city: string | null; state_code: string;
-      slug: string; city_slug: string; license_number: string | null;
-      beds: number | null; care_category: CareCategory;
-    };
+  const allIds = (idRows ?? []).map((r: { id: string }) => r.id);
+  const hourSeed = Math.floor(Date.now() / 3600000);
+  const pickedIds = seededShuffle(allIds, hourSeed).slice(0, SAMPLE_CARD_ROTATION_COUNT);
 
-    const { data: snap } = await supabase
-      .rpc("facility_snapshot", { p_facility_id: picked.id });
+  let gradeCardFacilities: HomeSampleFacility[] = [];
+  if (pickedIds.length > 0) {
+    const { data: pickedRows } = await supabase
+      .from("facilities")
+      .select(
+        "id, name, city, state_code, slug, city_slug, license_number, beds, care_category",
+      )
+      .in("id", pickedIds);
 
-    const s = snap as null | {
-      grade?: { letter: string; composite_percentile: number } | null;
-      metrics?: { severity: { percentile: number }; repeats: { percentile: number }; frequency: { percentile: number } } | null;
-    };
+    const rowById = new Map(
+      (pickedRows ?? []).map((r) => [r.id as string, r]),
+    );
+    const ordered = pickedIds
+      .map((id) => rowById.get(id))
+      .filter((r): r is NonNullable<typeof r> => r != null);
 
-    gradeCardFacility = {
-      ...picked,
-      grade: s?.grade?.letter ?? null,
-      composite: s?.grade?.composite_percentile ?? null,
-      sev_pct: s?.metrics?.severity?.percentile ?? null,
-      rep_pct: s?.metrics?.repeats?.percentile ?? null,
-      freq_pct: s?.metrics?.frequency?.percentile ?? null,
-    };
+    gradeCardFacilities = (
+      await Promise.all(
+        ordered.map(async (picked) => {
+          const { data: snap } = await supabase.rpc("facility_snapshot", {
+            p_facility_id: picked.id,
+          });
+          const s = snap as null | {
+            grade?: { letter: string; composite_percentile: number } | null;
+            metrics?: {
+              severity: { percentile: number };
+              repeats: { percentile: number };
+              frequency: { percentile: number };
+            } | null;
+          };
+          return {
+            ...picked,
+            care_category: picked.care_category as CareCategory,
+            grade: s?.grade?.letter ?? null,
+            composite: s?.grade?.composite_percentile ?? null,
+            sev_pct: s?.metrics?.severity?.percentile ?? null,
+            rep_pct: s?.metrics?.repeats?.percentile ?? null,
+            freq_pct: s?.metrics?.frequency?.percentile ?? null,
+          } satisfies HomeSampleFacility;
+        }),
+      )
+    ).filter(Boolean);
   }
 
   // County facility counts
@@ -213,106 +237,17 @@ async function loadHomeData(): Promise<HomeData> {
 
   return {
     stats: { facilities: facilityCount, inspections: inspCount, severeCitations: sevCount, lastRefreshed },
-    gradeCardFacility,
+    gradeCardFacilities,
     counties,
     topCities,
     sampleReviews,
   };
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function GradeBar({ label, pct, warn = false }: { label: string; pct: number | null; warn?: boolean }) {
-  const w = pct != null ? Math.min(100, Math.max(0, pct)) : 0;
-  const fillColor = warn ? "var(--color-gold)" : "var(--color-grade-a)";
-  return (
-    <div className="flex flex-col gap-1.5 text-[13px] min-w-0 sm:grid sm:grid-cols-[minmax(0,5.5rem)_1fr_2.75rem] sm:items-center sm:gap-2.5">
-      <div className="flex items-center justify-between gap-2 min-w-0 sm:contents">
-        <span className="text-ink-2 shrink-0">{label}</span>
-        <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 text-right tracking-[0.04em] tabular-nums sm:order-3">
-          {pct != null ? Math.round(pct) : "—"}
-        </span>
-      </div>
-      <span
-        className="h-1.5 relative min-w-0 sm:order-2"
-        style={{ background: "var(--color-paper-2)", borderRadius: 0 }}
-      >
-        <span
-          className="absolute left-0 top-0 bottom-0"
-          style={{ width: `${w}%`, background: fillColor }}
-        />
-      </span>
-    </div>
-  );
-}
-
-function FacilityGradeCardSample({ facility }: { facility: GradeCardFacility }) {
-  const stateSlug = STATE_SLUG[facility.state_code] ?? facility.state_code.toLowerCase();
-  const profileUrl = `/${stateSlug}/${facility.city_slug}/${facility.slug}`;
-  const composite = facility.composite != null ? Math.round(facility.composite) : null;
-
-  return (
-    <div className="border border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-      {/* Top bar */}
-      <div
-        className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[1fr_auto] sm:p-[22px] items-start border-b border-paper-rule"
-      >
-        <div>
-          <h3
-            className="font-[family-name:var(--font-display)] text-[22px] sm:text-[26px] leading-[1.05] tracking-[-0.005em] m-0 mb-1"
-          >
-            {facility.name}
-          </h3>
-          <div className="text-[13.5px] text-ink-3">
-            {facility.city}, CA
-          </div>
-          <div className="flex flex-wrap gap-3 mt-2 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
-            {facility.license_number && (
-              <span className="text-rust">LIC# {facility.license_number}</span>
-            )}
-            {facility.beds && <span>Capacity {facility.beds}</span>}
-            <span className="uppercase">{facility.care_category.replace(/_/g, " ")}</span>
-          </div>
-        </div>
-        {composite != null && (
-          <div
-            className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] px-2.5 py-1 justify-self-start sm:justify-self-end"
-            style={{ background: "var(--color-teal-soft)", color: "var(--color-teal-deep)" }}
-          >
-            Top {100 - composite}%
-          </div>
-        )}
-      </div>
-
-      {/* Percentile bars */}
-      <div className="flex flex-col gap-3 p-4 sm:p-6" style={{ background: "var(--color-paper)" }}>
-        <GradeBar label="Severity" pct={facility.sev_pct} />
-        <GradeBar label="Repeat rate" pct={facility.rep_pct} />
-        <GradeBar label="Frequency" pct={facility.freq_pct} warn />
-      </div>
-
-      {/* Foot */}
-      <div
-        className="flex flex-col gap-2 items-start sm:flex-row sm:justify-between sm:items-center px-4 sm:px-[22px] py-3.5 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] sm:text-[11.5px] tracking-[0.06em] text-ink-3"
-        style={{ background: "var(--color-paper-2)" }}
-      >
-        <span className="text-balance">Source: CA CDSS · Community Care Licensing</span>
-        <Link href={profileUrl} className="text-teal no-underline font-medium hover:text-teal-deep shrink-0">
-          View full profile →
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-// ── FAQ accordion (client component wrapper) ──────────────────────────────────
-// Since we need interactivity, extract to a separate client component
-import { HomeFaq } from "@/components/home/HomeFaq";
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
-  const { stats, gradeCardFacility, counties, topCities, sampleReviews } = await loadHomeData();
+  const { stats, gradeCardFacilities, counties, topCities, sampleReviews } = await loadHomeData();
 
   const homeJsonLd = [
     buildOrganizationSchema(),
@@ -411,24 +346,24 @@ export default async function Home() {
     <>
       <JsonLd objects={homeJsonLd} />
 
-      <div className="m-app md:hidden">
-        <MobileHomeView
-          season={season}
-          year={year}
-          statItems={statItems}
-          counties={counties}
-          topCities={topCities}
-          gradeCardFacility={gradeCardFacility}
-          firstReview={sampleReviews[0] ?? null}
-          editorials={EDITORIAL_CARDS}
-          mobileFaqs={HOME_FAQS.slice(0, 4)}
-          lastRefreshed={stats.lastRefreshed}
-          countyCountLive={counties.length}
-        />
-      </div>
-      <MobileStickyCtaBar />
+      <SampleFacilityRotationProvider facilities={gradeCardFacilities}>
+        <div className="m-app md:hidden">
+          <MobileHomeView
+            season={season}
+            year={year}
+            statItems={statItems}
+            counties={counties}
+            topCities={topCities}
+            firstReview={sampleReviews[0] ?? null}
+            editorials={EDITORIAL_CARDS}
+            mobileFaqs={HOME_FAQS.slice(0, 4)}
+            lastRefreshed={stats.lastRefreshed}
+            countyCountLive={counties.length}
+          />
+        </div>
+        <MobileStickyCtaBar />
 
-      <div className="hidden md:block">
+        <div className="hidden md:block">
         <GovernanceBar />
         <SiteNav />
 
@@ -542,17 +477,8 @@ export default async function Home() {
                 </p>
               </div>
 
-              {/* Sample facility card */}
-              {gradeCardFacility ? (
-                <FacilityGradeCardSample facility={gradeCardFacility} />
-              ) : (
-                <div
-                  className="border border-paper-rule p-10 flex items-center justify-center text-ink-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em]"
-                  style={{ background: "var(--color-paper-2)", minHeight: 260 }}
-                >
-                  Facility data card
-                </div>
-              )}
+              {/* Sample facility card (10-facility cohort, auto-rotates) */}
+              <SyncedHomeSampleCardDesktop />
             </div>
 
             {/* 3-step methodology */}
@@ -822,6 +748,7 @@ export default async function Home() {
 
         <SiteFooter />
       </div>
+      </SampleFacilityRotationProvider>
     </>
   );
 }

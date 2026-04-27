@@ -3,7 +3,9 @@ import Link from "next/link";
 import type { StatItem } from "@/components/editorial/StatBlock";
 import { MobileTopbar } from "@/components/mobile/MobileTopbar";
 import { MobileTrustBar } from "@/components/mobile/MobileTrustBar";
-import { MobileFacilityGradeCard, type MobileGradeFacility } from "@/components/mobile/MobileFacilityGradeCard";
+import {
+  SyncedHomeSampleCardMobile,
+} from "@/components/home/SampleFacilityRotation";
 import { MobileHomeFaq } from "@/components/mobile/MobileHomeFaq";
 import { MobileFooter } from "@/components/mobile/MobileFooter";
 import type { FaqItem } from "@/lib/content/homeFaqs";
@@ -37,7 +39,6 @@ export function MobileHomeView({
 
   counties,
   topCities,
-  gradeCardFacility,
   firstReview,
   editorials,
   mobileFaqs,
@@ -49,7 +50,6 @@ export function MobileHomeView({
   statItems: StatItem[];
   counties: MobileCounty[];
   topCities: MobileCity[];
-  gradeCardFacility: MobileGradeFacility | null;
   firstReview: MobileHomeReview | null;
   editorials: MobileEditorialCard[];
   mobileFaqs: FaqItem[];
@@ -122,15 +122,7 @@ export function MobileHomeView({
         </p>
       </section>
 
-      {gradeCardFacility ? (
-        <div className="px-0">
-          <MobileFacilityGradeCard facility={gradeCardFacility} />
-        </div>
-      ) : (
-        <div className="mx-[18px] border border-paper-rule bg-paper-2 p-8 text-center font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-ink-4">
-          Sample grade card loading…
-        </div>
-      )}
+      <SyncedHomeSampleCardMobile />
 
       <section className="m-section">
         <div className="label">§ 03 · Browse California</div>
