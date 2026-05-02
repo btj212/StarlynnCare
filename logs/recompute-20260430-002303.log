@@ -1,0 +1,13 @@
+Recomputing publishable flags for state: CA
+
+Before counts (LICENSED facilities only):
+  serves_memory_care = true:   213
+  publishable = true:          213
+  mc_review_status = needs_review:  115
+
+After counts (LICENSED facilities only):
+  serves_memory_care = true:   245 (Δ+32)
+  publishable = true:          245 (Δ+32)
+  mc_review_status = needs_review:  115 (Δ+0)
+
+Total database rows touched: 16136

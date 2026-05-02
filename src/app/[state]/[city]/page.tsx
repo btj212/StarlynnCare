@@ -8,6 +8,7 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
+import { TopGradedFacilities } from "@/components/facility/TopGradedFacilities";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { resolveListingRegion } from "@/lib/resolveListingRegion";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -366,6 +367,16 @@ export default async function RegionPage({ params }: PageProps) {
               The CDSS ingest for this region has not yet produced verifiable records.
             </p>
           </div>
+        )}
+
+        {/* ── Top-graded rail (county pages only) ── */}
+        {isCounty && !fetchError && totalCount > 0 && (
+          <TopGradedFacilities
+            citySlugs={region.citySlugs}
+            stateCode={region.state.code}
+            stateSlug={region.state.slug}
+            countyName={region.name}
+          />
         )}
 
         {/* ── Facility list ── */}

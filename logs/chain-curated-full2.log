@@ -1,0 +1,129 @@
+Processing 18 chain(s)...
+
+=== Processing silverado ===
+Auto-confirming silverado (MC-only chain)...
+  Updated 0 facilities
+
+=== Processing belmont-village ===
+Auto-confirming belmont-village (MC-only chain)...
+  Updated 0 facilities
+
+=== Processing aegis ===
+Auto-confirming aegis (MC-only chain)...
+  Updated 0 facilities
+
+=== Processing activcare ===
+Auto-confirming activcare (MC-only chain)...
+  Updated 0 facilities
+
+=== Processing ivy-park ===
+Scrape + LLM extraction for ivy-park...
+  URL: https://www.ivypark.com/locations/?state=CA
+  Empty or trivial markdown; aborting extraction
+Failed to extract data for ivy-park
+
+=== Processing brookdale ===
+Scrape + LLM extraction for brookdale...
+  URL: https://www.brookdale.com/en/find-a-community.html?careType=memory-care&state=CA
+  Extracted 0 communities
+
+=== Processing atria ===
+Scrape + LLM extraction for atria...
+  URL: https://www.atriaseniorliving.com/senior-living-communities/senior-living-in-california
+  Extracted 25 communities
+  Matched 13/25 to CDSS facilities, updated 0
+
+=== Processing oakmont ===
+Scrape + LLM extraction for oakmont...
+  URL: https://oakmontseniorliving.com/our-communities/
+  Extracted 0 communities
+
+=== Processing front-porch ===
+Scrape + LLM extraction for front-porch...
+  URL: https://frontporch.net/communities/
+  Extracted 10 communities
+  Matched 0/10 to CDSS facilities, updated 0
+
+=== Processing sunrise ===
+Scrape + LLM extraction for sunrise...
+  URL: https://www.sunriseseniorliving.com/locations/?state=CA
+  Extracted 0 communities
+
+=== Processing cogir ===
+Scrape + LLM extraction for cogir...
+  URL: https://www.cogirseniorliving.com/california
+  Extracted 23 communities
+  ✓ Updated Cogir of Stock Ranch (Citrus Heights)
+  ✓ Updated Cogir of Folsom (Folsom)
+  ✓ Updated Cogir of Brea (Brea)
+  ✓ Updated Cogir of South Bay (Torrance)
+  Matched 4/23 to CDSS facilities, updated 4
+
+=== Processing carlton ===
+Scrape + LLM extraction for carlton...
+  URL: https://www.carltonseniorliving.com/locations/
+  Extracted 8 communities
+  ✓ Updated Sacramento (Sacramento)
+  ✓ Updated Orangevale (Orangevale)
+  Matched 2/8 to CDSS facilities, updated 2
+
+=== Processing merrill-gardens ===
+Scrape + LLM extraction for merrill-gardens...
+  URL: https://www.merrillgardens.com/find-a-community/?state=ca
+  Extracted 0 communities
+
+=== Processing eskaton ===
+Scrape + LLM extraction for eskaton...
+  URL: https://www.eskaton.org/communities
+  Extracted 0 communities
+
+=== Processing watermark ===
+Scrape + LLM extraction for watermark...
+  URL: https://www.watermarkcommunities.com/find-a-community/
+  Extracted 0 communities
+
+=== Processing pacifica ===
+Scrape + LLM extraction for pacifica...
+  URL: https://pacificaseniorliving.com/community-search/?state=CA
+  Extracted 0 communities
+
+=== Processing generations ===
+Scrape + LLM extraction for generations...
+  URL: https://generationslmc.com/communities/
+  Empty or trivial markdown; aborting extraction
+Failed to extract data for generations
+
+=== Processing pegasus ===
+Scrape + LLM extraction for pegasus...
+  URL: https://www.pegasusseniorliving.com/communities/
+  Extracted 6 communities
+  Matched 0/6 to CDSS facilities, updated 0
+
+Chain-curated MC scraper audit report - 2026-05-01 23:02:00
+================================================================================
+
+silverado            (auto-confirm): 0 facilities updated
+belmont-village      (auto-confirm): 0 facilities updated
+aegis                (auto-confirm): 0 facilities updated
+activcare            (auto-confirm): 0 facilities updated
+ivy-park            : scraped 0, matched 0, updated 0
+brookdale           : scraped 0, matched 0, updated 0
+atria               : scraped 25, matched 13, updated 0
+oakmont             : scraped 0, matched 0, updated 0
+front-porch         : scraped 10, matched 0, updated 0
+sunrise             : scraped 0, matched 0, updated 0
+cogir               : scraped 23, matched 4, updated 4
+carlton             : scraped 8, matched 2, updated 2
+merrill-gardens     : scraped 0, matched 0, updated 0
+eskaton             : scraped 0, matched 0, updated 0
+watermark           : scraped 0, matched 0, updated 0
+pacifica            : scraped 0, matched 0, updated 0
+generations         : scraped 0, matched 0, updated 0
+pegasus             : scraped 6, matched 0, updated 0
+
+TOTAL: scraped 72, matched 19, updated 6
+
+AUDIT FINDINGS:
+----------------------------------------
+Note: Detailed unmatched analysis not yet implemented
+Consider adding extraction result storage for full audit

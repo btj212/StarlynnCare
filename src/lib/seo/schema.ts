@@ -286,6 +286,9 @@ export function buildItemListSchema(
     itemListElement: facilities.map((f, i) => ({
       "@type": "ListItem",
       position: i + 1,
+      // name + url at ListItem level required by Google Rich Results validator
+      name: f.name,
+      url: f.url,
       item: itemListLocalBusiness(f),
     })),
   };

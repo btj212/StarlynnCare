@@ -1,0 +1,30 @@
+Processing 1 chain(s)...
+
+=== Processing atria ===
+Scrape + LLM extraction for atria...
+  URL: https://www.atriaseniorliving.com/senior-living-communities/senior-living-in-california
+  Extracted 25 communities
+  ✓ Updated Atria Carmichael Oaks (Carmichael)
+  ✓ Updated Atria Del Sol (Mission Viejo)
+  ✓ Updated Atria at Foster Square (Foster City)
+  ✓ Updated Atria Golden Creek (Irvine)
+  ✓ Updated Atria Hacienda (Palm Desert)
+  ✓ Updated Atria Newport Beach (Newport Beach)
+  ✓ Updated Atria Park of Lafayette (Lafayette)
+  ✓ Updated Atria Park of Vintage Hills (Temecula)
+  ✓ Updated Atria Rancho Mirage (Rancho Mirage)
+  ✓ Updated Atria San Juan (San Juan Capistrano)
+  ✓ Updated Atria Santa Clarita (Santa Clarita)
+  Matched 13/25 to CDSS facilities, updated 11
+
+Chain-curated MC scraper audit report - 2026-05-01 22:56:51
+================================================================================
+
+atria               : scraped 25, matched 13, updated 11
+
+TOTAL: scraped 25, matched 13, updated 11
+
+AUDIT FINDINGS:
+----------------------------------------
+Note: Detailed unmatched analysis not yet implemented
+Consider adding extraction result storage for full audit

@@ -1,0 +1,910 @@
+Facilities loaded: 275
+Silverado seed already set; skipping (use --force to overwrite).
+
+[1/274] Meadowbrook at Agoura Hills (Agoura Hills)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[2/274] Oakmont of Agoura Hills (Agoura Hills)
+  → content already set; skipping (use --force)
+
+[3/274] Cardinal Point at Mariner Square (Alameda)
+  → content already set; skipping (use --force)
+
+[4/274] Elders Inn On Webster (Alameda)
+  → content already set; skipping (use --force)
+
+[5/274] Oakmont of Mariner Point (Alameda)
+  → content already set; skipping (use --force)
+
+[6/274] Waters Edge Lodge (Alameda)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[7/274] Alamo Care Home (Alamo)
+  → content already set; skipping (use --force)
+
+[8/274] Eaton Place (Alamo)
+  → content already set; skipping (use --force)
+
+[9/274] Navajo Care Home (Alamo)
+  → content already set; skipping (use --force)
+
+[10/274] Roundhill Care Homes, Inc. (Alamo)
+  → content already set; skipping (use --force)
+
+[11/274] Belmont Village Albany (Albany)
+  → content already set; skipping (use --force)
+
+[12/274] Silverado Senior Living - the Huntington (Alhambra)
+  → content already set; skipping (use --force)
+
+[13/274] Belmont Village Aliso Viejo (Aliso Viejo)
+  → content already set; skipping (use --force)
+
+[14/274] Harbor Heights Assisted Living and Memory Care (Anaheim)
+  → content already set; skipping (use --force)
+
+[15/274] Aegis Senior Residence (Antelope)
+  → content already set; skipping (use --force)
+
+[16/274] Unity Memory Home Care (Antelope)
+  → content already set; skipping (use --force)
+
+[17/274] Silverado Senior Living-sierra Vista (Azusa)
+  → content already set; skipping (use --force)
+
+[18/274] New Rivershore Care Home (Bay Point)
+  → content already set; skipping (use --force)
+
+[19/274] Silverado Senior Living - Belmont Hills (Belmont)
+  → content already set; skipping (use --force)
+
+[20/274] Elegance Berkeley (Berkeley)
+  → content already set; skipping (use --force)
+
+[21/274] Ivy at Berkeley, the (Berkeley)
+  → content already set; skipping (use --force)
+
+[22/274] Silverado Brea Llc (Brea)
+  → content already set; skipping (use --force)
+
+[23/274] Belmont Village Burbank (Burbank)
+  → content already set; skipping (use --force)
+
+[24/274] Ivy Park at Burbank (Burbank)
+  → content already set; skipping (use --force)
+
+[25/274] Burlingame Senior Living (Burlingame)
+  → content already set; skipping (use --force)
+
+[26/274] Belmont Village Calabasas (Calabasas)
+  → content already set; skipping (use --force)
+
+[27/274] Silverado Senior Living - Calabasas (Calabasas)
+  → content already set; skipping (use --force)
+
+[28/274] Bed of Roses Residential Care Home (Campbell)
+  → content already set; skipping (use --force)
+
+[29/274] Merrill Gardens at Campbell (Campbell)
+  → content already set; skipping (use --force)
+
+[30/274] Princess Lodge (Campbell)
+  → content already set; skipping (use --force)
+
+[31/274] West Valley Care Home (Campbell)
+  → content already set; skipping (use --force)
+
+[32/274] Canyon Trails at Topanga Senior Living (Canoga Park)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[33/274] Belmont Village Cardiff (Cardiff by the Sea)
+  → content already set; skipping (use --force)
+
+[34/274] Activcare at Bressi Ranch (Carlsbad)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[35/274] Santianna Oakmont Signature Living (Carlsbad)
+  → content already set; skipping (use --force)
+
+[36/274] Aegis Assisted Living of Carmichael (Carmichael)
+  → content already set; skipping (use --force)
+
+[37/274] Oakmont of Carmichael (Carmichael)
+  → content already set; skipping (use --force)
+
+[38/274] Eden Assisted Living (Castro Valley)
+  → content already set; skipping (use --force)
+
+[39/274] Willow Creek Alzheimer's & Dementia Care Center (Castro Valley)
+  → content already set; skipping (use --force)
+
+[40/274] Ivy Park at Cerritos (Cerritos)
+  → content already set; skipping (use --force)
+
+[41/274] Activcare at Rolling Hills Ranch (Chula Vista)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[42/274] Angel Touch Memory Care Llc (Cirtus Heights)
+  → content already set; skipping (use --force)
+
+[43/274] Brookdale Sylvan Ranch (Citrus Heights)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[44/274] California Sunshine Rcfe (Clayton)
+  → content already set; skipping (use --force)
+
+[45/274] Amistad Assisted Living and Memory Care Home (Corona)
+  → content already set; skipping (use --force)
+
+[46/274] Assisted Living and Memory Care by Inspirations (Corona)
+  → content already set; skipping (use --force)
+
+[47/274] Assisted Lvg & Memory Care Home at Wildrose Ranch (Corona)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[48/274] Brookdale Corona (Corona)
+  → content already set; skipping (use --force)
+
+[49/274] Cathy's Cottage - Assisted Living and Memory Care (Corona)
+  → content already set; skipping (use --force)
+
+[50/274] Silverado Senior Living- Newport Mesa (Costa Mesa)
+  → content already set; skipping (use --force)
+
+[51/274] Aegis Living Dana Point (Dana Point)
+  → content already set; skipping (use --force)
+
+[52/274] Brookdale Danville (Danville)
+  → content already set; skipping (use --force)
+
+[53/274] Good Shepherd of Danville (Danville)
+  → content already set; skipping (use --force)
+
+[54/274] Granny's Loving Angels Llc (Danville)
+  → content already set; skipping (use --force)
+
+[55/274] Reutlinger Community, the (Danville)
+  → content already set; skipping (use --force)
+
+[56/274] Sunrise Assisted Living of Danville (Danville)
+  → content already set; skipping (use --force)
+
+[57/274] Emerald Home Care (Dublin)
+  → content already set; skipping (use --force)
+
+[58/274] Emerald Valley (Dublin)
+  → content already set; skipping (use --force)
+
+[59/274] Gardens at Laguna Springs Memory Care, the (Elk Grove)
+  → content already set; skipping (use --force)
+
+[60/274] Ivy Park at Laguna Creek (Elk Grove)
+  → content already set; skipping (use --force)
+
+[61/274] 1440 by the Bay (Emeryville)
+  → content already set; skipping (use --force)
+
+[62/274] Silverado Senior Living-encinitas (Encinitas)
+  → content already set; skipping (use --force)
+
+[63/274] Silverado Senior Living-escondido (Escondido)
+  → content already set; skipping (use --force)
+
+[64/274] Vista del Lago Memory Care (Escondido)
+  → content already set; skipping (use --force)
+
+[65/274] Always Tlc (Foster City)
+  → content already set; skipping (use --force)
+
+[66/274] Atria at Foster Square (Foster City)
+  → content already set; skipping (use --force)
+
+[67/274] A & P Care Home for Seniors (Fremont)
+  → content already set; skipping (use --force)
+
+[68/274] Aegis Assisted Living of Fremont (Fremont)
+  → content already set; skipping (use --force)
+
+[69/274] Aegis Gardens (Fremont)
+  → content already set; skipping (use --force)
+
+[70/274] Brookdale North Fremont (Fremont)
+  → content already set; skipping (use --force)
+
+[71/274] Carlton Plaza of Fremont (Fremont)
+  → content already set; skipping (use --force)
+
+[72/274] Common Destiny (Fremont)
+  → content already set; skipping (use --force)
+
+[73/274] Fremont Hills (Fremont)
+  → content already set; skipping (use --force)
+
+[74/274] Fremont Village (Fremont)
+  → content already set; skipping (use --force)
+
+[75/274] K & J Residential Care Home (Fremont)
+  → content already set; skipping (use --force)
+
+[76/274] La Concepcion Residential Care Home (Fremont)
+  → content already set; skipping (use --force)
+
+[77/274] Lincoln Villa (Fremont)
+  → content already set; skipping (use --force)
+
+[78/274] Mary's Manor (Fremont)
+  → content already set; skipping (use --force)
+
+[79/274] Merisol Care (Fremont)
+  → content already set; skipping (use --force)
+
+[80/274] Muriel's Residential Facility (Fremont)
+  → content already set; skipping (use --force)
+
+[81/274] Muriel's Residential Facility Ii (Fremont)
+  → content already set; skipping (use --force)
+
+[82/274] Tri City Care Home Ii (Fremont)
+  → content already set; skipping (use --force)
+
+[83/274] Merrill Gardens at Gilroy (Gilroy)
+  → content already set; skipping (use --force)
+
+[84/274] Sweet Care Home in Gilroy (Gilroy)
+  → content already set; skipping (use --force)
+
+[85/274] Aegis Living Granada Hills (Granada Hills)
+  → content already set; skipping (use --force)
+
+[86/274] Above & Beyond Rcfe, Inc. (Hayward)
+  → content already set; skipping (use --force)
+
+[87/274] Bella Vista (Hayward)
+  → content already set; skipping (use --force)
+
+[88/274] Bellara Senior Living (Hayward)
+  → content already set; skipping (use --force)
+
+[89/274] Blossom Garden Senior Home (Hayward)
+  → content already set; skipping (use --force)
+
+[90/274] Colonial Acres Residential Care Home (Hayward)
+  → content already set; skipping (use --force)
+
+[91/274] Continuance Care Home Llc (Hayward)
+  → content already set; skipping (use --force)
+
+[92/274] Diana's Care Home (Hayward)
+  → content already set; skipping (use --force)
+
+[93/274] Elle's Home (Hayward)
+  → content already set; skipping (use --force)
+
+[94/274] Galicia's Tulip Care Home #2 (Hayward)
+  → content already set; skipping (use --force)
+
+[95/274] Ivy Park at Hayward (Hayward)
+  → content already set; skipping (use --force)
+
+[96/274] Landmark Villa (Hayward)
+  → content already set; skipping (use --force)
+
+[97/274] Montgomery Springs Manor (Hayward)
+  → content already set; skipping (use --force)
+
+[98/274] Pleasant Hill Manor (Hayward)
+  → content already set; skipping (use --force)
+
+[99/274] Royal Colony View Place (Hayward)
+  → content already set; skipping (use --force)
+
+[100/274] Scott Villa (Hayward)
+  → content already set; skipping (use --force)
+
+[101/274] St. Lourdes Home (Hayward)
+  → content already set; skipping (use --force)
+
+[102/274] Desert Hills Memory Care Center (Hemet)
+  → content already set; skipping (use --force)
+
+[103/274] Whitten Heights Assisted Living and Memory Care (La Habra)
+  → content already set; skipping (use --force)
+
+[104/274] Belmont Village la Jolla (La Jolla)
+  → content already set; skipping (use --force)
+
+[105/274] Grossmont Gardens Memory Care (La Mesa)
+  → content already set; skipping (use --force)
+
+[106/274] Caleo Bay Alzheimer's Special Care Center (La Quinta)
+  → content already set; skipping (use --force)
+
+[107/274] Lafayette Gardens (Lafayette)
+  → content already set; skipping (use --force)
+
+[108/274] Lafayette Heights Res. Care (Lafayette)
+  → content already set; skipping (use --force)
+
+[109/274] Activcare Laguna Hills (Laguna Hills)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 asks the facility to walk families through 'most recent CDSS inspection documentation' when source data shows zero inspections on record — this is logically impossible and misleading.
+    - Question 4 closes with the generic phrase 'before making a placement decision' equivalent by asking for documentation 'over the past 24 months' to inform family decisions — this violates the guidance against generic decision-framing closures.
+
+[110/274] Aegis Assisted Living of Laguna Niguel (Laguna Niguel)
+  → content already set; skipping (use --force)
+
+[111/274] A Gabriela's Villa-livermore (Livermore)
+  → content already set; skipping (use --force)
+
+[112/274] A New Haven Care Home - Hampton (Livermore)
+  → content already set; skipping (use --force)
+
+[113/274] Bethany Home Senior Living, Llc (Livermore)
+  → content already set; skipping (use --force)
+
+[114/274] Bethany Homes Senior Living Ii (Livermore)
+  → content already set; skipping (use --force)
+
+[115/274] Grace Home Care - Lloyd (Livermore)
+  → content already set; skipping (use --force)
+
+[116/274] Heritage Estates (Livermore)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[117/274] Hrs Care Home (Livermore)
+  → content already set; skipping (use --force)
+
+[118/274] Kennedy Guest Home (Livermore)
+  → content already set; skipping (use --force)
+
+[119/274] Khivi Care, Llc (Livermore)
+  → content already set; skipping (use --force)
+
+[120/274] Milan Villa Senior Living (Livermore)
+  → content already set; skipping (use --force)
+
+[121/274] Old Oak Golden Villa, Llc (Livermore)
+  → content already set; skipping (use --force)
+
+[122/274] Shannen Guest Home (Livermore)
+  → content already set; skipping (use --force)
+
+[123/274] Sunrise Private Care (Livermore)
+  → content already set; skipping (use --force)
+
+[124/274] Tuscany Villa Senior Living (Livermore)
+  → content already set; skipping (use --force)
+
+[125/274] Hidden Lane Villa (Los Altos)
+  → content already set; skipping (use --force)
+
+[126/274] Avenir Memory Care Westside (Los Angeles)
+  → content already set; skipping (use --force)
+
+[127/274] Belmont Village Hollywood (Los Angeles)
+  → content already set; skipping (use --force)
+
+[128/274] Belmont Village Westwood (Los Angeles)
+  → content already set; skipping (use --force)
+
+[129/274] Silverado Senior Living-beverly Place (Los Angeles)
+  → content already set; skipping (use --force)
+
+[130/274] Sunny Hills Assisted Living (memory Care) (Los Angeles)
+  → content already set; skipping (use --force)
+
+[131/274] Watermark at Westwood Village, the (Los Angeles)
+  → content already set; skipping (use --force)
+
+[132/274] Cedar Creek Alzheimer's & Dementia Care Center (Los Gatos)
+  → content already set; skipping (use --force)
+
+[133/274] Mina's Elderly Carehome 2 (Los Gatos)
+  → content already set; skipping (use --force)
+
+[134/274] Olympic Residential Care Home (Martinez)
+  → content already set; skipping (use --force)
+
+[135/274] Reliez Valley Care Home (Martinez)
+  → content already set; skipping (use --force)
+
+[136/274] Villa Vittoria (Martinez)
+  → content already set; skipping (use --force)
+
+[137/274] Sandhill Assisted Living Llc (Menlo Park)
+  → content already set; skipping (use --force)
+
+[138/274] Sandhill Assisted Living Llc (Menlo Park)
+  → content already set; skipping (use --force)
+
+[139/274] Hearts at Millwood Assisted Living (Millbrae)
+  → content already set; skipping (use --force)
+
+[140/274] Millbrae Family Care Home (Millbrae)
+  → content already set; skipping (use --force)
+
+[141/274] Aegis Residential Living (Mission Viejo)
+  → content already set; skipping (use --force)
+
+[142/274] Aegis Assisted Living of Moraga (Moraga)
+  → content already set; skipping (use --force)
+
+[143/274] Loma Clara Senior Living (Morgan Hill)
+  → content already set; skipping (use --force)
+
+[144/274] Westmont of Morgan Hill (Morgan Hill)
+  → content already set; skipping (use --force)
+
+[145/274] Casa Pastel Care Home (Mountain View)
+  → content already set; skipping (use --force)
+
+[146/274] Paradise Care Home (Mountain View)
+  → content already set; skipping (use --force)
+
+[147/274] Villa Toscana a Memory Care Community (Mountain View)
+  → content already set; skipping (use --force)
+
+[148/274] Parkview Memory Care at Paradise Village (National City)
+  → content already set; skipping (use --force)
+
+[149/274] Heavenly Care Home (Newark)
+  → content already set; skipping (use --force)
+
+[150/274] St Joseph Senior Care (Newark)
+  → content already set; skipping (use --force)
+
+[151/274] Newport Beach Memory Care (Newport Beach)
+  → content already set; skipping (use --force)
+
+[152/274] Charitys Residence (Oakland)
+  → content already set; skipping (use --force)
+
+[153/274] D'nalor Care Homes, Llc (Oakland)
+  → content already set; skipping (use --force)
+
+[154/274] Dimond Care (Oakland)
+  → content already set; skipping (use --force)
+
+[155/274] Elder Ashram (Oakland)
+  → content already set; skipping (use --force)
+
+[156/274] Ivy Park at Oakland Hills (Oakland)
+  → content already set; skipping (use --force)
+
+[157/274] J & C Care Center Llc (Oakland)
+  → content already set; skipping (use --force)
+
+[158/274] Lakeshore Residential Care (Oakland)
+  → content already set; skipping (use --force)
+
+[159/274] Mercy Retirement & Care Center (Oakland)
+  → content already set; skipping (use --force)
+
+[160/274] Merrill Gardens at Rockridge (Oakland)
+  → content already set; skipping (use --force)
+
+[161/274] Oakland Heights Senior Living (Oakland)
+  → content already set; skipping (use --force)
+
+[162/274] Opal Care Llc (Oakland)
+  → content already set; skipping (use --force)
+
+[163/274] Point at Rockridge, the (Oakland)
+  → content already set; skipping (use --force)
+
+[164/274] B. Ruiz Carehome 2 (Oakley)
+  → content already set; skipping (use --force)
+
+[165/274] Oakley Assisted Living Ii , Llc (Oakley)
+  → content already set; skipping (use --force)
+
+[166/274] Safe Haven Oakley Llc (Oakley)
+  → content already set; skipping (use --force)
+
+[167/274] Aegis Assisted Living at Shadowridge (Oceanside)
+  → content already set; skipping (use --force)
+
+[168/274] Ocean Hills Assisted Living & Memory Care (Oceanside)
+  → content already set; skipping (use --force)
+
+[169/274] Activcare Orange (Orange)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[170/274] Ivy Park at Bradford (Placentia)
+  → content already set; skipping (use --force)
+
+[171/274] Aegis Living Pleasant Hill (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[172/274] Better Living Care Home (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[173/274] Boyd Senior Care Home (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[174/274] Cordial Care Home (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[175/274] Dysico Care Home, Rcfe (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[176/274] Elisabeth Care Home (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[177/274] Maureen House (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[178/274] Memory Care of Contra Costa (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[179/274] Pleasant Hill Oasis (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[180/274] Pleasant Hill Villa Home Care (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[181/274] Ramona Care Home (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[182/274] Stonehedge Guest Home (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[183/274] Sunvalley Residential Care Home (Pleasant Hill)
+  → content already set; skipping (use --force)
+
+[184/274] Abigail's Guest Home (Pleasanton)
+  → content already set; skipping (use --force)
+
+[185/274] Carefield Pleasanton (Pleasanton)
+  → content already set; skipping (use --force)
+
+[186/274] Ivy Park at Pleasanton (Pleasanton)
+  → content already set; skipping (use --force)
+
+[187/274] Parkview, the (Pleasanton)
+  → content already set; skipping (use --force)
+
+[188/274] Stoneridge Creek Pleasanton (Pleasanton)
+  → content already set; skipping (use --force)
+
+[189/274] Sunol Creek Memory Care (Pleasanton)
+  → content already set; skipping (use --force)
+
+[190/274] Valle Verde Care Home Iii (Pleasanton)
+  → content already set; skipping (use --force)
+
+[191/274] Valle Verde Care Home Iv (Pleasanton)
+  → content already set; skipping (use --force)
+
+[192/274] Belmont Village Rancho Palos Verdes (Rancho Palos Verdes)
+  → content already set; skipping (use --force)
+
+[193/274] Family Connect Memory Care Palos Verdes (Rancho Palos Verdes)
+  → content already set; skipping (use --force)
+
+[194/274] Silverado Senior Living-beach Cities (Redondo Beach)
+  → content already set; skipping (use --force)
+
+[195/274] Ark, the (Redwood City)
+  → content already set; skipping (use --force)
+
+[196/274] Britannia Place (Redwood City)
+  → content already set; skipping (use --force)
+
+[197/274] Arlington Heights Assisted Living and Memory Care (Riverside)
+  → content already set; skipping (use --force)
+
+[198/274] Canyon Crest Assisted Living and Memory Care (Riverside)
+  → content already set; skipping (use --force)
+
+[199/274] Sycamore Canyon Assisted Living and Memory Care (Riverside)
+  → content already set; skipping (use --force)
+
+[200/274] Victoria Hills Assisted Living and Memory Care (Riverside)
+  → content already set; skipping (use --force)
+
+[201/274] Loving Hands Care Home Llc (Rodeo)
+  → content already set; skipping (use --force)
+
+[202/274] Villa Board and Care Home (Rodeo)
+  → content already set; skipping (use --force)
+
+[203/274] Ahau Boarding Care Home (San Bruno)
+  → content already set; skipping (use --force)
+
+[204/274] Araville Residential Care Home Ii (San Bruno)
+  → content already set; skipping (use --force)
+
+[205/274] Pacaldo Llc (San Bruno)
+  → content already set; skipping (use --force)
+
+[206/274] Sunshine Care Home Facility Llc (San Bruno)
+  → content already set; skipping (use --force)
+
+[207/274] Activcare at 4s Ranch (San Diego)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[208/274] Activcare at Mission Bay (San Diego)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[209/274] Belmont Village Sabre Springs (San Diego)
+  → content already set; skipping (use --force)
+
+[210/274] Terraces at Via Verde-a Memory Care Community, the (San Dimas)
+  → content already set; skipping (use --force)
+
+[211/274] Silverado Senior Living-san Juan Capistrano (San Juan Capistrano)
+  → content already set; skipping (use --force)
+
+[212/274] California Mentor-marineview Home (San Leandro)
+  → content already set; skipping (use --force)
+
+[213/274] Carlton Plaza of San Leandro (San Leandro)
+  → content already set; skipping (use --force)
+
+[214/274] Heart and Soul Communities Ii (San Leandro)
+  → content already set; skipping (use --force)
+
+[215/274] Marymount Villa Retirement Center (San Leandro)
+  → content already set; skipping (use --force)
+
+[216/274] Mori Manor (San Leandro)
+  → content already set; skipping (use --force)
+
+[217/274] Rosegate (San Leandro)
+  → content already set; skipping (use --force)
+
+[218/274] San Leandro Senior Living (San Leandro)
+  → content already set; skipping (use --force)
+
+[219/274] Sunrise Care Home (San Lorenzo)
+  → content already set; skipping (use --force)
+
+[220/274] Country Rose Estate Memory Care (San Marcos)
+  → content already set; skipping (use --force)
+
+[221/274] Ageway Boarding Care #2 (San Mateo)
+  → content already set; skipping (use --force)
+
+[222/274] Chateau Sabelle (San Mateo)
+  → content already set; skipping (use --force)
+
+[223/274] Enchanted Garden for Seniors (San Mateo)
+  → content already set; skipping (use --force)
+
+[224/274] George Anne Home (San Mateo)
+  → content already set; skipping (use --force)
+
+[225/274] Hennelly House (San Mateo)
+  → content already set; skipping (use --force)
+
+[226/274] Heritage Place (San Mateo)
+  → content already set; skipping (use --force)
+
+[227/274] Olivia's Care Home Ii (San Mateo)
+  → content already set; skipping (use --force)
+
+[228/274] Peninsula Village (San Mateo)
+  → content already set; skipping (use --force)
+
+[229/274] Portola Place (San Mateo)
+  → content already set; skipping (use --force)
+
+[230/274] Roias Home for the Elderly (San Mateo)
+  → content already set; skipping (use --force)
+
+[231/274] San Mateo Villa (San Mateo)
+  → content already set; skipping (use --force)
+
+[232/274] Vanessa Care Home Ii (San Mateo)
+  → content already set; skipping (use --force)
+
+[233/274] Abigail's Guest Home (San Ramon)
+  → content already set; skipping (use --force)
+
+[234/274] Belmont Village San Ramon (San Ramon)
+  → content already set; skipping (use --force)
+
+[235/274] Bluegarden Care (San Ramon)
+  → content already set; skipping (use --force)
+
+[236/274] Bluemeadow Care (San Ramon)
+  → content already set; skipping (use --force)
+
+[237/274] Discovery Commons San Ramon (San Ramon)
+  → content already set; skipping (use --force)
+
+[238/274] Golden Hill Homes, Inc. (San Ramon)
+  → content already set; skipping (use --force)
+
+[239/274] Ivy Park at San Ramon (San Ramon)
+  → content already set; skipping (use --force)
+
+[240/274] Penny's Guest Home (San Ramon)
+  → content already set; skipping (use --force)
+
+[241/274] Watermark at San Ramon, the (San Ramon)
+  → content already set; skipping (use --force)
+
+[242/274] Forever Young Memory Care (Santa Ana)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[243/274] Willow View Gardens Memory Care & Assisted Living (Santa Ana)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[244/274] April Garden Villa of Saratoga (Saratoga)
+  → content already set; skipping (use --force)
+
+[245/274] Belmont Village Encino (Sherman Oaks)
+  → content already set; skipping (use --force)
+
+[246/274] Seabright Assisted Living and Memory Care (Solana Beach)
+  → content already set; skipping (use --force)
+
+[247/274] Beach Terrace Assisted Living and Memory Care (Stanton)
+  → content already set; skipping (use --force)
+
+[248/274] Reserve at Thousand Oaks, the (Thousand Oaks)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 asks the facility to confirm 'April 2026 expiration date' but source data shows license_expiration is '(not in data)' — this is a factual contradiction.
+    - Question 2 claims 'zero complaints and zero deficiencies across all inspections on file' but source data shows inspection_count is 0, meaning there are no inspections on file — this phrasing misrepresents the data.
+    - Question 4 asks 'when was the most recent state inspection conducted' but source data explicitly states last_inspection_date is '(none on record)' — asking for a date that does not exist is inappropriate.
+
+[249/274] Family Connect Memory Care Inc (Torrance)
+  → content already set; skipping (use --force)
+
+[250/274] Family Connected Memory Care Boutique (Torrance)
+  → content already set; skipping (use --force)
+
+[251/274] Silverado Rolling Hills (Torrance)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[252/274] South Bay Memory Care (Torrance)
+  → content already set; skipping (use --force)
+
+[253/274] Silverado Senior Living-tustin Hacienda (Tustin)
+  → content already set; skipping (use --force)
+
+[254/274] Ageway Boarding Care #3 (Union City)
+  → content already set; skipping (use --force)
+
+[255/274] Ava Bella Care Home (Union City)
+  → content already set; skipping (use --force)
+
+[256/274] Begonia Residential Care Home (Union City)
+  → content already set; skipping (use --force)
+
+[257/274] C & L Home for the Elderly (Union City)
+  → content already set; skipping (use --force)
+
+[258/274] C & R Home for the Elderly (Union City)
+  → content already set; skipping (use --force)
+
+[259/274] Harmony Homes Llc (Union City)
+  → content already set; skipping (use --force)
+
+[260/274] Hartnell Home Care (Union City)
+  → content already set; skipping (use --force)
+
+[261/274] Merisol Care Home (Union City)
+  → content already set; skipping (use --force)
+
+[262/274] Merisol Care Home (Union City)
+  → content already set; skipping (use --force)
+
+[263/274] Pacifica Senior Living Union City (Union City)
+  → content already set; skipping (use --force)
+
+[264/274] St. Therese Care Home Ii (Union City)
+  → content already set; skipping (use --force)
+
+[265/274] Tri City Care Home (Union City)
+  → content already set; skipping (use --force)
+
+[266/274] Oakmont of Valencia (Valencia)
+  → content already set; skipping (use --force)
+
+[267/274] Vista Gardens Memory Care (Vista)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[268/274] Fairwinds - West Hills (West Hills)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[269/274] West Hills Assisted Living (West Hills)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[270/274] Ridge at Westlake Village, the (Westlake Village)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 references '§87705 designation' which is a regulatory code section, not a LIC form, but the framing conflates formal CDSS designation with Title 22 code in a way that may confuse; however, the question correctly notes the absence of formal designation.
+    - Question 2 asks the facility to provide 'confirmation that all required annual inspections have been completed' — this asks the facility to validate state-issued paperwork/processes, which is borderline; a better phrasing would ask for the facility's own records or corrective-action documentation.
+    - Only 4 questions are present; the minimum approved count is exactly 4 questions, so this passes the array-length requirement.
+
+[271/274] Sunrise of Westlake Village (Westlake Village)
+  → content already set; skipping (use --force)
+
+[272/274] Savant of Woodland Hills (Woodland Hills)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[273/274] Variel of Woodland Hills, the (Woodland Hills)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 asks the facility to provide its inspection report and internal audit schedule, which exceeds the scope of requesting corrective-action plans or regulatory documentation.
+    - Question 4 asks the facility to verify compliance documentation for Title 22 sections §87101–87102, which is appropriate, but the array contains only 4 questions and should contain exactly 4–5 questions (this is acceptable).
+    - Question 2 requests the facility show its grievance log and internal process documentation, which goes beyond regulatory corrective-action plans and enters operational process disclosure.
+    - Array contains exactly 4 questions, which meets the minimum requirement and should pass on count alone, but questions 1 and 2 request operational documentation beyond the scope of regulatory remediation plans.
+
+[274/274] Activcare at Yorba Linda (Yorba Linda)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 19
+  Skipped       : 251 (already had content)
+  Failed gate   : 4
+  Errors        : 0
+=======================================================

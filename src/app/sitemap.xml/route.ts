@@ -50,6 +50,8 @@ export async function GET() {
     { loc: `${SITE}/methodology`, priority: "0.75", changefreq: "monthly" as const },
     { loc: `${SITE}/about`, priority: "0.75", changefreq: "monthly" as const },
     { loc: `${SITE}/data`, priority: "0.8", changefreq: "monthly" as const },
+    { loc: `${SITE}/library/type-a-vs-type-b-deficiencies-explained`, priority: "0.78", changefreq: "monthly" as const },
+    { loc: `${SITE}/library/memory-care-cost-california`, priority: "0.78", changefreq: "monthly" as const },
     ...CITY_PAGES.map((slug) => ({
       loc: `${SITE}/california/${slug}`,
       priority: "0.85",

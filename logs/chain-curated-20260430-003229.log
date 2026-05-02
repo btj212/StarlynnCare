@@ -1,0 +1,11 @@
+Chain-curated MC scraper audit report - 2026-04-30 00:32:29
+================================================================================
+
+brookdale           : scraped 0, matched 0, updated 0
+
+TOTAL: scraped 0, matched 0, updated 0
+
+AUDIT FINDINGS:
+----------------------------------------
+Note: Detailed unmatched analysis not yet implemented
+Consider adding extraction result storage for full audit

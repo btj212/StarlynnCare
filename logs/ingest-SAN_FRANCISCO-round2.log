@@ -1,0 +1,35 @@
+Fetching San Francisco County RCFE roster from CA Open Data …
+CKAN rows received: 69
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24275 facilities loaded
+
+============================================================
+RCFE summary (69 total records)
+============================================================
+
+By license status:
+  CLOSED                 16
+  LICENSED               51
+  PENDING                 2
+
+By care category:
+  ccrc                            3
+  rcfe_general                   65
+  rcfe_memory_care                1
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)      20
+  medium  (7–49 beds)    28
+  large   (50+ beds)     21
+  unknown (no beds)       0
+
+Memory Care Signal Breakdown:
+  Explicit MC terminology:          1
+  Chain name match only:            4
+  Total flagged (explicit+chain):    5
+
+Publishable (LICENSED + memory-care): 4
+============================================================
+
+Upserting 69 rows …
+Done. New rows: 69  Updated: 0  scrape_run: 9502444b-e0b3-48d9-898c-ee4b923cf9fb

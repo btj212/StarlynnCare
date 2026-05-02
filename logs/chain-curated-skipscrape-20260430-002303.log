@@ -1,0 +1,32 @@
+Processing 4 chain(s)...
+
+=== Processing silverado ===
+Auto-confirming silverado (MC-only chain)...
+  Updated 14 facilities
+
+=== Processing belmont-village ===
+Auto-confirming belmont-village (MC-only chain)...
+  Updated 12 facilities
+
+=== Processing aegis ===
+Auto-confirming aegis (MC-only chain)...
+  Updated 11 facilities
+
+=== Processing activcare ===
+Auto-confirming activcare (MC-only chain)...
+  Updated 7 facilities
+
+Chain-curated MC scraper audit report - 2026-04-30 00:24:07
+================================================================================
+
+silverado            (auto-confirm): 14 facilities updated
+belmont-village      (auto-confirm): 12 facilities updated
+aegis                (auto-confirm): 11 facilities updated
+activcare            (auto-confirm): 7 facilities updated
+
+TOTAL: scraped 44, matched 0, updated 44
+
+AUDIT FINDINGS:
+----------------------------------------
+Note: Detailed unmatched analysis not yet implemented
+Consider adding extraction result storage for full audit

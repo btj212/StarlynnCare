@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
 
 async function getLastRefreshed(): Promise<string | null> {
   const supabase = tryPublicSupabaseClient();
@@ -49,8 +50,11 @@ export async function SiteFooter() {
               An independent civic-data publisher. We grade every licensed memory care facility in
               California against the state&rsquo;s own public inspection record.
             </p>
-            <p className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-rust">
-              No referral fees. No paid placement. Period.
+            <p
+              id="no-paid-placement"
+              className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-rust leading-relaxed max-w-[36ch]"
+            >
+              {GOVERNANCE_24_WORDS}
             </p>
           </div>
 

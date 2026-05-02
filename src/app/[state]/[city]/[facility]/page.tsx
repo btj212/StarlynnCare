@@ -182,7 +182,7 @@ export async function generateMetadata({
   const canonical = canonicalFor(
     `/${state.slug}/${facility.city_slug}/${facility.slug}`,
   );
-  const desc = `Memory care profile for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""}, built from state and federal primary sources.`;
+  const desc = `Inspection records, citation history, and quality context for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""} — verified from primary CDSS licensing data by StarlynnCare.`;
 
   return {
     title: `${facility.name} | StarlynnCare`,
@@ -958,6 +958,28 @@ export default async function FacilityPage({ params }: PageProps) {
               ← Back to {backLabel}
             </Link>
           </p>
+
+          {/* ── Editorial resource links ─────────────────────────────── */}
+          <div className="mt-10 pt-8 border-t border-sc-border flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-6 text-[13.5px] text-slate">
+            <Link
+              href="/library/type-a-vs-type-b-deficiencies-explained"
+              className="text-teal hover:underline underline-offset-4"
+            >
+              Understanding citations: Type A vs. Type B deficiencies →
+            </Link>
+            <Link
+              href="/library/memory-care-cost-california"
+              className="text-teal hover:underline underline-offset-4"
+            >
+              What memory care costs in California →
+            </Link>
+            <Link
+              href="/methodology"
+              className="text-teal hover:underline underline-offset-4"
+            >
+              How we calculate this grade →
+            </Link>
+          </div>
 
           {/* Public correction form */}
           <ReportListingForm

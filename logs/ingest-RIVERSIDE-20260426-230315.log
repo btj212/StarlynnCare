@@ -1,0 +1,32 @@
+Fetching Riverside County RCFE roster from CA Open Data …
+CKAN rows received: 867
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (867 total records)
+============================================================
+
+By license status:
+  CLOSED                268
+  LICENSED              530
+  ON PROBATION            1
+  PENDING                68
+
+By care category:
+  ccrc                            8
+  rcfe_general                  842
+  rcfe_memory_care               17
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)     720
+  medium  (7–49 beds)    64
+  large   (50+ beds)     83
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 18
+Publishable (LICENSED + memory-care): 15
+============================================================
+
+Upserting 867 rows …
+Done. New rows: 867  Updated: 0  scrape_run: 83def85a-faf5-4c96-8736-f65e4a8db14b

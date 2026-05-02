@@ -1,0 +1,32 @@
+Fetching Sacramento County RCFE roster from CA Open Data …
+CKAN rows received: 1054
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (1054 total records)
+============================================================
+
+By license status:
+  CLOSED                347
+  LICENSED              634
+  ON PROBATION            7
+  PENDING                66
+
+By care category:
+  ccrc                            1
+  rcfe_general                 1028
+  rcfe_memory_care               25
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)     919
+  medium  (7–49 beds)    52
+  large   (50+ beds)     83
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 25
+Publishable (LICENSED + memory-care): 16
+============================================================
+
+Upserting 1054 rows …
+Done. New rows: 1054  Updated: 0  scrape_run: ec38c7c1-9ccd-4120-86bf-68ff516b5b05

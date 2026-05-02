@@ -1,0 +1,15 @@
+2026-04-30 00:38:38,463 - INFO - --cities-from-db top-30: ['anaheim', 'carmichael', 'citrus-heights', 'corona', 'costa-mesa', 'elk-grove', 'escondido', 'fair-oaks', 'fountain-valley', 'fullerton', 'garden-grove', 'granada-hills', 'huntington-beach', 'laguna-hills', 'lake-forest', 'lancaster', 'long-beach', 'los-angeles', 'mission-viejo', 'murrieta', 'north-hollywood', 'northridge', 'orange', 'orangevale', 'riverside', 'sacramento', 'san-diego', 'san-mateo', 'torrance', 'van-nuys']
+2026-04-30 00:38:38,463 - INFO - 
+============================================================
+2026-04-30 00:38:38,463 - INFO - SCRAPING A PLACE FOR MOM
+2026-04-30 00:38:38,463 - INFO - ============================================================
+2026-04-30 00:38:38,463 - INFO - Starting scrape of A Place for Mom
+2026-04-30 00:38:38,920 - INFO - Filtered by --cities-from-db: 26 of 546 URLs
+2026-04-30 00:38:38,920 - INFO - Processing 1/26: https://www.aplaceformom.com/alzheimers-care/california/anaheim
+2026-04-30 00:38:38,920 - INFO - Extracting facilities from: https://www.aplaceformom.com/alzheimers-care/california/anaheim
+2026-04-30 00:40:54,535 - INFO -   Found 25 facilities
+2026-04-30 00:40:55,036 - INFO - Processing 2/26: https://www.aplaceformom.com/alzheimers-care/california/carmichael
+2026-04-30 00:40:55,036 - INFO - Extracting facilities from: https://www.aplaceformom.com/alzheimers-care/california/carmichael
+2026-04-30 00:42:49,180 - INFO -   Found 22 facilities
+2026-04-30 00:42:49,681 - INFO - Processing 3/26: https://www.aplaceformom.com/alzheimers-care/california/citrus-heights
+2026-04-30 00:42:49,681 - INFO - Extracting facilities from: https://www.aplaceformom.com/alzheimers-care/california/citrus-heights

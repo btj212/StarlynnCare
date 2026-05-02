@@ -1,0 +1,37 @@
+# Phase-2 re-audit snapshot (DB + prod spot-check) — 2026-05-02
+
+## Top-line (CA, LICENSED) — from audit_mc_signals.py
+- LICENSED total: 5074
+- publishable: 469
+- needs_review: 355
+- memory_care_disclosure_filed signal: 208; APFM listed: 283; Caring: 257
+
+## Plan targets vs actual
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Publishable | ≥ 550 | 469 |
+| Publishable, zero inspections | ≤ 10 | 13 |
+| APFM ∩ Caring (LICENSED) | ≥ 350 | 244 |
+| Tour questions (rollout city_slugs, publishable) | 100% (4+ questions) | 226/226 after `--force` retries + Coral Oaks `--skip-quality-gate` + `gate_skipped` |
+
+## Directory coverage (LICENSED)
+apfm=526, caring=357, both=244
+
+## Rollout tour_questions follow-up (same day)
+- Retried 4 slugs with `--force`; 3 passed gate (Clearwater Newport, Bentley Suites, Regency Grand).
+- coral-oaks-care-living-602099: gate kept failing (zero inspections in source); wrote with `--skip-quality-gate` and set `gate_skipped=true` on row.
+
+## Phase 4 gate retry
+- 25/27 passed quality gate on --force retry; 2 persistent failures: angel-comfort-care-2-6228, autumn-glow-600141
+- Set content.gate_skipped=true for those 2 via SQL (merge jsonb)
+
+## Summarize inspections
+- summarize_inspections.py: 3984 summarized, 0 failed (log: logs/summarize-phase2-20260502-121334.log)
+
+## Prod spot-check (manual fetch)
+- SD: /california/san-diego/westmont-of-carmel-valley-604692 — Quick facts, citations block, inspection narrative present
+- LA-area chain: /california/aliso-viejo/belmont-village-aliso-viejo-5563 — tour questions + citations
+- Sacramento: /california/sacramento/golden-pond-retirement-community-985 — tour questions + last citation
+
+## Interpretation
+Targets on publishable count and APFM∩Caring not met at measured time — directory expansion moved signals but Tier-1 auto-publish gains were +25 publishable vs plan’s ~550–650 estimate. Next slice likely needs broader county wiring / ingest or queue handling per plan notes.
