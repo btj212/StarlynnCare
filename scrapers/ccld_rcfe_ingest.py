@@ -140,40 +140,50 @@ FACILITY_PROFILE_URL = (
 #      dedicated memory-care unit. Brand presence is sufficient evidence;
 #      Phase D (SS87705/87706 citation scan) will confirm or correct.
 #
-# "legacy" excluded — too common without memory-care context.
-MEMORY_CARE_RE = re.compile(
+# Tier 1 — strict MC terminology in facility name. Sole signal sufficient to publish.
+MC_EXPLICIT_RE = re.compile(
     r"\b("
-    # A: Explicit program descriptors
-    r"memory\s*care|memory[-\s]care"
-    r"|dementia"
-    r"|alzheimer"
+    r"memory\s*care|memory[-\s]care|memory[-\s]support"
+    r"|dementia|alzheimer"
     r"|reminiscence"
     r"|cognitive\s+care|cognitive\s+memory"
-    r"|neurocognitive|neurodegenerative"
-    r"|mind[s]?\s*\&?\s*motion"
-    # B: Known chains — memory care is part of their standard offering
-    r"|silverado"                           # pure memory-care brand
-    r"|aegis"                               # Aegis Living — memory-care focused
-    r"|belmont\s+village"                   # Belmont Village — dedicated MC on every campus
-    r"|brookdale"                           # Clare Bridge MC program
-    r"|watermark\s+at|the\s+watermark"      # The Watermark — always has MC
-    r"|oakmont\s+of"                        # Oakmont Senior Living CA chain
-    r"|merrill\s+gardens"                   # Merrill Gardens MC program
-    r"|ivy\s+park"                          # Ivy Park by Atria — premium tier
-    r"|elegance\s+\w+"                      # Elegance (ex-Sunrise) — retains MC
-    r"|sunrise\s+senior\s+living|sunrise\s+of"  # Sunrise Reminiscence MC program
     r")\b",
     re.IGNORECASE,
 )
 
-# City→county lookup for sanity-check. CDSS occasionally mis-assigns a facility
-# to the wrong county. Drop records whose city is known to be outside Alameda.
-CITIES_NOT_IN_ALAMEDA = frozenset({
-    "concord", "walnut-creek", "antioch", "pittsburg", "brentwood",
-    "richmond", "el-cerrito", "san-pablo", "hercules", "pinole",
-    "san-jose", "santa-clara", "milpitas", "sunnyvale",
-    "san-francisco", "south-san-francisco", "daly-city",
-})
+# Tier 2 — chain operators whose CA portfolio includes MC at SOME but not ALL properties.
+# A hit alone routes the facility to /admin/mc-review (mc_review_status='needs_review').
+MC_CHAIN_RE = re.compile(
+    r"\b("
+    r"silverado|aegis|belmont\s+village|brookdale|watermark\s+at|the\s+watermark"
+    r"|oakmont\s+of|merrill\s+gardens|ivy\s+park|sunrise\s+(senior\s+living|of)"
+    r"|atria|pacifica\s+senior\s+living|eskaton|cogir|carlton\s+senior\s+living"
+    r"|pegasus\s+senior\s+living|holiday\s+by\s+atria|activcare|front\s+porch"
+    r"|episcopal\s+senior\s+communities|generations|spectrum\s+senior\s+living"
+    r"|elegance\s+\w+"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# City→county lookup for sanity-check. CDSS occasionally mis-assigns facilities.
+# Skip known city-county mismatches to maintain data quality per county.
+# Keys = CKAN county_name normalized: spaces → underscores, uppercased.
+COUNTY_CITY_EXCLUSIONS = {
+    "ALAMEDA": frozenset({
+        "concord", "walnut-creek", "antioch", "pittsburg", "brentwood",
+        "richmond", "el-cerrito", "san-pablo", "hercules", "pinole",
+        "san-jose", "santa-clara", "milpitas", "sunnyvale",
+        "san-francisco", "south-san-francisco", "daly-city",
+    }),
+    # San Francisco County ingest must NOT exclude the city of San Francisco.
+    "SAN_FRANCISCO": frozenset(),
+    # Add other counties' exclusions as needed:
+    # "CONTRA_COSTA": frozenset({"berkeley", "oakland", "hayward"}),
+}
+
+
+def _county_exclusion_key(ingest_county: str) -> str:
+    return ingest_county.strip().replace(" ", "_").upper()
 
 REQUEST_DELAY_SECS = 0.5  # polite delay between Transparency API calls
 
@@ -345,12 +355,15 @@ def load_transparency_all(force_refresh: bool = False) -> dict[str, dict[str, An
 
 def classify_facility(
     row: dict[str, Any],
-) -> tuple[str, bool, str | None]:
+) -> tuple[str, str | None, bool, bool]:
     """
-    Returns (care_category, serves_memory_care, memory_care_designation).
+    Returns (care_category, designation, explicit_match: bool, chain_match: bool).
 
     care_category options (from migration 0002):
       rcfe_memory_care | rcfe_general | ccrc | snf_* (N/A here)
+
+    explicit_match: facility name contains strict MC terminology
+    chain_match: facility name contains a chain operator pattern
 
     Identification is Pass 1 only (name regex). Pass 2 (citation scan §87705/§87706)
     runs in Phase D after inspection HTML is ingested.
@@ -362,33 +375,33 @@ def classify_facility(
     licensee = row.get("licensee") or ""
     combined = f"{name} {licensee}"
 
-    mc_match = MEMORY_CARE_RE.search(combined)
+    explicit_match = bool(MC_EXPLICIT_RE.search(combined))
+    chain_match = bool(MC_CHAIN_RE.search(combined))
 
     if is_ccrc:
         care_category = "ccrc"
-        if mc_match:
-            serves_mc = True
-            designation = (
-                f"CCRC — name indicates memory-care program "
-                f"(matched: '{mc_match.group()}')"
-            )
+        if explicit_match:
+            # CCRC with explicit MC terminology keeps CCRC designation
+            designation = f"CCRC — name indicates memory-care program"
+        elif chain_match:
+            # CCRC with chain match gets a chain-describing designation
+            chain_name = MC_CHAIN_RE.search(combined)
+            designation = f"CCRC — operated by {chain_name.group() if chain_name else 'recognized chain'}"
         else:
-            serves_mc = False
             designation = "CCRC — memory-care capability unconfirmed"
     else:
-        if mc_match:
+        if explicit_match:
             care_category = "rcfe_memory_care"
-            serves_mc = True
-            designation = (
-                f"RCFE — name indicates dementia/memory-care program "
-                f"(matched: '{mc_match.group()}')"
-            )
+            designation = f"RCFE — name indicates dementia/memory-care program"
+        elif chain_match:
+            care_category = "rcfe_general"  # chain-only facilities don't auto-categorize as memory care
+            chain_name = MC_CHAIN_RE.search(combined)
+            designation = f"RCFE — operated by {chain_name.group() if chain_name else 'recognized chain'}"
         else:
             care_category = "rcfe_general"
-            serves_mc = False
             designation = None
 
-    return care_category, serves_mc, designation
+    return care_category, designation, explicit_match, chain_match
 
 
 # ---------------------------------------------------------------------------
@@ -400,10 +413,11 @@ def build_facility_row(
     ckan: dict[str, Any],
     trans: dict[str, Any] | None,
     force_publish: bool = False,
+    ingest_county: str = "ALAMEDA",
 ) -> dict[str, Any] | None:
     """
     Map one CKAN + Transparency row to a facilities INSERT dict.
-    Returns None if the record should be skipped (e.g. city outside Alameda).
+    Returns None if the record should be skipped (e.g. city outside target county).
     """
     raw_num = ckan.get("facility_number")
     license_num = pad_license(raw_num) if raw_num else "000000000"
@@ -415,15 +429,38 @@ def build_facility_row(
     city = titleize(raw_city)
     city_slug = slugify(raw_city) if raw_city else "unknown-city"
 
-    # Drop records whose city is known to be outside Alameda County
-    if city_slug in CITIES_NOT_IN_ALAMEDA:
+    exc_key = _county_exclusion_key(ingest_county)
+    excluded = COUNTY_CITY_EXCLUSIONS.get(exc_key)
+    if excluded is None:
+        excluded = frozenset()
+    if city_slug in excluded:
         return None
 
     slug = facility_slug(name, license_num)
 
     raw_status = (ckan.get("facility_status") or "").strip().upper()
 
-    care_category, serves_mc, designation = classify_facility(ckan)
+    care_category, designation, explicit_match, chain_match = classify_facility(ckan)
+
+    # Check if we already have memory_care_disclosure_filed from a previous run
+    # This requires a database lookup, but for now we'll default to False and let
+    # the recompute script handle the final publishable calculation
+    memory_care_disclosure_filed_existing = False  # Will be set by mc_disclosure_ingest.py
+
+    # Seed mc_review_status based on signal strength
+    if force_publish and raw_status == "LICENSED":
+        # Force publish overrides normal logic for testing
+        mc_review_status = 'auto_published'
+    elif explicit_match or memory_care_disclosure_filed_existing:
+        mc_review_status = 'auto_published'
+    elif chain_match:
+        mc_review_status = 'needs_review'
+    else:
+        mc_review_status = 'auto_published'  # Will be rejected at recompute (publishable=false)
+
+    # For backward compatibility, keep serves_memory_care as explicit OR chain match for now
+    # The recompute script will reset it correctly based on Tier 1 signals + manual approvals
+    serves_mc = explicit_match or chain_match
 
     # publishable: LICENSED + memory-care confirmed (or force flag for testing)
     publishable = bool(raw_status == "LICENSED" and (serves_mc or force_publish))
@@ -487,6 +524,10 @@ def build_facility_row(
         "license_status": ckan.get("facility_status") or None,
         "license_expiration": None,
         "publishable": publishable,
+        # 0010_mc_signal_columns.sql — new tiered signal model
+        "mc_signal_explicit_name": explicit_match,
+        "mc_signal_chain_name": chain_match,
+        "mc_review_status": mc_review_status,
     }
 
 
@@ -508,6 +549,7 @@ INSERT INTO facilities (
     source_url,
     care_category, serves_memory_care, memory_care_designation,
     license_status, license_expiration, publishable,
+    mc_signal_explicit_name, mc_signal_chain_name, mc_review_status,
     updated_at
 ) VALUES (
     %(state_code)s, %(name)s, %(cms_id)s,
@@ -522,6 +564,7 @@ INSERT INTO facilities (
     %(source_url)s,
     %(care_category)s, %(serves_memory_care)s, %(memory_care_designation)s,
     %(license_status)s, %(license_expiration)s, %(publishable)s,
+    %(mc_signal_explicit_name)s, %(mc_signal_chain_name)s, %(mc_review_status)s,
     now()
 )
 ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
@@ -544,6 +587,13 @@ ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     memory_care_designation = EXCLUDED.memory_care_designation,
     license_status          = EXCLUDED.license_status,
     publishable             = EXCLUDED.publishable,
+    mc_signal_explicit_name = EXCLUDED.mc_signal_explicit_name,
+    mc_signal_chain_name    = EXCLUDED.mc_signal_chain_name,
+    mc_review_status        = CASE 
+        WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject') 
+        THEN facilities.mc_review_status 
+        ELSE EXCLUDED.mc_review_status 
+    END,
     updated_at              = now()
 RETURNING (xmax = 0) AS is_insert
 """
@@ -579,6 +629,9 @@ def print_summary(rows: list[dict[str, Any]]) -> None:
     tier_counts: dict[str, int] = {"small": 0, "medium": 0, "large": 0, "unknown": 0}
     mc_count = 0
     publishable_count = 0
+    explicit_count = 0
+    chain_count = 0
+    disclosure_count = 0
 
     for r in rows:
         s = r.get("license_status") or "UNKNOWN"
@@ -589,6 +642,13 @@ def print_summary(rows: list[dict[str, Any]]) -> None:
             mc_count += 1
         if r.get("publishable"):
             publishable_count += 1
+        if r.get("mc_signal_explicit_name"):
+            explicit_count += 1
+        if r.get("mc_signal_chain_name"):
+            chain_count += 1
+        # Note: memory_care_disclosure_filed will be populated by mc_disclosure_ingest.py
+        # For now, we can't count it in the ingest summary
+        
         # Compute tier from beds (mirrors the generated column logic in migration 0008)
         beds = r.get("beds")
         if beds is None:
@@ -601,7 +661,7 @@ def print_summary(rows: list[dict[str, Any]]) -> None:
             tier_counts["large"] += 1
 
     print(f"\n{'='*60}")
-    print(f"Alameda County RCFE summary ({len(rows)} total records)")
+    print(f"RCFE summary ({len(rows)} total records)")
     print(f"{'='*60}")
     print(f"\nBy license status:")
     for s, n in sorted(status_counts.items()):
@@ -614,8 +674,11 @@ def print_summary(rows: list[dict[str, Any]]) -> None:
     print(f"  medium  (7–49 beds)  {tier_counts['medium']:>4}")
     print(f"  large   (50+ beds)   {tier_counts['large']:>4}")
     print(f"  unknown (no beds)    {tier_counts['unknown']:>4}")
-    print(f"\nServes memory care (name-matched): {mc_count}")
-    print(f"Publishable (LICENSED + memory-care): {publishable_count}")
+    print(f"\nMemory Care Signal Breakdown:")
+    print(f"  Explicit MC terminology:       {explicit_count:>4}")
+    print(f"  Chain name match only:         {chain_count:>4}")
+    print(f"  Total flagged (explicit+chain): {mc_count:>4}")
+    print(f"\nPublishable (LICENSED + memory-care): {publishable_count}")
     print(f"{'='*60}\n")
 
 
@@ -631,7 +694,7 @@ def main() -> None:
     parser.add_argument(
         "--county",
         default=COUNTY_FILTER,
-        help='County to ingest (CKAN county_name, uppercase recommended). Example: "CONTRA COSTA". Default: ALAMEDA.',
+        help='County to ingest (CKAN county_name, uppercase recommended). Examples: "ALAMEDA", "CONTRA COSTA", "LOS_ANGELES", "ORANGE", "SAN_DIEGO", "SACRAMENTO", "RIVERSIDE".',
     )
     parser.add_argument(
         "--dry-run",
@@ -693,7 +756,9 @@ def main() -> None:
         raw_num = ckan.get("facility_number")
         padded = pad_license(raw_num) if raw_num else None
         trans = trans_lookup.get(padded) if padded else None
-        row = build_facility_row(ckan, trans, force_publish=args.force_publish)
+        row = build_facility_row(
+            ckan, trans, force_publish=args.force_publish, ingest_county=county
+        )
         if row is None:
             skipped_geo += 1
         else:

@@ -65,6 +65,21 @@ STATE_CODE = "CA"
 SOURCE_CITATION = "§87705/§87706 citation"
 SOURCE_DISCLOSURE_LIST = "§1569.627 disclosure list (CDSS)"  # unused until list exists
 
+# Strategy C — keyword patterns for deficiency corroboration.
+# These are stored in Python `\b` form (so the in-Python re-scan below works) and
+# translated to PostgreSQL `\y` for the SQL query at execution time.
+KEYWORD_PATTERNS = [
+    r'\bdement(?:ia|ed)\b', r'\bmemory\s+care\b', r'\balzheim',
+    r'\belop(?:e|ement|ing)\b', r'\bwander(?:ed|ing)\b',
+    r'\bsecured?\s+(?:perimeter|unit|wing)\b',
+    r'\bcognitive\s+impair', r'\b87705\b', r'\b87706\b',
+]
+
+
+def _to_pg_regex(pattern: str) -> str:
+    """Translate Python word-boundary `\\b` to PostgreSQL POSIX `\\y`."""
+    return pattern.replace(r"\b", r"\y")
+
 
 # ---------------------------------------------------------------------------
 # Env
@@ -142,6 +157,115 @@ def find_facilities_via_disclosure_list() -> list[dict[str, Any]]:
     # TODO: implement once a public list is available.
     # Suggested check: https://data.ca.gov/api/3/action/package_search?q=1569.627+dementia+disclosure
     return []
+
+
+# ---------------------------------------------------------------------------
+# Strategy C — deficiency keyword corroboration
+# ---------------------------------------------------------------------------
+
+
+def find_facilities_via_keywords(
+    conn: psycopg.Connection,
+) -> list[dict[str, Any]]:
+    """
+    Find facilities that have deficiency descriptions containing memory care keywords.
+    
+    This is a corroborator signal only — it writes mc_signal_deficiency_keyword = true
+    but never touches mc_review_status, serves_memory_care, or publishable directly.
+    The recompute script ignores it as a sole signal.
+    
+    Returns facility IDs and the matched pattern for tracking.
+    """
+    import re
+    
+    results = []
+    
+    # Build OR conditions for all patterns
+    pattern_conditions = []
+    for pattern in KEYWORD_PATTERNS:
+        pattern_conditions.append(f"d.description ~* %s")
+    
+    sql = f"""
+        SELECT DISTINCT
+            f.id           AS facility_id,
+            f.license_number,
+            f.name,
+            d.description
+        FROM facilities f
+        JOIN inspections i   ON i.facility_id = f.id
+        JOIN deficiencies d  ON d.inspection_id = i.id
+        WHERE f.state_code = %s
+          AND f.mc_signal_deficiency_keyword = false
+          AND ({" OR ".join(pattern_conditions)})
+        ORDER BY f.name
+    """
+    
+    pg_patterns = [_to_pg_regex(p) for p in KEYWORD_PATTERNS]
+
+    with conn.cursor() as cur:
+        cur.execute(sql, [STATE_CODE] + pg_patterns)
+        rows = cur.fetchall()
+        
+        for row in rows:
+            facility_id, license_num, name, description = row
+            
+            # Find which pattern matched for source tracking
+            matched_pattern = None
+            for pattern in KEYWORD_PATTERNS:
+                if re.search(pattern, description or "", re.IGNORECASE):
+                    matched_pattern = pattern
+                    break
+            
+            results.append({
+                "facility_id": facility_id,
+                "license_number": license_num,
+                "name": name,
+                "matched_pattern": matched_pattern or "unknown",
+            })
+    
+    return results
+
+
+def upsert_keyword_signals(
+    conn: psycopg.Connection,
+    rows: list[dict[str, Any]],
+    dry_run: bool = False,
+) -> int:
+    """
+    Set mc_signal_deficiency_keyword = true for facilities with keyword matches.
+    Returns count of updated facilities.
+    
+    IMPORTANT: This function ONLY sets the keyword signal. It does NOT touch
+    mc_review_status, serves_memory_care, or publishable. Those are handled
+    by the recompute script.
+    """
+    if not rows:
+        return 0
+        
+    sql = """
+        UPDATE facilities 
+        SET mc_signal_deficiency_keyword = true,
+            mc_signal_deficiency_keyword_source = %s
+        WHERE id = %s
+          AND mc_signal_deficiency_keyword = false
+    """
+    
+    updated_count = 0
+    
+    if dry_run:
+        print("  Keyword corroboration (would set mc_signal_deficiency_keyword = true):")
+        for row in rows:
+            print(f"    {row['license_number']} | {row['name']} | pattern: {row['matched_pattern']}")
+            updated_count += 1
+    else:
+        with conn.cursor() as cur:
+            for row in rows:
+                cur.execute(sql, (row['matched_pattern'], row['facility_id']))
+                if cur.rowcount > 0:
+                    updated_count += 1
+        conn.commit()
+    
+    return updated_count
 
 
 # ---------------------------------------------------------------------------
@@ -229,6 +353,11 @@ def main() -> None:
         disclosure_rows = find_facilities_via_disclosure_list()
         print(f"  Found {len(disclosure_rows)} facilities in disclosure list (stub returns 0)")
 
+        # Strategy C: deficiency keyword corroboration
+        print("Strategy C — scanning deficiencies for keyword corroboration …")
+        keyword_rows = find_facilities_via_keywords(conn)
+        print(f"  Found {len(keyword_rows)} facilities with memory care deficiency keywords")
+
         if args.dry_run:
             print("\n--- Dry-run output ---")
 
@@ -238,12 +367,15 @@ def main() -> None:
         disclosure_updated = upsert_disclosures(
             conn, disclosure_rows, SOURCE_DISCLOSURE_LIST, args.dry_run
         )
+        keyword_updated = upsert_keyword_signals(
+            conn, keyword_rows, args.dry_run
+        )
 
-        total = citation_updated + disclosure_updated
+        total = citation_updated + disclosure_updated + keyword_updated
         label = "would update" if args.dry_run else "updated"
         print(
             f"\nDone. {label} {total} facilities "
-            f"(citations: {citation_updated}, disclosure list: {disclosure_updated})."
+            f"(citations: {citation_updated}, disclosure list: {disclosure_updated}, keywords: {keyword_updated})."
         )
         if total == 0 and not args.dry_run:
             print(

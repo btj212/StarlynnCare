@@ -17,6 +17,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               Review moderation
             </Link>
+            <Link
+              href="/admin/mc-review"
+              className="text-sm font-medium text-slate hover:text-ink"
+            >
+              MC Review
+            </Link>
           </div>
           <UserButton />
         </div>

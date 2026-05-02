@@ -24,6 +24,7 @@ import {
   buildReviewSchema,
 } from "@/lib/seo/schema";
 import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
+import { ReportListingForm } from "@/components/facility/ReportListingForm";
 import type { Facility, CareCategory } from "@/lib/types";
 
 type FacilityContent = {
@@ -957,6 +958,12 @@ export default async function FacilityPage({ params }: PageProps) {
               ← Back to {backLabel}
             </Link>
           </p>
+
+          {/* Public correction form */}
+          <ReportListingForm
+            facilityId={facility.id}
+            facilityName={facility.name}
+          />
         </article>
       </main>
       <SiteFooter />

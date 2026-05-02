@@ -33,6 +33,8 @@ Run modes
     python ccld_citations_ingest.py --publishable     # only publishable=true
     python ccld_citations_ingest.py --smoke           # first 3 facilities
     python ccld_citations_ingest.py --dry-run         # parse only, no DB writes
+    python ccld_citations_ingest.py --region bay-area # priority Bay Area counties (see COUNTY_CITY_SLUGS)
+    python ccld_citations_ingest.py --county ALAMEDA  # one county by city_slug list
 """
 
 from __future__ import annotations
@@ -48,6 +50,106 @@ from typing import Any
 
 import psycopg
 import requests
+
+# City slugs per county — keep in sync with `src/lib/regions.ts` county city lists.
+COUNTY_CITY_SLUGS: dict[str, tuple[str, ...]] = {
+    "ALAMEDA": (
+        "alameda",
+        "albany",
+        "berkeley",
+        "castro-valley",
+        "dublin",
+        "emeryville",
+        "fremont",
+        "hayward",
+        "livermore",
+        "newark",
+        "oakland",
+        "piedmont",
+        "pleasanton",
+        "san-leandro",
+        "san-lorenzo",
+        "sunol",
+        "union-city",
+    ),
+    "CONTRA_COSTA": (
+        "alamo",
+        "antioch",
+        "bay-point",
+        "brentwood",
+        "clayton",
+        "concord",
+        "danville",
+        "el-cerrito",
+        "el-sobrante",
+        "hercules",
+        "lafayette",
+        "martinez",
+        "moraga",
+        "oakley",
+        "orinda",
+        "pinole",
+        "pittsburg",
+        "pleasant-hill",
+        "richmond",
+        "rodeo",
+        "san-martin",
+        "san-pablo",
+        "san-ramon",
+        "walnut-creek",
+    ),
+    "SAN_MATEO": (
+        "atherton",
+        "belmont",
+        "brisbane",
+        "burlingame",
+        "colma",
+        "daly-city",
+        "east-palo-alto",
+        "emerald-hills",
+        "foster-city",
+        "half-moon-bay",
+        "hillsborough",
+        "menlo-park",
+        "millbrae",
+        "montara",
+        "pacifica",
+        "portola-valley",
+        "redwood-city",
+        "s-san-francisco",
+        "san-bruno",
+        "san-carlos",
+        "san-mateo",
+        "south-san-francisco",
+        "woodside",
+    ),
+    "SANTA_CLARA": (
+        "campbell",
+        "cupertino",
+        "gilroy",
+        "los-altos",
+        "los-altos-hills",
+        "los-gatos",
+        "milpitas",
+        "monte-sereno",
+        "morgan-hill",
+        "mountain-view",
+        "palo-alto",
+        "san-jose",
+        "santa-clara",
+        "saratoga",
+        "sunnyvale",
+    ),
+    "SAN_FRANCISCO": ("san-francisco",),
+}
+
+
+def _bay_area_city_slugs() -> tuple[str, ...]:
+    """Alameda + Contra Costa + San Mateo + Santa Clara + San Francisco city."""
+    s: set[str] = set()
+    for key in ("ALAMEDA", "CONTRA_COSTA", "SAN_MATEO", "SANTA_CLARA", "SAN_FRANCISCO"):
+        s.update(COUNTY_CITY_SLUGS[key])
+    return tuple(sorted(s))
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
@@ -768,6 +870,26 @@ def main() -> None:
         help="Process only the facility with this license number.",
     )
     parser.add_argument(
+        "--city",
+        type=str,
+        default=None,
+        help='Process only facilities in this city (exact match to facilities.city, e.g. "San Francisco").',
+    )
+    parser.add_argument(
+        "--county",
+        type=str,
+        choices=sorted(COUNTY_CITY_SLUGS.keys()),
+        default=None,
+        help="Process only facilities whose city_slug is in this county’s beachhead list (see regions.ts).",
+    )
+    parser.add_argument(
+        "--region",
+        type=str,
+        choices=("bay-area",),
+        default=None,
+        help="Process only Bay Area priority counties (Alameda, Contra Costa, San Mateo, Santa Clara, San Francisco).",
+    )
+    parser.add_argument(
         "--refetch", action="store_true",
         help=(
             "Re-parse and overwrite already-ingested reports. "
@@ -776,6 +898,12 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+
+    geo_filters = sum(
+        1 for x in (args.city, args.county, args.region) if x is not None
+    )
+    if geo_filters > 1:
+        parser.error("Use only one of --city, --county, --region")
 
     load_env()
 
@@ -797,14 +925,25 @@ def main() -> None:
             WHERE state_code = 'CA'
             AND license_number IS NOT NULL
         """
+        params: list[Any] = []
         if args.publishable:
             query += " AND publishable = true"
         if args.license:
-            query += f" AND license_number = '{args.license}'"
+            query += " AND license_number = %s"
+            params.append(args.license)
+        if args.city:
+            query += " AND city = %s"
+            params.append(args.city)
+        elif args.county:
+            query += " AND city_slug = ANY(%s)"
+            params.append(list(COUNTY_CITY_SLUGS[args.county]))
+        elif args.region == "bay-area":
+            query += " AND city_slug = ANY(%s)"
+            params.append(list(_bay_area_city_slugs()))
         query += " ORDER BY city, name"
 
         with conn.cursor() as cur:
-            cur.execute(query)
+            cur.execute(query, params)
             cols = [d[0] for d in cur.description]
             facilities = [dict(zip(cols, row)) for row in cur.fetchall()]
 
