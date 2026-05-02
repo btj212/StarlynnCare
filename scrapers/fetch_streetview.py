@@ -9,6 +9,7 @@ Usage:
     python3 scrapers/fetch_streetview.py --smoke          # first 5 only
     python3 scrapers/fetch_streetview.py --state CA       # all CA missing
     python3 scrapers/fetch_streetview.py --refetch        # re-fetch existing too
+    python3 scrapers/fetch_streetview.py --state CA --city-slugs "a,b"  # filter (publishable)
 """
 
 from __future__ import annotations
@@ -70,6 +71,11 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true", help="First 5 only")
     parser.add_argument("--state", default="CA", help="State code (default: CA)")
     parser.add_argument("--refetch", action="store_true", help="Re-fetch even if photo_url is set")
+    parser.add_argument(
+        "--city-slugs",
+        dest="city_slugs",
+        help="Comma-separated city_slug values to filter",
+    )
     args = parser.parse_args()
 
     if not API_KEY:
@@ -82,8 +88,15 @@ def main() -> None:
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             where = ["latitude IS NOT NULL", "longitude IS NOT NULL", "state_code = %s"]
+            params: list = [args.state]
             if not args.refetch:
                 where.append("photo_url IS NULL")
+            if args.city_slugs:
+                parts = [p.strip() for p in args.city_slugs.split(",") if p.strip()]
+                if parts:
+                    where.append("city_slug = ANY(%s)")
+                    params.append(parts)
+                    where.append("publishable = true")
             cur.execute(
                 f"""
                 SELECT id, name, latitude, longitude
@@ -91,7 +104,7 @@ def main() -> None:
                 WHERE {" AND ".join(where)}
                 ORDER BY name
                 """,
-                [args.state],
+                params,
             )
             rows = cur.fetchall()
 

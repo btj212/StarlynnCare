@@ -83,6 +83,7 @@ def load_facilities(
     conn: psycopg.Connection,
     name_filter: str | None = None,
     slugs: list[str] | None = None,
+    city_slugs: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     query = """
         SELECT
@@ -132,6 +133,9 @@ def load_facilities(
     if slugs:
         query += " AND f.slug = ANY(%(slugs)s)"
         params["slugs"] = slugs
+    elif city_slugs:
+        query += " AND f.city_slug = ANY(%(city_slugs)s)"
+        params["city_slugs"] = city_slugs
     elif name_filter:
         query += " AND LOWER(f.name) LIKE LOWER(%(name_filter)s)"
         params["name_filter"] = f"%{name_filter}%"
@@ -473,6 +477,12 @@ def main() -> None:
                         help="Process only facilities whose name contains this string.")
     parser.add_argument("--slug", dest="slugs", action="append", default=None,
                         help="Process only facilities with this slug (repeat for multiple).")
+    parser.add_argument(
+        "--city-slugs",
+        dest="city_slugs",
+        default=None,
+        help="Comma-separated city_slug values (e.g. rollout scope for county hubs).",
+    )
     parser.add_argument("--force", action="store_true",
                         help="Overwrite existing content (default: skip if content already set).")
     parser.add_argument("--skip-quality-gate", action="store_true",
@@ -494,11 +504,16 @@ def main() -> None:
     api_key = os.environ.get("ANTHROPIC_API_KEY", "placeholder")
     client = anthropic.Anthropic(api_key=api_key)
 
+    city_slug_list: list[str] | None = None
+    if args.city_slugs:
+        city_slug_list = [p.strip() for p in args.city_slugs.split(",") if p.strip()]
+
     with psycopg.connect(dsn) as conn:
         facilities = load_facilities(
             conn,
             name_filter=args.facility,
             slugs=args.slugs,
+            city_slugs=city_slug_list,
         )
 
     print(f"Facilities loaded: {len(facilities)}")

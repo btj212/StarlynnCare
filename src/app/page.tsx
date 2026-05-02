@@ -9,6 +9,7 @@ import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { ZipSearch } from "@/components/site/ZipSearch";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
+import { regionsForState } from "@/lib/regions";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { buildOrganizationSchema, buildWebSiteSchema, buildFaqSchemaFromPairs } from "@/lib/seo/schema";
 import { HOME_FAQS } from "@/lib/content/homeFaqs";
@@ -85,13 +86,6 @@ type HomeData = {
     created_at: string;
   }>;
 };
-
-const KNOWN_COUNTIES: Array<{ name: string; slug: string }> = [
-  { name: "Alameda County", slug: "alameda-county" },
-  { name: "Contra Costa County", slug: "contra-costa-county" },
-  { name: "San Mateo County", slug: "san-mateo-county" },
-  { name: "Santa Clara County", slug: "santa-clara-county" },
-];
 
 async function loadHomeData(): Promise<HomeData> {
   const fallback: HomeData = {
@@ -173,24 +167,50 @@ async function loadHomeData(): Promise<HomeData> {
     ).filter(Boolean);
   }
 
-  // County facility counts
-  const counties: CountyRow[] = [];
-  for (const c of KNOWN_COUNTIES) {
-    const { count } = await supabase
-      .from("facilities")
-      .select("*", { count: "exact", head: true })
-      .eq("publishable", true)
-      .ilike("county_name", `%${c.name.replace(" County", "")}%`);
+  // County facility counts — align with `regions.ts` citySlug memberships (no DB county column)
+  const { data: tierRows } = await supabase
+    .from("facilities")
+    .select("city_slug, capacity_tier")
+    .eq("state_code", "CA")
+    .eq("publishable", true);
 
-    const { data: cityData } = await supabase
-      .from("facilities")
-      .select("city_slug")
-      .eq("publishable", true)
-      .ilike("county_name", `%${c.name.replace(" County", "")}%`);
-
-    const cities = new Set((cityData ?? []).map((r: { city_slug: string }) => r.city_slug)).size;
-    counties.push({ name: c.name, slug: c.slug, count: count ?? 0, cities });
+  const countsByCity = new Map<string, number>();
+  const smallCountsByCity = new Map<string, number>();
+  for (const row of tierRows ?? []) {
+    const slug = (row as { city_slug: string | null }).city_slug ?? "";
+    const tier =
+      (row as { capacity_tier: string | null }).capacity_tier ?? "unknown";
+    if (!slug) continue;
+    if (tier === "small") {
+      smallCountsByCity.set(slug, (smallCountsByCity.get(slug) ?? 0) + 1);
+    } else {
+      countsByCity.set(slug, (countsByCity.get(slug) ?? 0) + 1);
+    }
   }
+
+  const counties: CountyRow[] = regionsForState("CA")
+    .filter((r) => r.kind === "county")
+    .map((region) => {
+      const nMediumPlus = region.citySlugs.reduce(
+        (acc, s) => acc + (countsByCity.get(s) ?? 0),
+        0,
+      );
+      const nSmall = region.citySlugs.reduce(
+        (acc, s) => acc + (smallCountsByCity.get(s) ?? 0),
+        0,
+      );
+      const citiesWithData = region.citySlugs.filter(
+        (s) =>
+          (countsByCity.get(s) ?? 0) > 0 ||
+          (smallCountsByCity.get(s) ?? 0) > 0,
+      ).length;
+      return {
+        name: region.name,
+        slug: region.slug,
+        count: nMediumPlus + nSmall,
+        cities: citiesWithData,
+      };
+    });
 
   // Top cities by facility count
   const { data: cityRows } = await supabase
@@ -289,7 +309,7 @@ export default async function Home() {
     },
   ];
 
-  const COMING_COUNTIES = ["Los Angeles County", "San Diego County", "Orange County", "Sacramento County"];
+  const COMING_COUNTIES: string[] = [];
 
   const EDITORIAL_CARDS = [
     {

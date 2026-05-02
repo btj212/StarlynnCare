@@ -1,0 +1,981 @@
+Facilities loaded: 207
+
+[1/207] Meadowbrook at Agoura Hills (Agoura Hills)
+  → content already set; skipping (use --force)
+
+[2/207] Silverado Senior Living - the Huntington (Alhambra)
+  → content already set; skipping (use --force)
+
+[3/207] Belmont Village Aliso Viejo (Aliso Viejo)
+  → content already set; skipping (use --force)
+
+[4/207] Acacia Guest Home-anaheim (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[5/207] Anaheim Villa (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[6/207] Angel Comfort Care 2 (Anaheim)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 3 claims the facility is 'designated for memory care under California Title 22' when source data shows it is cited under §87705/§87706 but not formally CDSS-designated — the facility advertises memory care but lacks formal designation.
+
+[7/207] Britta Care (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[8/207] Care Celine (Anaheim)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks about staffing verification of compliance, which conflates clinical process with staffing headcount; the phrasing 'how does the facility verify' is acceptable, but the question should focus on documentation rather than operational staffing practices.
+    - Array has only 4 questions, which meets the minimum approved length; however, re-review confirms this is acceptable and should PASS.
+
+[9/207] Carewell Manor (Anaheim)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 states 5 serious citations but source data shows 5 serious citations total — this is correct, but the phrasing 'across all inspections' matches approved language and should pass; however, the question does not cite a specific inspection date or deficiency number, making it generic.
+    - Question 2 correctly cites the March 18, 2026 inspection and Title 22 code sections, which should pass.
+    - Question 3 asks about substantiation of complaints, which is an always-pass category.
+    - Question 4 asks about the written dementia-care program, which is an always-pass regulatory documentation question.
+    - Array contains exactly 4 questions, which meets the minimum approved count and should pass.
+
+[10/207] Caringbridge Inc. (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[11/207] Carnelian Villas (Anaheim)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 claims 10 serious citations, but source data shows 10 serious citations total — the phrasing 'on file across all inspections' is correct, so this passes; however, re-reading shows this is actually accurate and should PASS.
+    - Question 2 correctly cites Title 22 §87705/§87706 and asks for the written program and corrective action — this PASSES.
+    - Question 3 asks whether a complaint was substantiated — this PASSES per guidance.
+    - Question 4 references the October 14, 2025 inspection date — this PASSES per guidance on 2025/2026 dates.
+    - Exactly 4 questions are present — this PASSES per guidance on the approved minimum.
+
+[12/207] Cottages at Artesia Anaheim, the (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[13/207] Divine Grace Villa (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[14/207] Francel Guest Home Ii (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[15/207] Graces Home (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[16/207] Harbor Heights Assisted Living and Memory Care (Anaheim)
+  → content already set; skipping (use --force)
+
+[17/207] Walnut Village (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[18/207] Silverado Senior Living-sierra Vista (Azusa)
+  → content already set; skipping (use --force)
+
+[19/207] Sunrise of Beverly Hills (Beverly Hills)
+  → content already set; skipping (use --force)
+
+[20/207] Capriana (Brea)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 3 asks for a 'deficiency notice or clearance letter from' a visit when the source data shows zero inspections on file — no visit occurred to produce such documentation.
+    - Question 4 asks the facility to confirm a separate memory-care unit and provide admission criteria, which conflates a clinical/operational question with a staffing/resource question that may probe unit staffing or assignment practices.
+
+[21/207] Cogir of Brea (Brea)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[22/207] Silverado Brea Llc (Brea)
+  → content already set; skipping (use --force)
+
+[23/207] Belmont Village Burbank (Burbank)
+  → content already set; skipping (use --force)
+
+[24/207] Ivy Park at Burbank (Burbank)
+  → content already set; skipping (use --force)
+
+[25/207] Belmont Village Calabasas (Calabasas)
+  → content already set; skipping (use --force)
+
+[26/207] Silverado Senior Living - Calabasas (Calabasas)
+  → content already set; skipping (use --force)
+
+[27/207] Bed of Roses Residential Care Home (Campbell)
+  → content already set; skipping (use --force)
+
+[28/207] Merrill Gardens at Campbell (Campbell)
+  → content already set; skipping (use --force)
+
+[29/207] Princess Lodge (Campbell)
+  → content already set; skipping (use --force)
+
+[30/207] West Valley Care Home (Campbell)
+  → content already set; skipping (use --force)
+
+[31/207] Activcare at Bressi Ranch (Carlsbad)
+  → content already set; skipping (use --force)
+
+[32/207] La Marea Senior Living (Carlsbad)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[33/207] Santianna Oakmont Signature Living (Carlsbad)
+  → content already set; skipping (use --force)
+
+[34/207] Sunrise at la Costa (Carlsbad)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[35/207] Ivy Park at Cerritos (Cerritos)
+  → content already set; skipping (use --force)
+
+[36/207] Activcare at Rolling Hills Ranch (Chula Vista)
+  → content already set; skipping (use --force)
+
+[37/207] Bonita Villa Senior Living (Chula Vista)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[38/207] Fredericka Manor (Chula Vista)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[39/207] Ivy Park at Bonita (Chula Vista)
+  → content already set; skipping (use --force)
+
+[40/207] Ivy Park at Otay Ranch (Chula Vista)
+  → content already set; skipping (use --force)
+
+[41/207] Westmont at San Miguel Ranch (Chula Vista)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[42/207] Brookdale Sylvan Ranch (Citrus Heights)
+  → content already set; skipping (use --force)
+
+[43/207] Cogir of Stock Ranch (Citrus Heights)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[44/207] Claremont Manor (Claremont)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[45/207] Claremont Place (Claremont)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks the facility to 'show how you document staff competency assessments,' which is a staffing/certification question that should be flagged.
+    - Question 3 asks for 'inspection report or deficiency notice from that visit' when source data explicitly states zero inspections on record — this asks for documentation that does not exist.
+
+[46/207] Ivy Park at Claremont (Claremont)
+  → content already set; skipping (use --force)
+
+[47/207] Newport Mesa Senior Living (Costa Mesa)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[48/207] Pacifica Senior Living South Coast (Costa Mesa)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 asks how occupancy affects 'availability of care staff and resources,' which implies staffing ratios and capacity — a prohibited staffing question.
+    - Question 3 asks about internal logs of 'incident reports' that families can review, which conflates complaint documentation with facility staffing/oversight practices in a way that suggests regulatory compliance monitoring rather than a legitimate tour question.
+
+[49/207] Silverado Senior Living- Newport Mesa (Costa Mesa)
+  → content already set; skipping (use --force)
+
+[50/207] Park View Place (Covina)
+  → content already set; skipping (use --force)
+
+[51/207] Westmont of Culver City (Culver City)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[52/207] Aegis Living Dana Point (Dana Point)
+  → content already set; skipping (use --force)
+
+[53/207] Sea Bluffs, the (Dana Point)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 references LIC 624, which is a LIC-numbered form and violates the quality gate.
+    - Question 2 asks about deficiency notices, which is allowed, but the LIC 624 reference must be removed.
+
+[54/207] Commons at Elk Grove, the (Elk Grove)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[55/207] Gardens at Laguna Springs Memory Care, the (Elk Grove)
+  → content already set; skipping (use --force)
+
+[56/207] Ivy Park at Laguna Creek (Elk Grove)
+  → content already set; skipping (use --force)
+
+[57/207] Meadows Senior Living, the (Elk Grove)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[58/207] Wellquest of Elk Grove (Elk Grove)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[59/207] Silverado Senior Living-encinitas (Encinitas)
+  → content already set; skipping (use --force)
+
+[60/207] Summerfield of Encinitas (Encinitas)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[61/207] Escondido Senior Living (Escondido)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[62/207] Gardens at Escondido (Escondido)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 3 asks staff about 'specialized dementia-care training,' which is a staffing/training certification question and should be flagged.
+    - Question 4 contains 'between state inspections,' implying a generic compliance monitoring pattern rather than facility-specific facts tied to this facility's actual inspection history.
+
+[63/207] Ivy Park at Escondido (Escondido)
+  → content already set; skipping (use --force)
+
+[64/207] Las Villas del Norte (Escondido)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[65/207] Redwood Terrace (Escondido)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[66/207] Silverado Senior Living-escondido (Escondido)
+  → content already set; skipping (use --force)
+
+[67/207] Villa Monticello Assisted Living (Escondido)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[68/207] Vista del Lago Memory Care (Escondido)
+  → content already set; skipping (use --force)
+
+[69/207] Westmont of Escondido (Escondido)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[70/207] Brookdale Folsom (Folsom)
+  → content already set; skipping (use --force)
+
+[71/207] Cogir of Folsom (Folsom)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[72/207] Folsom Countryhouse (Folsom)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 asks the facility to show the 'most recent inspection report or notice of compliance' when source data shows zero inspections on record — this is impossible and misleading.
+    - Question 4 asks for 'copies of any state visit reports or letters of compliance' when source data explicitly shows no inspection history — this is impossible and misleading.
+    - Question 1 asks about 'changes in ownership or management structure in the past 24 months' which is not facility-specific data from the source and could apply to any facility.
+    - Array contains 4 questions, which is acceptable, but questions 2 and 4 both ask for non-existent state inspection documentation.
+
+[73/207] Oakmont of Folsom (Folsom)
+  → content already set; skipping (use --force)
+
+[74/207] Carmel Village Retirement Community (Fountain Valley)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[75/207] Ivy Terrace at Fullerton (Fullerton)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 3 references LIC 809, a form number that triggers automatic rejection.
+    - The array contains exactly 4 questions, which meets the minimum approved threshold and should not be flagged as an issue — this is actually compliant.
+    - Question 1 asks for staff competency assessments, which relates to staff training/certification programs and should be flagged.
+
+[76/207] Brookdale Garden Grove (Garden Grove)
+  → content already set; skipping (use --force)
+
+[77/207] Ivy Terrace at Garden Grove (Garden Grove)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 asks the facility to explain why no state inspections appear on file, which is a request for information about inspection records that may not exist rather than a facility-specific factual question.
+    - Question 2 requests internal incident logs and audit findings, which are not regulatory documentation required by Title 22 and shifts focus away from verifiable facility facts.
+    - Question 4 contains 'verification that the facility meets all Title 22 regulatory requirements' phrased as a generic compliance check that could apply to any facility without facility-specific basis.
+    - The array contains exactly 4 questions, which is acceptable, but questions 1, 2, and 4 fail on grounds of being overly general requests for internal documentation or explanations rather than grounded in facility-specific facts from the source data.
+
+[78/207] Merrill Gardens at Gilroy (Gilroy)
+  → content already set; skipping (use --force)
+
+[79/207] Sweet Care Home in Gilroy (Gilroy)
+  → content already set; skipping (use --force)
+
+[80/207] Sage Glendale Senior Living (Glendale)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[81/207] Clearwater at Glendora (Glendora)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks for administrator name, contact information, and CDSS certification — this is staffing/personnel information beyond regulatory documentation.
+    - Question 4 requests 'administrator certification on file with CDSS' but CDSS licensing records do not track individual staff certifications — this conflates facility licensing with personnel records.
+
+[82/207] Sunrise Assisted Living of Hermosa Beach (Hermosa Beach)
+  → content already set; skipping (use --force)
+
+[83/207] Huntington Terrace (Huntington Beach)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks for 'staff competency assessments for dementia care,' which relates to staff training/certification and should be flagged.
+    - Question 1 contains the generic closing phrase 'explain why no inspection history appears in the state Transparency API,' which conflates facility accountability with state database questions.
+    - Question 4 conflates the facility's written program requirement with staff competency documentation, mixing a regulatory document question with a staffing qualification question.
+
+[84/207] Oakmont of Huntington Beach (Huntington Beach)
+  → content already set; skipping (use --force)
+
+[85/207] Atria Golden Creek (Irvine)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[86/207] Woodbridge Terrace (Irvine)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[87/207] Whitten Heights Assisted Living and Memory Care (La Habra)
+  → content already set; skipping (use --force)
+
+[88/207] Grossmont Gardens Memory Care (La Mesa)
+  → content already set; skipping (use --force)
+
+[89/207] Montera, the (La Mesa)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[90/207] Westmont of la Mesa (La Mesa)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[91/207] Ivy Park at la Palma (La Palma)
+  → content already set; skipping (use --force)
+
+[92/207] Activcare Laguna Hills (Laguna Hills)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 requests LIC 809, which is a LIC-numbered form and violates the quality standard.
+    - Question 4 asks about management structure and operational responsibility, which relates to staffing/organizational oversight and is outside the scope of appropriate tour questions.
+
+[93/207] Aegis Assisted Living of Laguna Niguel (Laguna Niguel)
+  → content already set; skipping (use --force)
+
+[94/207] Crestavilla (Laguna Niguel)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[95/207] Watermark Laguna Niguel (Laguna Niguel)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 3 asks for organizational chart and reporting structure between on-site leadership and corporate ownership, which relates to staffing/management hierarchy and should not be included.
+    - Array contains exactly 4 questions, which is acceptable, but question 3 fails on staffing/organizational grounds.
+
+[96/207] Ivy Park of Wellington (Laguna Woods)
+  → content already set; skipping (use --force)
+
+[97/207] Brittany House (Long Beach)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[98/207] Regency Palms Long Beach (Long Beach)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[99/207] Vista del Mar Senior Living (Long Beach)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[100/207] Hidden Lane Villa (Los Altos)
+  → content already set; skipping (use --force)
+
+[101/207] Avenir Memory Care Westside (Los Angeles)
+  → content already set; skipping (use --force)
+
+[102/207] Belmont Village Hollywood (Los Angeles)
+  → content already set; skipping (use --force)
+
+[103/207] Belmont Village Westwood (Los Angeles)
+  → content already set; skipping (use --force)
+
+[104/207] Hollenbeck Palms (Los Angeles)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[105/207] Hollywood Hills Senior Living (Los Angeles)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[106/207] Ivy Park at Culver City (Los Angeles)
+  → content already set; skipping (use --force)
+
+[107/207] Sakura Gardens at los Angeles (Los Angeles)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 asks for a deficiency notice or clearance letter when source data shows zero inspections on record — this is contradictory and misleading.
+    - Question 3 asks about internal protocols but is not grounded in facility-specific facts and could apply unchanged to any facility.
+
+[108/207] Silverado Senior Living-beverly Place (Los Angeles)
+  → content already set; skipping (use --force)
+
+[109/207] Solheim Senior Community (Los Angeles)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[110/207] Sunny Hills Assisted Living (memory Care) (Los Angeles)
+  → content already set; skipping (use --force)
+
+[111/207] Watermark at Westwood Village, the (Los Angeles)
+  → content already set; skipping (use --force)
+
+[112/207] Cedar Creek Alzheimer's & Dementia Care Center (Los Gatos)
+  → content already set; skipping (use --force)
+
+[113/207] Mina's Elderly Carehome 2 (Los Gatos)
+  → content already set; skipping (use --force)
+
+[114/207] Aegis Residential Living (Mission Viejo)
+  → content already set; skipping (use --force)
+
+[115/207] Atria del Sol (Mission Viejo)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[116/207] Ivy Park at Mission Viejo (Mission Viejo)
+  → content already set; skipping (use --force)
+
+[117/207] Morningstar Senior Living of Mission Viejo (Mission Viejo)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks about organizational structure and operational responsibility, which relates to management/staffing authority and should not be included.
+    - Question 3 asks for 'staff competency assessments,' which is a staffing qualification question and should be flagged.
+
+[118/207] Sunrise of Mission Viejo (Mission Viejo)
+  → content already set; skipping (use --force)
+
+[119/207] Loma Clara Senior Living (Morgan Hill)
+  → content already set; skipping (use --force)
+
+[120/207] Westmont of Morgan Hill (Morgan Hill)
+  → content already set; skipping (use --force)
+
+[121/207] Casa Pastel Care Home (Mountain View)
+  → content already set; skipping (use --force)
+
+[122/207] Paradise Care Home (Mountain View)
+  → content already set; skipping (use --force)
+
+[123/207] Villa Toscana a Memory Care Community (Mountain View)
+  → content already set; skipping (use --force)
+
+[124/207] Parkview Memory Care at Paradise Village (National City)
+  → content already set; skipping (use --force)
+
+[125/207] Atria Newport Beach (Newport Beach)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 asks the facility to provide a deficiency notice or clearance letter, which implies state-issued paperwork; it should also ask for the facility's own corrective-action plan to pass the quality gate.
+    - Question 3 contains a generic closing phrase asking families how to 'verify complaint history' that could apply to any facility and is not grounded in facility-specific facts.
+
+[126/207] Newport Beach Memory Care (Newport Beach)
+  → content already set; skipping (use --force)
+
+[127/207] Aegis Assisted Living at Shadowridge (Oceanside)
+  → content already set; skipping (use --force)
+
+[128/207] Brookdale Oceanside (Oceanside)
+  → content already set; skipping (use --force)
+
+[129/207] Everest at Oceanside (Oceanside)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[130/207] Ocean Hills Assisted Living & Memory Care (Oceanside)
+  → content already set; skipping (use --force)
+
+[131/207] Oceanside Senior Living (Oceanside)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[132/207] Sunrise of Oceanside (Oceanside)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[133/207] Activcare Orange (Orange)
+  → content already set; skipping (use --force)
+
+[134/207] Kirkwood Orange (Orange)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[135/207] Oakmont of Orange (Orange)
+  → content already set; skipping (use --force)
+
+[136/207] Sunrise of Orange (Orange)
+  → content already set; skipping (use --force)
+
+[137/207] Ivy Park at Palo Alto (Palo Alto)
+  → content already set; skipping (use --force)
+
+[138/207] Palo Alto Commons (Palo Alto)
+  → content already set; skipping (use --force)
+
+[139/207] Vi at Palo Alto (Palo Alto)
+  → content already set; skipping (use --force)
+
+[140/207] Astoria Park Senior Living (Pasadena)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 asks for inspection report but source data shows zero inspections on record — this is contradictory and should acknowledge no inspection has occurred.
+    - Question 3 asks to 'show families the deficiency notice or compliance letter' but source data shows zero deficiencies and zero inspections — no such document exists.
+    - Question 4 asks about 'current resident census' which is not in the source data and cannot be verified against it.
+
+[141/207] Pasadena Highlands (Pasadena)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[142/207] Regency Park Oak Knoll (Pasadena)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[143/207] Crescendo Senior Living (Placentia)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks for inspection reports, but source data shows zero inspections on file — the facility cannot provide reports that do not exist.
+    - Question 2 asks about complaints resolved informally without state involvement, which is outside the scope of CDSS data verification and invites speculation.
+    - Array contains only 4 questions; while 4 is acceptable, the two issues above require correction before resubmission.
+
+[144/207] Ivy Park at Bradford (Placentia)
+  → content already set; skipping (use --force)
+
+[145/207] Poway Gardens Senior Living - Mountain Vistas (Poway)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[146/207] Belmont Village Rancho Palos Verdes (Rancho Palos Verdes)
+  → content already set; skipping (use --force)
+
+[147/207] Family Connect Memory Care Palos Verdes (Rancho Palos Verdes)
+  → content already set; skipping (use --force)
+
+[148/207] Silverado Senior Living-beach Cities (Redondo Beach)
+  → content already set; skipping (use --force)
+
+[149/207] Golden Pond Retirement Community (Sacramento)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[150/207] Ivy Park at Sacramento (Sacramento)
+  → content already set; skipping (use --force)
+
+[151/207] Regency Place (Sacramento)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks the facility to provide a state inspection report, but source data shows zero inspections on record — this is asking for documentation that does not exist.
+
+[152/207] San Clemente Villas by the Sea (San Clemente)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[153/207] Activcare at 4s Ranch (San Diego)
+  → content already set; skipping (use --force)
+
+[154/207] Activcare at Mission Bay (San Diego)
+  → content already set; skipping (use --force)
+
+[155/207] Belmont Village Sabre Springs (San Diego)
+  → content already set; skipping (use --force)
+
+[156/207] Ivy Park at la Jolla (San Diego)
+  → content already set; skipping (use --force)
+
+[157/207] Ivy Park at Sabre Springs (San Diego)
+  → content already set; skipping (use --force)
+
+[158/207] Rancho Penasquitos Senior Living (San Diego)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 requests a copy of the LPA visit report, which is a LIC-numbered form equivalent (inspection documentation form).
+    - Question 4 asks solely for state-issued paperwork (CDSS unannounced visit documentation) without also requesting the facility's own corrective-action plan or written program.
+
+[159/207] Silvergate Rancho Bernardo (San Diego)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[160/207] Westmont of Carmel Valley (San Diego)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks for 'three most recent unannounced inspections' but source data shows zero inspections on record — this is a factual contradiction.
+    - Question 4 contradicts the source data by implying an inspection history exists when inspection_count is 0.
+
+[161/207] Terraces at Via Verde-a Memory Care Community, the (San Dimas)
+  → content already set; skipping (use --force)
+
+[162/207] Autumn Glow (San Francisco)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks whether all residents have documented dementia diagnoses, which is a clinical assessment question that should not be part of a tour checklist.
+    - Question 4 contains no facility-specific facts beyond the bed count and operator name; it could apply unchanged to any memory-care facility.
+
+[163/207] Buena Vista Manor House (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[164/207] Cayco's Care Home (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[165/207] Coterie Cathedral Hill (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[166/207] Damenik's Home (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[167/207] Gonzales Home (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[168/207] Ivy at Golden Gate, the (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[169/207] Ivy Park at Cathedral Hill (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[170/207] Janet's Residential Facility for the Elderly (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[171/207] Kimochi Home (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[172/207] Kokoro Assisted Living (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[173/207] Lynne & Roy M Frank Residences (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[174/207] Sagebrook Senior Living at San Francisco (San Francisco)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[175/207] Ivy Park at San Marino (San Gabriel)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[176/207] Atria San Juan (San Juan Capistrano)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[177/207] Serra Sol (San Juan Capistrano)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[178/207] Silverado Senior Living-san Juan Capistrano (San Juan Capistrano)
+  → content already set; skipping (use --force)
+
+[179/207] Country Rose Estate Memory Care (San Marcos)
+  → content already set; skipping (use --force)
+
+[180/207] Silvergate San Marcos Retirement Residence (San Marcos)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[181/207] Forever Young Memory Care (Santa Ana)
+  → content already set; skipping (use --force)
+
+[182/207] Ivy Park at Tustin (Santa Ana)
+  → content already set; skipping (use --force)
+
+[183/207] Willow View Gardens Memory Care & Assisted Living (Santa Ana)
+  → content already set; skipping (use --force)
+
+[184/207] Atria Santa Clarita (Santa Clarita)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[185/207] Lantern Crest (Santee)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[186/207] April Garden Villa of Saratoga (Saratoga)
+  → content already set; skipping (use --force)
+
+[187/207] Ivy Park at Seal Beach (Seal Beach)
+  → content already set; skipping (use --force)
+
+[188/207] Seabright Assisted Living and Memory Care (Solana Beach)
+  → content already set; skipping (use --force)
+
+[189/207] Beach Terrace Assisted Living and Memory Care (Stanton)
+  → content already set; skipping (use --force)
+
+[190/207] Rowntree Gardens (Stanton)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[191/207] Clearwater at South Bay (Torrance)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[192/207] Cogir of South Bay (Torrance)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[193/207] Family Connect Memory Care Inc (Torrance)
+  → content already set; skipping (use --force)
+
+[194/207] Family Connected Memory Care Boutique (Torrance)
+  → content already set; skipping (use --force)
+
+[195/207] Ivy Park at Palos Verdes (Torrance)
+  → content already set; skipping (use --force)
+
+[196/207] Oakmont of Torrance (Torrance)
+  → content already set; skipping (use --force)
+
+[197/207] Silverado Rolling Hills (Torrance)
+  → content already set; skipping (use --force)
+
+[198/207] South Bay Memory Care (Torrance)
+  → content already set; skipping (use --force)
+
+[199/207] Groves of Tustin, the (Tustin)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[200/207] Silverado Senior Living-tustin Hacienda (Tustin)
+  → content already set; skipping (use --force)
+
+[201/207] Alta Vista Senior Living (Vista)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+[202/207] Rancho Vista Senior Living (Vista)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 2 requests 'LPA walk-through documentation,' which appears to reference a form or record type that should be clarified or may fall under restricted documentation.
+    - Question 4 asks about 'organizational documentation' and 'chain of accountability' in a way that could imply staffing structure questions, which are outside scope.
+    - The array contains exactly 4 questions, which meets the minimum; however, question 2's request for inspection report documentation when zero inspections are on record is contradictory and may confuse families.
+
+[203/207] Vista Gardens Memory Care (Vista)
+  → content already set; skipping (use --force)
+
+[204/207] Brookdale Brookhurst (Westminster)
+  → content already set; skipping (use --force)
+
+[205/207] La Posada (Whittier)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 asks the facility to 'walk families through your internal quality-assurance process' — this is a generic prompt that could apply to any facility and contains no facility-specific facts beyond the bed count.
+    - Question 2 asks 'when was the most recent state visit' — the source data explicitly states there is no inspection on record, making this question unanswerable and potentially misleading.
+    - Array contains 4 questions, which meets the minimum threshold, but Question 1 lacks sufficient facility-specific grounding to justify its inclusion.
+
+[206/207] Activcare at Yorba Linda (Yorba Linda)
+  → content already set; skipping (use --force)
+
+[207/207] Sunrise at Yorba Linda (Yorba Linda)
+  → content already set; skipping (use --force)
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 76
+  Skipped       : 104 (already had content)
+  Failed gate   : 27
+  Errors        : 0
+=======================================================

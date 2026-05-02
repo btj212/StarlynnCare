@@ -9,6 +9,8 @@ Usage:
     python3 scrapers/geocode_facilities.py             # all missing
     python3 scrapers/geocode_facilities.py --smoke     # first 5 only
     python3 scrapers/geocode_facilities.py --state CA  # one state
+    python3 scrapers/geocode_facilities.py --state CA --city-slugs "san-francisco,oakland"
+        # optional comma-separated city_slug filter (implies publishable=true)
 """
 
 from __future__ import annotations
@@ -50,6 +52,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke", action="store_true", help="First 5 only")
     parser.add_argument("--state", help="Filter by state_code (e.g. CA)")
+    parser.add_argument(
+        "--city-slugs",
+        dest="city_slugs",
+        help="Comma-separated city_slug values (e.g. san-francisco,san-jose)",
+    )
     args = parser.parse_args()
 
     if not API_KEY:
@@ -66,6 +73,13 @@ def main() -> None:
             if args.state:
                 where.append("state_code = %s")
                 params.append(args.state)
+            if args.city_slugs:
+                parts = [p.strip() for p in args.city_slugs.split(",") if p.strip()]
+                if parts:
+                    where.append("city_slug = ANY(%s)")
+                    params.append(parts)
+                    # Rollout scope: only publishable profiles need coords for Street View
+                    where.append("publishable = true")
             cur.execute(
                 f"""
                 SELECT id, name, street, city, zip, state_code

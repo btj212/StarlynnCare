@@ -129,6 +129,169 @@ const SANTA_CLARA_COUNTY_CITIES = [
   "sunnyvale",
 ] as const;
 
+// Los Angeles County — 88 incorporated cities (Wikipedia "List of cities in Los Angeles County")
+const LOS_ANGELES_COUNTY_CITIES = [
+  "agoura-hills",
+  "alhambra",
+  "arcadia",
+  "artesia",
+  "avalon",
+  "azusa",
+  "baldwin-park",
+  "bell",
+  "bell-gardens",
+  "bellflower",
+  "beverly-hills",
+  "bradbury",
+  "burbank",
+  "calabasas",
+  "carson",
+  "cerritos",
+  "claremont",
+  "commerce",
+  "compton",
+  "covina",
+  "cudahy",
+  "culver-city",
+  "diamond-bar",
+  "downey",
+  "duarte",
+  "el-monte",
+  "el-segundo",
+  "gardena",
+  "glendale",
+  "glendora",
+  "hawaiian-gardens",
+  "hawthorne",
+  "hermosa-beach",
+  "hidden-hills",
+  "huntington-park",
+  "industry",
+  "inglewood",
+  "irwindale",
+  "la-canada-flintridge",
+  "la-habra-heights",
+  "la-mirada",
+  "la-puente",
+  "la-verne",
+  "lakewood",
+  "lancaster",
+  "lawndale",
+  "lomita",
+  "long-beach",
+  "los-angeles",
+  "lynwood",
+  "malibu",
+  "manhattan-beach",
+  "maywood",
+  "monrovia",
+  "montebello",
+  "monterey-park",
+  "norwalk",
+  "palmdale",
+  "palos-verdes-estates",
+  "paramount",
+  "pasadena",
+  "pico-rivera",
+  "pomona",
+  "rancho-palos-verdes",
+  "redondo-beach",
+  "rolling-hills",
+  "rolling-hills-estates",
+  "rosemead",
+  "san-dimas",
+  "san-fernando",
+  "san-gabriel",
+  "san-marino",
+  "santa-clarita",
+  "santa-fe-springs",
+  "santa-monica",
+  "sierra-madre",
+  "signal-hill",
+  "south-el-monte",
+  "south-gate",
+  "south-pasadena",
+  "temple-city",
+  "torrance",
+  "vernon",
+  "walnut",
+  "west-covina",
+  "west-hollywood",
+  "westlake-village",
+  "whittier",
+] as const;
+
+// San Diego County — 18 incorporated cities
+const SAN_DIEGO_COUNTY_CITIES = [
+  "carlsbad",
+  "chula-vista",
+  "coronado",
+  "del-mar",
+  "el-cajon",
+  "encinitas",
+  "escondido",
+  "imperial-beach",
+  "la-mesa",
+  "lemon-grove",
+  "national-city",
+  "oceanside",
+  "poway",
+  "san-diego",
+  "san-marcos",
+  "santee",
+  "solana-beach",
+  "vista",
+] as const;
+
+// Orange County — 34 incorporated cities
+const ORANGE_COUNTY_CITIES = [
+  "aliso-viejo",
+  "anaheim",
+  "brea",
+  "buena-park",
+  "costa-mesa",
+  "cypress",
+  "dana-point",
+  "fountain-valley",
+  "fullerton",
+  "garden-grove",
+  "huntington-beach",
+  "irvine",
+  "la-habra",
+  "la-palma",
+  "laguna-beach",
+  "laguna-hills",
+  "laguna-niguel",
+  "laguna-woods",
+  "lake-forest",
+  "los-alamitos",
+  "mission-viejo",
+  "newport-beach",
+  "orange",
+  "placentia",
+  "rancho-santa-margarita",
+  "san-clemente",
+  "san-juan-capistrano",
+  "santa-ana",
+  "seal-beach",
+  "stanton",
+  "tustin",
+  "villa-park",
+  "westminster",
+  "yorba-linda",
+] as const;
+
+// Sacramento County — 7 incorporated cities
+const SACRAMENTO_COUNTY_CITIES = [
+  "citrus-heights",
+  "elk-grove",
+  "folsom",
+  "galt",
+  "isleton",
+  "rancho-cordova",
+  "sacramento",
+] as const;
+
 export const REGIONS: ReadonlyArray<Region> = [
   {
     slug: "alameda-county",
@@ -192,6 +355,78 @@ export const REGIONS: ReadonlyArray<Region> = [
     citySlugs: SANTA_CLARA_COUNTY_CITIES,
   },
   ...SANTA_CLARA_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "los-angeles-county",
+    name: "Los Angeles County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: LOS_ANGELES_COUNTY_CITIES,
+  },
+  ...LOS_ANGELES_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "san-diego-county",
+    name: "San Diego County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SAN_DIEGO_COUNTY_CITIES,
+  },
+  ...SAN_DIEGO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "orange-county",
+    name: "Orange County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: ORANGE_COUNTY_CITIES,
+  },
+  ...ORANGE_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "sacramento-county",
+    name: "Sacramento County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SACRAMENTO_COUNTY_CITIES,
+  },
+  ...SACRAMENTO_COUNTY_CITIES.map<Region>((slug) => ({
     slug,
     name: slug
       .split("-")
