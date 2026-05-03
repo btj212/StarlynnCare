@@ -105,8 +105,10 @@ export async function SiteFooter() {
         {/* Foot meta */}
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center pt-6 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-ink-4 sm:flex-wrap sm:gap-3">
           <span>© {year} StarlynnCare, PBC · A California Public Benefit Corporation</span>
-          <span>
-            {lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · CMS Care Compare
+          <span className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link href="/terms" className="hover:text-teal transition-colors">Terms of Use</Link>
+            <Link href="/privacy" className="hover:text-teal transition-colors">Privacy Policy</Link>
+            <span>{lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · CMS Care Compare</span>
           </span>
         </div>
       </div>
