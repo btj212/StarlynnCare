@@ -29,7 +29,7 @@ export async function generateMetadata({
   const state = stateFromSlug(stateSlug);
   if (!state) return { title: "State not found | StarlynnCare" };
   const canonical = canonicalFor(`/${state.slug}`);
-  const desc = `State inspection records and citation history for every licensed memory care facility in ${state.name} — built from primary CDSS data, updated weekly.`;
+  const desc = `Inspection records and citation history for every licensed memory care facility in ${state.name} — from primary CDSS data, updated weekly.`;
   return {
     title: `${state.name} memory care | StarlynnCare`,
     description: desc,
@@ -39,11 +39,13 @@ export async function generateMetadata({
       description: desc,
       url: canonical,
       type: "website",
+      images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: `${state.name} memory care | StarlynnCare`,
       description: desc,
+      images: ["/og-default.png"],
     },
   };
 }

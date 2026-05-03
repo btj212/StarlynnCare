@@ -51,6 +51,11 @@ export const metadata: Metadata = {
   openGraph: {
     url: homeCanonical,
     type: "website",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og-default.png"],
   },
 };
 

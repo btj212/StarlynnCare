@@ -25,6 +25,11 @@ const nextConfig: NextConfig = {
         destination: "/california/citrus-heights/:path*",
         permanent: true,
       },
+      {
+        source: "/library",
+        destination: "/library/type-a-vs-type-b-deficiencies-explained",
+        permanent: true,
+      },
     ];
   },
 };

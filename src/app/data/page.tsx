@@ -20,11 +20,13 @@ export const metadata: Metadata = {
     description: dataDesc,
     url: dataCanonical,
     type: "website",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Dataset — California Memory Care Inspection Records | StarlynnCare",
     description: dataDesc,
+    images: ["/og-default.png"],
   },
 };
 

@@ -48,11 +48,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: desc,
       url: canonical,
       type: "website",
+      images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
       description: desc,
+      images: ["/og-default.png"],
     },
   };
 }

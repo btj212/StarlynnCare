@@ -15,9 +15,9 @@ import { DataFootnote } from "@/components/editorial/DataFootnote";
 
 const PAGE_PATH = "/library/type-a-vs-type-b-deficiencies-explained";
 const canonicalUrl = canonicalFor(PAGE_PATH);
-const TITLE = "Type A vs. Type B Deficiencies in California Memory Care — Explained";
+const TITLE = "Type A vs. Type B Deficiencies in California RCFEs";
 const DESC =
-  "What the difference between a Type A and Type B deficiency means in a California RCFE inspection report, how to read them on a facility profile, and why they matter when choosing memory care.";
+  "What Type A and Type B deficiency citations mean in a California RCFE inspection report, how to read them on a facility profile, and why they matter when choosing memory care.";
 const DATE_PUBLISHED = "2026-05-02";
 
 export const metadata: Metadata = {
@@ -29,11 +29,13 @@ export const metadata: Metadata = {
     description: DESC,
     url: canonicalUrl,
     type: "article",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
   },
   twitter: {
     card: "summary_large_image",
     title: `${TITLE} | StarlynnCare`,
     description: DESC,
+    images: ["/og-default.png"],
   },
 };
 
@@ -111,7 +113,7 @@ export default function TypeATypeBPage() {
             >
               <Link href="/" className="hover:text-teal transition-colors">Home</Link>
               <span aria-hidden>›</span>
-              <Link href="/library" className="hover:text-teal transition-colors">Library</Link>
+              <Link href="/california/glossary" className="hover:text-teal transition-colors">Glossary</Link>
               <span aria-hidden>›</span>
               <span className="text-ink-3">Deficiency types</span>
             </nav>

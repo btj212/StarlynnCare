@@ -21,11 +21,13 @@ export const metadata: Metadata = {
     description: methodologyDesc,
     url: methodologyCanonical,
     type: "article",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "How We Rate Facilities | StarlynnCare",
     description: methodologyDesc,
+    images: ["/og-default.png"],
   },
 };
 
