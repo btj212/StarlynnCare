@@ -17,7 +17,6 @@ type FacilityRow = {
 };
 
 type Ranked = FacilityRow & {
-  grade: string | null;
   composite: number | null;
 };
 
@@ -60,7 +59,6 @@ async function loadTopGraded(
       const snap = snapMap.get(f.id);
       return {
         ...f,
-        grade: snap?.letter ?? null,
         composite: snap?.composite_percentile ?? null,
       };
     })
@@ -69,16 +67,8 @@ async function loadTopGraded(
     .slice(0, 8);
 }
 
-const GRADE_COLORS: Record<string, string> = {
-  A: "text-[#3a6b40] bg-[#e9f5eb]",
-  B: "text-[#4a7080] bg-[#e6eff4]",
-  C: "text-[#7a6b30] bg-[#f5f0e0]",
-  D: "text-[#8a4030] bg-[#f5e8e6]",
-  F: "text-[#6b2020] bg-[#f5e0e0]",
-};
-
 /**
- * Server component. Renders a "Top-graded in [county]" rail of up to 8
+ * Server component. Renders a "Top performers in [county]" rail of up to 8
  * facilities sorted by composite_percentile (highest first). Used on county
  * hub pages to give Googlebot anchor tags into facility profiles.
  */
@@ -95,7 +85,7 @@ export async function TopGradedFacilities({
     <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
         <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
-          § Top-graded in {countyName}
+          § Top performers in {countyName}
         </div>
         <h2
           className="font-[family-name:var(--font-display)] font-normal text-[clamp(28px,4vw,44px)] leading-[1.06] tracking-[-0.015em] text-ink mb-8"
@@ -104,34 +94,29 @@ export async function TopGradedFacilities({
         </h2>
 
         <div className="grid gap-0 border-t border-ink md:grid-cols-2 lg:grid-cols-4">
-          {facilities.map((f) => {
-            const gradeCls = f.grade ? (GRADE_COLORS[f.grade] ?? GRADE_COLORS.C) : "";
-            return (
-              <Link
-                key={f.id}
-                href={`/${stateSlug}/${f.city_slug}/${f.slug}`}
-                className="flex items-start justify-between gap-3 px-5 py-5 border-r border-b border-paper-rule last:border-r-0 no-underline text-ink hover:bg-paper-2 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-[family-name:var(--font-sans)] font-semibold text-[15px] leading-[1.2] tracking-[-0.005em] m-0 text-ink line-clamp-2">
-                    {f.name}
+          {facilities.map((f) => (
+            <Link
+              key={f.id}
+              href={`/${stateSlug}/${f.city_slug}/${f.slug}`}
+              className="flex items-start justify-between gap-3 px-5 py-5 border-r border-b border-paper-rule last:border-r-0 no-underline text-ink hover:bg-paper-2 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-[family-name:var(--font-sans)] font-semibold text-[15px] leading-[1.2] tracking-[-0.005em] m-0 text-ink line-clamp-2">
+                  {f.name}
+                </p>
+                {f.city && (
+                  <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.06em] mt-1">
+                    {f.city}
                   </p>
-                  {f.city && (
-                    <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.06em] mt-1">
-                      {f.city}
-                    </p>
-                  )}
-                </div>
-                {f.grade && (
-                  <span
-                    className={`shrink-0 font-[family-name:var(--font-display)] text-[22px] leading-none font-semibold px-2.5 py-1.5 rounded ${gradeCls}`}
-                  >
-                    {f.grade}
-                  </span>
                 )}
-              </Link>
-            );
-          })}
+              </div>
+              {f.composite !== null && (
+                <span className="shrink-0 font-[family-name:var(--font-mono)] text-[11px] font-semibold px-2 py-1 rounded bg-teal/10 text-teal-deep tabular-nums">
+                  Top {100 - f.composite}%
+                </span>
+              )}
+            </Link>
+          ))}
         </div>
       </div>
     </section>

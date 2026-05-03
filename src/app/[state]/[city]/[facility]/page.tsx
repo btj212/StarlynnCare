@@ -978,7 +978,7 @@ export default async function FacilityPage({ params }: PageProps) {
               href="/methodology"
               className="text-teal hover:underline underline-offset-4"
             >
-              How we calculate this grade →
+              Our inspection scoring methodology →
             </Link>
           </div>
 

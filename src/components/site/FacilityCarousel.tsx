@@ -24,27 +24,11 @@ export type CarouselFacility = {
   slug: string;
   city_slug: string;
   state_slug: string;
-  grade: string | null;
   composite: number | null;
   sev_pct: number | null;
   rep_pct: number | null;
   freq_pct: number | null;
 };
-
-function gradeColor(letter: string | null): string {
-  if (!letter) return "#9a938a";
-  if (letter.startsWith("A")) return "#6b8f71";
-  if (letter.startsWith("B")) return "#c8a26b";
-  if (letter.startsWith("C")) return "#c8a26b";
-  return "#b5532e";
-}
-
-function gradeBg(letter: string | null): string {
-  if (!letter) return "#f5f2ec";
-  if (letter.startsWith("A")) return "#f0f5f1";
-  if (letter.startsWith("B")) return "#fdf8f0";
-  return "#fdf3f0";
-}
 
 const METRIC_BARS: [string, keyof Pick<CarouselFacility, "sev_pct" | "rep_pct" | "freq_pct">][] = [
   ["Severity", "sev_pct"],
@@ -121,9 +105,7 @@ export function FacilityCarousel({ facilities }: { facilities: CarouselFacility[
 }
 
 function CardInner({ f }: { f: CarouselFacility }) {
-  const color = gradeColor(f.grade);
-  const bg = gradeBg(f.grade);
-  const hasGrade = f.grade !== null;
+  const hasData = f.composite !== null;
 
   return (
     <>
@@ -153,35 +135,13 @@ function CardInner({ f }: { f: CarouselFacility }) {
         </div>
       </div>
 
-      {/* Grade + metric bars */}
-      <div
-        className="mt-3.5 flex items-stretch gap-4 rounded-xl px-4 py-3.5"
-        style={{ backgroundColor: bg }}
-      >
-        {/* Grade letter */}
-        <div className="flex flex-col items-center justify-center shrink-0 w-12">
-          <span
-            className="font-[family-name:var(--font-serif)] text-[2.5rem] font-semibold leading-none"
-            style={{ color }}
-          >
-            {f.grade ?? "—"}
-          </span>
-          {f.composite !== null && (
-            <span className="mt-1 text-[9px] font-medium text-center leading-tight" style={{ color: "#9a938a" }}>
-              {f.composite}th
-              <br />pct
-            </span>
-          )}
-        </div>
-
-        {/* Vertical divider */}
-        <div className="w-px self-stretch rounded-full" style={{ backgroundColor: `${color}30` }} />
-
-        {/* Metric bars */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-2.5">
-          {hasGrade ? (
-            METRIC_BARS.map(([label, key]) => {
+      {/* Peer percentile bars */}
+      <div className="mt-3.5 rounded-xl bg-[#f5f2ec] px-4 py-3.5">
+        {hasData ? (
+          <div className="flex flex-col gap-2.5">
+            {METRIC_BARS.map(([label, key]) => {
               const val = f[key];
+              const barColor = peerRankBarFillHex(val);
               return (
                 <div key={key}>
                   <div className="flex items-center justify-between mb-1">
@@ -189,28 +149,25 @@ function CardInner({ f }: { f: CarouselFacility }) {
                     {val !== null && (
                       <span
                         className="text-[10px] font-semibold leading-none tabular-nums"
-                        style={{ color: peerRankBarFillHex(val) }}
+                        style={{ color: barColor }}
                       >
                         {val}<span className="font-normal opacity-70">th</span>
                       </span>
                     )}
                   </div>
-                  <div className="h-[3px] w-full rounded-full overflow-hidden" style={{ backgroundColor: `${color}20` }}>
+                  <div className="h-[3px] w-full rounded-full overflow-hidden bg-black/10">
                     <div
                       className="h-full rounded-full"
-                      style={{
-                        width: `${val ?? 0}%`,
-                        backgroundColor: peerRankBarFillHex(val),
-                      }}
+                      style={{ width: `${val ?? 0}%`, backgroundColor: barColor }}
                     />
                   </div>
                 </div>
               );
-            })
-          ) : (
-            <p className="text-[11px] text-muted">No inspection data on file</p>
-          )}
-        </div>
+            })}
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted">No inspection data on file</p>
+        )}
       </div>
     </>
   );

@@ -396,7 +396,7 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* ── Top-graded rail (county pages only) ── */}
+        {/* ── Top performers rail (county pages only) ── */}
         {isCounty && !fetchError && totalCount > 0 && (
           <TopGradedFacilities
             citySlugs={region.citySlugs}

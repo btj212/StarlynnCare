@@ -16,7 +16,6 @@ type RelatedRow = {
   city: string | null;
   slug: string;
   city_slug: string;
-  grade: string | null;
   composite: number | null;
 };
 
@@ -64,7 +63,6 @@ async function loadRelated(
       const snap = snapMap.get(f.id);
       return {
         ...f,
-        grade: snap?.letter ?? null,
         composite: snap?.composite_percentile ?? null,
       };
     })
