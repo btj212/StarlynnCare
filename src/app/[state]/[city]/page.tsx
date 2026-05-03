@@ -9,6 +9,7 @@ import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
 import { TopGradedFacilities } from "@/components/facility/TopGradedFacilities";
+import { HubFaqSection } from "@/components/facility/HubFaqSection";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { resolveListingRegion } from "@/lib/resolveListingRegion";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -17,9 +18,11 @@ import { getRegulatorPrimer } from "@/lib/content/regulatorPrimer";
 import {
   buildBreadcrumbList,
   buildCollectionPageSchema,
+  buildFaqSchemaFromPairs,
   buildItemListSchema,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
+import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import type { CareCategory } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -35,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
   if (!region) return { title: "Region not found | StarlynnCare" };
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
-  const desc = `State inspection records, citation history, and quality grades for every licensed memory care facility in ${region.name}. Built from primary CDSS data.`;
+  const desc = `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`;
   return {
     title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
     description: desc,
@@ -156,7 +159,7 @@ export default async function RegionPage({ params }: PageProps) {
 
   const pageUrl = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const pageTitle = `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`;
-  const pageDesc = `State inspection records, citation history, and quality grades for every licensed memory care facility in ${region.name}. Built from primary CDSS data.`;
+  const pageDesc = `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`;
   const itemListFacilities = facilities.map((f) => ({
     name: f.name,
     url: canonicalFor(`/${region.state.slug}/${f.city_slug}/${f.slug}`),
@@ -166,6 +169,16 @@ export default async function RegionPage({ params }: PageProps) {
     postalCode: f.zip,
     addressRegion: region.state.name,
   }));
+  const facilitiesWithSeriousDef = facilities.filter((f) => f.serious_citations > 0).length;
+  const severePct =
+    totalCount > 0 ? Math.round((facilitiesWithSeriousDef / totalCount) * 100) : 0;
+  const findingsDate = new Date().toISOString().split("T")[0];
+
+  const faqPairs = buildCityFaqs(region, {
+    totalCount,
+    facilitiesWithDeficiency: facilitiesWithSeriousDef,
+  });
+
   const regionJsonLd = [
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
@@ -187,32 +200,10 @@ export default async function RegionPage({ params }: PageProps) {
       pageUrl,
       itemListFacilities,
     ),
+    buildFaqSchemaFromPairs(faqPairs, pageUrl),
   ];
 
   // ── Additional data for content blocks ────────────────────────────────────
-
-  // Severe (Type-A/B) deficiency count for the region
-  let severeCount = 0;
-  let severeQueryDate = "";
-  if (supabase && facilities.length > 0) {
-    const ids = facilities.map((f) => f.id);
-    const { data: inspRows } = await supabase
-      .from("inspections")
-      .select("id, facility_id")
-      .in("facility_id", ids);
-    const inspIds = (inspRows ?? []).map((i: { id: string }) => i.id);
-    if (inspIds.length > 0) {
-      const { count: sevCount } = await supabase
-        .from("deficiencies")
-        .select("*", { count: "exact", head: true })
-        .in("inspection_id", inspIds)
-        .gte("severity", 3);
-      severeCount = sevCount ?? 0;
-    }
-    severeQueryDate = new Date().toISOString().split("T")[0];
-  }
-
-  const severePct = totalCount > 0 ? Math.round((severeCount / totalCount) * 100) : 0;
 
   // Regulator primer (CA-specific)
   const regulatorPrimer = getRegulatorPrimer(region.state.code);
@@ -224,10 +215,11 @@ export default async function RegionPage({ params }: PageProps) {
       src: "CDSS",
     },
     {
-      n: String(severeCount),
-      label: "Severe (Type-A or Type-B) deficiency findings on file from the last 24 months",
+      n: String(facilitiesWithSeriousDef),
+      label:
+        "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
       src: "CDSS",
-      delta: totalCount > 0 ? `${severePct}% of facilities` : undefined,
+      delta: totalCount > 0 ? `${severePct}% of indexed facilities` : undefined,
     },
     {
       n: String(visibleCount),
@@ -268,7 +260,7 @@ export default async function RegionPage({ params }: PageProps) {
             <p
               className="font-[family-name:var(--font-display)] italic text-[20px] leading-[1.4] text-ink-3 max-w-[50ch]"
             >
-              State inspection records, citation history, and quality grades for every licensed
+              State inspection records and citation history for every licensed
               facility — built from primary CDSS data.
             </p>
           </div>
@@ -286,14 +278,14 @@ export default async function RegionPage({ params }: PageProps) {
                   Of the{" "}
                   <strong className="font-normal text-rust">{totalCount}</strong>{" "}
                   licensed memory care facilities indexed in {region.name},{" "}
-                  <strong className="font-normal text-rust">{severeCount}</strong>{" "}
+                  <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
                   ({severePct}%) have a Type-A or Type-B deficiency in their state record
                   from the past 24 months.
                 </p>
-                {severeQueryDate && (
+                {findingsDate && (
                   <DataFootnote
                     source="CA CDSS Community Care Licensing"
-                    refreshed={severeQueryDate}
+                    refreshed={findingsDate}
                     note="Type-A = immediate health/safety risk; Type-B = lesser violation"
                   />
                 )}
@@ -314,7 +306,7 @@ export default async function RegionPage({ params }: PageProps) {
             <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
               <SectionHead
                 label="§ How memory care is regulated here"
-                title={<>The public record that drives <em>every grade.</em></>}
+                title={<>The public record behind <em>every profile.</em></>}
               />
               <div
                 className="text-[16px] leading-[1.7] text-ink-2 max-w-[72ch]"
@@ -335,16 +327,27 @@ export default async function RegionPage({ params }: PageProps) {
               <p className="text-[16px] leading-[1.7] text-ink-2 max-w-[60ch]">
                 Median monthly cost in {region.name} ranges from approximately{" "}
                 <strong className="font-semibold">$5,000–$9,000/month</strong> based on regional
-                licensing data. We do not yet collect verified cost data for this specific area —
-                see our{" "}
+                benchmarks. For statewide ranges, financing options, and hidden fees, read{" "}
+                <Link href="/california/cost-guide" className="text-teal underline underline-offset-4">
+                  What memory care costs in California
+                </Link>
+                . Methodology for future verified city medians:{" "}
                 <Link href="/methodology" className="text-teal underline underline-offset-4">
-                  methodology
-                </Link>{" "}
-                for how cost figures will be sourced and verified when available.
+                  how we source data
+                </Link>
+                .
               </p>
-              <DataFootnote source="Estimate only · Unverified" note="Verified cost data coming Q3 2026" />
+              <DataFootnote source="Regional estimate · Genworth / operator benchmarks" note="Facility-specific quotes required before signing" />
             </div>
           </div>
+        )}
+
+        {/* ── FAQ: county after stats block; city after cost band ── */}
+        {isCounty && !fetchError && (
+          <HubFaqSection regionName={region.name} faqPairs={faqPairs} />
+        )}
+        {!isCounty && !fetchError && (
+          <HubFaqSection regionName={region.name} faqPairs={faqPairs} />
         )}
 
         {/* ── Error state ── */}
@@ -386,8 +389,8 @@ export default async function RegionPage({ params }: PageProps) {
               label={isCounty ? `§ ${region.name} Facilities` : "§ All Facilities in this City"}
               title={
                 isCounty
-                  ? <>{region.name} — <em>every licensed facility, graded.</em></>
-                  : <>Memory care options in {region.name}, <em>graded by the public record.</em></>
+                  ? <>{region.name} — <em>every licensed facility, documented in the public record.</em></>
+                  : <>Memory care options in {region.name}, <em>documented in the public record.</em></>
               }
             />
             <FacilityListClient

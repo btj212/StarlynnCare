@@ -10,6 +10,21 @@ const nextConfig: NextConfig = {
     return [
       { source: "/signin", destination: "/sign-in", permanent: true },
       { source: "/signup", destination: "/sign-in", permanent: true },
+      {
+        source: "/library/memory-care-cost-california",
+        destination: "/california/cost-guide",
+        permanent: true,
+      },
+      {
+        source: "/california/cirtus-heights",
+        destination: "/california/citrus-heights",
+        permanent: true,
+      },
+      {
+        source: "/california/cirtus-heights/:path*",
+        destination: "/california/citrus-heights/:path*",
+        permanent: true,
+      },
     ];
   },
 };

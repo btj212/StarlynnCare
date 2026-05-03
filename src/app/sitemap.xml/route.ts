@@ -51,7 +51,11 @@ export async function GET() {
     { loc: `${SITE}/about`, priority: "0.75", changefreq: "monthly" as const },
     { loc: `${SITE}/data`, priority: "0.8", changefreq: "monthly" as const },
     { loc: `${SITE}/library/type-a-vs-type-b-deficiencies-explained`, priority: "0.78", changefreq: "monthly" as const },
-    { loc: `${SITE}/library/memory-care-cost-california`, priority: "0.78", changefreq: "monthly" as const },
+    { loc: `${SITE}/california/cost-guide`, priority: "0.85", changefreq: "monthly" as const },
+    { loc: `${SITE}/memory-care-vs-assisted-living`, priority: "0.85", changefreq: "monthly" as const },
+    { loc: `${SITE}/california/glossary`, priority: "0.78", changefreq: "monthly" as const },
+    { loc: `${SITE}/california/37-questions-to-ask-on-a-tour`, priority: "0.78", changefreq: "monthly" as const },
+    { loc: `${SITE}/editorial-policy`, priority: "0.72", changefreq: "monthly" as const },
     ...CITY_PAGES.map((slug) => ({
       loc: `${SITE}/california/${slug}`,
       priority: "0.85",

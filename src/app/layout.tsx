@@ -37,12 +37,21 @@ export const metadata: Metadata = {
     url: "https://www.starlynncare.com",
     siteName: "StarlynnCare",
     type: "website",
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "StarlynnCare",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Find the Best Memory Care Facilities — Based on Real Inspection Data",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care in Alameda County, California.",
+    images: ["/og-default.png"],
   },
 };
 

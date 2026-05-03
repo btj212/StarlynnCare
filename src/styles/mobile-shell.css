@@ -103,7 +103,8 @@
 .m-hero .eyebrow::before {
   content: ""; width: 24px; height: 1px; background: var(--rust); opacity: 0.6;
 }
-.m-hero h1 {
+.m-hero h1,
+.m-hero h2 {
   font-family: var(--font-display), Georgia, serif;
   font-weight: 400;
   font-size: 40px; line-height: 0.98;
@@ -111,10 +112,12 @@
   margin: 0 0 14px;
   color: var(--ink);
 }
-.m-hero h1 em {
+.m-hero h1 em,
+.m-hero h2 em {
   font-style: italic; color: var(--rust);
 }
-.m-hero h1 .ul {
+.m-hero h1 .ul,
+.m-hero h2 .ul {
   background-image: linear-gradient(transparent 70%, var(--gold-soft) 70%);
   padding: 0 3px;
 }

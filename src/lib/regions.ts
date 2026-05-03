@@ -436,6 +436,15 @@ export const REGIONS: ReadonlyArray<Region> = [
     state: CALIFORNIA,
     citySlugs: [slug],
   })),
+
+  /** City & county of San Francisco — not nested under another county list */
+  {
+    slug: "san-francisco",
+    name: "San Francisco",
+    kind: "city",
+    state: CALIFORNIA,
+    citySlugs: ["san-francisco"],
+  },
 ];
 
 export function regionFromSlug(

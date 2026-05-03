@@ -65,7 +65,7 @@ export async function SiteFooter() {
             </h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Data links">
               <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">All California facilities</Link>
-              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">By county (4 live)</Link>
+              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">By county (8 live)</Link>
               <Link href="/data" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Dataset overview</Link>
               <Link href="/llms.txt" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors flex items-center gap-1">
                 llms.txt <span className="text-rust text-[10px]">↗</span>
@@ -81,6 +81,8 @@ export async function SiteFooter() {
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Methodology links">
               <Link href="/methodology" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">How we grade</Link>
               <Link href="/methodology#cdss" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Source records (CDSS)</Link>
+              <Link href="/editorial-policy" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Editorial policy</Link>
+              <Link href="/california/glossary" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">California glossary</Link>
               <Link href="/methodology#no-paid-placement" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Editorial standards</Link>
               <Link href="/methodology#corrections" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Corrections policy</Link>
             </nav>
@@ -93,6 +95,7 @@ export async function SiteFooter() {
             </h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="About links">
               <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Our editorial desk</Link>
+              <Link href="/california/37-questions-to-ask-on-a-tour" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Tour checklist (37 questions)</Link>
               <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">For discharge planners</Link>
               <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Press &amp; citations</Link>
             </nav>

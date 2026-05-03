@@ -2,7 +2,11 @@ import type { Review } from "@/components/reviews/ReviewCard";
 import type { Facility } from "@/lib/types";
 import type { StateInfo } from "@/lib/states";
 import type { Region } from "@/lib/regions";
-import { STARLYNN_EDITORIAL_REVIEWER } from "@/lib/seo/editor";
+import {
+  STARLYNN_AUTHOR_IMAGE_PATH,
+  STARLYNN_AUTHOR_LICENSE,
+  STARLYNN_EDITORIAL_REVIEWER,
+} from "@/lib/seo/editor";
 import { SITE_ORIGIN, canonicalFor } from "@/lib/seo/canonical";
 
 export type BreadcrumbItem = { name: string; url: string };
@@ -427,5 +431,107 @@ export function buildDatasetSchema(input: {
         contentUrl: input.methodologyUrl,
       },
     ],
+  };
+}
+
+/** Person JSON-LD for Rebecca Lynn Starkey (clinical author / reviewer). */
+export function buildStarlynnPerson(): object {
+  const img = `${SITE_ORIGIN}${STARLYNN_AUTHOR_IMAGE_PATH}`;
+  return {
+    "@type": "Person",
+    "@id": `${SITE_ORIGIN}#person-starlynn-starkey`,
+    name: STARLYNN_EDITORIAL_REVIEWER,
+    jobTitle: "Registered Nurse",
+    image: img,
+    hasCredential: {
+      "@type": "EducationalOccupationalCredential",
+      credentialCategory: "license",
+      recognizedBy: {
+        "@type": "Organization",
+        name: "California Board of Registered Nursing",
+      },
+      identifier: STARLYNN_AUTHOR_LICENSE,
+    },
+    worksFor: { "@type": "Organization", name: "StarlynnCare", url: SITE_ORIGIN },
+  };
+}
+
+export function buildArticleSchema(input: {
+  headline: string;
+  description: string;
+  url: string;
+  datePublished: string;
+  dateModified?: string;
+  /** Optional extra types e.g. FAQPage handled separately */
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${input.url}#article`,
+    headline: input.headline,
+    description: input.description,
+    url: input.url,
+    datePublished: input.datePublished,
+    dateModified: input.dateModified ?? input.datePublished,
+    author: buildStarlynnPerson(),
+    reviewedBy: buildStarlynnPerson(),
+    publisher: { "@type": "Organization", name: "StarlynnCare", url: SITE_ORIGIN },
+    isPartOf: { "@type": "WebSite", name: "StarlynnCare", url: SITE_ORIGIN },
+  };
+}
+
+/** Generic Person JSON-LD for founders / contributors (About page). */
+export function buildPersonSchema(input: {
+  name: string;
+  jobTitle: string;
+  description?: string;
+  image?: string;
+  url?: string;
+  /** Stable node id for JSON-LD @graph (e.g. `${SITE_ORIGIN}/about#person-blake`). */
+  id?: string;
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    ...(input.id ? { "@id": input.id } : {}),
+    name: input.name,
+    jobTitle: input.jobTitle,
+    ...(input.description ? { description: input.description } : {}),
+    ...(input.image ? { image: `${SITE_ORIGIN}${input.image.startsWith("/") ? input.image : `/${input.image}`}` } : {}),
+    ...(input.url ? { url: input.url } : {}),
+    worksFor: { "@type": "Organization", name: "StarlynnCare", url: SITE_ORIGIN },
+  };
+}
+
+/** Container for glossary entries — reference from each DefinedTerm via `inDefinedTermSet`. */
+export function buildDefinedTermSetSchema(input: {
+  id: string;
+  name: string;
+  description?: string;
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "DefinedTermSet",
+    "@id": input.id,
+    name: input.name,
+    ...(input.description ? { description: input.description } : {}),
+  };
+}
+
+export function buildDefinedTermSchema(input: {
+  name: string;
+  description: string;
+  url: string;
+  termCode?: string;
+  termSetId: string;
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "DefinedTerm",
+    name: input.name,
+    description: input.description,
+    url: input.url,
+    ...(input.termCode ? { termCode: input.termCode } : {}),
+    inDefinedTermSet: { "@id": input.termSetId },
   };
 }

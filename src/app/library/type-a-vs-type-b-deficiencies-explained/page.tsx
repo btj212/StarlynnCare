@@ -5,8 +5,12 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { SITE_ORIGIN } from "@/lib/seo/canonical";
-import { STARLYNN_EDITORIAL_REVIEWER } from "@/lib/seo/editor";
+import { AuthorByline } from "@/components/editorial/AuthorByline";
+import {
+  buildArticleSchema,
+  buildBreadcrumbList,
+  buildFaqSchemaFromPairs,
+} from "@/lib/seo/schema";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 
 const PAGE_PATH = "/library/type-a-vs-type-b-deficiencies-explained";
@@ -33,61 +37,34 @@ export const metadata: Metadata = {
   },
 };
 
-const jsonLd = [
+const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "@id": `${canonicalUrl}#article`,
+    q: "What is a Type A deficiency in a California memory care facility?",
+    a: "A Type A deficiency is cited when California CDSS inspectors determine that a violation 'presents an immediate risk to the health, safety, or personal rights of the clients in care' (Cal. Health & Safety Code §1540.1). Type A findings require the facility to submit a corrective action plan within 48 hours and trigger the highest civil penalty tier.",
+  },
+  {
+    q: "What is a Type B deficiency in a California RCFE?",
+    a: "A Type B deficiency covers all other violations that do not rise to the level of immediate jeopardy. They represent real regulatory failures — inadequate records, missing staff training documentation, improperly stored medications — but inspectors determined that residents were not in immediate danger at the time of the visit.",
+  },
+  {
+    q: "Which is worse, Type A or Type B?",
+    a: "Type A is more severe. It signals that inspectors found conditions posing an immediate risk to residents. That said, repeated Type B citations in the same regulatory domain (such as medication management or dementia care training) can be equally revealing about systemic quality problems at a facility.",
+  },
+];
+
+const jsonLd = [
+  buildArticleSchema({
     headline: TITLE,
     description: DESC,
     url: canonicalUrl,
     datePublished: DATE_PUBLISHED,
-    dateModified: DATE_PUBLISHED,
-    author: { "@type": "Organization", name: "StarlynnCare", url: SITE_ORIGIN },
-    reviewedBy: { "@type": "Person", name: STARLYNN_EDITORIAL_REVIEWER },
-    publisher: { "@type": "Organization", name: "StarlynnCare", url: SITE_ORIGIN },
-    isPartOf: { "@type": "WebSite", name: "StarlynnCare", url: SITE_ORIGIN },
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: SITE_ORIGIN },
-      { "@type": "ListItem", position: 2, name: "Library", item: canonicalFor("/library") },
-      { "@type": "ListItem", position: 3, name: "Type A vs. Type B deficiencies", item: canonicalUrl },
-    ],
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    url: canonicalUrl,
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "What is a Type A deficiency in a California memory care facility?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "A Type A deficiency is cited when California CDSS inspectors determine that a violation 'presents an immediate risk to the health, safety, or personal rights of the clients in care' (Cal. Health & Safety Code §1540.1). Type A findings require the facility to submit a corrective action plan within 48 hours and trigger the highest civil penalty tier.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "What is a Type B deficiency in a California RCFE?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "A Type B deficiency covers all other violations that do not rise to the level of immediate jeopardy. They represent real regulatory failures — inadequate records, missing staff training documentation, improperly stored medications — but inspectors determined that residents were not in immediate danger at the time of the visit.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "Which is worse, Type A or Type B?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Type A is more severe. It signals that inspectors found conditions posing an immediate risk to residents. That said, repeated Type B citations in the same regulatory domain (such as medication management or dementia care training) can be equally revealing about systemic quality problems at a facility.",
-        },
-      },
-    ],
-  },
+  }),
+  buildBreadcrumbList([
+    { name: "Home", url: canonicalFor("/") },
+    { name: "Library", url: canonicalFor("/library") },
+    { name: "Type A vs. Type B deficiencies", url: canonicalUrl },
+  ]),
+  buildFaqSchemaFromPairs(FAQ_PAIRS, canonicalUrl),
 ];
 
 function Prose({ children }: { children: React.ReactNode }) {
@@ -151,9 +128,9 @@ export default function TypeATypeBPage() {
               Every California RCFE inspection report classifies violations as Type A or Type B.
               Here is what that difference means for a family evaluating a memory care facility.
             </p>
-            <p className="mt-4 font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.06em]">
-              By {STARLYNN_EDITORIAL_REVIEWER} · Published {DATE_PUBLISHED}
-            </p>
+            <div className="mt-8 max-w-[72ch]">
+              <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
+            </div>
           </div>
         </div>
 
@@ -318,7 +295,7 @@ export default function TypeATypeBPage() {
               </Link>
             </p>
             <p>
-              <Link href="/library/memory-care-cost-california" className="text-teal underline underline-offset-4 hover:text-teal/80">
+              <Link href="/california/cost-guide" className="text-teal underline underline-offset-4 hover:text-teal/80">
                 What memory care costs in California →
               </Link>
             </p>

@@ -193,15 +193,13 @@ export async function generateMetadata({
       description: desc,
       url: canonical,
       type: "website",
-      ...(facility.photo_url
-        ? { images: [{ url: facility.photo_url, alt: facility.name }] }
-        : {}),
+      images: [{ url: facility.photo_url ?? "/og-default.png", alt: facility.name }],
     },
     twitter: {
-      card: facility.photo_url ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: `${facility.name} | StarlynnCare`,
       description: desc,
-      ...(facility.photo_url ? { images: [facility.photo_url] } : {}),
+      images: [facility.photo_url ?? "/og-default.png"],
     },
   };
 }
@@ -968,7 +966,7 @@ export default async function FacilityPage({ params }: PageProps) {
               Understanding citations: Type A vs. Type B deficiencies →
             </Link>
             <Link
-              href="/library/memory-care-cost-california"
+              href="/california/cost-guide"
               className="text-teal hover:underline underline-offset-4"
             >
               What memory care costs in California →
