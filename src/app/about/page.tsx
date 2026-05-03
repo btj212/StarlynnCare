@@ -113,26 +113,10 @@ export default function AboutPage() {
                   <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-teal">
                     Co-founder · Clinical voice
                   </p>
-                  <p className="mt-2 text-sm text-slate">
-                    California Registered Nurse License <strong>95100373</strong> — verify anytime via the{" "}
-                    <a
-                      href="https://search.dca.ca.gov/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-teal underline-offset-4 hover:underline"
-                    >
-                      California Department of Consumer Affairs license lookup
-                    </a>{" "}
-                    (search by name or license number).
-                  </p>
                 </div>
                 <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
                   <p>
-                    Friends call her Star — but clinical bylines use her legal name so families can validate
-                    credentials the same way they would check a discharge planner or hospice liaison.
-                  </p>
-                  <p>
-                    Rebecca&apos;s practice history spans bedside nursing, public-health case management, and a
+                    Friends call her Star. Her practice history spans bedside nursing, public-health case management, and a
                     chapter inside regulatory survey work — walking into facilities after complaints landed,
                     reading medication administration records under fluorescent lights, and watching how quickly
                     operators corrected versus spun.
@@ -140,7 +124,7 @@ export default function AboutPage() {
                   <p>
                     That grounding informs every pillar article on StarlynnCare: when we translate Type A and Type B
                     deficiencies, walk through Medi-Cal versus Medicare limits, or draft tour questions, a practicing
-                    RN license sits behind the words — not an anonymous content farm.
+                    RN license sits behind the words.
                   </p>
                 </div>
               </div>
@@ -172,14 +156,8 @@ export default function AboutPage() {
                     planners to reuse with attribution.
                   </p>
                   <p>
-                    His background is brand journalism and operations — currently an MBA candidate at UC Berkeley
-                    Haas — which shows up less on page copy and more in how quickly facility records refresh, how
-                    canonical URLs stay stable, and how governance language stays brutally short (see the rust banner
-                    above).
-                  </p>
-                  <p>
-                    Together we split responsibilities: Rebecca sets clinical guardrails; Blake enforces data
-                    integrity and refuses paid placement dollars that would contaminate rankings.
+                    His background is brand storytelling and operations — currently an MBA candidate at UC Berkeley
+                    Haas, where he is exploring entrepreneurship through the lens of social impact.
                   </p>
                 </div>
               </div>
