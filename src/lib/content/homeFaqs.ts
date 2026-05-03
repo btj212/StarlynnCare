@@ -9,12 +9,8 @@ export interface FaqItem {
  */
 export const HOME_FAQS: FaqItem[] = [
   {
-    q: "How is each facility's grade calculated?",
-    a: "We weight five inputs: severity of state inspection findings, repeat-citation frequency, complaint outcomes, staffing-related deficiencies, and verified family-experience reviews. Every grade links to the underlying CDSS records and the date each input was last refreshed. Read the full methodology for the formula and weights.",
-  },
-  {
     q: "Where does the data come from?",
-    a: "Primary sources only: California Department of Social Services Community Care Licensing (CDSS), CMS Care Compare, county ombudsman complaint outcomes, and verified family reviews submitted through our identity-checked review form. Operator-supplied marketing copy is not factored into the grade.",
+    a: "Primary sources only: California Department of Social Services Community Care Licensing (CDSS), CMS Care Compare, county ombudsman complaint outcomes, and verified family reviews submitted through our identity-checked review form.",
   },
   {
     q: "Do you accept payments from facilities or operators?",
