@@ -23,6 +23,7 @@ import {
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
+import { clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -38,7 +39,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
   if (!region) return { title: "Region not found | StarlynnCare" };
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
-  const desc = `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`;
+  const desc = clipMetaDescription(
+    `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`,
+  );
   return {
     title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
     description: desc,

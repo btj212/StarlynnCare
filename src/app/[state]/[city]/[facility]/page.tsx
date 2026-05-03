@@ -17,6 +17,7 @@ import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { RelatedFacilities } from "@/components/facility/RelatedFacilities";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
+import { clipMetaDescription } from "@/lib/seo/meta";
 import {
   buildBreadcrumbList,
   buildFaqPageSchema,
@@ -182,7 +183,9 @@ export async function generateMetadata({
   const canonical = canonicalFor(
     `/${state.slug}/${facility.city_slug}/${facility.slug}`,
   );
-  const desc = `Inspection records, citation history, and quality context for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""} — verified from primary CDSS licensing data by StarlynnCare.`;
+  const desc = clipMetaDescription(
+    `Inspection records, citation history, and quality context for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""} — verified from primary CDSS licensing data by StarlynnCare.`,
+  );
 
   return {
     title: `${facility.name} | StarlynnCare`,
