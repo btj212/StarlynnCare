@@ -631,7 +631,7 @@ export default async function Home() {
                   <div className={`flex flex-col gap-3.5 border-t pt-6 ${e.live ? "opacity-100" : "opacity-70"}`} style={{ borderColor: "rgba(255,255,255,0.2)" }}>
                     {i === 0 && (
                       <div
-                        className="relative mb-2"
+                        className="relative mb-2 max-h-[320px]"
                         style={{ aspectRatio: "4/3", background: "linear-gradient(135deg, #2a3a30 0%, #1A2620 100%)", overflow: "hidden" }}
                       >
                         <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(45deg, rgba(196,146,59,0.06) 0 14px, transparent 14px 28px)" }} />
@@ -663,7 +663,7 @@ export default async function Home() {
                     </div>
                   </div>
                 );
-                const spanCls = i === 0 ? "md:col-span-2 xl:col-span-1" : "";
+                const spanCls = "";
                 return e.live && e.href ? (
                   <Link
                     key={i}

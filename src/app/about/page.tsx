@@ -16,7 +16,7 @@ import {
 const ABOUT_PATH = "/about";
 const aboutCanonical = canonicalFor(ABOUT_PATH);
 const aboutDesc =
-  "StarlynnCare is built by Rebecca Lynn Starkey, BSN, RN, PHN (California RN license 95100373), and Blake Jones — combining bedside nursing, public-health regulation, and editorial rigor so families can read California memory care inspection data with confidence.";
+  "StarlynnCare is built by Rebecca Lynn Starkey, BSN, RN, PHN, and Blake Jones — combining hands-on regulatory survey experience, older adult primary care, and editorial rigor so families can cut through noise and make confident memory care decisions.";
 
 export const metadata: Metadata = {
   title: "About | StarlynnCare",
@@ -116,15 +116,14 @@ export default function AboutPage() {
                 </div>
                 <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
                   <p>
-                    Friends call her Star. Her practice history spans bedside nursing, public-health case management, and a
-                    chapter inside regulatory survey work — walking into facilities after complaints landed,
-                    reading medication administration records under fluorescent lights, and watching how quickly
-                    operators corrected versus spun.
+                    Friends call her Star. She&rsquo;s a registered nurse whose work spans older adult primary care,
+                    public-health case management, and regulatory survey work — walking into facilities after complaints,
+                    auditing records, interviewing staff, and quickly seeing whether issues were being fixed or reframed.
                   </p>
                   <p>
-                    That grounding informs every pillar article on StarlynnCare: when we translate Type A and Type B
-                    deficiencies, walk through Medi-Cal versus Medicare limits, or draft tour questions, a practicing
-                    RN license sits behind the words.
+                    After seeing ongoing gaps in care, visiting repeat-offender facilities, and what felt like a
+                    near-endless stream of paid facility reviews, she set out to build a clearer, no-nonsense way for
+                    families to cut through noise and make confident decisions for their loved ones.
                   </p>
                 </div>
               </div>
@@ -162,6 +161,10 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
+
+            <p className="mt-10 text-center font-[family-name:var(--font-display)] italic text-[18px] text-slate">
+              And they happened to be married.
+            </p>
           </div>
         </section>
 
