@@ -105,10 +105,14 @@ export default async function RegionPage({ params }: PageProps) {
         const ids = raw.map((f) => f.id);
 
         // 2. Inspections
-        const { data: inspData } = await supabase
+        const { data: inspData, error: inspErr } = await supabase
           .from("inspections")
           .select("id, facility_id")
           .in("facility_id", ids);
+
+        if (inspErr) {
+          console.error("[hub] inspections query failed:", inspErr.message);
+        }
 
         const inspCountByFac = new Map<string, number>();
         const inspFacMap = new Map<string, string>();
@@ -119,18 +123,31 @@ export default async function RegionPage({ params }: PageProps) {
 
         const inspIds = (inspData ?? []).map((i: { id: string }) => i.id);
 
-        // 3. Deficiencies — use severity (replaces broken class field)
-        const { data: defData } = await supabase
-          .from("deficiencies")
-          .select("inspection_id, severity")
-          .in("inspection_id", inspIds.length ? inspIds : ["__none__"]);
+        // 3. Deficiencies — chunked to avoid PostgREST row limits and URL length limits
+        //    when inspIds is large (large counties with hundreds of inspections).
+        //    severity mapping: Type A → 3 or 4, Type B → 2 (see ccld_citations_ingest.py)
+        const DEF_CHUNK = 200;
+        const allDefs: Array<{ inspection_id: string; severity: number | null }> = [];
+        for (let ci = 0; ci < inspIds.length; ci += DEF_CHUNK) {
+          const chunk = inspIds.slice(ci, ci + DEF_CHUNK);
+          const { data: chunkData, error: chunkErr } = await supabase
+            .from("deficiencies")
+            .select("inspection_id, severity")
+            .in("inspection_id", chunk);
+          if (chunkErr) {
+            console.error("[hub] deficiencies chunk query failed:", chunkErr.message, { ci, chunkLen: chunk.length });
+            break;
+          }
+          if (chunkData) allDefs.push(...(chunkData as typeof allDefs));
+        }
 
         const totalCitByFac = new Map<string, number>();
         const seriousCitByFac = new Map<string, number>();
-        for (const d of (defData ?? []) as { inspection_id: string; severity: number | null }[]) {
+        for (const d of allDefs) {
           const fid = inspFacMap.get(d.inspection_id);
           if (!fid) continue;
           totalCitByFac.set(fid, (totalCitByFac.get(fid) ?? 0) + 1);
+          // severity >= 3 = Type A (immediate jeopardy 4, serious 3); severity 2 = Type B
           if ((d.severity ?? 0) >= 3) {
             seriousCitByFac.set(fid, (seriousCitByFac.get(fid) ?? 0) + 1);
           }
@@ -174,7 +191,9 @@ export default async function RegionPage({ params }: PageProps) {
     postalCode: f.zip,
     addressRegion: region.state.name,
   }));
-  const facilitiesWithSeriousDef = facilities.filter((f) => f.serious_citations > 0).length;
+  // Any deficiency (Type A or Type B) — matches the "§ Findings" label.
+  // serious_citations is retained on each facility for card-level red/amber badging.
+  const facilitiesWithSeriousDef = facilities.filter((f) => f.total_citations > 0).length;
   const severePct =
     totalCount > 0 ? Math.round((facilitiesWithSeriousDef / totalCount) * 100) : 0;
   const findingsDate = new Date().toISOString().split("T")[0];
