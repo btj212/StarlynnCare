@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { CareCategory } from "@/lib/types";
+import { peerRankBarFillHex } from "@/lib/peerRankBar";
 
 const CATEGORY_LABEL: Partial<Record<CareCategory, string>> = {
   rcfe_memory_care: "RCFE · Memory care",
@@ -43,13 +44,6 @@ function gradeBg(letter: string | null): string {
   if (letter.startsWith("A")) return "#f0f5f1";
   if (letter.startsWith("B")) return "#fdf8f0";
   return "#fdf3f0";
-}
-
-function barColor(pct: number | null): string {
-  if (pct === null) return "#9a938a";
-  if (pct >= 65) return "#6b8f71";
-  if (pct <= 35) return "#b5532e";
-  return "#c8a26b";
 }
 
 const METRIC_BARS: [string, keyof Pick<CarouselFacility, "sev_pct" | "rep_pct" | "freq_pct">][] = [
@@ -195,7 +189,7 @@ function CardInner({ f }: { f: CarouselFacility }) {
                     {val !== null && (
                       <span
                         className="text-[10px] font-semibold leading-none tabular-nums"
-                        style={{ color: barColor(val) }}
+                        style={{ color: peerRankBarFillHex(val) }}
                       >
                         {val}<span className="font-normal opacity-70">th</span>
                       </span>
@@ -206,7 +200,7 @@ function CardInner({ f }: { f: CarouselFacility }) {
                       className="h-full rounded-full"
                       style={{
                         width: `${val ?? 0}%`,
-                        backgroundColor: barColor(val),
+                        backgroundColor: peerRankBarFillHex(val),
                       }}
                     />
                   </div>

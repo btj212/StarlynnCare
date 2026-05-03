@@ -1,5 +1,6 @@
 import type { CareCategory } from "@/lib/types";
 import { TrackedProfileLink } from "@/components/analytics/TrackedProfileLink";
+import { peerRankBarFillCss } from "@/lib/peerRankBar";
 
 const STATE_SLUG: Record<string, string> = { CA: "california" };
 
@@ -20,21 +21,14 @@ export type MobileGradeFacility = {
   freq_pct: number | null;
 };
 
-function MobileGradeBar({
-  label,
-  pct,
-  warn,
-}: {
-  label: string;
-  pct: number | null;
-  warn?: boolean;
-}) {
+function MobileGradeBar({ label, pct }: { label: string; pct: number | null }) {
   const w = pct != null ? Math.min(100, Math.max(0, pct)) : 0;
+  const fill = peerRankBarFillCss(pct);
   return (
     <div className="m-bar">
       <span className="lbl">{label}</span>
       <span className="track">
-        <span className={warn ? "fill warn" : "fill"} style={{ width: `${w}%` }} />
+        <span className="fill" style={{ width: `${w}%`, background: fill }} />
       </span>
       <span className="pct">{pct != null ? Math.round(pct) : "—"}</span>
     </div>
@@ -60,11 +54,18 @@ export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFac
         </div>
       </div>
       <div className="m-fc-grade">
+        <p className="m-fc-peer-hdr">Peer percentiles · higher is better</p>
+        <p className="m-fc-peer-deck">
+          Versus similar licensed peers; bar length = percentile. Green upper third, gold middle, red lower third.
+        </p>
         <div className="m-bars">
           <MobileGradeBar label="Severity" pct={facility.sev_pct} />
           <MobileGradeBar label="Repeat rate" pct={facility.rep_pct} />
-          <MobileGradeBar label="Frequency" pct={facility.freq_pct} warn />
+          <MobileGradeBar label="Frequency" pct={facility.freq_pct} />
         </div>
+        <p className="m-fc-peer-note">
+          Not medical advice — inspection summaries only, same methodology as full profiles.
+        </p>
       </div>
       <div className="m-fc-foot">
         <span>CA CDSS · Community Care Licensing</span>

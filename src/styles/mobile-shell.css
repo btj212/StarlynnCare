@@ -284,12 +284,31 @@ h3.m-fc-name { margin-top: 0; }
 }
 
 .m-fc-grade {
-  display: grid;
-  grid-template-columns: 90px 1fr;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   padding: 16px;
   background: var(--paper);
-  align-items: center;
+}
+.m-fc-peer-hdr {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--rust);
+  margin: 0;
+}
+.m-fc-peer-deck {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+  margin: 0 0 4px 0;
+}
+.m-fc-peer-note {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--ink-4);
+  margin: 8px 0 0 0;
 }
 .m-grade-letter {
   text-align: center;
@@ -312,7 +331,6 @@ h3.m-fc-name { margin-top: 0; }
 .m-bar .lbl { color: var(--ink-2); }
 .m-bar .track { height: 5px; background: var(--paper-2); position: relative; }
 .m-bar .fill { position: absolute; left:0; top:0; bottom:0; background: var(--grade-a); }
-.m-bar .fill.warn { background: var(--gold); }
 .m-bar .pct { font-family: var(--font-mono), ui-monospace, monospace; font-size: 9.5px; color: var(--ink-3); text-align: right; }
 .m-fc-foot {
   padding: 10px 16px;
