@@ -241,6 +241,7 @@ export default function CaliforniaCostGuidePage() {
           </Prose>
           <div className="mt-6">
             <StatBlock
+              compact
               stats={REGIONAL_STATS}
               footnotes={[
                 "Genworth 2024 Cost of Care Survey, California. Luxury units and specialized behavioral programs can exceed ranges.",

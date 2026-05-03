@@ -14,13 +14,18 @@ export interface StatItem {
 interface StatBlockProps {
   stats: StatItem[];
   footnotes?: string[];
+  /**
+   * Use a smaller, line-wrap-friendly font size for the number.
+   * Good when `n` is a long string like "$8,000–$12,000".
+   */
+  compact?: boolean;
 }
 
 /**
  * Broadsheet 4-up stat grid with thin-rule dividers and footnote citations.
  * Used on homepage, county hub, and city hub pages.
  */
-export function StatBlock({ stats, footnotes }: StatBlockProps) {
+export function StatBlock({ stats, footnotes, compact = false }: StatBlockProps) {
   const wide =
     stats.length <= 1
       ? ""
@@ -46,7 +51,13 @@ export function StatBlock({ stats, footnotes }: StatBlockProps) {
             </span>
 
             {/* Big number */}
-            <div className="font-[family-name:var(--font-display)] text-[clamp(48px,5.5vw,78px)] leading-[0.95] tracking-[-0.02em] text-ink">
+            <div
+              className={`font-[family-name:var(--font-display)] leading-[1.0] tracking-[-0.02em] text-ink${
+                compact
+                  ? " text-[clamp(28px,3.5vw,44px)] break-words"
+                  : " text-[clamp(48px,5.5vw,78px)] leading-[0.95]"
+              }`}
+            >
               {s.n}
               {s.unit && (
                 <span className="text-[0.55em] text-ink-3 ml-1.5">{s.unit}</span>
