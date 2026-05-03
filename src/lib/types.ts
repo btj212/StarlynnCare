@@ -18,6 +18,17 @@ export interface State {
 
 export type OwnershipType = "for-profit" | "non-profit" | "government";
 
+/**
+ * The CA regulatory or signal basis for a memory-care classification.
+ * Mirrors the CHECK constraint on facilities.ca_memory_care_designation_basis.
+ */
+export type CaMemoryCareDesignationBasis =
+  | "self_identified"
+  | "dementia_training_compliance"
+  | "secured_perimeter"
+  | "hospice_waiver"
+  | "multiple";
+
 export type CareCategory =
   | "rcfe_memory_care"
   | "rcfe_general"
@@ -63,6 +74,13 @@ export interface Facility {
   license_status: string | null;
   license_expiration: string | null;
   publishable: boolean;
+
+  /**
+   * CA-specific: the regulatory or signal basis for the memory-care classification.
+   * NULL means the signal exists but the basis is not yet resolved.
+   * Added in migration 0013_mc_designation_basis.sql
+   */
+  ca_memory_care_designation_basis: CaMemoryCareDesignationBasis | null;
 
   // Added in migration 0008_capacity_tier_and_mc_disclosure.sql
   /**

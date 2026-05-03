@@ -1,4 +1,5 @@
 import type { Facility } from "@/lib/types";
+import { MemoryCareDesignationBasis } from "./MemoryCareDesignationBasis";
 
 interface QuickFactsProps {
   facility: Facility;
@@ -116,6 +117,11 @@ export function QuickFacts({ facility, lastInspectionDate, lastCitationDate }: Q
               />
             )}
           </div>
+
+          <MemoryCareDesignationBasis
+            basis={facility.ca_memory_care_designation_basis}
+            stateCode={facility.state_code}
+          />
         </div>
 
         {/* ── Right: map thumbnail ── */}

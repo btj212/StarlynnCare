@@ -272,6 +272,94 @@ def upsert_keyword_signals(
 # DB upsert
 # ---------------------------------------------------------------------------
 
+RECOMPUTE_BASIS_SQL = """
+UPDATE facilities
+SET ca_memory_care_designation_basis = (
+  CASE
+    WHEN (
+      (mc_signal_explicit_name::int)
+      + (memory_care_disclosure_filed::int)
+      + (CASE WHEN mc_signal_deficiency_keyword
+                   AND mc_signal_deficiency_keyword_source ILIKE '%%secured%%'
+              THEN 1 ELSE 0 END)
+    ) >= 2 THEN 'multiple'
+    WHEN memory_care_disclosure_filed THEN 'dementia_training_compliance'
+    WHEN mc_signal_explicit_name THEN 'self_identified'
+    WHEN mc_signal_deficiency_keyword
+         AND mc_signal_deficiency_keyword_source ILIKE '%%secured%%'
+    THEN 'secured_perimeter'
+    ELSE NULL
+  END
+)
+WHERE state_code = 'CA'
+  AND serves_memory_care = true
+  AND ca_memory_care_designation_basis IS DISTINCT FROM (
+    CASE
+      WHEN (
+        (mc_signal_explicit_name::int)
+        + (memory_care_disclosure_filed::int)
+        + (CASE WHEN mc_signal_deficiency_keyword
+                     AND mc_signal_deficiency_keyword_source ILIKE '%%secured%%'
+                THEN 1 ELSE 0 END)
+      ) >= 2 THEN 'multiple'
+      WHEN memory_care_disclosure_filed THEN 'dementia_training_compliance'
+      WHEN mc_signal_explicit_name THEN 'self_identified'
+      WHEN mc_signal_deficiency_keyword
+           AND mc_signal_deficiency_keyword_source ILIKE '%%secured%%'
+      THEN 'secured_perimeter'
+      ELSE NULL
+    END
+  )
+"""
+
+
+def recompute_designation_basis(
+    conn: "psycopg.Connection[Any]",
+    dry_run: bool = False,
+) -> int:
+    """
+    Derive ca_memory_care_designation_basis from existing signal columns for all
+    CA memory-care facilities whose computed value differs from the stored one.
+
+    Returns the count of rows updated (or that would be updated in dry-run mode).
+    """
+    if dry_run:
+        count_sql = """
+            SELECT COUNT(*) FROM facilities
+            WHERE state_code = 'CA'
+              AND serves_memory_care = true
+              AND ca_memory_care_designation_basis IS DISTINCT FROM (
+                CASE
+                  WHEN (
+                    (mc_signal_explicit_name::int)
+                    + (memory_care_disclosure_filed::int)
+                    + (CASE WHEN mc_signal_deficiency_keyword
+                                 AND mc_signal_deficiency_keyword_source ILIKE '%secured%'
+                            THEN 1 ELSE 0 END)
+                  ) >= 2 THEN 'multiple'
+                  WHEN memory_care_disclosure_filed THEN 'dementia_training_compliance'
+                  WHEN mc_signal_explicit_name THEN 'self_identified'
+                  WHEN mc_signal_deficiency_keyword
+                       AND mc_signal_deficiency_keyword_source ILIKE '%secured%'
+                  THEN 'secured_perimeter'
+                  ELSE NULL
+                END
+              )
+        """
+        with conn.cursor() as cur:
+            cur.execute(count_sql)
+            row = cur.fetchone()
+            count = row[0] if row else 0
+        print(f"  [dry-run] would recompute ca_memory_care_designation_basis on {count} facilities")
+        return count
+    else:
+        with conn.cursor() as cur:
+            cur.execute(RECOMPUTE_BASIS_SQL)
+            updated = cur.rowcount
+        conn.commit()
+        return updated
+
+
 UPDATE_SQL = """
 UPDATE facilities
 SET
@@ -371,11 +459,17 @@ def main() -> None:
             conn, keyword_rows, args.dry_run
         )
 
+        # Step D: recompute designation_basis from signals
+        print("Step D — recomputing ca_memory_care_designation_basis …")
+        basis_updated = recompute_designation_basis(conn, args.dry_run)
+        print(f"  {'Would update' if args.dry_run else 'Updated'} {basis_updated} designation_basis rows")
+
         total = citation_updated + disclosure_updated + keyword_updated
         label = "would update" if args.dry_run else "updated"
         print(
             f"\nDone. {label} {total} facilities "
-            f"(citations: {citation_updated}, disclosure list: {disclosure_updated}, keywords: {keyword_updated})."
+            f"(citations: {citation_updated}, disclosure list: {disclosure_updated}, "
+            f"keywords: {keyword_updated}, designation_basis: {basis_updated})."
         )
         if total == 0 and not args.dry_run:
             print(
