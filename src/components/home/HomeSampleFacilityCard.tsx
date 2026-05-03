@@ -66,12 +66,6 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
           <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em] text-rust m-0">
             Peer-relative percentiles · higher is better
           </p>
-          <p className="text-[12px] leading-snug text-ink-3 mt-2 mb-0 max-w-[62ch]">
-            Each bar shows where this home ranks on CDSS inspection metrics versus a{' '}
-            <strong className="font-medium text-ink-2">similar peer group</strong> (state, license category, and
-            size band). Longer fill means stronger standing; bar color marks upper (green), middle (gold), or lower
-            (red) third among peers.
-          </p>
           <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 font-[family-name:var(--font-mono)] text-[10px] text-ink-4 list-none p-0 m-0">
             <li className="flex items-center gap-1.5">
               <span className="inline-block h-2 w-2 shrink-0" style={{ background: "var(--color-grade-a)" }} aria-hidden />

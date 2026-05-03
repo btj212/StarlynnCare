@@ -55,9 +55,6 @@ export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFac
       </div>
       <div className="m-fc-grade">
         <p className="m-fc-peer-hdr">Peer percentiles · higher is better</p>
-        <p className="m-fc-peer-deck">
-          Versus similar licensed peers; bar length = percentile. Green upper third, gold middle, red lower third.
-        </p>
         <div className="m-bars">
           <MobileGradeBar label="Severity" pct={facility.sev_pct} />
           <MobileGradeBar label="Repeat rate" pct={facility.rep_pct} />
