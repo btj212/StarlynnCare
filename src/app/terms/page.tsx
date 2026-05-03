@@ -112,13 +112,14 @@ export default function TermsPage() {
               with respect to matters of public concern. Nothing in these Terms limits any right
               of access to government records or restricts fair reporting on matters of public
               health and safety. California&rsquo;s fair-report privilege (California Civil Code
-              §47(d)) protects accurate reporting on official government proceedings and records.
+              §47(d)) provides protection for accurate reporting on official government proceedings
+              and records; we rely on that privilege where applicable.
             </p>
             <p>
-              StarlynnCare does not fabricate, alter, or editorialize inspection outcomes.
-              Inspection narratives are reproduced from primary CDSS source documents. Analytic
-              metrics (peer percentiles, composite scores) are computed from those records and
-              are clearly labeled as such. Disputes regarding the underlying CDSS data should
+              StarlynnCare endeavors to reproduce public records as published by CDSS. We make
+              no warranty that any reproduction is error-free, complete, or current. Analytic
+              metrics (peer percentiles, composite scores) are derived computations and may
+              contain errors. Disputes regarding the underlying CDSS source data should
               be directed to CDSS at{" "}
               <a href="https://www.cdss.ca.gov" target="_blank" rel="noopener noreferrer" className="text-teal underline underline-offset-4">
                 www.cdss.ca.gov
@@ -214,25 +215,25 @@ export default function TermsPage() {
               arising from protected speech on matters of public concern.
             </p>
             <p>
-              If you believe a specific data point in your facility&rsquo;s profile is factually
-              inaccurate as published (e.g., wrong inspection date, wrong deficiency count
-              attributable to our processing), contact us at{" "}
+              If you believe a specific data point in your facility&rsquo;s profile reflects a
+              processing error on our part (e.g., wrong inspection date or deficiency count
+              attributable solely to our computation), you may submit a correction request to{" "}
               <a href="mailto:hello@starlynncare.com" className="text-teal underline underline-offset-4">
                 hello@starlynncare.com
               </a>{" "}
-              with primary-source CDSS documentation. We will acknowledge verifiable corrections
-              within five business days per our{" "}
+              with primary-source CDSS documentation. We review such requests in our ordinary
+              course; we make no representation regarding response timelines or outcomes. See our{" "}
               <Link href="/editorial-policy" className="text-teal underline underline-offset-4">
                 editorial policy
-              </Link>
-              .
+              </Link>{" "}
+              for general correction practices.
             </p>
             <p>
               Disputes regarding the <em>underlying CDSS record itself</em> — the inspection
               finding, deficiency classification, or enforcement action — must be addressed
-              directly with CDSS. StarlynnCare cannot modify primary government records and will
-              not remove factually accurate reproductions of public records in response to
-              operator requests.
+              directly with CDSS. StarlynnCare cannot modify primary government records.
+              StarlynnCare has no obligation to remove or modify reproductions of public records
+              in response to operator requests, except as required by applicable law.
             </p>
           </Section>
 

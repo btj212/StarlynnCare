@@ -247,7 +247,7 @@ export default function PrivacyPage() {
 
           <Section id="security" title="7. Security">
             <p>
-              We implement industry-standard technical safeguards including HTTPS, encrypted
+              We take commercially reasonable steps to protect data, including HTTPS, encrypted
               database connections, and access controls. No method of internet transmission is
               100% secure. We do not store payment information, Social Security numbers, or
               health records, so the blast radius of any breach is limited to contact submissions
@@ -305,7 +305,7 @@ export default function PrivacyPage() {
             <p>
               This site is not directed at children under the age of 13 and we do not knowingly
               collect personal information from children under 13. If we learn we have inadvertently
-              collected such information, we will delete it promptly. Parents or guardians may
+              collected such information, we will endeavor to delete it in a reasonable time. Parents or guardians may
               contact us at{" "}
               <a href="mailto:hello@starlynncare.com" className="text-teal underline underline-offset-4">
                 hello@starlynncare.com
