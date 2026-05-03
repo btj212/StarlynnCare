@@ -65,7 +65,7 @@ export async function SiteFooter() {
             </h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Data links">
               <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">All California facilities</Link>
-              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">By county (8 live)</Link>
+              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">By county (18 live)</Link>
               <Link href="/data" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Dataset overview</Link>
               <Link href="/llms.txt" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors flex items-center gap-1">
                 llms.txt <span className="text-rust text-[10px]">↗</span>

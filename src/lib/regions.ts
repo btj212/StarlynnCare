@@ -292,6 +292,78 @@ const SACRAMENTO_COUNTY_CITIES = [
   "sacramento",
 ] as const;
 
+/** Fresno County — seed list; expand as Supabase reveals more publishable cities */
+const FRESNO_COUNTY_CITIES = ["fresno", "clovis"] as const;
+
+/** Monterey County — seed list */
+const MONTEREY_COUNTY_CITIES = [
+  "salinas",
+  "monterey",
+  "marina",
+  "pacific-grove",
+  "seaside",
+] as const;
+
+/** Ventura County — seed list */
+const VENTURA_COUNTY_CITIES = [
+  "thousand-oaks",
+  "simi-valley",
+  "oxnard",
+  "camarillo",
+  "ventura",
+] as const;
+
+/** Kern County — seed list */
+const KERN_COUNTY_CITIES = ["bakersfield", "tehachapi", "delano"] as const;
+
+/** Stanislaus County — seed list */
+const STANISLAUS_COUNTY_CITIES = [
+  "modesto",
+  "turlock",
+  "ceres",
+  "oakdale",
+] as const;
+
+/** Tulare County — seed list */
+const TULARE_COUNTY_CITIES = ["visalia", "tulare", "porterville"] as const;
+
+/** Solano County — seed list */
+const SOLANO_COUNTY_CITIES = [
+  "vallejo",
+  "fairfield",
+  "vacaville",
+  "benicia",
+] as const;
+
+/** Sonoma County — seed list */
+const SONOMA_COUNTY_CITIES = [
+  "santa-rosa",
+  "petaluma",
+  "sebastopol",
+  "windsor",
+  "healdsburg",
+] as const;
+
+/** San Bernardino County — seed list */
+const SAN_BERNARDINO_COUNTY_CITIES = [
+  "rancho-cucamonga",
+  "san-bernardino",
+  "redlands",
+  "upland",
+  "ontario",
+  "chino",
+  "chino-hills",
+  "fontana",
+] as const;
+
+/** San Joaquin County — seed list */
+const SAN_JOAQUIN_COUNTY_CITIES = [
+  "stockton",
+  "lodi",
+  "tracy",
+  "manteca",
+] as const;
+
 export const REGIONS: ReadonlyArray<Region> = [
   {
     slug: "alameda-county",
@@ -427,6 +499,186 @@ export const REGIONS: ReadonlyArray<Region> = [
     citySlugs: SACRAMENTO_COUNTY_CITIES,
   },
   ...SACRAMENTO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "fresno-county",
+    name: "Fresno County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: FRESNO_COUNTY_CITIES,
+  },
+  ...FRESNO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "monterey-county",
+    name: "Monterey County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: MONTEREY_COUNTY_CITIES,
+  },
+  ...MONTEREY_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "ventura-county",
+    name: "Ventura County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: VENTURA_COUNTY_CITIES,
+  },
+  ...VENTURA_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "kern-county",
+    name: "Kern County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: KERN_COUNTY_CITIES,
+  },
+  ...KERN_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "stanislaus-county",
+    name: "Stanislaus County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: STANISLAUS_COUNTY_CITIES,
+  },
+  ...STANISLAUS_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "tulare-county",
+    name: "Tulare County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: TULARE_COUNTY_CITIES,
+  },
+  ...TULARE_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "solano-county",
+    name: "Solano County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SOLANO_COUNTY_CITIES,
+  },
+  ...SOLANO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "sonoma-county",
+    name: "Sonoma County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SONOMA_COUNTY_CITIES,
+  },
+  ...SONOMA_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "san-bernardino-county",
+    name: "San Bernardino County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SAN_BERNARDINO_COUNTY_CITIES,
+  },
+  ...SAN_BERNARDINO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "san-joaquin-county",
+    name: "San Joaquin County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SAN_JOAQUIN_COUNTY_CITIES,
+  },
+  ...SAN_JOAQUIN_COUNTY_CITIES.map<Region>((slug) => ({
     slug,
     name: slug
       .split("-")
