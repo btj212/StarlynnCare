@@ -10,8 +10,8 @@ Phase 5: replace DISCOVERY_URLS with verified LTCR endpoints and implement:
 Environment:
   DATABASE_URL — optional; connect only after schema parity with CA ingest is validated.
 
-This file intentionally performs **no production writes**. Use it as the anchor for the
-future `tx_citations_ingest.py` modeled on `ccld_citations_ingest.py`.
+Roster / directory Phase 1 is implemented in `tx_alf_ingest.py` (HHSC ALF Excel). This
+file remains a no-op placeholder; use it only as a historical note.
 """
 from __future__ import annotations
 
