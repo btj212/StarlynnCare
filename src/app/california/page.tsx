@@ -4,44 +4,76 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { buildOrganizationSchema, buildWebSiteSchema } from "@/lib/seo/schema";
+import {
+  buildBreadcrumbList,
+  buildFaqSchemaFromPairs,
+  buildStateHubCollectionPage,
+  buildWebPageWithReviewer,
+} from "@/lib/seo/schema";
 import { CA_FAQS } from "@/lib/content/stateFaqs";
-import { MobileHomeView } from "@/components/mobile/MobileHomeView";
+import { stateFromSlug } from "@/lib/states";
 import {
   SampleFacilityRotationProvider,
 } from "@/components/home/SampleFacilityRotation";
-import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 import { loadCaliforniaStateHubData, getSeasonAndYear } from "@/lib/data/stateHub";
 import { californiaStatItems, CALIFORNIA_EDITORIAL_CARDS } from "@/lib/stateHubConfig";
 import { CaliforniaStateHubSections } from "@/components/state-hub/CaliforniaStateHubSections";
+import { MobileHomeView } from "@/components/mobile/MobileHomeView";
+import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 
 export const revalidate = 3600;
 
-const canonicalTarget = canonicalFor("/california");
+const pageCanonical = canonicalFor("/california");
+const PAGE_TITLE = "California memory care directory | StarlynnCare";
+const PAGE_DESC =
+  "Inspection-backed memory care facility profiles across California — CDSS citations, peer benchmarks, and county-by-county browse.";
 
 export const metadata: Metadata = {
-  alternates: { canonical: canonicalTarget },
+  title: PAGE_TITLE,
+  description: PAGE_DESC,
+  alternates: { canonical: pageCanonical },
   openGraph: {
-    url: canonicalTarget,
+    title: PAGE_TITLE,
+    description: PAGE_DESC,
+    url: pageCanonical,
     type: "website",
     images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
   },
   twitter: {
     card: "summary_large_image",
+    title: PAGE_TITLE,
+    description: PAGE_DESC,
     images: ["/og-default.png"],
   },
 };
 
-export default async function Home() {
+export default async function CaliforniaHubPage() {
   const data = await loadCaliforniaStateHubData();
+  const state = stateFromSlug("california")!;
   const { season, year } = getSeasonAndYear();
   const statItems = californiaStatItems(data.stats);
 
-  const homeJsonLd = [buildOrganizationSchema(), buildWebSiteSchema()];
+  const stateJsonLd = [
+    buildBreadcrumbList([
+      { name: "Home", url: canonicalFor("/") },
+      { name: `${state.name} memory care`, url: pageCanonical },
+    ]),
+    buildWebPageWithReviewer({
+      name: PAGE_TITLE,
+      url: pageCanonical,
+      description: PAGE_DESC,
+    }),
+    buildStateHubCollectionPage({
+      name: `Memory care in ${state.name}`,
+      url: pageCanonical,
+      state,
+    }),
+    buildFaqSchemaFromPairs(CA_FAQS, pageCanonical),
+  ];
 
   return (
     <>
-      <JsonLd objects={homeJsonLd} />
+      <JsonLd objects={stateJsonLd} />
 
       <SampleFacilityRotationProvider facilities={data.gradeCardFacilities}>
         <div className="m-app md:hidden">

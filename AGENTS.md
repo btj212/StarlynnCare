@@ -24,5 +24,7 @@ When adding or editing a **state, county, or city hub page** (any route under `/
 5. **No placeholder numbers**: all stats must come from Supabase or a confirmed constant. Never ship prototype mock data.
 6. **Fonts**: use `font-[family-name:var(--font-display)]` for headlines, `font-[family-name:var(--font-mono)]` for data/citations.
 
+**State hub layout:** rich homepage-like hubs (`/california`, future `/texas` rich) must compose shared pieces from `src/components/state-hub/` per [`docs/STATE_HUB_ARCHITECTURE.md`](docs/STATE_HUB_ARCHITECTURE.md) — do not fork one-off section markup.
+
 Full details: [`docs/SEO_GEO_CONVENTIONS.md#8-editorial-design-system-v1`](docs/SEO_GEO_CONVENTIONS.md).
 

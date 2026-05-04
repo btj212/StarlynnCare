@@ -47,6 +47,9 @@ export async function SiteNav() {
 
         {/* Nav */}
         <nav className="flex items-center gap-2 sm:gap-5 md:gap-7 text-[14px] md:text-[14.5px] shrink-0" aria-label="Site navigation">
+          <Link href="/california" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+            California
+          </Link>
           <Link href="/data" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
             The Data
           </Link>

@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import {
   buildArticleSchema,
@@ -104,6 +105,11 @@ export default function WhenMemoryCarePage() {
             <div className="mt-8">
               <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
             </div>
+            <EditorialHero
+              src="/illustrations/kitchen-conversation-two-women.png"
+              alt="Illustrated mother and adult daughter in conversation across a kitchen table — representing the family conversations that precede a memory-care decision"
+              priority
+            />
           </div>
         </div>
 

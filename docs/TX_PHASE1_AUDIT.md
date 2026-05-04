@@ -112,3 +112,23 @@ Expect **200** when each region has ≥1 publishable facility; **404** if empty/
 - [x] TX publish gate via `recompute_publishable.py --state TX`.
 - [x] Texas in `COVERED_STATES` for hub/sitemap parity.
 - [ ] Optional: PIA bulk pull — [`docs/TX_PIA_REQUEST_DRAFT.md`](./TX_PIA_REQUEST_DRAFT.md) (fallback if Aura capture stalls).
+
+---
+
+## Phase 2 — engineering closeout & operational wait (2026-05-04)
+
+**Engineering status:** Complete for code paths defined in [`docs/TX_DATA_SOURCES.md`](./TX_DATA_SOURCES.md). Scrape-feasibility verdict is recorded (**GREEN** interactive browser path / **YELLOW** unattended server-only). Ingest supports **import-json** bundles from either TULIP capture ([`scrapers/tx_tulip_to_bundle.py`](../scrapers/tx_tulip_to_bundle.py)) or PIA fulfillment ([`scrapers/tx_pia_to_bundle.py`](../scrapers/tx_pia_to_bundle.py)).
+
+**Operational blocker:** Bulk coverage of all ~515 Alzheimer-certified metro ALFs requires **HHSC Public Information Act** fulfillment — send [`docs/TX_PIA_REQUEST_DRAFT.md`](./TX_PIA_REQUEST_DRAFT.md). Until CSV/XLSX arrives, `publishable` may remain `0` for TX despite ingest plumbing being ready.
+
+### Post-PIA runbook (repeatable)
+
+1. Save HHSC fulfillment under `.firecrawl/tx-pia/` (gitignored at scale).
+2. `python3 scrapers/tx_pia_to_bundle.py …` → `format_version: 1` bundle JSON.
+3. `python3 scrapers/tx_inspections_ingest.py --import-json <bundle>` (idempotent).
+4. `python3 scrapers/recompute_publishable.py --state TX` — gate uses **fresh inspection window** per [`scrapers/recompute_publishable.py`](../scrapers/recompute_publishable.py) / [`docs/TX_DATA_SOURCES.md`](./TX_DATA_SOURCES.md) (`TX_PUBLISH_GATE_MONTHS`).
+5. `python3 scrapers/summarize_inspections.py --state TX` → `fetch_photos.py --state TX` → `generate_content.py --state TX`.
+6. Backfill **Metrics to backfill after production ingest** (section above) into this doc.
+7. Run **Production hub HTTP sweep** `curl` loop; expect **200** per metro hub when publishable facilities exist.
+
+**Note:** Earlier snapshots in this doc that say Texas is **not** in `COVERED_STATES` are superseded — see [`src/lib/states.ts`](../src/lib/states.ts).
