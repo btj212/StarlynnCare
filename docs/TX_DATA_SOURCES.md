@@ -50,7 +50,16 @@ Private research doc for Phase 5 ingest. **Do not treat URLs below as API contra
 3. **Parse:** deficiency rows → `deficiencies` with `state_severity_raw` verbatim + mapped `severity` / flags.
 4. **Publish gate:** separate TX rule module; flip `publishable` only after editorial agrees inspection coverage is sufficient.
 
-**Ingest (Phase 2 — implemented):** [`scrapers/tx_inspections_ingest.py`](../scrapers/tx_inspections_ingest.py) loads **`format_version: 1` JSON bundles** (import-json / `--smoke` fixture) into `inspections` + `deficiencies` with `source_agency = 'TX HHSC LTCR'`, `raw_data` jsonb, and verbatim `state_severity_raw`. Run `recompute_publishable.py --state TX` after ingest for the 36-month publish gate.
+**Ingest (Phase 2 — implemented):** [`scrapers/tx_inspections_ingest.py`](../scrapers/tx_inspections_ingest.py) loads **`format_version: 1` JSON bundles** (import-json / `--smoke` fixture) into `inspections` + `deficiencies` with `source_agency = 'TX HHSC LTCR'`, `raw_data` jsonb, verbatim `state_severity_raw`, and (for complaint events) `inspections.incident_date` distinct from `inspection_date`. Run `recompute_publishable.py --state TX` after ingest. **Publish gate:** 48 months of inspection freshness (see `TX_PUBLISH_GATE_MONTHS` in [`scrapers/recompute_publishable.py`](../scrapers/recompute_publishable.py)) — bumped from 36 after first TULIP smoke captures showed shallow history.
+
+### Two parallel ingest paths
+
+| Source | Parser | Throughput | When to use |
+|---|---|---|---|
+| **TULIP** (manual DevTools capture) | [`scrapers/tx_tulip_to_bundle.py`](../scrapers/tx_tulip_to_bundle.py) | ~10–50 facilities / session | Spot-checks, urgent additions, validating a single license. |
+| **HHSC PIA** (CSV / XLSX) | [`scrapers/tx_pia_to_bundle.py`](../scrapers/tx_pia_to_bundle.py) | All 515 Alzheimer-certified ALFs in one fulfilment | Bulk coverage; this is the primary scaling path. See [`docs/TX_PIA_REQUEST_DRAFT.md`](./TX_PIA_REQUEST_DRAFT.md). |
+
+Both parsers emit the same `format_version: 1` bundle, so the ingest, publish gate, and editorial enrichment chain are unchanged regardless of source.
 
 ## Phase 2 — TULIP smoke & scrape feasibility (2026)
 

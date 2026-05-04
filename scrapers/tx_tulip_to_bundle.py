@@ -115,6 +115,26 @@ def envelope_to_facility_block(env: dict[str, Any]) -> dict[str, Any] | None:
     for inspection_date in sorted(by_date.keys(), reverse=True):
         items = by_date[inspection_date]
         deficiencies = []
+        # Detect complaint-investigation rows: TULIP's "Complaints" tab returns
+        # the same Aura shape but typically labels visitType "Complaint" and may
+        # include incidentDate. Mark the wrapping inspection accordingly.
+        is_complaint = any(
+            "complaint" in (r.get("visitType") or "").lower() for r in items
+        )
+        # First non-empty incidentDate / complaintReceivedDate across items.
+        incident_date = next(
+            (
+                parse_us_date(r.get("incidentDate") or r.get("complaintReceivedDate"))
+                for r in items
+                if r.get("incidentDate") or r.get("complaintReceivedDate")
+            ),
+            None,
+        )
+        complaint_id = next(
+            (r.get("complaintNumber") or r.get("complaintId") for r in items
+             if r.get("complaintNumber") or r.get("complaintId")),
+            None,
+        )
         for r in items:
             deficiencies.append({
                 "code": None,
@@ -127,8 +147,10 @@ def envelope_to_facility_block(env: dict[str, Any]) -> dict[str, Any] | None:
             })
         inspections.append({
             "inspection_date": inspection_date,
-            "inspection_type": "comprehensive",
-            "is_complaint": False,
+            "incident_date": incident_date,
+            "inspection_type": "complaint" if is_complaint else "comprehensive",
+            "is_complaint": is_complaint,
+            "complaint_id": complaint_id,
             "source_url": source_url,
             "raw_data": {
                 "tulip_account_id": account_id,

@@ -229,16 +229,33 @@ def mark_single_directory_for_review(
         return cur.rowcount
 
 
+TX_PUBLISH_GATE_MONTHS = 48
+"""
+Months of inspection freshness required for a TX facility to be publishable.
+
+Bumped from 36 → 48 (2026-05) after first TULIP smoke captures showed:
+  - HHSC ALFs are surveyed annually-ish but TULIP's history surface is shallow,
+  - Many facilities' "most recent comprehensive" date is 2-4 years old,
+  - 36 months left otherwise-active facilities unpublishable, with no signal
+    distinguishing "stale data" from "abandoned site".
+
+Capture-everything-now policy: inspections + deficiencies are still ingested
+regardless of freshness; this gate only controls hub visibility. Tighten back
+toward 36 once we have confident bulk PIA history.
+"""
+
+
 def recompute_texas_publishable(
     conn: psycopg.Connection,
     dry_run: bool = False,
 ) -> int:
     """
     Texas: publishable = LICENSED + Alzheimer certification + at least one inspection
-    in the last 36 months (and not manually rejected). Non–Alzheimer-certified rows
-    stay unpublishable. Does not touch `serves_memory_care` (set by tx_alf_ingest).
+    in the last TX_PUBLISH_GATE_MONTHS months (and not manually rejected).
+    Non–Alzheimer-certified rows stay unpublishable. Does not touch
+    `serves_memory_care` (set by tx_alf_ingest).
     """
-    sql = """
+    sql = f"""
         UPDATE facilities
         SET publishable = (
           license_status = 'LICENSED'
@@ -247,14 +264,17 @@ def recompute_texas_publishable(
           AND EXISTS (
             SELECT 1 FROM inspections i
             WHERE i.facility_id = facilities.id
-              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '36 months')
+              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{TX_PUBLISH_GATE_MONTHS} months')
           )
         )
         WHERE state_code = 'TX'
           AND license_status = 'LICENSED'
     """
     if dry_run:
-        print("  TX: Would set publishable for Alzheimer-certified facilities with ≥1 inspection in 36 months")
+        print(
+            f"  TX: Would set publishable for Alzheimer-certified facilities with "
+            f"≥1 inspection in {TX_PUBLISH_GATE_MONTHS} months"
+        )
         return 0
     with conn.cursor() as cur:
         cur.execute(sql)

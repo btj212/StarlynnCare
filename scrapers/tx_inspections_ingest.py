@@ -196,17 +196,18 @@ def insert_inspection(
     raw = dict(payload.get("raw_data") or {})
     raw["narrative"] = payload.get("narrative") or raw.get("narrative")
     raw["outcome"] = payload.get("outcome") or raw.get("outcome")
+    incident_date = _parse_date_loose(payload.get("incident_date"))
     with conn.cursor() as cur:
         cur.execute(
             """
             INSERT INTO inspections (
-                facility_id, inspection_date, inspection_type,
+                facility_id, inspection_date, incident_date, inspection_type,
                 is_complaint, complaint_id,
                 total_deficiency_count,
                 source_url, source_agency, scrape_run_id,
                 raw_data
             ) VALUES (
-                %s::uuid, %s, %s,
+                %s::uuid, %s, %s, %s,
                 %s, %s,
                 %s,
                 %s, %s, %s::uuid,
@@ -217,6 +218,7 @@ def insert_inspection(
             (
                 facility_id,
                 payload["inspection_date"],
+                incident_date,
                 payload.get("inspection_type") or "standard",
                 bool(payload.get("is_complaint")),
                 payload.get("complaint_id"),
