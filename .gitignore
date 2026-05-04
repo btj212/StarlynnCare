@@ -48,3 +48,6 @@ next-env.d.ts
 .xhawk/
 .claude/settings.local.json
 .firecrawl/
+
+# scraper run logs
+/logs/

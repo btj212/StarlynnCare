@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SITE_ORIGIN } from "@/lib/seo/canonical";
 import { regionsForState } from "@/lib/regions";
+import { COVERED_STATES } from "@/lib/states";
 
 export type SitemapUrlRow = {
   loc: string;
@@ -54,6 +55,7 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
   const paths: Array<{ path: string; priority: string; changefreq: SitemapUrlRow["changefreq"] }> = [
     { path: "/", priority: "1.0", changefreq: "weekly" },
     { path: "/california", priority: "0.9", changefreq: "weekly" },
+    { path: "/texas", priority: "0.88", changefreq: "weekly" },
     { path: "/methodology", priority: "0.75", changefreq: "monthly" },
     { path: "/about", priority: "0.75", changefreq: "monthly" },
     { path: "/data", priority: "0.8", changefreq: "monthly" },
@@ -81,18 +83,17 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
   }));
 }
 
-/**
- * California listing hubs: counties with ≥1 publishable facility across seed cities,
- * plus every city_slug that has ≥1 publishable facility (matches hub routing).
- */
-export async function collectCaliforniaHubEntries(
+/** Listing hubs for one state: counties + city_slug hubs that match `regionsForState`. */
+export async function collectHubEntriesForState(
   supabase: SupabaseClient,
+  stateCode: string,
+  stateSlug: string,
   today: string,
 ): Promise<SitemapUrlRow[]> {
   const { data: rows } = await supabase
     .from("facilities")
     .select("city_slug")
-    .eq("state_code", "CA")
+    .eq("state_code", stateCode)
     .eq("publishable", true);
 
   const countBySlug = new Map<string, number>();
@@ -104,7 +105,7 @@ export async function collectCaliforniaHubEntries(
 
   const hubSlugs = new Set<string>();
 
-  for (const region of regionsForState("CA")) {
+  for (const region of regionsForState(stateCode)) {
     if (region.kind !== "county") continue;
     const n = region.citySlugs.reduce((acc, s) => acc + (countBySlug.get(s) ?? 0), 0);
     if (n > 0) hubSlugs.add(region.slug);
@@ -117,21 +118,45 @@ export async function collectCaliforniaHubEntries(
   return [...hubSlugs]
     .sort()
     .map((slug) => ({
-      loc: `${SITE_ORIGIN}/california/${slug}`,
+      loc: `${SITE_ORIGIN}/${stateSlug}/${slug}`,
       priority: "0.85",
       changefreq: "weekly" as const,
       lastmod: today,
     }));
 }
 
-export async function collectFacilityEntries(
+/**
+ * California listing hubs — wrapper for backwards compatibility.
+ */
+export async function collectCaliforniaHubEntries(
   supabase: SupabaseClient,
+  today: string,
+): Promise<SitemapUrlRow[]> {
+  return collectHubEntriesForState(supabase, "CA", "california", today);
+}
+
+/** County + city hubs for every covered state (publishable rows drive inclusion). */
+export async function collectCoveredStateHubEntries(
+  supabase: SupabaseClient,
+  today: string,
+): Promise<SitemapUrlRow[]> {
+  const out: SitemapUrlRow[] = [];
+  for (const s of COVERED_STATES) {
+    out.push(...(await collectHubEntriesForState(supabase, s.code, s.slug, today)));
+  }
+  return out;
+}
+
+export async function collectFacilityEntriesForState(
+  supabase: SupabaseClient,
+  stateCode: string,
+  stateSlug: string,
   today: string,
 ): Promise<SitemapUrlRow[]> {
   const { data } = await supabase
     .from("facilities")
     .select("city_slug, slug, updated_at")
-    .eq("state_code", "CA")
+    .eq("state_code", stateCode)
     .eq("publishable", true)
     .order("city_slug")
     .order("slug");
@@ -143,9 +168,20 @@ export async function collectFacilityEntries(
   }>;
 
   return facilities.map((f) => ({
-    loc: `${SITE_ORIGIN}/california/${f.city_slug}/${f.slug}`,
+    loc: `${SITE_ORIGIN}/${stateSlug}/${f.city_slug}/${f.slug}`,
     priority: "0.8",
     changefreq: "monthly" as const,
     lastmod: f.updated_at ? f.updated_at.split("T")[0] : today,
   }));
+}
+
+export async function collectFacilityEntries(
+  supabase: SupabaseClient,
+  today: string,
+): Promise<SitemapUrlRow[]> {
+  const out: SitemapUrlRow[] = [];
+  for (const s of COVERED_STATES) {
+    out.push(...(await collectFacilityEntriesForState(supabase, s.code, s.slug, today)));
+  }
+  return out;
 }

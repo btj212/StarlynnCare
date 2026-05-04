@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
 import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
 import { regionsForState } from "@/lib/regions";
+import { COVERED_STATES } from "@/lib/states";
 
 /**
  * Plain-text guidance for LLM crawlers (llms.txt). Lists canonical URLs and
@@ -31,39 +32,45 @@ export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise
 
   let hubLines = "";
   if (supabase) {
-    const { data: rows } = await supabase
-      .from("facilities")
-      .select("city_slug")
-      .eq("state_code", "CA")
-      .eq("publishable", true);
+    const sections: string[] = [];
+    for (const st of COVERED_STATES) {
+      const { data: rows } = await supabase
+        .from("facilities")
+        .select("city_slug")
+        .eq("state_code", st.code)
+        .eq("publishable", true);
 
-    const countBySlug = new Map<string, number>();
-    for (const r of rows ?? []) {
-      const slug = (r as { city_slug: string }).city_slug;
-      if (!slug) continue;
-      countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
+      const countBySlug = new Map<string, number>();
+      for (const r of rows ?? []) {
+        const slug = (r as { city_slug: string }).city_slug;
+        if (!slug) continue;
+        countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
+      }
+
+      const hubSlugs = new Set<string>();
+      for (const region of regionsForState(st.code)) {
+        if (region.kind !== "county") continue;
+        const n = region.citySlugs.reduce((acc, s) => acc + (countBySlug.get(s) ?? 0), 0);
+        if (n > 0) hubSlugs.add(region.slug);
+      }
+      for (const slug of countBySlug.keys()) hubSlugs.add(slug);
+
+      const lines = [...hubSlugs]
+        .sort()
+        .map((slug) => `- ${SITE_ORIGIN}/${st.slug}/${slug} — County or city listing hub`);
+      if (lines.length > 0) {
+        sections.push(`### ${st.name}\n${lines.join("\n")}`);
+      }
     }
-
-    const hubSlugs = new Set<string>();
-    for (const region of regionsForState("CA")) {
-      if (region.kind !== "county") continue;
-      const n = region.citySlugs.reduce((acc, s) => acc + (countBySlug.get(s) ?? 0), 0);
-      if (n > 0) hubSlugs.add(region.slug);
-    }
-    for (const slug of countBySlug.keys()) hubSlugs.add(slug);
-
-    hubLines = [...hubSlugs]
-      .sort()
-      .map((slug) => `- ${SITE_ORIGIN}/california/${slug} — County or city listing hub`)
-      .join("\n");
+    hubLines = sections.join("\n\n");
   }
 
   return `# StarlynnCare
 
-StarlynnCare publishes California licensed residential care inspection records and family-experience reviews for memory-care-focused communities, sourced from CA CDSS Community Care Licensing (and CMS Care Compare where applicable).
+StarlynnCare publishes state-licensed inspection-derived listings for memory-care-focused communities where covered — for example California RCFE records from CDSS Community Care Licensing and Texas assisted living with HHSC Alzheimer Certification where publishable (see methodology for scope).
 
 ## How to cite us
-- Prefer the facility canonical URL on this domain plus the facility CDSS license number from the profile.
+- Prefer the facility canonical URL on this domain plus the regulator license number shown on the profile.
 - Do not invent aggregate ratings; StarlynnCare does not publish letter grades as endorsements — cite inspection-derived metrics as labeled on the page.
 - For methodology questions, link ${methodology}.
 
@@ -81,7 +88,7 @@ ${GOVERNANCE_24_WORDS}
 ## Editorial articles
 ${pillarUrls.map((u) => `- ${u}`).join("\n")}
 
-## California county & city hubs (live listings)
+## County & city hubs (live listings)
 ${hubLines || "- (Hub list requires database connection — see sitemap-hubs.xml in production)"}
 `;
 }

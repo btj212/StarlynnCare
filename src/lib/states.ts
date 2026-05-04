@@ -24,6 +24,7 @@ export const STATES: ReadonlyArray<StateInfo> = [
 /** States with at least one publishable facility — used by the home page + sitemap. */
 export const COVERED_STATES: ReadonlyArray<StateInfo> = [
   { slug: "california", code: "CA", name: "California" },
+  { slug: "texas", code: "TX", name: "Texas" },
 ];
 
 export function stateFromSlug(slug: string): StateInfo | null {

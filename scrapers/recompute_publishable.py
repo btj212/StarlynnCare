@@ -23,7 +23,8 @@ Usage
 -----
     python recompute_publishable.py --dry-run     # print what would change
     python recompute_publishable.py               # write to DB
-    python recompute_publishable.py --state CA    # specific state (default: CA)
+    python recompute_publishable.py --state CA    # California (default)
+    python recompute_publishable.py --state TX    # Texas publish gate (Alz cert + 36-mo inspection)
 """
 
 from __future__ import annotations
@@ -228,6 +229,38 @@ def mark_single_directory_for_review(
         return cur.rowcount
 
 
+def recompute_texas_publishable(
+    conn: psycopg.Connection,
+    dry_run: bool = False,
+) -> int:
+    """
+    Texas: publishable = LICENSED + Alzheimer certification + at least one inspection
+    in the last 36 months (and not manually rejected). Non–Alzheimer-certified rows
+    stay unpublishable. Does not touch `serves_memory_care` (set by tx_alf_ingest).
+    """
+    sql = """
+        UPDATE facilities
+        SET publishable = (
+          license_status = 'LICENSED'
+          AND tx_alzheimer_certified = true
+          AND mc_review_status <> 'reviewed_reject'
+          AND EXISTS (
+            SELECT 1 FROM inspections i
+            WHERE i.facility_id = facilities.id
+              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '36 months')
+          )
+        )
+        WHERE state_code = 'TX'
+          AND license_status = 'LICENSED'
+    """
+    if dry_run:
+        print("  TX: Would set publishable for Alzheimer-certified facilities with ≥1 inspection in 36 months")
+        return 0
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return cur.rowcount
+
+
 def promote_queue_with_tier1_signals(
     conn: psycopg.Connection,
     state_code: str,
@@ -299,36 +332,46 @@ def main() -> None:
 
     with psycopg.connect(dsn) as conn:
         print(f"Recomputing publishable flags for state: {args.state}")
-        
+
         # Get before counts
         before = get_before_counts(conn, args.state)
         print(f"\nBefore counts (LICENSED facilities only):")
-        print(f"  serves_memory_care = true:  {before['serves_mc_before']:>4}")  
+        print(f"  serves_memory_care = true:  {before['serves_mc_before']:>4}")
         print(f"  publishable = true:         {before['publishable_before']:>4}")
         print(f"  mc_review_status = needs_review: {before['needs_review_before']:>4}")
-        
+
         if args.dry_run:
             print(f"\n--- Dry-run mode ---")
-        
-        # Execute the recompute steps in order. Step 4 (promote) runs BEFORE
-        # step 3 (queue chain-only) so promotions don't get re-queued in the
-        # same run.
-        step1_updated = recompute_serves_memory_care(conn, args.state, args.dry_run)
-        step2_updated = recompute_publishable(conn, args.state, args.dry_run)
-        step4_updated = promote_queue_with_tier1_signals(conn, args.state, args.dry_run)
-        step3a_updated = mark_chain_only_for_review(conn, args.state, args.dry_run)
-        step3b_updated = mark_single_directory_for_review(conn, args.state, args.dry_run)
+
+        step1_updated = 0
+        step2_updated = 0
+        step4_updated = 0
+        step3a_updated = 0
+        step3b_updated = 0
+
+        if args.state.upper() == "TX":
+            # Do not run CA directory / disclosure tier logic against Texas rows.
+            step2_updated = recompute_texas_publishable(conn, args.dry_run)
+        else:
+            # Execute the recompute steps in order. Step 4 (promote) runs BEFORE
+            # step 3 (queue chain-only) so promotions don't get re-queued in the
+            # same run.
+            step1_updated = recompute_serves_memory_care(conn, args.state, args.dry_run)
+            step2_updated = recompute_publishable(conn, args.state, args.dry_run)
+            step4_updated = promote_queue_with_tier1_signals(conn, args.state, args.dry_run)
+            step3a_updated = mark_chain_only_for_review(conn, args.state, args.dry_run)
+            step3b_updated = mark_single_directory_for_review(conn, args.state, args.dry_run)
 
         if not args.dry_run:
             conn.commit()
-            
+
             # Get after counts
             after = get_after_counts(conn, args.state)
             print(f"\nAfter counts (LICENSED facilities only):")
             print(f"  serves_memory_care = true:  {after['serves_mc_after']:>4} (Δ{after['serves_mc_after'] - before['serves_mc_before']:+})")
-            print(f"  publishable = true:         {after['publishable_after']:>4} (Δ{after['publishable_after'] - before['publishable_before']:+})")  
+            print(f"  publishable = true:         {after['publishable_after']:>4} (Δ{after['publishable_after'] - before['publishable_before']:+})")
             print(f"  mc_review_status = needs_review: {after['needs_review_after']:>4} (Δ{after['needs_review_after'] - before['needs_review_before']:+})")
-            
+
             total_rows_touched = (
                 step1_updated
                 + step2_updated

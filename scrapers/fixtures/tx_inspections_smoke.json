@@ -1,0 +1,43 @@
+{
+  "format_version": 1,
+  "note": "Smoke fixture for tx_inspections_ingest.py --smoke. Replace license_number with a real TX Alzheimer-certified license from the DB if the default is missing locally.",
+  "facilities": [
+    {
+      "license_number": "307194",
+      "inspections": [
+        {
+          "inspection_date": "2024-06-15",
+          "inspection_type": "standard",
+          "is_complaint": false,
+          "complaint_id": null,
+          "source_url": "https://tulip.hhs.texas.gov/TULIP/s/ltc-provider-detail?c__accountidparam=001TX0000000000AAA",
+          "raw_data": {
+            "fixture": true,
+            "tulip_account_hint": "replace with captured Account Id when available"
+          },
+          "deficiencies": [
+            {
+              "code": "HFL-0001",
+              "category": "Resident care",
+              "description": "Sample: care plan update process not consistently documented for residents with cognitive impairment.",
+              "state_severity_raw": "Type A",
+              "severity": 3,
+              "immediate_jeopardy": false,
+              "class": "Type A",
+              "inspector_narrative": "The facility was unable to produce complete documentation for two sampled residents."
+            },
+            {
+              "code": "HFL-0002",
+              "category": "Environment",
+              "description": "Sample: one common-area handrail required maintenance.",
+              "state_severity_raw": "Type B",
+              "severity": 2,
+              "immediate_jeopardy": false,
+              "class": "Type B"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -29,7 +29,10 @@ export async function generateMetadata({
   const state = stateFromSlug(stateSlug);
   if (!state) return { title: "State not found | StarlynnCare" };
   const canonical = canonicalFor(`/${state.slug}`);
-  const desc = `Inspection records and citation history for every licensed memory care facility in ${state.name} — from primary CDSS data, updated weekly.`;
+  const desc =
+    state.code === "TX"
+      ? `HHSC-sourced inspection listings for Alzheimer-certified assisted living across Texas metro regions — scope and methodology on-site.`
+      : `Inspection records and citation history for every licensed memory care facility in ${state.name} — from primary CDSS data, updated weekly.`;
   return {
     title: `${state.name} memory care | StarlynnCare`,
     description: desc,

@@ -86,6 +86,13 @@ Rules:
 8. Do NOT use phrases like "the report states" or "according to the document". Just state the facts.
 9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
 
+SYSTEM_PROMPT_TX = f"""You summarize Texas HHSC LTCR assisted living inspection findings for families.
+Today is {TODAY}.
+
+Texas ALF license Types A/B/C describe facility capability — not California-style deficiency "Type A/B".
+Describe what the inspection narrative says factually. Same audience rules as CA summaries:
+plain English, no evaluative hype words, no invented facts, 2-3 sentences."""
+
 USER_TEMPLATE = """Inspection type: {inspection_type}
 Is complaint: {is_complaint}
 Outcome (if complaint): {outcome}
@@ -107,6 +114,8 @@ def summarize(
     is_complaint: bool,
     outcome: str | None,
     narrative: str,
+    *,
+    state_code: str = "CA",
 ) -> str | None:
     user_msg = USER_TEMPLATE.format(
         inspection_type=inspection_type or "visit",
@@ -114,11 +123,12 @@ def summarize(
         outcome=outcome or "N/A",
         narrative=narrative[:6000],  # stay well within context
     )
+    system = SYSTEM_PROMPT_TX if state_code.upper() == "TX" else SYSTEM_PROMPT
     try:
         resp = client.messages.create(
             model=MODEL,
             max_tokens=300,
-            system=SYSTEM_PROMPT,
+            system=system,
             messages=[{"role": "user", "content": user_msg}],
         )
         return resp.content[0].text.strip()
@@ -138,6 +148,11 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print summaries, no DB writes")
     parser.add_argument("--refetch", action="store_true", help="Re-generate existing summaries")
     parser.add_argument("--facility-id", help="Only process inspections for this facility UUID")
+    parser.add_argument(
+        "--state",
+        default="CA",
+        help="Only summarize inspections for facilities in this state (default: CA)",
+    )
     args = parser.parse_args()
 
     if not ANTHROPIC_API_KEY and not args.dry_run:
@@ -162,13 +177,15 @@ def main() -> None:
             if args.facility_id:
                 where_parts.append("facility_id = %s")
                 params.append(args.facility_id)
+            where_parts.append("f.state_code = %s")
+            params.append(args.state.upper())
 
             where_clause = " AND ".join(where_parts)
             cur.execute(
                 f"""
                 SELECT i.id, i.inspection_type, i.is_complaint,
                        i.raw_data->>'outcome', i.raw_data->>'narrative',
-                       f.name
+                       f.name, f.state_code
                 FROM inspections i
                 JOIN facilities f ON f.id = i.facility_id
                 WHERE {where_clause}
@@ -188,7 +205,7 @@ def main() -> None:
     failed = 0
 
     with psycopg.connect(DATABASE_URL) as conn:
-        for insp_id, insp_type, is_complaint, outcome, raw_narrative, fac_name in rows:
+        for insp_id, insp_type, is_complaint, outcome, raw_narrative, fac_name, st_code in rows:
             print(f"\n→ {fac_name[:45]} | {insp_type} | {'complaint' if is_complaint else 'routine'}")
 
             narrative = clean_narrative(raw_narrative)
@@ -206,7 +223,14 @@ def main() -> None:
                     break
                 continue
 
-            summary = summarize(client, insp_type or "visit", is_complaint, outcome, narrative)
+            summary = summarize(
+                client,
+                insp_type or "visit",
+                is_complaint,
+                outcome,
+                narrative,
+                state_code=st_code or "CA",
+            )
             if not summary:
                 print("  ✗ Summary generation failed")
                 failed += 1

@@ -23,6 +23,8 @@ export type ListFacility = {
   capacity_tier: "small" | "medium" | "large" | "unknown";
   serves_memory_care: boolean;
   memory_care_disclosure_filed: boolean;
+  /** Texas HHSC Alzheimer Certification on roster (Phase 2 MC signal). */
+  tx_alzheimer_certified?: boolean;
   inspections: number;
   serious_citations: number;
   total_citations: number;
@@ -118,7 +120,10 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
   const signal = trustSignal(f);
   const [g1, g2] = gradientFor(f.name);
   const typeLabel = CATEGORY_SHORT[f.care_category] ?? "Care facility";
-  const isMc = f.memory_care_disclosure_filed || f.serves_memory_care;
+  const isMc =
+    f.memory_care_disclosure_filed ||
+    f.serves_memory_care ||
+    Boolean(f.tx_alzheimer_certified);
 
   return (
     <Link

@@ -174,6 +174,11 @@ def main() -> None:
         default=None,
         help="Only fetch photo for this license number.",
     )
+    parser.add_argument(
+        "--state",
+        default="CA",
+        help="Only fetch for publishable facilities in this state (default: CA)",
+    )
     args = parser.parse_args()
 
     # Validate env
@@ -194,16 +199,19 @@ def main() -> None:
         with conn.cursor() as cur:
             where_photo = "" if args.refetch else "AND photo_url IS NULL"
             where_license = f"AND license_number = '{args.license}'" if args.license else ""
-            cur.execute(f"""
+            cur.execute(
+                f"""
                 SELECT id, name, street, city, zip, state_code
                 FROM facilities
                 WHERE publishable = true
-                  AND state_code = 'CA'
+                  AND state_code = %s
                   AND street IS NOT NULL
                   {where_photo}
                   {where_license}
                 ORDER BY name
-            """)
+                """,
+                (args.state.upper(),),
+            )
             facilities = cur.fetchall()
 
     print(f"Facilities to process: {len(facilities)}")

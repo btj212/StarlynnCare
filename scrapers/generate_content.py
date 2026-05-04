@@ -37,7 +37,7 @@ import psycopg
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-STATE_CODE = "CA"
+DEFAULT_STATE = "CA"
 # Scale model: tour-questions only (fast + cheap)
 CONTENT_MODEL = "claude-sonnet-4-5"
 QUALITY_GATE_MODEL = "claude-haiku-4-5-20251001"
@@ -81,6 +81,8 @@ def load_env() -> None:
 
 def load_facilities(
     conn: psycopg.Connection,
+    *,
+    state_code: str = DEFAULT_STATE,
     name_filter: str | None = None,
     slugs: list[str] | None = None,
     city_slugs: list[str] | None = None,
@@ -88,6 +90,7 @@ def load_facilities(
     query = """
         SELECT
             f.id::text,
+            f.state_code,
             f.name,
             f.slug,
             f.city,
@@ -101,6 +104,8 @@ def load_facilities(
             f.license_status,
             f.license_expiration::text,
             f.care_category,
+            f.serves_memory_care,
+            f.tx_alzheimer_certified,
             f.memory_care_designation,
             f.content,
             -- Inspection summary subquery
@@ -127,9 +132,9 @@ def load_facilities(
              FROM inspections i WHERE i.facility_id = f.id AND i.is_complaint)
                 AS complaint_count
         FROM facilities f
-        WHERE f.publishable = true AND f.state_code = 'CA'
+        WHERE f.publishable = true AND f.state_code = %(state_code)s
     """
-    params: dict[str, Any] = {}
+    params: dict[str, Any] = {"state_code": state_code.upper()}
     if slugs:
         query += " AND f.slug = ANY(%(slugs)s)"
         params["slugs"] = slugs
@@ -299,6 +304,68 @@ GOLD-STANDARD EXAMPLE (Silverado Berkeley — do not reproduce directly, use as 
 Now generate the content block for {name}. Output JSON only, no markdown fences.
 """
 
+GENERATION_SYSTEM_TX = """\
+You generate tour questions for StarlynnCare — built from Texas HHSC public assisted living
+data (directory + LTCR inspection extracts).
+
+Write for families researching dementia care. Plain English. No jargon. No marketing language.
+
+Tour questions rules:
+- Generate 4-5 questions. Prefer exactly 4 unless 5 naturally follows from distinct facts.
+- Each question MUST reference at least one concrete fact from the source data — counts,
+  dates, deficiency themes, or Alzheimer certification context.
+- Do NOT cite California Title 22 or CDSS unless the facility is in California (these rows are Texas).
+- Do NOT ask about staffing ratios, caregiver counts, overnight coverage, training hours,
+  or supervisor staffing levels (same staffing ban as CA).
+- Ask about documentation families can request on a tour: corrective action, written policies,
+  or how the community describes dementia supports — grounded in inspection counts/dates given.
+- NEVER frame questions as "has the state mailed you a closure letter" — ask the facility for
+  its own remediation documentation instead.
+
+CORRECTIVE-ACTION PHRASING — critical:
+Ask the facility for its plans and records — not for HHSC paperwork the family cannot obtain on a tour.
+
+SPECIFICITY BAN — do not ask about complaint subjects if only a complaint count is listed.
+
+DATE BAN — no relative time math; use exact dates from source data.
+"""
+
+GENERATION_HUMAN_TEMPLATE_TX = """\
+Generate tour questions for the following facility. Return ONLY valid JSON with these exact keys:
+tour_questions, generated_at, model.
+
+tour_questions must be a JSON array of 4-5 strings (questions), not a prose paragraph.
+
+SOURCE DATA
+-----------
+Facility name        : {name}
+Address              : {street}, {city}, TX {zip}
+Phone                : {phone}
+Licensed beds        : {beds}
+Operator             : {operator}
+License number       : {license_number}
+License status       : {license_status}
+License expires      : {license_expiration}
+Memory care signal   : {serves_mc}
+Alzheimer certified (HHSC roster): {tx_alz}
+Memory care note     : {mc_designation}
+
+Inspection history (Texas HHSC LTCR / imports)
+  Total reports on file  : {inspection_count}
+  Total deficiencies     : {deficiency_count}
+  Serious citations      : {serious_citation_count}  (severity 3–4 mapped where available)
+  Dementia-reg citations : {dementia_citation_count}  (CA §87705/87706 N/A in TX — often 0)
+  Complaints on file     : {complaint_count}
+  Most recent inspection : {last_inspection_date}  ← use EXACT date. Today is {today}.
+
+GOLD-STANDARD EXAMPLE (Silverado Berkeley — California — tone only; do not copy regulatory citations)
+-----------------------------------------------------------------------------------------------
+{example_json}
+-----------------------------------------------------------------------------------------------
+
+Now generate the content block for {name}. Output JSON only, no markdown fences.
+"""
+
 QUALITY_GATE_SYSTEM = f"""\
 You are a quality checker for StarlynnCare tour questions. Today: {datetime.now(timezone.utc).strftime("%B %d, %Y")}.
 
@@ -343,6 +410,23 @@ ALWAYS PASS — do NOT flag:
 Output the JSON object ONLY — no text before or after, no markdown fences.
 """
 
+QUALITY_GATE_SYSTEM_TX = f"""\
+You are a quality checker for StarlynnCare tour questions for TEXAS facilities. Today: {datetime.now(timezone.utc).strftime("%B %d, %Y")}.
+
+Return JSON only: {{"pass": true/false, "issues": ["one sentence per issue"]}}.
+
+FAIL if a question:
+  1. Violates the staffing ban (ratios, headcounts, training programs).
+  2. Contradicts source data counts/dates.
+  3. References California Title 22 / CDSS as if this facility were in California.
+  4. Contains zero facility-specific facts.
+  5. Wrong array length (<4 or >5 questions).
+
+PASS Texas-specific regulatory documentation questions when grounded in inspection counts/dates.
+
+Output JSON only — no markdown fences.
+"""
+
 QUALITY_GATE_HUMAN_TEMPLATE = """\
 SOURCE DATA:
 {source_json}
@@ -372,6 +456,22 @@ def _format_operator(raw: str | None) -> str:
 
 
 def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
+    st = (fac.get("state_code") or "CA").upper()
+    mc_signal = (
+        fac.get("care_category") in ("rcfe_memory_care", "alf_memory_care")
+        or fac.get("serves_memory_care") is True
+        or fac.get("tx_alzheimer_certified") is True
+    )
+    if st == "TX":
+        mc_note = fac["memory_care_designation"] or (
+            "(HHSC Alzheimer Certification on roster)"
+            if fac.get("tx_alzheimer_certified")
+            else "(not flagged as Alzheimer-certified in source)"
+        )
+    else:
+        mc_note = fac["memory_care_designation"] or (
+            "(none — memory care is operator-advertised, not formally designated in CDSS licensing data)"
+        )
     return {
         "name": fac["name"],
         "street": fac["street"] or "(not in data)",
@@ -383,8 +483,9 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         "license_number": fac["license_number"] or "(not in data)",
         "license_status": fac["license_status"] or "(not in data)",
         "license_expiration": fac["license_expiration"] or "(not in data)",
-        "serves_mc": "Yes" if fac.get("care_category") == "rcfe_memory_care" else "No",
-        "mc_designation": fac["memory_care_designation"] or "(none — memory care is operator-advertised, not formally designated in CDSS licensing data)",
+        "serves_mc": "Yes" if mc_signal else "No",
+        "tx_alz": "Yes" if fac.get("tx_alzheimer_certified") else "No",
+        "mc_designation": mc_note,
         "inspection_count": fac["inspection_count"],
         "deficiency_count": fac["deficiency_count"],
         "serious_citation_count": fac["serious_citation_count"],
@@ -400,13 +501,19 @@ def generate_content(
     client: anthropic.Anthropic, fac: dict[str, Any]
 ) -> dict[str, str] | None:
     ctx = build_source_context(fac)
-    prompt = GENERATION_HUMAN_TEMPLATE.format(**ctx)
+    st = (fac.get("state_code") or "CA").upper()
+    if st == "TX":
+        prompt = GENERATION_HUMAN_TEMPLATE_TX.format(**ctx)
+        system = GENERATION_SYSTEM_TX
+    else:
+        prompt = GENERATION_HUMAN_TEMPLATE.format(**ctx)
+        system = GENERATION_SYSTEM
 
     try:
         msg = client.messages.create(
             model=CONTENT_MODEL,
             max_tokens=1024,
-            system=GENERATION_SYSTEM,
+            system=system,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = msg.content[0].text.strip()
@@ -437,11 +544,13 @@ def quality_gate(
         source_json=json.dumps(source, indent=2),
         content_json=json.dumps(content, indent=2),
     )
+    st = (fac.get("state_code") or "CA").upper()
+    gate_system = QUALITY_GATE_SYSTEM_TX if st == "TX" else QUALITY_GATE_SYSTEM
     try:
         msg = client.messages.create(
             model=QUALITY_GATE_MODEL,
             max_tokens=768,
-            system=QUALITY_GATE_SYSTEM,
+            system=gate_system,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = msg.content[0].text.strip()
@@ -487,6 +596,11 @@ def main() -> None:
                         help="Overwrite existing content (default: skip if content already set).")
     parser.add_argument("--skip-quality-gate", action="store_true",
                         help="Write generated content without running the quality gate (use sparingly).")
+    parser.add_argument(
+        "--state",
+        default=DEFAULT_STATE,
+        help=f"State code for publishable facilities to load (default: {DEFAULT_STATE})",
+    )
     args = parser.parse_args()
 
     load_env()
@@ -511,6 +625,7 @@ def main() -> None:
     with psycopg.connect(dsn) as conn:
         facilities = load_facilities(
             conn,
+            state_code=args.state,
             name_filter=args.facility,
             slugs=args.slugs,
             city_slugs=city_slug_list,

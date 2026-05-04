@@ -49,7 +49,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const desc = clipMetaDescription(
-    `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`,
+    region.state.code === "TX"
+      ? `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — built from public LTCR records.`
+      : `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`,
   );
   return {
     title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
@@ -91,7 +93,7 @@ export default async function RegionPage({ params }: PageProps) {
     const { data: rawFacilities, error } = await supabase
       .from("facilities")
       .select(
-        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, capacity_tier",
+        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier",
       )
       .eq("state_code", region.state.code)
       .eq("publishable", true)
@@ -107,6 +109,7 @@ export default async function RegionPage({ params }: PageProps) {
         slug: string; beds: number | null; care_category: string;
         photo_url: string | null; serves_memory_care: boolean;
         memory_care_disclosure_filed: boolean;
+        tx_alzheimer_certified: boolean | null;
         capacity_tier: "small" | "medium" | "large" | "unknown";
       }>;
 
@@ -176,6 +179,7 @@ export default async function RegionPage({ params }: PageProps) {
           capacity_tier: f.capacity_tier,
           serves_memory_care: f.serves_memory_care,
           memory_care_disclosure_filed: f.memory_care_disclosure_filed,
+          tx_alzheimer_certified: Boolean(f.tx_alzheimer_certified),
           inspections: inspCountByFac.get(f.id) ?? 0,
           total_citations: totalCitByFac.get(f.id) ?? 0,
           serious_citations: seriousCitByFac.get(f.id) ?? 0,
@@ -260,7 +264,10 @@ export default async function RegionPage({ params }: PageProps) {
 
   const pageUrl = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const pageTitle = `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`;
-  const pageDesc = `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`;
+  const pageDesc =
+    region.state.code === "TX"
+      ? `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — public LTCR record where published.`
+      : `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`;
   const itemListFacilities = facilities.map((f) => ({
     name: f.name,
     url: canonicalFor(`/${region.state.slug}/${f.city_slug}/${f.slug}`),
@@ -311,25 +318,46 @@ export default async function RegionPage({ params }: PageProps) {
   // Regulator primer (CA-specific)
   const regulatorPrimer = getRegulatorPrimer(region.state.code);
 
-  const regionStatItems: StatItem[] = [
-    {
-      n: String(totalCount),
-      label: `Licensed memory care facilities indexed in ${region.name}`,
-      src: "CDSS",
-    },
-    {
-      n: String(facilitiesWithSeriousDef),
-      label:
-        "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
-      src: "CDSS",
-      delta: totalCount > 0 ? `${severePct}% of indexed facilities` : undefined,
-    },
-    {
-      n: String(visibleCount),
-      label: "Facilities with full CDSS profile published on StarlynnCare",
-      src: "StarlynnCare",
-    },
-  ];
+  const regionStatItems: StatItem[] =
+    region.state.code === "TX"
+      ? [
+          {
+            n: String(totalCount),
+            label: `Alzheimer-certified assisted living facilities indexed in ${region.name}`,
+            src: "HHSC ALF directory",
+          },
+          {
+            n: String(facilitiesWithSeriousDef),
+            label:
+              "Facilities with at least one cited deficiency in the indexed LTCR inspection record on file",
+            src: "HHSC LTCR",
+            delta: totalCount > 0 ? `${severePct}% of indexed facilities` : undefined,
+          },
+          {
+            n: String(visibleCount),
+            label: "Facilities with full StarlynnCare profile published",
+            src: "StarlynnCare",
+          },
+        ]
+      : [
+          {
+            n: String(totalCount),
+            label: `Licensed memory care facilities indexed in ${region.name}`,
+            src: "CDSS",
+          },
+          {
+            n: String(facilitiesWithSeriousDef),
+            label:
+              "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
+            src: "CDSS",
+            delta: totalCount > 0 ? `${severePct}% of indexed facilities` : undefined,
+          },
+          {
+            n: String(visibleCount),
+            label: "Facilities with full CDSS profile published on StarlynnCare",
+            src: "StarlynnCare",
+          },
+        ];
 
   const isCounty = region.kind === "county";
   const cityIntro = !isCounty ? cityIntroForSlug(region.slug) : null;
@@ -364,8 +392,17 @@ export default async function RegionPage({ params }: PageProps) {
             <p
               className="font-[family-name:var(--font-display)] italic text-[20px] leading-[1.4] text-ink-3 max-w-[50ch]"
             >
-              State inspection records and citation history for every licensed
-              facility — built from primary CDSS data.
+              {region.state.code === "TX" ? (
+                <>
+                  HHSC public listings for Alzheimer-certified assisted living — inspection
+                  findings drawn from Long-Term Care Regulation (LTCR) where published.
+                </>
+              ) : (
+                <>
+                  State inspection records and citation history for every licensed
+                  facility — built from primary CDSS data.
+                </>
+              )}
             </p>
             {cityIntro && (
               <p className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch]">
@@ -384,18 +421,41 @@ export default async function RegionPage({ params }: PageProps) {
                   § Findings
                 </div>
                 <p className="font-[family-name:var(--font-display)] text-[22px] leading-[1.3] text-ink mb-4">
-                  Of the{" "}
-                  <strong className="font-normal text-rust">{totalCount}</strong>{" "}
-                  licensed memory care facilities indexed in {region.name},{" "}
-                  <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                  ({severePct}%) have a Type-A or Type-B deficiency in their state record
-                  from the past 24 months.
+                  {region.state.code === "TX" ? (
+                    <>
+                      Of the{" "}
+                      <strong className="font-normal text-rust">{totalCount}</strong>{" "}
+                      Alzheimer-certified facilities indexed in {region.name},{" "}
+                      <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
+                      ({severePct}%) have at least one cited deficiency in the inspection data on
+                      file. Texas ALF license Type A/B/C is a <em>capacity</em> class on the
+                      license — not the same as California&rsquo;s Type-A/Type-B{" "}
+                      <em>deficiency</em> labels.
+                    </>
+                  ) : (
+                    <>
+                      Of the{" "}
+                      <strong className="font-normal text-rust">{totalCount}</strong>{" "}
+                      licensed memory care facilities indexed in {region.name},{" "}
+                      <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
+                      ({severePct}%) have a Type-A or Type-B deficiency in their state record
+                      from the past 24 months.
+                    </>
+                  )}
                 </p>
                 {findingsDate && (
                   <DataFootnote
-                    source="CA CDSS Community Care Licensing"
+                    source={
+                      region.state.code === "TX"
+                        ? "Texas HHSC Long-Term Care Regulation"
+                        : "CA CDSS Community Care Licensing"
+                    }
                     refreshed={findingsDate}
-                    note="Type-A = immediate health/safety risk; Type-B = lesser violation"
+                    note={
+                      region.state.code === "TX"
+                        ? "Deficiency labels are shown as published by HHSC; see methodology for scope"
+                        : "Type-A = immediate health/safety risk; Type-B = lesser violation"
+                    }
                   />
                 )}
 
@@ -409,8 +469,8 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* ── Regulator primer (city pages only) ── */}
-        {!isCounty && (
+        {/* ── Regulator primer (all city pages; Texas county hubs too) ── */}
+        {(!isCounty || region.state.code === "TX") && (
           <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
             <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
               <SectionHead
@@ -436,11 +496,18 @@ export default async function RegionPage({ params }: PageProps) {
               <p className="text-[16px] leading-[1.7] text-ink-2 max-w-[60ch]">
                 Median monthly cost in {region.name} ranges from approximately{" "}
                 <strong className="font-semibold">$5,000–$9,000/month</strong> based on regional
-                benchmarks. For statewide ranges, financing options, and hidden fees, read{" "}
-                <Link href="/california/cost-guide" className="text-teal underline underline-offset-4">
-                  What memory care costs in California
-                </Link>
-                . Methodology for future verified city medians:{" "}
+                benchmarks.{" "}
+                {region.state.code === "CA" ? (
+                  <>
+                    For statewide ranges, financing options, and hidden fees, read{" "}
+                    <Link href="/california/cost-guide" className="text-teal underline underline-offset-4">
+                      What memory care costs in California
+                    </Link>
+                    . Methodology for future verified city medians:{" "}
+                  </>
+                ) : (
+                  <>For how we separate pricing estimates from inspection-derived facts, see </>
+                )}
                 <Link href="/methodology" className="text-teal underline underline-offset-4">
                   how we source data
                 </Link>
