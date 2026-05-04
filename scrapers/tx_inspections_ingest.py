@@ -230,6 +230,24 @@ def insert_inspection(
         return str(cur.fetchone()[0])
 
 
+def _parse_date_loose(value: Any) -> date | None:
+    """Accept ISO ('YYYY-MM-DD') or US ('M/D/YYYY') date strings."""
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    try:
+        return date.fromisoformat(s[:10])
+    except ValueError:
+        return None
+
+
 def insert_deficiency(
     conn: psycopg.Connection,
     inspection_id: str,
@@ -243,6 +261,11 @@ def insert_deficiency(
     desc = (d.get("description") or "")[:4000] or None
     narr = (d.get("inspector_narrative") or "")[:8000] or None
     cls = d.get("class") or state_raw
+    cited = _parse_date_loose(d.get("cited_date"))
+    corrected = _parse_date_loose(d.get("corrected_date"))
+    status = d.get("status")
+    if not status and corrected:
+        status = "corrected"
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -253,7 +276,7 @@ def insert_deficiency(
                 immediate_jeopardy,
                 description, inspector_narrative,
                 state_severity_raw,
-                cited_date
+                cited_date, corrected_date, status
             ) VALUES (
                 %s::uuid,
                 %s, %s,
@@ -261,7 +284,7 @@ def insert_deficiency(
                 %s,
                 %s, %s,
                 %s,
-                %s
+                %s, %s, %s
             )
             """,
             (
@@ -274,7 +297,9 @@ def insert_deficiency(
                 desc,
                 narr,
                 state_raw,
-                None,
+                cited,
+                corrected,
+                status,
             ),
         )
 

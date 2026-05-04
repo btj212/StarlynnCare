@@ -91,15 +91,52 @@ Private research doc for Phase 5 ingest. **Do not treat URLs below as API contra
 }
 ```
 
-### Feasibility verdict: **YELLOW**
+### Feasibility verdict: **GREEN (interactive) / YELLOW (unattended)**
 
-- **GREEN criteria not met:** no unattended JSON replay without browser + captcha clearance on search.
-- **Not RED for product:** JSON **is** obtainable interactively; ingestion can proceed via **`--import-json` bundles** captured from DevTools / Playwright exports or HHSC PIA bulk files.
-- **Chosen path:** Phase 2 ships **import-json ingest + TX publish gate**; optional later Playwright runner posts Aura payloads using captured templates.
+- **Interactive (browser) path is GREEN.** TULIP's "Inspections" tab calls `…/TULIP/s/sfsites/aura?aura.ApexAction.execute=1` and returns a clean JSON array of violations (real, parseable, no obfuscation). Captured smoke for `license=148715`, `accountId=001cv00000RpEjOAAV` lives in [`.firecrawl/tulip-smoke/148715.json`](../.firecrawl/tulip-smoke/148715.json) (gitignored at scale; one example committed for shape documentation).
+- **Unattended path remains YELLOW.** reCAPTCHA v2 + Salesforce session cookies block server-only `curl`. Scaling to all 515 Alzheimer-certified TX rows needs either:
+  - **Manual DevTools capture** (sustainable for 10–50 facilities; one envelope per `license_number` saved under `.firecrawl/tulip-smoke/`), then [`scrapers/tx_tulip_to_bundle.py`](../scrapers/tx_tulip_to_bundle.py) → `--import-json`, **or**
+  - **Playwright runner** with stored session + captured Aura payload (template), **or**
+  - **HHSC Public Information Act** request ([`docs/TX_PIA_REQUEST_DRAFT.md`](./TX_PIA_REQUEST_DRAFT.md)) for bulk historical CSV.
 
-### HTTP reproduction notes
+### Observed Aura row shape (TULIP "Inspections" tab)
 
-Use **browser DevTools → Network** while solving CAPTCHA manually once per session; export **Fetch as cURL** for the Aura POST and store redacted copies under `.firecrawl/tulip-smoke/` (gitignored). Keep **`User-Agent`** + contact email per [`scrapers/ccld_rcfe_ingest.py`](../scrapers/ccld_rcfe_ingest.py) politeness defaults.
+```jsonc
+// actions[0].returnValue.returnValue is an array of these:
+{
+  "correctedDate": "3/6/2020",                  // M/D/YYYY → deficiencies.corrected_date
+  "exitDate": "2/7/2020",                       // M/D/YYYY → inspections.inspection_date + deficiencies.cited_date
+  "mostRecentExitDate": "February 16, 2023",    // header echo (may differ from per-row exitDate)
+  "stateViolationCited": "The facility failed to ensure …",  // → deficiencies.description / inspector_narrative
+  "visitType": "Life Safty Code"                // verbatim (note HHSC's typo) → state_severity_raw
+}
+```
+
+**No** citation code is exposed by TULIP for ALFs — `tx_inspections_ingest.py` synthesizes a stable `__tx_<sha1>` key for dedupe. **No** severity ordinal is exposed (TX ALF inspection findings are narrative-only); `severity` stays NULL and the editorial layer surfaces narratives directly.
+
+### Capture workflow (per facility)
+
+1. Open `https://tulip.hhs.texas.gov/TULIP/s/ltc-provider-search`, solve reCAPTCHA, search by **License No**, click facility → Inspections tab. Note the `c__accountidparam` from the URL.
+2. Chrome **DevTools → Network → filter `ApexAction`** before clicking the tab. Refresh if the only Apex calls are from the prior tab.
+3. Right-click the `aura?…ApexAction.execute=1` row → **Copy → Copy response**. Save raw response into `.firecrawl/tulip-smoke/<license>.json` wrapped in this envelope:
+
+```jsonc
+{
+  "license_number": "148715",
+  "account_id": "001cv00000RpEjOAAV",
+  "source_url": "https://tulip.hhs.texas.gov/TULIP/s/ltc-provider-detail?c__accountidparam=001cv00000RpEjOAAV",
+  "captured_at": "2026-05-04",
+  "aura": { /* paste verbatim Aura response */ }
+}
+```
+
+4. Run [`scrapers/tx_tulip_to_bundle.py --capture-dir .firecrawl/tulip-smoke/ --output .firecrawl/tulip-smoke/bundle.json`](../scrapers/tx_tulip_to_bundle.py).
+5. Run `python3 scrapers/tx_inspections_ingest.py --import-json .firecrawl/tulip-smoke/bundle.json`.
+6. Run `python3 scrapers/recompute_publishable.py --state TX`.
+
+### Synthesized "clean visit" rows
+
+The page header reports a **most-recent comprehensive inspection date** even when that visit had **0 violations** (no rows in the Aura array). The bundle parser synthesizes a zero-deficiency `inspections` row for that date so the publish gate sees the recent visit. Marker: `raw_data.synthesized_from = "mostRecentExitDate header"`.
 
 ## Companion / legacy script
 
