@@ -249,6 +249,13 @@ export default function CaliforniaCostGuidePage() {
               ]}
             />
           </div>
+          <p className="mt-6 text-[15px] leading-relaxed text-ink-2 max-w-[68ch]">
+            For metro-by-metro benchmark bands (still not facility quotes), see{" "}
+            <Link href="/california/cost-by-city" className="font-medium text-teal underline-offset-4 hover:underline">
+              Memory care costs by California city &amp; region
+            </Link>
+            .
+          </p>
 
           <H2 id="whats-included">What you&apos;re paying for</H2>
           <Prose>

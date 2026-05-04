@@ -16,6 +16,7 @@ export function MobileFooter({ lastRefreshed }: { lastRefreshed: string | null }
       </p>
       <nav className="links" aria-label="Footer links">
         <Link href="/california">All facilities</Link>
+        <Link href="/library">Library</Link>
         <Link href="/methodology">Methodology</Link>
         <Link href="/data">Dataset overview</Link>
         <Link href="/llms.txt">llms.txt ↗</Link>

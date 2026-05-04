@@ -276,6 +276,52 @@ function itemListLocalBusiness(f: ItemListFacility): object {
   };
 }
 
+/** Generic topical CollectionPage (editorial index — not a geographic hub). */
+export function buildTopicCollectionPage(input: {
+  name: string;
+  url: string;
+  description?: string;
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: input.name,
+    url: input.url,
+    ...(input.description ? { description: input.description } : {}),
+    isPartOf: {
+      "@type": "WebSite",
+      name: "StarlynnCare",
+      url: SITE_ORIGIN,
+    },
+  };
+}
+
+/** ItemList of editorial WebPages — not LocalBusiness (use for /library hub). */
+export function buildSimpleLinkItemListSchema(
+  pageName: string,
+  pageUrl: string,
+  items: Array<{ name: string; url: string }>,
+): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: pageName,
+    url: pageUrl,
+    numberOfItems: items.length,
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      url: it.url,
+      item: {
+        "@type": "WebPage",
+        name: it.name,
+        url: it.url,
+      },
+    })),
+  };
+}
+
 export function buildItemListSchema(
   pageName: string,
   pageUrl: string,

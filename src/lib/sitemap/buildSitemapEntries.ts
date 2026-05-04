@@ -60,6 +60,7 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/editorial-policy", priority: "0.72", changefreq: "monthly" },
     { path: "/terms", priority: "0.55", changefreq: "yearly" },
     { path: "/privacy", priority: "0.55", changefreq: "yearly" },
+    { path: "/library", priority: "0.83", changefreq: "weekly" },
     { path: "/library/type-a-vs-type-b-deficiencies-explained", priority: "0.78", changefreq: "monthly" },
     { path: "/library/memory-care-vs-nursing-home", priority: "0.82", changefreq: "monthly" },
     { path: "/library/medi-cal-and-memory-care", priority: "0.82", changefreq: "monthly" },

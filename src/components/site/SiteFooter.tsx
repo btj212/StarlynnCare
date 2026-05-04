@@ -28,8 +28,8 @@ export async function SiteFooter() {
     <footer className="bg-paper border-t-2 border-ink pt-12 pb-8">
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10">
 
-        {/* 4-column grid */}
-        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr] mb-10">
+        {/* 5-column grid */}
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] mb-10">
 
           {/* Brand block */}
           <div>
@@ -70,6 +70,21 @@ export async function SiteFooter() {
               <Link href="/llms.txt" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors flex items-center gap-1">
                 llms.txt <span className="text-rust text-[10px]">↗</span>
               </Link>
+            </nav>
+          </div>
+
+          {/* Editorial library */}
+          <div>
+            <h5 className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust font-semibold mb-3.5">
+              Library
+            </h5>
+            <nav className="flex flex-col gap-1 text-[14px]" aria-label="Editorial library links">
+              <Link href="/library" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">All articles</Link>
+              <Link href="/california/cost-by-city" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Cost by city</Link>
+              <Link href="/library/memory-care-vs-nursing-home" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">vs. nursing home</Link>
+              <Link href="/library/medi-cal-and-memory-care" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Medi-Cal guide</Link>
+              <Link href="/library/when-is-it-time-for-memory-care" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">When to move</Link>
+              <Link href="/library/dementia-vs-alzheimers-vs-lewy-body" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Dementia types</Link>
             </nav>
           </div>
 

@@ -50,6 +50,9 @@ export async function SiteNav() {
           <Link href="/data" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
             The Data
           </Link>
+          <Link href="/library" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+            Library
+          </Link>
           <Link href="/methodology" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
             Methodology
           </Link>

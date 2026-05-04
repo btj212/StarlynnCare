@@ -16,6 +16,7 @@ export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise
   const privacy = canonicalFor("/privacy");
 
   const pillarUrls = [
+    canonicalFor("/library"),
     canonicalFor("/library/type-a-vs-type-b-deficiencies-explained"),
     canonicalFor("/library/memory-care-vs-nursing-home"),
     canonicalFor("/library/medi-cal-and-memory-care"),
