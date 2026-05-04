@@ -82,6 +82,10 @@ export interface Facility {
    */
   ca_memory_care_designation_basis: CaMemoryCareDesignationBasis | null;
 
+  /** TX HHSC scaffold — migration 0014_tx_scaffold_columns.sql */
+  tx_license_class?: string | null;
+  tx_alzheimer_certified?: boolean | null;
+
   // Added in migration 0008_capacity_tier_and_mc_disclosure.sql
   /**
    * Derived from beds: 'small' (≤6), 'medium' (7–49), 'large' (50+), 'unknown'.
@@ -162,6 +166,8 @@ export interface Deficiency {
   corrected_date: string | null;
   status: string | null;
   civil_money_penalty: string | null;
+  /** Verbatim regulator severity label when differing from normalized `severity` int — migration 0014 */
+  state_severity_raw?: string | null;
   created_at: string;
 }
 

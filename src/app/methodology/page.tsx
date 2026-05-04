@@ -191,8 +191,11 @@ export default function MethodologyPage() {
               </li>
             </ul>
             <p>
-              Data is refreshed via automated scrapers. Each facility record
-              shows a &ldquo;last updated&rdquo; date reflecting the most recent ingest run.
+              Data is refreshed via automated scrapers; production runs target a{" "}
+              <strong className="font-medium text-ink">weekly cadence</strong> on CI/CD schedules,
+              with facility rows reflecting the latest successful ingest in{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">updated_at</code>.
+              See also the <Link href="/data" className="font-medium text-teal underline underline-offset-4 hover:underline">dataset page</Link>.
             </p>
           </Section>
 

@@ -208,15 +208,18 @@ export function FacilityListClient({
   stateSlug,
   regionName,
   hiddenSmallCount,
+  initialShowSmall = false,
 }: {
   facilities: ListFacility[];
   stateSlug: string;
   regionName: string;
   hiddenSmallCount: number;
+  /** When all indexed facilities are small-tier, show them by default so the list is not empty. */
+  initialShowSmall?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [chip, setChip] = useState<FilterChip>("all");
-  const [showSmall, setShowSmall] = useState(false);
+  const [showSmall, setShowSmall] = useState(initialShowSmall);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();

@@ -5,6 +5,7 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { regionFromSlug } from "@/lib/regions";
+import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { stateFromSlug } from "@/lib/states";
 import { loadBenchmarks } from "@/lib/benchmarks";
 import { BenchmarkRow } from "@/components/facility/BenchmarkRow";
@@ -341,6 +342,8 @@ export default async function FacilityPage({ params }: PageProps) {
     : `/${state.slug}/${facility.city_slug}`;
   const backLabel = region ? region.name : facility.city ?? state.name;
 
+  const countyHub = countyRegionContainingCitySlug(state.code, facility.city_slug);
+
   const businessId = `${canonicalUrl}#business`;
   const breadcrumbTrail = [
     { name: "Home", url: canonicalFor("/") },
@@ -380,6 +383,30 @@ export default async function FacilityPage({ params }: PageProps) {
               {backLabel}
             </Link>
           </p>
+          <nav
+            className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-muted"
+            aria-label="Browse nearby hubs"
+          >
+            <Link
+              href={`/${state.slug}/${facility.city_slug}`}
+              className="font-medium text-teal hover:underline underline-offset-4"
+            >
+              All memory care in {facility.city ?? "this city"}
+            </Link>
+            {countyHub && (
+              <>
+                <span aria-hidden className="text-muted">
+                  ·
+                </span>
+                <Link
+                  href={`/${state.slug}/${countyHub.slug}`}
+                  className="font-medium text-teal hover:underline underline-offset-4"
+                >
+                  {countyHub.name} hub
+                </Link>
+              </>
+            )}
+          </nav>
 
           <h1 className="mt-4 font-[family-name:var(--font-sans)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
             {facility.name}

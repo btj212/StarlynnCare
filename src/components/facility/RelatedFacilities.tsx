@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { stateFromSlug } from "@/lib/states";
 
 interface RelatedFacilitiesProps {
   /** The current facility's ID — excluded from results */
@@ -27,7 +28,8 @@ async function loadRelated(
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return [];
 
-  const stateCode = stateSlug === "california" ? "CA" : stateSlug.toUpperCase().slice(0, 2);
+  const stateInfo = stateFromSlug(stateSlug);
+  const stateCode = stateInfo?.code ?? "CA";
 
   // Same city, up to 8 siblings (we'll narrow to top 6 after grade lookup)
   const { data: raw } = await supabase

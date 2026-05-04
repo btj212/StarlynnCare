@@ -29,6 +29,7 @@ export interface Region {
 }
 
 const CALIFORNIA = stateFromSlug("california")!;
+const TEXAS = stateFromSlug("texas")!;
 
 /**
  * Alameda County cities — incorporated places only. If a CDSS record has a
@@ -364,6 +365,108 @@ const SAN_JOAQUIN_COUNTY_CITIES = [
   "manteca",
 ] as const;
 
+/** Phase 4 expansion — coastal / inland counties with substantial RCFE supply */
+const RIVERSIDE_COUNTY_CITIES = [
+  "riverside",
+  "corona",
+  "temecula",
+  "murrieta",
+  "moreno-valley",
+  "menifee",
+  "hemet",
+  "indio",
+  "cathedral-city",
+  "palm-springs",
+  "palm-desert",
+  "la-quinta",
+  "rancho-mirage",
+  "desert-hot-springs",
+  "beaumont",
+  "banning",
+  "lake-elsinore",
+  "perris",
+  "eastvale",
+  "jurupa-valley",
+  "norco",
+  "wildomar",
+  "canyon-lake",
+  "calimesa",
+] as const;
+
+const PLACER_COUNTY_CITIES = [
+  "roseville",
+  "rocklin",
+  "lincoln",
+  "auburn",
+  "granite-bay",
+  "loomis",
+  "north-highlands",
+  "colfax",
+] as const;
+
+const EL_DORADO_COUNTY_CITIES = [
+  "placerville",
+  "south-lake-tahoe",
+  "el-dorado-hills",
+  "cameron-park",
+  "shingle-springs",
+] as const;
+
+const YOLO_COUNTY_CITIES = ["davis", "woodland", "west-sacramento", "winters"] as const;
+
+const MARIN_COUNTY_CITIES = [
+  "san-rafael",
+  "novato",
+  "mill-valley",
+  "san-anselmo",
+  "larkspur",
+  "corte-madera",
+  "fairfax",
+  "sausalito",
+  "tiburon",
+] as const;
+
+const SANTA_CRUZ_COUNTY_CITIES = [
+  "santa-cruz",
+  "watsonville",
+  "scotts-valley",
+  "capitola",
+  "aptos",
+  "soquel",
+] as const;
+
+const SANTA_BARBARA_COUNTY_CITIES = [
+  "santa-barbara",
+  "goleta",
+  "lompoc",
+  "santa-maria",
+  "carpinteria",
+  "buellton",
+  "guadalupe",
+  "solvang",
+] as const;
+
+const SAN_LUIS_OBISPO_COUNTY_CITIES = [
+  "san-luis-obispo",
+  "paso-robles",
+  "atascadero",
+  "arroyo-grande",
+  "morro-bay",
+  "pismo-beach",
+  "grover-beach",
+  "oceano",
+] as const;
+
+const NAPA_COUNTY_CITIES = [
+  "napa",
+  "american-canyon",
+  "st-helena",
+  "calistoga",
+  "yountville",
+] as const;
+
+const MENDOCINO_COUNTY_CITIES = ["ukiah", "fort-bragg", "willits"] as const;
+
 export const REGIONS: ReadonlyArray<Region> = [
   {
     slug: "alameda-county",
@@ -689,6 +792,186 @@ export const REGIONS: ReadonlyArray<Region> = [
     citySlugs: [slug],
   })),
 
+  {
+    slug: "riverside-county",
+    name: "Riverside County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: RIVERSIDE_COUNTY_CITIES,
+  },
+  ...RIVERSIDE_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "placer-county",
+    name: "Placer County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: PLACER_COUNTY_CITIES,
+  },
+  ...PLACER_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "el-dorado-county",
+    name: "El Dorado County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: EL_DORADO_COUNTY_CITIES,
+  },
+  ...EL_DORADO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "yolo-county",
+    name: "Yolo County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: YOLO_COUNTY_CITIES,
+  },
+  ...YOLO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "marin-county",
+    name: "Marin County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: MARIN_COUNTY_CITIES,
+  },
+  ...MARIN_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "santa-cruz-county",
+    name: "Santa Cruz County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SANTA_CRUZ_COUNTY_CITIES,
+  },
+  ...SANTA_CRUZ_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "santa-barbara-county",
+    name: "Santa Barbara County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SANTA_BARBARA_COUNTY_CITIES,
+  },
+  ...SANTA_BARBARA_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "san-luis-obispo-county",
+    name: "San Luis Obispo County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: SAN_LUIS_OBISPO_COUNTY_CITIES,
+  },
+  ...SAN_LUIS_OBISPO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "napa-county",
+    name: "Napa County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: NAPA_COUNTY_CITIES,
+  },
+  ...NAPA_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
+  {
+    slug: "mendocino-county",
+    name: "Mendocino County",
+    kind: "county",
+    state: CALIFORNIA,
+    citySlugs: MENDOCINO_COUNTY_CITIES,
+  },
+  ...MENDOCINO_COUNTY_CITIES.map<Region>((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" "),
+    kind: "city" as const,
+    state: CALIFORNIA,
+    citySlugs: [slug],
+  })),
+
   /** City & county of San Francisco — not nested under another county list */
   {
     slug: "san-francisco",
@@ -696,6 +979,64 @@ export const REGIONS: ReadonlyArray<Region> = [
     kind: "city",
     state: CALIFORNIA,
     citySlugs: ["san-francisco"],
+  },
+
+  // ── Texas (Phase 5 scaffold — HHSC ingest pending; empty hubs 404 until data lands)
+  {
+    slug: "harris-county",
+    name: "Harris County",
+    kind: "county",
+    state: TEXAS,
+    citySlugs: [
+      "houston",
+      "pasadena-tx",
+      "pearland",
+      "sugar-land",
+      "baytown",
+      "missouri-city",
+    ],
+  },
+  {
+    slug: "dallas-county",
+    name: "Dallas County",
+    kind: "county",
+    state: TEXAS,
+    citySlugs: ["dallas", "irving", "garland", "richardson", "mesquite", "carrollton"],
+  },
+  {
+    slug: "tarrant-county",
+    name: "Tarrant County",
+    kind: "county",
+    state: TEXAS,
+    citySlugs: ["fort-worth", "arlington-tx", "grand-prairie"],
+  },
+  {
+    slug: "bexar-county",
+    name: "Bexar County",
+    kind: "county",
+    state: TEXAS,
+    citySlugs: ["san-antonio"],
+  },
+  {
+    slug: "travis-county",
+    name: "Travis County",
+    kind: "county",
+    state: TEXAS,
+    citySlugs: ["austin"],
+  },
+  {
+    slug: "collin-county",
+    name: "Collin County",
+    kind: "county",
+    state: TEXAS,
+    citySlugs: ["plano", "mckinney", "frisco", "allen"],
+  },
+  {
+    slug: "denton-county",
+    name: "Denton County",
+    kind: "county",
+    state: TEXAS,
+    citySlugs: ["denton", "lewisville", "flower-mound"],
   },
 ];
 

@@ -25,6 +25,8 @@ import {
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import { clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
+import { countPublishableFacilitiesInRegion } from "@/lib/regionsHubCount";
+import { cityIntroForSlug } from "@/lib/content/cityIntros";
 
 export const revalidate = 3600;
 
@@ -38,6 +40,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = tryPublicSupabaseClient();
   const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
   if (!region) return { title: "Region not found | StarlynnCare" };
+
+  // Thin hub guardrail: empty regions 404 — avoids indexing placeholder shells (CA + future states).
+  if (supabase) {
+    const n = await countPublishableFacilitiesInRegion(supabase, region);
+    if (n === 0) notFound();
+  }
+
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const desc = clipMetaDescription(
     `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`,
@@ -179,6 +188,76 @@ export default async function RegionPage({ params }: PageProps) {
   const visibleCount = facilities.filter((f) => f.capacity_tier !== "small").length;
   const totalCount = facilities.length;
 
+  if (!fetchError && totalCount === 0) {
+    notFound();
+  }
+
+  type TrendFacility = {
+    id: string;
+    name: string;
+    slug: string;
+    city_slug: string;
+    typeACount: number;
+  };
+
+  let countyTrendRows: TrendFacility[] = [];
+  if (
+    region.kind === "county" &&
+    totalCount > 0 &&
+    supabase &&
+    region.state.code === "CA" &&
+    facilities.length > 0
+  ) {
+    const ids = facilities.map((f) => f.id);
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    const isoDate = twelveMonthsAgo.toISOString().split("T")[0];
+
+    const { data: inspRows } = await supabase
+      .from("inspections")
+      .select("id, facility_id")
+      .in("facility_id", ids)
+      .gte("inspection_date", isoDate);
+
+    const facilityByInsp = new Map(
+      (inspRows ?? []).map((r: { id: string; facility_id: string }) => [r.id, r.facility_id]),
+    );
+    const inspIds = (inspRows ?? []).map((r: { id: string }) => r.id);
+
+    const typeAByFac = new Map<string, number>();
+    const TREND_CHUNK = 200;
+    for (let ti = 0; ti < inspIds.length; ti += TREND_CHUNK) {
+      const chunk = inspIds.slice(ti, ti + TREND_CHUNK);
+      const { data: defs } = await supabase
+        .from("deficiencies")
+        .select("inspection_id")
+        .in("inspection_id", chunk)
+        .gte("severity", 3);
+      for (const d of defs ?? []) {
+        const fid = facilityByInsp.get(d.inspection_id as string);
+        if (!fid) continue;
+        typeAByFac.set(fid, (typeAByFac.get(fid) ?? 0) + 1);
+      }
+    }
+
+    const facById = new Map(facilities.map((f) => [f.id, f]));
+    countyTrendRows = [...typeAByFac.entries()]
+      .filter(([, n]) => n > 0)
+      .map(([fid, typeACount]) => {
+        const f = facById.get(fid);
+        if (!f) return null;
+        return {
+          id: f.id,
+          name: f.name,
+          slug: f.slug,
+          city_slug: f.city_slug,
+          typeACount,
+        };
+      })
+      .filter((x): x is TrendFacility => x != null)
+      .sort((a, b) => b.typeACount - a.typeACount || a.name.localeCompare(b.name));
+  }
+
   const pageUrl = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const pageTitle = `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`;
   const pageDesc = `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`;
@@ -253,6 +332,7 @@ export default async function RegionPage({ params }: PageProps) {
   ];
 
   const isCounty = region.kind === "county";
+  const cityIntro = !isCounty ? cityIntroForSlug(region.slug) : null;
 
   return (
     <>
@@ -287,6 +367,11 @@ export default async function RegionPage({ params }: PageProps) {
               State inspection records and citation history for every licensed
               facility — built from primary CDSS data.
             </p>
+            {cityIntro && (
+              <p className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch]">
+                {cityIntro}
+              </p>
+            )}
           </div>
         </div>
 
@@ -384,18 +469,6 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* ── Empty state ── */}
-        {!fetchError && totalCount === 0 && (
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
-            <p className="font-[family-name:var(--font-display)] text-[24px] text-ink">
-              No facilities published yet for {region.name}.
-            </p>
-            <p className="mt-3 text-ink-3 leading-relaxed max-w-xl">
-              The CDSS ingest for this region has not yet produced verifiable records.
-            </p>
-          </div>
-        )}
-
         {/* ── Top performers rail (county pages only) ── */}
         {isCounty && !fetchError && totalCount > 0 && (
           <TopGradedFacilities
@@ -405,6 +478,48 @@ export default async function RegionPage({ params }: PageProps) {
             countyName={region.name}
           />
         )}
+
+        {/* ── County citation spotlight (Type-A in last 12 months, CA counties only) ── */}
+        {isCounty &&
+          !fetchError &&
+          countyTrendRows.length > 0 &&
+          region.state.code === "CA" && (
+            <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
+              <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
+                <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+                  § Recent findings
+                </div>
+                <h2 className="font-[family-name:var(--font-display)] text-[26px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.01em] text-ink m-0 mb-3">
+                  Type-A citations in the last 12 months
+                </h2>
+                <p className="text-[15px] text-ink-2 max-w-[72ch] leading-relaxed mb-8">
+                  Facilities below had at least one Type-A (or immediate jeopardy) deficiency tied to an inspection dated in the rolling year — sourced from published CDSS deficiency records.
+                </p>
+                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 list-none m-0 p-0">
+                  {countyTrendRows.slice(0, 12).map((row) => (
+                    <li key={row.id}>
+                      <Link
+                        href={`/${region.state.slug}/${row.city_slug}/${row.slug}`}
+                        className="flex flex-col gap-1 rounded-lg border border-paper-rule bg-paper-2 px-4 py-3 no-underline hover:border-rust/40 transition-colors min-w-0"
+                      >
+                        <span className="font-[family-name:var(--font-display)] text-[17px] text-ink leading-snug">
+                          {row.name}
+                        </span>
+                        <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 uppercase tracking-[0.06em]">
+                          {row.typeACount} Type-A finding{row.typeACount !== 1 ? "s" : ""} (indexed window)
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                {countyTrendRows.length > 12 && (
+                  <p className="mt-6 text-sm text-ink-3">
+                    Showing 12 of {countyTrendRows.length} facilities with Type-A findings in this window.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
 
         {/* ── Facility list ── */}
         {!fetchError && totalCount > 0 && (
@@ -422,6 +537,7 @@ export default async function RegionPage({ params }: PageProps) {
               stateSlug={region.state.slug}
               regionName={region.name}
               hiddenSmallCount={smallCount}
+              initialShowSmall={visibleCount === 0 && smallCount > 0}
             />
           </div>
         )}

@@ -17,7 +17,8 @@ export interface StateInfo {
 
 export const STATES: ReadonlyArray<StateInfo> = [
   { slug: "california", code: "CA", name: "California" },
-  // Future: florida, texas, etc. Add here when a state goes live.
+  /** Scaffolded for ingest + routing — hubs ship when publishable TX rows exist. */
+  { slug: "texas", code: "TX", name: "Texas" },
 ];
 
 /** States with at least one publishable facility — used by the home page + sitemap. */

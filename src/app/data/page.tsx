@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { buildBreadcrumbList, buildDatasetSchema, buildWebPageWithReviewer } from "@/lib/seo/schema";
+import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
 const DATA_PATH = "/data";
 const dataCanonical = canonicalFor(DATA_PATH);
@@ -30,7 +31,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DataPage() {
+export default async function DataPage() {
+  const supabase = tryPublicSupabaseClient();
+  let lastDatasetRefresh: string | null = null;
+  if (supabase) {
+    const { data } = await supabase
+      .from("facilities")
+      .select("updated_at")
+      .eq("publishable", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const row = data as { updated_at: string } | null;
+    lastDatasetRefresh = row?.updated_at
+      ? new Date(row.updated_at).toISOString().split("T")[0]
+      : null;
+  }
+
   const methodologyUrl = canonicalFor("/methodology");
   const dataJsonLd = [
     buildBreadcrumbList([
@@ -104,6 +121,26 @@ export default function DataPage() {
               >
                 How we rate facilities →
               </Link>
+            </p>
+          </section>
+
+          <section className="mt-10 space-y-4 text-base leading-relaxed text-slate">
+            <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
+              Refresh cadence
+            </h2>
+            <p>
+              CDSS inspection and deficiency records are ingested on a recurring schedule in the
+              production pipeline (weekly target). Facility roster rows last touched{" "}
+              {lastDatasetRefresh ? (
+                <strong className="text-navy">{lastDatasetRefresh}</strong>
+              ) : (
+                <span className="italic text-muted">(connect Supabase to display)</span>
+              )}{" "}
+              reflect the latest publishable profile sync — see{" "}
+              <Link href="/methodology" className="font-medium text-teal underline-offset-2 hover:underline">
+                methodology → ingest &amp; refresh
+              </Link>
+              .
             </p>
           </section>
 
