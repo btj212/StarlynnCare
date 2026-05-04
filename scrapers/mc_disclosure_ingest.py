@@ -313,6 +313,21 @@ WHERE state_code = 'CA'
 """
 
 
+def _column_exists(conn: "psycopg.Connection[Any]", table: str, column: str) -> bool:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = %s
+              AND column_name = %s
+            """,
+            (table, column),
+        )
+        return cur.fetchone() is not None
+
+
 def recompute_designation_basis(
     conn: "psycopg.Connection[Any]",
     dry_run: bool = False,
@@ -323,6 +338,13 @@ def recompute_designation_basis(
 
     Returns the count of rows updated (or that would be updated in dry-run mode).
     """
+    if not _column_exists(conn, "facilities", "ca_memory_care_designation_basis"):
+        print(
+            "  (skip) column ca_memory_care_designation_basis not present; "
+            "add migration or drop this step until the column exists."
+        )
+        return 0
+
     if dry_run:
         count_sql = """
             SELECT COUNT(*) FROM facilities

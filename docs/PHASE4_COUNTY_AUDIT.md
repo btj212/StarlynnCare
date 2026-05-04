@@ -1,24 +1,26 @@
 # Phase 4 county coverage audit (California)
 
-**Date:** 2026-05-04  
+**Date:** 2026-05-03 (post–Phase 4 CKAN ingest + MC signal refresh + `recompute_publishable`)  
 **Method:** Read-only SQL against `facilities` where `state_code = 'CA'` and `publishable = true`, counting rows whose `city_slug` appears in the Phase 4 county seed lists in [`src/lib/regions.ts`](../src/lib/regions.ts) (`RIVERSIDE_COUNTY_CITIES` … `MENDOCINO_COUNTY_CITIES`).
 
 **Hub behavior:** County/city listing hubs call `notFound()` when `countPublishableFacilitiesInRegion` is `0` (see [`src/app/[state]/[city]/page.tsx`](../src/app/[state]/[city]/page.tsx)). Counties with **0** publishable facilities in their seed cities therefore **404** until ingest maps facilities into those `city_slug` values.
 
 ## Aggregate counts (publishable facilities in county seed cities)
 
-| County slug              | Publishable count | Expected hub |
+| County slug              | Publishable count | Prod hub (`GET /california/{slug}`) |
 | ------------------------ | ----------------: | ------------ |
 | `riverside-county`       |                38 | 200 (listings) |
 | `placer-county`          |                 1 | 200 (thin) |
-| `el-dorado-county`       |                 0 | **404** |
-| `yolo-county`            |                 0 | **404** |
-| `marin-county`           |                 0 | **404** |
-| `santa-cruz-county`      |                 0 | **404** |
-| `santa-barbara-county`   |                 0 | **404** |
-| `san-luis-obispo-county` |                 0 | **404** |
-| `napa-county`            |                 0 | **404** |
-| `mendocino-county`       |                 0 | **404** |
+| `el-dorado-county`       |                 1 | 200 |
+| `yolo-county`            |                 0 | **404** (empty guardrail) |
+| `marin-county`           |                 1 | 200 |
+| `santa-cruz-county`      |                 3 | 200 |
+| `santa-barbara-county`   |                 6 | 200 |
+| `san-luis-obispo-county` |                 2 | 200 |
+| `napa-county`            |                 1 | 200 |
+| `mendocino-county`       |                 0 | **404** (empty guardrail) |
+
+Note — **Yolo / Mendocino:** roster rows exist from CKAN ingest, but **no facility is currently `publishable`** under Option C rules (Tier-1 MC signals + review gates), so county hubs correctly **404** until promotion signals appear.
 
 ## Riverside — publishable rows by `city_slug` (for ingest prioritization)
 
@@ -117,13 +119,18 @@ Tool: [Rich Results Test](https://search.google.com/test/rich-results). Paste ea
 
 | Metric | Value |
 | ------ | ----- |
-| CA `publishable` facilities | 469 |
-| With `photo_url` | 365 (~78%) |
-| Distinct `city_slug` | 157 |
+| CA licensed rows (`LICENSED`) | 5,455 |
+| CA `publishable` facilities | 483 |
+| CA `serves_memory_care` (licensed) | 483 |
+| CA `mc_review_status = needs_review` (licensed) | 384 |
+| Publishable missing `photo_url` | 19 |
+| Distinct `city_slug` (publishable) | _(see SQL)_ |
 
-**Orphan `city_slug` check:** Compared distinct DB slugs to all region `slug` + `citySlugs` in [`src/lib/regions.ts`](../src/lib/regions.ts). **25 slugs** appear in data but are **not** in `REGIONS`:  
-`altadena`, `antelope`, `arleta`, `canoga-park`, `cardiff-by-the-sea`, `carmichael`, `cirtus-heights`, `fair-oaks`, `fallbrook`, `gold-river`, `granada-hills`, `la-jolla`, `montrose`, `northridge`, `orangevale`, `pacific-palisades`, `playa-vista`, `sherman-oaks`, `studio-city`, `sun-city`, `tarzana`, `valencia`, `van-nuys`, `west-hills`, `woodland-hills`.  
-Facilities in those cities still appear on **county** hubs that include them in `citySlugs`; standalone `/california/{slug}` hubs for those city names may be missing until seeds are expanded or slugs are normalized (see typo `cirtus-heights` vs `citrus-heights` redirect already in `next.config.ts`).
+**Orphan `city_slug` check (publishable vs seed lists):** Compared publishable rows to every `*_COUNTY_CITIES` array in [`src/lib/regions.ts`](../src/lib/regions.ts). After expanding LA / Sacramento / San Diego / SLO seeds (neighborhood + CDP slugs), adding `slugify_city()` typo alias `cirtus-heights` → `citrus-heights` in [`scrapers/ccld_rcfe_ingest.py`](../scrapers/ccld_rcfe_ingest.py), and a one-time DB fix for the legacy `cirtus-heights` row, **no publishable facility remains outside the county city-slug seeds** except the **`san-francisco`** standalone region (intentional — not part of a `*_COUNTY_CITIES` constant).
+
+**Phase 4 production curl (snapshot):** `el-dorado-county`, `marin-county`, `santa-cruz-county`, `santa-barbara-county`, `san-luis-obispo-county`, `napa-county` → **200**. `yolo-county`, `mendocino-county` → **404** (0 publishable in county seeds).
+
+**Backfill batch (local scrapers):** `fetch_photos.py` (118 candidates → 99 fetched / 19 no Street View), `summarize_inspections.py` (266 inspection summaries written), `generate_content.py` (48 new content blocks; remainder already filled).
 
 ### Monday scheduled ingest
 

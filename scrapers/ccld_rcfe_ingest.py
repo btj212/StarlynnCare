@@ -211,6 +211,18 @@ def slugify(text: str) -> str:
     return s or "facility"
 
 
+# Known CKAN / CDSS typos → canonical hub slug (must match `src/lib/regions.ts`).
+_CITY_SLUG_ALIASES: dict[str, str] = {
+    "cirtus-heights": "citrus-heights",
+}
+
+
+def slugify_city(raw_city: str) -> str:
+    """Normalize facility_city into city_slug; aliases fix recurring data-entry typos."""
+    base = slugify(raw_city)
+    return _CITY_SLUG_ALIASES.get(base, base)
+
+
 def titleize(text: str) -> str:
     """Uppercase-all CDSS names → Title Case."""
     if not text:
@@ -427,7 +439,7 @@ def build_facility_row(
 
     raw_city = (ckan.get("facility_city") or "").strip()
     city = titleize(raw_city)
-    city_slug = slugify(raw_city) if raw_city else "unknown-city"
+    city_slug = slugify_city(raw_city) if raw_city else "unknown-city"
 
     exc_key = _county_exclusion_key(ingest_county)
     excluded = COUNTY_CITY_EXCLUSIONS.get(exc_key)

@@ -58,6 +58,7 @@ Document run date, sample size, and adjudication rules here after the audit.
 | CKAN ingest | `scrapers/ccld_rcfe_ingest.py` |
 | Citations | `scrapers/ccld_citations_ingest.py` |
 | MC disclosure | `scrapers/mc_disclosure_ingest.py` |
+| §1569.627 filings import (PRA / bulk) | `scrapers/mc_disclosure_filings_import.py` → then `recompute_publishable.py` |
 | Chain signals | `scrapers/chain_curated_mc.py` |
 | Directories | `scrapers/directory_mc_scrape.py` → JSON under `.firecrawl/directory-match/` |
 | Directory match | `scrapers/directory_mc_upsert.py` |
@@ -65,5 +66,11 @@ Document run date, sample size, and adjudication rules here after the audit.
 | Inspection blurbs | `scrapers/summarize_inspections.py` |
 | Editorial content | `scrapers/generate_content.py` |
 | Queue suggestions | `scrapers/queue_verifier.py` → `mc_queue_evidence` |
+
+### When CDSS §1569.627 list arrives
+
+1. `python3 scrapers/mc_disclosure_filings_import.py --input <file> --dry-run`
+2. Re-run without `--dry-run`, then `python3 scrapers/recompute_publishable.py`
+3. Backfill photos / summaries / content for newly publishable rows (`fetch_photos`, `summarize_inspections`, `generate_content`)
 
 _Last updated: automated during “Maximize MC Coverage” ship prep._

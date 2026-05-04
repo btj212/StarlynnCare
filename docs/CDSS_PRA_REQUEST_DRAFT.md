@@ -92,4 +92,4 @@ Update this file when you send it and when responses come back so we have a writ
 - [ ] Send.
 - [ ] Calendar a 10-day reminder for the statutory acknowledgement.
 - [ ] Calendar a 24-day reminder for production (10 + 14 day extension).
-- [ ] Once received, write `scrapers/import_1569627_disclosure.py` to upsert the list into `facilities.memory_care_disclosure_filed` and set `memory_care_disclosure_source = '§1569.627 disclosure list (CDSS)'`.
+- [ ] Once received, run `scrapers/mc_disclosure_filings_import.py` (see script docstring) to set `memory_care_disclosure_filed` and `memory_care_disclosure_source = 'cdss_pra_2026'`, then `scrapers/recompute_publishable.py`.
