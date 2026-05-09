@@ -28,6 +28,8 @@ export const orStateConfig: StateHubConfig = {
       p: "Each profile links directly to the Oregon DHS source record. Every finding shows its download date. No black box.",
     },
   ],
+  guidesHref: "/oregon/guides",
+  stateArticles: [],
   editorialCards: [
     {
       kind: "Comparison Hub",
@@ -48,9 +50,9 @@ export const orStateConfig: StateHubConfig = {
     {
       kind: "Editorial library",
       title: "All guides & explainers",
-      desc: "Costs, citations, tours, glossary, dementia vocabulary — every StarlynnCare article in one index.",
+      desc: "Decision guides, clinical primers, and inspection explainers — every StarlynnCare article for Oregon families.",
       meta: "Live · Full library",
-      href: "/library",
+      href: "/oregon/guides",
       live: true,
     },
   ],

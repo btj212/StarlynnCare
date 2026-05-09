@@ -28,6 +28,8 @@ export const waStateConfig: StateHubConfig = {
       p: "Each profile links directly to the DSHS source report. Every finding shows its download date. No black box.",
     },
   ],
+  guidesHref: "/washington/guides",
+  stateArticles: [],
   editorialCards: [
     {
       kind: "Comparison Hub",
@@ -48,9 +50,9 @@ export const waStateConfig: StateHubConfig = {
     {
       kind: "Editorial library",
       title: "All guides & explainers",
-      desc: "Costs, citations, tours, glossary, dementia vocabulary — every StarlynnCare article in one index.",
+      desc: "Decision guides, clinical primers, and inspection explainers — every StarlynnCare article for Washington families.",
       meta: "Live · Full library",
-      href: "/library",
+      href: "/washington/guides",
       live: true,
     },
   ],

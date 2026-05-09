@@ -90,6 +90,7 @@ export function StateHubSections({ data, config }: Props) {
         sectionTitle={<>An editorial desk for memory care, <em>backed by primary-source data.</em></>}
         cards={config.editorialCards}
         year={year}
+        stateName={config.stateName}
       />
 
       <StateHubReviews reviews={sampleReviews} />

@@ -28,6 +28,8 @@ export const caStateConfig: StateHubConfig = {
       p: "Each profile shows citation numbers, dates, and severity levels. No black box. Every data point links to its source record.",
     },
   ],
+  guidesHref: "/library",
+  stateArticles: [],
   editorialCards: [
     {
       kind: "Annual Data Report · 2026",

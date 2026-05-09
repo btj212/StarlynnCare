@@ -10,9 +10,10 @@ type Props = {
   sectionTitle: ReactNode;
   cards: EditorialCard[];
   year: number;
+  stateName: string;
 };
 
-export function StateHubEditorial({ sectionLabel, sectionTitle, cards, year }: Props) {
+export function StateHubEditorial({ sectionLabel, sectionTitle, cards, year, stateName }: Props) {
   return (
     <section
       id="editorial"
@@ -41,7 +42,7 @@ export function StateHubEditorial({ sectionLabel, sectionTitle, cards, year }: P
                       style={{ color: "#EBDDB8" }}
                     >
                       <span>The State of<br />Memory Care<br /></span>
-                      <em style={{ color: "#fff" }}>in California</em>
+                      <em style={{ color: "#fff" }}>in {stateName}</em>
                     </div>
                   </div>
                 )}

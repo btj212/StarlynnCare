@@ -1,5 +1,6 @@
 import type { StatItem } from "@/components/editorial/StatBlock";
 import type { StateHubData } from "@/lib/data/stateHub";
+import type { ArticleTag } from "@/lib/content/articleRegistry";
 
 export type EditorialCard = {
   kind: string;
@@ -7,6 +8,20 @@ export type EditorialCard = {
   desc: string;
   meta: string;
   href: string | null;
+  live: boolean;
+};
+
+/**
+ * A state-specific guide page declared directly in the state config.
+ * These supplement the shared ARTICLE_REGISTRY entries for a state.
+ * `slug` is relative (e.g. "type-a-b-c-licensing") — the full path is
+ * `/${stateSlug}/${slug}`.
+ */
+export type StateArticle = {
+  slug: string;
+  title: string;
+  desc: string;
+  tags: ArticleTag[];
   live: boolean;
 };
 
@@ -20,6 +35,17 @@ export interface StateHubConfig {
   methodologySteps: ReadonlyArray<{ n: string; t: string; p: string }>;
   /** Editorial article cards for § 04. */
   editorialCards: EditorialCard[];
+  /**
+   * State-specific guide pages. Each entry corresponds to a page at
+   * `/[stateSlug]/[slug]`. Used by the per-state guides index.
+   */
+  stateArticles: StateArticle[];
+  /**
+   * The href for the "all guides" link on this state's hub.
+   * CA → "/library" (owns the main library).
+   * All other states → "/{stateSlug}/guides".
+   */
+  guidesHref: string;
   /** County names to show as "coming soon" in the browse grid. */
   comingCounties: readonly string[];
   /** FAQ set for § 06. */
