@@ -142,17 +142,19 @@ export default async function RegionPage({ params }: PageProps) {
 
         const inspIds = (inspData ?? []).map((i: { id: string }) => i.id);
 
-        // 3. Deficiencies — chunked to avoid PostgREST row limits and URL length limits
-        //    when inspIds is large (large counties with hundreds of inspections).
-        //    severity mapping: Type A → 3 or 4, Type B → 2 (see ccld_citations_ingest.py)
-        const DEF_CHUNK = 200;
-        const allDefs: Array<{ inspection_id: string; severity: number | null }> = [];
+        // 3. Deficiencies — chunked to avoid URL-length limits on the IN clause.
+        //    Each chunk query uses a high explicit limit (5000) to bypass PostgREST's
+        //    default 1000-row cap, which otherwise silently truncates large cities.
+        //    Serious = Type A class OR severity >= 3 (whichever is populated by the ingest).
+        const DEF_CHUNK = 150;
+        const allDefs: Array<{ inspection_id: string; class: string | null; severity: number | null }> = [];
         for (let ci = 0; ci < inspIds.length; ci += DEF_CHUNK) {
           const chunk = inspIds.slice(ci, ci + DEF_CHUNK);
           const { data: chunkData, error: chunkErr } = await supabase
             .from("deficiencies")
-            .select("inspection_id, severity")
-            .in("inspection_id", chunk);
+            .select("inspection_id, class, severity")
+            .in("inspection_id", chunk)
+            .limit(5000);
           if (chunkErr) {
             console.error("[hub] deficiencies chunk query failed:", chunkErr.message, { ci, chunkLen: chunk.length });
             break;
@@ -166,8 +168,9 @@ export default async function RegionPage({ params }: PageProps) {
           const fid = inspFacMap.get(d.inspection_id);
           if (!fid) continue;
           totalCitByFac.set(fid, (totalCitByFac.get(fid) ?? 0) + 1);
-          // severity >= 3 = Type A (immediate jeopardy 4, serious 3); severity 2 = Type B
-          if ((d.severity ?? 0) >= 3) {
+          // Type A class OR severity >= 3 — handles whichever field the ingest populates.
+          const isSerious = d.class === "Type A" || (d.severity ?? 0) >= 3;
+          if (isSerious) {
             seriousCitByFac.set(fid, (seriousCitByFac.get(fid) ?? 0) + 1);
           }
         }
