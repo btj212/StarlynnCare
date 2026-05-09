@@ -10,15 +10,14 @@ import {
   buildStateHubCollectionPage,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
-import { CA_FAQS } from "@/lib/content/stateFaqs";
 import { stateFromSlug } from "@/lib/states";
 import {
   SampleFacilityRotationProvider,
 } from "@/components/home/SampleFacilityRotation";
-import { loadCaliforniaStateHubData, getSeasonAndYear } from "@/lib/data/stateHub";
-import { californiaStatItems, CALIFORNIA_EDITORIAL_CARDS } from "@/lib/stateHubConfig";
-import { CaliforniaStateHubSections } from "@/components/state-hub/CaliforniaStateHubSections";
-import { MobileHomeView } from "@/components/mobile/MobileHomeView";
+import { loadStateHubData } from "@/lib/data/stateHub";
+import { caStateConfig } from "@/lib/stateHubConfigs/ca";
+import { StateHubSections } from "@/components/state-hub/StateHubSections";
+import { MobileStateHubView } from "@/components/mobile/MobileStateHubView";
 import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 
 export const revalidate = 3600;
@@ -48,10 +47,8 @@ export const metadata: Metadata = {
 };
 
 export default async function CaliforniaHubPage() {
-  const data = await loadCaliforniaStateHubData();
+  const data = await loadStateHubData("CA");
   const state = stateFromSlug("california")!;
-  const { season, year } = getSeasonAndYear();
-  const statItems = californiaStatItems(data.stats);
 
   const stateJsonLd = [
     buildBreadcrumbList([
@@ -68,7 +65,7 @@ export default async function CaliforniaHubPage() {
       url: pageCanonical,
       state,
     }),
-    buildFaqSchemaFromPairs(CA_FAQS, pageCanonical),
+    buildFaqSchemaFromPairs(caStateConfig.faqs.map((f) => ({ q: f.q, a: f.a })), pageCanonical),
   ];
 
   return (
@@ -77,27 +74,16 @@ export default async function CaliforniaHubPage() {
 
       <SampleFacilityRotationProvider facilities={data.gradeCardFacilities}>
         <div className="m-app md:hidden">
-          <MobileHomeView
-            season={season}
-            year={year}
-            statItems={statItems}
-            counties={data.counties}
-            topCities={data.topCities}
-            firstReview={data.sampleReviews[0] ?? null}
-            editorials={CALIFORNIA_EDITORIAL_CARDS}
-            mobileFaqs={CA_FAQS.slice(0, 4)}
-            lastRefreshed={data.stats.lastRefreshed}
-            countyCountLive={data.counties.length}
-          />
+          <MobileStateHubView data={data} config={caStateConfig} />
         </div>
         <MobileStickyCtaBar />
 
         <div className="hidden md:block">
-          <GovernanceBar />
-          <SiteNav />
+          <GovernanceBar scope="CA" />
+          <SiteNav countStateCode="CA" badge="California" ctaHref="/california" ctaLabel="California memory care facilities" />
 
           <main>
-            <CaliforniaStateHubSections data={data} />
+            <StateHubSections data={data} config={caStateConfig} />
           </main>
 
           <SiteFooter />
