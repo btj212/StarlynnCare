@@ -1,9 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import type { RuleIcon } from "@/lib/states/profileConfig";
+
+/**
+ * Serializable subset of RuleCard — strips `codePattern` (RegExp) and
+ * the cfg functions so this data can safely cross the server→client boundary.
+ */
+export type SerializableRuleCard = {
+  id: string;
+  icon: RuleIcon;
+  question: string;
+  regCite: string;
+  plain: string;
+  ask: string;
+  citedDate: string | null;
+};
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -30,7 +43,7 @@ function RuleIconEl({ icon }: { icon: RuleIcon }) {
     case "report":
       return (
         <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
-          <path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v11.75A2.75 2.75 0 0016.75 18h-12A2.75 2.75 0 012 15.25V3.5zm3.75 7a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm0 3a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zM5 5.75A.75.75 0 015.75 5h4.5a.75.75 0 01.75.75v2.5a.75.75 0 01-.75.75h-4.5A.75.75 0 015 8.25v-2.5z" clipRule="evenodd" /><path d="M16.5 6.5h-1v8.75a1.25 1.25 0 002.5 0V8a1.5 1.5 0 00-1.5-1.5z" />
+          <path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v11.75A2.75 2.75 0 0116.75 18h-12A2.75 2.75 0 012 15.25V3.5zm3.75 7a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm0 3a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zM5 5.75A.75.75 0 015.75 5h4.5a.75.75 0 01.75.75v2.5a.75.75 0 01-.75.75h-4.5A.75.75 0 015 8.25v-2.5z" clipRule="evenodd" /><path d="M16.5 6.5h-1v8.75a1.25 1.25 0 002.5 0V8a1.5 1.5 0 00-1.5-1.5z" />
         </svg>
       );
     case "enforce":
@@ -50,8 +63,11 @@ function fmtCiteDate(iso: string): string {
   });
 }
 
-export function FacilityRules({ profile }: { profile: FacilityProfile }) {
-  const { rulesCards } = profile;
+type Props = {
+  rulesCards: SerializableRuleCard[];
+};
+
+export function FacilityRules({ rulesCards }: Props) {
   const [openId, setOpenId] = useState<string | null>(rulesCards[0]?.id ?? null);
 
   if (rulesCards.length === 0) return null;
@@ -98,7 +114,10 @@ export function FacilityRules({ profile }: { profile: FacilityProfile }) {
                   ) : (
                     <span />
                   )}
-                  <span className="text-rust text-[22px] transition-transform duration-200" style={{ display: "inline-block", transform: isOpen ? "rotate(45deg)" : "none" }}>
+                  <span
+                    className="text-rust text-[22px] transition-transform duration-200"
+                    style={{ display: "inline-block", transform: isOpen ? "rotate(45deg)" : "none" }}
+                  >
                     +
                   </span>
                 </div>

@@ -17,7 +17,7 @@ import { FacilityQuickFacts } from "@/components/facility/profile/FacilityQuickF
 import { FacilitySnapshot } from "@/components/facility/profile/FacilitySnapshot";
 import { FacilityPeerRank } from "@/components/facility/profile/FacilityPeerRank";
 import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
-import { FacilityRules } from "@/components/facility/profile/FacilityRules";
+import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
 import { FacilityFullInspections } from "@/components/facility/profile/FacilityFullInspections";
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
@@ -137,7 +137,7 @@ export default async function FacilityPage({ params }: PageProps) {
         <FacilityRecord profile={profile} />
 
         {/* § 04 · Rulebook accordion (hidden when state has no rules configured) */}
-        <FacilityRules profile={profile} />
+        <FacilityRules rulesCards={profile.rulesCards.map(({ id, icon, question, regCite, plain, ask, citedDate }) => ({ id, icon, question, regCite, plain, ask, citedDate } satisfies SerializableRuleCard))} />
 
         {/* § 05 · Tour prep cards (hidden when < 3 tour questions) */}
         <FacilityTourPrep profile={profile} />
