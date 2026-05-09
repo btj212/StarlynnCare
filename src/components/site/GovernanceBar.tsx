@@ -1,10 +1,25 @@
 import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
 
+const SCOPE_LABELS: Record<string, string> = {
+  CA: "EST 2025 IN CA",
+  OR: "EST 2025 IN OR",
+  WA: "EST 2025 IN WA",
+  MN: "EST 2025 IN MN",
+  TX: "EST 2025 IN TX",
+  national: "EST 2025 · 5 STATES",
+};
+
+type GovernanceBarProps = {
+  /** Two-letter state code for state hubs, or "national" for the homepage. Defaults to "CA". */
+  scope?: string;
+};
+
 /**
  * Dark-ink editorial independence bar rendered above SiteNav on every page.
  * AI crawlers and screen readers see this as a labelled landmark.
  */
-export function GovernanceBar() {
+export function GovernanceBar({ scope = "CA" }: GovernanceBarProps = {}) {
+  const scopeLabel = SCOPE_LABELS[scope] ?? SCOPE_LABELS["CA"];
   return (
     <section
       aria-label="Editorial independence statement"
@@ -28,12 +43,12 @@ export function GovernanceBar() {
             )}
         </p>
 
-        {/* Right badge — California edition only (matches product scope) */}
+        {/* Right badge */}
         <div
           className="hidden md:block font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.16em] text-gold-soft shrink-0"
           aria-hidden
         >
-          EST 2025 IN CA
+          {scopeLabel}
         </div>
       </div>
     </section>

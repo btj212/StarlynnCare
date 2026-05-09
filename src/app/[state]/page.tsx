@@ -17,6 +17,14 @@ import {
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import { OR_FAQS, WA_FAQS, MN_FAQS, TX_FAQS, type FaqItem } from "@/lib/content/stateFaqs";
+import { getStateHubConfig } from "@/lib/stateHubConfigs";
+import { loadStateHubData } from "@/lib/data/stateHub";
+import { StateHubSections } from "@/components/state-hub/StateHubSections";
+import {
+  SampleFacilityRotationProvider,
+} from "@/components/home/SampleFacilityRotation";
+import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
+import { MobileStateHubView } from "@/components/mobile/MobileStateHubView";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +72,53 @@ export default async function StatePage({ params }: PageProps) {
   const { state: stateSlug } = await params;
   const state = stateFromSlug(stateSlug);
   if (!state) notFound();
+
+  // Rich hub: if a per-state config exists, render the full state hub UI.
+  const richConfig = getStateHubConfig(stateSlug);
+  if (richConfig) {
+    const data = await loadStateHubData(state.code);
+    const stateJsonLd = [
+      buildBreadcrumbList([
+        { name: "Home", url: canonicalFor("/") },
+        { name: `${state.name} memory care`, url: canonicalFor(`/${state.slug}`) },
+      ]),
+      buildWebPageWithReviewer({
+        name: `${state.name} memory care | StarlynnCare`,
+        url: canonicalFor(`/${state.slug}`),
+        description: `Inspection-backed memory care facility profiles across ${state.name} — ranked by the state's own regulator data.`,
+      }),
+      buildStateHubCollectionPage({
+        name: `Memory care in ${state.name}`,
+        url: canonicalFor(`/${state.slug}`),
+        state,
+      }),
+      buildFaqSchemaFromPairs(richConfig.faqs.map((f) => ({ q: f.q, a: f.a })), canonicalFor(`/${state.slug}`)),
+    ];
+    return (
+      <>
+        <JsonLd objects={stateJsonLd} />
+        <SampleFacilityRotationProvider facilities={data.gradeCardFacilities}>
+          <div className="m-app md:hidden">
+            <MobileStateHubView data={data} config={richConfig} />
+          </div>
+          <MobileStickyCtaBar />
+          <div className="hidden md:block">
+            <GovernanceBar scope={state.code} />
+            <SiteNav
+              countStateCode={state.code}
+              badge={state.name}
+              ctaHref={`/${state.slug}`}
+              ctaLabel={`${state.name} memory care facilities`}
+            />
+            <main>
+              <StateHubSections data={data} config={richConfig} />
+            </main>
+            <SiteFooter />
+          </div>
+        </SampleFacilityRotationProvider>
+      </>
+    );
+  }
 
   const regions = regionsForState(state.code);
   const counties = regions.filter((r) => r.kind === "county");
