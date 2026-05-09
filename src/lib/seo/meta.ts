@@ -14,16 +14,24 @@ export function clipMetaDescription(text: string, max = 160): string {
   const preferFrom = Math.floor(max * 0.6);
 
   // Last sentence end within slice, not before preferFrom.
-  // Skip periods that are preceded by a single uppercase letter (abbreviations like St., Dr., Mt.).
+  // Skip periods that are preceded by an abbreviation (e.g. "N.", "St.", "Dr.", "Mt.").
   for (let i = slice.length - 1; i >= preferFrom; i--) {
     const c = slice[i];
     if (c === "." || c === "!" || c === "?") {
       const next = slice[i + 1];
       if (next === undefined || /\s/.test(next ?? "")) {
-        // Don't clip after abbreviations: a single uppercase letter before the period.
         const prev = i > 0 ? slice[i - 1] : "";
         const prevPrev = i > 1 ? slice[i - 2] : "";
-        const isAbbreviation = /[A-Z]/.test(prev) && (prevPrev === "" || /[\s\-]/.test(prevPrev));
+        const prevPrevPrev = i > 2 ? slice[i - 3] : "";
+        // Single uppercase: "N.", "A.", "U.", etc.
+        const isSingleUpperAbbrev =
+          /[A-Z]/.test(prev) && (prevPrev === "" || /[\s\-]/.test(prevPrev));
+        // Two-letter uppercase-initial: "St.", "Dr.", "Mt.", "Rd.", "Jr.", "Sr.", etc.
+        const isTwoLetterAbbrev =
+          /[a-z]/.test(prev) &&
+          /[A-Z]/.test(prevPrev) &&
+          (prevPrevPrev === "" || /[\s\-]/.test(prevPrevPrev));
+        const isAbbreviation = isSingleUpperAbbrev || isTwoLetterAbbrev;
         if (isAbbreviation) continue;
         const out = slice.slice(0, i + 1).trim();
         if (out.length > 0 && out.length <= budget) return out + ellipsis;

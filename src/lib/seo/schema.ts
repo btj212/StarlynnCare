@@ -618,6 +618,7 @@ export function buildArticleSchema(input: {
   dateModified?: string;
   /** Optional extra types e.g. FAQPage handled separately */
 }): object {
+  const ogImage = `${SITE_ORIGIN}/og-default.png`;
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -625,11 +626,22 @@ export function buildArticleSchema(input: {
     headline: input.headline,
     description: input.description,
     url: input.url,
+    image: ogImage,
     datePublished: input.datePublished,
     dateModified: input.dateModified ?? input.datePublished,
     author: buildStarlynnPerson(),
     reviewedBy: buildStarlynnPerson(),
-    publisher: { "@type": "Organization", name: "StarlynnCare", url: SITE_ORIGIN },
+    publisher: {
+      "@type": "Organization",
+      name: "StarlynnCare",
+      url: SITE_ORIGIN,
+      logo: {
+        "@type": "ImageObject",
+        url: ogImage,
+        width: 1200,
+        height: 630,
+      },
+    },
     isPartOf: { "@type": "WebSite", name: "StarlynnCare", url: SITE_ORIGIN },
   };
 }

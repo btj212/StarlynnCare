@@ -16,9 +16,9 @@ import {
 
 const PAGE_PATH = "/library/when-is-it-time-for-memory-care";
 const canonicalUrl = canonicalFor(PAGE_PATH);
-const TITLE = "When Is It Time for Memory Care? A Decision Framework for Families";
+const TITLE = "When Is It Time for Memory Care? A Family Guide";
 const DESC =
-  "Safety-focused checklist: wandering, nutrition, caregiver burnout, medication complexity, and parallel documentation to discuss with clinicians — not a substitute for medical advice — reviewed by a California RN.";
+  "Decision framework for families weighing memory care timing: safety signals, caregiver burnout, medication complexity. Not medical advice. Reviewed by a CA RN.";
 const DATE_PUBLISHED = "2026-05-03";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [

@@ -16,7 +16,7 @@ import {
 
 const PAGE_PATH = "/california/cost-by-city";
 const canonicalUrl = canonicalFor(PAGE_PATH);
-const TITLE = "Memory Care Costs by California City & Region (2026 Bands)";
+const TITLE = "Memory Care Costs by California City & Region";
 const DESC =
   "Regional monthly cost bands for RCFE memory care across major California metros — benchmarks only, not quotes. Reviewed by a California RN.";
 const DATE_PUBLISHED = "2026-05-03";

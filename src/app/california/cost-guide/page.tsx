@@ -313,14 +313,12 @@ export default function CaliforniaCostGuidePage() {
           <Prose>
             <p>
               The{" "}
-              <a
-                href="https://www.cdss.ca.gov/assisted-living-waiver"
+              <Link
+                href="/library/medi-cal-and-memory-care"
                 className="text-teal underline underline-offset-2"
-                target="_blank"
-                rel="noopener noreferrer"
               >
                 Assisted Living Waiver
-              </a>{" "}
+              </Link>{" "}
               can fund <em>services</em> in participating RCFEs for eligible beneficiaries in select
               counties — waitlists are common; room and board remains largely private-pay.
             </p>

@@ -20,7 +20,7 @@ const ARTICLE_HEADLINE =
   "Memory care vs. nursing home — what's actually different, and how to tell which one your person needs";
 const TITLE = "Memory Care vs. Nursing Home (SNF) in California (2026)";
 const DESC =
-  "RCFE memory care vs. skilled nursing: licensing (CDSS vs. CMS), Care Compare vs. CCL inspections, Medicare short-stay rules, Medi-Cal ALW, who pays for what, and tour questions by setting.";
+  "RCFE memory care vs. skilled nursing: licensing differences, inspection databases, Medicare and Medi-Cal ALW payment rules, and tour questions by setting.";
 const DATE_PUBLISHED = "2026-05-04";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [

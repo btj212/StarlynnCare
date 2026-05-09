@@ -19,9 +19,9 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 /** Display + JSON-LD headline */
 const ARTICLE_HEADLINE =
   "Medi-Cal and memory care in California — what it actually covers, what it doesn't, and how the Assisted Living Waiver works";
-const TITLE = "Medi-Cal & Memory Care in California — ALW, Coverage & Costs (2026)";
+const TITLE = "Medi-Cal & Memory Care in California — ALW Guide";
 const DESC =
-  "What Medi-Cal covers for RCFE memory care vs. skilled nursing, how the Assisted Living Waiver (ALW) works in participating counties, SSI room-and-board, share of cost, and what to ask eligibility workers and admissions staff.";
+  "Medi-Cal and RCFE memory care in California: how the Assisted Living Waiver works, participating counties, SSI room-and-board, and share of cost.";
 const DATE_PUBLISHED = "2026-05-04";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [

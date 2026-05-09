@@ -17,7 +17,7 @@ const PAGE_PATH = "/texas/type-a-b-c-licensing";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "Type A, B, and C assisted living in Texas — what each license class means for memory care";
-const TITLE = "Type A, B, and C Assisted Living Licensing in Texas (HHSC) — 2026";
+const TITLE = "Type A, B & C ALF Licensing in Texas (HHSC 2026)";
 const DESC =
   "HHSC license classes describe facility capability, not deficiency severity. Learn what Type A, B, and C mean for memory care in Texas — Alzheimer Certification, staffing requirements, and how to read both on a StarlynnCare profile.";
 const DATE_PUBLISHED = "2026-05-09";

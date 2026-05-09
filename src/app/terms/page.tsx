@@ -11,14 +11,18 @@ const PAGE_PATH = "/terms";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const TITLE = "Terms of Use & Legal Disclaimer";
 const DESC =
-  "Terms governing use of StarlynnCare, including disclaimer of warranties, limitation of liability, public-records basis, and notice that nothing on this site constitutes medical or legal advice.";
+  "Terms governing StarlynnCare: disclaimer of warranties, liability limits, public-records basis, and notice that site content is not medical or legal advice.";
 const EFFECTIVE = "May 2026";
 
 export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,
   description: DESC,
   alternates: { canonical: canonicalUrl },
-  openGraph: { url: canonicalUrl },
+  openGraph: {
+    url: canonicalUrl,
+    description: DESC,
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
+  },
 };
 
 function Section({

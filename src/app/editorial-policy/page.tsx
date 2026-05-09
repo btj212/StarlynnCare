@@ -12,7 +12,7 @@ const PAGE_PATH = "/editorial-policy";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const TITLE = "Editorial Policy — Sourcing, Corrections & Conflicts";
 const DESC =
-  "How StarlynnCare cites primary records, handles corrections within five business days, discloses conflicts of interest, and refreshes editorial versus inspection data.";
+  "How StarlynnCare cites primary records, handles corrections within five business days, discloses conflicts of interest, and refreshes data.";
 
 export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,

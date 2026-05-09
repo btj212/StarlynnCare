@@ -17,9 +17,9 @@ import { CALIFORNIA_MEMORY_CARE_GLOSSARY } from "@/lib/content/glossaryTerms";
 
 const PAGE_PATH = "/california/glossary";
 const canonicalUrl = canonicalFor(PAGE_PATH);
-const TITLE = "California Memory Care Glossary — Plain-Language Definitions";
+const TITLE = "California Memory Care Glossary";
 const DESC =
-  "RCFE, CDSS, Type A/B deficiencies, level-of-care fees, Medi-Cal waiver basics, and other terms families encounter in licensing data — reviewed by a California RN.";
+  "RCFE, CDSS, Type A/B deficiencies, level-of-care fees, Medi-Cal waiver, and other terms families encounter in licensing data — reviewed by a California RN.";
 const DATE_PUBLISHED = "2026-05-02";
 
 const TERM_SET_ID = `${canonicalUrl}#california-memory-care-glossary`;

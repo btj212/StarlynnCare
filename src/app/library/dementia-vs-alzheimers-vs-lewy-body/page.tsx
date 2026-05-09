@@ -16,9 +16,9 @@ import {
 
 const PAGE_PATH = "/library/dementia-vs-alzheimers-vs-lewy-body";
 const canonicalUrl = canonicalFor(PAGE_PATH);
-const TITLE = "Dementia vs. Alzheimer’s vs. Lewy Body — A Family-Friendly Overview";
+const TITLE = "Dementia vs. Alzheimer’s vs. Lewy Body Explained";
 const DESC =
-  "Non-diagnostic explainer for caregivers: how these terms relate, why doctors matter for diagnosis, and how symptoms influence residential care choices — reviewed by a California RN.";
+  "Non-diagnostic explainer for caregivers: how dementia, Alzheimer’s, and Lewy body relate and why they matter for care choices. Reviewed by a California RN.";
 const DATE_PUBLISHED = "2026-05-03";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [

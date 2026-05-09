@@ -17,7 +17,7 @@ const PAGE_PATH = "/memory-care-vs-assisted-living";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const TITLE = "Memory Care vs. Assisted Living — How to Choose (2026)";
 const DESC =
-  "Regulation, physical environment, staffing, costs, and transition timing — a practical comparison for families navigating dementia care options in the U.S., reviewed by a California RN.";
+  "Regulation, staffing, costs, and transition timing compared: memory care vs. assisted living in the U.S. — a family guide reviewed by a California RN.";
 const DATE_PUBLISHED = "2026-05-02";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [

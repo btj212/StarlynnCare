@@ -16,7 +16,7 @@ import {
 const ABOUT_PATH = "/about";
 const aboutCanonical = canonicalFor(ABOUT_PATH);
 const aboutDesc =
-  "StarlynnCare is built by Rebecca Lynn Starkey, BSN, RN, PHN, and Blake Jones — combining hands-on regulatory survey experience, older adult primary care, and editorial rigor so families can cut through noise and make confident memory care decisions.";
+  "A California RN and co-founder built StarlynnCare to help families navigate memory care decisions using verified inspection data and editorial rigor.";
 
 export const metadata: Metadata = {
   title: "About | StarlynnCare",

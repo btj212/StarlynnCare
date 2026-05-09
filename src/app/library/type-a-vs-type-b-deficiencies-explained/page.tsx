@@ -17,7 +17,7 @@ const PAGE_PATH = "/library/type-a-vs-type-b-deficiencies-explained";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const TITLE = "Type A vs. Type B Deficiencies in California RCFEs";
 const DESC =
-  "What Type A and Type B deficiency citations mean in a California RCFE inspection report, how to read them on a facility profile, and why they matter when choosing memory care.";
+  "What Type A and Type B citations mean in California RCFE inspections, how to read them on a facility profile, and why they matter when choosing memory care.";
 const DATE_PUBLISHED = "2026-05-02";
 
 export const metadata: Metadata = {

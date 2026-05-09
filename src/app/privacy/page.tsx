@@ -18,7 +18,11 @@ export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,
   description: DESC,
   alternates: { canonical: canonicalUrl },
-  openGraph: { url: canonicalUrl },
+  openGraph: {
+    url: canonicalUrl,
+    description: DESC,
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
+  },
 };
 
 function Section({
