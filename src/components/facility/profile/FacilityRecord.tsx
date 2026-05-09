@@ -309,14 +309,16 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
           }
         />
 
-        {/* 24-month timeline rail */}
-        <div className="border border-paper-rule bg-paper-2 p-8">
-          <TimelineRail timeline={timeline} windowMonths={cfg.timelineWindowMonths} />
+        {/* Top row: timeline rail (left) + scope×severity grid (right) */}
+        <div className="grid gap-7 md:grid-cols-[1.6fr_1fr]">
+          <div className="border border-paper-rule bg-paper-2 p-8">
+            <TimelineRail timeline={timeline} windowMonths={cfg.timelineWindowMonths} />
+          </div>
+          <ScopeSeverityGrid grid={scopeSeverityGrid} />
         </div>
 
-        {/* Two-column: heatmap + inspection list */}
-        <div className="mt-7 grid gap-7 md:grid-cols-2">
-          <ScopeSeverityGrid grid={scopeSeverityGrid} />
+        {/* Full-width inspection list below */}
+        <div className="mt-7">
           <CompactInspectionList profile={profile} />
         </div>
 
