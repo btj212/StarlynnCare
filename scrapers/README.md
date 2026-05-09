@@ -76,3 +76,19 @@ at `/tmp/ccld_facility_all_cache.json`.
 `cms_ingest.py` ingested FL SNF data in Sprint 1. FL rows were deleted by
 migration `0002_alameda_beachhead.sql`. Keep the script for CA SNF re-ingest
 if we later need to enrich CCRC records with CMS star ratings.
+
+## Oregon / Minnesota / Washington (memory-care roster + inspections)
+
+Shared HTTP helpers: [`_http_helpers.py`](./_http_helpers.py) (User-Agent, CSRF, ASP.NET ViewState).
+
+| State | Roster | Inspections bundle | Ingest | Publish gate |
+|-------|--------|---------------------|--------|--------------|
+| **OR** | `or_dhs_ltc_directory_scrape.py` → `or_dhs_ltc_directory_ingest.py` | `or_dhs_ltc_inspections_scrape.py` → `or_ltc_to_bundle.py` | `or_inspections_ingest.py` | `recompute_publishable.py --state OR` |
+| **MN** | `mn_mdh_directory_scrape.py` → `mn_mdh_directory_ingest.py` | After MDH survey export exists: `mn_mdh_to_bundle.py` (wraps `tx_pia_to_bundle.py`) | `mn_inspections_ingest.py` | `recompute_publishable.py --state MN` |
+| **WA** | `wa_dshs_directory_scrape.py` → `wa_dshs_directory_ingest.py` | `wa_dshs_inspections_scrape.py` → `wa_dshs_to_bundle.py` | `wa_inspections_ingest.py` | `recompute_publishable.py --state WA` |
+
+Docs: [`docs/OR_DATA_SOURCES.md`](../docs/OR_DATA_SOURCES.md), [`docs/MN_DATA_SOURCES.md`](../docs/MN_DATA_SOURCES.md), [`docs/WA_DATA_SOURCES.md`](../docs/WA_DATA_SOURCES.md).
+
+Migrations: `0017_or_directory_columns.sql`, `0018_mn_directory_columns.sql`, `0019_wa_directory_columns.sql`.
+
+Routing: [`src/lib/states.ts`](../src/lib/states.ts) lists OR/MN/WA in `STATES` (not `COVERED_STATES` until publishable ≥ 1); [`src/lib/regions.ts`](../src/lib/regions.ts) seeds metro county regions for ingest city slugs.

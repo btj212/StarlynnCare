@@ -19,7 +19,7 @@ export const CA_FAQS: FaqItem[] = [
   },
   {
     q: "Which states do you cover?",
-    a: "California is fully indexed. Texas and Florida are in active rollout. We are prioritizing states with public, structured inspection data.",
+    a: "California, Oregon, and Washington are fully indexed. Texas is in active rollout. Minnesota is in pipeline. We are prioritizing states with public, structured inspection data.",
   },
   {
     q: "Can a facility correct or respond to information on its profile?",
@@ -48,6 +48,78 @@ export const TX_FAQS: FaqItem[] = [
   {
     q: "Can a facility correct or respond to information on its profile?",
     a: "Yes. Every profile includes a verified-operator response field, edited by us only for length. We do not remove citations at operator request, but we publish operator context and corrective actions alongside the original record.",
+  },
+];
+
+/** Oregon DHS LTC Licensing framing. */
+export const OR_FAQS: FaqItem[] = [
+  {
+    q: "Where does Oregon inspection data come from?",
+    a: "Primary sources: Oregon Department of Human Services (DHS), Long-Term Care Licensing public portal — including licensing violations and abuse investigation records for ALFs and RCFs holding the Memory Care Endorsement. Inspection findings are sourced directly from ltclicensing.oregon.gov.",
+  },
+  {
+    q: "Do you accept payments from facilities or operators?",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+  },
+  {
+    q: "How often is Oregon data updated?",
+    a: "After each ingest run from the Oregon DHS LTC Licensing portal. Source links and download dates appear on each facility profile.",
+  },
+  {
+    q: "What is Oregon's Memory Care Endorsement?",
+    a: "The Memory Care Endorsement is a separate certification issued by Oregon DHS on top of an ALF or RCF license. To hold the endorsement, a facility must meet enhanced requirements for dementia staff training, individualized care planning, and secured-environment protocols. Only endorsed facilities appear on StarlynnCare for Oregon.",
+  },
+  {
+    q: "Can a facility correct or respond to information on its profile?",
+    a: "Yes. Every profile includes a verified-operator response field, edited by us only for length. We do not remove violations at operator request.",
+  },
+];
+
+/** Washington DSHS ADSA framing. */
+export const WA_FAQS: FaqItem[] = [
+  {
+    q: "Where does Washington inspection data come from?",
+    a: "Primary sources: Washington State Department of Social and Health Services (DSHS), Aging and Disability Services Administration (ADSA), Residential Care Services — specifically the public ALF Reports portal (fortress.wa.gov). Inspection and investigation report links are sourced directly from that portal.",
+  },
+  {
+    q: "Do you accept payments from facilities or operators?",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+  },
+  {
+    q: "How often is Washington data updated?",
+    a: "After each ingest run from the DSHS ALF Reports portal. Source links appear on each facility profile.",
+  },
+  {
+    q: "What is Washington's Specialized Dementia Care contract?",
+    a: "The Specialized Dementia Care contract is a DSHS contract tier that ALFs holding this status must meet — it requires staff with specific dementia care training, behavioral support protocols, and enhanced supervision standards beyond a standard ALF license. Only Specialized Dementia Care contracted ALFs appear on StarlynnCare for Washington.",
+  },
+  {
+    q: "Can a facility correct or respond to information on its profile?",
+    a: "Yes. Every profile includes a verified-operator response field, edited by us only for length. We do not remove inspection findings at operator request.",
+  },
+];
+
+/** Minnesota MDH framing. */
+export const MN_FAQS: FaqItem[] = [
+  {
+    q: "Where does Minnesota inspection data come from?",
+    a: "Primary sources: Minnesota Department of Health (MDH), which regulates Assisted Living Facilities under Minn. Stat. ch. 144G. Complaint and survey findings are published publicly by MDH. StarlynnCare indexes MDH licensing records and inspection outcomes.",
+  },
+  {
+    q: "Do you accept payments from facilities or operators?",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+  },
+  {
+    q: "How often is Minnesota data updated?",
+    a: "After each ingest run from MDH licensing records. Source dates appear on each facility profile.",
+  },
+  {
+    q: "What is Minnesota's Assisted Living Facility with Dementia Care license?",
+    a: "Minnesota's 2019 Assisted Living Licensure Reform (Minn. Stat. ch. 144G) created a distinct license tier for facilities serving residents with Alzheimer's and dementia. Requirements include dementia-trained staff at all times, individualized dementia programming, and secured environments where clinically indicated — requirements beyond a standard ALF license.",
+  },
+  {
+    q: "Can a facility correct or respond to information on its profile?",
+    a: "Yes. Every profile includes a verified-operator response field, edited by us only for length. We do not remove MDH findings at operator request.",
   },
 ];
 

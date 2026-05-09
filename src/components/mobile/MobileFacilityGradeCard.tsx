@@ -1,8 +1,7 @@
 import type { CareCategory } from "@/lib/types";
 import { TrackedProfileLink } from "@/components/analytics/TrackedProfileLink";
 import { peerRankBarFillCss } from "@/lib/peerRankBar";
-
-const STATE_SLUG: Record<string, string> = { CA: "california" };
+import { stateFromCode } from "@/lib/states";
 
 export type MobileGradeFacility = {
   id: string;
@@ -36,7 +35,8 @@ function MobileGradeBar({ label, pct }: { label: string; pct: number | null }) {
 }
 
 export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFacility }) {
-  const stateSlug = STATE_SLUG[facility.state_code] ?? facility.state_code.toLowerCase();
+  const stateInfo = stateFromCode(facility.state_code);
+  const stateSlug = stateInfo?.slug ?? facility.state_code.toLowerCase();
   const profileUrl = `/${stateSlug}/${facility.city_slug}/${facility.slug}`;
 
   return (
@@ -45,7 +45,7 @@ export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFac
         <div className="m-fc-photo" aria-hidden />
         <div className="min-w-0">
           <h3 className="m-fc-name">{facility.name}</h3>
-          <div className="m-fc-loc">{facility.city ? `${facility.city}, CA` : "California"}</div>
+          <div className="m-fc-loc">{facility.city ? `${facility.city}, ${facility.state_code}` : stateInfo?.name ?? facility.state_code}</div>
           <div className="m-fc-meta">
             {facility.license_number && <span className="lic">LIC# {facility.license_number}</span>}
             {facility.beds != null && facility.beds > 0 && <span>Cap. {facility.beds}</span>}
@@ -65,7 +65,7 @@ export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFac
         </p>
       </div>
       <div className="m-fc-foot">
-        <span>CA CDSS · Community Care Licensing</span>
+        <span>{stateInfo?.name ?? facility.state_code} · public inspection data</span>
         <TrackedProfileLink
           href={profileUrl}
           facilityId={facility.id}

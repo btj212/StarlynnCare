@@ -1,6 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SectionHead } from "@/components/editorial/SectionHead";
+import { getArticleThumbnail } from "@/lib/content/articleThumbnails";
 import type { EditorialCard } from "@/lib/stateHubConfig";
 
 type Props = {
@@ -22,6 +24,7 @@ export function StateHubEditorial({ sectionLabel, sectionTitle, cards, year }: P
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
           {cards.map((e, i) => {
+            const thumb = i > 0 ? getArticleThumbnail(e.href) : null;
             const inner = (
               <div className={`flex flex-col gap-3.5 border-t pt-6 ${e.live ? "opacity-100" : "opacity-70"}`} style={{ borderColor: "rgba(255,255,255,0.2)" }}>
                 {i === 0 && (
@@ -42,6 +45,20 @@ export function StateHubEditorial({ sectionLabel, sectionTitle, cards, year }: P
                     </div>
                   </div>
                 )}
+                {thumb && (
+                  <div
+                    className="relative mb-2 w-full max-h-[220px] overflow-hidden rounded-sm border border-white/10"
+                    style={{ aspectRatio: "4/3", background: "rgba(255,255,255,0.06)" }}
+                  >
+                    <Image
+                      src={thumb.src}
+                      alt={thumb.alt}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 400px"
+                    />
+                  </div>
+                )}
                 <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] text-gold">{e.kind}</span>
                 <h3
                   className={`font-[family-name:var(--font-display)] font-normal leading-[1.05] tracking-[-0.01em] m-0 text-paper ${
@@ -60,14 +77,14 @@ export function StateHubEditorial({ sectionLabel, sectionTitle, cards, year }: P
             );
             return e.live && e.href ? (
               <Link
-                key={i}
+                key={e.href}
                 href={e.href}
                 className="no-underline hover:opacity-90 transition-opacity min-w-0"
               >
                 {inner}
               </Link>
             ) : (
-              <div key={i} className="min-w-0" aria-label={`Coming soon: ${e.title}`}>
+              <div key={e.href ?? `soon-${i}`} className="min-w-0" aria-label={`Coming soon: ${e.title}`}>
                 {inner}
               </div>
             );

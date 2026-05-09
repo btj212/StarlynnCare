@@ -1,0 +1,27 @@
+{
+  "format_version": 1,
+  "note": "Smoke fixture for mn_inspections_ingest.py. Replace license_number with real MN HFID from DB after directory ingest.",
+  "facilities": [
+    {
+      "license_number": "0000000001",
+      "inspections": [
+        {
+          "inspection_date": "2024-01-10",
+          "inspection_type": "comprehensive",
+          "is_complaint": false,
+          "complaint_id": null,
+          "source_url": "https://www.health.state.mn.us/facilities/regulation/homecare/consumers/surveyresults.html#0000000001-2024-01-10",
+          "raw_data": { "fixture": true },
+          "deficiencies": [
+            {
+              "code": null,
+              "description": "Sample finding text for smoke test.",
+              "state_severity_raw": "Survey",
+              "immediate_jeopardy": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

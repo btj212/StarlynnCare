@@ -31,7 +31,7 @@ async function loadRelated(
   const stateInfo = stateFromSlug(stateSlug);
   const stateCode = stateInfo?.code ?? "CA";
 
-  // Same city, up to 8 siblings (we'll narrow to top 6 after grade lookup)
+  // Same city — fetch a pool, then rank by composite grade for top 8
   const { data: raw } = await supabase
     .from("facilities")
     .select("id, name, city, slug, city_slug")
@@ -40,7 +40,7 @@ async function loadRelated(
     .eq("publishable", true)
     .neq("id", facilityId)
     .order("name")
-    .limit(10);
+    .limit(14);
 
   if (!raw || raw.length === 0) return [];
 
@@ -69,12 +69,12 @@ async function loadRelated(
       };
     })
     .sort((a, b) => (b.composite ?? 0) - (a.composite ?? 0))
-    .slice(0, 6);
+    .slice(0, 8);
 }
 
 /**
- * Server component. Renders a "Related in [city]" rail showing up to 6 sibling
- * facilities sorted by grade (highest first). Used on facility pages (audit #15).
+ * Server component. Renders a "Related in [city]" rail showing up to 8 sibling
+ * facilities sorted by grade (highest first).
  */
 export async function RelatedFacilities({
   facilityId,

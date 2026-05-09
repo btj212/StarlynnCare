@@ -16,6 +16,9 @@ import type { CitationRecord } from "@/components/facility/RegulatoryBaseline";
 import { QualitySnapshot } from "@/components/facility/QualitySnapshot";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { RelatedFacilities } from "@/components/facility/RelatedFacilities";
+import { FacilityBrowseLinks } from "@/components/facility/FacilityBrowseLinks";
+import { MetroNearbyFacilities } from "@/components/facility/MetroNearbyFacilities";
+import { SameOperatorFacilities } from "@/components/facility/SameOperatorFacilities";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { clipMetaDescription } from "@/lib/seo/meta";
@@ -114,6 +117,10 @@ const LICENSE_TYPE_INFO: Partial<Record<CareCategory, { title: string; body: str
 
 const STATE_AGENCY_LABEL: Record<string, string> = {
   CA: "California Dept. of Social Services · Community Care Licensing",
+  TX: "Texas Health & Human Services Commission · Long-Term Care Regulation",
+  OR: "Oregon Dept. of Human Services · Long-Term Care Licensing",
+  WA: "Washington DSHS · Aging and Disability Services Administration",
+  MN: "Minnesota Dept. of Health · Health Regulation Division",
 };
 
 async function loadFacility(
@@ -184,8 +191,16 @@ export async function generateMetadata({
   const canonical = canonicalFor(
     `/${state.slug}/${facility.city_slug}/${facility.slug}`,
   );
+  const _facilityAgencyByState: Record<string, string> = {
+    CA: "primary CDSS licensing data",
+    TX: "HHSC Long-Term Care Regulation records",
+    OR: "Oregon DHS LTC Licensing data",
+    WA: "Washington DSHS ALF inspection records",
+    MN: "Minnesota Department of Health licensing records",
+  };
+  const agencyDesc = _facilityAgencyByState[state.code] ?? "primary state licensing data";
   const desc = clipMetaDescription(
-    `Inspection records, citation history, and quality context for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""} — verified from primary CDSS licensing data by StarlynnCare.`,
+    `Inspection records, citation history, and quality context for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""} — verified from ${agencyDesc} by StarlynnCare.`,
   );
 
   return {
@@ -969,11 +984,33 @@ export default async function FacilityPage({ params }: PageProps) {
             <ReviewsSection facilityId={facility.id} initialReviews={reviews} />
           </div>
 
-          {/* ── Related facilities ───────────────────────────────────── */}
-          <div className="mt-14">
+          {/* ── Internal discovery (city, county, siblings, operator) ───────── */}
+          <div className="mt-14 space-y-12">
+            <FacilityBrowseLinks
+              cityDisplayName={
+                facility.city ??
+                facility.city_slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+              }
+              citySlug={facility.city_slug}
+              stateSlug={state.slug}
+              stateDisplayName={state.name}
+              county={
+                countyHub ? { slug: countyHub.slug, name: countyHub.name } : null
+              }
+            />
             <RelatedFacilities
               facilityId={facility.id}
               citySlug={facility.city_slug}
+              stateSlug={state.slug}
+            />
+            <MetroNearbyFacilities
+              facilityId={facility.id}
+              citySlug={facility.city_slug}
+              stateSlug={state.slug}
+            />
+            <SameOperatorFacilities
+              facilityId={facility.id}
+              operatorName={facility.operator_name}
               stateSlug={state.slug}
             />
           </div>
@@ -994,6 +1031,18 @@ export default async function FacilityPage({ params }: PageProps) {
               className="text-teal hover:underline underline-offset-4"
             >
               Understanding citations: Type A vs. Type B deficiencies →
+            </Link>
+            <Link
+              href="/library/when-is-it-time-for-memory-care"
+              className="text-teal hover:underline underline-offset-4"
+            >
+              When is it time for memory care? →
+            </Link>
+            <Link
+              href="/library/memory-care-vs-nursing-home"
+              className="text-teal hover:underline underline-offset-4"
+            >
+              Memory care vs. nursing home →
             </Link>
             <Link
               href="/california/cost-guide"

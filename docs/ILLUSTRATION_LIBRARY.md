@@ -7,6 +7,7 @@ Internal watercolor-style illustrations for guides and hubs. **No stock photogra
 - **Style:** Textured editorial / storybook watercolor; cohesive with `/illustrations/family.png` (homepage hero).
 - **Dimensions:** Long edge ≥ 1024px; export PNG; Next.js `Image` serves modern formats at request time.
 - **Accessibility:** Re-use the **canonical alt** from this doc everywhere the asset appears (including `next/image` `alt`).
+- **Previews:** Path → thumbnail mapping for homepage §04, mobile editorial strip, and `/library` cards lives in [`src/lib/content/articleThumbnails.ts`](../src/lib/content/articleThumbnails.ts). Add new rows there when an article gets a hero illustration.
 
 ---
 

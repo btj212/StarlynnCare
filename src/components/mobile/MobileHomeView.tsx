@@ -9,6 +9,7 @@ import {
 import { MobileHomeFaq } from "@/components/mobile/MobileHomeFaq";
 import { MobileFooter } from "@/components/mobile/MobileFooter";
 import type { FaqItem } from "@/lib/content/homeFaqs";
+import { getArticleThumbnail } from "@/lib/content/articleThumbnails";
 
 export type MobileCounty = { name: string; slug: string; count: number; cities: number };
 export type MobileCity = { name: string; slug: string; count: number };
@@ -174,6 +175,7 @@ export function MobileHomeView({
         {editorials.map((e, i) => {
           const isFeature = i === 0;
           const cardClass = isFeature ? "m-ed-card feature" : "m-ed-card";
+          const thumb = !isFeature ? getArticleThumbnail(e.href) : null;
           const inner = (
             <>
               {isFeature ? (
@@ -186,13 +188,13 @@ export function MobileHomeView({
                     <em>in California</em>
                   </div>
                 </div>
-              ) : i === 1 ? (
+              ) : thumb ? (
                 <div className="ill relative overflow-hidden">
                   <Image
-                    src="/illustrations/family.png"
-                    alt=""
+                    src={thumb.src}
+                    alt={thumb.alt}
                     fill
-                    className="object-cover opacity-90"
+                    className="object-cover"
                     sizes="85vw"
                   />
                 </div>
@@ -211,11 +213,11 @@ export function MobileHomeView({
             </>
           );
           return e.live && e.href ? (
-            <Link key={i} href={e.href} className={cardClass}>
+            <Link key={e.href} href={e.href} className={cardClass}>
               {inner}
             </Link>
           ) : (
-            <div key={i} className={cardClass} aria-label={`Coming soon: ${e.title}`}>
+            <div key={e.title} className={cardClass} aria-label={`Coming soon: ${e.title}`}>
               {inner}
             </div>
           );

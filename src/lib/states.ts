@@ -19,12 +19,18 @@ export const STATES: ReadonlyArray<StateInfo> = [
   { slug: "california", code: "CA", name: "California" },
   /** Scaffolded for ingest + routing — hubs ship when publishable TX rows exist. */
   { slug: "texas", code: "TX", name: "Texas" },
+  { slug: "oregon", code: "OR", name: "Oregon" },
+  { slug: "minnesota", code: "MN", name: "Minnesota" },
+  { slug: "washington", code: "WA", name: "Washington" },
 ];
 
 /** States with at least one publishable facility — used by the home page + sitemap. */
 export const COVERED_STATES: ReadonlyArray<StateInfo> = [
   { slug: "california", code: "CA", name: "California" },
   { slug: "texas", code: "TX", name: "Texas" },
+  { slug: "oregon", code: "OR", name: "Oregon" },
+  { slug: "washington", code: "WA", name: "Washington" },
+  { slug: "minnesota", code: "MN", name: "Minnesota" },
 ];
 
 export function stateFromSlug(slug: string): StateInfo | null {

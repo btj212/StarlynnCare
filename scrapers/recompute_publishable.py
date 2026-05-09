@@ -24,7 +24,10 @@ Usage
     python recompute_publishable.py --dry-run     # print what would change
     python recompute_publishable.py               # write to DB
     python recompute_publishable.py --state CA    # California (default)
-    python recompute_publishable.py --state TX    # Texas publish gate (Alz cert + 36-mo inspection)
+    python recompute_publishable.py --state TX    # Texas publish gate (Alz cert + inspection freshness)
+    python recompute_publishable.py --state OR    # Oregon endorsement + inspection freshness
+    python recompute_publishable.py --state MN    # Minnesota dementia-care flag + freshness
+    python recompute_publishable.py --state WA    # Washington dementia contract + freshness
 """
 
 from __future__ import annotations
@@ -281,6 +284,117 @@ def recompute_texas_publishable(
         return cur.rowcount
 
 
+OR_PUBLISH_GATE_MONTHS = 36
+
+
+def recompute_oregon_publishable(
+    conn: psycopg.Connection,
+    dry_run: bool = False,
+) -> int:
+    """
+    Oregon: publishable = LICENSED + memory-care endorsement + ≥1 inspection
+    within OR_PUBLISH_GATE_MONTHS (not manually rejected).
+    """
+    sql = f"""
+        UPDATE facilities
+        SET publishable = (
+          license_status = 'LICENSED'
+          AND or_memory_care_endorsed = true
+          AND mc_review_status <> 'reviewed_reject'
+          AND EXISTS (
+            SELECT 1 FROM inspections i
+            WHERE i.facility_id = facilities.id
+              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{OR_PUBLISH_GATE_MONTHS} months')
+          )
+        )
+        WHERE state_code = 'OR'
+          AND license_status = 'LICENSED'
+    """
+    if dry_run:
+        print(
+            f"  OR: Would set publishable for endorsed facilities with "
+            f"≥1 inspection in {OR_PUBLISH_GATE_MONTHS} months"
+        )
+        return 0
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return cur.rowcount
+
+
+MN_PUBLISH_GATE_MONTHS = 48
+
+
+def recompute_minnesota_publishable(
+    conn: psycopg.Connection,
+    dry_run: bool = False,
+) -> int:
+    """Minnesota: serves_memory_care + publishable = LICENSED + dementia-care flag + fresh inspection."""
+    smc_sql = """
+        UPDATE facilities
+        SET serves_memory_care = mn_dementia_care_licensed
+        WHERE state_code = 'MN'
+    """
+    pub_sql = f"""
+        UPDATE facilities
+        SET publishable = (
+          license_status = 'LICENSED'
+          AND mn_dementia_care_licensed = true
+          AND mc_review_status <> 'reviewed_reject'
+          AND EXISTS (
+            SELECT 1 FROM inspections i
+            WHERE i.facility_id = facilities.id
+              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{MN_PUBLISH_GATE_MONTHS} months')
+          )
+        )
+        WHERE state_code = 'MN'
+          AND license_status = 'LICENSED'
+    """
+    if dry_run:
+        print(
+            f"  MN: Would set serves_memory_care = mn_dementia_care_licensed and "
+            f"publishable for dementia-care rows with ≥1 inspection in {MN_PUBLISH_GATE_MONTHS} months"
+        )
+        return 0
+    with conn.cursor() as cur:
+        cur.execute(smc_sql)
+        cur.execute(pub_sql)
+        return cur.rowcount
+
+
+WA_PUBLISH_GATE_MONTHS = 48
+
+
+def recompute_washington_publishable(
+    conn: psycopg.Connection,
+    dry_run: bool = False,
+) -> int:
+    """Washington: publishable = LICENSED + Dementia Care contract + fresh inspection."""
+    sql = f"""
+        UPDATE facilities
+        SET publishable = (
+          license_status = 'LICENSED'
+          AND wa_dementia_care_contract = true
+          AND mc_review_status <> 'reviewed_reject'
+          AND EXISTS (
+            SELECT 1 FROM inspections i
+            WHERE i.facility_id = facilities.id
+              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{WA_PUBLISH_GATE_MONTHS} months')
+          )
+        )
+        WHERE state_code = 'WA'
+          AND license_status = 'LICENSED'
+    """
+    if dry_run:
+        print(
+            f"  WA: Would set publishable for dementia-contract rows with "
+            f"≥1 inspection in {WA_PUBLISH_GATE_MONTHS} months"
+        )
+        return 0
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return cur.rowcount
+
+
 def promote_queue_with_tier1_signals(
     conn: psycopg.Connection,
     state_code: str,
@@ -369,9 +483,16 @@ def main() -> None:
         step3a_updated = 0
         step3b_updated = 0
 
-        if args.state.upper() == "TX":
+        state_u = args.state.upper()
+        if state_u == "TX":
             # Do not run CA directory / disclosure tier logic against Texas rows.
             step2_updated = recompute_texas_publishable(conn, args.dry_run)
+        elif state_u == "OR":
+            step2_updated = recompute_oregon_publishable(conn, args.dry_run)
+        elif state_u == "MN":
+            step2_updated = recompute_minnesota_publishable(conn, args.dry_run)
+        elif state_u == "WA":
+            step2_updated = recompute_washington_publishable(conn, args.dry_run)
         else:
             # Execute the recompute steps in order. Step 4 (promote) runs BEFORE
             # step 3 (queue chain-only) so promotions don't get re-queued in the

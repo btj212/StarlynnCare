@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { SiteNav } from "@/components/site/SiteNav";
@@ -12,10 +13,11 @@ import {
   buildTopicCollectionPage,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
+import { getArticleThumbnail } from "@/lib/content/articleThumbnails";
 
 const LIBRARY_PATH = "/library";
 const libraryCanonical = canonicalFor(LIBRARY_PATH);
-const PAGE_TITLE = "Editorial library — guides for California memory care";
+const PAGE_TITLE = "Editorial library — memory care guides";
 const PAGE_DESC =
   "Decision guides, cost & payer literacy, inspection-record explainers, and clinical primers — every StarlynnCare editorial article in one index.";
 
@@ -104,22 +106,38 @@ const SECTION_CLINICAL: ArticleCard[] = [
 function ArticleGrid({ items }: { items: ArticleCard[] }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 list-none m-0 p-0">
-      {items.map((a) => (
-        <li key={a.href}>
-          <Link
-            href={a.href}
-            className="flex flex-col gap-2 rounded-lg border border-paper-rule bg-paper-2 px-5 py-4 no-underline hover:border-rust/35 transition-colors min-h-[7rem]"
-          >
-            <span className="font-[family-name:var(--font-display)] text-[19px] text-ink leading-snug">
-              {a.title}
-            </span>
-            <span className="text-[14.5px] leading-relaxed text-ink-2">{a.desc}</span>
-            <span className="mt-auto font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-rust">
-              Read →
-            </span>
-          </Link>
-        </li>
-      ))}
+      {items.map((a) => {
+        const thumb = getArticleThumbnail(a.href);
+        return (
+          <li key={a.href}>
+            <Link
+              href={a.href}
+              className="flex flex-col sm:flex-row gap-4 rounded-lg border border-paper-rule bg-paper-2 px-5 py-4 no-underline hover:border-rust/35 transition-colors min-h-[7rem]"
+            >
+              {thumb ? (
+                <div className="relative w-full sm:w-[148px] shrink-0 aspect-[4/3] overflow-hidden rounded border border-paper-rule bg-paper">
+                  <Image
+                    src={thumb.src}
+                    alt={thumb.alt}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, 148px"
+                  />
+                </div>
+              ) : null}
+              <div className="flex flex-col gap-2 flex-1 min-w-0">
+                <span className="font-[family-name:var(--font-display)] text-[19px] text-ink leading-snug">
+                  {a.title}
+                </span>
+                <span className="text-[14.5px] leading-relaxed text-ink-2">{a.desc}</span>
+                <span className="mt-auto font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-rust">
+                  Read →
+                </span>
+              </div>
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }

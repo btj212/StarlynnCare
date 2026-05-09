@@ -47,8 +47,8 @@ export async function SiteFooter() {
               </span>
             </div>
             <p className="text-[13.5px] text-ink-3 leading-relaxed max-w-[36ch] mb-3">
-              An independent civic-data publisher. We grade every licensed memory care facility in
-              California against the state&rsquo;s own public inspection record.
+              An independent civic-data publisher. We index every licensed memory care facility in
+              California, Oregon, and Washington against each state&rsquo;s own public inspection record.
             </p>
             <p
               id="no-paid-placement"
@@ -64,8 +64,9 @@ export async function SiteFooter() {
               The Data
             </h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Data links">
-              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">All California facilities</Link>
-              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">By county (28 live)</Link>
+              <Link href="/california" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">California facilities</Link>
+              <Link href="/oregon" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Oregon facilities</Link>
+              <Link href="/washington" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Washington facilities</Link>
               <Link href="/data" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Dataset overview</Link>
               <Link href="/llms.txt" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors flex items-center gap-1">
                 llms.txt <span className="text-rust text-[10px]">↗</span>
@@ -95,7 +96,7 @@ export async function SiteFooter() {
             </h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Methodology links">
               <Link href="/methodology" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">How we grade</Link>
-              <Link href="/methodology#cdss" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Source records (CDSS)</Link>
+              <Link href="/methodology#cdss" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Source records</Link>
               <Link href="/editorial-policy" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Editorial policy</Link>
               <Link href="/california/glossary" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">California glossary</Link>
               <Link href="/methodology#no-paid-placement" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Editorial standards</Link>
@@ -123,7 +124,7 @@ export async function SiteFooter() {
           <span className="flex flex-wrap gap-x-4 gap-y-1">
             <Link href="/terms" className="hover:text-teal transition-colors">Terms of Use</Link>
             <Link href="/privacy" className="hover:text-teal transition-colors">Privacy Policy</Link>
-            <span>{lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · CMS Care Compare</span>
+            <span>{lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · OR DHS · WA DSHS · CMS</span>
           </span>
         </div>
       </div>

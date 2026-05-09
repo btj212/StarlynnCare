@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
 import { peerRankBarFillCss } from "@/lib/peerRankBar";
-
-const STATE_SLUG: Record<string, string> = { CA: "california" };
+import { stateFromCode } from "@/lib/states";
 
 export function GradeBar({ label, pct }: { label: string; pct: number | null }) {
   const w = pct != null ? Math.min(100, Math.max(0, pct)) : 0;
@@ -29,7 +28,9 @@ export function GradeBar({ label, pct }: { label: string; pct: number | null }) 
 }
 
 export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacility }) {
-  const stateSlug = STATE_SLUG[facility.state_code] ?? facility.state_code.toLowerCase();
+  const stateInfo = stateFromCode(facility.state_code);
+  const stateSlug = stateInfo?.slug ?? facility.state_code.toLowerCase();
+  const stateName = stateInfo?.name ?? facility.state_code;
   const profileUrl = `/${stateSlug}/${facility.city_slug}/${facility.slug}`;
   const composite = facility.composite != null ? Math.round(facility.composite) : null;
 
@@ -41,7 +42,7 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
             {facility.name}
           </h3>
           <div className="text-[13.5px] text-ink-3">
-            {facility.city}, CA
+            {facility.city}, {facility.state_code}
           </div>
           <div className="flex flex-wrap gap-3 mt-2 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
             {facility.license_number && (
@@ -94,7 +95,7 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
         className="flex flex-col gap-2 items-start sm:flex-row sm:justify-between sm:items-center px-4 sm:px-[22px] py-3.5 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] sm:text-[11.5px] tracking-[0.06em] text-ink-3"
         style={{ background: "var(--color-paper-2)" }}
       >
-        <span className="text-balance">Source: CA CDSS · Community Care Licensing</span>
+        <span className="text-balance">Source: {stateName} state agency · public inspection data</span>
         <Link href={profileUrl} className="text-teal no-underline font-medium hover:text-teal-deep shrink-0">
           View full profile →
         </Link>

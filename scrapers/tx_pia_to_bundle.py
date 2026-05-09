@@ -87,6 +87,7 @@ COLUMN_ALIASES: dict[str, tuple[str, ...]] = {
     "license_number": (
         "license", "licenseno", "licensenumber", "licensenum", "lic",
         "facilitylicense", "alflicense",
+        "hfid", "healthfacilityid",
     ),
     "facility_id_tx": (
         "facilityid", "providerid", "facilityidnumber",
@@ -191,6 +192,9 @@ def pad_license(value: Any) -> str | None:
     digits = re.sub(r"\D", "", raw)
     if not digits:
         return raw
+    # TX licenses are 6-digit; MN HFID (and similar) are longer — pad to 10 when needed.
+    if len(digits) > 6:
+        return digits.zfill(10)
     return digits.zfill(6)
 
 

@@ -43,6 +43,46 @@ const INTROS: Record<string, string> = {
     "Riverside County stretches from Corona commute sheds to desert cities — climate and staffing markets differ sharply by sub-region. Start with citation trends, then narrow geographically.",
   visalia:
     "Visalia anchors Tulare County medical referrals for many surrounding towns. Compare operators serving similar bed counts — peer analytics on profiles highlight outliers.",
+
+  // Oregon
+  portland:
+    "Portland's memory care market spans a wide geography — from inner SE neighborhoods to Beaverton and Lake Oswego suburbs. Facilities here hold Oregon DHS Memory Care Endorsements; inspection records on each profile reflect DHS licensing violations and complaint outcomes, not California CDSS criteria.",
+  "lake-oswego":
+    "Lake Oswego draws families seeking proximity to Portland with a quieter suburban setting. Compare DHS inspection histories and endorsement status before scheduling tours — the endorsement is required, but the depth of programming varies significantly by operator.",
+  beaverton:
+    "Beaverton's tech-corridor demographics mean higher family expectations and a range of pricing tiers. Oregon DHS violation history on each profile is the most reliable public signal for operator consistency — read complaint-driven investigation outcomes alongside routine inspection results.",
+  gresham:
+    "Gresham sits at the eastern edge of the Portland metro, with generally lower price points than western suburbs. Use the DHS enforcement record to identify operators with repeated licensing violations before narrowing your tour list.",
+  eugene:
+    "Eugene anchors the Willamette Valley south of Portland with a distinct care market. DHS Memory Care Endorsement status is required for any facility indexed here — read violation history with attention to complaint investigations, which reflect resident and family-triggered findings.",
+  salem:
+    "Salem is the capital-region hub for mid-Willamette Valley families. Compare ALF and RCF endorsement holders using DHS inspection dates — older inspection records deserve closer scrutiny about whether staffing or programming has changed.",
+  bend:
+    "Bend's rapid growth has brought new ALF construction alongside established operators. For newer facilities, pay attention to opening inspection dates and whether routine surveys have caught up to marketing claims.",
+  medford:
+    "Medford serves southern Oregon families who often face longer drives to urban alternatives. DHS inspection outcomes are the clearest independent signal for operators in this market — read complaint findings alongside routine visit results.",
+
+  // Washington
+  seattle:
+    "Seattle's memory care market is dense and expensive — ALFs here hold DSHS Specialized Dementia Care contracts as the minimum bar for appearing on StarlynnCare. Inspection and investigation report links on each profile go directly to the DSHS ALF Reports portal.",
+  bellevue:
+    "Bellevue families often compare Eastside operators against Seattle and south King County options simultaneously. DSHS investigation findings from complaint-driven visits are the most revealing part of the record — look for clusters of incident reports over time.",
+  tacoma:
+    "Tacoma anchors Pierce County with a broader price range than Seattle. Focus on DSHS inspection frequency and investigation outcomes — facilities with more reports aren't automatically worse, but the content of findings matters.",
+  spokane:
+    "Spokane is the eastern Washington hub, with a distinct care market from Puget Sound. DSHS investigation records on each profile reflect complaint-driven reviews — compare these across similarly sized operators before touring.",
+  kirkland:
+    "Kirkland sits between Bellevue and north Seattle — families often cross-compare Eastside corridors. DSHS reports for each facility link directly to publicly posted inspection and investigation PDFs, which contain narrative detail not captured in summary form.",
+  redmond:
+    "Redmond's tech-adjacent demographics mean well-resourced families with high expectations and operators who price accordingly. DSHS enforcement letters — visible in each profile's report list — signal regulatory escalation beyond standard inspections.",
+  "federal-way":
+    "Federal Way bridges South King and North Pierce counties, useful for families splitting commutes. Compare DSHS Specialized Dementia Care contract holders using the investigation record — complaint-driven findings predict staffing and programming quality better than marketing materials.",
+  olympia:
+    "Olympia families often weigh proximity to Tacoma alternatives. DSHS regulatory records here are the same statewide public database — read investigation outcomes alongside routine inspection results before shortlisting.",
+  kent:
+    "Kent is a mid-corridor market between Seattle and Tacoma. Compare operators using DSHS report frequency and content — enforcement letters are the strongest signal of regulatory concern beyond routine inspections.",
+  renton:
+    "Renton families frequently consider Bellevue and south Seattle options in parallel. DSHS investigation records often capture complaint-originated reviews that don't appear in routine survey summaries — read both categories.",
 };
 
 export function cityIntroForSlug(regionSlug: string): string | null {

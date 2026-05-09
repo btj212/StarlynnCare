@@ -12,9 +12,11 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import {
   buildBreadcrumbList,
+  buildFaqSchemaFromPairs,
   buildStateHubCollectionPage,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
+import { OR_FAQS, WA_FAQS, MN_FAQS, TX_FAQS, type FaqItem } from "@/lib/content/stateFaqs";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +31,15 @@ export async function generateMetadata({
   const state = stateFromSlug(stateSlug);
   if (!state) return { title: "State not found | StarlynnCare" };
   const canonical = canonicalFor(`/${state.slug}`);
-  const desc =
-    state.code === "TX"
-      ? `HHSC-sourced inspection listings for Alzheimer-certified assisted living across Texas metro regions — scope and methodology on-site.`
-      : `Inspection records and citation history for every licensed memory care facility in ${state.name} — from primary CDSS data, updated weekly.`;
+  const _stateHubDescByCode: Record<string, string> = {
+    CA: `Inspection records and citation history for every licensed memory care facility in ${state.name} — from primary CDSS data, updated weekly.`,
+    TX: `HHSC-sourced inspection listings for Alzheimer-certified assisted living across Texas metro regions — scope and methodology on-site.`,
+    OR: `Oregon DHS inspection records for every Memory Care Endorsed ALF and RCF across Oregon — sourced from the DHS LTC Licensing portal.`,
+    WA: `DSHS inspection and investigation records for every Specialized Dementia Care ALF across Washington — sourced from the DSHS ALF Reports portal.`,
+    MN: `MDH inspection records for every licensed Assisted Living Facility with Dementia Care across Minnesota — sourced from the MN Department of Health.`,
+  };
+  const desc = _stateHubDescByCode[state.code] ??
+    `Inspection records and citation history for every licensed memory care facility in ${state.name}.`;
   return {
     title: `${state.name} memory care | StarlynnCare`,
     description: desc,
@@ -104,6 +111,10 @@ export default async function StatePage({ params }: PageProps) {
   const statePageUrl = canonicalFor(`/${state.slug}`);
   const statePageTitle = `${state.name} memory care | StarlynnCare`;
   const statePageDesc = `Memory care facility profiles in ${state.name}, built from state and federal primary sources.`;
+
+  const STATE_FAQS: Record<string, FaqItem[]> = { OR: OR_FAQS, WA: WA_FAQS, MN: MN_FAQS, TX: TX_FAQS };
+  const stateFaqs = STATE_FAQS[state.code] ?? null;
+
   const stateJsonLd = [
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
@@ -119,6 +130,9 @@ export default async function StatePage({ params }: PageProps) {
       url: statePageUrl,
       state,
     }),
+    ...(stateFaqs
+      ? [buildFaqSchemaFromPairs(stateFaqs.map((f) => ({ q: f.q, a: f.a })), statePageUrl)]
+      : []),
   ];
 
   return (
@@ -163,43 +177,39 @@ export default async function StatePage({ params }: PageProps) {
             </div>
           )}
 
-          {counties.length > 0 && (
+          {counties.filter((r) => countyCount(r) + countySmallCount(r) > 0).length > 0 && (
             <section aria-labelledby="counties-heading">
               <SectionHead
                 label="§ Counties we cover"
                 title={<>Browse by county, <em>or jump to a city below.</em></>}
               />
               <div className="grid gap-4 sm:grid-cols-2">
-                {counties.map((region) => {
-                  const n = countyCount(region);
-                  const small = countySmallCount(region);
-                  return (
-                    <Link
-                      key={region.slug}
-                      href={`/${state.slug}/${region.slug}`}
-                      className="block border border-paper-rule p-5 no-underline text-ink hover:border-teal transition-colors"
-                      style={{ background: "var(--color-paper-2)" }}
-                    >
-                      <span className="font-[family-name:var(--font-display)] text-[22px] leading-none tracking-[-0.005em]">
-                        {region.name}
-                      </span>
-                      <p className="mt-2 font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-[0.04em]">
-                        {n > 0 ? (
-                          <>
-                            {n} {n === 1 ? "facility" : "facilities"}
-                            {small > 0 && (
-                              <span className="ml-1.5 text-[10.5px]">
-                                · {small} small care home{small !== 1 ? "s" : ""}
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          "Indexing in progress"
-                        )}
-                      </p>
-                    </Link>
-                  );
-                })}
+                {counties
+                  .filter((r) => countyCount(r) + countySmallCount(r) > 0)
+                  .map((region) => {
+                    const n = countyCount(region);
+                    const small = countySmallCount(region);
+                    return (
+                      <Link
+                        key={region.slug}
+                        href={`/${state.slug}/${region.slug}`}
+                        className="block border border-paper-rule p-5 no-underline text-ink hover:border-teal transition-colors"
+                        style={{ background: "var(--color-paper-2)" }}
+                      >
+                        <span className="font-[family-name:var(--font-display)] text-[22px] leading-none tracking-[-0.005em]">
+                          {region.name}
+                        </span>
+                        <p className="mt-2 font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-[0.04em]">
+                          {n} {n === 1 ? "facility" : "facilities"}
+                          {small > 0 && (
+                            <span className="ml-1.5 text-[10.5px]">
+                              · {small} small care home{small !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </p>
+                      </Link>
+                    );
+                  })}
               </div>
             </section>
           )}
@@ -275,7 +285,7 @@ export default async function StatePage({ params }: PageProps) {
             return (
               <section className="mt-16" aria-labelledby="more-cities-heading">
                 <SectionHead
-                  label="§ More California cities"
+                  label={`§ More ${state.name} cities`}
                   title={<>Indexed hubs <em>beyond the curated list above.</em></>}
                 />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -305,6 +315,30 @@ export default async function StatePage({ params }: PageProps) {
             );
           })()}
         </div>
+
+        {stateFaqs && (
+          <div className="border-t border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
+              <SectionHead
+                label={`§ ${state.name} · FAQ`}
+                title={<>Common questions about <em>memory care in {state.name}.</em></>}
+              />
+              <dl className="mt-8 space-y-6 max-w-[72ch]">
+                {stateFaqs.map((faq) => (
+                  <div key={faq.q} className="border-l-2 border-teal pl-5">
+                    <dt className="font-[family-name:var(--font-display)] text-[17px] font-medium text-ink leading-snug mb-2">
+                      {faq.q}
+                    </dt>
+                    <dd
+                      className="text-[14.5px] leading-relaxed text-ink-2"
+                      dangerouslySetInnerHTML={{ __html: faq.a }}
+                    />
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        )}
       </main>
       <SiteFooter />
     </>

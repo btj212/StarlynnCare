@@ -9,6 +9,7 @@ import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
 import { TopGradedFacilities } from "@/components/facility/TopGradedFacilities";
+import { SiblingCityHubLinks } from "@/components/facility/SiblingCityHubLinks";
 import { HubFaqSection } from "@/components/facility/HubFaqSection";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { resolveListingRegion } from "@/lib/resolveListingRegion";
@@ -48,10 +49,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
+  const _cityDescByState: Record<string, string> = {
+    CA: `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`,
+    TX: `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — built from public LTCR records.`,
+    OR: `Oregon DHS inspection records for every Memory Care Endorsed ALF and RCF in ${region.name} — sourced directly from the DHS LTC Licensing portal.`,
+    WA: `DSHS inspection and investigation records for every Specialized Dementia Care ALF in ${region.name}, Washington — sourced from the DSHS ALF Reports portal.`,
+    MN: `MDH inspection records for every licensed Assisted Living Facility with Dementia Care in ${region.name}, Minnesota — sourced from the MN Department of Health.`,
+  };
   const desc = clipMetaDescription(
-    region.state.code === "TX"
-      ? `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — built from public LTCR records.`
-      : `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`,
+    _cityDescByState[region.state.code] ??
+      `State inspection records for licensed memory care facilities in ${region.name}, ${region.state.name}.`,
   );
   return {
     title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
@@ -587,6 +594,14 @@ export default async function RegionPage({ params }: PageProps) {
               </div>
             </section>
           )}
+
+        {!isCounty && !fetchError && totalCount > 0 && (
+          <SiblingCityHubLinks
+            stateSlug={region.state.slug}
+            stateCode={region.state.code}
+            currentCitySlug={region.slug}
+          />
+        )}
 
         {/* ── Facility list ── */}
         {!fetchError && totalCount > 0 && (
