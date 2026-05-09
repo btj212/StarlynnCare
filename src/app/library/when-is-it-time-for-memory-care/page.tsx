@@ -140,7 +140,7 @@ export default function WhenMemoryCarePage() {
           <H2 id="tours">3 · Tours after you shortlist</H2>
           <p>
             Use{" "}
-            <Link href="/california/37-questions-to-ask-on-a-tour" className="text-teal underline underline-offset-4">
+            <Link href="/library/37-questions-to-ask-on-a-memory-care-tour" className="text-teal underline underline-offset-4">
               the 37-question checklist
             </Link>{" "}
             with inspection citations printed — administrators answer differently when families cite dated deficiencies by number.
@@ -163,8 +163,8 @@ export default function WhenMemoryCarePage() {
           </div>
 
           <div className="mt-12 flex flex-col gap-3 text-[14px]">
-            <Link href="/california" className="text-teal underline underline-offset-4">
-              Browse California hubs →
+            <Link href="/states" className="text-teal underline underline-offset-4">
+              Browse memory care directories by state →
             </Link>
             <Link href="/library/dementia-vs-alzheimers-vs-lewy-body" className="text-teal underline underline-offset-4">
               Dementia vs. Alzheimer’s vs. Lewy body →

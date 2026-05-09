@@ -259,11 +259,11 @@ export default function MemoryCareVsAssistedLivingPage() {
               supplies, and ancillary transportation. Ask for a modeled month-three bill, not a brochure grid.
             </p>
             <p>
-              For California-specific ranges and payer basics, see our{" "}
-              <Link href="/california/cost-guide" className="text-teal underline underline-offset-4">
-                California memory care cost guide
-              </Link>
-              .
+              For state-specific cost ranges and payer basics, visit your{" "}
+              <Link href="/states" className="text-teal underline underline-offset-4">
+                state directory
+              </Link>{" "}
+              — each state hub includes a regional cost overview.
             </p>
           </Prose>
 
@@ -292,15 +292,15 @@ export default function MemoryCareVsAssistedLivingPage() {
               </li>
               <li>
                 Use the{" "}
-                <Link href="/california/37-questions-to-ask-on-a-tour" className="text-teal underline underline-offset-4">
+                <Link href="/library/37-questions-to-ask-on-a-memory-care-tour" className="text-teal underline underline-offset-4">
                   37-question tour checklist
                 </Link>{" "}
                 so staff cannot steer only to scripted highlights.
               </li>
               <li>
-                Bookmark terms you do not recognize in our{" "}
-                <Link href="/california/glossary" className="text-teal underline underline-offset-4">
-                  California glossary
+                Unfamiliar regulatory terms? Each state hub has a licensing explainer — see your{" "}
+                <Link href="/states" className="text-teal underline underline-offset-4">
+                  state&apos;s guides page
                 </Link>
                 .
               </li>
@@ -322,8 +322,8 @@ export default function MemoryCareVsAssistedLivingPage() {
           </div>
 
           <div className="mt-12 flex flex-col gap-3 text-[14px] text-ink-3">
-            <Link href="/california" className="text-teal underline underline-offset-4 hover:text-teal/80">
-              Browse California memory care directories →
+            <Link href="/states" className="text-teal underline underline-offset-4 hover:text-teal/80">
+              Browse memory care directories by state →
             </Link>
             <Link href="/editorial-policy" className="text-teal underline underline-offset-4 hover:text-teal/80">
               Editorial policy →

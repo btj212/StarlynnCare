@@ -148,6 +148,60 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     tags: ["decision", "licensing"],
     live: true,
   },
+
+  // ── Oregon ────────────────────────────────────────────────────────────────
+  {
+    slug: "/oregon/memory-care-licensing",
+    title: "Oregon memory care licensing — ALFs, RCFs & the Memory Care Endorsement",
+    desc: "Oregon licenses memory care as ALFs and RCFs under ORS ch. 443. A separate DHS Memory Care Endorsement governs dementia-specific programming.",
+    states: ["OR"],
+    tags: ["licensing", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/oregon/memory-care-vs-nursing-home",
+    title: "Memory care vs. nursing home in Oregon",
+    desc: "Oregon DHS regulates ALF/RCF memory care; CMS and OHA regulate nursing homes (SNFs). Different records, different Medicaid funding.",
+    states: ["OR"],
+    tags: ["decision", "licensing"],
+    live: true,
+  },
+
+  // ── Washington ────────────────────────────────────────────────────────────
+  {
+    slug: "/washington/memory-care-licensing",
+    title: "Washington memory care licensing — ALFs & Specialized Dementia Care",
+    desc: "Washington licenses memory care in ALFs under RCW 18.20. A DSHS Specialized Dementia Care contract is required for dementia-focused facilities.",
+    states: ["WA"],
+    tags: ["licensing", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/washington/memory-care-vs-nursing-home",
+    title: "Memory care vs. nursing home in Washington",
+    desc: "DSHS regulates Washington ALF memory care; CMS and WA DOH regulate nursing homes (SNFs). Different records, different Medicaid funding.",
+    states: ["WA"],
+    tags: ["decision", "licensing"],
+    live: true,
+  },
+
+  // ── Minnesota ─────────────────────────────────────────────────────────────
+  {
+    slug: "/minnesota/memory-care-licensing",
+    title: "Minnesota memory care licensing — ALF with Dementia Care (Chapter 144G)",
+    desc: "Minnesota licenses memory care as Assisted Living Facility with Dementia Care under Chapter 144G, regulated by MDH. Effective August 2021.",
+    states: ["MN"],
+    tags: ["licensing", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/minnesota/memory-care-vs-nursing-home",
+    title: "Memory care vs. nursing home in Minnesota",
+    desc: "MDH regulates Minnesota ALF-DC memory care; CMS and MDH (Ch. 144A) regulate nursing homes (SNFs). Different records, different Medicaid funding.",
+    states: ["MN"],
+    tags: ["decision", "licensing"],
+    live: true,
+  },
 ];
 
 /**

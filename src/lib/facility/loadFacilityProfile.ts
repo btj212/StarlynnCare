@@ -174,8 +174,10 @@ export interface FacilityProfile {
   tourQuestions: string[];
 
   reviews: Review[];
-  /** Photo URLs — currently facility.photo_url, will expand to gallery. */
+  /** Photo URLs — up to 5 for the gallery; sourced from photo_urls[] with photo_url fallback. */
   photoUrls: string[];
+  /** Per-photo source metadata for attribution display (Google Places API TOS requirement). */
+  photoSources: Array<{ url: string; source: string; attribution: string }>;
   mapState: MapState | null;
 
   canonicalUrl: string;
@@ -399,12 +401,21 @@ export async function loadFacilityProfile(params: {
   const tourQuestions = (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [];
 
   // Photos — use the gallery array (photo_urls) when populated; fall back to legacy photo_url.
-  const rawPhotoUrls = (facility as unknown as { photo_urls?: string[] }).photo_urls;
+  const facilityWithGallery = facility as unknown as {
+    photo_urls?: string[];
+    photo_sources?: Array<{ url: string; source: string; attribution: string }>;
+  };
+  const rawPhotoUrls = facilityWithGallery.photo_urls;
   const photoUrls: string[] = Array.isArray(rawPhotoUrls) && rawPhotoUrls.length > 0
     ? rawPhotoUrls.filter(Boolean)
     : facility.photo_url
       ? [facility.photo_url]
       : [];
+  const photoSources = facilityWithGallery.photo_sources ?? photoUrls.map((url) => ({
+    url,
+    source: "Google Street View",
+    attribution: facility.photo_attribution ?? "© Google",
+  }));
 
   // Map
   const lat = facility.latitude ? parseFloat(facility.latitude) : null;
@@ -468,6 +479,7 @@ export async function loadFacilityProfile(params: {
 
     reviews,
     photoUrls,
+    photoSources,
     mapState,
 
     canonicalUrl,

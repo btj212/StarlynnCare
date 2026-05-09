@@ -86,6 +86,15 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     // Texas-specific articles (live)
     { path: "/texas/type-a-b-c-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/texas/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    // Oregon-specific articles (live)
+    { path: "/oregon/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/oregon/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    // Washington-specific articles (live)
+    { path: "/washington/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/washington/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    // Minnesota-specific articles (live)
+    { path: "/minnesota/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/minnesota/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
   ];
 
   return paths.map((p) => ({

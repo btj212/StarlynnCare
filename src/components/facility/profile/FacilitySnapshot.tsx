@@ -1,7 +1,25 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { SectionHead } from "@/components/editorial/SectionHead";
 
-function PhotoGallery({ urls, name }: { urls: string[]; name: string }) {
+type PhotoSource = { url: string; source: string; attribution: string };
+
+function PhotoGallery({
+  urls,
+  name,
+  photoSources,
+}: {
+  urls: string[];
+  name: string;
+  photoSources?: PhotoSource[];
+}) {
+  const GRADIENTS = [
+    "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 100%)",
+    "linear-gradient(135deg, #D6CFB8 0%, #A89D7E 100%)",
+    "linear-gradient(135deg, #C8B49A 0%, #8E7A60 100%)",
+    "linear-gradient(135deg, #BDC8B9 0%, #7E8A77 100%)",
+    "linear-gradient(135deg, #E0CFB8 0%, #B0A084 100%)",
+  ];
+
   if (urls.length === 0) {
     return (
       <div className="grid h-[460px] grid-cols-[2fr_1fr_1fr] grid-rows-2 gap-1">
@@ -9,14 +27,7 @@ function PhotoGallery({ urls, name }: { urls: string[]; name: string }) {
           <div
             key={i}
             className={`relative overflow-hidden ${i === 0 ? "row-span-2" : ""}`}
-            style={{
-              background: i === 0
-                ? "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 100%)"
-                : i === 1 ? "linear-gradient(135deg, #D6CFB8 0%, #A89D7E 100%)"
-                : i === 2 ? "linear-gradient(135deg, #C8B49A 0%, #8E7A60 100%)"
-                : i === 3 ? "linear-gradient(135deg, #BDC8B9 0%, #7E8A77 100%)"
-                : "linear-gradient(135deg, #E0CFB8 0%, #B0A084 100%)",
-            }}
+            style={{ background: GRADIENTS[i] }}
           >
             <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.22em] text-white/75">
               Photo
@@ -27,35 +38,39 @@ function PhotoGallery({ urls, name }: { urls: string[]; name: string }) {
     );
   }
 
-  // With a single photo: big-left, blank slots on right
   const [primary, ...rest] = urls;
+  const primaryAttribution = photoSources?.[0]?.attribution;
+
   return (
-    <div className="grid h-[460px] grid-cols-[2fr_1fr_1fr] grid-rows-2 gap-1">
-      <div className="relative row-span-2 overflow-hidden bg-ink-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={primary} alt={name} className="absolute inset-0 h-full w-full object-cover" />
-      </div>
-      {[0, 1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="relative overflow-hidden"
-          style={{
-            background: i === 0 ? "linear-gradient(135deg, #D6CFB8 0%, #A89D7E 100%)"
-              : i === 1 ? "linear-gradient(135deg, #C8B49A 0%, #8E7A60 100%)"
-              : i === 2 ? "linear-gradient(135deg, #BDC8B9 0%, #7E8A77 100%)"
-              : "linear-gradient(135deg, #E0CFB8 0%, #B0A084 100%)",
-          }}
-        >
-          {rest[i] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={rest[i]} alt={`${name} photo ${i + 2}`} className="absolute inset-0 h-full w-full object-cover" />
-          ) : (
-            <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.22em] text-white/75">
-              Photo
-            </span>
-          )}
+    <div className="relative">
+      <div className="grid h-[460px] grid-cols-[2fr_1fr_1fr] grid-rows-2 gap-1">
+        <div className="relative row-span-2 overflow-hidden bg-ink-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={primary} alt={name} className="absolute inset-0 h-full w-full object-cover" />
         </div>
-      ))}
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="relative overflow-hidden"
+            style={{ background: GRADIENTS[i + 1] }}
+          >
+            {rest[i] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={rest[i]} alt={`${name} photo ${i + 2}`} className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.22em] text-white/75">
+                Photo
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      {/* Per-Google Places API TOS: display attribution when Places photos are used */}
+      {primaryAttribution && primaryAttribution !== "© Google" && (
+        <p className="mt-1 text-right font-[family-name:var(--font-mono)] text-[10px] text-ink-3/60 tracking-wide">
+          {primaryAttribution}
+        </p>
+      )}
     </div>
   );
 }
@@ -152,7 +167,7 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
         />
 
         <div className="grid gap-7 md:grid-cols-[1.5fr_1fr]">
-          <PhotoGallery urls={profile.photoUrls} name={facility.name} />
+          <PhotoGallery urls={profile.photoUrls} name={facility.name} photoSources={profile.photoSources} />
           <FacilityMap profile={profile} />
         </div>
       </div>

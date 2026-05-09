@@ -87,6 +87,112 @@ const INTROS: Record<string, string> = {
     "Kent is a mid-corridor market between Seattle and Tacoma. Compare operators using DSHS report frequency and content — enforcement letters are the strongest signal of regulatory concern beyond routine inspections.",
   "WA:renton":
     "Renton families frequently consider Bellevue and south Seattle options in parallel. DSHS investigation records often capture complaint-originated reviews that don't appear in routine survey summaries — read both categories.",
+
+  // ── Washington (expanded) ────────────────────────────────────────────────
+  "WA:spokane-valley":
+    "Spokane Valley's suburban setting offers more facilities than downtown Spokane for families seeking space. DSHS Specialized Dementia Care contract holders are the only operators indexed here — compare investigation records before touring.",
+  "WA:kennewick":
+    "Kennewick anchors the Tri-Cities market alongside Richland and Pasco. DSHS inspection and complaint investigation history for each facility links directly to the state portal — read these as a set across the Tri-Cities before choosing.",
+  "WA:bremerton":
+    "Bremerton families often face ferry and bridge logistics when comparing options across Kitsap Peninsula. DSHS reports for each facility reflect both routine surveys and complaint-driven investigations.",
+  "WA:puyallup":
+    "Puyallup serves Pierce County families east of Tacoma. DSHS Specialized Dementia Care contract status is the minimum bar for facilities indexed here — enforcement letters are the strongest signal of regulatory concern beyond routine surveys.",
+  "WA:lacey":
+    "Lacey sits in greater Olympia and offers options for south Sound families. DSHS investigation records and inspection history are publicly posted for each facility on the state ALF reports portal.",
+  "WA:vancouver":
+    "Vancouver, WA sits across the Columbia River from Portland — families frequently compare options in both states. Washington DSHS inspection records (indexed here) and Oregon DHS records (for Portland-area facilities) use different regulatory frameworks.",
+  "WA:yakima":
+    "Yakima is the central Washington agricultural hub with a distinct care market from Puget Sound. DSHS enforcement records are the same public database — read complaint investigations alongside routine surveys.",
+  "WA:pasco":
+    "Pasco is part of the Tri-Cities corridor with Kennewick and Richland. DSHS reports for all three cities can be reviewed in parallel — aggregate the investigation record before committing to a tour schedule.",
+  "WA:centralia":
+    "Centralia is midway between Olympia and Portland — useful for families splitting distance between two metros. DSHS inspection records are the clearest independent signal for operators in this corridor.",
+  "WA:chehalis":
+    "Chehalis sits in the Lewis County corridor between Olympia and Portland. Compare investigation findings with Centralia alternatives using DSHS records — the complaint-driven reports capture issues routine surveys sometimes miss.",
+
+  // ── Oregon (expanded) ────────────────────────────────────────────────────
+  "OR:grants-pass":
+    "Grants Pass serves the Rogue Valley with options for families between Medford and the coast. Oregon DHS Memory Care Endorsement status is required for all facilities indexed here — DHS inspection and complaint records are publicly available.",
+  "OR:mcminnville":
+    "McMinnville anchors Yamhill County wine country south of Portland. DHS licensing violation history is the best independent quality signal — read complaint-driven investigation outcomes alongside routine surveys.",
+  "OR:hillsboro":
+    "Hillsboro's tech-corridor demographics mirror Beaverton's pricing dynamics on the west side. DHS inspection records for endorsed facilities reflect both routine and complaint-driven reviews — read both categories before shortlisting.",
+  "OR:springfield":
+    "Springfield families often compare Lane County options with Eugene simultaneously. DHS violation history and Memory Care Endorsement renewal dates help distinguish operators with consistent regulatory track records.",
+  "OR:milwaukie":
+    "Milwaukie sits between Portland and Lake Oswego — useful for families bridging inner metro access. DHS Memory Care Endorsement holders are indexed here; violation counts and investigation outcomes vary more than endorsement status alone suggests.",
+  "OR:albany":
+    "Albany anchors mid-valley families between Salem and Corvallis. For each Oregon facility, the DHS endorsement is necessary but not sufficient — compare complaint investigation outcomes to assess operator responsiveness.",
+  "OR:roseburg":
+    "Roseburg serves Douglas County families in southern Oregon. DHS inspection and complaint records are the primary public quality signal in this market — read the full investigation narrative, not just the outcome code.",
+  "OR:woodburn":
+    "Woodburn sits between Salem and Portland on I-5 — practical for families commuting between metro areas. DHS endorsement holders in this corridor have inspectable records on the state portal.",
+  "OR:redmond":
+    "Redmond serves Central Oregon families alongside Bend. For newer facilities built with Bend-area growth, compare opening inspection dates against recent surveys — the regulatory record builds over time.",
+
+  // ── Texas ────────────────────────────────────────────────────────────────
+  "TX:houston":
+    "Houston is one of the largest memory care markets in Texas — a sprawling metro where family commute time and proximity to medical centers drive geography as much as quality scores. All facilities indexed here hold an active HHSC Alzheimer Certification; compare HHSC LTCR inspection findings before touring.",
+  "TX:san-antonio":
+    "San Antonio blends major medical infrastructure with a large military-adjacent family population. HHSC LTCR inspection records for each facility are the primary public quality signal — read scope and severity of cited deficiencies alongside certification status.",
+  "TX:dallas":
+    "Dallas families typically anchor searches in specific corridors — Uptown, North Dallas, or the Plano-Frisco axis. HHSC license type (A, B, or C) and Alzheimer Certification status are listed on each profile; deficiency records reflect the full LTCR inspection history.",
+  "TX:austin":
+    "Austin's growth has brought a wide range of ALF memory care options at varying price points. HHSC inspection frequency and deficiency scope are the most reliable public signals for distinguishing operators in this competitive market.",
+  "TX:fort-worth":
+    "Fort Worth families often compare Tarrant County options against North Dallas and Denton alternatives. HHSC LTCR records here use the same scope-and-severity framework as the rest of Texas — read both routine survey and complaint investigation outcomes.",
+  "TX:plano":
+    "Plano anchors the North Dallas Collin County corridor with a concentration of mid-to-upper market memory care operators. HHSC Alzheimer Certification is required for all indexed facilities; deficiency history is the key differentiator.",
+  "TX:spring":
+    "Spring is a north Houston suburb with a growing senior housing market. HHSC inspection and complaint records for each facility reflect the same public LTCR dataset — compare operators by deficiency frequency and scope before touring.",
+  "TX:conroe":
+    "Conroe serves Montgomery County families north of Houston. HHSC licensing records are publicly searchable by facility name at hhs.texas.gov — StarlynnCare surfaces the key findings on each profile.",
+  "TX:mckinney":
+    "McKinney's rapid growth has added new ALF memory care construction alongside established operators. For newer facilities, compare their first inspection outcomes with recent surveys — the regulatory record tells a different story than marketing materials.",
+  "TX:arlington-tx":
+    "Arlington sits between Dallas and Fort Worth — a practical option for families splitting commutes between both metros. HHSC LTCR inspection findings and Alzheimer Certification status are indexed for all facilities listed here.",
+  "TX:katy":
+    "Katy is a west Houston suburb with strong family concentration and a range of ALF memory care pricing tiers. Read HHSC deficiency scope and severity across multiple inspection cycles — single-year snapshots miss operator trends.",
+  "TX:denton":
+    "Denton serves the north Texas university corridor and anchors comparisons for families between Fort Worth and McKinney. HHSC license type, Alzheimer Certification, and deficiency records are all available on each profile.",
+  "TX:garland":
+    "Garland sits east of Dallas with generally lower price points than Plano-area alternatives. HHSC LTCR complaint investigation outcomes — separate from routine surveys — are often the most revealing part of the public record.",
+  "TX:carrollton":
+    "Carrollton bridges Denton and Dallas County families with mid-corridor access. HHSC inspection records here reflect the same public database — compare citation frequency across similar-sized operators before narrowing your list.",
+  "TX:lewisville":
+    "Lewisville anchors the north Dallas lake corridor. ALF license type (A, B, or C) affects which residents can legally be admitted — read license class alongside Alzheimer Certification and inspection history.",
+  "TX:frisco":
+    "Frisco is one of Texas's fastest-growing cities with newer ALF construction. Newer facilities may have fewer inspection cycles — read available records carefully and ask operators about deficiency remediation history during tours.",
+  "TX:sugar-land":
+    "Sugar Land is a southwest Houston suburb with strong family demographics and mid-to-upper market pricing. HHSC scope and severity categories in deficiency reports map to the seriousness of each finding — read the narrative, not just the count.",
+  "TX:round-rock":
+    "Round Rock serves north Austin families with a growing memory care market. HHSC license class (A, B, or C) determines what level of care a facility can legally provide — pair this with inspection history when evaluating fit.",
+  "TX:georgetown":
+    "Georgetown is a north Austin suburb with a strong retiree population. HHSC LTCR records for facilities here reflect both routine surveys and complaint investigations — the latter often surfaces family-reported concerns.",
+  "TX:allen":
+    "Allen sits in Collin County northeast of Plano — a high-demographic suburb with operators at various quality tiers. HHSC Alzheimer Certification and LTCR inspection records are the clearest independent signals for this market.",
+
+  // ── Minnesota ────────────────────────────────────────────────────────────
+  "MN:minneapolis":
+    "Minneapolis offers a range of ALF with Dementia Care options across city neighborhoods and inner-ring suburbs. MDH licenses these under Chapter 144G — inspection and complaint survey records are indexed on each profile.",
+  "MN:st-paul":
+    "St. Paul families often cross-compare with Minneapolis and inner-ring suburbs simultaneously. MDH inspection records for Chapter 144G ALF-DC facilities reflect both routine licensing surveys and complaint-driven investigations.",
+  "MN:minnetonka":
+    "Minnetonka anchors the western Twin Cities suburbs with a concentration of established memory care operators. MDH survey history is the primary public quality signal — read correction orders and civil penalties alongside routine survey outcomes.",
+  "MN:rochester":
+    "Rochester's medical corridor anchors southeast Minnesota with strong referral networks. MDH ALF-DC inspection records here reflect Chapter 144G standards — compare facilities by correction order frequency and complaint investigation outcomes.",
+  "MN:edina":
+    "Edina is a high-income south Twin Cities suburb with mid-to-upper market memory care pricing. MDH enforcement records — including correction orders — are the most reliable independent signal for operator consistency.",
+  "MN:burnsville":
+    "Burnsville anchors the south Metro with a range of pricing tiers and operator sizes. MDH Chapter 144G inspection records and complaint investigation outcomes are indexed on each profile — compare over multiple survey cycles.",
+  "MN:duluth":
+    "Duluth is the hub for northeastern Minnesota families who often face limited alternatives. MDH licensing records for ALF-DC facilities here reflect both routine surveys and complaint-driven investigations — read the full narrative.",
+  "MN:eden-prairie":
+    "Eden Prairie combines southwest Metro access with a strong senior housing market. MDH correction order and civil penalty records are the strongest signals of regulatory escalation — compare these across similarly sized operators.",
+  "MN:bloomington":
+    "Bloomington sits between Minneapolis and the south suburbs — central for families managing multiple commute directions. MDH ALF-DC survey records reflect Chapter 144G standards in effect since August 2021.",
+  "MN:blaine":
+    "Blaine serves north Metro families between Minneapolis and the St. Cloud corridor. MDH inspection frequency and complaint investigation outcomes for Chapter 144G facilities are indexed on each profile.",
 };
 
 /**

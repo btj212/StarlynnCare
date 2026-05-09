@@ -24,3 +24,48 @@ Internal watercolor-style illustrations for guides and hubs. **No stock photogra
 ## Provenance
 
 Commissioned for StarlynnCare editorial use. All rights reserved unless otherwise documented in a separate license file.
+
+---
+
+## Facility photo sourcing strategy
+
+Facility profile galleries support up to 5 images. The sourcing hierarchy is:
+
+### Source 1 — Google Street View (primary; automated)
+
+**Script:** `scrapers/fetch_streetview.py --state XX`
+
+- Exterior shot from the nearest Street View panorama.
+- Stored in `facilities.photo_url` (legacy) and `photo_urls[0]` + `photo_sources[0]`.
+- Attribution: `"© Google"` — displayed in the hero if present; covered by [Google Maps Platform Terms](https://cloud.google.com/maps-platform/terms).
+- Runs as part of every state's downstream pipeline.
+- **Gap:** ~20-25% of addresses have no Street View coverage (flagged as `skipped (no imagery)`).
+
+### Source 2 — Google Places Photos API (automated; supplements Street View)
+
+**Script:** `scrapers/fetch_places_photos.py --state XX`
+
+- Fetches up to 4 business photos from Google Places.
+- Stored in `photo_urls[1..4]` and `photo_sources[1..4]`.
+- **Attribution requirement (TOS):** Each photo's `author_attributions.display_name` must be displayed wherever the photo appears. The UI in `FacilitySnapshot.tsx` renders the attribution below the gallery automatically when present.
+- Costs: ~$0.017 per facility (1 text search + 1 detail call).
+- Run *after* `fetch_streetview.py` — it uses index 0 as the anchor.
+- **Do not run for facilities with no Street View** — wait for geocoding to succeed first.
+
+### Source 3 — Manual / operator-submitted photos (future)
+
+Not yet implemented. When a facility operator submits photos through a future operator portal:
+1. Store in Supabase Storage bucket `facility-photos`.
+2. Insert URLs into `photo_urls[1..4]` and tag `photo_sources[*].source = "Operator-submitted"`.
+3. Attribution: operator name; no API TOS requirement beyond standard rights confirmation.
+
+### Running the pipeline (new state)
+
+```bash
+python3 scrapers/geocode_facilities.py --state XX
+python3 scrapers/recompute_publishable.py --state XX
+python3 scrapers/fetch_streetview.py --state XX
+python3 scrapers/fetch_places_photos.py --state XX
+```
+
+See `docs/NEW_STATE_PLAYBOOK.md#data-pipeline--throttling-cost-and-ops-guidance` for costs and rate limits.
