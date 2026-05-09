@@ -118,33 +118,36 @@ function ExpandedRow({
         </div>
       )}
 
-      {/* 4. Official CDSS report link — prominent */}
+      {/* 4. Full inspector notes — primary CTA dropdown */}
+      {rawNarrative && (
+        <details className="mt-4 group/notes">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-2 border border-rust px-4 py-2.5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-rust hover:bg-rust hover:text-white transition-colors [&::-webkit-details-marker]:hidden">
+            <span>Full inspector notes</span>
+            <svg viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 shrink-0 transition-transform duration-200 group-open/notes:rotate-180" aria-hidden>
+              <path d="M8 10L3 5h10L8 10z" />
+            </svg>
+          </summary>
+          <p className="mt-3 border-l-2 border-rust/30 pl-4 text-[13px] leading-relaxed text-ink-2 whitespace-pre-line">
+            {rawNarrative}
+          </p>
+        </details>
+      )}
+
+      {/* 5. Official report link — demoted, grey */}
       {insp.source_url && (
         <div className="mt-4">
           <a
             href={insp.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 border border-rust px-4 py-2.5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-rust hover:bg-rust hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.06em] text-ink-3 hover:text-ink-2 transition-colors"
           >
-            View official {cfg.agencyShort} report →
+            View official {cfg.agencyShort} report
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-3 w-3 shrink-0" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13L13 3M7 3h6v6" />
+            </svg>
           </a>
         </div>
-      )}
-
-      {/* 5. Raw inspector notes — deepest in funnel */}
-      {rawNarrative && (
-        <details className="mt-5 border-t border-paper-rule pt-4">
-          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 font-[family-name:var(--font-mono)] text-[10.5px] text-ink-3 hover:text-ink transition-colors [&::-webkit-details-marker]:hidden">
-            <span>Full inspector notes</span>
-            <svg viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 shrink-0" aria-hidden>
-              <path d="M8 10L3 5h10L8 10z" />
-            </svg>
-          </summary>
-          <p className="mt-3 border-l-2 border-paper-rule pl-4 text-[13px] leading-relaxed text-ink-3 whitespace-pre-line">
-            {rawNarrative}
-          </p>
-        </details>
       )}
     </div>
   );
