@@ -63,6 +63,21 @@ export interface FaqItem {
   a: string;
 }
 
+/**
+ * Builds the freshness footnotes for a state hub StatBlock — surfaces
+ * `stats.lastRefreshed` so families see when the public-record data was last
+ * pulled. Empty array when no refresh date is available.
+ */
+export function buildStateStatFootnotes(
+  stats: StateHubData["stats"],
+  config: StateHubConfig,
+): string[] {
+  if (!stats.lastRefreshed) return [];
+  return [
+    `Data refreshed ${stats.lastRefreshed} from ${config.regulatorAbbr} public records`,
+  ];
+}
+
 /** Builds the standard 4 stat items for a state hub. */
 export function buildStateStatItems(
   stats: StateHubData["stats"],

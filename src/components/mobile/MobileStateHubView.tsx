@@ -20,7 +20,7 @@ type Props = {
 
 export function MobileStateHubView({ data, config }: Props) {
   const { season, year } = getSeasonAndYear();
-  const { stateName, stateSlug, edition, showZipSearch } = config;
+  const { stateName, stateSlug, stateCode, edition, showZipSearch } = config;
   const statItems = buildStateStatItems(data.stats, config);
   const { counties, topCities, stats, sampleReviews } = data;
   const firstReview = sampleReviews[0] ?? null;
@@ -259,7 +259,7 @@ export function MobileStateHubView({ data, config }: Props) {
       <div className="px-[18px] py-4 font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em]">
         <span className="inline-flex items-center gap-1.5 text-grade-a">
           <span className="live-dot" aria-hidden />
-          Live across {counties.length > 0 ? `${counties.length} ${stateName.substring(0, 2).toUpperCase()} counties` : stateName}
+          Live across {counties.length > 0 ? `${counties.length} ${stateCode} counties` : stateName}
         </span>
         <span className="text-ink-4"> · {stats.facilities.toLocaleString()} facilities indexed</span>
       </div>

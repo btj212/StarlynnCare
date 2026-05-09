@@ -220,6 +220,88 @@ The `editorialCards` array drives the § 04 section on the state hub. Rules:
 
 ---
 
+## Data pipeline — throttling, cost, and ops guidance
+
+When running the downstream enrichment pipeline for a new state, follow these rules to keep API costs
+manageable and avoid rate-limit errors.
+
+### Pipeline order
+
+Run steps in this exact order to avoid wasted API calls on unpublishable facilities:
+
+```
+1. scrapers/geocode_facilities.py --state XX       # fill lat/lon
+2. scrapers/recompute_publishable.py --state XX     # set publishable = true
+3. scrapers/fetch_streetview.py --state XX          # photos (Google Street View)
+4. scrapers/summarize_inspections.py --state XX     # AI summaries (Anthropic)
+5. scrapers/generate_content.py --state XX          # AI tour questions (Anthropic)
+```
+
+Steps 3-5 are independent once step 2 has run; run them in parallel if you have the budget.
+
+### Estimated record counts and runtimes (May 2026 baseline)
+
+| State | Publishable facilities | Inspections to summarize | Expected runtime |
+|-------|----------------------|--------------------------|------------------|
+| CA | ~484 | ~742 remaining | ~6 h (summaries) |
+| TX | ~1 | ~0 remaining | < 10 min |
+| OR | ~244 | ~8,900+ | ~14 h (summaries) |
+| WA | ~99 | ~420 (stub narratives — no real text) | 30 min geocode / content |
+| MN | ~552 | 0 (no narrative text in source data) | 3-5 h (content only) |
+
+### Anthropic cost estimates
+
+- `claude-haiku-4-5-20251001` (summarize): ~$0.0005 per inspection. 8,900 OR records ≈ **$4.50**.
+- `claude-sonnet-4-5-20251001` (generate_content, quality gate): ~$0.006 per facility × 2 calls = $0.012/facility. 244 OR facilities ≈ **$3**.
+- Budget for a full new-state run (5k inspections + 500 facilities): **≈ $10–15**.
+
+### Rate limits
+
+- **Anthropic Haiku:** 1,000 requests/min on Tier 2+. The scripts use a 0.5 s sleep per record by default;
+  adjust `SLEEP_BETWEEN` in the script if you hit 429s.
+- **Google Geocoding:** 50 req/s / $5 per 1,000. 500 facilities ≈ **$2.50**.
+- **Google Street View Static:** $7 per 1,000. 500 facilities ≈ **$3.50**.
+- Both Google APIs use the same `GOOGLE_MAPS_API_KEY` in `.env.local`.
+
+### Running in stages
+
+For very large states (> 5,000 inspections), use `--city-slugs` to run a metro at a time:
+
+```bash
+python summarize_inspections.py --state OR \
+  --city-slugs portland,eugene,salem
+```
+
+This lets you ship a metro sooner without waiting for the whole state.
+
+### Monitoring progress
+
+Log files are written to `logs/ingest/`. Check the tail to see current position:
+
+```bash
+tail -f logs/ingest/summarize_or.log
+tail -f logs/ingest/content_or.log
+```
+
+A completed run ends with `Done. N summarized, M failed, P processed.`
+
+### After the pipeline
+
+After all steps complete, commit the script updates (not data — that lives in Supabase) and
+run a TypeScript build to confirm no regressions:
+
+```bash
+npx tsc --noEmit
+git add scripts/ scrapers/
+git commit -m "chore: run XX state enrichment pipeline"
+git push
+```
+
+Then trigger a Vercel preview deploy and spot-check 3 facility profiles and 2 city hubs in the
+new state before promoting to production.
+
+---
+
 ## Thumbnail registration
 
 If you create illustration art for a state-specific article, register it in `src/lib/content/articleThumbnails.ts`:

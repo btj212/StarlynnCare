@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { DataFootnote } from "@/components/editorial/DataFootnote";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -140,6 +141,12 @@ export default function CaliforniaGlossaryPage() {
               </dl>
             </section>
           ))}
+
+          <DataFootnote
+            source="California Department of Social Services (CDSS), Community Care Licensing Division — Title 22, Division 6, Chapter 8 (RCFE regulations) and CDSS public glossary"
+            refreshed={DATE_PUBLISHED}
+            note="Definitions cross-checked against the CDSS Title 22 regulations and current CDSS public guidance; verify with your county licensing analyst before relying on any term in a regulatory dispute"
+          />
 
           <p className="text-[14px] text-ink-3 pt-8 border-t border-paper-rule">
             <Link href="/editorial-policy" className="text-teal underline underline-offset-4 hover:text-teal/80">

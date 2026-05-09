@@ -398,8 +398,13 @@ export async function loadFacilityProfile(params: {
   const rulesCards = deriveRulesCards(cfg, deficiencies, inspections);
   const tourQuestions = (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [];
 
-  // Photos
-  const photoUrls = facility.photo_url ? [facility.photo_url] : [];
+  // Photos — use the gallery array (photo_urls) when populated; fall back to legacy photo_url.
+  const rawPhotoUrls = (facility as unknown as { photo_urls?: string[] }).photo_urls;
+  const photoUrls: string[] = Array.isArray(rawPhotoUrls) && rawPhotoUrls.length > 0
+    ? rawPhotoUrls.filter(Boolean)
+    : facility.photo_url
+      ? [facility.photo_url]
+      : [];
 
   // Map
   const lat = facility.latitude ? parseFloat(facility.latitude) : null;

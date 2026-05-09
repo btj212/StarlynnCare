@@ -10,14 +10,14 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 const DATA_PATH = "/data";
 const dataCanonical = canonicalFor(DATA_PATH);
 const dataDesc =
-  "Overview of the California memory care inspection and quality dataset behind StarlynnCare — CDSS Community Care Licensing and CMS Care Compare.";
+  "Overview of the memory care inspection and quality dataset behind StarlynnCare — sourced from CDSS, HHSC, Oregon DHS, WA DSHS, and MN MDH across five states.";
 
 export const metadata: Metadata = {
-  title: "Dataset — California Memory Care Inspection Records | StarlynnCare",
+  title: "Dataset — Memory Care Inspection Records (5 States) | StarlynnCare",
   description: dataDesc,
   alternates: { canonical: dataCanonical },
   openGraph: {
-    title: "Dataset — California Memory Care Inspection Records | StarlynnCare",
+    title: "Dataset — Memory Care Inspection Records (5 States) | StarlynnCare",
     description: dataDesc,
     url: dataCanonical,
     type: "website",

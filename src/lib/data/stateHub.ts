@@ -212,7 +212,7 @@ export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubDa
   const { data: reviewRows } = await supabase
     .from("reviews")
     .select("id, body, rating, reviewer_name, created_at, facility_id")
-    .eq("published", true)
+    .eq("status", "published")
     .order("created_at", { ascending: false })
     .limit(3);
 
@@ -367,7 +367,7 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
   const { data: reviewRows } = await supabase
     .from("reviews")
     .select("id, body, rating, reviewer_name, created_at, facility_id")
-    .eq("published", true)
+    .eq("status", "published")
     .order("created_at", { ascending: false })
     .limit(3);
 

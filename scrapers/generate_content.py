@@ -427,6 +427,147 @@ PASS Texas-specific regulatory documentation questions when grounded in inspecti
 Output JSON only — no markdown fences.
 """
 
+# ── OR / WA / MN — parameterized templates ─────────────────────────────────────
+#
+# These three states share a near-identical structure (state regulator + dementia
+# license/endorsement/contract + state-specific inspection terminology), so we
+# parameterize a single system prompt + human template by state code rather than
+# duplicating three copies. Per-state regulatory facts live in NONCA_STATE_META.
+
+NONCA_STATE_META: dict[str, dict[str, str]] = {
+    "OR": {
+        "state_full": "Oregon",
+        "regulator_short": "Oregon DHS",
+        "regulator_full": "Oregon Department of Human Services, Long-Term Care Licensing",
+        "mc_designation_label": "DHS Memory Care Endorsement",
+        "license_law": "ORS ch. 443",
+        "facility_type": "Assisted Living Facility (ALF) or Residential Care Facility (RCF)",
+        "deficiency_terminology": "licensing violation",
+        "complaint_terminology": "complaint investigation",
+    },
+    "WA": {
+        "state_full": "Washington",
+        "regulator_short": "DSHS",
+        "regulator_full": "Washington DSHS Aging and Disability Services Administration, Residential Care Services",
+        "mc_designation_label": "DSHS Specialized Dementia Care contract",
+        "license_law": "RCW ch. 18.20",
+        "facility_type": "Assisted Living Facility (ALF)",
+        "deficiency_terminology": "deficiency",
+        "complaint_terminology": "complaint investigation",
+    },
+    "MN": {
+        "state_full": "Minnesota",
+        "regulator_short": "MDH",
+        "regulator_full": "Minnesota Department of Health",
+        "mc_designation_label": "Assisted Living Facility with Dementia Care license",
+        "license_law": "Minn. Stat. ch. 144G",
+        "facility_type": "Assisted Living Facility with Dementia Care",
+        "deficiency_terminology": "correction order",
+        "complaint_terminology": "complaint findings",
+    },
+}
+
+
+def generation_system_for_state(state_code: str) -> str:
+    """Return the GENERATION_SYSTEM prompt for OR/WA/MN — parameterized by state meta."""
+    meta = NONCA_STATE_META[state_code.upper()]
+    return f"""\
+You generate tour questions for StarlynnCare — built from {meta["state_full"]} ({meta["regulator_short"]})
+public assisted living and memory care data.
+
+Write for families researching dementia care. Plain English. No jargon. No marketing language.
+
+Tour questions rules:
+- Generate 4-5 questions. Prefer exactly 4 unless 5 naturally follows from distinct facts.
+- Each question MUST reference at least one concrete fact from the source data — counts,
+  dates, deficiency themes, or memory-care designation context.
+- Do NOT cite California Title 22 / CDSS, or Texas HHSC / Alzheimer Certification — this row
+  is in {meta["state_full"]}. Reference {meta["regulator_short"]} regulator framing where relevant.
+- Do NOT ask about staffing ratios, caregiver counts, overnight coverage, training hours,
+  or supervisor staffing levels.
+- Ask about documentation families can request on a tour: corrective action plans, written
+  policies, or how the community describes dementia supports — grounded in the inspection
+  counts/dates given.
+- NEVER frame questions as "has the state mailed you a closure letter" — ask the facility
+  for its own remediation documentation instead.
+
+CORRECTIVE-ACTION PHRASING — critical:
+Ask the facility for its plans and records — not for {meta["regulator_short"]} paperwork the family
+cannot obtain on a tour.
+
+SPECIFICITY BAN — do not ask about complaint subjects if only a complaint count is listed.
+
+DATE BAN — no relative time math; use exact dates from source data.
+"""
+
+
+def generation_human_template_for_state(state_code: str) -> str:
+    """Return the GENERATION_HUMAN_TEMPLATE for OR/WA/MN — parameterized by state meta."""
+    meta = NONCA_STATE_META[state_code.upper()]
+    sc = state_code.upper()
+    return f"""\
+Generate tour questions for the following facility. Return ONLY valid JSON with these exact keys:
+tour_questions, generated_at, model.
+
+tour_questions must be a JSON array of 4-5 strings (questions), not a prose paragraph.
+
+SOURCE DATA
+-----------
+Facility name        : {{name}}
+Address              : {{street}}, {{city}}, {sc} {{zip}}
+Phone                : {{phone}}
+Licensed beds        : {{beds}}
+Operator             : {{operator}}
+License number       : {{license_number}}
+License status       : {{license_status}}
+License expires      : {{license_expiration}}
+Facility type        : {meta["facility_type"]} ({meta["license_law"]})
+Memory care signal   : {{serves_mc}}
+Memory care designation: {{mc_designation}}
+Designation context  : {meta["mc_designation_label"]} where applicable
+
+Inspection history ({meta["regulator_full"]})
+  Total reports on file  : {{inspection_count}}
+  Total deficiencies     : {{deficiency_count}}
+  Serious citations      : {{serious_citation_count}}  (severity 3–4 mapped where available)
+  Dementia-reg citations : {{dementia_citation_count}}
+  Complaints on file     : {{complaint_count}}
+  Most recent inspection : {{last_inspection_date}}  ← use EXACT date. Today is {{today}}.
+
+GOLD-STANDARD EXAMPLE (Silverado Berkeley — California — tone only; do NOT copy the
+California regulatory citations into a {meta["state_full"]} facility's questions)
+-----------------------------------------------------------------------------------------------
+{{example_json}}
+-----------------------------------------------------------------------------------------------
+
+Now generate the content block for {{name}}. Output JSON only, no markdown fences.
+"""
+
+
+def quality_gate_system_for_state(state_code: str) -> str:
+    """Return the QUALITY_GATE_SYSTEM for OR/WA/MN — parameterized by state meta."""
+    meta = NONCA_STATE_META[state_code.upper()]
+    today = datetime.now(timezone.utc).strftime("%B %d, %Y")
+    return f"""\
+You are a quality checker for StarlynnCare tour questions for {meta["state_full"].upper()} facilities. Today: {today}.
+
+Return JSON only: {{{{"pass": true/false, "issues": ["one sentence per issue"]}}}}.
+
+FAIL if a question:
+  1. Violates the staffing ban (ratios, headcounts, training programs).
+  2. Contradicts source data counts/dates.
+  3. References California Title 22 / CDSS or Texas HHSC as if this facility were in those
+     states. The facility is in {meta["state_full"]}; correct regulator is {meta["regulator_short"]}.
+  4. Contains zero facility-specific facts.
+  5. Wrong array length (<4 or >5 questions).
+
+PASS {meta["state_full"]}-specific regulatory documentation questions when grounded in
+inspection counts/dates (corrective-action plans, written dementia program documentation,
+{meta["mc_designation_label"]} status, etc.).
+
+Output JSON only — no markdown fences.
+"""
+
 QUALITY_GATE_HUMAN_TEMPLATE = """\
 SOURCE DATA:
 {source_json}
@@ -468,6 +609,18 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
             if fac.get("tx_alzheimer_certified")
             else "(not flagged as Alzheimer-certified in source)"
         )
+    elif st == "OR":
+        mc_note = fac["memory_care_designation"] or (
+            "(DHS Memory Care Endorsement status from roster)"
+        )
+    elif st == "WA":
+        mc_note = fac["memory_care_designation"] or (
+            "(DSHS Specialized Dementia Care contract status from roster)"
+        )
+    elif st == "MN":
+        mc_note = fac["memory_care_designation"] or (
+            "(MDH Assisted Living with Dementia Care license status from roster)"
+        )
     else:
         mc_note = fac["memory_care_designation"] or (
             "(none — memory care is operator-advertised, not formally designated in CDSS licensing data)"
@@ -505,6 +658,9 @@ def generate_content(
     if st == "TX":
         prompt = GENERATION_HUMAN_TEMPLATE_TX.format(**ctx)
         system = GENERATION_SYSTEM_TX
+    elif st in NONCA_STATE_META:
+        prompt = generation_human_template_for_state(st).format(**ctx)
+        system = generation_system_for_state(st)
     else:
         prompt = GENERATION_HUMAN_TEMPLATE.format(**ctx)
         system = GENERATION_SYSTEM
@@ -545,7 +701,12 @@ def quality_gate(
         content_json=json.dumps(content, indent=2),
     )
     st = (fac.get("state_code") or "CA").upper()
-    gate_system = QUALITY_GATE_SYSTEM_TX if st == "TX" else QUALITY_GATE_SYSTEM
+    if st == "TX":
+        gate_system = QUALITY_GATE_SYSTEM_TX
+    elif st in NONCA_STATE_META:
+        gate_system = quality_gate_system_for_state(st)
+    else:
+        gate_system = QUALITY_GATE_SYSTEM
     try:
         msg = client.messages.create(
             model=QUALITY_GATE_MODEL,

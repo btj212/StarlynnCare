@@ -27,7 +27,8 @@ import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import { clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
 import { countPublishableFacilitiesInRegion } from "@/lib/regionsHubCount";
-import { cityIntroForSlug } from "@/lib/content/cityIntros";
+import { cityIntroForRegion } from "@/lib/content/cityIntros";
+import { formatCostRange, getStateCostBand } from "@/lib/content/stateCostBands";
 
 export const revalidate = 3600;
 
@@ -292,7 +293,26 @@ export default async function RegionPage({ params }: PageProps) {
   const facilitiesWithSeriousDef = facilities.filter((f) => f.total_citations > 0).length;
   const severePct =
     totalCount > 0 ? Math.round((facilitiesWithSeriousDef / totalCount) * 100) : 0;
-  const findingsDate = new Date().toISOString().split("T")[0];
+
+  // Real ingest-derived "as of" date — the latest `facilities.updated_at` for this region's
+  // publishable rows. Falls back to null if Supabase is unreachable so the footnote omits
+  // a date rather than misleadingly showing the build/deploy date.
+  let findingsDate: string | null = null;
+  if (supabase) {
+    const { data: refreshRow } = await supabase
+      .from("facilities")
+      .select("updated_at")
+      .eq("state_code", region.state.code)
+      .eq("publishable", true)
+      .in("city_slug", region.citySlugs as unknown as string[])
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const row = refreshRow as { updated_at: string } | null;
+    findingsDate = row?.updated_at
+      ? new Date(row.updated_at).toISOString().split("T")[0]
+      : null;
+  }
 
   const faqPairs = buildCityFaqs(region, {
     totalCount,
@@ -370,7 +390,7 @@ export default async function RegionPage({ params }: PageProps) {
         ];
 
   const isCounty = region.kind === "county";
-  const cityIntro = !isCounty ? cityIntroForSlug(region.slug) : null;
+  const cityIntro = !isCounty ? cityIntroForRegion(region.state.code, region.slug) : null;
 
   return (
     <>
@@ -479,21 +499,19 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* ── Regulator primer (all city pages; Texas county hubs too) ── */}
-        {(!isCounty || region.state.code === "TX") && (
-          <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
-            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
-              <SectionHead
-                label="§ How memory care is regulated here"
-                title={<>The public record behind <em>every profile.</em></>}
-              />
-              <div
-                className="text-[16px] leading-[1.7] text-ink-2 max-w-[72ch]"
-                dangerouslySetInnerHTML={{ __html: regulatorPrimer }}
-              />
-            </div>
+        {/* ── Regulator primer (all city + county pages, all states) ── */}
+        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
+            <SectionHead
+              label="§ How memory care is regulated here"
+              title={<>The public record behind <em>every profile.</em></>}
+            />
+            <div
+              className="text-[16px] leading-[1.7] text-ink-2 max-w-[72ch]"
+              dangerouslySetInnerHTML={{ __html: regulatorPrimer }}
+            />
           </div>
-        )}
+        </div>
 
         {/* ── Cost band placeholder (city pages only) ── */}
         {!isCounty && (
@@ -505,8 +523,8 @@ export default async function RegionPage({ params }: PageProps) {
               />
               <p className="text-[16px] leading-[1.7] text-ink-2 max-w-[60ch]">
                 Median monthly cost in {region.name} ranges from approximately{" "}
-                <strong className="font-semibold">$5,000–$9,000/month</strong> based on regional
-                benchmarks.{" "}
+                <strong className="font-semibold">{formatCostRange(region.state.code, "city")}</strong>{" "}
+                based on regional benchmarks.{" "}
                 {region.state.code === "CA" ? (
                   <>
                     For statewide ranges, financing options, and hidden fees, read{" "}
@@ -523,7 +541,10 @@ export default async function RegionPage({ params }: PageProps) {
                 </Link>
                 .
               </p>
-              <DataFootnote source="Regional estimate · Genworth / operator benchmarks" note="Facility-specific quotes required before signing" />
+              <DataFootnote
+                source={`Regional estimate · ${getStateCostBand(region.state.code).source}`}
+                note="Facility-specific quotes required before signing"
+              />
             </div>
           </div>
         )}

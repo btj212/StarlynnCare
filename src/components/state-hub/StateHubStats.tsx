@@ -6,9 +6,11 @@ type Props = {
   label: string;
   title: ReactNode;
   stats: StatItem[];
+  /** Optional refresh date footnotes ("Data refreshed YYYY-MM-DD ..."). */
+  footnotes?: string[];
 };
 
-export function StateHubStats({ label, title, stats }: Props) {
+export function StateHubStats({ label, title, stats, footnotes }: Props) {
   return (
     <section
       id="data"
@@ -17,7 +19,7 @@ export function StateHubStats({ label, title, stats }: Props) {
     >
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
         <SectionHead label={label} title={title} />
-        <StatBlock stats={stats} />
+        <StatBlock stats={stats} footnotes={footnotes} />
       </div>
     </section>
   );

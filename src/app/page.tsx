@@ -3,8 +3,11 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { canonicalFor } from "@/lib/seo/canonical";
-import { buildOrganizationSchema, buildWebSiteSchema } from "@/lib/seo/schema";
+import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
+import {
+  buildHomeOrganizationGraph,
+  buildPersonSchema,
+} from "@/lib/seo/schema";
 import {
   SampleFacilityRotationProvider,
 } from "@/components/home/SampleFacilityRotation";
@@ -28,6 +31,8 @@ export const metadata: Metadata = {
   alternates: { canonical: homeCanonical },
   openGraph: {
     title: "Memory care facilities, ranked by state inspectors | StarlynnCare",
+    description:
+      "No paid ads. No sales calls. Public inspection data from 5 states — California, Oregon, Washington, Minnesota, and Texas — analyzed and ranked for families.",
     url: homeCanonical,
     type: "website",
     images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
@@ -88,7 +93,18 @@ export default async function Home() {
     loadGradeCardFacilities(),
   ]);
 
-  const homeJsonLd = [buildOrganizationSchema(), buildWebSiteSchema()];
+  // Single homepage @graph chains Organization ↔ WebSite ↔ founder ↔ reviewer Person
+  // so search engines can read the editorial trust chain in one node graph.
+  const founderPersonNode = buildPersonSchema({
+    id: `${SITE_ORIGIN}/about#person-blake-jones`,
+    name: "Blake Jones",
+    jobTitle: "Co-founder, StarlynnCare",
+    description:
+      "Co-founder leading product narrative, data partnerships, and responsible distribution of state licensing records.",
+    image: "/images/about/blake-jones.png",
+    url: `${SITE_ORIGIN}/about#person-blake-jones`,
+  });
+  const homeJsonLd = [buildHomeOrganizationGraph({ founderPersonNode })];
 
   return (
     <>

@@ -105,14 +105,18 @@ export interface Facility {
   photo_url: string | null;
   photo_attribution: string | null;
 
-  // Added in migration 0003_facility_content.sql
+  // facilities.content jsonb — populated by scrapers/generate_content.py.
+  // Schema reflects current pipeline output (migration 0007 stripped legacy
+  // intro/headline/neighborhood fields). `tour_questions` is the only
+  // user-facing field rendered today.
   content: {
-    headline?: string;
-    intro?: string;
-    memory_care_approach?: string;
-    neighborhood?: string;
+    /** Tailored tour-prep prompts (3 per facility), rendered in § 05 · Tour Prep. */
+    tour_questions?: string[];
+    /** Optional clinical/operational summary used by older ingest runs; not surfaced today. */
     what_families_should_know?: string;
+    /** ISO timestamp of last LLM generation. */
     generated_at?: string;
+    /** LLM model identifier used for generation. */
     model?: string;
   } | null;
 }

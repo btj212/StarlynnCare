@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import {
   buildArticleSchema,
@@ -306,6 +307,14 @@ export default function TxMemoryCareVsNursingHomePage() {
                 <p className="text-[15.5px] leading-[1.7] text-ink-2">{pair.a}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-12">
+            <DataFootnote
+              source="Texas HHSC Long-Term Care Regulation (ALF rules, 26 TAC ch. 553); CMS Care Compare (skilled nursing facility certification & inspections); Texas Medicaid STAR+PLUS waiver guidance (HHSC); Medicare Coverage of Skilled Nursing Facility Care (CMS publication)"
+              refreshed={DATE_PUBLISHED}
+              note="Medicare 100-day rule and STAR+PLUS waiver mechanics summarized from current CMS and Texas HHSC public guidance; verify the specific rules that apply to your loved one's situation with the facility's social worker or a Texas Medicaid eligibility specialist before relying on coverage assumptions"
+            />
           </div>
 
           <div className="mt-16 rounded-lg border border-paper-rule bg-paper-2 px-5 py-6">

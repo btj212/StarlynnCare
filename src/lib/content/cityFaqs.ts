@@ -1,5 +1,6 @@
 import type { Region } from "@/lib/regions";
 import { canonicalFor } from "@/lib/seo/canonical";
+import { formatCostRange } from "@/lib/content/stateCostBands";
 
 export interface CityFaqInputs {
   totalCount: number;
@@ -37,8 +38,8 @@ function getStateStrings(stateCode: string): StateStrings {
     return {
       costRange: (city, isCounty) =>
         isCounty
-          ? `Memory care across ${city} typically runs $4,000–$9,000/month for an ALF or RCF with an Oregon DHS Memory Care Endorsement. Rates vary by room type, level-of-care tier, and operator. Full monthly bills often exceed the advertised base rate.`
-          : `Memory care in ${city} typically runs $4,500–$8,500/month for an Oregon-licensed ALF or RCF with a Memory Care Endorsement, depending on room type and care level. The full bill nearly always exceeds the advertised base rate.`,
+          ? `Memory care across ${city} typically runs ${formatCostRange("OR", "county")} for an ALF or RCF with an Oregon DHS Memory Care Endorsement. Rates vary by room type, level-of-care tier, and operator. Full monthly bills often exceed the advertised base rate.`
+          : `Memory care in ${city} typically runs ${formatCostRange("OR", "city")} for an Oregon-licensed ALF or RCF with a Memory Care Endorsement, depending on room type and care level. The full bill nearly always exceeds the advertised base rate.`,
       licenseQ: `What makes a facility "memory care" in Oregon?`,
       licenseA: `Oregon has a specific Memory Care Endorsement issued by the Department of Human Services (DHS), Long-Term Care Licensing. Facilities here are licensed as Assisted Living Facilities (ALFs) or Residential Care Facilities (RCFs) under ORS ch. 443. To carry the endorsement, a facility must meet additional staff training standards, have secured environments where clinically appropriate, and provide individualized dementia programming. Endorsement status appears on every StarlynnCare profile and is sourced from the DHS public licensing portal.`,
       facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Oregon?`,
@@ -54,8 +55,8 @@ function getStateStrings(stateCode: string): StateStrings {
     return {
       costRange: (city, isCounty) =>
         isCounty
-          ? `Memory care across ${city} typically runs $5,000–$10,000/month for an ALF holding a Washington DSHS Specialized Dementia Care contract. Rates vary by region, room type, and level-of-care tier.`
-          : `Memory care in ${city} typically runs $5,500–$9,500/month for an ALF with a Washington DSHS Specialized Dementia Care contract. Full monthly costs often exceed the advertised base rate by $500–$2,000 depending on care level.`,
+          ? `Memory care across ${city} typically runs ${formatCostRange("WA", "county")} for an ALF holding a Washington DSHS Specialized Dementia Care contract. Rates vary by region, room type, and level-of-care tier.`
+          : `Memory care in ${city} typically runs ${formatCostRange("WA", "city")} for an ALF with a Washington DSHS Specialized Dementia Care contract. Full monthly costs often exceed the advertised base rate by $500–$2,000 depending on care level.`,
       licenseQ: `What makes a facility "memory care" in Washington?`,
       licenseA: `Washington state licenses memory care communities as Assisted Living Facilities (ALFs) regulated by DSHS Aging and Disability Services Administration (ADSA), Residential Care Services. Facilities here hold a <strong>Specialized Dementia Care contract</strong> with DSHS — a contract tier requiring specialized staff training in dementia care techniques, behavioral support protocols, and enhanced supervision standards. Contract status appears on every StarlynnCare profile and is sourced from the DSHS public lookup.`,
       facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Washington?`,
@@ -67,12 +68,29 @@ function getStateStrings(stateCode: string): StateStrings {
     };
   }
 
+  if (code === "TX") {
+    return {
+      costRange: (city, isCounty) =>
+        isCounty
+          ? `Memory care across ${city} typically runs ${formatCostRange("TX", "county")} for a Texas-licensed Assisted Living Facility (Type A or B) holding HHSC Alzheimer's Disease and Related Disorders certification. Rates vary by metro, room type, and care level.`
+          : `Memory care in ${city} typically runs ${formatCostRange("TX", "city")} for a Texas Type B ALF with HHSC Alzheimer's certification, depending on room type and care level. Full monthly bills nearly always exceed the advertised base rate.`,
+      licenseQ: `What makes a facility "memory care" in Texas?`,
+      licenseA: `Texas licenses memory care communities as Assisted Living Facilities (ALFs) under Texas Health & Safety Code ch. 247, regulated by HHSC Long-Term Care Regulation (LTCR). Most Texas memory care lives in <strong>Type B ALFs</strong> (for residents who cannot evacuate without assistance) carrying the optional <strong>Alzheimer's Disease and Related Disorders certification</strong> — a separate HHSC designation requiring dementia-specific staff training, secured environments where clinically indicated, and individualized programming. Type C is reserved for adult foster homes (≤4 residents). License type and Alzheimer's certification status appear on every StarlynnCare profile and are sourced from the HHSC public licensing portal.`,
+      facilityVsNursingQ: `What's the difference between an ALF and a nursing facility in Texas?`,
+      facilityVsNursingA: `Texas ALFs provide non-medical residential care — room, board, ADL assistance, medication administration by trained staff. Nursing facilities (NFs, also called nursing homes or skilled nursing facilities) provide licensed nursing care 24/7 for residents needing IV therapy, complex wound care, or continuous medical management. If your family member needs ongoing skilled medical care, a Texas NF or SNF may be more appropriate than a memory-care ALF.`,
+      deficiencyLabel: "HHSC inspection or complaint finding",
+      medicaidQ: (city) => `Does Texas Medicaid cover memory care in ${city}?`,
+      medicaidA: (city) =>
+        `Traditional Texas Medicaid does not pay ALF room and board. The <strong>STAR+PLUS</strong> waiver program — Texas Medicaid managed care for elderly and disabled adults — can cover certain personal care and HCBS services in a participating ALF, but room-and-board costs remain the family's responsibility and waitlists exist. Eligibility depends on functional and financial criteria. Each StarlynnCare profile notes Medicaid acceptance where documented in HHSC data. Contact 211 Texas (dial 2-1-1) or the Texas HHSC Aging and Disability Resource Center for current options in ${city}.`,
+    };
+  }
+
   if (code === "MN") {
     return {
       costRange: (city, isCounty) =>
         isCounty
-          ? `Memory care across ${city} typically runs $4,500–$9,000/month for a licensed Assisted Living Facility with Dementia Care under Minnesota Statutes ch. 144G. Rates vary by city, room type, and care level tier.`
-          : `Memory care in ${city} typically runs $4,500–$8,500/month for a licensed ALF with Dementia Care under Minnesota ch. 144G, depending on room type and care level.`,
+          ? `Memory care across ${city} typically runs ${formatCostRange("MN", "county")} for a licensed Assisted Living Facility with Dementia Care under Minnesota Statutes ch. 144G. Rates vary by city, room type, and care level tier.`
+          : `Memory care in ${city} typically runs ${formatCostRange("MN", "city")} for a licensed ALF with Dementia Care under Minnesota ch. 144G, depending on room type and care level.`,
       licenseQ: `What makes a facility "memory care" in Minnesota?`,
       licenseA: `Minnesota's 2019 Assisted Living Licensure Reform (Minn. Stat. ch. 144G) created a specific <strong>Assisted Living Facility with Dementia Care</strong> license tier, regulated by the Minnesota Department of Health (MDH). Facilities at this tier must meet enhanced requirements: dementia-trained staff at all times, individualized dementia programming, and secured environments where clinically indicated. License tier appears on every StarlynnCare profile and is sourced from the MDH public licensing directory.`,
       facilityVsNursingQ: `What's the difference between an ALF with Dementia Care and a nursing home in Minnesota?`,
@@ -117,8 +135,13 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
   const stateCode = region.state.code;
 
   const s = getStateStrings(stateCode);
-  const tourUrlBase = stateCode === "CA" ? "/california" : `/${region.state.slug}`;
-  const resolvedTourUrl = canonicalFor(`${tourUrlBase}/37-questions-to-ask-on-a-tour`);
+  // CA has a state-specific deeper version with RCFE/Medi-Cal framing; all other
+  // states link to the universal /library/ checklist that translates across regulators.
+  const resolvedTourUrl = canonicalFor(
+    stateCode === "CA"
+      ? "/california/37-questions-to-ask-on-a-tour"
+      : "/library/37-questions-to-ask-on-a-memory-care-tour",
+  );
 
   return [
     {

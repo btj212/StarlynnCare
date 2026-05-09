@@ -9,12 +9,12 @@ import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { buildArticleSchema, buildBreadcrumbList } from "@/lib/seo/schema";
 
-const PAGE_PATH = "/california/37-questions-to-ask-on-a-tour";
+const PAGE_PATH = "/library/37-questions-to-ask-on-a-memory-care-tour";
 const canonicalUrl = canonicalFor(PAGE_PATH);
-const TITLE = "37 Questions to Ask on a Memory Care Tour (California)";
+const TITLE = "37 Questions to Ask on a Memory Care Tour";
 const DESC =
-  "A printable-style checklist for families: what to ask before you book, on the tour, and after you leave — reviewed by a California RN.";
-const DATE_PUBLISHED = "2026-05-02";
+  "A printable-style checklist for families touring memory care anywhere in the US — what to ask before you book, on the tour, and after you leave. Reviewed by an RN.";
+const DATE_PUBLISHED = "2026-05-09";
 
 export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,
@@ -35,14 +35,14 @@ export const metadata: Metadata = {
 };
 
 const BEFORE = [
-  "What is the facility license number, and is memory care authorized under that license (care category / secured unit)?",
+  "What is the facility license number, and is dementia or memory care specifically authorized under that license (secured unit, dementia endorsement, or specialty certification)?",
   "Can you email the full resident agreement, house rules, and fee schedule before we tour?",
   "How do you structure base rent vs. level-of-care fees — what was the average monthly increase last year for residents like mine?",
   "What staff positions are on-site overnight, and what is the typical awake staffing ratio by shift?",
-  "When was your last routine inspection, and were there any Type A deficiencies or substantiated complaints in the last 24 months?",
+  "When was your last routine state inspection, and were there any serious deficiencies, citations, or substantiated complaints in the last 24 months?",
   "How do you manage elopement risk — delayed egress, perimeter checks, wearable alerts?",
-  "What is your policy on psychotropic medications and gradual dose reduction (GDR) per regulations?",
-  "Do you accept Assisted Living Waiver or other Medi-Cal–related programs — and is there a waitlist?",
+  "What is your policy on antipsychotic and other psychotropic medications, including gradual dose reduction (GDR) reviews?",
+  "Do you accept Medicaid, your state's HCBS waiver, or other public payer programs — and is there a waitlist?",
   "What hospice agencies have privileges here, and how do handoffs work after hours?",
   "Can we tour on a weekend evening to see staffing reality, not the weekday showcase?",
   "What items can families bring (furniture, locks, cameras) and what is prohibited?",
@@ -56,10 +56,10 @@ const DURING = [
   "How do you cue residents who refuse meals or fluids — what is documented in the care plan?",
   "What happens when a resident has a fall — who assesses, who notifies family, and within what timeframe?",
   "How do you staff for behavioral expressions during bathing or transfers?",
-  "What dementia-specific training do caregivers receive and how often is it refreshed?",
+  "What dementia-specific training do caregivers receive, how many hours, and how often is it refreshed?",
   "Who writes care plans and how quickly are they updated after hospital discharge?",
   "How do you prevent medication errors with look-alike/sound-alike drugs?",
-  "What is the protocol for suspected abuse or neglect — internal and external reporting?",
+  "What is the protocol for suspected abuse or neglect — internal escalation and external state/county reporting?",
   "Can we speak with a family council member or recent move-in family (with privacy respected)?",
   "How do you prevent urinary tract infections and skin breakdown in immobile residents?",
   "What is your nurse coverage — hours on-site vs. telehealth — and who takes physician orders?",
@@ -74,13 +74,13 @@ const DURING = [
 
 const AFTER = [
   "Request references from three families whose loved ones had needs similar to ours.",
-  "Ask for the administrator’s direct line — does anyone answer after 8 p.m.?",
+  "Ask for the administrator's direct line — does anyone answer after 8 p.m.?",
   "Re-read the inspection narrative on StarlynnCare: does it match what we were told today?",
   "Compare this quote line-by-line with the second finalist property — where are the hidden stacks?",
   "Sleep on it — guilt is not a discharge plan. Re-tour if answers shifted under mild pressure.",
 ];
 
-export default function ThirtySevenQuestionsPage() {
+export default function ThirtySevenQuestionsUniversalPage() {
   const jsonLd = [
     buildArticleSchema({
       headline: TITLE,
@@ -90,7 +90,7 @@ export default function ThirtySevenQuestionsPage() {
     }),
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
-      { name: "California", url: canonicalFor("/california") },
+      { name: "Editorial library", url: canonicalFor("/library") },
       { name: "37 questions tour checklist", url: canonicalUrl },
     ]),
   ];
@@ -112,8 +112,8 @@ export default function ThirtySevenQuestionsPage() {
                 Home
               </Link>
               <span aria-hidden>›</span>
-              <Link href="/california" className="hover:text-teal transition-colors">
-                California
+              <Link href="/library" className="hover:text-teal transition-colors">
+                Editorial library
               </Link>
               <span aria-hidden>›</span>
               <span className="text-ink-3">Tour checklist</span>
@@ -127,7 +127,8 @@ export default function ThirtySevenQuestionsPage() {
             </h1>
             <p className="text-[18px] leading-[1.6] text-ink-3 max-w-[58ch]">
               Use this list on your phone or print it. Checkboxes are for your notes — not a scorecard against
-              staff humanity.
+              staff humanity. The questions translate across state regulators (CDSS, HHSC, DSHS, OR DHS, MN MDH) —
+              the underlying safety questions are the same.
             </p>
             <div className="mt-8">
               <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
@@ -145,14 +146,19 @@ export default function ThirtySevenQuestionsPage() {
             </p>
             <div className="text-[16.5px] leading-[1.75] text-ink-2 space-y-4">
               <p>
-                I sat where you sit — reading brochures that promise “homelike care” while my mind scanned for the
-                details regulators actually cite: egress controls, medication storage, whether night staff can
-                hear a fall.
+                I sat where you sit — reading brochures that promise &ldquo;homelike care&rdquo; while my mind
+                scanned for the details regulators actually cite: egress controls, medication storage, whether
+                night staff can hear a fall.
               </p>
               <p>
                 This checklist distills the questions that reveal whether a building can truly hold your person
                 safely as cognition changes. If an answer feels defensive, slow down. If documentation does not
                 match the lobby flowers, trust the record.
+              </p>
+              <p>
+                Regulator names differ by state — California writes Type A and Type B citations through CDSS;
+                Texas through HHSC; Oregon through DHS; Washington through DSHS; Minnesota through MDH — but
+                the underlying safety questions for a tour are the same.
               </p>
               <p className="text-ink font-medium">
                 — Rebecca Lynn Starkey, BSN, RN, PHN · California RN License 95100373
@@ -165,17 +171,18 @@ export default function ThirtySevenQuestionsPage() {
           <ChecklistSection title="After you leave" id="after" items={AFTER} offset={BEFORE.length + DURING.length} />
 
           <DataFootnote
-            source="California Department of Social Services (CDSS), Community Care Licensing — RCFE Title 22 regulations + CDSS Memory Care Disclosure requirements; supplemented by CDC dementia-care safety guidance and clinical RN review"
+            source="State assisted-living and memory-care regulators (CDSS, HHSC, OR DHS, WA DSHS, MN MDH); supplemented by CDC dementia-care safety guidance and clinical RN review"
             refreshed={DATE_PUBLISHED}
-            note="Tour questions reflect current CDSS regulatory expectations for RCFEs serving residents with dementia; confirm specific staffing and disclosure requirements with the licensing analyst assigned to the facility you tour"
+            note="Questions are framed to translate across state regulatory frameworks; specific staffing, disclosure, and reporting requirements vary by state — confirm the rules that apply to the facility you tour"
           />
 
           <p className="text-[13px] text-ink-4 font-[family-name:var(--font-mono)]">
-            Total prompts: {BEFORE.length + DURING.length + AFTER.length}. Pair with our{" "}
-            <Link href="/california/glossary" className="text-teal underline underline-offset-4">
-              glossary
-            </Link>{" "}
-            if a term is unfamiliar.
+            Total prompts: {BEFORE.length + DURING.length + AFTER.length}. For state-specific licensing terms you
+            will see on a profile, see the{" "}
+            <Link href="/library" className="text-teal underline underline-offset-4">
+              editorial library
+            </Link>
+            .
           </p>
         </div>
       </main>

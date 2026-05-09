@@ -1,5 +1,9 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import type { CareCategory } from "@/lib/types";
+import {
+  regulatorLicensePageFor,
+  regulatorLicensePageLabel,
+} from "@/lib/seo/schema";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -19,9 +23,9 @@ const MC_CATEGORIES: CareCategory[] = [
 ];
 
 function formatAddr(facility: FacilityProfile["facility"]): string {
-  return [facility.street, [facility.city, facility.zip].filter(Boolean).join(", CA ")]
-    .filter(Boolean)
-    .join(" · ");
+  const stateCode = (facility.state_code ?? "").toUpperCase();
+  const cityZip = [facility.city, facility.zip].filter(Boolean).join(`, ${stateCode} `);
+  return [facility.street, cityZip].filter(Boolean).join(" · ");
 }
 
 function VerdictCard({ profile }: { profile: FacilityProfile }) {
@@ -140,11 +144,28 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {addr && (
               <div className="mt-4 font-[family-name:var(--font-display)] text-[22px] italic text-ink-2">
                 {addr}
-                {facility.license_number && (
-                  <span className="ml-3 font-[family-name:var(--font-mono)] not-italic text-[11px] tracking-[0.06em] text-rust">
-                    LIC# {facility.license_number}
-                  </span>
-                )}
+                {facility.license_number && (() => {
+                  const verifyUrl = regulatorLicensePageFor(
+                    facility.state_code,
+                    facility.license_number,
+                  );
+                  const verifyLabel = regulatorLicensePageLabel(facility.state_code);
+                  return verifyUrl ? (
+                    <a
+                      href={verifyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={verifyLabel}
+                      className="ml-3 font-[family-name:var(--font-mono)] not-italic text-[11px] tracking-[0.06em] text-rust underline underline-offset-4 decoration-rust/30 hover:decoration-rust transition-colors"
+                    >
+                      LIC# {facility.license_number} ↗
+                    </a>
+                  ) : (
+                    <span className="ml-3 font-[family-name:var(--font-mono)] not-italic text-[11px] tracking-[0.06em] text-rust">
+                      LIC# {facility.license_number}
+                    </span>
+                  );
+                })()}
               </div>
             )}
           </div>

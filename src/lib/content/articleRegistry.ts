@@ -64,6 +64,14 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     reviewNote:
       "uses CA inspections as examples — acceptable framing for now; update before OR/WA launch",
   },
+  {
+    slug: "/library/37-questions-to-ask-on-a-memory-care-tour",
+    title: "37 questions to ask on a memory care tour",
+    desc: "Universal printable checklist — translates across CDSS, HHSC, OR DHS, WA DSHS, and MN MDH regulator frameworks.",
+    states: ["all"],
+    tags: ["decision"],
+    live: true,
+  },
 
   // ── California ────────────────────────────────────────────────────────────
   {

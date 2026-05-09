@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { DataFootnote } from "@/components/editorial/DataFootnote";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -397,6 +398,14 @@ export default function TxTypeLicensingPage() {
                 <p className="text-[15.5px] leading-[1.7] text-ink-2">{pair.a}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-12">
+            <DataFootnote
+              source="Texas Health and Human Services Commission (HHSC), Long-Term Care Regulation — Texas Health & Safety Code ch. 247 (Assisted Living Facilities) and 26 TAC ch. 553 (ALF licensing rules); HHSC Alzheimer Disease and Related Disorders certification standards"
+              refreshed={DATE_PUBLISHED}
+              note="License-class definitions and Alzheimer Certification requirements verified against current 26 TAC ch. 553 rules; confirm the most current rule citations on the Texas Secretary of State Administrative Code site before relying on details for a regulatory matter"
+            />
           </div>
 
           <div className="mt-16 rounded-lg border border-paper-rule bg-paper-2 px-5 py-6">

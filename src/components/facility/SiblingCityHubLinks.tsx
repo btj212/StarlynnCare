@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
+import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
 type Props = {
   stateSlug: string;
@@ -16,14 +17,33 @@ function titleFromSlug(slug: string): string {
 
 /**
  * City listing hubs only: links to sibling city hubs in the same seeded county region.
+ * Only cities with at least one publishable facility are linked.
  */
-export function SiblingCityHubLinks({ stateSlug, stateCode, currentCitySlug }: Props) {
+export async function SiblingCityHubLinks({ stateSlug, stateCode, currentCitySlug }: Props) {
   const county = countyRegionContainingCitySlug(stateCode, currentCitySlug);
   const siblings =
     county?.citySlugs.filter((s) => s.toLowerCase() !== currentCitySlug.toLowerCase()) ?? [];
   if (!county || siblings.length === 0) return null;
 
-  const shown = siblings.slice(0, 16);
+  // Filter to only cities that have at least one publishable facility.
+  let publishableSlugs: Set<string> = new Set(siblings);
+  const supabase = tryPublicSupabaseClient();
+  if (supabase && siblings.length > 0) {
+    const { data } = await supabase
+      .from("facilities")
+      .select("city_slug")
+      .eq("state_code", stateCode)
+      .eq("publishable", true)
+      .in("city_slug", siblings);
+    if (data) {
+      publishableSlugs = new Set((data as Array<{ city_slug: string }>).map((r) => r.city_slug));
+    }
+  }
+
+  const filtered = siblings.filter((s) => publishableSlugs.has(s));
+  if (filtered.length === 0) return null;
+
+  const shown = filtered.slice(0, 16);
 
   return (
     <section className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>

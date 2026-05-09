@@ -72,11 +72,20 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/library/medi-cal-and-memory-care", priority: "0.82", changefreq: "monthly" },
     { path: "/library/dementia-vs-alzheimers-vs-lewy-body", priority: "0.78", changefreq: "monthly" },
     { path: "/library/when-is-it-time-for-memory-care", priority: "0.8", changefreq: "monthly" },
+    { path: "/library/37-questions-to-ask-on-a-memory-care-tour", priority: "0.82", changefreq: "monthly" },
     { path: "/california/cost-guide", priority: "0.85", changefreq: "monthly" },
     { path: "/california/cost-by-city", priority: "0.84", changefreq: "monthly" },
     { path: "/memory-care-vs-assisted-living", priority: "0.85", changefreq: "monthly" },
     { path: "/california/glossary", priority: "0.78", changefreq: "monthly" },
     { path: "/california/37-questions-to-ask-on-a-tour", priority: "0.78", changefreq: "monthly" },
+    // State-specific guides indexes
+    { path: "/texas/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/oregon/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/washington/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/minnesota/guides", priority: "0.80", changefreq: "monthly" },
+    // Texas-specific articles (live)
+    { path: "/texas/type-a-b-c-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/texas/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
   ];
 
   return paths.map((p) => ({

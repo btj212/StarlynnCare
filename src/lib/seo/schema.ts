@@ -1,6 +1,6 @@
 import type { Review } from "@/components/reviews/ReviewCard";
 import type { Facility } from "@/lib/types";
-import type { StateInfo } from "@/lib/states";
+import { stateFromCode, type StateInfo } from "@/lib/states";
 import type { Region } from "@/lib/regions";
 import {
   STARLYNN_AUTHOR_IMAGE_PATH,
@@ -18,6 +18,62 @@ export function cdssLicensePageFor(
   if (licenseNumber == null || !String(licenseNumber).trim()) return null;
   const facNum = String(licenseNumber).trim();
   return `https://www.ccld.dss.ca.gov/carefacilitysearch/?rewrite=FacDetail&facNum=${encodeURIComponent(facNum)}`;
+}
+
+/**
+ * Per-state regulator URL where a family can independently verify the license.
+ *
+ * Where the regulator publishes a deep link by license/facility ID we use it; where
+ * only a search portal exists, we link the portal (the user can paste the displayed
+ * license number to find the facility). Used by FacilityHero to make the LIC#
+ * clickable and by JSON-LD `sameAs` to chain trust into the structured data graph.
+ *
+ * - CA → CDSS FacDetail deep link
+ * - TX → HHSC LTC Online Search portal (LTC Search; users paste license number)
+ * - OR → Oregon DHS LTC Licensing portal
+ * - WA → Washington DSHS ALF Public Lookup
+ * - MN → Minnesota MDH Licensed/Certified Provider lookup
+ */
+export function regulatorLicensePageFor(
+  stateCode: string,
+  licenseNumber: string | null | undefined,
+): string | null {
+  if (licenseNumber == null || !String(licenseNumber).trim()) return null;
+  const code = stateCode.toUpperCase();
+  const lic = String(licenseNumber).trim();
+  switch (code) {
+    case "CA":
+      return cdssLicensePageFor(lic);
+    case "TX":
+      return `https://apps.hhs.texas.gov/LTCSearch/`;
+    case "OR":
+      return `https://ltclicensing.oregon.gov/Facilities`;
+    case "WA":
+      return `https://fortress.wa.gov/dshs/adsaapps/lookup/AlfPubLookup.aspx`;
+    case "MN":
+      return `https://www.health.state.mn.us/facilities/providers/index.html`;
+    default:
+      return null;
+  }
+}
+
+/** Short label for the regulator portal a license link goes to. */
+export function regulatorLicensePageLabel(stateCode: string): string {
+  const code = stateCode.toUpperCase();
+  switch (code) {
+    case "CA":
+      return "Verify on CDSS";
+    case "TX":
+      return "Verify on HHSC";
+    case "OR":
+      return "Verify on OR DHS";
+    case "WA":
+      return "Verify on DSHS";
+    case "MN":
+      return "Verify on MDH";
+    default:
+      return "Verify with regulator";
+  }
 }
 
 function reviewOverallRating(review: Review): number {
@@ -53,15 +109,12 @@ function parseCoord(s: string | null | undefined): number | null {
 }
 
 function facilityDescription(facility: Facility): string {
-  const parts: string[] = [];
-  if (facility.content?.headline) parts.push(facility.content.headline);
-  else if (facility.content?.intro) parts.push(facility.content.intro.slice(0, 500));
-  else {
-    parts.push(
-      `Licensed memory care profile for ${facility.name}${facility.city ? ` in ${facility.city}, California` : ""}, with state inspection context from StarlynnCare.`,
-    );
+  if (facility.content?.what_families_should_know) {
+    return facility.content.what_families_should_know.slice(0, 5000);
   }
-  return parts.join(" ").slice(0, 5000);
+  const stateName = stateFromCode(facility.state_code)?.name ?? facility.state_code;
+  const location = facility.city ? `${facility.city}, ${stateName}` : stateName;
+  return `Licensed memory care profile for ${facility.name} in ${location}, with state inspection context from StarlynnCare.`;
 }
 
 function nestedAggregateFromReviews(reviews: Review[]): object {
@@ -85,8 +138,8 @@ export function buildLocalBusinessForFacility(
 ): object {
   const businessId = `${opts.canonicalUrl}#business`;
   const sameAs: string[] = [];
-  const cdss = cdssLicensePageFor(facility.license_number);
-  if (cdss) sameAs.push(cdss);
+  const regulatorUrl = regulatorLicensePageFor(state.code, facility.license_number);
+  if (regulatorUrl) sameAs.push(regulatorUrl);
   if (facility.website?.trim()) sameAs.push(facility.website.trim());
 
   const additionalProperty: object[] = [];
@@ -403,18 +456,25 @@ export function buildWebPageWithReviewer(input: {
   name: string;
   url: string;
   description?: string;
+  /**
+   * Override reviewer name only when the page is reviewed by someone other than
+   * the default Starlynn RN reviewer. Leave undefined for the standard chain
+   * which embeds full credentials (RN license, recognizing org) via buildStarlynnPerson().
+   */
   reviewerName?: string;
 }): object {
+  // Default reviewer = full Person node with credentials (RN license, recognizing org).
+  // This is the YMYL-strength signal Google's quality guidelines reward on healthcare/eldercare directories.
+  const reviewedBy = input.reviewerName
+    ? { "@type": "Person", name: input.reviewerName }
+    : buildStarlynnPerson();
   return {
     "@context": "https://schema.org",
     "@type": "WebPage",
     name: input.name,
     url: input.url,
     ...(input.description ? { description: input.description } : {}),
-    reviewedBy: {
-      "@type": "Person",
-      name: input.reviewerName ?? STARLYNN_EDITORIAL_REVIEWER,
-    },
+    reviewedBy,
     isPartOf: {
       "@type": "WebSite",
       name: "StarlynnCare",
@@ -424,14 +484,42 @@ export function buildWebPageWithReviewer(input: {
 }
 
 export function buildOrganizationSchema(): object {
+  const aboutUrl = canonicalFor("/about");
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${SITE_ORIGIN}#organization`,
     name: "StarlynnCare",
     url: SITE_ORIGIN,
+    logo: `${SITE_ORIGIN}/illustrations/logo-mark.png`,
     description:
-      "StarlynnCare publishes verified California CDSS inspection records and family reviews for licensed memory care facilities.",
-    sameAs: [canonicalFor("/methodology"), canonicalFor("/data")],
+      "StarlynnCare publishes verified state inspection records, citations, and family reviews for licensed memory care facilities. Independent and free for families: no referral commissions, lead fees, or paid placements from operators.",
+    foundingDate: "2024",
+    founder: { "@id": `${SITE_ORIGIN}/about#person-blake-jones` },
+    employee: [{ "@id": `${SITE_ORIGIN}#person-starlynn-starkey` }],
+    knowsAbout: [
+      "Memory care",
+      "Dementia care licensing",
+      "Assisted living regulation",
+      "Skilled nursing facility inspections",
+      "California RCFE regulation",
+      "Texas HHSC ALF licensing",
+      "Oregon DHS Memory Care Endorsement",
+      "Washington DSHS Specialized Dementia Care contracts",
+      "Minnesota MDH Assisted Living with Dementia Care",
+    ],
+    funding: {
+      "@type": "MonetaryGrant",
+      name: "Founder-funded; no operator commissions",
+      description:
+        "StarlynnCare receives no referral commissions, lead fees, or paid placements from facility operators. Funding comes from the founder; the editorial product is free for families.",
+    },
+    sameAs: [
+      aboutUrl,
+      canonicalFor("/methodology"),
+      canonicalFor("/data"),
+      canonicalFor("/editorial-policy"),
+    ],
   };
 }
 
@@ -439,9 +527,29 @@ export function buildWebSiteSchema(): object {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${SITE_ORIGIN}#website`,
     name: "StarlynnCare",
     url: SITE_ORIGIN,
-    publisher: { "@type": "Organization", name: "StarlynnCare" },
+    publisher: { "@id": `${SITE_ORIGIN}#organization` },
+  };
+}
+
+/**
+ * Compose homepage `@graph` linking Organization ↔ WebSite ↔ founder Person ↔ reviewer Person.
+ * Use this on the homepage instead of emitting Organization and WebSite separately so search
+ * engines can reason about the editorial trust chain (founder, reviewer credentials).
+ */
+export function buildHomeOrganizationGraph(input: {
+  founderPersonNode: object;
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildOrganizationSchema(),
+      buildWebSiteSchema(),
+      buildStarlynnPerson(),
+      input.founderPersonNode,
+    ],
   };
 }
 

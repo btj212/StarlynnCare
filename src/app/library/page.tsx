@@ -90,8 +90,8 @@ const SECTION_RECORD: ArticleCard[] = [
   },
   {
     title: "37 questions to ask on a memory care tour",
-    desc: "Structured checklist for executives, night staff, and families in the hallway.",
-    href: "/california/37-questions-to-ask-on-a-tour",
+    desc: "Universal printable checklist — translates across state regulators (CDSS, HHSC, OR DHS, WA DSHS, MN MDH).",
+    href: "/library/37-questions-to-ask-on-a-memory-care-tour",
   },
 ];
 

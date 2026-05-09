@@ -4,7 +4,7 @@ export { waStateConfig } from "./wa";
 export { mnStateConfig } from "./mn";
 export { txStateConfig } from "./tx";
 export type { StateHubConfig, EditorialCard, FaqItem } from "./types";
-export { buildStateStatItems } from "./types";
+export { buildStateStatItems, buildStateStatFootnotes } from "./types";
 
 import { caStateConfig } from "./ca";
 import { orStateConfig } from "./or";

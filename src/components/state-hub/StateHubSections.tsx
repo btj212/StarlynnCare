@@ -1,7 +1,7 @@
 import { getSeasonAndYear } from "@/lib/data/stateHub";
 import type { StateHubData } from "@/lib/data/stateHub";
 import type { StateHubConfig } from "@/lib/stateHubConfigs/types";
-import { buildStateStatItems } from "@/lib/stateHubConfigs/types";
+import { buildStateStatItems, buildStateStatFootnotes } from "@/lib/stateHubConfigs/types";
 import { StateHubHero } from "./StateHubHero";
 import { StateHubStats } from "./StateHubStats";
 import { StateHubMethodology } from "./StateHubMethodology";
@@ -20,6 +20,7 @@ export function StateHubSections({ data, config }: Props) {
   const { season, year } = getSeasonAndYear();
   const { stateSlug, stateName, stateCode, edition } = config;
   const statItems = buildStateStatItems(data.stats, config);
+  const statFootnotes = buildStateStatFootnotes(data.stats, config);
   const { counties, topCities, stats, sampleReviews } = data;
 
   const countyCode = stateCode;
@@ -53,6 +54,7 @@ export function StateHubSections({ data, config }: Props) {
         label="§ 01 · The Public Record"
         title={<>The {stateName} facility data you need, <em>curated + analyzed for you.</em></>}
         stats={statItems}
+        footnotes={statFootnotes}
       />
 
       <StateHubMethodology

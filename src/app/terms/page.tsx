@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,
   description: DESC,
   alternates: { canonical: canonicalUrl },
-  robots: { index: true, follow: false },
+  openGraph: { url: canonicalUrl },
 };
 
 function Section({

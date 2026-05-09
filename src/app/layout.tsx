@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Instrument_Serif, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
@@ -62,23 +63,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${instrumentSerif.variable} ${interTight.variable} ${jetbrainsMono.variable}`}>
-      <head>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-19JKWKER15" />
-        <script dangerouslySetInnerHTML={{ __html: `
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-19JKWKER15');
-        `}} />
-        <script
-          src="https://analytics.ahrefs.com/analytics.js"
-          data-key="IjDNyQvSmnNGFMK02hdywA"
-          async
-        />
-      </head>
       <body>
         {/* GovernanceBar rendered per-page inside page layouts, not globally, to avoid auth pages */}
         <ClerkProvider>{children}</ClerkProvider>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-19JKWKER15"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-19JKWKER15');
+          `}
+        </Script>
+        <Script
+          src="https://analytics.ahrefs.com/analytics.js"
+          data-key="IjDNyQvSmnNGFMK02hdywA"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
