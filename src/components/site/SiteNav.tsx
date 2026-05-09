@@ -1,21 +1,42 @@
 import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
-async function getFacilityCount(): Promise<number> {
+async function getFacilityCount(stateCode?: string): Promise<number> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return 0;
-  const { count } = await supabase
+  let q = supabase
     .from("facilities")
     .select("*", { count: "exact", head: true })
     .eq("publishable", true);
+  if (stateCode) q = q.eq("state_code", stateCode);
+  const { count } = await q;
   return count ?? 0;
 }
+
+type SiteNavProps = {
+  /** State code to scope the facility count (e.g. "CA"). Omit for national count. */
+  countStateCode?: string;
+  /** Badge label shown next to the wordmark. Omit to hide the badge. */
+  badge?: string;
+  /** CTA href (defaults to "/california"). */
+  ctaHref?: string;
+  /** CTA aria-label suffix (defaults to "California memory care facilities"). */
+  ctaLabel?: string;
+  /** When true, shows "States" nav link instead of "California". */
+  national?: boolean;
+};
 
 /**
  * Sticky editorial header with brand mark, nav links, and a live facility-count CTA pill.
  */
-export async function SiteNav() {
-  const facilityCount = await getFacilityCount();
+export async function SiteNav({
+  countStateCode = "CA",
+  badge = "California",
+  ctaHref = "/california",
+  ctaLabel = "California memory care facilities",
+  national = false,
+}: SiteNavProps = {}) {
+  const facilityCount = await getFacilityCount(countStateCode || undefined);
   const countLabel = facilityCount > 0 ? facilityCount.toLocaleString() : "1,000+";
 
   return (
@@ -38,18 +59,26 @@ export async function SiteNav() {
           >
             Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
           </span>
-          <span
-            className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] border border-rust text-rust px-[7px] py-[3px] rounded-[3px] relative top-[-2px] hidden sm:inline-block"
-          >
-            California
-          </span>
+          {badge && (
+            <span
+              className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] border border-rust text-rust px-[7px] py-[3px] rounded-[3px] relative top-[-2px] hidden sm:inline-block"
+            >
+              {badge}
+            </span>
+          )}
         </Link>
 
         {/* Nav */}
         <nav className="flex items-center gap-2 sm:gap-5 md:gap-7 text-[14px] md:text-[14.5px] shrink-0" aria-label="Site navigation">
-          <Link href="/california" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
-            California
-          </Link>
+          {national ? (
+            <Link href="/states" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+              States
+            </Link>
+          ) : (
+            <Link href="/california" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+              California
+            </Link>
+          )}
           <Link href="/data" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
             The Data
           </Link>
@@ -65,9 +94,9 @@ export async function SiteNav() {
 
           {/* Primary CTA */}
           <Link
-            href="/california"
+            href={ctaHref}
             className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-teal text-white px-3 py-2 sm:px-[18px] sm:py-[10px] rounded-full text-[12px] sm:text-[14px] font-medium hover:bg-teal-deep transition-colors no-underline whitespace-nowrap"
-            aria-label={`Browse ${countLabel} California memory care facilities`}
+            aria-label={`Browse ${countLabel} ${ctaLabel}`}
           >
             <span className="sm:hidden">Browse all</span>
             <span className="hidden sm:inline">Browse {countLabel} facilities</span>

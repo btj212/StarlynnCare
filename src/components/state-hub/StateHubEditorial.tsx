@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { getArticleThumbnail } from "@/lib/content/articleThumbnails";
-import type { EditorialCard } from "@/lib/stateHubConfig";
+import type { EditorialCard } from "@/lib/stateHubConfigs/types";
 
 type Props = {
   sectionLabel: string;

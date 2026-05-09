@@ -19,7 +19,7 @@ export const CA_FAQS: FaqItem[] = [
   },
   {
     q: "Which states do you cover?",
-    a: "California, Oregon, and Washington are fully indexed. Texas is in active rollout. Minnesota is in pipeline. We are prioritizing states with public, structured inspection data.",
+    a: "California, Oregon, Washington, Minnesota, and Texas are all live with publishable facility profiles. Each state's data comes from its respective state regulator — CDSS for California, Oregon DHS for Oregon, DSHS for Washington, MDH for Minnesota, and HHSC for Texas.",
   },
   {
     q: "Can a facility correct or respond to information on its profile?",

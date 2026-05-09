@@ -54,7 +54,11 @@ ${body}
 export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
   const paths: Array<{ path: string; priority: string; changefreq: SitemapUrlRow["changefreq"] }> = [
     { path: "/", priority: "1.0", changefreq: "weekly" },
+    { path: "/states", priority: "0.92", changefreq: "weekly" },
     { path: "/california", priority: "0.9", changefreq: "weekly" },
+    { path: "/oregon", priority: "0.88", changefreq: "weekly" },
+    { path: "/washington", priority: "0.88", changefreq: "weekly" },
+    { path: "/minnesota", priority: "0.88", changefreq: "weekly" },
     { path: "/texas", priority: "0.88", changefreq: "weekly" },
     { path: "/methodology", priority: "0.75", changefreq: "monthly" },
     { path: "/about", priority: "0.75", changefreq: "monthly" },
