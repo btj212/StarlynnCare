@@ -1,5 +1,6 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { SectionHead } from "@/components/editorial/SectionHead";
+import { peerRankBarFillCss } from "@/lib/peerRankBar";
 
 const CARE_LABEL: Record<string, string> = {
   rcfe_memory_care: "RCFE memory care",
@@ -20,12 +21,17 @@ type MetricCellProps = {
 
 function MetricCell({ label, percentile, desc }: MetricCellProps) {
   const pct = percentile ?? 0;
+  const fillColor = peerRankBarFillCss(pct);
+
   return (
     <div className="bg-paper-2 p-7 pb-6">
       <div className="mb-4 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-ink-3">
         {label}
       </div>
-      <div className="font-[family-name:var(--font-display)] text-[96px] leading-[0.85] tracking-[-0.04em] text-grade-a">
+      <div
+        className="font-[family-name:var(--font-display)] text-[96px] leading-[0.85] tracking-[-0.04em]"
+        style={{ color: fillColor }}
+      >
         {pct}
         <sup className="font-[family-name:var(--font-mono)] text-[0.3em] tracking-[0.04em] text-ink-2 align-super">th</sup>
       </div>
@@ -36,10 +42,14 @@ function MetricCell({ label, percentile, desc }: MetricCellProps) {
       <div className="relative mt-5 h-7">
         {/* Track */}
         <div className="absolute left-0 right-0 top-3 h-1 border border-paper-rule bg-paper" />
+        {/* Tertile zone markers (faint) */}
+        <div className="absolute top-3 h-1 opacity-20" style={{ left: 0, width: "33.33%", background: "var(--color-grade-f)" }} />
+        <div className="absolute top-3 h-1 opacity-20" style={{ left: "33.33%", width: "33.34%", background: "var(--color-gold)" }} />
+        <div className="absolute top-3 h-1 opacity-20" style={{ left: "66.67%", width: "33.33%", background: "var(--color-grade-a)" }} />
         {/* Fill */}
         <div
-          className="absolute left-0 top-3 h-1 bg-grade-a"
-          style={{ width: `${pct}%` }}
+          className="absolute left-0 top-3 h-1"
+          style={{ width: `${pct}%`, background: fillColor }}
         />
         {/* Median tick */}
         <div className="absolute left-1/2 top-1.5 h-4 w-px -translate-x-1/2 bg-ink-3" />
