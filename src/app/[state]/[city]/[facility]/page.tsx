@@ -20,6 +20,8 @@ import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
 import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
 import { FacilityWatchSignup } from "@/components/facility/FacilityWatchSignup";
+import { FacilityWatchBar } from "@/components/facility/FacilityWatchBar";
+import { FacilityWatchModal } from "@/components/facility/FacilityWatchModal";
 import { FacilityFullInspections } from "@/components/facility/profile/FacilityFullInspections";
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
 
@@ -154,6 +156,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
         {/* § 00 · Hero */}
         <FacilityHero profile={profile} />
+        <FacilityWatchModal facilityId={facility.id} facilityName={facility.name} />
 
         {/* Quick facts strip */}
         <FacilityQuickFacts profile={profile} />
@@ -164,6 +167,13 @@ export default async function FacilityPage({ params }: PageProps) {
         {/* § 02 · Peer comparison — dark band */}
         <FacilityPeerRank profile={profile} />
 
+        {/* § 02b · Facility Watch — inline strip (citation-aware copy) */}
+        <FacilityWatchSignup
+          facilityId={facility.id}
+          facilityName={facility.name}
+          citationCount={profile.totals.deficiencies}
+        />
+
         {/* § 03 · Citation record — timeline + heatmap + inspection list */}
         <FacilityRecord profile={profile} />
 
@@ -173,14 +183,14 @@ export default async function FacilityPage({ params }: PageProps) {
         {/* § 05 · Tour prep cards (hidden when < 3 tour questions) */}
         <FacilityTourPrep profile={profile} />
 
-        {/* § 06 · Facility Watch — email capture */}
-        <FacilityWatchSignup facilityId={facility.id} facilityName={facility.name} />
-
         {/* § 07 · Full verbatim inspection record */}
         <FacilityFullInspections profile={profile} />
 
         {/* § 08 · Nearby sibling facilities */}
         <FacilitySiblings profile={profile} />
+
+        {/* Sticky Watch bar — fixed position, shown at 40% scroll or 20s */}
+        <FacilityWatchBar facilityId={facility.id} facilityName={facility.name} />
 
         {/* Reviews, discovery, and correction form */}
         <div className="mx-auto max-w-[1280px] space-y-14 px-4 pb-20 pt-14 md:px-8">

@@ -1,15 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { submitWatch } from "@/lib/watch/submitWatch";
 
 interface FacilityWatchSignupProps {
   facilityId: string;
   facilityName: string;
+  citationCount?: number;
 }
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
-export function FacilityWatchSignup({ facilityId, facilityName }: FacilityWatchSignupProps) {
+export function FacilityWatchSignup({
+  facilityId,
+  facilityName,
+  citationCount = 0,
+}: FacilityWatchSignupProps) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -21,112 +27,97 @@ export function FacilityWatchSignup({ facilityId, facilityName }: FacilityWatchS
     setState("submitting");
     setErrorMsg("");
 
-    try {
-      const res = await fetch("/api/watch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          facilityId,
-          facilityName,
-          source: "facility_hero",
-        }),
-      });
+    const result = await submitWatch({
+      email: email.trim(),
+      facilityId,
+      facilityName,
+      source: "inline_strip",
+    });
 
-      if (res.ok) {
-        setState("success");
-      } else {
-        const json = await res.json().catch(() => ({}));
-        setErrorMsg((json as { error?: string }).error ?? "Something went wrong. Try again.");
-        setState("error");
-      }
-    } catch {
-      setErrorMsg("Network error. Please try again.");
+    if (result.ok) {
+      setState("success");
+    } else {
+      setErrorMsg(result.error ?? "Something went wrong. Try again.");
       setState("error");
     }
   };
 
-  if (state === "success") {
-    return (
-      <section className="border-t border-paper-rule py-10 px-4 md:px-8">
-        <div className="mx-auto max-w-[1280px]">
-          <div className="border border-teal/30 bg-teal-soft px-6 py-5 max-w-xl">
-            <p className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] text-teal mb-2">
-              Watch confirmed
-            </p>
-            <p className="font-[family-name:var(--font-display)] text-[18px] leading-snug text-ink">
-              Check your email to confirm your watch.
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-ink-2">
-              We sent a confirmation link to {email}.
-            </p>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const headline =
+    citationCount > 0
+      ? `${facilityName} has ${citationCount} citation${citationCount === 1 ? "" : "s"} on record. Know the moment anything changes.`
+      : `Be first to know if ${facilityName}'s inspection record changes.`;
 
   return (
-    <section className="border-t border-paper-rule py-10 px-4 md:px-8">
+    <section
+      className="w-full py-10 px-4 md:px-8"
+      style={{ backgroundColor: "var(--color-teal)" }}
+    >
       <div className="mx-auto max-w-[1280px]">
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-12">
-          {/* Copy */}
-          <div className="md:max-w-[380px]">
-            <p className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] text-rust mb-2">
-              Facility Watch · Beta
-            </p>
-            <p className="font-[family-name:var(--font-display)] text-[22px] leading-snug text-ink">
-              Get notified when{" "}
-              <em className="not-italic text-rust">{facilityName}</em>'s inspection
-              record changes.{" "}
-              <span className="text-ink-2">Free.</span>
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-2">
-              New citations, complaint investigations, or status changes —
-              delivered to your inbox.
+        {state === "success" ? (
+          <div className="flex items-center gap-3">
+            <span className="text-white text-xl">✓</span>
+            <p className="font-[family-name:var(--font-mono)] text-[13px] tracking-[0.06em] text-white">
+              Check your email to confirm.
             </p>
           </div>
-
-          {/* Form */}
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-3 md:flex-row md:items-start"
-          >
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="watch-email"
-                className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em] text-ink-2"
-              >
-                Email address
-              </label>
-              <input
-                id="watch-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="h-10 w-full min-w-[240px] border border-paper-rule bg-white px-3 font-[family-name:var(--font-mono)] text-[13px] text-ink placeholder:text-ink-2/50 focus:border-teal focus:outline-none md:w-auto"
-                disabled={state === "submitting"}
-              />
+        ) : (
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:gap-12">
+            {/* Copy */}
+            <div className="md:flex-1">
+              <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>
+                FACILITY WATCH · BETA
+              </p>
+              <p className="font-[family-name:var(--font-display)] text-[26px] leading-snug text-white md:text-[30px]">
+                {headline}
+              </p>
+              <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em]" style={{ color: "rgba(255,255,255,0.7)" }}>
+                New findings, complaint investigations, or status changes — emailed to you free.
+              </p>
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="hidden font-[family-name:var(--font-mono)] text-[10px] md:block">&nbsp;</span>
-              <button
-                type="submit"
-                disabled={state === "submitting" || !email.trim()}
-                className="h-10 bg-teal px-5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {state === "submitting" ? "Sending…" : "Watch this facility"}
-              </button>
-            </div>
-          </form>
-        </div>
 
-        {state === "error" && (
-          <p className="mt-3 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-rust">
-            {errorMsg}
-          </p>
+            {/* Form */}
+            <div className="md:flex-shrink-0">
+              <form
+                onSubmit={handleSubmit}
+                className="flex flex-col gap-3 sm:flex-row sm:items-end"
+              >
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="watch-inline-email"
+                    className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em]"
+                    style={{ color: "rgba(255,255,255,0.6)" }}
+                  >
+                    Email address
+                  </label>
+                  <input
+                    id="watch-inline-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="h-10 w-full min-w-[240px] border-0 bg-white px-3 font-[family-name:var(--font-mono)] text-[13px] focus:outline-none focus:ring-2 focus:ring-white/50"
+                    style={{ color: "var(--color-ink)" }}
+                    disabled={state === "submitting"}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={state === "submitting" || !email.trim()}
+                  className="h-10 px-5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{ backgroundColor: "var(--color-teal-deep)" }}
+                >
+                  {state === "submitting" ? "Sending…" : "Watch Free →"}
+                </button>
+              </form>
+
+              {state === "error" && (
+                <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em]" style={{ color: "rgba(255,255,255,0.8)" }}>
+                  {errorMsg}
+                </p>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </section>
