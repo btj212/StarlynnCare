@@ -33,7 +33,7 @@ export function AuthorByline({ lastReviewed, className = "" }: AuthorBylineProps
           alt=""
           width={48}
           height={48}
-          className="object-cover object-top"
+          className="object-cover object-[center_30%]"
         />
       </div>
       <div className="min-w-0">

@@ -6,6 +6,7 @@
 export type ArticleThumbnail = { src: string; alt: string };
 
 const THUMBNAILS: Record<string, ArticleThumbnail> = {
+  // ── Universal library articles ──────────────────────────────────────────────
   "/library/memory-care-vs-nursing-home": {
     src: "/illustrations/beach-grandparent-grandchild.png",
     alt:
@@ -25,6 +26,54 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
     src: "/illustrations/couch-grandmother-grandkids-reading.png",
     alt:
       "Illustrated grandmother reading a book to two young grandchildren on a couch — representing the relationships dementia care planning aims to preserve",
+  },
+
+  // ── Oregon articles ─────────────────────────────────────────────────────────
+  "/oregon/memory-care-licensing": {
+    src: "/illustrations/family.png",
+    alt:
+      "Illustrated family — representing the families researching Oregon DHS Memory Care Endorsement requirements and how to read a facility profile",
+  },
+  "/oregon/memory-care-vs-nursing-home": {
+    src: "/illustrations/beach-grandparent-grandchild.png",
+    alt:
+      "Illustrated grandparent and grandchild walking together — representing the choice Oregon families face between memory care ALFs and skilled nursing facilities",
+  },
+
+  // ── Washington articles ─────────────────────────────────────────────────────
+  "/washington/memory-care-licensing": {
+    src: "/illustrations/family.png",
+    alt:
+      "Illustrated family — representing Washington families researching DSHS Specialized Dementia Care contracts and memory care licensing requirements",
+  },
+  "/washington/memory-care-vs-nursing-home": {
+    src: "/illustrations/beach-grandparent-grandchild.png",
+    alt:
+      "Illustrated grandparent and grandchild walking together — representing the choice Washington families face between memory care ALFs and skilled nursing facilities",
+  },
+
+  // ── Minnesota articles ──────────────────────────────────────────────────────
+  "/minnesota/memory-care-licensing": {
+    src: "/illustrations/family.png",
+    alt:
+      "Illustrated family — representing Minnesota families researching Assisted Living Facility with Dementia Care licensing under Minn. Stat. ch. 144G",
+  },
+  "/minnesota/memory-care-vs-nursing-home": {
+    src: "/illustrations/beach-grandparent-grandchild.png",
+    alt:
+      "Illustrated grandparent and grandchild walking together — representing the choice Minnesota families face between memory care ALFs and skilled nursing facilities",
+  },
+
+  // ── Texas articles ──────────────────────────────────────────────────────────
+  "/texas/type-a-b-c-licensing": {
+    src: "/illustrations/family.png",
+    alt:
+      "Illustrated family — representing Texas families researching HHSC Type A, B, and C assisted living licensing requirements",
+  },
+  "/texas/memory-care-vs-nursing-home": {
+    src: "/illustrations/beach-grandparent-grandchild.png",
+    alt:
+      "Illustrated grandparent and grandchild walking together — representing the choice Texas families face between memory care ALFs and skilled nursing facilities",
   },
 };
 
