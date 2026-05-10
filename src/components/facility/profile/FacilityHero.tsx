@@ -4,6 +4,7 @@ import {
   regulatorLicensePageFor,
   regulatorLicensePageLabel,
 } from "@/lib/seo/schema";
+import { buildFacilitySnippet } from "@/lib/seo/meta";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -100,6 +101,21 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   const lastWord = words.length > 1 ? words.pop() : null;
   const mainPart = words.join(" ");
 
+  // Editorial prose summary — mirrors the meta description so Google has a
+  // human-readable narrative line to lift even when it overrides our meta.
+  const lastInspectionDate =
+    profile.inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
+  const snippet = buildFacilitySnippet({
+    facilityName: facility.name,
+    stateName: state.name,
+    stateCode: state.code,
+    grade: profile.snapshot?.grade?.letter ?? null,
+    percentile: profile.snapshot?.grade?.composite_percentile ?? null,
+    citationCount: profile.totals.deficiencies,
+    lastInspectionDate,
+    variant: "prose",
+  });
+
   return (
     <section className="fp-hero border-b-2 border-ink px-4 py-14 md:px-8">
       <div className="mx-auto max-w-[1280px]">
@@ -122,6 +138,14 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 <em className="not-italic text-rust">{facility.name}.</em>
               )}
             </h1>
+
+            {/* Editorial summary — same data points as the meta snippet so
+                Google has narrative prose above-the-fold to lift. */}
+            {snippet && (
+              <p className="mt-5 max-w-[58ch] font-[family-name:var(--font-display)] text-[19px] italic leading-[1.45] text-ink-2">
+                {snippet}
+              </p>
+            )}
 
             {/* Tags */}
             <div className="mt-4 flex flex-wrap gap-2">

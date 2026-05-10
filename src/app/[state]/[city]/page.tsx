@@ -24,9 +24,9 @@ import {
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
-import { clipMetaDescription } from "@/lib/seo/meta";
+import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
-import { countPublishableFacilitiesInRegion } from "@/lib/regionsHubCount";
+import { loadRegionHubSummary } from "@/lib/regionsHubCount";
 import { cityIntroForRegion } from "@/lib/content/cityIntros";
 import { formatCostRange, getStateCostBand } from "@/lib/content/stateCostBands";
 
@@ -44,13 +44,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!region) return { title: "Region not found | StarlynnCare" };
 
   // Thin hub guardrail: empty regions 404 — avoids indexing placeholder shells (CA + future states).
+  // We also reuse the same query path to derive the data-driven SERP snippet.
+  let totalCount = 0;
+  let withDeficiency = 0;
+  let findingsDate: string | null = null;
   if (supabase) {
-    const n = await countPublishableFacilitiesInRegion(supabase, region);
-    if (n === 0) notFound();
+    const summary = await loadRegionHubSummary(supabase, region);
+    if (summary.totalCount === 0) notFound();
+    totalCount = summary.totalCount;
+    withDeficiency = summary.withDeficiency;
+    findingsDate = summary.findingsDate;
   }
 
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
-  const _cityDescByState: Record<string, string> = {
+  const reg = REGULATOR_ABBR[region.state.code] ?? "state";
+  const facilityNoun = region.state.code === "TX" ? "ALFs" : "facilities";
+
+  // Data-driven snippet: facility count + cited-deficiency count + last refresh.
+  // Falls back to a static templated string when Supabase isn't configured (preview/dev).
+  const dataDriven =
+    totalCount > 0
+      ? `${totalCount} licensed memory care ${facilityNoun} in ${region.name}, ${region.state.name}. ${withDeficiency} with cited deficiencies on record. Independent ${reg} data, no commissions${findingsDate ? `, refreshed ${findingsDate}` : ""}.`
+      : null;
+
+  const fallbackByState: Record<string, string> = {
     CA: `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`,
     TX: `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — built from public LTCR records.`,
     OR: `Oregon DHS inspection records for every Memory Care Endorsed ALF and RCF in ${region.name} — sourced directly from the DHS LTC Licensing portal.`,
@@ -58,7 +75,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     MN: `MDH inspection records for every licensed Assisted Living Facility with Dementia Care in ${region.name}, Minnesota — sourced from the MN Department of Health.`,
   };
   const desc = clipMetaDescription(
-    _cityDescByState[region.state.code] ??
+    dataDriven ??
+      fallbackByState[region.state.code] ??
       `State inspection records for licensed memory care facilities in ${region.name}, ${region.state.name}.`,
   );
   return {

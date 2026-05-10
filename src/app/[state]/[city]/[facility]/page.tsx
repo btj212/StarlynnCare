@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { clipMetaDescription } from "@/lib/seo/meta";
+import { buildFacilitySnippet, clipMetaDescription } from "@/lib/seo/meta";
 import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
@@ -41,33 +41,53 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const state = stateFromSlug(stateSlug);
   if (!state) return { title: "Facility | StarlynnCare" };
 
-  // Light load — just need name for the meta title
   const result = await loadFacilityProfile({ stateSlug, regionSlug: citySlug, facilitySlug });
   if (result === "not_found" || result === "unconfigured") {
     return { title: "Facility | StarlynnCare" };
   }
 
-  const { facility } = result;
+  const profile = result;
+  const { facility } = profile;
   const canonical = canonicalFor(`/${state.slug}/${facility.city_slug}/${facility.slug}`);
 
-  const agencyByState: Record<string, string> = {
-    CA: "primary CDSS licensing data",
-    TX: "HHSC Long-Term Care Regulation records",
-    OR: "Oregon DHS LTC Licensing data",
-    WA: "Washington DSHS ALF inspection records",
-    MN: "Minnesota Department of Health licensing records",
-  };
-  const agencyDesc = agencyByState[state.code] ?? "primary state licensing data";
-  const desc = clipMetaDescription(
-    `Inspection records, citation history, and quality context for ${facility.name}${facility.city ? ` in ${facility.city}, ${state.name}` : ""} — verified from ${agencyDesc} by StarlynnCare.`,
-  );
+  // Data-driven snippet: grade · citations · last inspection. Falls back to a
+  // citation-only fragment when the snapshot RPC hasn't produced a grade (peer
+  // set too thin / fallback level high). Always returns a non-empty string.
+  const lastInspectionDate =
+    profile.inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
+  const snippet = buildFacilitySnippet({
+    facilityName: facility.name,
+    stateName: state.name,
+    stateCode: state.code,
+    grade: profile.snapshot?.grade?.letter ?? null,
+    percentile: profile.snapshot?.grade?.composite_percentile ?? null,
+    citationCount: profile.totals.deficiencies,
+    lastInspectionDate,
+    variant: "meta",
+  });
+  const desc = clipMetaDescription(snippet);
+
+  // Thin-page guardrail: only noindex when the page has effectively no content
+  // (no inspections, no reviews, no tour Q&A, no photo). Verified <1% of the
+  // publishable index meets this bar across CA/TX/OR/WA/MN, so this stays a
+  // future-proof guard rather than removing live pages from search.
+  const tourQs = (facility.content as { tour_questions?: string[] } | null)
+    ?.tour_questions;
+  const isThin =
+    profile.totals.inspections === 0 &&
+    profile.reviews.length === 0 &&
+    (tourQs?.length ?? 0) === 0 &&
+    profile.photoUrls.length === 0;
+
+  const title = `${facility.name} — Quality Score & Inspection Record | StarlynnCare`;
 
   return {
-    title: `${facility.name} | StarlynnCare`,
+    title,
     description: desc,
     alternates: { canonical },
+    ...(isThin ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
-      title: `${facility.name} | StarlynnCare`,
+      title,
       description: desc,
       url: canonical,
       type: "website",
@@ -75,7 +95,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: "summary_large_image",
-      title: `${facility.name} | StarlynnCare`,
+      title,
       description: desc,
       images: [facility.photo_url ?? "/og-default.png"],
     },

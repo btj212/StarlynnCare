@@ -442,10 +442,19 @@ export async function loadFacilityProfile(params: {
     { name: facility.name, url: canonicalUrl },
   ];
 
+  const lastNonComplaintInspection =
+    inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
+
   const jsonLd: object[] = [
     buildLocalBusinessForFacility(facility, state, {
       canonicalUrl,
       reviews: reviews.length ? reviews : undefined,
+      extras: {
+        grade: snapshot?.grade?.letter ?? null,
+        percentile: snapshot?.grade?.composite_percentile ?? null,
+        citationCount: totalDeficiencies,
+        lastInspectionDate: lastNonComplaintInspection,
+      },
     }),
     buildBreadcrumbList(breadcrumbTrail),
     ...reviews.map((r) => buildReviewSchema(r, businessId)),

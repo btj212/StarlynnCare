@@ -8,6 +8,23 @@ import {
   STARLYNN_EDITORIAL_REVIEWER,
 } from "@/lib/seo/editor";
 import { SITE_ORIGIN, canonicalFor } from "@/lib/seo/canonical";
+import { buildFacilitySnippet } from "@/lib/seo/meta";
+
+/**
+ * Optional snapshot-derived extras the LocalBusiness/MedicalOrganization JSON-LD
+ * uses to build a `description` that mirrors the meta tag. When omitted,
+ * `facilityDescription` falls back to the legacy location-only sentence.
+ */
+export type FacilitySchemaExtras = {
+  /** Composite letter grade from facility_snapshot RPC. Null when peer-set too thin. */
+  grade?: string | null;
+  /** Composite percentile 0–100, higher = better. */
+  percentile?: number | null;
+  /** Total deficiencies on record. */
+  citationCount?: number;
+  /** ISO yyyy-mm-dd of last non-complaint inspection. */
+  lastInspectionDate?: string | null;
+};
 
 export type BreadcrumbItem = { name: string; url: string };
 
@@ -108,11 +125,37 @@ function parseCoord(s: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function facilityDescription(facility: Facility): string {
+function facilityDescription(
+  facility: Facility,
+  extras?: FacilitySchemaExtras,
+): string {
   if (facility.content?.what_families_should_know) {
     return facility.content.what_families_should_know.slice(0, 5000);
   }
   const stateName = stateFromCode(facility.state_code)?.name ?? facility.state_code;
+
+  // When snapshot data is available, mirror the meta description so the
+  // LocalBusiness/MedicalOrganization graph node carries the same differentiator
+  // we put in the SERP snippet. Knowledge-panel & AI Overview surfaces lift from here.
+  if (
+    extras &&
+    (extras.grade != null ||
+      extras.percentile != null ||
+      (extras.citationCount ?? 0) > 0 ||
+      extras.lastInspectionDate)
+  ) {
+    return buildFacilitySnippet({
+      facilityName: facility.name,
+      stateName,
+      stateCode: facility.state_code,
+      grade: extras.grade ?? null,
+      percentile: extras.percentile ?? null,
+      citationCount: extras.citationCount ?? 0,
+      lastInspectionDate: extras.lastInspectionDate ?? null,
+      variant: "prose",
+    });
+  }
+
   const location = facility.city ? `${facility.city}, ${stateName}` : stateName;
   return `Licensed memory care profile for ${facility.name} in ${location}, with state inspection context from StarlynnCare.`;
 }
@@ -134,7 +177,12 @@ function nestedAggregateFromReviews(reviews: Review[]): object {
 export function buildLocalBusinessForFacility(
   facility: Facility,
   state: StateInfo,
-  opts: { canonicalUrl: string; reviews?: Review[] },
+  opts: {
+    canonicalUrl: string;
+    reviews?: Review[];
+    /** Snapshot-derived extras used to mirror the meta description copy. */
+    extras?: FacilitySchemaExtras;
+  },
 ): object {
   const businessId = `${opts.canonicalUrl}#business`;
   const sameAs: string[] = [];
@@ -187,7 +235,7 @@ export function buildLocalBusinessForFacility(
     "@id": businessId,
     name: facility.name,
     url: opts.canonicalUrl,
-    description: facilityDescription(facility),
+    description: facilityDescription(facility, opts.extras),
     telephone: facility.phone ?? undefined,
     image: facility.photo_url ?? undefined,
     priceRange: "$$",

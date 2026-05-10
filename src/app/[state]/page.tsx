@@ -10,6 +10,7 @@ import { stateFromSlug } from "@/lib/states";
 import { regionsForState, type Region } from "@/lib/regions";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
+import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
 import {
   buildBreadcrumbList,
   buildFaqSchemaFromPairs,
@@ -39,15 +40,33 @@ export async function generateMetadata({
   const state = stateFromSlug(stateSlug);
   if (!state) return { title: "State not found | StarlynnCare" };
   const canonical = canonicalFor(`/${state.slug}`);
-  const _stateHubDescByCode: Record<string, string> = {
+  const reg = REGULATOR_ABBR[state.code] ?? "state";
+
+  // Data-driven snippet — pull live stats (facility count, severe deficiency count,
+  // refresh date) from the same loader the page render uses. Falls back to the
+  // legacy templated copy when Supabase isn't configured or the loader returns 0.
+  const hub = await loadStateHubData(state.code);
+  const facilityCount = hub.stats.facilities;
+  const severeCount = hub.stats.severeCitations;
+  const refreshed = hub.stats.lastRefreshed;
+
+  const dataDriven =
+    facilityCount > 0
+      ? `${facilityCount} licensed memory care facilities across ${state.name}. ${severeCount} severe deficiencies on record. Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
+      : null;
+
+  const fallbackByCode: Record<string, string> = {
     CA: `Inspection records and citation history for every licensed memory care facility in ${state.name} — from primary CDSS data, updated weekly.`,
     TX: `HHSC-sourced inspection listings for Alzheimer-certified assisted living across Texas metro regions — scope and methodology on-site.`,
     OR: `Oregon DHS inspection records for every Memory Care Endorsed ALF and RCF across Oregon — sourced from the DHS LTC Licensing portal.`,
     WA: `DSHS inspection and investigation records for every Specialized Dementia Care ALF across Washington — sourced from the DSHS ALF Reports portal.`,
     MN: `MDH inspection records for every licensed Assisted Living Facility with Dementia Care across Minnesota — sourced from the MN Department of Health.`,
   };
-  const desc = _stateHubDescByCode[state.code] ??
-    `Inspection records and citation history for every licensed memory care facility in ${state.name}.`;
+  const desc = clipMetaDescription(
+    dataDriven ??
+      fallbackByCode[state.code] ??
+      `Inspection records and citation history for every licensed memory care facility in ${state.name}.`,
+  );
   return {
     title: `${state.name} memory care | StarlynnCare`,
     description: desc,

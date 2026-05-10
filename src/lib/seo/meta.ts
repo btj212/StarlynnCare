@@ -46,3 +46,110 @@ export function clipMetaDescription(text: string, max = 160): string {
 
   return slice.trim() + ellipsis;
 }
+
+/**
+ * State regulator abbreviation used inline in meta/prose copy ("CDSS citations",
+ * "MDH citations", etc.). Mirrors `regulatorLicensePageLabel` but as a bare
+ * abbreviation suitable for prose.
+ */
+export const REGULATOR_ABBR: Record<string, string> = {
+  CA: "CDSS",
+  TX: "HHSC",
+  OR: "OR DHS",
+  WA: "DSHS",
+  MN: "MDH",
+};
+
+/**
+ * Format an ISO date (e.g. "2025-07-14") as "Jul 2025". Returns null when input
+ * is missing so callers can drop the fragment cleanly.
+ */
+export function shortMonthYear(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+export type FacilitySnippetVariant = "meta" | "prose";
+
+export interface FacilitySnippetArgs {
+  facilityName: string;
+  stateName: string;
+  stateCode: string;
+  /** Snapshot composite letter grade (e.g. "B+"). Null when peer set too thin. */
+  grade: string | null;
+  /** Composite percentile 0–100, higher = better. Null when grade missing. */
+  percentile: number | null;
+  /** Total deficiencies on record. */
+  citationCount: number;
+  /** Most recent non-complaint inspection date as ISO yyyy-mm-dd. */
+  lastInspectionDate: string | null;
+  /** "meta" emits the "What X's website won't show you:" prefix. "prose" emits a
+   *  natural-prose sentence suitable for in-page rendering. Default "meta". */
+  variant?: FacilitySnippetVariant;
+}
+
+/**
+ * Build a data-driven facility SERP snippet from snapshot RPC + totals.
+ *
+ * Both variants pull from the same fragments (grade+rank, citation count,
+ * last inspection) so meta and on-page prose stay aligned — important because
+ * Google overrides our meta ~20–30% of the time and we want it to lift the
+ * same differentiator from on-page text.
+ *
+ * Fragments degrade gracefully: if grade is null we drop the rank fragment;
+ * if there are no inspections we drop the last-inspection fragment. The helper
+ * always returns at least the citation fragment ("no CDSS citations on record"
+ * when zero), so callers never get an empty string.
+ */
+export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
+  const {
+    facilityName,
+    stateName,
+    stateCode,
+    grade,
+    percentile,
+    citationCount,
+    lastInspectionDate,
+    variant = "meta",
+  } = args;
+
+  const reg = REGULATOR_ABBR[stateCode] ?? "state";
+
+  // Clamp the displayed rank so we never print "top 0%" / "bottom 0%" — at the
+  // tails (percentile === 100 or === 0) say "top 1%" / "bottom 1%" instead.
+  let rankFrag: string | null = null;
+  if (grade && percentile != null) {
+    if (percentile >= 50) {
+      const topPct = Math.max(1, 100 - percentile);
+      rankFrag = `Grade ${grade}, ranked in the top ${topPct}% of ${stateName} memory care`;
+    } else {
+      const bottomPct = Math.max(1, percentile);
+      rankFrag = `Grade ${grade}, ranked in the bottom ${bottomPct}% of ${stateName} memory care`;
+    }
+  }
+
+  const citeFrag =
+    citationCount > 0
+      ? `${citationCount} ${reg} citation${citationCount === 1 ? "" : "s"} on record`
+      : `no ${reg} citations on record`;
+
+  const inspMo = shortMonthYear(lastInspectionDate);
+  const inspFrag = inspMo ? `last inspected ${inspMo}` : null;
+
+  if (variant === "prose") {
+    if (rankFrag) {
+      const tail = [citeFrag, inspFrag].filter(Boolean).join("; ");
+      return `${facilityName} is ${rankFrag} with ${tail}.`;
+    }
+    return `${facilityName} has ${citeFrag}${inspFrag ? `; ${inspFrag}` : ""}.`;
+  }
+
+  const parts = [rankFrag, citeFrag, inspFrag].filter(Boolean);
+  return `What ${facilityName}'s website won't show you: ${parts.join(" · ")}.`;
+}
