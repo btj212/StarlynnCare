@@ -26,6 +26,7 @@ import {
 } from "@/components/home/SampleFacilityRotation";
 import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 import { MobileStateHubView } from "@/components/mobile/MobileStateHubView";
+import { AreaWatchModal } from "@/components/facility/AreaWatchModal";
 
 export const dynamic = "force-dynamic";
 
@@ -129,6 +130,7 @@ export default async function StatePage({ params }: PageProps) {
               ctaHref={`/${state.slug}#browse`}
               ctaLabel={`${state.name} memory care facilities`}
             />
+            <AreaWatchModal areaName={state.name} areaSlug={state.slug} source="state_modal" delayMs={20000} />
             <main>
               <StateHubSections data={data} config={richConfig} />
             </main>
@@ -214,6 +216,7 @@ export default async function StatePage({ params }: PageProps) {
       <JsonLd objects={stateJsonLd} />
       <GovernanceBar />
       <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}#browse`} ctaLabel={`${state.name} memory care facilities`} />
+      <AreaWatchModal areaName={state.name} areaSlug={state.slug} source="state_modal" delayMs={20000} />
       <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
         {/* ── Header ── */}
