@@ -194,7 +194,7 @@ export default async function StatePage({ params }: PageProps) {
     <>
       <JsonLd objects={stateJsonLd} />
       <GovernanceBar />
-      <SiteNav />
+      <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}`} ctaLabel={`${state.name} memory care facilities`} />
       <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
         {/* ── Header ── */}

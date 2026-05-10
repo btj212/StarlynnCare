@@ -120,7 +120,7 @@ export default async function Home() {
           <GovernanceBar scope="national" />
           <SiteNav
             countStateCode={undefined}
-            badge={undefined}
+            badge=""
             ctaHref="/states"
             ctaLabel="memory care facilities nationwide"
             national

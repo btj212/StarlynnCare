@@ -222,7 +222,7 @@ export default async function StateGuidesPage({ params }: PageProps) {
     <>
       <JsonLd objects={jsonLd} />
       <GovernanceBar />
-      <SiteNav />
+      <SiteNav countStateCode={config.stateCode} badge={config.stateName} ctaHref={`/${stateSlug}`} ctaLabel={`${config.stateName} memory care facilities`} />
       <main className="min-h-[50vh]" style={{ background: "var(--color-paper)" }}>
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
           <div className="mx-auto max-w-[1100px] px-4 sm:px-6 md:px-10 py-12 md:py-16">

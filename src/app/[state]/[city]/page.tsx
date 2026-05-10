@@ -396,7 +396,7 @@ export default async function RegionPage({ params }: PageProps) {
     <>
       <JsonLd objects={regionJsonLd} />
       <GovernanceBar />
-      <SiteNav />
+      <SiteNav countStateCode={region.state.code} badge={region.state.name} ctaHref={`/${region.state.slug}`} ctaLabel={`${region.state.name} memory care facilities`} />
       <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
         {/* ── Header ── */}

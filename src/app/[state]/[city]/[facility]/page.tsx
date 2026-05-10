@@ -91,7 +91,7 @@ export default async function FacilityPage({ params }: PageProps) {
   if (result === "unconfigured") {
     return (
       <>
-        <SiteNav />
+        <SiteNav badge="" />
         <main className="border-b border-sc-border bg-paper px-6 py-20 md:px-8">
           <div className="mx-auto max-w-[680px] rounded-lg border border-gold/30 bg-gold-soft px-5 py-4 text-sm text-ink-2">
             <p className="font-semibold text-gold">Configuration</p>
@@ -115,7 +115,7 @@ export default async function FacilityPage({ params }: PageProps) {
     <>
       <JsonLd objects={profile.jsonLd} />
       <GovernanceBar />
-      <SiteNav />
+      <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}`} ctaLabel={`${state.name} memory care facilities`} />
 
       <main className="bg-paper">
         {/* Sticky sub-nav */}
@@ -188,13 +188,17 @@ export default async function FacilityPage({ params }: PageProps) {
 
           {/* Editorial resource links */}
           <div className="border-t border-paper-rule pt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6 text-[13.5px]">
-            {[
-              { href: "/library/type-a-vs-type-b-deficiencies-explained", label: "Understanding citations: Type A vs. Type B deficiencies →" },
+            {([
+              facility.state_code === "CA"
+                ? { href: "/library/type-a-vs-type-b-deficiencies-explained", label: "Understanding citations: Type A vs. Type B deficiencies →" }
+                : { href: `/${state.slug}/memory-care-licensing`, label: `Memory care licensing in ${state.name} →` },
               { href: "/library/when-is-it-time-for-memory-care", label: "When is it time for memory care? →" },
               { href: "/library/memory-care-vs-nursing-home", label: "Memory care vs. nursing home →" },
-              { href: "/california/cost-guide", label: "What memory care costs in California →" },
+              facility.state_code === "CA"
+                ? { href: "/california/cost-guide", label: "What memory care costs in California →" }
+                : { href: `/${state.slug}/memory-care-vs-nursing-home`, label: `Memory care costs in ${state.name} →` },
               { href: "/methodology", label: "Our inspection scoring methodology →" },
-            ].map(({ href, label }) => (
+            ] as { href: string; label: string }[]).map(({ href, label }) => (
               <a key={href} href={href} className="text-teal hover:underline underline-offset-4">
                 {label}
               </a>
