@@ -23,6 +23,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               MC Review
             </Link>
+            <Link
+              href="/admin/watchers"
+              className="text-sm font-medium text-slate hover:text-ink"
+            >
+              Watchers
+            </Link>
           </div>
           <UserButton />
         </div>
