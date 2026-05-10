@@ -260,26 +260,45 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return fallback;
 
-  const [facRes, inspRes, sevRes, refreshRes] = await Promise.all([
+  const [facRes, refreshRes, idRes] = await Promise.all([
     supabase.from("facilities").select("*", { count: "exact", head: true }).eq("publishable", true).eq("state_code", stateCode),
-    supabase.from("inspections").select("*", { count: "exact", head: true }),
-    supabase.from("deficiencies").select("*", { count: "exact", head: true }).gte("severity", 3),
     supabase.from("facilities").select("updated_at").eq("publishable", true).eq("state_code", stateCode).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("facilities").select("id").eq("publishable", true).eq("state_code", stateCode),
   ]);
 
   const facilityCount = facRes.count ?? 0;
-  const inspCount = inspRes.count ?? 0;
-  const sevCount = sevRes.count ?? 0;
   const lastUpdated = refreshRes.data?.updated_at as string | null;
   const lastRefreshed = lastUpdated ? new Date(lastUpdated).toISOString().split("T")[0] : null;
 
-  const { data: idRows } = await supabase
-    .from("facilities")
-    .select("id")
-    .eq("publishable", true)
-    .eq("state_code", stateCode);
+  const idRows = idRes.data ?? [];
+  const allIds = idRows.map((r: { id: string }) => r.id);
 
-  const allIds = (idRows ?? []).map((r: { id: string }) => r.id);
+  // Fetch inspection count scoped to this state's facilities
+  let inspCount = 0;
+  let sevCount = 0;
+  if (allIds.length > 0) {
+    const { count: ic } = await supabase
+      .from("inspections")
+      .select("*", { count: "exact", head: true })
+      .in("facility_id", allIds);
+    inspCount = ic ?? 0;
+
+    // Count severe deficiencies via inspection IDs for this state
+    const { data: inspIdRows } = await supabase
+      .from("inspections")
+      .select("id")
+      .in("facility_id", allIds);
+    const inspIds = (inspIdRows ?? []).map((r: { id: string }) => r.id);
+    if (inspIds.length > 0) {
+      const { count: sc } = await supabase
+        .from("deficiencies")
+        .select("*", { count: "exact", head: true })
+        .in("inspection_id", inspIds)
+        .gte("severity", 3);
+      sevCount = sc ?? 0;
+    }
+  }
+
   const hourSeed = Math.floor(Date.now() / 3600000);
   const pickedIds = seededShuffle(allIds, hourSeed).slice(0, SAMPLE_CARD_ROTATION_COUNT);
 
