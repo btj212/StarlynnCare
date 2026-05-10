@@ -1,30 +1,51 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { submitWatch } from "@/lib/watch/submitWatch";
 
-interface FacilityWatchModalProps {
-  facilityId: string;
-  facilityName: string;
+interface AreaWatchModalProps {
+  areaName: string;
+  areaSlug: string;
+  source: "city_modal" | "state_modal";
+  /** Milliseconds before the modal appears. Default: 15000 */
+  delayMs?: number;
 }
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
-export function FacilityWatchModal({ facilityId, facilityName }: FacilityWatchModalProps) {
+const COPY = {
+  city_modal: {
+    headline: (areaName: string) => `Searching for memory care in ${areaName}?`,
+    sub: "We track every facility in this area. Get a free ranked report when you're ready to compare.",
+    button: "Get the ranked list →",
+  },
+  state_modal: {
+    headline: (areaName: string) => `Researching memory care in ${areaName}?`,
+    sub: "We score every licensed facility against state inspection records. Get alerts when records change.",
+    button: "Get the ranked list →",
+  },
+};
+
+export function AreaWatchModal({
+  areaName,
+  areaSlug,
+  source,
+  delayMs = 15000,
+}: AreaWatchModalProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    const key = `watch-modal-seen-${facilityId}`;
+    const prefix = source === "state_modal" ? "state" : "city";
+    const key = `watch-modal-seen-${prefix}-${areaSlug}`;
     if (sessionStorage.getItem(key)) return;
     const timer = setTimeout(() => {
       setOpen(true);
       sessionStorage.setItem(key, "1");
-    }, 15000);
+    }, delayMs);
     return () => clearTimeout(timer);
-  }, [facilityId]);
+  }, [areaSlug, source, delayMs]);
 
   const handleClose = useCallback(() => setOpen(false), []);
 
@@ -39,26 +60,32 @@ export function FacilityWatchModal({ facilityId, facilityName }: FacilityWatchMo
     setFormState("submitting");
     setErrorMsg("");
 
-    const result = await submitWatch({
-      email: email.trim(),
-      facilityId,
-      facilityName,
-      source: "modal",
-    });
+    try {
+      const res = await fetch("/api/watch/area", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), areaName, areaSlug, source }),
+      });
 
-    if (result.ok) {
-      setFormState("success");
-      setTimeout(() => setOpen(false), 3000);
-    } else {
-      setErrorMsg(result.error ?? "Something went wrong. Try again.");
+      if (res.ok) {
+        setFormState("success");
+        setTimeout(() => setOpen(false), 3000);
+      } else {
+        const json = await res.json().catch(() => ({}));
+        setErrorMsg((json as { error?: string }).error ?? "Something went wrong. Try again.");
+        setFormState("error");
+      }
+    } catch {
+      setErrorMsg("Network error. Please try again.");
       setFormState("error");
     }
   };
 
   if (!open) return null;
 
+  const copy = COPY[source];
+
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{
@@ -68,14 +95,13 @@ export function FacilityWatchModal({ facilityId, facilityName }: FacilityWatchMo
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
-      aria-label="Facility Watch signup"
+      aria-label="Area Watch signup"
     >
       <style>{`
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
       `}</style>
 
-      {/* Panel */}
       <div
         className="relative w-full max-w-[480px] p-8"
         style={{
@@ -83,7 +109,6 @@ export function FacilityWatchModal({ facilityId, facilityName }: FacilityWatchMo
           animation: "slideUp 250ms ease forwards",
         }}
       >
-        {/* Close */}
         <button
           onClick={handleClose}
           aria-label="Close"
@@ -106,20 +131,20 @@ export function FacilityWatchModal({ facilityId, facilityName }: FacilityWatchMo
               className="font-[family-name:var(--font-display)] text-[28px] leading-tight mb-3"
               style={{ color: "var(--color-ink)" }}
             >
-              This facility's record can change.
+              {copy.headline(areaName)}
             </h2>
             <p
               className="font-[family-name:var(--font-display)] text-[18px] leading-snug mb-6"
               style={{ color: "var(--color-ink-2)", fontStyle: "italic" }}
             >
-              Complaint investigations and new findings aren't announced. We'll tell you the moment the record updates.
+              {copy.sub}
             </p>
 
             <p
               className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] mb-4"
               style={{ color: "var(--color-ink-3)" }}
             >
-              FREE ALERT · NO ACCOUNT NEEDED
+              FREE · NO ACCOUNT NEEDED
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -143,7 +168,7 @@ export function FacilityWatchModal({ facilityId, facilityName }: FacilityWatchMo
                 className="h-11 w-full font-[family-name:var(--font-mono)] text-[12px] uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{ backgroundColor: "var(--color-teal)" }}
               >
-                {formState === "submitting" ? "Sending…" : `Watch ${facilityName} →`}
+                {formState === "submitting" ? "Sending…" : copy.button}
               </button>
             </form>
 

@@ -8,6 +8,7 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
+import { AreaWatchModal } from "@/components/facility/AreaWatchModal";
 import { TopGradedFacilities } from "@/components/facility/TopGradedFacilities";
 import { SiblingCityHubLinks } from "@/components/facility/SiblingCityHubLinks";
 import { HubFaqSection } from "@/components/facility/HubFaqSection";
@@ -415,6 +416,7 @@ export default async function RegionPage({ params }: PageProps) {
       <JsonLd objects={regionJsonLd} />
       <GovernanceBar />
       <SiteNav countStateCode={region.state.code} badge={region.state.name} ctaHref={`/${region.state.slug}#browse`} ctaLabel={`${region.state.name} memory care facilities`} />
+      <AreaWatchModal areaName={region.name} areaSlug={region.slug} source="city_modal" />
       <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
         {/* ── Header ── */}
