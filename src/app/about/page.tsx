@@ -101,7 +101,7 @@ export default function AboutPage() {
                     src="/images/about/star.png"
                     alt="Rebecca Lynn Starkey, BSN, RN, PHN — Co-founder of StarlynnCare"
                     fill
-                    className="object-cover object-[center_25%] brightness-110"
+                    className="object-cover object-[center_33%] brightness-110"
                     sizes="144px"
                     priority
                   />
@@ -135,7 +135,7 @@ export default function AboutPage() {
                     src="/images/about/blake-jones.png"
                     alt="Blake Jones — Co-founder of StarlynnCare"
                     fill
-                    className="object-cover object-top"
+                    className="object-cover object-[center_20%] brightness-110"
                     sizes="144px"
                     priority
                   />
