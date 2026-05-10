@@ -118,8 +118,9 @@ _EXCESS_WHITESPACE_RE = re.compile(r"\n{3,}")
 
 
 def _clean_text(raw: str) -> str:
-    """Strip boilerplate lines and normalize whitespace."""
-    text = _HEADER_NOISE_RE.sub("", raw)
+    """Strip boilerplate lines, NUL bytes, and normalize whitespace."""
+    text = raw.replace("\x00", "")  # PostgreSQL rejects NUL bytes
+    text = _HEADER_NOISE_RE.sub("", text)
     text = _EXCESS_WHITESPACE_RE.sub("\n\n", text)
     return text.strip()
 
