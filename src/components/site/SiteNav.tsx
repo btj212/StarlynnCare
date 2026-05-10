@@ -30,13 +30,13 @@ type SiteNavProps = {
  * Sticky editorial header with brand mark, nav links, and a live facility-count CTA pill.
  */
 export async function SiteNav({
-  countStateCode = "CA",
+  countStateCode,
   badge = "California",
   ctaHref = "/california",
   ctaLabel = "California memory care facilities",
   national = false,
 }: SiteNavProps = {}) {
-  const facilityCount = await getFacilityCount(countStateCode || undefined);
+  const facilityCount = await getFacilityCount(countStateCode);
   const countLabel = facilityCount > 0 ? facilityCount.toLocaleString() : "1,000+";
 
   return (
