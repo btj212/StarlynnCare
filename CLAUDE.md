@@ -106,6 +106,7 @@ npx tsc --noEmit   # type check (preferred fast verification)
 - Tailwind for styling. Inline `style={{}}` is allowed only for binding CSS custom properties (`var(--color-paper)`), gradients, or computed values that Tailwind cannot express. Do not use CSS modules unless already in use.
 - All new pages must be responsive. Mobile-first.
 - Do not edit plan files in `.cursor/plans/` while implementing them — they are the source of truth.
+- **Branch before large changes.** Any change that touches ≥3 files, introduces a new route, adds a migration, or could break production must go on a feature branch (e.g. `cursor/feature-name`) and get a Vercel preview deploy before merging to `main`. Small fixes (1–2 file typos, copy tweaks, single-line patches) may commit directly to `main`. When in doubt, branch.
 
 ## Design Principles
 
