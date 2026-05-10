@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
@@ -45,8 +45,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (result === "not_found" || result === "unconfigured") {
     return { title: "Facility | StarlynnCare" };
   }
+  // Clean-slug alias — metadata will be generated after the 301 redirect resolves.
+  if (typeof result === "object" && "kind" in result && result.kind === "redirect") {
+    return { title: "Facility | StarlynnCare" };
+  }
 
-  const profile = result;
+  const profile = result as import("@/lib/facility/loadFacilityProfile").FacilityProfile;
   const { facility } = profile;
   const canonical = canonicalFor(`/${state.slug}/${facility.city_slug}/${facility.slug}`);
 
@@ -108,6 +112,12 @@ export default async function FacilityPage({ params }: PageProps) {
   const result = await loadFacilityProfile({ stateSlug, regionSlug, facilitySlug });
 
   // Supabase not configured — show a dev hint
+  // Clean-slug redirect: e.g. /minnesota/north-branch/ecumen-north-branch
+  // → /minnesota/north-branch/ecumen-north-branch-mn652
+  if (typeof result === "object" && result !== null && "kind" in result && result.kind === "redirect") {
+    redirect(`/${stateSlug}/${regionSlug}/${result.canonicalSlug}`);
+  }
+
   if (result === "unconfigured") {
     return (
       <>
@@ -128,7 +138,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
   if (result === "not_found") notFound();
 
-  const profile = result;
+  const profile = result as import("@/lib/facility/loadFacilityProfile").FacilityProfile;
   const { facility, state, county, backHref, backLabel } = profile;
 
   return (

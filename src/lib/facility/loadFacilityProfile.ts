@@ -340,11 +340,14 @@ function deriveRulesCards(
 // Main export
 // ─────────────────────────────────────────────────────────────────
 
+/** Returned when the requested slug is a clean alias that maps to a canonical suffixed slug. */
+export type FacilityRedirect = { kind: "redirect"; canonicalSlug: string };
+
 export async function loadFacilityProfile(params: {
   stateSlug: string;
   regionSlug: string;
   facilitySlug: string;
-}): Promise<FacilityProfile | "not_found" | "unconfigured"> {
+}): Promise<FacilityProfile | "not_found" | "unconfigured" | FacilityRedirect> {
   const { stateSlug, regionSlug, facilitySlug } = params;
 
   const state = stateFromSlug(stateSlug);
@@ -358,7 +361,28 @@ export async function loadFacilityProfile(params: {
 
   if (!configured) return "unconfigured";
   if (error) throw new Error(error);
-  if (!facility) return "not_found";
+
+  // If no exact match, check whether this is a "clean" slug that corresponds to
+  // a canonical slug with a state-disambiguation suffix (e.g. ecumen-north-branch
+  // → ecumen-north-branch-mn652). Redirect 301 to the canonical URL.
+  if (!facility) {
+    const supabase = tryPublicSupabaseClient();
+    if (supabase) {
+      const statePrefix = state.code.toLowerCase();
+      const { data: candidates } = await supabase
+        .from("facilities")
+        .select("slug")
+        .eq("state_code", state.code)
+        .eq("city_slug", regionSlug)
+        .eq("publishable", true)
+        .like("slug", `${facilitySlug}-${statePrefix}%`)
+        .limit(2);
+      if (candidates && candidates.length === 1) {
+        return { kind: "redirect", canonicalSlug: (candidates[0] as { slug: string }).slug };
+      }
+    }
+    return "not_found";
+  }
 
   const region = regionFromSlug(stateSlug, regionSlug);
   const countyHub = countyRegionContainingCitySlug(state.code, facility.city_slug);
