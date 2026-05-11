@@ -120,7 +120,12 @@ def build_bundle(
     col_report = detect_col(viol_headers, "reportnumber", "report")
     col_date_v = detect_col(viol_headers, "date", "incidentdate")
     col_alleg = detect_col(viol_headers, "allegation", "description")
-    col_vtype = detect_col(viol_headers, "type", "violationtype")
+    # Use exact-match for bare "Type" header to avoid shadowing by "Provider type".
+    # "detect_col" with keyword "type" matches "providertype" first, so we must
+    # find the column whose entire normalized name is exactly "type".
+    col_vtype = next((h for h in viol_headers if norm_key(h) == "type"), None)
+    if not col_vtype:
+        col_vtype = detect_col(viol_headers, "violationtype", "allegationtype")
     col_provider_v = detect_col(viol_headers, "providertype")
 
     missing = [
@@ -240,7 +245,7 @@ def build_bundle(
                 "is_complaint": True,
                 "complaint_id": rep,
                 "source_url": source_url,
-                "raw_data": {"oregon": True, "provider_id": pv, "report_number": rep, "violation_record": True},
+                "raw_data": {"oregon": True, "provider_id": pv, "report_number": rep, "violation_record": True, "violation_type": alleg_types and sorted(alleg_types) or []},
                 "deficiencies": [],
             }
         for vrow in v_rows:
