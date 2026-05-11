@@ -39,6 +39,9 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
 
 API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+STORAGE_BUCKET = "facility-photos"
 
 # Google Places API (New) endpoints
 PLACES_TEXT_SEARCH = "https://places.googleapis.com/v1/places:searchText"
@@ -46,6 +49,30 @@ PLACES_PHOTO_URL = "https://places.googleapis.com/v1/{name}/media"
 
 # Max photos to fetch per facility (plus the existing Street View as index 0)
 DEFAULT_MAX_PHOTOS = 4
+
+
+def upload_to_storage(image_bytes: bytes, storage_path: str) -> str:
+    """Upload image bytes to Supabase Storage and return the public URL."""
+    upload_url = f"{SUPABASE_URL}/storage/v1/object/{STORAGE_BUCKET}/{storage_path}"
+    req = urllib.request.Request(
+        upload_url,
+        data=image_bytes,
+        method="PUT",
+        headers={
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+            "Content-Type": "image/jpeg",
+            "x-upsert": "true",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=30) as r:
+        r.read()
+    return f"{SUPABASE_URL}/storage/v1/object/public/{STORAGE_BUCKET}/{storage_path}"
+
+
+def download_bytes(url: str) -> bytes:
+    """Download image bytes from a URL (follows redirects)."""
+    with urllib.request.urlopen(url, timeout=15) as r:
+        return r.read()
 
 
 def find_place(name: str, address: str, city: str, state: str) -> str | None:
@@ -142,6 +169,9 @@ def main() -> None:
     if not DATABASE_URL:
         print("ERROR: DATABASE_URL not set in .env.local")
         sys.exit(1)
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        print("ERROR: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in .env.local")
+        sys.exit(1)
 
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
@@ -209,12 +239,30 @@ def main() -> None:
                 skip += 1
                 continue
 
-            # Merge: keep index 0 (Street View), append new Places photos
+            # Merge: keep index 0 (Street View), upload + append new Places photos
             sv_entry = base_sources[0] if base_sources else {
                 "url": base_urls[0], "source": "Google Street View", "attribution": "© Google"
             }
-            new_urls = base_urls[:1] + [p["url"] for p in photos]
-            new_sources = [sv_entry] + photos
+
+            stored_photos: list[dict] = []
+            for i, photo in enumerate(photos, start=1):
+                places_url = photo["url"]
+                storage_path = f"{fac_id}-{i}.jpg"
+                try:
+                    img_bytes = download_bytes(places_url)
+                    storage_url = upload_to_storage(img_bytes, storage_path)
+                    stored_photos.append({**photo, "url": storage_url})
+                    time.sleep(0.05)
+                except Exception as e:
+                    print(f"    ✗ Failed to upload photo {i}: {e}")
+
+            if not stored_photos:
+                print("  – All photo uploads failed")
+                skip += 1
+                continue
+
+            new_urls = base_urls[:1] + [p["url"] for p in stored_photos]
+            new_sources = [sv_entry] + stored_photos
 
             with conn.cursor() as cur:
                 cur.execute(
@@ -223,7 +271,7 @@ def main() -> None:
                 )
             conn.commit()
 
-            print(f"  ✓ {len(photos)} Places photos added (total gallery: {len(new_urls)})")
+            print(f"  ✓ {len(stored_photos)} Places photos uploaded to Storage (total gallery: {len(new_urls)})")
             ok += 1
 
     print(f"\nDone. {ok} updated, {skip} skipped, {fail} errored.\n")
