@@ -111,10 +111,10 @@ See `_FRESHNESS_MONTHS` constant in `scrapers/recompute_publishable.py`.
 | Layer | Source | Status |
 |---|---|---|
 | Directory | DSHS BHAdvLookup | Broadened May 2026 (107 → 557 facilities) |
-| Inspections | DSHS BHForms PDF survey reports | ~418 inspections; 420 facilities |
+| Inspections | DSHS BHForms PDF survey reports | ~418 inspections; 99 publishable facilities |
 | Deficiencies | Survey PDFs (image-based) | Needs OCR pipeline |
-| History | 1–3 years | Shallow |
-| Notes | BHForms history backfill in progress (Phase 2); survey PDFs are scanned images |
+| History | 2023–present (~3 years) | Shallow |
+| Notes | BHForms live portal only exposes ~3 years of history; no hidden date params found. Wayback CDX coverage is sparse (2–3 snapshots/facility, mostly fire inspections). **Recommended path for deeper history: DSHS Public Records Act request for pre-2023 survey reports.** New 440 non-dementia-contract facilities (from broadened directory scrape) still need BHForms pages fetched; run `wa_dshs_inspections_scrape.py --from-csv adv-lookup-YYYY-MM-DD.csv`. |
 
 ### Minnesota (MN)
 | Layer | Source | Status |
