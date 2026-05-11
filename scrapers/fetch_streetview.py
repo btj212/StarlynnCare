@@ -29,6 +29,9 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
 
 API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+STORAGE_BUCKET = "facility-photos"
 
 PHOTO_ATTRIBUTION = "© Google Street View"
 
@@ -53,6 +56,24 @@ def sv_has_imagery(lat: float, lon: float) -> bool:
     except Exception as e:
         print(f"    metadata error: {e}")
         return False
+
+
+def upload_to_storage(image_bytes: bytes, storage_path: str) -> str:
+    """Upload image bytes to Supabase Storage and return the public URL."""
+    upload_url = f"{SUPABASE_URL}/storage/v1/object/{STORAGE_BUCKET}/{storage_path}"
+    req = urllib.request.Request(
+        upload_url,
+        data=image_bytes,
+        method="PUT",
+        headers={
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+            "Content-Type": "image/jpeg",
+            "x-upsert": "true",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=30) as r:
+        r.read()
+    return f"{SUPABASE_URL}/storage/v1/object/public/{STORAGE_BUCKET}/{storage_path}"
 
 
 def sv_url(lat: float, lon: float) -> str:
@@ -126,6 +147,9 @@ def main() -> None:
     if not API_KEY:
         print("ERROR: GOOGLE_MAPS_API_KEY not set in .env.local")
         sys.exit(1)
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        print("ERROR: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in .env.local")
+        sys.exit(1)
 
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
@@ -176,14 +200,23 @@ def main() -> None:
             print(f"\n→ {name[:60]}")
 
             if sv_has_imagery(lat, lon):
-                url = sv_url(lat, lon)
+                api_url = sv_url(lat, lon)
+                try:
+                    with urllib.request.urlopen(api_url, timeout=15) as r:
+                        image_bytes = r.read()
+                    storage_path = f"{fac_id}.jpg"
+                    public_url = upload_to_storage(image_bytes, storage_path)
+                except Exception as e:
+                    print(f"  ✗ Storage upload failed: {e}")
+                    fail += 1
+                    continue
                 with conn.cursor() as cur:
                     cur.execute(
                         "UPDATE facilities SET photo_url = %s, photo_attribution = %s WHERE id = %s",
-                        (url, PHOTO_ATTRIBUTION, fac_id),
+                        (public_url, PHOTO_ATTRIBUTION, fac_id),
                     )
                 conn.commit()
-                print(f"  ✓ Street View image + attribution set")
+                print(f"  ✓ Street View image uploaded to Storage")
                 ok += 1
             else:
                 print(f"  – No Street View imagery found, skipping")
