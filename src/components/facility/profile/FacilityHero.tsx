@@ -32,6 +32,12 @@ function formatAddr(facility: FacilityProfile["facility"]): string {
 function VerdictCard({ profile }: { profile: FacilityProfile }) {
   const { facility, totals, photoUrls } = profile;
   const photo = photoUrls[0] ?? null;
+  const attribution = facility.photo_attribution ?? null;
+  const suggestSubject = encodeURIComponent(`Photo submission: ${facility.name}`);
+  const suggestBody = encodeURIComponent(
+    `Hi,\n\nI'd like to submit a photo for ${facility.name}.\n\nPlease attach the photo to this email.\n\nThank you.`,
+  );
+  const suggestHref = `mailto:hello@starlynncare.com?subject=${suggestSubject}&body=${suggestBody}`;
 
   // Generate verdict copy from content or derive from totals
   const copy: string = (() => {
@@ -61,20 +67,31 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
       </div>
       <div className="grid gap-5" style={{ gridTemplateColumns: "110px 1fr" }}>
         {/* Photo or gradient placeholder */}
-        <div className="relative aspect-square overflow-hidden" style={{ background: "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 60%, #6F8479 100%)" }}>
-          {photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt={facility.name} className="absolute inset-0 h-full w-full object-cover" />
-          ) : (
-            <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.22em] text-white/70">
-              Photo
-            </span>
-          )}
-          {profile.facility.photo_attribution && (
-            <span className="absolute bottom-1 left-1.5 z-10 bg-black/35 px-1.5 py-px font-[family-name:var(--font-mono)] text-[8.5px] tracking-[0.1em] text-white/85">
-              {profile.facility.photo_attribution}
-            </span>
-          )}
+        <div className="flex flex-col gap-1.5">
+          <div className="relative aspect-square overflow-hidden" style={{ background: "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 60%, #6F8479 100%)" }}>
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt={facility.name} className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.22em] text-white/70">
+                Photo
+              </span>
+            )}
+          </div>
+          {/* Attribution + suggest link */}
+          <div className="font-[family-name:var(--font-mono)] text-[10px] leading-tight opacity-50">
+            {attribution && (
+              <span className="block text-paper truncate" title={attribution}>
+                {attribution}
+              </span>
+            )}
+            <a
+              href={suggestHref}
+              className="block text-paper/70 hover:opacity-100 transition-opacity whitespace-nowrap"
+            >
+              operator? submit a photo →
+            </a>
+          </div>
         </div>
         {/* Copy */}
         <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
