@@ -209,6 +209,15 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 })()}
               </div>
             )}
+
+            {/* Limited inspection history badge */}
+            {profile.limitedHistory && (
+              <div className="mt-3">
+                <span className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-amber-700 border border-amber-400 px-[5px] py-[2px] rounded-[2px]">
+                  Limited Inspection History · fewer than 4 records in 3 years
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Verdict card */}

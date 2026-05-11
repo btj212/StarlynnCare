@@ -75,24 +75,42 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
   const lastUpdated = refreshRes.data?.updated_at as string | null;
   const lastRefreshed = lastUpdated ? new Date(lastUpdated).toISOString().split("T")[0] : null;
 
-  // Per-state + city data in one query
-  const { data: facilityRows } = await supabase
-    .from("facilities")
-    .select("state_code, city_slug")
-    .eq("publishable", true);
+  // Per-state counts via HEAD requests (bypass 1000-row PostgREST cap),
+  // plus paginated city-slug query covering up to 5000 rows.
+  const COVERED_STATE_CODES = COVERED_STATES.map((s) => s.code);
+  const [stateCountResults, citySlugResult] = await Promise.all([
+    Promise.all(
+      COVERED_STATE_CODES.map((code) =>
+        supabase
+          .from("facilities")
+          .select("*", { count: "exact", head: true })
+          .eq("publishable", true)
+          .eq("state_code", code)
+          .then((r) => ({ code, count: r.count ?? 0 }))
+      )
+    ),
+    supabase
+      .from("facilities")
+      .select("state_code, city_slug")
+      .eq("publishable", true)
+      .range(0, 4999),
+  ]);
 
-  // Build per-state stats and city leaderboard simultaneously
-  const stateFacilityCounts = new Map<string, number>();
+  // Build per-state stats from exact HEAD counts
+  const stateFacilityCounts = new Map<string, number>(
+    stateCountResults.map(({ code, count }) => [code, count])
+  );
+
+  // Build city sets and leaderboard from paginated rows
   const stateCitySets = new Map<string, Set<string>>();
   // city_slug -> { stateCode, count }
   const cityBuckets = new Map<string, { name: string; count: number; stateCode: string }>();
 
-  for (const row of facilityRows ?? []) {
+  for (const row of citySlugResult.data ?? []) {
     const code = (row as { state_code: string; city_slug: string | null }).state_code;
     const citySlug = (row as { state_code: string; city_slug: string | null }).city_slug;
     if (!code) continue;
 
-    stateFacilityCounts.set(code, (stateFacilityCounts.get(code) ?? 0) + 1);
     if (citySlug) {
       if (!stateCitySets.has(code)) stateCitySets.set(code, new Set());
       stateCitySets.get(code)!.add(citySlug);

@@ -51,3 +51,6 @@ next-env.d.ts
 
 # scraper run logs
 /logs/
+
+# WA skipped PDFs — 367MB of binary files, tracked via ocr_wa_image_pdfs.py instead
+scrapers/wa-skipped-pdfs/

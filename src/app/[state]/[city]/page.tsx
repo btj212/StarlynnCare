@@ -146,18 +146,26 @@ export default async function RegionPage({ params }: PageProps) {
         // 2. Inspections
         const { data: inspData, error: inspErr } = await supabase
           .from("inspections")
-          .select("id, facility_id")
+          .select("id, facility_id, inspection_date")
           .in("facility_id", ids);
 
         if (inspErr) {
           console.error("[hub] inspections query failed:", inspErr.message);
         }
 
+        const cutoff3y = new Date();
+        cutoff3y.setFullYear(cutoff3y.getFullYear() - 3);
+        const cutoff3yStr = cutoff3y.toISOString().split("T")[0];
+
         const inspCountByFac = new Map<string, number>();
+        const recentInspCountByFac = new Map<string, number>();
         const inspFacMap = new Map<string, string>();
         for (const i of inspData ?? []) {
           inspCountByFac.set(i.facility_id, (inspCountByFac.get(i.facility_id) ?? 0) + 1);
           inspFacMap.set(i.id, i.facility_id);
+          if ((i as { inspection_date: string }).inspection_date >= cutoff3yStr) {
+            recentInspCountByFac.set(i.facility_id, (recentInspCountByFac.get(i.facility_id) ?? 0) + 1);
+          }
         }
 
         const inspIds = (inspData ?? []).map((i: { id: string }) => i.id);
@@ -213,6 +221,7 @@ export default async function RegionPage({ params }: PageProps) {
           inspections: inspCountByFac.get(f.id) ?? 0,
           total_citations: totalCitByFac.get(f.id) ?? 0,
           serious_citations: seriousCitByFac.get(f.id) ?? 0,
+          limitedHistory: (recentInspCountByFac.get(f.id) ?? 0) < 4,
         }));
       }
     }

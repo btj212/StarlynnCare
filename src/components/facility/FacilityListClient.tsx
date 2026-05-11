@@ -28,6 +28,8 @@ export type ListFacility = {
   inspections: number;
   serious_citations: number;
   total_citations: number;
+  /** True when fewer than 4 inspections exist in the past 3 years. */
+  limitedHistory?: boolean;
 };
 
 type FilterChip = "all" | "large" | "medium" | "has_citations" | "no_citations" | "small";
@@ -162,6 +164,11 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
         <p className="font-semibold text-ink leading-snug group-hover:text-teal transition-colors line-clamp-2">
           {f.name}
         </p>
+        {f.limitedHistory && (
+          <span className="font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.1em] text-amber-600">
+            · limited history
+          </span>
+        )}
 
         {/* Tier 2: trust signal */}
         <TrustBadge signal={signal} />
