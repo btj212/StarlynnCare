@@ -2,11 +2,14 @@
 """
 Washington DSHS — inspection / deficiency ingest.
 
-Loads format_version: 1 bundles from `wa_dshs_to_bundle.py` into `inspections` + `deficiencies`
-for facilities with `wa_dementia_care_contract = true`.
+Loads format_version: 1 bundles from `wa_dshs_to_bundle.py` into `inspections`
++ `deficiencies` for all LICENSED Washington facilities.
+
+Pass `--dementia-only` to keep the legacy scope (`wa_dementia_care_contract = true`).
 
 Usage:
   python3 scrapers/wa_inspections_ingest.py --import-json path/to/bundle.json
+  python3 scrapers/wa_inspections_ingest.py --import-json path/to/bundle.json --dementia-only
   python3 scrapers/wa_inspections_ingest.py --smoke
 """
 
@@ -44,7 +47,9 @@ STATE_CODE = "WA"
 SCRAPER_NAME = "wa_dshs_inspections"
 SOURCE_AGENCY = "WA DSHS ADSA"
 SMOKE_FIXTURE = SCRAPERS_DIR / "fixtures" / "wa_inspections_smoke.json"
-REQUEST_DELAY_SECS = 1.0
+# Bundle ingest is DB-only — no external API in the per-facility loop — so
+# this delay can be near-zero for the broader ~557-facility universe.
+REQUEST_DELAY_SECS = 0.1
 
 _SEVERITY_HINTS: list[tuple[tuple[str, ...], int]] = [
     (("immediate jeopardy", "ij", "priority 1", "i/j"), 4),
@@ -112,15 +117,17 @@ def fetch_target_facilities(
     conn: psycopg.Connection,
     *,
     license_filter: str | None,
+    dementia_only: bool = False,
     limit: int | None,
 ) -> list[dict[str, Any]]:
     q = """
         SELECT id::text, name, license_number
         FROM facilities
         WHERE state_code = 'WA'
-          AND wa_dementia_care_contract = true
           AND license_status = 'LICENSED'
     """
+    if dementia_only:
+        q += " AND wa_dementia_care_contract = true"
     params: list[Any] = []
     if license_filter:
         q += " AND license_number = %s"
@@ -401,6 +408,11 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--license", type=str, default=None)
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument(
+        "--dementia-only",
+        action="store_true",
+        help="Limit to wa_dementia_care_contract facilities (legacy behaviour).",
+    )
     args = parser.parse_args()
 
     load_env()
@@ -425,7 +437,10 @@ def main() -> None:
     else:
         with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
             facilities = fetch_target_facilities(
-                conn, license_filter=args.license, limit=args.limit
+                conn,
+                license_filter=args.license,
+                limit=args.limit,
+                dementia_only=args.dementia_only,
             )
 
     if not args.dry_run and not facilities:

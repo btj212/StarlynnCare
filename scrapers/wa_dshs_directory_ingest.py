@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Ingest Washington DSHS Advanced Lookup CSV (dementia care contract export) → facilities.
+Ingest Washington DSHS Advanced Lookup CSV (full ALF universe) → facilities.
+
+Facilities with a Dementia Care contract are tagged as memory-care (Tier-1 signal)
+and set to mc_review_status='auto_published'. All other ALFs enter 'needs_review'
+for downstream signal enrichment via recompute_publishable.py.
 
 Upsert conflict target: (state_code, city_slug, slug)
 
@@ -200,12 +204,31 @@ def parse_row(headers: list[str], row: dict[str, str]) -> dict[str, Any] | None:
         except (ValueError, TypeError):
             beds = None
 
-    contracts_raw = (row.get(col_contract) or "").strip() if col_contract else "Dementia Care"
+    contracts_raw = (row.get(col_contract) or "").strip() if col_contract else ""
     contracts = [c.strip() for c in contracts_raw.split(",") if c.strip()]
-    if not contracts:
-        contracts = ["Dementia Care"]
 
     wa_ftype = (row.get(col_ftype) or "").strip() if col_ftype else None
+
+    # Tier-1 signal: row has a DSHS Dementia Care contract
+    has_dementia_contract = any("dementia" in c.lower() for c in contracts)
+
+    # Facilities with the Dementia Care contract are auto-published as memory care.
+    # All others enter the manual review queue; recompute_publishable.py will
+    # promote them if a Tier-1 signal is later discovered (chain, APFM+Caring, etc.)
+    if has_dementia_contract:
+        care_category = "alf_memory_care"
+        serves_memory_care = True
+        memory_care_designation = "Washington DSHS Dementia Care Contract"
+        mc_review_status = "auto_published"
+        memory_care_disclosure_filed = True
+        memory_care_disclosure_source = "WA DSHS Dementia Care Contract"
+    else:
+        care_category = "alf_general"
+        serves_memory_care = False
+        memory_care_designation = None
+        mc_review_status = "needs_review"
+        memory_care_disclosure_filed = False
+        memory_care_disclosure_source = None
 
     slug = facility_slug(name, lic)
 
@@ -233,17 +256,17 @@ def parse_row(headers: list[str], row: dict[str, str]) -> dict[str, Any] | None:
         "latitude": None,
         "longitude": None,
         "source_url": SOURCE_PAGE,
-        "care_category": "alf_memory_care",
-        "serves_memory_care": True,
-        "memory_care_designation": "Washington DSHS Dementia Care Contract",
+        "care_category": care_category,
+        "serves_memory_care": serves_memory_care,
+        "memory_care_designation": memory_care_designation,
         "license_status": "LICENSED",
         "license_expiration": None,
         "publishable": False,
         "mc_signal_explicit_name": False,
         "mc_signal_chain_name": False,
-        "mc_review_status": "auto_published",
-        "memory_care_disclosure_filed": False,
-        "memory_care_disclosure_source": None,
+        "mc_review_status": mc_review_status,
+        "memory_care_disclosure_filed": memory_care_disclosure_filed,
+        "memory_care_disclosure_source": memory_care_disclosure_source,
         "mc_signal_apfm_listed": False,
         "mc_signal_caring_listed": False,
         "tx_license_class": None,
@@ -259,7 +282,7 @@ def parse_row(headers: list[str], row: dict[str, str]) -> dict[str, Any] | None:
         "tx_state_region": None,
         "tx_hhsc_suboffice": None,
         "tx_county": None,
-        "wa_dementia_care_contract": True,
+        "wa_dementia_care_contract": has_dementia_contract,
         "wa_contract_types": contracts,
         "wa_county": county,
         "wa_facility_type": wa_ftype,

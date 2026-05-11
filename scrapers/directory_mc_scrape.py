@@ -51,21 +51,37 @@ from firecrawl_markdown import parse_json_from_llm, scrape_url_to_markdown
 # ---------------------------------------------------------------------------
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-STATE_CODE = "CA"
 
-# Source configurations
-SOURCES = {
-    "apfm": {
-        "name": "A Place for Mom",
-        "state_url": "https://www.aplaceformom.com/alzheimers-care/california",
-        "output_file": ".firecrawl/directory-match/apfm-ca-mc.json",
-    },
-    "caring": {
-        "name": "Caring.com", 
-        "state_url": "https://www.caring.com/senior-living/memory-care-facilities/california",
-        "output_file": ".firecrawl/directory-match/caring-ca-mc.json",
-    }
+# State-aware source configurations. The `state_url` slugs come from the
+# directory sites' canonical state pages (kept stable). The `output_file`
+# embeds the state code so each state has its own JSON.
+STATE_NAMES = {
+    "CA": "california",
+    "OR": "oregon",
+    "WA": "washington",
+    "MN": "minnesota",
+    "TX": "texas",
 }
+
+
+def sources_for_state(state_code: str) -> dict[str, dict[str, str]]:
+    """Build per-source URL + output paths for a given state code."""
+    state_code = state_code.upper()
+    state_slug = STATE_NAMES[state_code]
+    return {
+        "apfm": {
+            "name": "A Place for Mom",
+            "state_url": f"https://www.aplaceformom.com/alzheimers-care/{state_slug}",
+            "output_file": f".firecrawl/directory-match/apfm-{state_code.lower()}-mc.json",
+        },
+        "caring": {
+            "name": "Caring.com",
+            "state_url": (
+                f"https://www.caring.com/senior-living/memory-care-facilities/{state_slug}"
+            ),
+            "output_file": f".firecrawl/directory-match/caring-{state_code.lower()}-mc.json",
+        },
+    }
 
 # Firecrawl extraction schema for facility listings
 EXTRACTION_SCHEMA = {
@@ -96,28 +112,43 @@ EXTRACTION_PROMPT = (
 
 # Haiku: cheap structured extraction from directory markdown (Sonnet reserved for judgment tasks).
 DIRECTORY_LLM_MODEL = "claude-haiku-4-5-20251001"
-DIRECTORY_LLM_SYSTEM = """You extract memory-care / dementia-care assisted living facility listings from a commercial directory page (markdown).
+DIRECTORY_LLM_SYSTEM_TMPL = """You extract memory-care / dementia-care assisted living facility listings from a commercial directory page (markdown).
 
-Return ONE JSON object only (no markdown fences): {\"facilities\":[{\"name\":\"\",\"street\":\"\",\"city\":\"\",\"state\":\"\",\"zip\":\"\"},...]}
+Return ONE JSON object only (no markdown fences): {{"facilities":[{{"name":"","street":"","city":"","state":"","zip":""}},...]}}
 
 Rules:
 - Include facilities explicitly listed as memory care, dementia care, Alzheimer's, or similar on this page.
-- Include only rows that appear to be California facilities (state CA or CA cities/zips). Omit other states.
-- Use \"\" for unknown street or zip.
+- Include only rows that appear to be {state_name} facilities (state {state_code} or {state_name} cities/zips). Omit other states.
+- Use "" for unknown street or zip.
 - De-duplicate same name+city.
-- If nothing qualifies, return {\"facilities\":[]}."""
+- If nothing qualifies, return {{"facilities":[]}}."""
 
 
-def _extract_facilities_llm(markdown: str, source_url: str) -> list[dict[str, Any]]:
+def _extract_facilities_llm(
+    markdown: str,
+    source_url: str,
+    *,
+    state_code: str = "CA",
+    state_name: str | None = None,
+) -> list[dict[str, Any]]:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise RuntimeError("ANTHROPIC_API_KEY is not set")
     client = anthropic.Anthropic(api_key=api_key)
     clipped = markdown[:150000]
+    state_code = state_code.upper()
+    if state_name is None:
+        state_name = {
+            "CA": "California", "OR": "Oregon", "WA": "Washington",
+            "MN": "Minnesota", "TX": "Texas",
+        }.get(state_code, state_code)
+    system_prompt = DIRECTORY_LLM_SYSTEM_TMPL.format(
+        state_name=state_name, state_code=state_code
+    )
     msg = client.messages.create(
         model=DIRECTORY_LLM_MODEL,
         max_tokens=8192,
-        system=DIRECTORY_LLM_SYSTEM,
+        system=system_prompt,
         messages=[
             {
                 "role": "user",
@@ -144,7 +175,7 @@ def _extract_facilities_llm(markdown: str, source_url: str) -> list[dict[str, An
                     "name": str(f.get("name", "")).strip(),
                     "street": str(f.get("street", "") or "").strip(),
                     "city": str(f.get("city", "")).strip(),
-                    "state": str(f.get("state", "") or "CA").strip(),
+                    "state": str(f.get("state", "") or state_code).strip(),
                     "zip": str(f.get("zip", "") or "").strip(),
                 }
             )
@@ -221,16 +252,24 @@ def run_firecrawl_command(cmd: list[str], timeout: int = 300) -> dict[str, Any]:
         return {"error": f"Command failed with code {e.returncode}: {e.stderr}"}
 
 
-def discover_city_urls(state_url: str, source_key: str, use_cache: bool = False) -> list[str]:
+def discover_city_urls(
+    state_url: str,
+    source_key: str,
+    *,
+    state_code: str = "CA",
+    use_cache: bool = False,
+) -> list[str]:
     """Discover all city/county URLs for a source using firecrawl map."""
-    cache_file = Path(f".firecrawl/directory-match/{source_key}-city-urls.json")
+    cache_file = Path(
+        f".firecrawl/directory-match/{source_key}-{state_code.lower()}-city-urls.json"
+    )
     
     if use_cache and cache_file.exists():
-        logging.info(f"Using cached city URLs for {source_key}")
+        logging.info(f"Using cached city URLs for {source_key} ({state_code})")
         with open(cache_file, 'r') as f:
             return json.load(f)
     
-    logging.info(f"Discovering city URLs for {source_key}: {state_url}")
+    logging.info(f"Discovering city URLs for {source_key} ({state_code}): {state_url}")
     
     # Use firecrawl map to discover all sub-URLs
     cmd = ["firecrawl", "map", state_url, "--search", "", "--json"]
@@ -262,20 +301,26 @@ def discover_city_urls(state_url: str, source_key: str, use_cache: bool = False)
     return urls
 
 
-def extract_facilities_from_url(url: str, source_key: str) -> dict[str, Any]:
-    """Scrape directory page to markdown, then extract facilities with Sonnet."""
+def extract_facilities_from_url(
+    url: str,
+    source_key: str,
+    state_code: str = "CA",
+) -> dict[str, Any]:
+    """Scrape directory page to markdown, then extract facilities with Haiku."""
     import hashlib
 
     logging.info(f"Extracting facilities from: {url}")
     h = hashlib.md5(url.encode()).hexdigest()[:12]
-    out_md = Path(f".firecrawl/directory-match/_page-{source_key}-{h}.md")
+    out_md = Path(
+        f".firecrawl/directory-match/_page-{source_key}-{state_code.lower()}-{h}.md"
+    )
     markdown = scrape_url_to_markdown(url, out_md, wait_ms=8000)
     if not markdown or len(markdown.strip()) < 40:
         logging.warning(f"Empty markdown for {url}")
         return {"facilities": [], "error": "empty_markdown"}
 
     try:
-        facilities = _extract_facilities_llm(markdown, url)
+        facilities = _extract_facilities_llm(markdown, url, state_code=state_code)
     except Exception as e:
         logging.error(f"LLM extraction failed for {url}: {e}")
         return {"facilities": [], "error": str(e)}
@@ -285,8 +330,8 @@ def extract_facilities_from_url(url: str, source_key: str) -> dict[str, Any]:
     return {"facilities": facilities}
 
 
-def _top_cities_from_db(top_n: int) -> set[str]:
-    """Return the top-N city slugs by LICENSED facility count for CA."""
+def _top_cities_from_db(top_n: int, state_code: str = "CA") -> set[str]:
+    """Return the top-N city slugs by LICENSED facility count for one state."""
     import psycopg
 
     dsn = os.environ.get("DATABASE_URL")
@@ -299,12 +344,12 @@ def _top_cities_from_db(top_n: int) -> set[str]:
             """
             SELECT city
             FROM facilities
-            WHERE state_code='CA' AND license_status='LICENSED'
+            WHERE state_code=%s AND license_status='LICENSED'
             GROUP BY city
             ORDER BY count(*) DESC
             LIMIT %s
             """,
-            (top_n,),
+            (state_code, top_n),
         )
         return {_slug(row[0]) for row in cur.fetchall()}
 
@@ -346,28 +391,35 @@ def _checkpoint_source_urls(output_file: Path) -> set[str]:
 
 def scrape_source(
     source_key: str,
+    sources: dict[str, dict[str, str]],
+    *,
+    state_code: str = "CA",
     max_cities: int = None,
     skip_map: bool = False,
     dry_run: bool = False,
     city_slugs: set[str] | None = None,
     resume: bool = False,
 ) -> dict[str, Any]:
-    """Scrape all facilities from a single source."""
-    source_config = SOURCES[source_key]
-    logging.info(f"Starting scrape of {source_config['name']}")
+    """Scrape all facilities from a single source for the active state."""
+    source_config = sources[source_key]
+    logging.info(f"Starting scrape of {source_config['name']} ({state_code})")
 
     start_time = datetime.now(timezone.utc)
     credits_start = get_current_credits()
 
     if not skip_map:
-        city_urls = discover_city_urls(source_config["state_url"], source_key)
+        city_urls = discover_city_urls(
+            source_config["state_url"], source_key, state_code=state_code
+        )
     else:
-        cache_file = Path(f".firecrawl/directory-match/{source_key}-city-urls.json")
+        cache_file = Path(
+            f".firecrawl/directory-match/{source_key}-{state_code.lower()}-city-urls.json"
+        )
         if cache_file.exists():
             with open(cache_file, 'r') as f:
                 city_urls = json.load(f)
         else:
-            logging.error(f"No cached URLs found for {source_key} and --skip-map specified")
+            logging.error(f"No cached URLs found for {source_key} ({state_code}) and --skip-map specified")
             return {"error": "No cached URLs"}
 
     if city_slugs:
@@ -416,7 +468,7 @@ def scrape_source(
     for i, url in enumerate(city_urls, 1):
         logging.info(f"Processing {i}/{len(city_urls)}: {url}")
 
-        result = extract_facilities_from_url(url, source_key)
+        result = extract_facilities_from_url(url, source_key, state_code=state_code)
 
         if "error" in result:
             failed_urls.append({"url": url, "error": result["error"]})
@@ -537,13 +589,17 @@ def _checkpoint_save(
     )
 
 
-def save_results(results: dict[str, Any], source_key: str) -> None:
+def save_results(
+    results: dict[str, Any],
+    source_key: str,
+    sources: dict[str, dict[str, str]],
+) -> None:
     """Merge new results with any existing JSON file (dedupe by name+city+zip).
 
     The smoke-test run already wrote a file. Subsequent runs add new facilities
     without trampling earlier results. Metadata fields reflect the latest run.
     """
-    output_file = Path(SOURCES[source_key]["output_file"])
+    output_file = Path(sources[source_key]["output_file"])
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
     merged_facilities: list[dict[str, Any]] = []
@@ -587,10 +643,16 @@ def save_results(results: dict[str, Any], source_key: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Scrape memory care directories")
-    
+
+    parser.add_argument(
+        "--state",
+        default="CA",
+        choices=list(STATE_NAMES.keys()),
+        help="State code to scrape (default: CA).",
+    )
     parser.add_argument(
         "--source",
-        choices=list(SOURCES.keys()) + ["all"],
+        choices=["apfm", "caring", "all"],
         default="all",
         help="Source to scrape (default: all)"
     )
@@ -645,34 +707,39 @@ def main() -> None:
     load_env()
     logger = setup_logging()
 
+    state_code = args.state.upper()
+    sources = sources_for_state(state_code)
+
     city_slugs: set[str] | None = None
     if args.cities:
         city_slugs = {_slug(c) for c in args.cities.split(",") if c.strip()}
         logger.info(f"--cities filter: {sorted(city_slugs)}")
     elif args.cities_from_db:
-        city_slugs = _top_cities_from_db(args.cities_from_db)
-        logger.info(f"--cities-from-db top-{args.cities_from_db}: {sorted(city_slugs)}")
+        city_slugs = _top_cities_from_db(args.cities_from_db, state_code=state_code)
+        logger.info(
+            f"--cities-from-db top-{args.cities_from_db} ({state_code}): {sorted(city_slugs)}"
+        )
 
     max_cities = None if args.full else args.max_cities
     
     if not args.full and not args.dry_run:
         logger.info(f"SMOKE TEST MODE: Limited to {args.max_cities} cities per source. Use --full for complete scrape.")
     
-    # Determine which sources to scrape
     if args.source == "all":
-        sources_to_scrape = list(SOURCES.keys())
+        sources_to_scrape = list(sources.keys())
     else:
         sources_to_scrape = [args.source]
     
-    # Scrape each source
     for source_key in sources_to_scrape:
         logger.info(f"\n{'='*60}")
-        logger.info(f"SCRAPING {SOURCES[source_key]['name'].upper()}")
+        logger.info(f"SCRAPING {sources[source_key]['name'].upper()} ({state_code})")
         logger.info(f"{'='*60}")
         
         try:
             results = scrape_source(
                 source_key=source_key,
+                sources=sources,
+                state_code=state_code,
                 max_cities=max_cities,
                 skip_map=args.skip_map,
                 dry_run=args.dry_run,
@@ -681,7 +748,7 @@ def main() -> None:
             )
             
             if not args.dry_run and "error" not in results:
-                save_results(results, source_key)
+                save_results(results, source_key, sources)
                 
                 # Print sample facilities
                 facilities = results.get("facilities", [])

@@ -111,15 +111,28 @@ def get_after_counts(conn: psycopg.Connection, state_code: str) -> dict[str, int
 
 
 def recompute_serves_memory_care(
-    conn: psycopg.Connection, 
-    state_code: str, 
-    dry_run: bool = False
+    conn: psycopg.Connection,
+    state_code: str,
+    dry_run: bool = False,
 ) -> int:
     """
-    Recompute serves_memory_care from Tier 1 signals + manual approvals.
-    Returns count of rows updated.
+    Recompute serves_memory_care using the unified Option C tier-1 signal model.
+
+    Core signals (all states):
+      - mc_signal_explicit_name: name keywords ("memory care", "Alzheimer", "dementia")
+      - memory_care_disclosure_filed: government regulatory confirmation filed
+      - mc_signal_chain_curated: hand-verified chain match (APFM, SH, Benchmark, etc.)
+      - mc_signal_apfm_listed AND mc_signal_caring_listed: both major directories agree
+      - mc_review_status = 'reviewed_publish': manually adjudicated by admin
+
+    Additional state-specific Tier-1 signals (override for each state):
+      - WA: wa_dementia_care_contract — DSHS Dementia Care contract (already maps to
+             memory_care_disclosure_filed=true in wa_dshs_directory_ingest.py, kept here
+             as belt-and-suspenders)
+      - OR: or_memory_care_endorsed — OHA Memory Care Endorsement
+      - MN: mn_dementia_care_licensed — MDH ALDC license
+      - TX: tx_alzheimer_certified — HHSC Alzheimer Certification
     """
-    # Option C: directories count only when BOTH APFM and Caring agree (plus gov/chain tier-1).
     sql = """
         UPDATE facilities
         SET serves_memory_care = (
@@ -128,42 +141,74 @@ def recompute_serves_memory_care(
           OR mc_signal_chain_curated
           OR (mc_signal_apfm_listed AND mc_signal_caring_listed)
           OR mc_review_status = 'reviewed_publish'
+          -- State-specific Tier-1 signals
+          OR (state_code = 'WA' AND wa_dementia_care_contract = true)
+          OR (state_code = 'OR' AND or_memory_care_endorsed = true)
+          OR (state_code = 'MN' AND mn_dementia_care_licensed = true)
+          OR (state_code = 'TX' AND tx_alzheimer_certified = true)
         )
         WHERE state_code = %s
     """
-    
+
     if dry_run:
-        print("  Step 1: Would recompute serves_memory_care from Tier 1 signals + manual approvals")
+        print("  Step 1: Would recompute serves_memory_care from unified Option C + state-specific Tier-1 signals")
         return 0
-    
+
     with conn.cursor() as cur:
         cur.execute(sql, (state_code,))
         return cur.rowcount
 
 
+# Freshness gate per state (months). CA has no freshness gate — CDSS is comprehensive.
+_FRESHNESS_MONTHS: dict[str, int | None] = {
+    "CA": None,
+    "TX": 48,
+    "OR": 36,
+    "MN": 48,
+    "WA": 48,
+}
+
+
 def recompute_publishable(
-    conn: psycopg.Connection, 
-    state_code: str, 
-    dry_run: bool = False
+    conn: psycopg.Connection,
+    state_code: str,
+    dry_run: bool = False,
 ) -> int:
     """
     Recompute publishable from serves_memory_care + license status + review status.
-    Returns count of rows updated.
+
+    For non-CA states a freshness override is applied: at least one inspection must
+    exist within _FRESHNESS_MONTHS months. This ensures we don't surface stale or
+    data-shallow facilities while the CA-style signal model promotes them.
     """
-    sql = """
-        UPDATE facilities 
+    freshness_months = _FRESHNESS_MONTHS.get(state_code.upper())
+
+    if freshness_months is not None:
+        freshness_clause = f"""
+          AND EXISTS (
+            SELECT 1 FROM inspections i
+            WHERE i.facility_id = facilities.id
+              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{freshness_months} months')
+          )"""
+    else:
+        freshness_clause = ""
+
+    sql = f"""
+        UPDATE facilities
         SET publishable = (
           license_status = 'LICENSED'
           AND serves_memory_care = true
           AND mc_review_status <> 'reviewed_reject'
+          {freshness_clause}
         )
         WHERE state_code = %s
     """
-    
+
     if dry_run:
-        print("  Step 2: Would recompute publishable from serves_memory_care + license + review status")
+        gate = f"+ ≥1 inspection in {freshness_months} months" if freshness_months else "(no freshness gate)"
+        print(f"  Step 2: Would recompute publishable from serves_memory_care + license + review_status {gate}")
         return 0
-    
+
     with conn.cursor() as cur:
         cur.execute(sql, (state_code,))
         return cur.rowcount
@@ -232,167 +277,11 @@ def mark_single_directory_for_review(
         return cur.rowcount
 
 
+# Legacy constants — kept for reference; freshness logic now lives in _FRESHNESS_MONTHS
 TX_PUBLISH_GATE_MONTHS = 48
-"""
-Months of inspection freshness required for a TX facility to be publishable.
-
-Bumped from 36 → 48 (2026-05) after first TULIP smoke captures showed:
-  - HHSC ALFs are surveyed annually-ish but TULIP's history surface is shallow,
-  - Many facilities' "most recent comprehensive" date is 2-4 years old,
-  - 36 months left otherwise-active facilities unpublishable, with no signal
-    distinguishing "stale data" from "abandoned site".
-
-Capture-everything-now policy: inspections + deficiencies are still ingested
-regardless of freshness; this gate only controls hub visibility. Tighten back
-toward 36 once we have confident bulk PIA history.
-"""
-
-
-def recompute_texas_publishable(
-    conn: psycopg.Connection,
-    dry_run: bool = False,
-) -> int:
-    """
-    Texas: publishable = LICENSED + Alzheimer certification + at least one inspection
-    in the last TX_PUBLISH_GATE_MONTHS months (and not manually rejected).
-    Non–Alzheimer-certified rows stay unpublishable. Does not touch
-    `serves_memory_care` (set by tx_alf_ingest).
-    """
-    sql = f"""
-        UPDATE facilities
-        SET publishable = (
-          license_status = 'LICENSED'
-          AND tx_alzheimer_certified = true
-          AND mc_review_status <> 'reviewed_reject'
-          AND EXISTS (
-            SELECT 1 FROM inspections i
-            WHERE i.facility_id = facilities.id
-              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{TX_PUBLISH_GATE_MONTHS} months')
-          )
-        )
-        WHERE state_code = 'TX'
-          AND license_status = 'LICENSED'
-    """
-    if dry_run:
-        print(
-            f"  TX: Would set publishable for Alzheimer-certified facilities with "
-            f"≥1 inspection in {TX_PUBLISH_GATE_MONTHS} months"
-        )
-        return 0
-    with conn.cursor() as cur:
-        cur.execute(sql)
-        return cur.rowcount
-
-
 OR_PUBLISH_GATE_MONTHS = 36
-
-
-def recompute_oregon_publishable(
-    conn: psycopg.Connection,
-    dry_run: bool = False,
-) -> int:
-    """
-    Oregon: publishable = LICENSED + memory-care endorsement + ≥1 inspection
-    within OR_PUBLISH_GATE_MONTHS (not manually rejected).
-    """
-    sql = f"""
-        UPDATE facilities
-        SET publishable = (
-          license_status = 'LICENSED'
-          AND or_memory_care_endorsed = true
-          AND mc_review_status <> 'reviewed_reject'
-          AND EXISTS (
-            SELECT 1 FROM inspections i
-            WHERE i.facility_id = facilities.id
-              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{OR_PUBLISH_GATE_MONTHS} months')
-          )
-        )
-        WHERE state_code = 'OR'
-          AND license_status = 'LICENSED'
-    """
-    if dry_run:
-        print(
-            f"  OR: Would set publishable for endorsed facilities with "
-            f"≥1 inspection in {OR_PUBLISH_GATE_MONTHS} months"
-        )
-        return 0
-    with conn.cursor() as cur:
-        cur.execute(sql)
-        return cur.rowcount
-
-
 MN_PUBLISH_GATE_MONTHS = 48
-
-
-def recompute_minnesota_publishable(
-    conn: psycopg.Connection,
-    dry_run: bool = False,
-) -> int:
-    """Minnesota: serves_memory_care + publishable = LICENSED + dementia-care flag + fresh inspection."""
-    smc_sql = """
-        UPDATE facilities
-        SET serves_memory_care = mn_dementia_care_licensed
-        WHERE state_code = 'MN'
-    """
-    pub_sql = f"""
-        UPDATE facilities
-        SET publishable = (
-          license_status = 'LICENSED'
-          AND mn_dementia_care_licensed = true
-          AND mc_review_status <> 'reviewed_reject'
-          AND EXISTS (
-            SELECT 1 FROM inspections i
-            WHERE i.facility_id = facilities.id
-              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{MN_PUBLISH_GATE_MONTHS} months')
-          )
-        )
-        WHERE state_code = 'MN'
-          AND license_status = 'LICENSED'
-    """
-    if dry_run:
-        print(
-            f"  MN: Would set serves_memory_care = mn_dementia_care_licensed and "
-            f"publishable for dementia-care rows with ≥1 inspection in {MN_PUBLISH_GATE_MONTHS} months"
-        )
-        return 0
-    with conn.cursor() as cur:
-        cur.execute(smc_sql)
-        cur.execute(pub_sql)
-        return cur.rowcount
-
-
 WA_PUBLISH_GATE_MONTHS = 48
-
-
-def recompute_washington_publishable(
-    conn: psycopg.Connection,
-    dry_run: bool = False,
-) -> int:
-    """Washington: publishable = LICENSED + Dementia Care contract + fresh inspection."""
-    sql = f"""
-        UPDATE facilities
-        SET publishable = (
-          license_status = 'LICENSED'
-          AND wa_dementia_care_contract = true
-          AND mc_review_status <> 'reviewed_reject'
-          AND EXISTS (
-            SELECT 1 FROM inspections i
-            WHERE i.facility_id = facilities.id
-              AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{WA_PUBLISH_GATE_MONTHS} months')
-          )
-        )
-        WHERE state_code = 'WA'
-          AND license_status = 'LICENSED'
-    """
-    if dry_run:
-        print(
-            f"  WA: Would set publishable for dementia-contract rows with "
-            f"≥1 inspection in {WA_PUBLISH_GATE_MONTHS} months"
-        )
-        return 0
-    with conn.cursor() as cur:
-        cur.execute(sql)
-        return cur.rowcount
 
 
 def promote_queue_with_tier1_signals(
@@ -483,25 +372,14 @@ def main() -> None:
         step3a_updated = 0
         step3b_updated = 0
 
-        state_u = args.state.upper()
-        if state_u == "TX":
-            # Do not run CA directory / disclosure tier logic against Texas rows.
-            step2_updated = recompute_texas_publishable(conn, args.dry_run)
-        elif state_u == "OR":
-            step2_updated = recompute_oregon_publishable(conn, args.dry_run)
-        elif state_u == "MN":
-            step2_updated = recompute_minnesota_publishable(conn, args.dry_run)
-        elif state_u == "WA":
-            step2_updated = recompute_washington_publishable(conn, args.dry_run)
-        else:
-            # Execute the recompute steps in order. Step 4 (promote) runs BEFORE
-            # step 3 (queue chain-only) so promotions don't get re-queued in the
-            # same run.
-            step1_updated = recompute_serves_memory_care(conn, args.state, args.dry_run)
-            step2_updated = recompute_publishable(conn, args.state, args.dry_run)
-            step4_updated = promote_queue_with_tier1_signals(conn, args.state, args.dry_run)
-            step3a_updated = mark_chain_only_for_review(conn, args.state, args.dry_run)
-            step3b_updated = mark_single_directory_for_review(conn, args.state, args.dry_run)
+        # Unified path for all states (Option C tier model + state-specific freshness gate).
+        # Step 4 (promote) runs BEFORE step 3 (queue chain-only) so promotions
+        # don't get re-queued in the same run.
+        step1_updated = recompute_serves_memory_care(conn, args.state, args.dry_run)
+        step2_updated = recompute_publishable(conn, args.state, args.dry_run)
+        step4_updated = promote_queue_with_tier1_signals(conn, args.state, args.dry_run)
+        step3a_updated = mark_chain_only_for_review(conn, args.state, args.dry_run)
+        step3b_updated = mark_single_directory_for_review(conn, args.state, args.dry_run)
 
         if not args.dry_run:
             conn.commit()

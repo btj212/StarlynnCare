@@ -65,8 +65,14 @@ def facility_slug(name: str, alrc_id: int) -> str:
     return f"{slugify(name)}-mn{alrc_id}"
 
 
-def load_excel_aldc(xlsx_path: Path) -> list[dict[str, Any]]:
-    """Load ALDC rows from ALRC Excel (License column contains 'dementia')."""
+def load_excel_all_alfs(xlsx_path: Path) -> list[dict[str, Any]]:
+    """
+    Load ALL ALF rows from ALRC Excel — both ALDC (Assisted Living with Dementia Care)
+    and standard AL (Assisted Living without dementia care designation).
+
+    ALDC rows are identified by "dementia" in the license column.
+    All other non-empty rows are standard ALF entries.
+    """
     try:
         import openpyxl  # noqa: PLC0415
     except ImportError:
@@ -84,7 +90,7 @@ def load_excel_aldc(xlsx_path: Path) -> list[dict[str, Any]]:
         capacity = row[3]
         license_text = str(row[4] or "").strip()
 
-        if not name or "dementia" not in license_text.lower():
+        if not name:
             continue
 
         # Map ALRC license status to canonical DB value
@@ -96,6 +102,8 @@ def load_excel_aldc(xlsx_path: Path) -> list[dict[str, Any]]:
         else:
             db_license_status = None
 
+        is_aldc = "dementia" in lic_lower
+
         records.append({
             "name": titleize(name),
             "city": city,
@@ -103,8 +111,11 @@ def load_excel_aldc(xlsx_path: Path) -> list[dict[str, Any]]:
             "capacity": int(capacity) if capacity else None,
             "license_status": license_text,
             "db_license_status": db_license_status,
+            "is_aldc": is_aldc,
         })
 
+    aldc = sum(1 for r in records if r["is_aldc"])
+    print(f"  ALDC (with dementia care): {aldc}, standard AL: {len(records)-aldc}, total: {len(records)}")
     return records
 
 
@@ -142,15 +153,17 @@ def upsert_facility(
                 name, street, city, zip,
                 city_slug, slug,
                 beds, facility_type,
-                mn_dementia_care_licensed, mn_hfid, mn_all_capacity,
-                serves_memory_care, publishable
+                mn_dementia_care_licensed, mn_hfid, mn_all_capacity, mn_lic_type,
+                serves_memory_care, publishable,
+                care_category, mc_review_status
             ) VALUES (
                 %(state_code)s, %(license_number)s, %(license_type)s, %(db_license_status)s,
                 %(name)s, %(street)s, %(city)s, %(zip)s,
                 %(city_slug)s, %(slug)s,
                 %(beds)s, %(facility_type)s,
-                %(mn_dementia_care_licensed)s, %(mn_hfid)s, %(mn_all_capacity)s,
-                false, false
+                %(mn_dementia_care_licensed)s, %(mn_hfid)s, %(mn_all_capacity)s, %(mn_lic_type)s,
+                false, false,
+                %(care_category)s, %(mc_review_status)s
             )
             ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
                 name                     = EXCLUDED.name,
@@ -161,7 +174,14 @@ def upsert_facility(
                 beds                     = COALESCE(EXCLUDED.beds, facilities.beds),
                 mn_dementia_care_licensed = EXCLUDED.mn_dementia_care_licensed,
                 mn_hfid                  = COALESCE(EXCLUDED.mn_hfid, facilities.mn_hfid),
-                mn_all_capacity          = COALESCE(EXCLUDED.mn_all_capacity, facilities.mn_all_capacity)
+                mn_all_capacity          = COALESCE(EXCLUDED.mn_all_capacity, facilities.mn_all_capacity),
+                mn_lic_type              = COALESCE(EXCLUDED.mn_lic_type, facilities.mn_lic_type),
+                care_category            = EXCLUDED.care_category,
+                mc_review_status         = CASE
+                    WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject')
+                    THEN facilities.mc_review_status
+                    ELSE EXCLUDED.mc_review_status
+                END
             RETURNING id::text
             """,
             record,
@@ -190,12 +210,12 @@ def main() -> int:
         print("ERROR: DATABASE_URL not set", file=sys.stderr)
         return 1
 
-    # Load Excel ALDC rows
+    # Load all ALF rows (both ALDC and standard AL)
     if not args.xlsx.is_file():
         print(f"ERROR: xlsx not found: {args.xlsx}", file=sys.stderr)
         return 1
-    excel_rows = load_excel_aldc(args.xlsx)
-    print(f"Loaded {len(excel_rows)} ALDC rows from Excel")
+    excel_rows = load_excel_all_alfs(args.xlsx)
+    print(f"Loaded {len(excel_rows)} total ALF rows from Excel")
 
     # Load address map (name+city → street/zip/alrc_id)
     addr_map: dict[tuple[str, str], dict[str, Any]] = {}
@@ -209,15 +229,14 @@ def main() -> int:
     else:
         print(f"WARNING: addresses JSON not found: {args.addresses}")
 
-    # Load ALRC ID map from facilities JSON
+    # Load ALRC ID map from facilities JSON (all ALFs, not just ALDC)
     fac_alrc_map: dict[tuple[str, str], int] = {}
     if args.facilities_json.is_file():
         raw_facs = json.loads(args.facilities_json.read_text())
         for r in raw_facs:
-            if r.get("is_aldc"):
-                key = (r["name"].strip().lower(), r["city"].strip().lower())
-                fac_alrc_map[key] = r["alrc_id"]
-        print(f"Loaded {len(fac_alrc_map)} ALDC facility IDs")
+            key = (r["name"].strip().lower(), r["city"].strip().lower())
+            fac_alrc_map[key] = r["alrc_id"]
+        print(f"Loaded {len(fac_alrc_map)} facility IDs from ALRC JSON")
     else:
         print(f"WARNING: facilities JSON not found: {args.facilities_json}")
 
@@ -254,10 +273,11 @@ def main() -> int:
             city_slug = slugify(row["city"])
             slug = facility_slug(row["name"], alrc_id or 0)
 
+            is_aldc = row.get("is_aldc", False)
             record = {
                 "state_code": STATE_CODE,
                 "license_number": license_number,
-                "license_type": "ALDC",
+                "license_type": "ALDC" if is_aldc else "AL",
                 "db_license_status": row.get("db_license_status"),
                 "name": row["name"],
                 "street": street,
@@ -266,10 +286,13 @@ def main() -> int:
                 "city_slug": city_slug,
                 "slug": slug,
                 "beds": row["capacity"],
-                "facility_type": "Assisted Living with Dementia Care",
-                "mn_dementia_care_licensed": True,
+                "facility_type": "Assisted Living with Dementia Care" if is_aldc else "Assisted Living",
+                "mn_dementia_care_licensed": is_aldc,
                 "mn_hfid": mn_hfid,
                 "mn_all_capacity": row["capacity"],
+                "mn_lic_type": "ALDC" if is_aldc else "AL",
+                "care_category": "alf_memory_care" if is_aldc else "alf_general",
+                "mc_review_status": "auto_published" if is_aldc else "needs_review",
             }
 
             if args.dry_run:

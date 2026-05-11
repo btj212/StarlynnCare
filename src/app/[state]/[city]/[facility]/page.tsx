@@ -186,6 +186,16 @@ export default async function FacilityPage({ params }: PageProps) {
         {/* § 07 · Full verbatim inspection record */}
         <FacilityFullInspections profile={profile} />
 
+        {/* Free-tier display cap notice */}
+        {profile.hiddenOlderCount > 0 && profile.oldestHiddenYear !== null && (
+          <div className="mx-auto max-w-[1280px] px-4 md:px-8 pb-2">
+            <p className="text-[12.5px] text-ink-3 font-[family-name:var(--font-mono)]">
+              {profile.hiddenOlderCount} older inspection{profile.hiddenOlderCount !== 1 ? "s" : ""}{" "}
+              ({profile.oldestHiddenYear}–{new Date().getFullYear() - 3}) are available with a premium membership.
+            </p>
+          </div>
+        )}
+
         {/* § 08 · Nearby sibling facilities */}
         <FacilitySiblings profile={profile} />
 

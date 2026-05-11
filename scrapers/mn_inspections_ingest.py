@@ -2,11 +2,14 @@
 """
 Minnesota MDH — inspection / deficiency ingest.
 
-Loads format_version: 1 bundles (from `mn_mdh_to_bundle.py` / `tx_pia_to_bundle.py`) into
-`inspections` + `deficiencies` for facilities with `mn_dementia_care_licensed = true`.
+Loads format_version: 1 bundles (from `mn_mdh_to_bundle.py` / `tx_pia_to_bundle.py`)
+into `inspections` + `deficiencies` for all LICENSED Minnesota facilities.
+
+Pass `--dementia-only` to keep the legacy scope (`mn_dementia_care_licensed = true`).
 
 Usage:
   python3 scrapers/mn_inspections_ingest.py --import-json path/to/bundle.json
+  python3 scrapers/mn_inspections_ingest.py --import-json path/to/bundle.json --dementia-only
   python3 scrapers/mn_inspections_ingest.py --smoke
 """
 
@@ -32,9 +35,19 @@ SCRAPERS_DIR = Path(__file__).resolve().parent
 
 
 def pad_license_mn(raw: Any) -> str:
+    """
+    Normalize a license_number for MN bundle-lookup. Preserves the `ALRC:{id}`
+    form used by mn_alrc_ingest.py / mn_mdh_to_bundle.py — that's how MN rows
+    are keyed in the `facilities` table (since the offline MDH bulk download
+    means we don't have real HFIDs yet). Only purely numeric inputs get
+    10-zero-padded for the old MDH-numeric matching path.
+    """
     if raw is None or str(raw).strip() == "":
         return "0000000000"
-    digits = re.sub(r"\D", "", str(raw))
+    raw_s = str(raw).strip()
+    if raw_s.upper().startswith("ALRC:"):
+        return raw_s
+    digits = re.sub(r"\D", "", raw_s)
     if not digits:
         return "0000000000"
     return digits.zfill(10)
@@ -44,7 +57,10 @@ STATE_CODE = "MN"
 SCRAPER_NAME = "mn_mdh_inspections"
 SOURCE_AGENCY = "MN MDH Health Regulation"
 SMOKE_FIXTURE = SCRAPERS_DIR / "fixtures" / "mn_inspections_smoke.json"
-REQUEST_DELAY_SECS = 1.0
+# Bundle ingest is DB-only — no external API in the per-facility loop — so
+# this delay can be near-zero for the broader 2k-facility universe. Kept
+# small (100ms) to give Postgres some breathing room between commits.
+REQUEST_DELAY_SECS = 0.1
 
 _SEVERITY_HINTS: list[tuple[tuple[str, ...], int]] = [
     (("immediate jeopardy", "ij", "priority 1", "i/j"), 4),
@@ -113,14 +129,16 @@ def fetch_target_facilities(
     *,
     license_filter: str | None,
     limit: int | None,
+    dementia_only: bool = False,
 ) -> list[dict[str, Any]]:
     q = """
         SELECT id::text, name, license_number
         FROM facilities
         WHERE state_code = 'MN'
-          AND mn_dementia_care_licensed = true
           AND license_status = 'LICENSED'
     """
+    if dementia_only:
+        q += " AND mn_dementia_care_licensed = true"
     params: list[Any] = []
     if license_filter:
         q += " AND license_number = %s"
@@ -401,6 +419,11 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--license", type=str, default=None)
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument(
+        "--dementia-only",
+        action="store_true",
+        help="Limit to mn_dementia_care_licensed facilities (legacy ALDC-only behaviour).",
+    )
     args = parser.parse_args()
 
     load_env()
@@ -425,11 +448,15 @@ def main() -> None:
     else:
         with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
             facilities = fetch_target_facilities(
-                conn, license_filter=args.license, limit=args.limit
+                conn,
+                license_filter=args.license,
+                limit=args.limit,
+                dementia_only=args.dementia_only,
             )
 
     if not args.dry_run and not facilities:
-        print("No MN dementia-care LICENSED facilities matched.")
+        scope = "dementia-care " if args.dementia_only else ""
+        print(f"No MN {scope}LICENSED facilities matched.")
         sys.exit(0)
 
     paired = match_bundle_to_facilities(bundle, facilities, dry_run=args.dry_run)

@@ -46,12 +46,20 @@ except ImportError:
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / ".firecrawl" / "directory-match"
-SOURCES = {
-    "apfm": ("apfm-ca-mc.json", "mc_signal_apfm_listed"),
-    "caring": ("caring-ca-mc.json", "mc_signal_caring_listed"),
+
+# Maps source key → DB column to set on a successful match. The JSON filename
+# is derived from the active state code so the same fixed source key works
+# across states (e.g., apfm-ca-mc.json, apfm-or-mc.json, …).
+SOURCE_COLUMNS = {
+    "apfm": "mc_signal_apfm_listed",
+    "caring": "mc_signal_caring_listed",
 }
 
-STATE_CODE = "CA"
+
+def source_json_path(source_key: str, state_code: str) -> Path:
+    return DATA_DIR / f"{source_key}-{state_code.lower()}-mc.json"
+
+
 DEFAULT_FUZZY_THRESHOLD = 85
 
 
@@ -97,6 +105,7 @@ def upsert_directory(
     conn: psycopg.Connection,
     json_path: Path,
     column: str,
+    state_code: str,
     threshold: int,
     dry_run: bool,
 ) -> tuple[int, int, int]:
@@ -121,7 +130,7 @@ def upsert_directory(
         if city not in by_city:
             cur.execute(
                 "SELECT id, name FROM facilities WHERE state_code=%s AND license_status='LICENSED' AND city ILIKE %s",
-                (STATE_CODE, city),
+                (state_code, city),
             )
             by_city[city] = list(cur.fetchall())
 
@@ -157,7 +166,12 @@ def upsert_directory(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", choices=list(SOURCES) + ["all"], default="all")
+    parser.add_argument(
+        "--state", default="CA", help="State code to upsert (default: CA)"
+    )
+    parser.add_argument(
+        "--source", choices=list(SOURCE_COLUMNS) + ["all"], default="all"
+    )
     parser.add_argument("--threshold", type=int, default=DEFAULT_FUZZY_THRESHOLD)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -167,15 +181,22 @@ def main() -> None:
         print("DATABASE_URL not set", file=sys.stderr)
         sys.exit(1)
 
-    sources = list(SOURCES) if args.source == "all" else [args.source]
+    state_code = args.state.upper()
+    sources = list(SOURCE_COLUMNS) if args.source == "all" else [args.source]
 
     with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
         totals = {"listings": 0, "matched": 0, "updated": 0}
         for src in sources:
-            json_name, column = SOURCES[src]
-            print(f"\n=== {src.upper()} ===")
+            column = SOURCE_COLUMNS[src]
+            json_path = source_json_path(src, state_code)
+            print(f"\n=== {src.upper()} ({state_code}) ===")
             listings, matched, updated = upsert_directory(
-                conn, DATA_DIR / json_name, column, args.threshold, args.dry_run
+                conn,
+                json_path,
+                column,
+                state_code,
+                args.threshold,
+                args.dry_run,
             )
             print(f"  listings={listings}  matched={matched}  updated={updated}")
             totals["listings"] += listings
@@ -186,7 +207,7 @@ def main() -> None:
             conn.commit()
 
         print()
-        print("=== Totals ===")
+        print(f"=== Totals ({state_code}) ===")
         for k, v in totals.items():
             print(f"  {k:<10} {v}")
 
