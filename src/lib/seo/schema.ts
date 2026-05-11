@@ -2,6 +2,14 @@ import type { Review } from "@/components/reviews/ReviewCard";
 import type { Facility } from "@/lib/types";
 import { stateFromCode, type StateInfo } from "@/lib/states";
 import type { Region } from "@/lib/regions";
+
+/**
+ * Free-tier display cap — must match INSPECTION_DISPLAY_YEARS in loadFacilityProfile.ts.
+ * Re-declared here to avoid a circular import (loadFacilityProfile → schema → loadFacilityProfile).
+ * Any inspection/deficiency data surfaced in JSON-LD builders (via the `extras` arg or similar)
+ * is already pre-filtered to this window before being passed in.
+ */
+const INSPECTION_DISPLAY_YEARS = 3; // eslint-disable-line @typescript-eslint/no-unused-vars
 import {
   STARLYNN_AUTHOR_IMAGE_PATH,
   STARLYNN_AUTHOR_LICENSE,

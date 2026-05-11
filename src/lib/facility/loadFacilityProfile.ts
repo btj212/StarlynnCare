@@ -18,6 +18,9 @@
 import { notFound } from "next/navigation";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { regionFromSlug } from "@/lib/regions";
+
+/** Free-tier display cap: show at most this many years of inspection history. */
+export const INSPECTION_DISPLAY_YEARS = 3;
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { stateFromSlug } from "@/lib/states";
 import { getStateProfileConfig } from "@/lib/states/profileConfig";
@@ -29,11 +32,18 @@ import {
   buildLocalBusinessForFacility,
   buildReviewSchema,
 } from "@/lib/seo/schema";
-import type { Facility, Deficiency } from "@/lib/types";
+import type { Facility, Deficiency, DataDepth, InspectionVisibilityTier } from "@/lib/types";
 import type { StateProfileConfig, Rule } from "@/lib/states/profileConfig";
 import type { Review } from "@/components/reviews/ReviewCard";
 import type { Region } from "@/lib/regions";
 import type { StateInfo } from "@/lib/states";
+
+// ─────────────────────────────────────────────────────────────────
+// Display constants
+// ─────────────────────────────────────────────────────────────────
+
+/** Free-tier inspection history window (years). Older records remain in DB for premium. */
+const INSPECTION_DISPLAY_YEARS = 3;
 
 // ─────────────────────────────────────────────────────────────────
 // Raw DB row types (narrower than full Inspection / Deficiency)
@@ -150,9 +160,9 @@ export interface FacilityProfile {
   county: { name: string; slug: string } | null;
   cfg: StateProfileConfig;
 
-  /** Inspection rows, most-recent-first. */
+  /** Inspection rows within the 3-year display window, most-recent-first. */
   inspections: InspectionRow[];
-  /** Deficiency rows keyed by inspection_id. */
+  /** Deficiency rows keyed by inspection_id (only for visible inspections). */
   deficienciesByInspection: Map<string, DeficiencyRow[]>;
   totals: {
     inspections: number;
@@ -160,6 +170,10 @@ export interface FacilityProfile {
     typeA: number;
     lastCitation: string | null;
   };
+  /** Count of inspections older than INSPECTION_DISPLAY_YEARS that are hidden in free tier. */
+  hiddenOlderCount: number;
+  /** Year of the oldest inspection on record (used for footer copy). Null when no inspections exist. */
+  oldestHiddenYear: number | null;
 
   /** Raw output from facility_snapshot() RPC. null when unavailable. */
   snapshot: SnapshotPayload | null;
@@ -387,11 +401,29 @@ export async function loadFacilityProfile(params: {
   const region = regionFromSlug(stateSlug, regionSlug);
   const countyHub = countyRegionContainingCitySlug(state.code, facility.city_slug);
 
-  const [{ inspections, deficiencies }, snapshot, reviews] = await Promise.all([
+  const [{ inspections: allInspections, deficiencies: allDeficiencies }, snapshot, reviews] = await Promise.all([
     fetchInspectionsAndDeficiencies(facility.id),
     fetchSnapshot(facility.id),
     loadPublishedReviews(facility.id),
   ]);
+
+  // ── Free-tier display cap ──────────────────────────────────────────────────
+  // Only show inspections from the past INSPECTION_DISPLAY_YEARS years.
+  // All data stays in the DB; this is view-layer filtering only.
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - INSPECTION_DISPLAY_YEARS);
+  const cutoffStr = cutoff.toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+  const inspections = allInspections.filter((i) => i.inspection_date >= cutoffStr);
+  const hiddenOlderCount = allInspections.length - inspections.length;
+  const oldestHiddenYear =
+    allInspections.length > 0
+      ? Math.min(...allInspections.map((i) => new Date(i.inspection_date).getUTCFullYear()))
+      : null;
+
+  const visibleInspectionIds = new Set(inspections.map((i) => i.id));
+  const deficiencies = allDeficiencies.filter((d) => visibleInspectionIds.has(d.inspection_id));
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Build deficiency map
   const deficienciesByInspection = new Map<string, DeficiencyRow[]>();
@@ -502,6 +534,8 @@ export async function loadFacilityProfile(params: {
       typeA: typeACount,
       lastCitation,
     },
+    hiddenOlderCount,
+    oldestHiddenYear,
 
     snapshot,
     timeline,
