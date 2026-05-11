@@ -72,7 +72,7 @@ def main() -> None:
     # --- Fetch candidates ---
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
-            where = ["photo_url ILIKE '%maps.googleapis.com%'"]
+            where = ["photo_url ILIKE '%%maps.googleapis.com%%'"]
             params: list = []
             if args.state:
                 where.append("state_code = %s")
