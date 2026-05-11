@@ -4,16 +4,18 @@ Minnesota MDH — findings API JSON → format_version:1 bundle.
 
 Converts the raw response from `providerdata-api.web.health.state.mn.us/search`
 (produced by mn_mdh_inspections_scrape.py) into a format_version:1 inspection
-bundle, filtered to only ALDC (Assisted Living with Dementia Care) facilities.
+bundle for all licensed Minnesota assisted-living facilities.
 
-ALDC identification: cross-references MDH HFID and name+city against the
-ALRC facility JSON (mn-alrc-facilities-*.json) produced by mn_alrc_scrape.py.
-Facilities matched to ALDC entries in the ALRC are included in the bundle;
-all other ALFs are skipped.
+Cross-reference: MDH provider records are matched by slugified name+city
+against the ALRC facility JSON (mn-alrc-facilities-*.json), which is the
+canonical ID source for MN rows in `facilities` (license_number = `ALRC:{id}`).
+The bundle covers ALL ALFs in the ALRC export — both ALDC (Assisted Living
+with Dementia Care) and standard AL — so the unified Tier-1 signal model in
+`recompute_publishable.py` has freshness coverage for the whole MN roster,
+not just the dementia subset.
 
-The bundle uses the facility's `mn_hfid` field (`ALRC:{id}`) as the
-`license_number` key (matching how mn_alrc_ingest.py stored it), so
-mn_inspections_ingest.py can look up the DB facility_id.
+Use `--aldc-only` to keep the legacy CA-style ALDC-only behaviour for spot
+re-bundles when you specifically want to reduce volume.
 
 Usage:
   python3 scrapers/mn_mdh_to_bundle.py \\
@@ -90,7 +92,7 @@ def build_bundle(
     *,
     since_months: int = 48,
 ) -> dict:
-    """Build format_version:1 bundle for ALDC facilities only."""
+    """Build format_version:1 bundle for all matched MN ALFs."""
     from datetime import date  # noqa: PLC0415
 
     cutoff = date.fromisoformat(
@@ -112,9 +114,8 @@ def build_bundle(
             skipped += 1
             continue
 
-        # This is an ALDC facility — build bundle entry
         alrc_id = alrc.get("alrc_id")
-        license_number = f"ALRC:{alrc_id}" if alrc_id else f"ALRC:0"
+        license_number = f"ALRC:{alrc_id}" if alrc_id else "ALRC:0"
 
         inspections = []
         for insp in fac.get("inspections", []):
@@ -139,8 +140,8 @@ def build_bundle(
         })
         matched += 1
 
-    print(f"  Matched {matched} ALDC facilities from {len(findings)} total ALFs")
-    print(f"  Skipped {skipped} non-ALDC ALF records")
+    print(f"  Matched {matched} ALFs from {len(findings)} MDH findings")
+    print(f"  Skipped {skipped} MDH records (no ALRC name+city match)")
     total_events = sum(len(f["inspections"]) for f in facilities)
     print(f"  Total inspection/complaint events (since {cutoff}): {total_events}")
 
@@ -166,6 +167,8 @@ def main() -> int:
                     default=out_dir / f"bundle-{today}.json")
     ap.add_argument("--since-months", type=int, default=48,
                     help="Only include events within this many months (default: 48)")
+    ap.add_argument("--aldc-only", action="store_true",
+                    help="Keep legacy behaviour and only emit ALDC facilities")
     args = ap.parse_args()
 
     if not args.findings.is_file():
@@ -185,12 +188,16 @@ def main() -> int:
 
     print(f"Loading ALRC facilities from {args.alrc_facilities}…")
     alrc_facs = json.loads(args.alrc_facilities.read_text())
-    aldc_facs = [f for f in alrc_facs if f.get("is_aldc")]
-    print(f"  {len(aldc_facs)} ALDC facilities")
+    if args.aldc_only:
+        eligible = [f for f in alrc_facs if f.get("is_aldc")]
+        print(f"  {len(eligible)} ALDC facilities (legacy --aldc-only mode)")
+    else:
+        eligible = alrc_facs
+        aldc_n = sum(1 for f in alrc_facs if f.get("is_aldc"))
+        print(f"  {len(eligible)} total ALFs ({aldc_n} ALDC + {len(eligible) - aldc_n} standard AL)")
 
-    # Build lookup: slugified_name|slugified_city → facility record
     alrc_by_key: dict[str, dict] = {}
-    for f in aldc_facs:
+    for f in eligible:
         key = f"{slugify_name(f['name'])}|{slugify_name(f['city'])}"
         alrc_by_key[key] = f
 
