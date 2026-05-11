@@ -30,7 +30,14 @@ from _firecrawl import fc_scrape, fc_search, current_spend_usd
 
 DB_URL = os.environ["DATABASE_URL"]
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
-SKIP_DOMAINS = {"cdss.ca.gov", "ca.gov", "dhcs.ca.gov", "dss.ca.gov"}
+SKIP_DOMAINS = {
+    "cdss.ca.gov", "ca.gov", "dhcs.ca.gov", "dss.ca.gov",
+    # Our own site — skip (no news value)
+    "starlynncare.com",
+    # Directory/review aggregators (not actual news)
+    "seniorly.com", "caring.com", "aplaceformom.com", "medicare.gov",
+    "yelp.com", "yellowpages.com", "angieslist.com",
+}
 
 ALAMEDA_CITIES = (
     "Alameda", "Albany", "Berkeley", "Castro Valley", "Dublin", "Emeryville",
@@ -71,10 +78,12 @@ def build_seed_list(conn: psycopg.Connection) -> None:
     """Identify high-citation facilities as ground-truth seed."""
     city_list = ", ".join(f"'{c}'" for c in ALAMEDA_CITIES)
     q = f"""
-        SELECT f.id, f.name, f.city, COUNT(d.id) as citation_count,
+        SELECT f.id, f.name, f.city,
+               COUNT(d.id) as citation_count,
                MAX(d.severity) as max_severity
         FROM facilities f
-        LEFT JOIN deficiencies d ON d.facility_id = f.id
+        LEFT JOIN inspections i ON i.facility_id = f.id
+        LEFT JOIN deficiencies d ON d.inspection_id = i.id
         WHERE f.state_code='CA' AND f.publishable=true
           AND f.city IN ({city_list})
         GROUP BY f.id, f.name, f.city

@@ -161,14 +161,17 @@ def compare_to_production(
         "coverage_pct": round(coverage * 100, 1),
     }
 
-    # Write stats back as a summary row
+    # Write stats back to any NULL-license row (or skip gracefully if none)
     with conn.cursor() as cur:
         cur.execute(
             """
             UPDATE pilot_extract_rows
             SET raw_json = raw_json || %s::jsonb
-            WHERE pilot_run_id=%s AND state_code=%s AND license_number IS NULL
-            LIMIT 1
+            WHERE id = (
+                SELECT id FROM pilot_extract_rows
+                WHERE pilot_run_id=%s AND state_code=%s AND license_number IS NULL
+                LIMIT 1
+            )
             """,
             (json.dumps({"comparison_stats": stats}), run_id, state_code),
         )

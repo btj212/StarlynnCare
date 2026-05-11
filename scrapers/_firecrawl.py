@@ -1,13 +1,13 @@
 """
-Thin Firecrawl wrapper for StarlynnCare pilots.
+Thin Firecrawl wrapper for StarlynnCare pilots (firecrawl-py v4).
 
-Tracks spend per call in .firecrawl/spend.json and hard-kills
-if cumulative spend exceeds FIRECRAWL_PILOT_BUDGET_USD (default $50).
+Tracks spend per call in .firecrawl/spend.json and hard-kills if cumulative
+spend exceeds FIRECRAWL_PILOT_BUDGET_USD (default $50).
 
 Credit pricing (Hobby plan):
-  search  ≈ 1 credit
+  search  ≈ 1 credit/result
   scrape  ≈ 1 credit
-  extract ≈ 5 credits
+  extract ≈ 5 credits/URL
   crawl   ≈ 1 credit/page
 
 1 credit ≈ $0.001
@@ -22,6 +22,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 from firecrawl import FirecrawlApp
+from firecrawl.v2.types import ScrapeOptions
 
 load_dotenv(Path(__file__).parent.parent / ".env.local")
 
@@ -83,51 +84,79 @@ def fc_search(query: str, num_results: int = 5) -> list[dict]:
     """Search the web. Returns list of {url, title, description}."""
     app = _get_app()
     result = app.search(query, limit=num_results)
-    results = result.data if hasattr(result, "data") else (result if isinstance(result, list) else [])
+    # result is SearchData with .web list of SearchResultWeb or Document
+    items = result.web or []
+    output = []
+    for item in items:
+        if hasattr(item, "url"):
+            output.append({
+                "url": item.url or "",
+                "title": getattr(item, "title", "") or "",
+                "description": getattr(item, "description", "") or "",
+            })
     _charge("search", num_results, {"query": query[:80]})
     time.sleep(0.5)
-    return results
+    return output
 
 
-def fc_scrape(url: str, formats: list[str] | None = None) -> dict:
-    """Scrape a URL. Returns {markdown, html, metadata}."""
+def fc_scrape(url: str) -> dict:
+    """Scrape a URL. Returns {markdown, metadata}."""
     app = _get_app()
-    params: dict[str, Any] = {"formats": formats or ["markdown"]}
-    result = app.scrape_url(url, params=params)
-    data = result.model_dump() if hasattr(result, "model_dump") else (result if isinstance(result, dict) else {})
+    result = app.scrape(url, formats=["markdown"])
+    data = {
+        "markdown": result.markdown or "",
+        "metadata": result.metadata.model_dump() if result.metadata else {},
+    }
     _charge("scrape", 1, {"url": url[:80]})
     time.sleep(0.5)
     return data
 
 
 def fc_extract(url: str, schema: dict, prompt: str | None = None) -> dict:
-    """LLM-powered structured extraction from a URL."""
+    """LLM-powered structured extraction. Returns {extract: {...}}."""
     app = _get_app()
-    params: dict[str, Any] = {
-        "formats": ["extract"],
-        "extract": {"schema": schema},
+    kwargs: dict[str, Any] = {
+        "urls": [url],
+        "schema": schema,
     }
     if prompt:
-        params["extract"]["prompt"] = prompt
-    result = app.scrape_url(url, params=params)
-    data = result.model_dump() if hasattr(result, "model_dump") else (result if isinstance(result, dict) else {})
+        kwargs["prompt"] = prompt
+    result = app.extract(**kwargs)
+    # result is ExtractResponse; .data contains the extracted content
+    extracted: Any = None
+    if hasattr(result, "data"):
+        extracted = result.data
+    elif isinstance(result, dict):
+        extracted = result
     _charge("extract", 5, {"url": url[:80]})
     time.sleep(0.5)
-    return data
+    if isinstance(extracted, dict):
+        return {"extract": extracted}
+    # Sometimes it's a list with one item
+    if isinstance(extracted, list) and extracted:
+        return {"extract": extracted[0] if isinstance(extracted[0], dict) else {}}
+    return {"extract": {}}
 
 
 def fc_crawl(url: str, depth: int = 2, limit: int = 20) -> list[dict]:
     """Crawl a site up to depth/limit. Returns list of {url, markdown}."""
     app = _get_app()
-    result = app.crawl_url(
+    result = app.crawl(
         url,
-        params={
-            "limit": limit,
-            "maxDepth": depth,
-            "scrapeOptions": {"formats": ["markdown"]},
-        },
+        limit=limit,
+        max_discovery_depth=depth,
+        scrape_options=ScrapeOptions(formats=["markdown"]),
     )
-    pages = result.data if hasattr(result, "data") else (result if isinstance(result, list) else [])
-    _charge("crawl", len(pages), {"url": url[:80], "pages": len(pages)})
+    pages = result.data or []
+    output = []
+    for page in pages:
+        md = page.markdown or ""
+        meta = page.metadata.model_dump() if page.metadata else {}
+        output.append({
+            "url": meta.get("sourceURL", meta.get("url", "")),
+            "markdown": md,
+            "metadata": meta,
+        })
+    _charge("crawl", len(output), {"url": url[:80], "pages": len(output)})
     time.sleep(0.5)
-    return pages
+    return output

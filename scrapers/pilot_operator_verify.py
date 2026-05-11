@@ -96,10 +96,11 @@ def get_inspection_summary(conn: psycopg.Connection, facility_id: str) -> str:
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT d.description, d.severity, d.citation_date
+            SELECT d.description, d.severity, i.inspection_date
             FROM deficiencies d
-            WHERE d.facility_id=%s
-            ORDER BY d.severity DESC NULLS LAST, d.citation_date DESC NULLS LAST
+            JOIN inspections i ON i.id = d.inspection_id
+            WHERE i.facility_id=%s
+            ORDER BY d.severity DESC NULLS LAST, i.inspection_date DESC NULLS LAST
             LIMIT 10
             """,
             (facility_id,),
