@@ -49,8 +49,12 @@ REQUEST_DELAY_SECS = 1.0
 _SEVERITY_HINTS: list[tuple[tuple[str, ...], int]] = [
     (("immediate jeopardy", "ij", "priority 1", "i/j"), 4),
     (("type a", "pattern a", "class a", "serious", "actual harm"), 3),
-    (("type b", "pattern b", "class b", "potential", "lesser"), 2),
-    (("type c", "class c", "no harm", "administrative"), 1),
+    # Oregon violations CSV "Type" column uses "Abuse: ..." prefix for all abuse categories.
+    # These map to Class A (actual harm) per OAR 411-054 / 411-086 enforcement rules.
+    (("abuse:", "physical abuse", "sexual abuse", "financial abuse", "financial exploitation",
+      "wrongful restraint", "involuntary seclusion"), 3),
+    (("type b", "pattern b", "class b", "potential", "lesser", "neglect"), 2),
+    (("type c", "class c", "no harm", "administrative", "licensing violation"), 1),
 ]
 
 
