@@ -148,7 +148,7 @@ export default async function FacilityPage({ params }: PageProps) {
     <>
       <JsonLd objects={profile.jsonLd} />
       <GovernanceBar />
-      <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}#browse`} ctaLabel={`${state.name} memory care facilities`} />
+      <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} />
 
       <main className="bg-paper">
         {/* Sticky sub-nav */}

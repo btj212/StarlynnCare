@@ -80,7 +80,7 @@ export default async function CaliforniaHubPage() {
 
         <div className="hidden md:block">
           <GovernanceBar scope="CA" />
-          <SiteNav countStateCode="CA" badge="California" ctaHref="/california" ctaLabel="California memory care facilities" />
+          <SiteNav countStateCode="CA" badge="California" ctaHref="/california/facilities" ctaLabel="Browse California facilities" />
 
           <main>
             <StateHubSections data={data} config={caStateConfig} />

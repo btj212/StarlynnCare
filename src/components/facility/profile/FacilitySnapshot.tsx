@@ -3,7 +3,7 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 
 type PhotoSource = { url: string; source: string; attribution: string };
 
-function PhotoGallery({
+function HeroPhoto({
   urls,
   name,
   photoSources,
@@ -12,60 +12,23 @@ function PhotoGallery({
   name: string;
   photoSources?: PhotoSource[];
 }) {
-  const GRADIENTS = [
-    "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 100%)",
-    "linear-gradient(135deg, #D6CFB8 0%, #A89D7E 100%)",
-    "linear-gradient(135deg, #C8B49A 0%, #8E7A60 100%)",
-    "linear-gradient(135deg, #BDC8B9 0%, #7E8A77 100%)",
-    "linear-gradient(135deg, #E0CFB8 0%, #B0A084 100%)",
-  ];
+  const primaryAttribution = photoSources?.[0]?.attribution;
 
   if (urls.length === 0) {
     return (
-      <div className="grid h-[460px] grid-cols-[2fr_1fr_1fr] grid-rows-2 gap-1">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className={`relative overflow-hidden ${i === 0 ? "row-span-2" : ""}`}
-            style={{ background: GRADIENTS[i] }}
-          >
-            <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.22em] text-white/75">
-              Photo
-            </span>
-          </div>
-        ))}
-      </div>
+      <div
+        className="h-[360px] w-full overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 100%)" }}
+      />
     );
   }
 
-  const [primary, ...rest] = urls;
-  const primaryAttribution = photoSources?.[0]?.attribution;
-
   return (
     <div className="relative">
-      <div className="grid h-[460px] grid-cols-[2fr_1fr_1fr] grid-rows-2 gap-1">
-        <div className="relative row-span-2 overflow-hidden bg-ink-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={primary} alt={name} className="absolute inset-0 h-full w-full object-cover" />
-        </div>
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="relative overflow-hidden"
-            style={{ background: GRADIENTS[i + 1] }}
-          >
-            {rest[i] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={rest[i]} alt={`${name} photo ${i + 2}`} className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
-              <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.22em] text-white/75">
-                Photo
-              </span>
-            )}
-          </div>
-        ))}
+      <div className="h-[360px] w-full overflow-hidden bg-ink-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={urls[0]} alt={name} className="h-full w-full object-cover object-center" />
       </div>
-      {/* Per-Google Places API TOS: display attribution when Places photos are used */}
       {primaryAttribution && primaryAttribution !== "© Google" && (
         <p className="mt-1 text-right font-[family-name:var(--font-mono)] text-[10px] text-ink-3/60 tracking-wide">
           {primaryAttribution}
@@ -81,14 +44,14 @@ function FacilityMap({ profile }: { profile: FacilityProfile }) {
   // Static Mapbox tile when configured
   if (mapState?.mapboxToken && mapState.lat && mapState.lon) {
     const { lat, lon, mapboxToken } = mapState;
-    const mapImgUrl = `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/pin-s+B8533A(${lon},${lat})/${lon},${lat},14/800x920@2x?access_token=${mapboxToken}`;
+    const mapImgUrl = `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/pin-s+B8533A(${lon},${lat})/${lon},${lat},14/800x720@2x?access_token=${mapboxToken}`;
     const googleUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
     return (
       <a
         href={googleUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="group relative block h-[460px] overflow-hidden bg-paper-2"
+        className="group relative block h-[360px] overflow-hidden bg-paper-2"
         aria-label="View location in Google Maps"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -107,7 +70,7 @@ function FacilityMap({ profile }: { profile: FacilityProfile }) {
 
   // Fallback: SVG gridpaper sketch
   return (
-    <div className="relative h-[460px] overflow-hidden bg-paper-2">
+    <div className="relative h-[360px] overflow-hidden bg-paper-2">
       <svg
         viewBox="0 0 400 460"
         className="absolute inset-0 h-full w-full"
@@ -167,7 +130,7 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
         />
 
         <div className="grid gap-7 md:grid-cols-[1.5fr_1fr]">
-          <PhotoGallery urls={profile.photoUrls} name={facility.name} photoSources={profile.photoSources} />
+          <HeroPhoto urls={profile.photoUrls} name={facility.name} photoSources={profile.photoSources} />
           <FacilityMap profile={profile} />
         </div>
       </div>
