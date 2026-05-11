@@ -1,0 +1,9 @@
+# Test dependencies — install with:
+#   pip install -r tests/requirements-test.txt
+#
+# All runtime scraper deps are inherited from scrapers/requirements.txt.
+# Install both:
+#   pip install -r scrapers/requirements.txt -r tests/requirements-test.txt
+
+pytest>=8.2
+pytest-timeout>=2.3

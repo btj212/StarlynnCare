@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify-schema": "tsx scripts/verify-schema.ts"
+    "verify-schema": "tsx scripts/verify-schema.ts",
+    "test:ts": "vitest run",
+    "test:ts:watch": "vitest",
+    "test:py": "python -m pytest tests/ -m 'not external_api and not slow' --ignore=tests/ts",
+    "test:py:all": "python -m pytest tests/ --ignore=tests/ts",
+    "test:py:external": "python -m pytest tests/external_apis/ -m external_api",
+    "test": "npm run test:ts && npm run test:py"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.2.3",
@@ -23,12 +29,15 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^2.1.9",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^2.1.9"
   }
 }

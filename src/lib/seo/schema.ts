@@ -253,7 +253,7 @@ export function buildLocalBusinessForFacility(
       streetAddress: facility.street ?? undefined,
       addressLocality: facility.city ?? undefined,
       postalCode: facility.zip ?? undefined,
-      addressRegion: state.name,
+      addressRegion: state.code,
       addressCountry: "US",
     },
     ...(lat != null && lng != null
