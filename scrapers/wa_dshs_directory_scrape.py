@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """
-Washington DSHS Advanced ALF Lookup — dementia care contract roster as CSV.
+Washington DSHS Advanced ALF Lookup — full licensed ALF roster as CSV.
+
+Pulls ALL licensed Assisted Living Facilities from BHAdvLookup.aspx by default.
+Use --contract to restrict to a specific contract type (e.g. "Dementia Care").
 
 The search form on BHAdvLookup.aspx posts to BHAdvResults.aspx (no classic __VIEWSTATE).
 
-Writes `.firecrawl/wa-scrape/adv-lookup-YYYY-MM-DD.csv`
+Writes `.firecrawl/wa-scrape/adv-lookup-YYYY-MM-DD.csv` (full universe)
+     or `.firecrawl/wa-scrape/adv-lookup-dementia-YYYY-MM-DD.csv` (targeted pull)
+
+Usage:
+    python3 scrapers/wa_dshs_directory_scrape.py
+    python3 scrapers/wa_dshs_directory_scrape.py --contract "Dementia Care"
 """
 
 from __future__ import annotations
@@ -68,21 +76,26 @@ WA_COUNTIES = (
 )
 
 
-def fetch_dementia_care_csv(out_path: Path) -> None:
+def fetch_alf_csv(out_path: Path, contract: str | None = None) -> None:
+    """Download the ALF roster CSV. Pass contract="Dementia Care" for a targeted pull."""
     sess = make_session()
     r = session_get(sess, LOOKUP_PAGE)
     r.raise_for_status()
 
     polite_sleep(1.0)
 
-    # Form field names from live HTML (checkbox value is exactly "Dementia Care")
+    # Core form fields — no contract filter by default (returns full ALF universe)
     data: list[tuple[str, str]] = [
         ("searchOpt", "county"),
-        ("contract", "Dementia Care"),
         ("LicensedBedCount", "0"),
         ("opt_output", "csv"),
         ("submit1", "Search"),
     ]
+
+    # Optionally restrict to a specific DSHS contract type
+    if contract:
+        data.append(("contract", contract))
+
     for c in WA_COUNTIES:
         data.append(("county", c))
 
@@ -99,16 +112,32 @@ def fetch_dementia_care_csv(out_path: Path) -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="WA ADSA dementia roster CSV export")
+    ap = argparse.ArgumentParser(description="WA ADSA ALF roster CSV export")
     ap.add_argument(
         "--out-dir",
         type=Path,
         default=REPO_ROOT / ".firecrawl" / "wa-scrape",
     )
+    ap.add_argument(
+        "--contract",
+        type=str,
+        default=None,
+        help=(
+            "Optional DSHS contract type to filter by (e.g. 'Dementia Care'). "
+            "Omit to pull the full licensed ALF universe."
+        ),
+    )
     args = ap.parse_args()
-    out = args.out_dir / f"adv-lookup-{date.today().isoformat()}.csv"
+
+    today = date.today().isoformat()
+    if args.contract:
+        slug = args.contract.lower().replace(" ", "-")
+        out = args.out_dir / f"adv-lookup-{slug}-{today}.csv"
+    else:
+        out = args.out_dir / f"adv-lookup-{today}.csv"
+
     try:
-        fetch_dementia_care_csv(out)
+        fetch_alf_csv(out, contract=args.contract)
     except Exception as e:  # noqa: BLE001
         print(f"ERROR: {e}", file=sys.stderr)
         return 1

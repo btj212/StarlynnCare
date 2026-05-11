@@ -217,14 +217,41 @@ WHERE f.state_code = %(state)s
   AND i.raw_data->>'report_link' IS NOT NULL
   AND (i.raw_data->>'narrative' IS NULL OR i.raw_data->>'narrative' = '')
 ORDER BY
-    CASE WHEN i.raw_data->>'status' = 'SUBSTANTIATED' THEN 0 ELSE 1 END,
+    -- Text-based survey PDFs first (surveyfindings), then OHFC complaint PDFs (ohfcfindings)
+    CASE WHEN i.raw_data->>'report_link' LIKE '%%surveyfindings%%' THEN 0 ELSE 1 END,
     i.inspection_date DESC
 """
 
-FETCH_SUBSTANTIATED_SQL = FETCH_SQL.replace(
-    "ORDER BY",
-    "AND i.raw_data->>'status' = 'SUBSTANTIATED'\nORDER BY",
-)
+FETCH_SUBSTANTIATED_SQL = """
+SELECT
+    i.id::text,
+    i.inspection_date,
+    i.raw_data->>'status'      AS status,
+    i.raw_data->>'report_link' AS report_link,
+    f.name                     AS facility_name
+FROM inspections i
+JOIN facilities f ON f.id = i.facility_id
+WHERE f.state_code = %(state)s
+  AND i.raw_data->>'report_link' IS NOT NULL
+  AND (i.raw_data->>'narrative' IS NULL OR i.raw_data->>'narrative' = '')
+  AND i.raw_data->>'status' = 'SUBSTANTIATED'
+ORDER BY i.inspection_date DESC
+"""
+
+FETCH_SURVEYS_SQL = """
+SELECT
+    i.id::text,
+    i.inspection_date,
+    i.raw_data->>'status'      AS status,
+    i.raw_data->>'report_link' AS report_link,
+    f.name                     AS facility_name
+FROM inspections i
+JOIN facilities f ON f.id = i.facility_id
+WHERE f.state_code = %(state)s
+  AND i.raw_data->>'report_link' LIKE '%%surveyfindings%%'
+  AND (i.raw_data->>'narrative' IS NULL OR i.raw_data->>'narrative' = '')
+ORDER BY i.inspection_date DESC
+"""
 
 UPDATE_SQL = """
 UPDATE inspections
@@ -233,8 +260,19 @@ WHERE id = %(id)s::uuid
 """
 
 
-def fetch_rows(conn: psycopg.Connection, state: str, substantiated_only: bool, limit: int | None) -> list[dict[str, Any]]:
-    sql = FETCH_SUBSTANTIATED_SQL if substantiated_only else FETCH_SQL
+def fetch_rows(
+    conn: psycopg.Connection,
+    state: str,
+    substantiated_only: bool,
+    surveys_only: bool,
+    limit: int | None,
+) -> list[dict[str, Any]]:
+    if substantiated_only:
+        sql = FETCH_SUBSTANTIATED_SQL
+    elif surveys_only:
+        sql = FETCH_SURVEYS_SQL
+    else:
+        sql = FETCH_SQL
     if limit:
         sql += f" LIMIT {int(limit)}"
     with conn.cursor() as cur:
@@ -306,7 +344,11 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=None, help="Process only first N records")
     parser.add_argument(
         "--substantiated-only", action="store_true",
-        help="Only process SUBSTANTIATED records",
+        help="Only process SUBSTANTIATED records (OHFC complaint PDFs — image-based for MN)",
+    )
+    parser.add_argument(
+        "--surveys-only", action="store_true",
+        help="Only process standard survey PDFs (text-based, faster for MN)",
     )
     args = parser.parse_args()
 
@@ -322,10 +364,10 @@ def main() -> None:
     session = make_session()
 
     with psycopg.connect(DATABASE_URL) as conn:
-        rows = fetch_rows(conn, args.state, args.substantiated_only, args.limit)
+        rows = fetch_rows(conn, args.state, args.substantiated_only, args.surveys_only, args.limit)
 
     total = len(rows)
-    print(f"Records to process: {total} (state={args.state}, substantiated_only={args.substantiated_only})")
+    print(f"Records to process: {total} (state={args.state}, substantiated_only={args.substantiated_only}, surveys_only={args.surveys_only})")
     if not total:
         print("Nothing to do.")
         return
