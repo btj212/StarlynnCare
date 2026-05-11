@@ -542,7 +542,7 @@ export function buildOrganizationSchema(): object {
     logo: `${SITE_ORIGIN}/illustrations/logo-mark.png`,
     description:
       "StarlynnCare publishes verified state inspection records, citations, and family reviews for licensed memory care facilities. Independent and free for families: no referral commissions, lead fees, or paid placements from operators.",
-    foundingDate: "2024",
+    foundingDate: "2025",
     founder: { "@id": `${SITE_ORIGIN}/about#person-blake-jones` },
     employee: [{ "@id": `${SITE_ORIGIN}#person-starlynn-starkey` }],
     knowsAbout: [
@@ -667,16 +667,19 @@ export function buildArticleSchema(input: {
   /** Optional extra types e.g. FAQPage handled separately */
 }): object {
   const ogImage = `${SITE_ORIGIN}/og-default.png`;
+  const dateModified = input.dateModified ?? input.datePublished;
   return {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": ["Article", "MedicalWebPage"],
     "@id": `${input.url}#article`,
     headline: input.headline,
     description: input.description,
     url: input.url,
     image: ogImage,
     datePublished: input.datePublished,
-    dateModified: input.dateModified ?? input.datePublished,
+    dateModified,
+    lastReviewed: dateModified,
+    medicalAudience: { "@type": "MedicalAudience", audienceType: "Patient" },
     author: buildStarlynnPerson(),
     reviewedBy: buildStarlynnPerson(),
     publisher: {
@@ -748,4 +751,97 @@ export function buildDefinedTermSchema(input: {
     ...(input.termCode ? { termCode: input.termCode } : {}),
     inDefinedTermSet: { "@id": input.termSetId },
   };
+}
+
+/**
+ * MedicalWebPage JSON-LD for facility profile pages — the YMYL-strength
+ * WebPage node that city/state hubs have always emitted but facility profiles
+ * were missing. Includes `reviewedBy` (RN reviewer) and `lastReviewed`
+ * (most-recent inspection date or today's ISO date as fallback).
+ */
+export function buildFacilityMedicalWebPage(input: {
+  name: string;
+  url: string;
+  description?: string;
+  /** ISO yyyy-mm-dd. Use most-recent non-complaint inspection date, fallback to today. */
+  lastReviewed: string;
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "MedicalWebPage",
+    name: input.name,
+    url: input.url,
+    ...(input.description ? { description: input.description } : {}),
+    lastReviewed: input.lastReviewed,
+    reviewedBy: buildStarlynnPerson(),
+    isPartOf: {
+      "@type": "WebSite",
+      name: "StarlynnCare",
+      url: SITE_ORIGIN,
+    },
+  };
+}
+
+/**
+ * Build a FAQPage schema for facility profiles using real facility data.
+ *
+ * Generates data-driven Q&A pairs (inspection count, quality grade) so
+ * every facility page has unique FAQ content — preventing Google from
+ * suppressing rich results due to identical boilerplate answers.
+ *
+ * Tour questions (from facility.content.tour_questions) are included as
+ * additional FAQ entries whose answers incorporate facility-specific facts
+ * rather than the identical template text that applied to all facilities.
+ *
+ * Returns null when no meaningful Q&A can be generated (no data, no tour
+ * questions), so callers can skip emitting the FAQPage node entirely.
+ */
+export function buildFacilityFaqSchema(input: {
+  facilityName: string;
+  stateName: string;
+  pageUrl: string;
+  inspectionCount: number;
+  deficiencyCount: number;
+  lastInspectionDate: string | null;
+  grade: string | null;
+  tourQuestions: string[];
+}): object | null {
+  const pairs: Array<{ q: string; a: string }> = [];
+
+  const lastDateStr = input.lastInspectionDate
+    ? `, most recently on ${input.lastInspectionDate}`
+    : "";
+
+  if (input.inspectionCount > 0) {
+    const inspPlural = input.inspectionCount !== 1 ? "inspections" : "inspection";
+    const defPlural = input.deficiencyCount !== 1 ? "deficiencies" : "deficiency";
+    pairs.push({
+      q: `How many inspections has ${input.facilityName} had?`,
+      a: `${input.facilityName} has ${input.inspectionCount} ${inspPlural} on record with ${input.stateName} regulators${lastDateStr}, with ${input.deficiencyCount} ${defPlural} documented across those inspections.`,
+    });
+  }
+
+  if (input.grade) {
+    pairs.push({
+      q: `What is ${input.facilityName}'s quality grade?`,
+      a: `${input.facilityName} received a grade of ${input.grade} from StarlynnCare based on deficiency severity, repeat citations, inspection frequency, and peer comparison across ${input.stateName} memory care facilities.`,
+    });
+  }
+
+  // Tour questions with facility-specific context so answers are not identical
+  // across all facilities. Each answer includes the facility's real inspection
+  // stats before directing families to ask staff directly.
+  const contextPrefix =
+    input.inspectionCount > 0
+      ? `${input.facilityName} has ${input.deficiencyCount} ${input.deficiencyCount !== 1 ? "deficiencies" : "deficiency"} documented across ${input.inspectionCount} ${input.stateName} regulator ${input.inspectionCount !== 1 ? "inspections" : "inspection"}${lastDateStr}. `
+      : "";
+  for (const q of input.tourQuestions) {
+    pairs.push({
+      q,
+      a: `${contextPrefix}Ask staff this question directly and compare their response to ${input.facilityName}'s public inspection record on StarlynnCare.`,
+    });
+  }
+
+  if (!pairs.length) return null;
+  return buildFaqSchemaFromPairs(pairs, input.pageUrl);
 }
