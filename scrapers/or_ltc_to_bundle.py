@@ -115,14 +115,14 @@ def build_bundle(
     # Do not pass keyword "type" — it matches provider Type before "Inspection type(s)".
     col_insp_kinds = detect_col(insp_headers, "inspectiontypes", "inspectiontype")
     col_provider_i = next((h for h in insp_headers if (h or "").strip() == "Type"), None)
+    col_def_count = detect_col(insp_headers, "deficienciescited", "deficiencies")
 
     col_prov_v = detect_col(viol_headers, "providerid")
     col_report = detect_col(viol_headers, "reportnumber", "report")
     col_date_v = detect_col(viol_headers, "date", "incidentdate")
     col_alleg = detect_col(viol_headers, "allegation", "description")
     # Use exact-match for bare "Type" header to avoid shadowing by "Provider type".
-    # "detect_col" with keyword "type" matches "providertype" first, so we must
-    # find the column whose entire normalized name is exactly "type".
+    # detect_col("type") matches "providertype" first (keyword "type" is in "providertype").
     col_vtype = next((h for h in viol_headers if norm_key(h) == "type"), None)
     if not col_vtype:
         col_vtype = detect_col(viol_headers, "violationtype", "allegationtype")
@@ -199,6 +199,11 @@ def build_bundle(
         )
 
         if key not in insp_groups:
+            def_count_raw = (row.get(col_def_count) or "").strip() if col_def_count else ""
+            try:
+                def_count = int(def_count_raw) if def_count_raw else None
+            except ValueError:
+                def_count = None
             insp_groups[key] = {
                 "license_number": lic,
                 "inspection_date": d_iso,
@@ -206,11 +211,13 @@ def build_bundle(
                 "is_complaint": is_complaint,
                 "complaint_id": None,
                 "source_url": source_url,
+                "total_deficiency_count": def_count,
                 "raw_data": {
                     "oregon": True,
                     "provider_id": pid,
                     "event_id": ev,
                     "inspection_types": types_raw,
+                    "deficiency_count_csv": def_count,
                     "source_row": row,
                 },
                 "deficiencies": [],
@@ -236,7 +243,6 @@ def build_bundle(
         viol_key = (lic_v, first_date, rep)
         if viol_key not in viol_insp_groups:
             alleg_types = {(vrow.get(col_vtype) or "").strip() for vrow in v_rows}
-            is_abuse = any("abuse" in t.lower() for t in alleg_types)
             source_url = f"https://ltclicensing.oregon.gov/Violations#or-{lic_v}-{rep}"
             viol_insp_groups[viol_key] = {
                 "license_number": lic_v,
@@ -245,7 +251,7 @@ def build_bundle(
                 "is_complaint": True,
                 "complaint_id": rep,
                 "source_url": source_url,
-                "raw_data": {"oregon": True, "provider_id": pv, "report_number": rep, "violation_record": True, "violation_type": alleg_types and sorted(alleg_types) or []},
+                "raw_data": {"oregon": True, "provider_id": pv, "report_number": rep, "violation_record": True},
                 "deficiencies": [],
             }
         for vrow in v_rows:
@@ -260,7 +266,11 @@ def build_bundle(
                     "inspector_narrative": alleg[:8000] if alleg else None,
                     "state_severity_raw": vtyp,
                     "cited_date": vd or first_date,
-                    "immediate_jeopardy": "abuse" in vtyp.lower(),
+                    # OR violations CSV has no explicit immediate-jeopardy flag.
+                    # Do not infer IJ from the violation type alone — that would
+                    # fabricate data not present in the source. Severity is inferred
+                    # separately from state_severity_raw via _SEVERITY_HINTS.
+                    "immediate_jeopardy": False,
                 }
             )
 
@@ -268,17 +278,18 @@ def build_bundle(
     by_lic: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for _k, block in {**insp_groups, **viol_insp_groups}.items():
         lic = block["license_number"]
-        by_lic[lic].append(
-            {
-                "inspection_date": block["inspection_date"],
-                "inspection_type": block["inspection_type"],
-                "is_complaint": block["is_complaint"],
-                "complaint_id": block["complaint_id"],
-                "source_url": block["source_url"],
-                "raw_data": block["raw_data"],
-                "deficiencies": block["deficiencies"],
-            }
-        )
+        entry: dict[str, Any] = {
+            "inspection_date": block["inspection_date"],
+            "inspection_type": block["inspection_type"],
+            "is_complaint": block["is_complaint"],
+            "complaint_id": block["complaint_id"],
+            "source_url": block["source_url"],
+            "raw_data": block["raw_data"],
+            "deficiencies": block["deficiencies"],
+        }
+        if block.get("total_deficiency_count") is not None:
+            entry["total_deficiency_count"] = block["total_deficiency_count"]
+        by_lic[lic].append(entry)
 
     facilities_out = [
         {"license_number": lic, "inspections": sorted(insp_list, key=lambda x: x["inspection_date"])}

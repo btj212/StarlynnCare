@@ -49,12 +49,8 @@ REQUEST_DELAY_SECS = 1.0
 _SEVERITY_HINTS: list[tuple[tuple[str, ...], int]] = [
     (("immediate jeopardy", "ij", "priority 1", "i/j"), 4),
     (("type a", "pattern a", "class a", "serious", "actual harm"), 3),
-    # Oregon violations CSV "Type" column uses "Abuse: ..." prefix for all abuse categories.
-    # These map to Class A (actual harm) per OAR 411-054 / 411-086 enforcement rules.
-    (("abuse:", "physical abuse", "sexual abuse", "financial abuse", "financial exploitation",
-      "wrongful restraint", "involuntary seclusion"), 3),
-    (("type b", "pattern b", "class b", "potential", "lesser", "neglect"), 2),
-    (("type c", "class c", "no harm", "administrative", "licensing violation"), 1),
+    (("type b", "pattern b", "class b", "potential", "lesser"), 2),
+    (("type c", "class c", "no harm", "administrative"), 1),
 ]
 
 
@@ -297,14 +293,38 @@ def load_bundle(path: Path) -> dict[str, Any]:
         return json.load(f)
 
 
+def _update_inspection_raw_data_and_count(
+    conn: psycopg.Connection,
+    inspection_id: str,
+    raw_patch: dict[str, Any],
+    total_deficiency_count: int,
+) -> None:
+    """Merge raw_patch into existing inspection raw_data and update deficiency count."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE inspections
+            SET raw_data = raw_data || %s,
+                total_deficiency_count = %s
+            WHERE id = %s::uuid
+            """,
+            (
+                psycopg.types.json.Jsonb(raw_patch),
+                total_deficiency_count,
+                inspection_id,
+            ),
+        )
+
+
 def process_bundle_for_facility(
     conn: psycopg.Connection,
     facility: dict[str, Any],
     inspections: list[dict[str, Any]],
     scrape_run_id: str,
     dry_run: bool,
+    force_deficiencies: bool = False,
 ) -> dict[str, int]:
-    stats = {"inspections": 0, "deficiencies": 0, "skipped": 0}
+    stats = {"inspections": 0, "deficiencies": 0, "skipped": 0, "reingested": 0}
     fac_id = facility["id"]
     for insp in inspections:
         defs = insp.get("deficiencies") or []
@@ -318,15 +338,19 @@ def process_bundle_for_facility(
             stats["skipped"] += 1
             continue
 
+        raw = insp.get("raw_data") if isinstance(insp.get("raw_data"), dict) else {}
         narrative = _narrative_from_deficiencies(defs)
+        # Use CSV deficiency count for inspection-side records that have no individual defs
+        csv_count = insp.get("total_deficiency_count")
+        def_count = len(defs) if defs else (csv_count if csv_count is not None else 0)
         payload = {
             "inspection_date": idate_p,
             "inspection_type": insp.get("inspection_type"),
             "is_complaint": insp.get("is_complaint"),
             "complaint_id": insp.get("complaint_id"),
             "source_url": insp["source_url"],
-            "total_deficiency_count": len(defs),
-            "raw_data": insp.get("raw_data") if isinstance(insp.get("raw_data"), dict) else {},
+            "total_deficiency_count": def_count,
+            "raw_data": raw,
             "narrative": narrative or insp.get("narrative"),
             "outcome": insp.get("outcome"),
         }
@@ -339,22 +363,31 @@ def process_bundle_for_facility(
         assert conn is not None
         with conn.cursor() as cur:
             existing = inspection_exists(cur, fac_id, payload["source_url"], idate_p)
-        if existing:
-            stats["skipped"] += 1
-            continue
 
-        insp_id = insert_inspection(conn, fac_id, payload, scrape_run_id)
-        if insp_id is None:
-            stats["skipped"] += 1
-            continue
-        stats["inspections"] += 1
+        if existing:
+            if not force_deficiencies:
+                stats["skipped"] += 1
+                continue
+            # Force mode: delete existing deficiencies and re-insert from bundle.
+            # Patch raw_data with any new fields (e.g. violation_type) and correct count.
+            raw_patch = {k: v for k, v in raw.items() if k in ("violation_type",)}
+            _update_inspection_raw_data_and_count(conn, existing, raw_patch, def_count)
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM deficiencies WHERE inspection_id = %s::uuid",
+                    (existing,),
+                )
+            insp_id = existing
+            stats["reingested"] += 1
+        else:
+            insp_id = insert_inspection(conn, fac_id, payload, scrape_run_id)
+            if insp_id is None:
+                stats["skipped"] += 1
+                continue
+            stats["inspections"] += 1
 
         for d in defs:
             dk = _deficiency_dedupe_key(insp_id, d)
-            fcode = final_deficiency_code(d, dk)
-            with conn.cursor() as cur:
-                if deficiency_row_exists(cur, insp_id, fcode):
-                    continue
             insert_deficiency(conn, insp_id, d, dk)
             stats["deficiencies"] += 1
 
@@ -406,6 +439,16 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true", help=f"Load {SMOKE_FIXTURE}")
     parser.add_argument("--license", type=str, default=None, help="Only this padded license / provider id")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument(
+        "--force-deficiencies",
+        action="store_true",
+        help=(
+            "For already-ingested inspections: delete their deficiency rows and re-insert "
+            "from the bundle. Also patches raw_data (adds violation_type) and corrects "
+            "total_deficiency_count. Use after a bundle rebuild to fix severity/type data "
+            "without losing AI narrative_summary values."
+        ),
+    )
     args = parser.parse_args()
 
     load_env()
@@ -447,7 +490,9 @@ def main() -> None:
 
     scrape_run_id = str(uuid.uuid4())
     started_at = datetime.now(timezone.utc)
-    totals = {"inspections": 0, "deficiencies": 0, "skipped": 0}
+    totals = {"inspections": 0, "deficiencies": 0, "skipped": 0, "reingested": 0}
+
+    force_defs = args.force_deficiencies
 
     if args.dry_run:
         for fac, insp_list in paired:
@@ -456,7 +501,7 @@ def main() -> None:
                 None, fac, insp_list, scrape_run_id, dry_run=True  # type: ignore[arg-type]
             )
             for k in totals:
-                totals[k] += st[k]  # type: ignore[operator]
+                totals[k] += st.get(k, 0)  # type: ignore[operator]
         print(json.dumps({"totals": totals, "scrape_run_id": scrape_run_id}, indent=2))
         return
 
@@ -478,11 +523,15 @@ def main() -> None:
             for fac, insp_list in paired:
                 print(f"\n→ {fac['name']} | license {fac['license_number']}")
                 try:
-                    st = process_bundle_for_facility(conn, fac, insp_list, scrape_run_id, dry_run=False)
+                    st = process_bundle_for_facility(
+                        conn, fac, insp_list, scrape_run_id, dry_run=False,
+                        force_deficiencies=force_defs,
+                    )
                     for k in totals:
-                        totals[k] += st[k]  # type: ignore[operator]
+                        totals[k] += st.get(k, 0)  # type: ignore[operator]
                     print(
-                        f"   inspections +{st['inspections']}, deficiencies +{st['deficiencies']}, skipped {st['skipped']}"
+                        f"   inspections +{st['inspections']}, deficiencies +{st['deficiencies']}, "
+                        f"reingested {st.get('reingested', 0)}, skipped {st['skipped']}"
                     )
                 except Exception as e:  # noqa: BLE001
                     err_parts.append(f"{fac['license_number']}: {e}")
