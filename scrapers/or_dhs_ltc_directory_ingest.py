@@ -161,8 +161,11 @@ def row_to_record(headers: list[str], row: dict[str, str]) -> dict[str, Any] | N
         "mc_signal_explicit_name": False,
         "mc_signal_chain_name": False,
         "mc_review_status": "auto_published",
-        "memory_care_disclosure_filed": False,
-        "memory_care_disclosure_source": None,
+        # OHA Memory Care Endorsement is OR's Tier-1 government signal; map it
+        # to the unified disclosure column so recompute_publishable.py treats
+        # OR endorsed facilities the same as a CA §1569.627 disclosure filing.
+        "memory_care_disclosure_filed": True,
+        "memory_care_disclosure_source": "OR DHS Memory Care Endorsement",
         "mc_signal_apfm_listed": False,
         "mc_signal_caring_listed": False,
         "tx_license_class": None,

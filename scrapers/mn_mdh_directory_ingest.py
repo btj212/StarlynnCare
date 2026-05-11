@@ -292,8 +292,11 @@ def build_row(
         "mc_signal_explicit_name": False,
         "mc_signal_chain_name": False,
         "mc_review_status": "auto_published",
-        "memory_care_disclosure_filed": False,
-        "memory_care_disclosure_source": None,
+        # ALDC (Assisted Living with Dementia Care) is MN's Tier-1 signal;
+        # mirror it into the unified disclosure column so recompute_publishable.py
+        # treats it the same as a CA §1569.627 filing.
+        "memory_care_disclosure_filed": dc,
+        "memory_care_disclosure_source": "MN ALRC ALDC" if dc else None,
         "mc_signal_apfm_listed": False,
         "mc_signal_caring_listed": False,
         "tx_license_class": None,
