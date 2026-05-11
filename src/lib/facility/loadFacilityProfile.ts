@@ -170,6 +170,8 @@ export interface FacilityProfile {
   oldestHiddenYear: number | null;
   /** Depth of historical coverage based on full ingested history span. */
   dataDepth: DataDepth;
+  /** True when fewer than 4 inspections exist within the INSPECTION_DISPLAY_YEARS window. */
+  limitedHistory: boolean;
   /** Which display tier is currently active. Always "free" until premium is built. */
   visibilityTier: InspectionVisibilityTier;
 
@@ -560,6 +562,7 @@ export async function loadFacilityProfile(params: {
     hiddenOlderCount,
     oldestHiddenYear,
     dataDepth,
+    limitedHistory: inspections.length < 4,
     visibilityTier: "free" as InspectionVisibilityTier,
 
     snapshot,
