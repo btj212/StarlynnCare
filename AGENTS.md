@@ -26,5 +26,7 @@ When adding or editing a **state, county, or city hub page** (any route under `/
 
 **State hub layout:** rich homepage-like hubs (`/california`, future `/texas` rich) must compose shared pieces from `src/components/state-hub/` per [`docs/STATE_HUB_ARCHITECTURE.md`](docs/STATE_HUB_ARCHITECTURE.md) — do not fork one-off section markup.
 
+**State facilities browse page:** every state must have a `/{state}/facilities` page (`src/app/[state]/facilities/page.tsx`) — a header with state name + copy, a search bar, and a `<FacilityListClient>` grid of all publishable facilities for the state. No editorial sections. This is what the "Browse X facilities" CTA in `SiteNav` links to on all state-scoped pages (state hub, county/city hub, facility profile, guides). Do not link the CTA to `/{state}#browse` or `/{state}` directly — always point to `/{state}/facilities`.
+
 Full details: [`docs/SEO_GEO_CONVENTIONS.md#8-editorial-design-system-v1`](docs/SEO_GEO_CONVENTIONS.md).
 

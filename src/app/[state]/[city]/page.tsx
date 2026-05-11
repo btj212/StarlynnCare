@@ -415,7 +415,7 @@ export default async function RegionPage({ params }: PageProps) {
     <>
       <JsonLd objects={regionJsonLd} />
       <GovernanceBar />
-      <SiteNav countStateCode={region.state.code} badge={region.state.name} ctaHref={`/${region.state.slug}#browse`} ctaLabel={`${region.state.name} memory care facilities`} />
+      <SiteNav countStateCode={region.state.code} badge={region.state.name} ctaHref={`/${region.state.slug}/facilities`} ctaLabel={`Browse ${region.state.name} facilities`} />
       <AreaWatchModal areaName={region.name} areaSlug={region.slug} source="city_modal" />
       <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
