@@ -25,7 +25,8 @@ import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import { canonicalFor } from "@/lib/seo/canonical";
 import {
   buildBreadcrumbList,
-  buildFaqPageSchema,
+  buildFacilityFaqSchema,
+  buildFacilityMedicalWebPage,
   buildLocalBusinessForFacility,
   buildReviewSchema,
 } from "@/lib/seo/schema";
@@ -481,11 +482,26 @@ export async function loadFacilityProfile(params: {
       },
     }),
     buildBreadcrumbList(breadcrumbTrail),
+    // Fix 1: MedicalWebPage + reviewedBy — previously missing from facility profiles
+    buildFacilityMedicalWebPage({
+      name: `${facility.name} — StarlynnCare`,
+      url: canonicalUrl,
+      lastReviewed: lastNonComplaintInspection ?? new Date().toISOString().split("T")[0],
+    }),
     ...reviews.map((r) => buildReviewSchema(r, businessId)),
   ];
-  if (tourQuestions.length) {
-    jsonLd.push(buildFaqPageSchema(tourQuestions, canonicalUrl));
-  }
+  // Fix 2: FAQ with real facility data instead of identical template answers
+  const faqSchema = buildFacilityFaqSchema({
+    facilityName: facility.name,
+    stateName: state.name,
+    pageUrl: canonicalUrl,
+    inspectionCount: inspections.length,
+    deficiencyCount: totalDeficiencies,
+    lastInspectionDate: lastNonComplaintInspection,
+    grade: snapshot?.grade?.letter ?? null,
+    tourQuestions,
+  });
+  if (faqSchema) jsonLd.push(faqSchema);
 
   return {
     facility,
