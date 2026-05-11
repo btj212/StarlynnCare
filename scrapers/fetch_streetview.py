@@ -7,8 +7,9 @@ Falls back to a Google Maps Embed thumbnail if Street View has no imagery.
 
 Usage:
     python3 scrapers/fetch_streetview.py --smoke          # first 5 only
-    python3 scrapers/fetch_streetview.py --state CA       # all CA missing
-    python3 scrapers/fetch_streetview.py --refetch        # re-fetch existing too
+    python3 scrapers/fetch_streetview.py --state CA       # all CA missing photos
+    python3 scrapers/fetch_streetview.py --refetch --state CA  # re-fetch all (caution: quota)
+    python3 scrapers/fetch_streetview.py --fix-attribution --state CA  # set attribution only, no API
     python3 scrapers/fetch_streetview.py --state CA --city-slugs "a,b"  # filter (publishable)
 """
 
@@ -28,6 +29,8 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
 
 API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+PHOTO_ATTRIBUTION = "© Google Street View"
 
 # Street View Static API — 640×480 gives a wide exterior shot
 SV_URL = "https://maps.googleapis.com/maps/api/streetview"
@@ -66,11 +69,41 @@ def sv_url(lat: float, lon: float) -> str:
     return f"{SV_URL}?{params}"
 
 
+def fix_attribution_only(conn: psycopg.Connection, state: str) -> int:
+    """
+    Set photo_attribution for facilities that already have a Street View photo_url
+    but NULL attribution. No API calls — just a direct DB update.
+    Returns number of rows updated.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE facilities
+            SET photo_attribution = %s
+            WHERE state_code = %s
+              AND publishable = true
+              AND photo_url IS NOT NULL
+              AND photo_attribution IS NULL
+              AND photo_url LIKE '%%maps.googleapis.com/maps/api/streetview%%'
+            """,
+            (PHOTO_ATTRIBUTION, state),
+        )
+        updated = cur.rowcount
+    conn.commit()
+    return updated
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke", action="store_true", help="First 5 only")
     parser.add_argument("--state", default="CA", help="State code (default: CA)")
     parser.add_argument("--refetch", action="store_true", help="Re-fetch even if photo_url is set")
+    parser.add_argument(
+        "--fix-attribution",
+        dest="fix_attribution",
+        action="store_true",
+        help="Only fix NULL photo_attribution for existing Street View URLs — no API calls",
+    )
     parser.add_argument(
         "--city-slugs",
         dest="city_slugs",
@@ -78,16 +111,30 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not API_KEY:
-        print("ERROR: GOOGLE_MAPS_API_KEY not set in .env.local")
-        sys.exit(1)
     if not DATABASE_URL:
         print("ERROR: DATABASE_URL not set in .env.local")
         sys.exit(1)
 
+    # --fix-attribution: purely a DB update, no API needed
+    if args.fix_attribution:
+        print(f"Fixing NULL photo_attribution for {args.state} Street View photos (no API calls)…")
+        with psycopg.connect(DATABASE_URL) as conn:
+            updated = fix_attribution_only(conn, args.state)
+        print(f"Done. {updated} rows updated with attribution.")
+        return
+
+    if not API_KEY:
+        print("ERROR: GOOGLE_MAPS_API_KEY not set in .env.local")
+        sys.exit(1)
+
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
-            where = ["latitude IS NOT NULL", "longitude IS NOT NULL", "state_code = %s"]
+            where = [
+                "latitude IS NOT NULL",
+                "longitude IS NOT NULL",
+                "state_code = %s",
+                "publishable = true",
+            ]
             params: list = [args.state]
             if not args.refetch:
                 where.append("photo_url IS NULL")
@@ -96,7 +143,6 @@ def main() -> None:
                 if parts:
                     where.append("city_slug = ANY(%s)")
                     params.append(parts)
-                    where.append("publishable = true")
             cur.execute(
                 f"""
                 SELECT id, name, latitude, longitude
@@ -133,11 +179,11 @@ def main() -> None:
                 url = sv_url(lat, lon)
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE facilities SET photo_url = %s WHERE id = %s",
-                        (url, fac_id),
+                        "UPDATE facilities SET photo_url = %s, photo_attribution = %s WHERE id = %s",
+                        (url, PHOTO_ATTRIBUTION, fac_id),
                     )
                 conn.commit()
-                print(f"  ✓ Street View image set")
+                print(f"  ✓ Street View image + attribution set")
                 ok += 1
             else:
                 print(f"  – No Street View imagery found, skipping")
