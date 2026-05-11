@@ -39,13 +39,6 @@ import type { Region } from "@/lib/regions";
 import type { StateInfo } from "@/lib/states";
 
 // ─────────────────────────────────────────────────────────────────
-// Display constants
-// ─────────────────────────────────────────────────────────────────
-
-/** Free-tier inspection history window (years). Older records remain in DB for premium. */
-const INSPECTION_DISPLAY_YEARS = 3;
-
-// ─────────────────────────────────────────────────────────────────
 // Raw DB row types (narrower than full Inspection / Deficiency)
 // ─────────────────────────────────────────────────────────────────
 
