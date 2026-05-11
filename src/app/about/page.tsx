@@ -16,7 +16,7 @@ import {
 const ABOUT_PATH = "/about";
 const aboutCanonical = canonicalFor(ABOUT_PATH);
 const aboutDesc =
-  "A California RN and co-founder built StarlynnCare to help families navigate memory care decisions using verified inspection data and editorial rigor.";
+  "StarlynnCare was built by a California RN and her husband to give families access to state inspection records that already exist — organized for people making care decisions under pressure.";
 
 export const metadata: Metadata = {
   title: "About | StarlynnCare",
@@ -53,7 +53,7 @@ export default function AboutPage() {
       name: "Blake Jones",
       jobTitle: "Co-founder · Operations & editorial systems",
       description:
-        "MBA candidate at UC Berkeley Haas; leads product narrative, data partnerships, and responsible distribution of California licensing records.",
+        "MBA candidate at UC Berkeley Haas (Social Impact concentration); leads the data pipeline, ingestion scripts, and normalization layer that powers StarlynnCare's facility profiles.",
       image: "/images/about/blake-jones.png",
       url: `${SITE_ORIGIN}/about#person-blake-jones`,
     }),
@@ -78,15 +78,49 @@ export default function AboutPage() {
               About StarlynnCare
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-slate max-w-[620px]">
-              Choosing a care facility for someone you love is one of the hardest decisions a family can make —
-              and one of the least transparent. We built StarlynnCare because public regulatory data already
-              exists; it simply was not assembled for families navigating dementia care under pressure.
+              The first time you tour a memory care facility, you are already behind. The marketing materials
+              are professional. The lobby smells like fresh flowers. The admissions coordinator knows exactly
+              how long to make eye contact. And the state inspection record — the document where a regulator
+              walked those same halls and wrote down what they found — is buried on a government portal in a
+              format that assumes you know what a Type-A deficiency is.
             </p>
             <p className="mt-4 text-lg leading-relaxed text-slate max-w-[620px]">
-              Our thesis is straightforward: when inspection narratives, deficiency classifications, and complaint
-              outcomes sit beside plain-language guides on cost, staffing expectations, and tour questions,
-              families stop guessing and start comparing reality to marketing.
+              Most families don&rsquo;t. Most families are calling facilities the same week a neurologist uses
+              the word &ldquo;placement.&rdquo; There is no runway. There is no research team. There is one
+              person — usually a daughter or a spouse — Googling at midnight and clicking through paid
+              directories where the top results are whoever wrote the largest referral check that month.
             </p>
+          </div>
+        </section>
+
+        {/* ── How it works ─────────────────────────────────────────────────── */}
+        <section className="border-b border-sc-border">
+          <div className="mx-auto max-w-[760px] px-6 py-14 md:px-8 md:py-16">
+            <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
+              How it works
+            </h2>
+            <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
+              <p>
+                The technical core is a data pipeline that ingests state inspection exports and normalizes
+                them into facility profiles. For California, that means pulling directly from CDSS Community
+                Care Licensing — license numbers, facility characteristics, deficiency narratives, and complaint
+                outcomes, matched to facilities by their official CDSS license identifier. Texas records come
+                from HHSC&rsquo;s Long-Term Care licensing system. Oregon runs through DHS, Washington through
+                DSHS, Minnesota through MDH. Each regulator uses different severity classifications and different
+                inspection frequencies; the profiles explain those differences in plain language so a family
+                comparing a California RCFE to a Texas ALF doesn&rsquo;t mistake the terminology for the quality
+                signal.
+              </p>
+              <p>
+                Facility grades are derived from peer comparison within each state, not across states. A grade
+                reflects how a facility&rsquo;s citation history compares to similarly-licensed facilities in the
+                same regulatory environment — not against a national average that would obscure what
+                California&rsquo;s inspection frequency actually looks like relative to Minnesota&rsquo;s. The
+                methodology is published and linkable. Discharge planners and geriatric care managers are welcome
+                to cite StarlynnCare profiles directly in placement packets; the license numbers link straight to
+                the originating regulator portal whenever families want to verify the primary source.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -116,14 +150,23 @@ export default function AboutPage() {
                 </div>
                 <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
                   <p>
-                    Friends call her Star. She&rsquo;s a registered nurse whose work spans older adult primary care,
-                    public-health case management, and regulatory survey work — walking into facilities after complaints,
-                    auditing records, interviewing staff, and quickly seeing whether issues were being fixed or reframed.
+                    Rebecca Lynn Starkey — friends call her Star — is a registered nurse whose career spans
+                    older adult primary care, public health case management, and regulatory survey work in
+                    California. That last category is the relevant one here: she has walked into facilities
+                    after complaints, reviewed records, interviewed staff, and seen firsthand whether cited
+                    deficiencies were being fixed or being reframed. Her California RN license (Board of
+                    Registered Nursing #95100373, verifiable at search.dca.ca.gov) is the credential that
+                    anchors StarlynnCare&rsquo;s clinical review chain. Every guide, every glossary entry,
+                    and every tour question on this site passes through Star&rsquo;s review before it
+                    publishes.
                   </p>
                   <p>
-                    After seeing ongoing gaps in care, visiting repeat-offender facilities, and what felt like a
-                    near-endless stream of paid facility reviews, she set out to build a clearer, no-nonsense way for
-                    families to cut through noise and make confident decisions for their loved ones.
+                    What she saw in that work was a pattern: the same facilities appeared on repeat. The same
+                    classes of deficiency — medication errors, staffing shortfalls, inadequate dementia
+                    programming — kept showing up under new administration names or after a round of cosmetic
+                    renovations. Families making placement decisions had no systematic way to see that history.
+                    Paid review sites, referral aggregators, and facility marketing filled the void with
+                    content that served operators. Star decided to build something that served families.
                   </p>
                 </div>
               </div>
@@ -150,13 +193,15 @@ export default function AboutPage() {
                 </div>
                 <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
                   <p>
-                    Blake leads the publishing stack that ingests CDSS exports, normalizes inspection narratives,
-                    and keeps StarlynnCare&apos;s methodology transparent enough for journalists and discharge
-                    planners to reuse with attribution.
+                    Blake leads the publishing stack — the ingestion scripts, the normalization layer, the
+                    data pipeline that turns raw CDSS and HHSC exports into the structured facility profiles
+                    on this site. His background is brand strategy and operations; he is currently an MBA
+                    candidate at UC Berkeley Haas, where his concentration is Social Impact.
                   </p>
                   <p>
-                    His background is brand storytelling and operations — currently an MBA candidate at UC Berkeley
-                    Haas, where he is exploring entrepreneurship through the lens of social impact.
+                    He is also Star&rsquo;s husband, which is how this project started: a conversation about
+                    why the families she was trying to help kept making decisions without the information she
+                    already had access to.
                   </p>
                 </div>
               </div>
@@ -176,22 +221,30 @@ export default function AboutPage() {
             </h2>
             <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
               <p>
-                We publish inspection-derived facts and clearly labeled interpretation. We do not accept referral
-                fees, &ldquo;lead auctions,&rdquo; or sponsored tiles inside facility directories. If that policy
-                ever changes, this page will scream the update before any contract ink dries.
+                StarlynnCare&rsquo;s editorial decisions — which facilities appear, how they are graded,
+                what the guides say — are made by the founders without operator input. Neither Blake nor Star
+                holds equity in any licensed memory care operator reviewed on this site. No pending commercial
+                relationships with operators exist. Future partnerships — research grants, foundation funding,
+                or data licensing arrangements — will be disclosed on this page if they could materially
+                influence how facilities are graded or ranked.
               </p>
               <p>
-                Corrections matter: when primary records disagree with our copy, we fix the page, cite the source,
-                and log substantive clinical edits with a refreshed reviewer date. Read the full commitment in our{" "}
+                Errors happen. When primary regulatory records contradict something published on a facility
+                profile, the correction goes up within five business days of verifiable notice. Substantive
+                clinical changes to editorial guides carry an updated reviewer date and a note on what changed.
+                The fastest path to a correction is{" "}
+                <a
+                  href="mailto:hello@starlynncare.com"
+                  className="font-medium text-teal underline-offset-4 hover:underline"
+                >
+                  hello@starlynncare.com
+                </a>{" "}
+                with the facility&rsquo;s license number and a link to the primary source. Read the full
+                commitment in our{" "}
                 <Link href="/editorial-policy" className="font-medium text-teal underline-offset-4 hover:underline">
                   editorial policy
                 </Link>
                 .
-              </p>
-              <p>
-                Discharge planners, social workers, and geriatric care managers are welcome to cite StarlynnCare
-                URLs in packets — the license numbers link straight to CDSS source material whenever families want
-                to double-click.
               </p>
             </div>
           </div>
