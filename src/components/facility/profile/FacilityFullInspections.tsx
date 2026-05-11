@@ -266,7 +266,7 @@ function InspectionItem({
 }
 
 export function FacilityFullInspections({ profile }: { profile: FacilityProfile }) {
-  const { inspections, deficienciesByInspection, totals, cfg } = profile;
+  const { inspections, deficienciesByInspection, totals, cfg, hiddenOlderCount, oldestHiddenYear } = profile;
 
   return (
     <section id="full-record" className="border-b border-paper-rule py-16">
@@ -347,6 +347,18 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
             >
               Open all raw {cfg.agencyShort} PDFs →
             </a>
+          </div>
+        )}
+
+        {hiddenOlderCount > 0 && oldestHiddenYear !== null && (
+          <div className="mt-6 rounded border border-paper-rule bg-paper-2 px-5 py-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-wide">
+              <span className="text-ink-2 font-semibold">{hiddenOlderCount} older inspection{hiddenOlderCount === 1 ? "" : "s"}</span>
+              {" "}from {oldestHiddenYear} are not shown in the free view.
+            </p>
+            <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.07em] text-ink-3 border border-paper-rule px-2.5 py-1 whitespace-nowrap">
+              Full history · Coming soon
+            </span>
           </div>
         )}
       </div>

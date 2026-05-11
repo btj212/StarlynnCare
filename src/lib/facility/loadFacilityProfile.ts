@@ -174,6 +174,10 @@ export interface FacilityProfile {
   hiddenOlderCount: number;
   /** Year of the oldest inspection on record (used for footer copy). Null when no inspections exist. */
   oldestHiddenYear: number | null;
+  /** Depth of historical coverage based on full ingested history span. */
+  dataDepth: DataDepth;
+  /** Which display tier is currently active. Always "free" until premium is built. */
+  visibilityTier: InspectionVisibilityTier;
 
   /** Raw output from facility_snapshot() RPC. null when unavailable. */
   snapshot: SnapshotPayload | null;
@@ -423,6 +427,16 @@ export async function loadFacilityProfile(params: {
 
   const visibleInspectionIds = new Set(inspections.map((i) => i.id));
   const deficiencies = allDeficiencies.filter((d) => visibleInspectionIds.has(d.inspection_id));
+
+  // Derive data depth from full history span (not just the visible window)
+  const dataDepth: DataDepth = (() => {
+    if (allInspections.length === 0 || oldestHiddenYear === null) return "shallow";
+    const currentYear = new Date().getUTCFullYear();
+    const spanYears = currentYear - oldestHiddenYear;
+    if (spanYears >= 5) return "deep";
+    if (spanYears >= 2) return "standard";
+    return "shallow";
+  })();
   // ─────────────────────────────────────────────────────────────────────────
 
   // Build deficiency map
@@ -536,6 +550,8 @@ export async function loadFacilityProfile(params: {
     },
     hiddenOlderCount,
     oldestHiddenYear,
+    dataDepth,
+    visibilityTier: "free" as InspectionVisibilityTier,
 
     snapshot,
     timeline,

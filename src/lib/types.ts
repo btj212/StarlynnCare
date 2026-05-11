@@ -5,6 +5,23 @@
 
 export type StateConfidence = "high" | "medium" | "low";
 
+/**
+ * Which inspection history tier is visible on the page.
+ * Free: last 3 years. Premium: full history.
+ * Governs the display filter in loadFacilityProfile.ts — DB is always complete.
+ */
+export type InspectionVisibilityTier = "free" | "premium";
+
+/**
+ * Depth of historical inspection coverage for a facility.
+ * Derived from the total number of years spanned by ingested inspections.
+ * Used for premium upsell copy and data-quality badges.
+ *   shallow  — < 2 years of records
+ *   standard — 2–5 years of records
+ *   deep     — 5+ years of records
+ */
+export type DataDepth = "shallow" | "standard" | "deep";
+
 export interface State {
   id: number;
   code: string;
