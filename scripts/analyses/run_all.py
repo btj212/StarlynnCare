@@ -23,6 +23,10 @@ REGISTRY: dict[str, str] = {
     "cost_vs_quality_ca": "scripts.analyses.cost_vs_quality_ca",
     "chain_operator_scorecard_ca": "scripts.analyses.chain_operator_scorecard_ca",
     "repeat_offender_report": "scripts.analyses.repeat_offender_report",
+    "memory_care_specific_violations": "scripts.analyses.memory_care_specific_violations",
+    "geographic_equity_map": "scripts.analyses.geographic_equity_map",
+    "severity_trends_2020_2025": "scripts.analyses.severity_trends_2020_2025",
+    "worst_week_seasonal": "scripts.analyses.worst_week_seasonal",
 }
 
 
