@@ -14,4 +14,4 @@
 
 Using county-level Genworth 2024 cost-of-care medians mapped to 484 CA memory care facilities, the correlation between price and inspection severity is 0.27 — essentially flat, confirming price is no guarantee of quality. 13% of CA facilities carry a high severity index (>5). The most expensive county (San Francisco) and the county with the highest average citation severity (Contra Costa) are different counties, reinforcing that cost alone does not predict safety. Headline: 'In California memory care, price is no guarantee of quality.'
 
-*Generated: 2026-05-11 16:53*
+*Generated: 2026-05-11 16:59*
