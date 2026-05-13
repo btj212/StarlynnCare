@@ -349,7 +349,8 @@ export default function CARCFERepeatCitationsPage() {
               <Prose>
                 <p>
                   Five operators with three or more CA facilities in the StarlynnCare database meet
-                  the threshold for chain analysis. Their{" "}
+                  the minimum threshold for chain analysis. (Raising the threshold to 5+ facilities
+                  would leave only one operator — not a meaningful list.) Their{" "}
                   <strong>Weighted Citation Scores (WCS)</strong> are computed from CDSS inspection
                   records for the last three years (May 2023 – May 2026).
                 </p>
@@ -358,6 +359,11 @@ export default function CARCFERepeatCitationsPage() {
                   deficiency sum. Severity weights: 1 (minor) = 1, 2 (moderate) = 2, 3 (serious) = 3,
                   4 (immediate jeopardy) = 5. Scope data is not available for CA RCFE records; scope
                   multiplier is 1. Lower score = fewer and less severe citations per licensed bed.
+                  Among chains with enough statistical backing to support comparison, the clearest
+                  finding is{" "}
+                  <strong>Aegis Senior Communities</strong> — 4 facilities, 55 inspections analyzed,
+                  WCS 0.137 — versus the Oakmont-affiliated Transformer Opco group at 12 facilities,
+                  78 inspections, WCS 0.021.
                 </p>
               </Prose>
 
@@ -366,15 +372,18 @@ export default function CARCFERepeatCitationsPage() {
                 affiliations. Operators running multiple legal entities — for example, Oakmont Senior
                 Living appears under at least two distinct LLC names in CDSS records — may appear
                 as separate entries. Only operators with ≥3 CA facilities in our dataset are included.
+                Operators marked ⚠ have fewer than 50 total licensed beds; their scores are more
+                sensitive to individual inspection outcomes and should be interpreted with caution.
               </MethodNote>
 
               <div className="mt-6 overflow-x-auto -mx-4 sm:mx-0">
-                <table className="w-full text-[13.5px] text-left border-collapse min-w-[540px]">
+                <table className="w-full text-[13.5px] text-left border-collapse min-w-[580px]">
                   <thead>
                     <tr className="border-b-2 border-paper-rule">
                       {[
                         { label: "CDSS Operator Name", align: "left" },
-                        { label: "CA Facilities", align: "right" },
+                        { label: "Facilities", align: "right" },
+                        { label: "Total Beds", align: "right" },
                         { label: "Inspections", align: "right" },
                         { label: "Deficiencies", align: "right" },
                         { label: "WCS", align: "right" },
@@ -395,15 +404,34 @@ export default function CARCFERepeatCitationsPage() {
                         className="border-b border-paper-rule hover:bg-paper-2 transition-colors"
                       >
                         <td className="py-3 pr-4 leading-[1.35]">
-                          <span className="text-ink font-medium">{row.cdssOperatorName}</span>
+                          <span className="text-ink font-medium">
+                            {row.smallSampleNote && (
+                              <span
+                                className="text-gold mr-1"
+                                title={row.smallSampleNote}
+                                aria-label={`Small sample caveat: ${row.smallSampleNote}`}
+                              >
+                                ⚠
+                              </span>
+                            )}
+                            {row.cdssOperatorName}
+                          </span>
                           {row.brandNote && row.brandNote !== row.cdssOperatorName && (
                             <span className="block text-[11.5px] text-ink-4 mt-0.5">
                               ({row.brandNote})
                             </span>
                           )}
+                          {row.smallSampleNote && (
+                            <span className="block text-[11px] text-gold mt-0.5 leading-[1.3] max-w-[40ch]">
+                              {row.smallSampleNote}
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
                           {row.caFacilitiesInDataset}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
+                          {row.totalBeds.toLocaleString()}
                         </td>
                         <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
                           {row.totalInspections}
@@ -414,14 +442,19 @@ export default function CARCFERepeatCitationsPage() {
                         <td className="py-3 text-right">
                           <span
                             className={`font-[family-name:var(--font-mono)] font-semibold ${
-                              row.weightedCitationScore > 0.2
-                                ? "text-rust"
-                                : row.weightedCitationScore > 0.05
-                                  ? "text-gold"
-                                  : "text-teal"
+                              row.smallSampleNote
+                                ? "text-ink-3"
+                                : row.weightedCitationScore > 0.1
+                                  ? "text-rust"
+                                  : row.weightedCitationScore > 0.05
+                                    ? "text-gold"
+                                    : "text-teal"
                             }`}
                           >
                             {row.weightedCitationScore.toFixed(3)}
+                            {row.smallSampleNote && (
+                              <span className="text-[10px] text-ink-4 ml-0.5">†</span>
+                            )}
                           </span>
                         </td>
                       </tr>
@@ -429,9 +462,10 @@ export default function CARCFERepeatCitationsPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-[12px] text-ink-4 mt-3 max-w-[66ch]">
+              <p className="text-[12px] text-ink-4 mt-3 max-w-[68ch]">
                 WCS = Weighted Citation Score (lower = fewer/less-severe citations per licensed bed).
-                Last 3 years of data. Source: CDSS records in StarlynnCare database (queried 2026-05-11).
+                Last 3 years. ⚠ = fewer than 50 total beds; score less statistically reliable.
+                Source: CDSS records in StarlynnCare database (queried 2026-05-11).
               </p>
 
               {/* Section 3: The trend */}

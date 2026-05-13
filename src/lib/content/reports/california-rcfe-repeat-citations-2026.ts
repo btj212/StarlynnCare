@@ -271,6 +271,17 @@ export const REPEAT_OFFENDERS: RepeatOffenderRow[] = [
 ];
 
 // ─── Chain scorecard (exact WCS, ≥3 facilities, last 3 years) ────────────────
+//
+// THRESHOLD ANALYSIS (queried 2026-05-11):
+//   ≥3 facilities: 5 operators — the only viable threshold.
+//   ≥5 facilities: 1 operator  (Transformer Opco / Oakmont only — not a useful list).
+//   ≥10 facilities: 1 operator (same).
+//
+// Decision: use ≥3. This gives a list of 5. Operators with very small total
+// bed counts (Alara: 3 facilities, ~18 beds) are flagged with `smallSampleNote`
+// to allow readers and editors to apply appropriate caution. The clearest
+// "worst large chain" for editorial use is Aegis Senior Communities (4 facilities,
+// 55 inspections, WCS 0.137) which has substantially more statistical backing.
 
 export type ChainScorecardRow = {
   /** Operator name exactly as it appears in CDSS licensing records. */
@@ -278,14 +289,21 @@ export type ChainScorecardRow = {
   /** Consumer-recognizable brand name (if identifiable; null if obscure LLC). */
   brandNote: string | null;
   caFacilitiesInDataset: number;
+  totalBeds: number;
   totalInspections: number;
   totalDeficiencies: number;
   weightedCitationScore: number;
+  /**
+   * Non-null when small total-bed count limits statistical reliability.
+   * Render as a visible footnote on the scorecard table.
+   */
+  smallSampleNote: string | null;
 };
 
 /**
  * Chain scorecard — Weighted Citation Score (WCS).
  * Only operators with ≥3 CA facilities in the dataset.
+ * ≥5 and ≥10 thresholds both yield ≤1 operator — not a meaningful list.
  * Last 3 years of data (2023-05-11 – 2026-05-11).
  * Sorted worst to best (highest WCS first).
  * Source: CDSS records in StarlynnCare DB, queried 2026-05-11.
@@ -295,41 +313,52 @@ export const CHAIN_SCORECARD: ChainScorecardRow[] = [
     cdssOperatorName: "Alara Health Services Inc",
     brandNote: "Alara Health Services",
     caFacilitiesInDataset: 3,
+    totalBeds: 18,
     totalInspections: 11,
     totalDeficiencies: 5,
     weightedCitationScore: 0.778,
+    smallSampleNote:
+      "3 facilities, ~18 total licensed beds. Score is sensitive to small-sample effects at this scale.",
   },
   {
     cdssOperatorName: "Aegis Senior Communities, Llc",
     brandNote: "Aegis Senior Communities",
     caFacilitiesInDataset: 4,
+    totalBeds: 362,
     totalInspections: 55,
     totalDeficiencies: 19,
     weightedCitationScore: 0.137,
+    smallSampleNote: null,
   },
   {
     cdssOperatorName: "Well Oak Tenant Llc;oakmont Management Group Llc",
     brandNote: "Oakmont Senior Living (Well Oak entities)",
     caFacilitiesInDataset: 3,
+    totalBeds: 476,
     totalInspections: 31,
     totalDeficiencies: 8,
     weightedCitationScore: 0.073,
+    smallSampleNote: null,
   },
   {
     cdssOperatorName: "Transformer Opco Llc;oakmont Management Group Llc",
     brandNote: "Oakmont Senior Living (Transformer Opco entities)",
     caFacilitiesInDataset: 12,
+    totalBeds: 1212,
     totalInspections: 78,
     totalDeficiencies: 11,
     weightedCitationScore: 0.021,
+    smallSampleNote: null,
   },
   {
     cdssOperatorName: "Front Porch Communities and Services",
     brandNote: "Front Porch Communities",
     caFacilitiesInDataset: 3,
+    totalBeds: 1254,
     totalInspections: 33,
     totalDeficiencies: 3,
     weightedCitationScore: 0.006,
+    smallSampleNote: null,
   },
 ];
 
@@ -383,7 +412,7 @@ A "regulatory citation" or "deficiency" is a finding by a CDSS licensing agent t
 
 "Repeat citation" in this analysis means the same CCR Title 22 regulation code was cited at the same facility in 3 or more distinct inspection visits in our database (May 2019 – May 2026). A repeat citation does not mean the violation was never corrected between visits.
 
-"Chain" means facilities sharing the same operator name as recorded in CDSS licensing records. CDSS records list the legal entity, which may differ from consumer brand names. Only operators with 3 or more CA facilities in our dataset are included.
+"Chain" means facilities sharing the same operator name as recorded in CDSS licensing records. CDSS records list the legal entity, which may differ from consumer brand names. Chain rankings include only operators with 3 or more facilities in our dataset; operators with fewer facilities are excluded to ensure a minimum level of statistical meaningfulness. Operators with very small total bed counts (fewer than 50 beds across all facilities) have scores that are more sensitive to individual inspection outcomes and should be interpreted with caution.
 
 "Weighted Citation Score" is a relative index of citation frequency and severity in our dataset over the last three years. It is not a safety rating or clinical quality measure.
 
