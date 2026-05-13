@@ -270,95 +270,69 @@ export const REPEAT_OFFENDERS: RepeatOffenderRow[] = [
   },
 ];
 
-// ─── Chain scorecard (exact WCS, ≥3 facilities, last 3 years) ────────────────
+// ─── Chain scorecard (exact WCS, ≥3 facilities AND ≥50 total beds, last 3yr) ──
 //
-// THRESHOLD ANALYSIS (queried 2026-05-11):
-//   ≥3 facilities: 5 operators — the only viable threshold.
-//   ≥5 facilities: 1 operator  (Transformer Opco / Oakmont only — not a useful list).
-//   ≥10 facilities: 1 operator (same).
-//
-// Decision: use ≥3. This gives a list of 5. Operators with very small total
-// bed counts (Alara: 3 facilities, ~18 beds) are flagged with `smallSampleNote`
-// to allow readers and editors to apply appropriate caution. The clearest
-// "worst large chain" for editorial use is Aegis Senior Communities (4 facilities,
-// 55 inspections, WCS 0.137) which has substantially more statistical backing.
+// THRESHOLD (queried 2026-05-13):
+//   ≥3 facilities + ≥50 total beds: 4 operators (Alara Health, 18 beds, drops out).
+//   Oakmont Senior Living operates under two legal entities in CDSS records
+//   ("Well Oak Tenant Llc;oakmont Management Group Llc" and
+//    "Transformer Opco Llc;oakmont Management Group Llc") — combined here for
+//   readability. Combined WCS = facility-count-weighted average of the two
+//   group scores: (3×0.073 + 12×0.021)/15 = 0.471/15 = 0.031.
 
 export type ChainScorecardRow = {
-  /** Operator name exactly as it appears in CDSS licensing records. */
-  cdssOperatorName: string;
-  /** Consumer-recognizable brand name (if identifiable; null if obscure LLC). */
-  brandNote: string | null;
+  /** Display name — may be combined brand if multiple CDSS entities share a brand. */
+  displayName: string;
+  /** Raw CDSS operator_name(s); pipe-separated when combined. */
+  cdssOperatorNames: string;
   caFacilitiesInDataset: number;
   totalBeds: number;
   totalInspections: number;
   totalDeficiencies: number;
   weightedCitationScore: number;
-  /**
-   * Non-null when small total-bed count limits statistical reliability.
-   * Render as a visible footnote on the scorecard table.
-   */
-  smallSampleNote: string | null;
+  /** Non-null when this row combines multiple CDSS legal entities. */
+  combinedEntitiesNote: string | null;
 };
 
 /**
  * Chain scorecard — Weighted Citation Score (WCS).
- * Only operators with ≥3 CA facilities in the dataset.
- * ≥5 and ≥10 thresholds both yield ≤1 operator — not a meaningful list.
- * Last 3 years of data (2023-05-11 – 2026-05-11).
- * Sorted worst to best (highest WCS first).
- * Source: CDSS records in StarlynnCare DB, queried 2026-05-11.
+ * Gate: ≥3 CA facilities AND ≥50 total licensed beds in dataset.
+ * Oakmont's two CDSS entities combined into one display row.
+ * Last 3 years (2023-05-13 – 2026-05-13). Sorted worst to best.
+ * Source: CDSS records in StarlynnCare DB, queried 2026-05-13.
  */
 export const CHAIN_SCORECARD: ChainScorecardRow[] = [
   {
-    cdssOperatorName: "Alara Health Services Inc",
-    brandNote: "Alara Health Services",
-    caFacilitiesInDataset: 3,
-    totalBeds: 18,
-    totalInspections: 11,
-    totalDeficiencies: 5,
-    weightedCitationScore: 0.778,
-    smallSampleNote:
-      "3 facilities, ~18 total licensed beds. Score is sensitive to small-sample effects at this scale.",
-  },
-  {
-    cdssOperatorName: "Aegis Senior Communities, Llc",
-    brandNote: "Aegis Senior Communities",
+    displayName: "Aegis Senior Communities",
+    cdssOperatorNames: "Aegis Senior Communities, Llc",
     caFacilitiesInDataset: 4,
     totalBeds: 362,
     totalInspections: 55,
     totalDeficiencies: 19,
     weightedCitationScore: 0.137,
-    smallSampleNote: null,
+    combinedEntitiesNote: null,
   },
   {
-    cdssOperatorName: "Well Oak Tenant Llc;oakmont Management Group Llc",
-    brandNote: "Oakmont Senior Living (Well Oak entities)",
-    caFacilitiesInDataset: 3,
-    totalBeds: 476,
-    totalInspections: 31,
-    totalDeficiencies: 8,
-    weightedCitationScore: 0.073,
-    smallSampleNote: null,
+    displayName: "Oakmont Senior Living (multiple entities)",
+    cdssOperatorNames:
+      "Well Oak Tenant Llc;oakmont Management Group Llc | Transformer Opco Llc;oakmont Management Group Llc",
+    caFacilitiesInDataset: 15,
+    totalBeds: 1688,
+    totalInspections: 109,
+    totalDeficiencies: 19,
+    weightedCitationScore: 0.031,
+    combinedEntitiesNote:
+      "Oakmont Senior Living operates under multiple legal entities in CDSS records. Rows have been combined for readability. Individual entity names: Well Oak Tenant Llc;oakmont Management Group Llc (3 facilities) and Transformer Opco Llc;oakmont Management Group Llc (12 facilities).",
   },
   {
-    cdssOperatorName: "Transformer Opco Llc;oakmont Management Group Llc",
-    brandNote: "Oakmont Senior Living (Transformer Opco entities)",
-    caFacilitiesInDataset: 12,
-    totalBeds: 1212,
-    totalInspections: 78,
-    totalDeficiencies: 11,
-    weightedCitationScore: 0.021,
-    smallSampleNote: null,
-  },
-  {
-    cdssOperatorName: "Front Porch Communities and Services",
-    brandNote: "Front Porch Communities",
+    displayName: "Front Porch Communities and Services",
+    cdssOperatorNames: "Front Porch Communities and Services",
     caFacilitiesInDataset: 3,
     totalBeds: 1254,
     totalInspections: 33,
     totalDeficiencies: 3,
     weightedCitationScore: 0.006,
-    smallSampleNote: null,
+    combinedEntitiesNote: null,
   },
 ];
 
@@ -412,7 +386,7 @@ A "regulatory citation" or "deficiency" is a finding by a CDSS licensing agent t
 
 "Repeat citation" in this analysis means the same CCR Title 22 regulation code was cited at the same facility in 3 or more distinct inspection visits in our database (May 2019 – May 2026). A repeat citation does not mean the violation was never corrected between visits.
 
-"Chain" means facilities sharing the same operator name as recorded in CDSS licensing records. CDSS records list the legal entity, which may differ from consumer brand names. Chain rankings include only operators with 3 or more facilities in our dataset; operators with fewer facilities are excluded to ensure a minimum level of statistical meaningfulness. Operators with very small total bed counts (fewer than 50 beds across all facilities) have scores that are more sensitive to individual inspection outcomes and should be interpreted with caution.
+"Chain" means facilities sharing the same operator name as recorded in CDSS licensing records. CDSS records list the legal entity, which may differ from consumer brand names. Chain rankings include only operators with 3 or more facilities and at least 50 total licensed beds in our dataset. Where a single operating brand appears under multiple legal entity names in CDSS records, rows have been combined for readability.
 
 "Weighted Citation Score" is a relative index of citation frequency and severity in our dataset over the last three years. It is not a safety rating or clinical quality measure.
 
