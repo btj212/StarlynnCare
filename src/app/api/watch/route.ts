@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
 import { sendWatchConfirmation } from "@/lib/email/watch";
+import { addLoopsContact } from "@/lib/loops";
 
 export async function POST(req: NextRequest) {
   let body: { email?: string; facilityId?: string; facilityName?: string; source?: string };
@@ -46,6 +47,15 @@ export async function POST(req: NextRequest) {
     console.error("[watch] email error:", emailErr);
     // Row is saved; email can be retried
   }
+
+  // Mirror to Loops audience so all sign-ups are visible in one place
+  await addLoopsContact({
+    email,
+    userGroup: "facility_watch",
+    source: source ?? "facility_hero",
+    facilityName,
+    facilityId: facilityId,
+  });
 
   return NextResponse.json({ ok: true });
 }
