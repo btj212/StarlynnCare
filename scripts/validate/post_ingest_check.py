@@ -218,6 +218,127 @@ def _check_no_null_rank_publishable(cur, state: str) -> None:
     )
 
 
+def _check_chain_wcs_drift_ca(cur) -> None:
+    """
+    CA-only: recompute chain WCS from DB and flag if any chain has drifted
+    more than 10% from the value hardcoded in the report content file.
+
+    Severity weights follow HOOK_DECISION.md:
+        1 → 1, 2 → 2, 3 → 3, 4 → 5, NULL → 1
+    Beds NULL → default 30.
+    Chain WCS = average of per-facility WCS scores.
+    Threshold: ≥3 CA publishable facilities AND ≥50 total beds.
+    """
+    import re
+    from pathlib import Path
+
+    print("\n[Chain WCS drift check — CA]")
+
+    report_ts = Path(__file__).resolve().parents[2] / (
+        "src/lib/content/reports/california-rcfe-repeat-citations-2026.ts"
+    )
+    if not report_ts.exists():
+        print(f"  WARNING: report TS file not found at {report_ts}")
+        check("CA: report TS file exists", False, str(report_ts))
+        return
+
+    src = report_ts.read_text()
+    match = re.search(r"export const CHAIN_SCORECARD.*?\[(.+?)\];", src, re.DOTALL)
+    if not match:
+        check("CA: CHAIN_SCORECARD parseable", False, "regex found nothing")
+        return
+
+    block = match.group(1)
+    ts_chains: list[dict] = []
+    for entry in re.finditer(r"\{([^{}]+)\}", block, re.DOTALL):
+        text = entry.group(1)
+
+        def _str(key: str) -> str | None:
+            m = re.search(rf'{key}\s*:\s*"([^"]+)"', text, re.DOTALL)
+            return m.group(1).strip() if m else None
+
+        def _num(key: str) -> float | None:
+            m = re.search(rf"{key}\s*:\s*([\d.]+)", text)
+            return float(m.group(1)) if m else None
+
+        display = _str("displayName")
+        op_raw = _str("cdssOperatorNames")
+        wcs = _num("weightedCitationScore")
+        if display and op_raw and wcs is not None:
+            ts_chains.append({"display": display, "op_names": op_raw, "wcs": wcs})
+
+    if not ts_chains:
+        check("CA: CHAIN_SCORECARD has entries", False, "parsed 0 chains")
+        return
+
+    drift_found = False
+    for chain in ts_chains:
+        op_names = [n.strip() for n in chain["op_names"].replace(" | ", "|").split("|")]
+        ilike = " OR ".join("LOWER(f.operator_name) = LOWER(%s)" for _ in op_names)
+
+        cur.execute(
+            f"""
+            WITH fac_scores AS (
+                SELECT
+                    f.id,
+                    COALESCE(f.beds, 30) AS eff_beds,
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN d.severity = 1 THEN 1
+                                WHEN d.severity = 2 THEN 2
+                                WHEN d.severity = 3 THEN 3
+                                WHEN d.severity = 4 THEN 5
+                                ELSE 1
+                            END
+                        )::numeric / NULLIF(COALESCE(f.beds, 30), 0),
+                        0
+                    ) AS wcs
+                FROM facilities f
+                LEFT JOIN inspections i
+                    ON i.facility_id = f.id
+                    AND i.inspection_date >= CURRENT_DATE - INTERVAL '3 years'
+                LEFT JOIN deficiencies d ON d.inspection_id = i.id
+                WHERE f.state_code = 'CA'
+                  AND f.publishable = true
+                  AND ({ilike})
+                GROUP BY f.id, f.beds
+            )
+            SELECT AVG(wcs)::numeric AS chain_wcs FROM fac_scores
+            """,
+            op_names,
+        )
+        row = cur.fetchone()
+        db_wcs = float(row["chain_wcs"] or 0)
+        ts_wcs = chain["wcs"]
+
+        if ts_wcs == 0 and db_wcs == 0:
+            pct_change = 0.0
+        elif ts_wcs == 0:
+            pct_change = 100.0
+        else:
+            pct_change = abs(db_wcs - ts_wcs) / max(abs(ts_wcs), 0.001) * 100
+
+        if pct_change > 10:
+            drift_found = True
+            print(
+                f"  WARN: Chain '{chain['display']}' WCS drifted {pct_change:.1f}%"
+                f"  (TS={ts_wcs:.3f}  DB={db_wcs:.3f})"
+            )
+
+    if drift_found:
+        print(
+            "  WARN: Chain scorecard drift detected — re-run "
+            "scripts/analyses/chain_operator_scorecard_ca.py and update the report content file."
+        )
+
+    check(
+        "CA: chain WCS drift ≤10% from TS file",
+        not drift_found,
+        "one or more chains have drifted >10% — update report content file" if drift_found else "",
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="StarlynnCare Layer 5 — Post-ingest validation"
@@ -252,6 +373,8 @@ def main() -> None:
             _check_rank_distribution(cur, state)
             _check_freshness(cur, state)
             _check_no_null_rank_publishable(cur, state)
+            if state == "CA":
+                _check_chain_wcs_drift_ca(cur)
 
     run_all_checks(f"Layer 5 (post-ingest {state})")
 

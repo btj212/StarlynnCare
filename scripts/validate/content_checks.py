@@ -391,6 +391,96 @@ def _check_chain_scorecard(cur) -> None:
             print(f"    • {f}")
 
 
+def _check_chain_wcs_drift(cur) -> None:
+    """
+    Re-query the DB and flag if any CA chain's WCS has changed by more than 10%
+    from the value in the report content file.
+
+    Uses the canonical HOOK_DECISION.md severity weights:
+        severity 1→1, 2→2, 3→3, 4→5, NULL→1.  beds NULL → default 30.
+    Chain WCS = average of per-facility WCS scores (same as scorecard formula).
+
+    Outputs a specific action message on drift so engineers know exactly what to run.
+    """
+    print("\n[Chain WCS drift check (>10%) — CA]")
+
+    chains = _parse_chain_scorecard()
+    if not chains:
+        check("CA: chain WCS drift check skipped", True, "no chains parsed from TS file")
+        return
+
+    drift_found = False
+
+    for chain in chains:
+        op_names = [
+            n.strip()
+            for n in chain["cdssOperatorNames"].replace(" | ", "|").split("|")
+        ]
+        ts_wcs = chain.get("weightedCitationScore") or 0.0
+        ilike = " OR ".join("LOWER(f.operator_name) = LOWER(%s)" for _ in op_names)
+
+        cur.execute(
+            f"""
+            WITH fac_scores AS (
+                SELECT
+                    f.id,
+                    COALESCE(f.beds, 30) AS eff_beds,
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN d.severity = 1 THEN 1
+                                WHEN d.severity = 2 THEN 2
+                                WHEN d.severity = 3 THEN 3
+                                WHEN d.severity = 4 THEN 5
+                                ELSE 1
+                            END
+                        )::numeric / NULLIF(COALESCE(f.beds, 30), 0),
+                        0
+                    ) AS wcs
+                FROM facilities f
+                LEFT JOIN inspections i
+                    ON i.facility_id = f.id
+                    AND i.inspection_date >= CURRENT_DATE - INTERVAL '3 years'
+                LEFT JOIN deficiencies d ON d.inspection_id = i.id
+                WHERE f.state_code = 'CA'
+                  AND f.publishable = true
+                  AND ({ilike})
+                GROUP BY f.id, f.beds
+            )
+            SELECT AVG(wcs)::numeric AS chain_wcs FROM fac_scores
+            """,
+            op_names,
+        )
+        row = cur.fetchone()
+        db_wcs = float(row["chain_wcs"] or 0)
+
+        if ts_wcs == 0 and db_wcs == 0:
+            pct_change = 0.0
+        elif ts_wcs == 0:
+            pct_change = 100.0
+        else:
+            pct_change = abs(db_wcs - ts_wcs) / max(abs(ts_wcs), 0.001) * 100
+
+        if pct_change > 10:
+            drift_found = True
+            print(
+                f"  WARN: Chain '{chain['displayName']}' WCS drifted {pct_change:.1f}%"
+                f"  (TS={ts_wcs:.3f}  DB={db_wcs:.3f})"
+            )
+
+    if drift_found:
+        print(
+            "  WARN: Chain scorecard drift detected — re-run "
+            "scripts/analyses/chain_operator_scorecard_ca.py and update the report content file."
+        )
+
+    check(
+        "CA: chain WCS drift ≤10% from TS file",
+        not drift_found,
+        "one or more chains drifted >10% — update report content file" if drift_found else "",
+    )
+
+
 def _check_positive_label_audit(cur) -> None:
     """
     Scan all facility content headlines for positive superlatives.
@@ -459,6 +549,7 @@ def main() -> None:
         with conn.cursor() as cur:
             _check_repeat_offender_csv(cur)
             _check_chain_scorecard(cur)
+            _check_chain_wcs_drift(cur)
             _check_positive_label_audit(cur)
 
     run_all_checks("Layer 2 (content checks)")

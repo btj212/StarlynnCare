@@ -272,13 +272,13 @@ export const REPEAT_OFFENDERS: RepeatOffenderRow[] = [
 
 // ─── Chain scorecard (exact WCS, ≥3 facilities AND ≥50 total beds, last 3yr) ──
 //
-// THRESHOLD (queried 2026-05-13):
+// THRESHOLD (queried 2026-05-13, recomputed 2026-05-13 after 2026-05-12 CDSS ingest):
 //   ≥3 facilities + ≥50 total beds: 4 operators (Alara Health, 18 beds, drops out).
 //   Oakmont Senior Living operates under two legal entities in CDSS records
 //   ("Well Oak Tenant Llc;oakmont Management Group Llc" and
 //    "Transformer Opco Llc;oakmont Management Group Llc") — combined here for
 //   readability. Combined WCS = facility-count-weighted average of the two
-//   group scores: (3×0.073 + 12×0.021)/15 = 0.471/15 = 0.031.
+//   group scores: (3×0.129 + 12×0.079)/15 = 1.335/15 = 0.089.
 
 export type ChainScorecardRow = {
   /** Display name — may be combined brand if multiple CDSS entities share a brand. */
@@ -299,7 +299,7 @@ export type ChainScorecardRow = {
  * Gate: ≥3 CA facilities AND ≥50 total licensed beds in dataset.
  * Oakmont's two CDSS entities combined into one display row.
  * Last 3 years (2023-05-13 – 2026-05-13). Sorted worst to best.
- * Source: CDSS records in StarlynnCare DB, queried 2026-05-13.
+ * Source: CDSS records in StarlynnCare DB, recomputed 2026-05-13 after 2026-05-12 ingest.
  */
 export const CHAIN_SCORECARD: ChainScorecardRow[] = [
   {
@@ -309,7 +309,7 @@ export const CHAIN_SCORECARD: ChainScorecardRow[] = [
     totalBeds: 362,
     totalInspections: 55,
     totalDeficiencies: 19,
-    weightedCitationScore: 0.137,
+    weightedCitationScore: 0.243,
     combinedEntitiesNote: null,
   },
   {
@@ -320,7 +320,7 @@ export const CHAIN_SCORECARD: ChainScorecardRow[] = [
     totalBeds: 1688,
     totalInspections: 109,
     totalDeficiencies: 19,
-    weightedCitationScore: 0.031,
+    weightedCitationScore: 0.089,
     combinedEntitiesNote:
       "Oakmont Senior Living operates under multiple legal entities in CDSS records. Rows have been combined for readability. Individual entity names: Well Oak Tenant Llc;oakmont Management Group Llc (3 facilities) and Transformer Opco Llc;oakmont Management Group Llc (12 facilities).",
   },
@@ -331,10 +331,15 @@ export const CHAIN_SCORECARD: ChainScorecardRow[] = [
     totalBeds: 1254,
     totalInspections: 33,
     totalDeficiencies: 3,
-    weightedCitationScore: 0.006,
+    weightedCitationScore: 0.030,
     combinedEntitiesNote: null,
   },
 ];
+
+/** Metadata for the chain scorecard — tracks when numbers were last refreshed from DB. */
+export const CHAIN_SCORECARD_META = {
+  lastRecomputed: "2026-05-13",
+} as const;
 
 // ─── Year-over-year citation rate data (2021–2025) ────────────────────────────
 
