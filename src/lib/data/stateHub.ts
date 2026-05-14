@@ -44,6 +44,7 @@ export type StateHubData = {
     inspections: number;
     severeCitations: number;
     lastRefreshed: string | null;
+    firstPublishedAt: string | null;
   };
   gradeCardFacilities: HomeSampleFacility[];
   counties: CountyRow[];
@@ -68,7 +69,7 @@ export type CaliforniaStateHubData = StateHubData;
  */
 export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubData> {
   const fallback: CaliforniaStateHubData = {
-    stats: { facilities: 0, inspections: 0, severeCitations: 0, lastRefreshed: null },
+    stats: { facilities: 0, inspections: 0, severeCitations: 0, lastRefreshed: null, firstPublishedAt: null },
     gradeCardFacilities: [],
     counties: [],
     topCities: [],
@@ -78,11 +79,12 @@ export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubDa
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return fallback;
 
-  const [facRes, inspRes, sevRes, refreshRes] = await Promise.all([
+  const [facRes, inspRes, sevRes, refreshRes, firstRes] = await Promise.all([
     supabase.from("facilities").select("*", { count: "exact", head: true }).eq("publishable", true).eq("state_code", "CA"),
     supabase.from("inspections").select("*", { count: "exact", head: true }),
     supabase.from("deficiencies").select("*", { count: "exact", head: true }).gte("severity", 3),
     supabase.from("facilities").select("updated_at").eq("publishable", true).eq("state_code", "CA").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("facilities").select("created_at").eq("publishable", true).eq("state_code", "CA").order("created_at", { ascending: true }).limit(1).maybeSingle(),
   ]);
 
   const facilityCount = facRes.count ?? 0;
@@ -92,6 +94,8 @@ export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubDa
   const lastRefreshed = lastUpdated
     ? new Date(lastUpdated).toISOString().split("T")[0]
     : null;
+  const firstCreated = firstRes.data?.created_at as string | null;
+  const firstPublishedAt = firstCreated ? new Date(firstCreated).toISOString() : null;
 
   const { data: idRows } = await supabase
     .from("facilities")
@@ -235,7 +239,7 @@ export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubDa
   }
 
   return {
-    stats: { facilities: facilityCount, inspections: inspCount, severeCitations: sevCount, lastRefreshed },
+    stats: { facilities: facilityCount, inspections: inspCount, severeCitations: sevCount, lastRefreshed, firstPublishedAt },
     gradeCardFacilities,
     counties,
     topCities,
@@ -250,7 +254,7 @@ export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubDa
 export async function loadStateHubData(stateCode: string): Promise<StateHubData> {
   const stateSlug = stateFromCode(stateCode)?.slug ?? stateCode.toLowerCase();
   const fallback: StateHubData = {
-    stats: { facilities: 0, inspections: 0, severeCitations: 0, lastRefreshed: null },
+    stats: { facilities: 0, inspections: 0, severeCitations: 0, lastRefreshed: null, firstPublishedAt: null },
     gradeCardFacilities: [],
     counties: [],
     topCities: [],
@@ -260,15 +264,18 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return fallback;
 
-  const [facRes, refreshRes, idRes] = await Promise.all([
+  const [facRes, refreshRes, firstRes, idRes] = await Promise.all([
     supabase.from("facilities").select("*", { count: "exact", head: true }).eq("publishable", true).eq("state_code", stateCode),
     supabase.from("facilities").select("updated_at").eq("publishable", true).eq("state_code", stateCode).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("facilities").select("created_at").eq("publishable", true).eq("state_code", stateCode).order("created_at", { ascending: true }).limit(1).maybeSingle(),
     supabase.from("facilities").select("id").eq("publishable", true).eq("state_code", stateCode),
   ]);
 
   const facilityCount = facRes.count ?? 0;
   const lastUpdated = refreshRes.data?.updated_at as string | null;
   const lastRefreshed = lastUpdated ? new Date(lastUpdated).toISOString().split("T")[0] : null;
+  const firstCreated = firstRes.data?.created_at as string | null;
+  const firstPublishedAt = firstCreated ? new Date(firstCreated).toISOString() : null;
 
   const idRows = idRes.data ?? [];
   const allIds = idRows.map((r: { id: string }) => r.id);
@@ -404,7 +411,7 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
     });
   }
 
-  return { stats: { facilities: facilityCount, inspections: inspCount, severeCitations: sevCount, lastRefreshed }, gradeCardFacilities, counties, topCities, sampleReviews };
+  return { stats: { facilities: facilityCount, inspections: inspCount, severeCitations: sevCount, lastRefreshed, firstPublishedAt }, gradeCardFacilities, counties, topCities, sampleReviews };
 }
 
 export function getSeasonAndYear(): { season: string; year: number } {

@@ -528,6 +528,14 @@ export async function loadFacilityProfile(params: {
       name: `${facility.name} — StarlynnCare`,
       url: canonicalUrl,
       lastReviewed: lastNonComplaintInspection ?? new Date().toISOString().split("T")[0],
+      datePublished: new Date(facility.created_at).toISOString(),
+      dateModified: (() => {
+        const updatedAt = new Date(facility.updated_at).getTime();
+        const inspectedAt = lastNonComplaintInspection
+          ? new Date(`${lastNonComplaintInspection}T12:00:00Z`).getTime()
+          : 0;
+        return new Date(Math.max(updatedAt, inspectedAt)).toISOString();
+      })(),
     }),
     ...reviews.map((r) => buildReviewSchema(r, businessId)),
   ];

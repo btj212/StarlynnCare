@@ -68,23 +68,13 @@ export async function generateMetadata({
       fallbackByCode[state.code] ??
       `Inspection records and citation history for every licensed memory care facility in ${state.name}.`,
   );
+  const title = `Memory Care in ${state.name} - State Inspection Data`;
   return {
-    title: `${state.name} memory care | StarlynnCare`,
+    title,
     description: desc,
     alternates: { canonical },
-    openGraph: {
-      title: `${state.name} memory care | StarlynnCare`,
-      description: desc,
-      url: canonical,
-      type: "website",
-      images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${state.name} memory care | StarlynnCare`,
-      description: desc,
-      images: ["/og-default.png"],
-    },
+    openGraph: { title, description: desc, url: canonical, type: "website", images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }] },
+    twitter: { card: "summary_large_image", title, description: desc, images: ["/og-default.png"] },
   };
 }
 
@@ -103,14 +93,18 @@ export default async function StatePage({ params }: PageProps) {
         { name: `${state.name} memory care`, url: canonicalFor(`/${state.slug}`) },
       ]),
       buildWebPageWithReviewer({
-        name: `${state.name} memory care | StarlynnCare`,
+        name: `Memory Care in ${state.name} - State Inspection Data`,
         url: canonicalFor(`/${state.slug}`),
         description: `Inspection-backed memory care facility profiles across ${state.name} — ranked by the state's own regulator data.`,
+        datePublished: data.stats.firstPublishedAt,
+        dateModified: data.stats.lastRefreshed,
       }),
       buildStateHubCollectionPage({
         name: `Memory care in ${state.name}`,
         url: canonicalFor(`/${state.slug}`),
         state,
+        datePublished: data.stats.firstPublishedAt,
+        dateModified: data.stats.lastRefreshed,
       }),
       buildFaqSchemaFromPairs(richConfig.faqs.map((f) => ({ q: f.q, a: f.a })), canonicalFor(`/${state.slug}`)),
     ];
@@ -151,15 +145,24 @@ export default async function StatePage({ params }: PageProps) {
   const smallCountsByCity = new Map<string, number>();    // ≤6 bed publishable
   let totalPublishable = 0;
   let fetchError: string | null = null;
+  let stateLastRefreshed: string | null = null;
+  let stateFirstPublishedAt: string | null = null;
 
   const slugDisplayName = new Map<string, string>();
 
   if (supabase) {
-    const { data, error } = await supabase
-      .from("facilities")
-      .select("city_slug, city, capacity_tier")
-      .eq("state_code", state.code)
-      .eq("publishable", true);
+    const [dataRes, refreshRes, firstRes] = await Promise.all([
+      supabase.from("facilities").select("city_slug, city, capacity_tier").eq("state_code", state.code).eq("publishable", true),
+      supabase.from("facilities").select("updated_at").eq("state_code", state.code).eq("publishable", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("facilities").select("created_at").eq("state_code", state.code).eq("publishable", true).order("created_at", { ascending: true }).limit(1).maybeSingle(),
+    ]);
+    stateLastRefreshed = (refreshRes.data as { updated_at: string } | null)?.updated_at
+      ? new Date((refreshRes.data as { updated_at: string }).updated_at).toISOString().split("T")[0]
+      : null;
+    stateFirstPublishedAt = (firstRes.data as { created_at: string } | null)?.created_at
+      ? new Date((firstRes.data as { created_at: string }).created_at).toISOString()
+      : null;
+    const { data, error } = dataRes;
     if (error) {
       fetchError = error.message;
     } else {
@@ -185,7 +188,7 @@ export default async function StatePage({ params }: PageProps) {
     region.citySlugs.reduce((n, s) => n + (smallCountsByCity.get(s) ?? 0), 0);
 
   const statePageUrl = canonicalFor(`/${state.slug}`);
-  const statePageTitle = `${state.name} memory care | StarlynnCare`;
+  const statePageTitle = `Memory Care in ${state.name} - State Inspection Data`;
   const statePageDesc = `Memory care facility profiles in ${state.name}, built from state and federal primary sources.`;
 
   const STATE_FAQS: Record<string, FaqItem[]> = { OR: OR_FAQS, WA: WA_FAQS, MN: MN_FAQS, TX: TX_FAQS };
@@ -200,11 +203,15 @@ export default async function StatePage({ params }: PageProps) {
       name: statePageTitle,
       url: statePageUrl,
       description: statePageDesc,
+      datePublished: stateFirstPublishedAt,
+      dateModified: stateLastRefreshed,
     }),
     buildStateHubCollectionPage({
       name: `Memory care in ${state.name}`,
       url: statePageUrl,
       state,
+      datePublished: stateFirstPublishedAt,
+      dateModified: stateLastRefreshed,
     }),
     ...(stateFaqs
       ? [buildFaqSchemaFromPairs(stateFaqs.map((f) => ({ q: f.q, a: f.a })), statePageUrl)]
@@ -214,10 +221,9 @@ export default async function StatePage({ params }: PageProps) {
   return (
     <>
       <JsonLd objects={stateJsonLd} />
-      <GovernanceBar />
-      <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} />
-      <AreaWatchModal areaName={state.name} areaSlug={state.slug} source="state_modal" delayMs={20000} />
-      <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
+      {/* DOM reorder: <main> (H1) is first in source; GovernanceBar+SiteNav use flex order:-1 to appear visually above it. */}
+      <div className="flex flex-col">
+        <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
         {/* ── Header ── */}
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
@@ -416,7 +422,13 @@ export default async function StatePage({ params }: PageProps) {
             </div>
           </div>
         )}
-      </main>
+        </main>
+        <div className="-order-1">
+          <GovernanceBar />
+          <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} />
+          <AreaWatchModal areaName={state.name} areaSlug={state.slug} source="state_modal" delayMs={20000} />
+        </div>
+      </div>
       <SiteFooter />
     </>
   );

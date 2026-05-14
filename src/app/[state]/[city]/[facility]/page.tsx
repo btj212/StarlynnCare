@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { buildFacilitySnippet, clipMetaDescription } from "@/lib/seo/meta";
+import { buildFacilitySnippet, buildFacilityTitle, clipMetaDescription } from "@/lib/seo/meta";
 import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
@@ -86,7 +86,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     (tourQs?.length ?? 0) === 0 &&
     profile.photoUrls.length === 0;
 
-  const title = `${facility.name} — Quality Score & Inspection Record | StarlynnCare`;
+  const title = buildFacilityTitle({
+    name: facility.name,
+    stateName: state.name,
+    percentile: profile.snapshot?.grade?.composite_percentile ?? null,
+  });
 
   return {
     title,
@@ -147,10 +151,9 @@ export default async function FacilityPage({ params }: PageProps) {
   return (
     <>
       <JsonLd objects={profile.jsonLd} />
-      <GovernanceBar />
-      <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} />
-
-      <main className="bg-paper">
+      {/* DOM reorder: <main> (H1) is first in source; GovernanceBar+SiteNav use flex order:-1 to appear visually above it. */}
+      <div className="flex flex-col">
+        <main className="bg-paper">
         {/* Sticky sub-nav */}
         <FacilitySubNav profile={profile} />
 
@@ -261,7 +264,12 @@ export default async function FacilityPage({ params }: PageProps) {
 
           <ReportListingForm facilityId={facility.id} facilityName={facility.name} />
         </div>
-      </main>
+        </main>
+        <div className="-order-1">
+          <GovernanceBar />
+          <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} />
+        </div>
+      </div>
 
       <SiteFooter />
     </>
