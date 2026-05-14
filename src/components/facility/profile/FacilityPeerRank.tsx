@@ -100,7 +100,7 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
             <MetricCell
               label="Repeat rank"
               percentile={snapshot.metrics.repeats.percentile}
-              desc="Repeat deficiencies as share of total."
+              desc="Citations for regulations cited 3+ times, as share of total."
             />
             <MetricCell
               label="Frequency rank"
