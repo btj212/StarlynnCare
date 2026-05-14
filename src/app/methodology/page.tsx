@@ -140,7 +140,7 @@ export default function MethodologyPage() {
             How we rate facilities
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-slate">
-            Every number on StarlynnCare comes directly from California state
+            Every number on StarlynnCare comes directly from official state
             inspection records. We do not invent data, accept paid placements,
             or produce a single letter grade. Instead, we show four independent
             signals and let families weigh them.
@@ -167,29 +167,49 @@ export default function MethodologyPage() {
           <Section id="sources-heading" title="Primary data sources">
             <p>
               Facility licensing, inspection, and complaint data are drawn from
-              the{" "}
-              <a
-                href="https://www.ccld.dss.ca.gov/"
-                className="font-medium text-teal underline-offset-4 hover:underline"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                California Department of Social Services (CDSS) Community Care
-                Licensing Division
-              </a>{" "}
-              via two public endpoints:
+              official public records published by each state&rsquo;s licensing authority.
+              Each source provides a facility roster and per-facility inspection
+              reports — including visit dates, deficiency citations, inspector
+              narratives, and complaint outcomes, where available.
             </p>
-            <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li>
-                <span className="font-medium text-ink">CDSS CKAN Open Data</span> —
-                statewide RCFE roster, including license status, bed count, and operator.
-              </li>
-              <li>
-                <span className="font-medium text-ink">CDSS Transparency API</span> —
-                per-facility LIC 9099 inspection reports, including visit dates,
-                Type A/B deficiency citations, inspector narratives, and complaint outcomes.
-              </li>
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse mt-2">
+                <thead>
+                  <tr className="border-b border-sc-border">
+                    <th className="text-left py-2 pr-4 font-semibold text-ink whitespace-nowrap">State</th>
+                    <th className="text-left py-2 pr-4 font-semibold text-ink">Licensing body</th>
+                    <th className="text-left py-2 font-semibold text-ink">Sources</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-sc-border/50 text-slate">
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">CA</td>
+                    <td className="py-2.5 pr-4 align-top">CDSS Community Care Licensing Division — Residential Care Facilities for the Elderly (RCFEs)</td>
+                    <td className="py-2.5 align-top">CDSS CKAN Open Data (roster); CDSS Transparency Portal (inspection reports, citations)</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">OR</td>
+                    <td className="py-2.5 pr-4 align-top">Oregon DHS Long-Term Care Licensing — Residential Care Facilities, Memory Care Communities</td>
+                    <td className="py-2.5 align-top">OregonDHS LTC public facility directory and inspection records</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">WA</td>
+                    <td className="py-2.5 pr-4 align-top">DSHS Aging and Long-Term Support Administration (ALTSA) — Adult Family Homes and Assisted Living Facilities</td>
+                    <td className="py-2.5 align-top">DSHS BH-Forms public inspection reports; DSHS facility directory</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">MN</td>
+                    <td className="py-2.5 pr-4 align-top">Minnesota Department of Health (MDH) / Assisted Living Licensure and Certification (ALRC) — ALDC and assisted living facilities</td>
+                    <td className="py-2.5 align-top">MDH inspection findings; ALRC public licensing records</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">TX</td>
+                    <td className="py-2.5 pr-4 align-top">Texas HHSC — Assisted Living Facilities (Type A, B, C)</td>
+                    <td className="py-2.5 align-top">HHSC public inspection reports</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <p>
               Data is refreshed via automated scrapers; production runs target a{" "}
               <strong className="font-medium text-ink">weekly cadence</strong> on CI/CD schedules,
@@ -202,28 +222,37 @@ export default function MethodologyPage() {
           {/* ── Coverage ── */}
           <Section id="coverage-heading" title="Current coverage">
             <p>
-              StarlynnCare currently covers the <strong>San Francisco Bay Area</strong>{" "}
-              — starting with <strong>Alameda County</strong> and expanding to{" "}
-              <strong>Contra Costa</strong>, <strong>San Mateo</strong>, and{" "}
-              <strong>Santa Clara</strong> counties. We add new counties as data
-              quality and coverage allow.
+              StarlynnCare currently publishes inspection data for{" "}
+              <strong>1,461 facilities across 5 states</strong>, with coverage
+              expanding as we ingest new state licensing data.
             </p>
+            <ul className="list-disc pl-5 space-y-1 text-sm">
+              <li><span className="font-medium text-ink">California</span> — 484 licensed RCFEs, covering counties statewide including Los Angeles, the San Francisco Bay Area, San Diego, Sacramento, and the Central Valley.</li>
+              <li><span className="font-medium text-ink">Minnesota</span> — 552 licensed assisted living facilities (ALDC and AL).</li>
+              <li><span className="font-medium text-ink">Oregon</span> — 244 licensed residential care facilities and memory care communities.</li>
+              <li><span className="font-medium text-ink">Washington</span> — 180 licensed assisted living facilities and adult family homes.</li>
+              <li><span className="font-medium text-ink">Texas</span> — early coverage expanding; 1 facility published to date as ingest ramps up.</li>
+            </ul>
             <p>
-              Only facilities with an active California license and at least one
+              Only facilities with an active state license and at least one
               published inspection record are shown. Facilities missing key data
               fields are held back until the next ingest run resolves them.
             </p>
             <p className="text-sm text-muted">
               Benchmarks and peer sets are recomputed dynamically as coverage expands.
-              Percentile thresholds will shift as more counties and facilities are added.
+              Percentile thresholds will shift as more facilities are added within each state.
             </p>
           </Section>
 
           {/* ── How we organize facilities ── */}
           <Section id="organization-heading" title="How we organize facilities">
             <p>
+              The following applies to{" "}
+              <strong className="font-medium text-ink">California</strong>{" "}
+              facilities; analogous capacity and dementia-care distinctions exist
+              in other states, with state-specific thresholds and regulatory designations.
               California&rsquo;s RCFE licensing regulations create two natural axes for
-              organizing facilities that we use on every city and county listing page.
+              organizing facilities that we use on every California city and county listing page.
             </p>
 
             <p className="font-semibold text-ink">Axis 1 — Capacity tier</p>
@@ -307,7 +336,7 @@ export default function MethodologyPage() {
               <MetricCard
                 label="Compliance record"
                 formula="Total deficiencies ÷ number of routine (non-complaint) inspections on file"
-                tierLogic="Compared against the distribution across all 14 Alameda County facilities. At or below the 33rd percentile = Strong; 34th–66th = Mixed; above 66th = Concerns."
+                tierLogic="Compared against the distribution across all same-state, same-county peer facilities. At or below the 33rd percentile = Strong; 34th–66th = Mixed; above 66th = Concerns."
                 rationale="Routine inspections are the most comparable measure of regulatory compliance across facilities. Complaint-triggered visits are excluded here because they are initiated by external reports, not by the state's regular cycle."
               />
               <MetricCard
@@ -379,8 +408,9 @@ export default function MethodologyPage() {
                 available.
               </li>
               <li>
-                A small sample (14 facilities) means percentile thresholds are
-                sensitive to individual outliers. Tiers may shift as coverage expands.
+                Percentile thresholds are computed per county and may be sensitive
+                to outliers in counties with few facilities. Tiers may shift as
+                coverage expands.
               </li>
               <li>
                 StarlynnCare is an information resource, not a licensed placement

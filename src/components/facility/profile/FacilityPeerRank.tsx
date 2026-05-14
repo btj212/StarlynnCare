@@ -68,19 +68,22 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
   const { facility, snapshot, state, cfg } = profile;
   const careLabel = CARE_LABEL[facility.care_category] ?? "care";
   const peerN = snapshot?.peer_set.n ?? 0;
+  const fallbackLevel = snapshot?.peer_set.fallback_level ?? 1;
+  const bedNormalized = fallbackLevel === 0;
+
+  const peerNLabel = peerN > 0 ? peerN.toLocaleString() : "similar";
+  const peerTitle = bedNormalized
+    ? <><em>{peerNLabel} {state.name} facilities with a similar number of beds.</em></>
+    : <><em>{peerNLabel} {state.name} facilities.</em></>;
 
   return (
     <section id="peer" className="bg-ink py-16 text-paper">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
           label="§ 02 · Peer Comparison"
-          title={
-            <>
-              Ranked against <em>{peerN > 0 ? peerN.toLocaleString() : "similar"} {state.name} facilities.</em>
-            </>
-          }
+          title={<>Compared to {peerTitle}</>}
           deck={
-            `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.inspectionWindowMonths}-month window. Higher percentile = better.` +
+            `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.inspectionWindowMonths}-month window. Higher percentile = better performance on inspection record.` +
             ` Source: ${cfg.agencyLong}.`
           }
           invert
@@ -91,23 +94,28 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
             Peer comparison data not yet available — inspection records for this facility are still being indexed.
           </div>
         ) : (
-          <div className="grid gap-1 md:grid-cols-3">
-            <MetricCell
-              label="Severity rank"
-              percentile={snapshot.metrics.severity.percentile}
-              desc="Weighted citations per bed."
-            />
-            <MetricCell
-              label="Repeat rank"
-              percentile={snapshot.metrics.repeats.percentile}
-              desc="Repeat deficiencies as share of total."
-            />
-            <MetricCell
-              label="Frequency rank"
-              percentile={snapshot.metrics.frequency.percentile}
-              desc="Deficiencies per inspection."
-            />
-          </div>
+          <>
+            <div className="grid gap-1 md:grid-cols-3">
+              <MetricCell
+                label="Severity rank"
+                percentile={snapshot.metrics.severity.percentile}
+                desc="Weighted citations per bed."
+              />
+              <MetricCell
+                label="Repeat rank"
+                percentile={snapshot.metrics.repeats.percentile}
+                desc="Repeat deficiencies as share of total."
+              />
+              <MetricCell
+                label="Frequency rank"
+                percentile={snapshot.metrics.frequency.percentile}
+                desc="Deficiencies per inspection."
+              />
+            </div>
+            <p className="mt-5 font-[family-name:var(--font-mono)] text-[11px] text-paper/50 tracking-[0.06em] leading-relaxed">
+              Rankings based on {cfg.inspectionWindowMonths}-month CDSS inspection data. Severity and frequency: fewer citations = higher percentile. Repeat rate: lower repeat citation share = higher percentile.
+            </p>
+          </>
         )}
       </div>
     </section>
