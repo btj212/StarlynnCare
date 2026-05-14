@@ -1,0 +1,48 @@
+# Data Validation CI — StarlynnCare
+#
+# Runs Layers 1 and 2 of the validation stack on every PR and every push to main.
+#
+# Layer 1 (db_invariants.py): peer-rank distribution, cross-metric contradictions,
+#   positive-label audits, coverage nulls, scraper freshness.
+# Layer 2 (content_checks.py): report CSV vs DB reconciliation, chain scorecard
+#   drift, headline vs rank audits.
+#
+# Layer 3 smoke tests are NOT run here — they require a live deployed URL.
+# Run manually after each production or preview deploy:
+#   python3 scripts/validate/smoke_test.py --env production
+#   python3 scripts/validate/smoke_test.py --env preview --url https://your-preview.vercel.app
+#
+# Layer 5 post-ingest checks are chained directly after scraper runs — see docs/VALIDATION.md.
+
+name: Data Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install psycopg python-dotenv requests
+
+      - name: Layer 1 — DB invariant checks
+        run: python3 scripts/validate/db_invariants.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Layer 2 — Content validation checks
+        run: python3 scripts/validate/content_checks.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
