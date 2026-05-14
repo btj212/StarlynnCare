@@ -344,131 +344,7 @@ export default function CARCFERepeatCitationsPage() {
                 Severity: 1 = minor, 2 = moderate, 3 = serious, 4 = immediate jeopardy.
               </p>
 
-              {/* Section 2: Chain scorecard */}
-              <H2 id="chain-scorecard">Chain operator scorecard</H2>
-              <Prose>
-                <p>
-                  Five operators with three or more CA facilities in the StarlynnCare database meet
-                  the minimum threshold for chain analysis. (Raising the threshold to 5+ facilities
-                  would leave only one operator — not a meaningful list.) Their{" "}
-                  <strong>Weighted Citation Scores (WCS)</strong> are computed from CDSS inspection
-                  records for the last three years (May 2023 – May 2026).
-                </p>
-                <p>
-                  The WCS for a chain is the average of each facility&rsquo;s per-bed, severity-weighted
-                  deficiency sum. Severity weights: 1 (minor) = 1, 2 (moderate) = 2, 3 (serious) = 3,
-                  4 (immediate jeopardy) = 5. Scope data is not available for CA RCFE records; scope
-                  multiplier is 1. Lower score = fewer and less severe citations per licensed bed.
-                  Among chains with enough statistical backing to support comparison, the clearest
-                  finding is{" "}
-                  <strong>Aegis Senior Communities</strong> — 4 facilities, 55 inspections analyzed,
-                  WCS 0.137 — versus the Oakmont-affiliated Transformer Opco group at 12 facilities,
-                  78 inspections, WCS 0.021.
-                </p>
-              </Prose>
-
-              <MethodNote>
-                Operator names reflect CDSS licensing records and may not capture all corporate
-                affiliations. Operators running multiple legal entities — for example, Oakmont Senior
-                Living appears under at least two distinct LLC names in CDSS records — may appear
-                as separate entries. Only operators with ≥3 CA facilities in our dataset are included.
-                Operators marked ⚠ have fewer than 50 total licensed beds; their scores are more
-                sensitive to individual inspection outcomes and should be interpreted with caution.
-              </MethodNote>
-
-              <div className="mt-6 overflow-x-auto -mx-4 sm:mx-0">
-                <table className="w-full text-[13.5px] text-left border-collapse min-w-[580px]">
-                  <thead>
-                    <tr className="border-b-2 border-paper-rule">
-                      {[
-                        { label: "CDSS Operator Name", align: "left" },
-                        { label: "Facilities", align: "right" },
-                        { label: "Total Beds", align: "right" },
-                        { label: "Inspections", align: "right" },
-                        { label: "Deficiencies", align: "right" },
-                        { label: "WCS", align: "right" },
-                      ].map(({ label, align }) => (
-                        <th
-                          key={label}
-                          className={`font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.1em] text-ink-4 py-3 pr-4 font-normal ${align === "right" ? "text-right" : ""}`}
-                        >
-                          {label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {CHAIN_SCORECARD.map((row, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-paper-rule hover:bg-paper-2 transition-colors"
-                      >
-                        <td className="py-3 pr-4 leading-[1.35]">
-                          <span className="text-ink font-medium">
-                            {row.smallSampleNote && (
-                              <span
-                                className="text-gold mr-1"
-                                title={row.smallSampleNote}
-                                aria-label={`Small sample caveat: ${row.smallSampleNote}`}
-                              >
-                                ⚠
-                              </span>
-                            )}
-                            {row.cdssOperatorName}
-                          </span>
-                          {row.brandNote && row.brandNote !== row.cdssOperatorName && (
-                            <span className="block text-[11.5px] text-ink-4 mt-0.5">
-                              ({row.brandNote})
-                            </span>
-                          )}
-                          {row.smallSampleNote && (
-                            <span className="block text-[11px] text-gold mt-0.5 leading-[1.3] max-w-[40ch]">
-                              {row.smallSampleNote}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
-                          {row.caFacilitiesInDataset}
-                        </td>
-                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
-                          {row.totalBeds.toLocaleString()}
-                        </td>
-                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
-                          {row.totalInspections}
-                        </td>
-                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
-                          {row.totalDeficiencies}
-                        </td>
-                        <td className="py-3 text-right">
-                          <span
-                            className={`font-[family-name:var(--font-mono)] font-semibold ${
-                              row.smallSampleNote
-                                ? "text-ink-3"
-                                : row.weightedCitationScore > 0.1
-                                  ? "text-rust"
-                                  : row.weightedCitationScore > 0.05
-                                    ? "text-gold"
-                                    : "text-teal"
-                            }`}
-                          >
-                            {row.weightedCitationScore.toFixed(3)}
-                            {row.smallSampleNote && (
-                              <span className="text-[10px] text-ink-4 ml-0.5">†</span>
-                            )}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-[12px] text-ink-4 mt-3 max-w-[68ch]">
-                WCS = Weighted Citation Score (lower = fewer/less-severe citations per licensed bed).
-                Last 3 years. ⚠ = fewer than 50 total beds; score less statistically reliable.
-                Source: CDSS records in StarlynnCare database (queried 2026-05-11).
-              </p>
-
-              {/* Section 3: The trend */}
+              {/* Section 2: The trend */}
               <H2 id="the-trend">Citation rates over time, 2021–2025</H2>
               <Prose>
                 <p>
@@ -521,6 +397,112 @@ export default function CARCFERepeatCitationsPage() {
               <p className="text-[12px] text-ink-4 mt-3 max-w-[60ch]">
                 Deficiencies per inspection, by year. 2020 omitted (1 inspection — COVID shutdown).
                 2025 = January – May only. Source: CDSS records in StarlynnCare database.
+              </p>
+
+              {/* Section 3: Chain scorecard (additional finding) */}
+              <h3
+                id="chain-scorecard"
+                className="font-[family-name:var(--font-display)] font-normal text-[20px] text-ink mt-12 mb-1"
+              >
+                <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] text-ink-4 block mb-2">
+                  Additional Finding
+                </span>
+                Chain operator scorecard
+              </h3>
+              <Prose>
+                <p>
+                  Among operators with three or more facilities and at least 50 licensed beds in
+                  our dataset, citation rates vary significantly — though the small number of
+                  qualifying chains limits broad conclusions.
+                </p>
+                <p>
+                  Three operator groups meet this threshold. Their{" "}
+                  <strong>Weighted Citation Scores (WCS)</strong> are computed from CDSS inspection
+                  records for the last three years (May 2023 – May 2026). The WCS for a chain is the
+                  average of each facility&rsquo;s per-bed, severity-weighted deficiency sum.
+                  Severity weights: 1 (minor) = 1, 2 (moderate) = 2, 3 (serious) = 3,
+                  4 (immediate jeopardy) = 5. Lower score = fewer and less severe citations per
+                  licensed bed.
+                </p>
+              </Prose>
+
+              <MethodNote>
+                Operator names reflect CDSS licensing records and may not capture all corporate
+                affiliations. Oakmont Senior Living operates under multiple legal entities in CDSS
+                records; those entities have been combined into a single row. Only operators with
+                ≥3 CA facilities and ≥50 total licensed beds in our dataset are included.
+              </MethodNote>
+
+              <div className="mt-6 overflow-x-auto -mx-4 sm:mx-0">
+                <table className="w-full text-[13.5px] text-left border-collapse min-w-[580px]">
+                  <thead>
+                    <tr className="border-b-2 border-paper-rule">
+                      {[
+                        { label: "Operator", align: "left" },
+                        { label: "Facilities", align: "right" },
+                        { label: "Total Beds", align: "right" },
+                        { label: "Inspections", align: "right" },
+                        { label: "Deficiencies", align: "right" },
+                        { label: "WCS", align: "right" },
+                      ].map(({ label, align }) => (
+                        <th
+                          key={label}
+                          className={`font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.1em] text-ink-4 py-3 pr-4 font-normal ${align === "right" ? "text-right" : ""}`}
+                        >
+                          {label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {CHAIN_SCORECARD.map((row, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-paper-rule hover:bg-paper-2 transition-colors"
+                      >
+                        <td className="py-3 pr-4 leading-[1.35]">
+                          <span className="text-ink font-medium">{row.displayName}</span>
+                          {row.combinedEntitiesNote && (
+                            <span className="block text-[11px] text-ink-4 mt-0.5 leading-[1.3] max-w-[44ch]">
+                              †
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
+                          {row.caFacilitiesInDataset}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
+                          {row.totalBeds.toLocaleString()}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
+                          {row.totalInspections}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-[family-name:var(--font-mono)] text-ink-3">
+                          {row.totalDeficiencies}
+                        </td>
+                        <td className="py-3 text-right">
+                          <span
+                            className={`font-[family-name:var(--font-mono)] font-semibold ${
+                              row.weightedCitationScore > 0.1
+                                ? "text-rust"
+                                : row.weightedCitationScore > 0.05
+                                  ? "text-gold"
+                                  : "text-teal"
+                            }`}
+                          >
+                            {row.weightedCitationScore.toFixed(3)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[12px] text-ink-4 mt-3 max-w-[68ch]">
+                WCS = Weighted Citation Score (lower = fewer/less-severe citations per licensed
+                bed). Last 3 years. † Oakmont Senior Living operates under multiple legal entities
+                in CDSS records; rows combined for readability.
+                Source: CDSS records in StarlynnCare database (queried 2026-05-13).
               </p>
 
               {/* Watch-list capture */}
