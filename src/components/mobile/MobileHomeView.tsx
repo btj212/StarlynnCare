@@ -111,14 +111,14 @@ export function MobileHomeView({
       </div>
 
       <section className="m-section">
-        <div className="label">§ 02 · How We Grade</div>
+        <div className="label">§ 02 · How We Rank</div>
         <h2>
-          One letter grade. <em>Transparent scoring.</em>
+          Ranked on public record. <em>Transparent methodology.</em>
         </h2>
         <p className="mb-4 text-[14px] leading-relaxed text-ink-2 px-[18px] -mx-[18px]">
-          Each facility receives a single A–F grade derived from weighted inspection signals tied to CDSS records.{" "}
+          Each facility is ranked against peers in California using publicly available CDSS inspection records.{" "}
           <Link href="/methodology" className="text-teal underline underline-offset-4">
-            How we calculate this grade →
+            How we calculate rankings →
           </Link>
         </p>
       </section>
@@ -276,7 +276,7 @@ export function MobileHomeView({
           Find the right facility, <em>without the sales funnel.</em>
         </h2>
         <p className="mt-2 text-[15px] leading-relaxed text-white/85">
-          Search by ZIP, compare A–F grades, read every dated citation. No operator is paying for placement here.
+          Search by ZIP, compare peer rankings, read every dated citation. No operator is paying for placement here.
         </p>
         <Link
           href="/california"

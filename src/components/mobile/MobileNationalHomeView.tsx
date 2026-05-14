@@ -128,14 +128,14 @@ export function MobileNationalHomeView({ data }: Props) {
       </div>
 
       <section className="m-section">
-        <div className="label">§ 04 · How We Grade</div>
+        <div className="label">§ 04 · How We Rank</div>
         <h2>
-          One letter grade. <em>Transparent scoring.</em>
+          Ranked on public record. <em>Transparent methodology.</em>
         </h2>
         <p className="mb-4 text-[14px] leading-relaxed text-ink-2 px-[18px] -mx-[18px]">
-          Each facility receives a single A–F grade derived from weighted inspection signals tied to the state regulator&rsquo;s public record.{" "}
+          Each facility is ranked against peers in its state using publicly available inspection records from state licensing agencies.{" "}
           <Link href="/methodology" className="text-teal underline underline-offset-4">
-            How we calculate this grade →
+            How we calculate rankings →
           </Link>
         </p>
       </section>
@@ -194,7 +194,7 @@ export function MobileNationalHomeView({ data }: Props) {
           Find the right facility, <em>without the sales funnel.</em>
         </h2>
         <p className="mt-2 text-[15px] leading-relaxed text-white/85">
-          Compare A–F grades, read every dated citation. No operator is paying for placement here.
+          Compare peer rankings, read every dated citation. No operator is paying for placement here.
         </p>
         <Link
           href="/states"
