@@ -83,30 +83,107 @@ const STATE_ABBR: Record<string, string> = {
   Texas: "TX",
 };
 
+const MAX_TITLE = 60;
+const hasMemoryCare = (s: string) => /\bmemory\s+care\b/i.test(s);
+
 /**
- * Build a ≤60-character facility page title leading with the percentile rank.
- * Falls back through shorter variants until one fits, or returns the bare facility
- * name when no snapshot grade is available (YMYL — never invent a percentile rank).
+ * Build a ≤60-character facility page title.
+ *
+ * Top-half facilities (composite_percentile ≥ 50) get a comparative rank claim:
+ *   "Autumn Glow · Top 14% of California Memory Care"
+ *
+ * Bottom-half and unrated facilities get a geographic anchor with no quality
+ * claim. The "Memory Care" phrase is skipped when it already appears in the
+ * facility name to avoid duplication:
+ *   "Sunrise Memory Care · Pasadena, CA"
+ *   "Oakwood Gardens · Memory Care in Pasadena, CA"
+ *
+ * YMYL rule: never invent a percentile rank. Null → no claim.
  */
 export function buildFacilityTitle(input: {
   name: string;
   stateName: string;
   /** Composite percentile 0–100, higher = better. Null when peer set too thin. */
   percentile: number | null;
+  city: string;
 }): string {
-  const { name, stateName, percentile } = input;
-  if (percentile == null) return name.length <= 60 ? name : name.slice(0, 57) + "…";
-
-  const topPct = Math.max(1, 100 - percentile);
+  const { name, stateName, percentile, city } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
-  const candidates = [
-    `${name} · Top ${topPct}% of ${stateName} Memory Care`,
-    `${name} · Top ${topPct}% in ${stateName}`,
-    `${name} · Top ${topPct}% in ${abbr}`,
-    `${name} · Top ${topPct}%`,
-    name,
-  ];
-  return candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
+
+  // Top-half — comparative ranking claim allowed.
+  if (percentile != null && percentile >= 50) {
+    const topPct = Math.max(1, 100 - percentile);
+    const candidates = [
+      `${name} · Top ${topPct}% of ${stateName} Memory Care`,
+      `${name} · Top ${topPct}% in ${stateName}`,
+      `${name} · Top ${topPct}% in ${abbr}`,
+      `${name} · Top ${topPct}%`,
+      name,
+    ];
+    return candidates.find((c) => c.length <= MAX_TITLE) ?? candidates.at(-1)!;
+  }
+
+  // Bottom-half or unrated — geographic anchor, zero quality claim.
+  // Skip "Memory Care" phrase when already present in the facility name.
+  const geoVariants: string[] = hasMemoryCare(name)
+    ? [
+        `${name} · ${city}, ${abbr}`,
+        `${name} · ${city}`,
+        `${name} · ${abbr}`,
+        name,
+      ]
+    : [
+        `${name} · Memory Care in ${city}, ${abbr}`,
+        `${name} · Memory Care in ${city}`,
+        `${name} · ${city}, ${abbr}`,
+        `${name} · ${city}`,
+        name,
+      ];
+  return geoVariants.find((c) => c.length <= MAX_TITLE) ?? geoVariants.at(-1)!;
+}
+
+/**
+ * Build a data-driven meta description for a facility SERP result.
+ *
+ * Top-half facilities (composite_percentile ≥ 50) lead with the comparative
+ * rank claim. Bottom-half and unrated facilities lead with facts only — city,
+ * citation count, last inspection date — with no quality claim.
+ *
+ * YMYL rule: never assert a ranking for a facility in the bottom half.
+ */
+export function buildFacilityDescription(f: {
+  name: string;
+  /** Composite percentile 0–100, higher = better. Null when peer set too thin. */
+  percentile: number | null;
+  stateName: string;
+  city: string;
+  citationCount: number;
+  /** Regulator abbreviation: "CDSS" / "DSHS" / "OR DHS" / "MDH" */
+  agency: string;
+  /** Pre-formatted month+year string, e.g. "Apr 2026" */
+  lastInspected: string | null;
+}): string {
+  const citations =
+    f.citationCount === 0
+      ? `clean inspection record`
+      : f.citationCount === 1
+        ? `1 ${f.agency} citation on record`
+        : `${f.citationCount} ${f.agency} citations on record`;
+  const inspPart = f.lastInspected ? ` · last inspected ${f.lastInspected}` : "";
+
+  // Top-half — comparative claim.
+  if (f.percentile != null && f.percentile >= 50) {
+    const topPct = Math.max(1, 100 - f.percentile);
+    // Very elite (top 10%): lean into the transparency angle.
+    const tail =
+      topPct <= 10
+        ? `See the full inspection record on StarlynnCare.`
+        : `Free public-record review on StarlynnCare.`;
+    return `Top ${topPct}% of ${f.stateName} memory care · ${citations}${inspPart}. ${tail}`;
+  }
+
+  // Bottom-half or unrated — facts only, no ranking language.
+  return `${f.name} in ${f.city}, ${f.stateName} · ${citations}${inspPart}. Free public-record review on StarlynnCare.`;
 }
 
 export type FacilitySnippetVariant = "meta" | "prose";

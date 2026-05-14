@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { buildFacilitySnippet, buildFacilityTitle, clipMetaDescription } from "@/lib/seo/meta";
+import { buildFacilityDescription, buildFacilityTitle, clipMetaDescription, REGULATOR_ABBR, shortMonthYear } from "@/lib/seo/meta";
 import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
@@ -57,22 +57,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { facility } = profile;
   const canonical = canonicalFor(`/${state.slug}/${facility.city_slug}/${facility.slug}`);
 
-  // Data-driven snippet: grade · citations · last inspection. Falls back to a
-  // citation-only fragment when the snapshot RPC hasn't produced a grade (peer
-  // set too thin / fallback level high). Always returns a non-empty string.
+  // Data-driven meta title + description.
   const lastInspectionDate =
     profile.inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
-  const snippet = buildFacilitySnippet({
-    facilityName: facility.name,
+  const compositePercentile = profile.snapshot?.grade?.composite_percentile ?? null;
+
+  const title = buildFacilityTitle({
+    name: facility.name,
     stateName: state.name,
-    stateCode: state.code,
-    grade: profile.snapshot?.grade?.letter ?? null,
-    percentile: profile.snapshot?.grade?.composite_percentile ?? null,
-    citationCount: profile.totals.deficiencies,
-    lastInspectionDate,
-    variant: "meta",
+    percentile: compositePercentile,
+    city: facility.city ?? state.name,
   });
-  const desc = clipMetaDescription(snippet);
+
+  const desc = clipMetaDescription(
+    buildFacilityDescription({
+      name: facility.name,
+      percentile: compositePercentile,
+      stateName: state.name,
+      city: facility.city ?? state.name,
+      citationCount: profile.totals.deficiencies,
+      agency: REGULATOR_ABBR[state.code] ?? state.code,
+      lastInspected: shortMonthYear(lastInspectionDate),
+    }),
+  );
 
   // Thin-page guardrail: only noindex when the page has effectively no content
   // (no inspections, no reviews, no tour Q&A, no photo). Verified <1% of the
@@ -85,12 +92,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     profile.reviews.length === 0 &&
     (tourQs?.length ?? 0) === 0 &&
     profile.photoUrls.length === 0;
-
-  const title = buildFacilityTitle({
-    name: facility.name,
-    stateName: state.name,
-    percentile: profile.snapshot?.grade?.composite_percentile ?? null,
-  });
 
   return {
     title,
