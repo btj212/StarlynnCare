@@ -121,7 +121,7 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
           label="§ 01 · Snapshot"
           title={
             headline ? (
-              <>{headline.split(",")[0]}, <em>{headline.split(",").slice(1).join(",").trim() || "highly rated."}</em></>
+              <>{headline.split(",")[0]}, <em>{headline.split(",").slice(1).join(",").trim() || "reviewed on public record."}</em></>
             ) : (
               <>A {facility.capacity_tier ?? "care"} home, <em>reviewed on public record.</em></>
             )
