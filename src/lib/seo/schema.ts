@@ -457,12 +457,16 @@ export function buildStateHubCollectionPage(input: {
   name: string;
   url: string;
   state: StateInfo;
+  datePublished?: string | null;
+  dateModified?: string | null;
 }): object {
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: input.name,
     url: input.url,
+    ...(input.datePublished ? { datePublished: input.datePublished } : {}),
+    ...(input.dateModified ? { dateModified: input.dateModified } : {}),
     about: {
       "@type": "AdministrativeArea",
       name: input.state.name,
@@ -478,6 +482,8 @@ export function buildCollectionPageSchema(input: {
   name: string;
   url: string;
   region: Region;
+  datePublished?: string | null;
+  dateModified?: string | null;
 }): object {
   const { name, url, region } = input;
   const isCity = region.kind === "city";
@@ -504,6 +510,8 @@ export function buildCollectionPageSchema(input: {
     "@type": "CollectionPage",
     name,
     url,
+    ...(input.datePublished ? { datePublished: input.datePublished } : {}),
+    ...(input.dateModified ? { dateModified: input.dateModified } : {}),
     about,
   };
 }
@@ -518,6 +526,10 @@ export function buildWebPageWithReviewer(input: {
    * which embeds full credentials (RN license, recognizing org) via buildStarlynnPerson().
    */
   reviewerName?: string;
+  /** ISO 8601 — first time this page's data was published. */
+  datePublished?: string | null;
+  /** ISO 8601 — last data refresh or content edit. */
+  dateModified?: string | null;
 }): object {
   // Default reviewer = full Person node with credentials (RN license, recognizing org).
   // This is the YMYL-strength signal Google's quality guidelines reward on healthcare/eldercare directories.
@@ -530,6 +542,8 @@ export function buildWebPageWithReviewer(input: {
     name: input.name,
     url: input.url,
     ...(input.description ? { description: input.description } : {}),
+    ...(input.datePublished ? { datePublished: input.datePublished } : {}),
+    ...(input.dateModified ? { dateModified: input.dateModified } : {}),
     reviewedBy,
     isPartOf: {
       "@type": "WebSite",
@@ -773,6 +787,10 @@ export function buildFacilityMedicalWebPage(input: {
   description?: string;
   /** ISO yyyy-mm-dd. Use most-recent non-complaint inspection date, fallback to today. */
   lastReviewed: string;
+  /** ISO 8601 — facility.created_at, the first time this facility was published. */
+  datePublished?: string | null;
+  /** ISO 8601 — facility.updated_at or last inspection date, whichever is more recent. */
+  dateModified?: string | null;
 }): object {
   return {
     "@context": "https://schema.org",
@@ -780,6 +798,8 @@ export function buildFacilityMedicalWebPage(input: {
     name: input.name,
     url: input.url,
     ...(input.description ? { description: input.description } : {}),
+    ...(input.datePublished ? { datePublished: input.datePublished } : {}),
+    ...(input.dateModified ? { dateModified: input.dateModified } : {}),
     lastReviewed: input.lastReviewed,
     reviewedBy: buildStarlynnPerson(),
     isPartOf: {

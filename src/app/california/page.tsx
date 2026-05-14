@@ -23,9 +23,9 @@ import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 export const revalidate = 3600;
 
 const pageCanonical = canonicalFor("/california");
-const PAGE_TITLE = "California memory care directory | StarlynnCare";
+const PAGE_TITLE = "Memory Care in California - State Inspection Data";
 const PAGE_DESC =
-  "Inspection-backed memory care facility profiles across California — CDSS citations, peer benchmarks, and county-by-county browse.";
+  "Inspection records and peer rankings for licensed California memory care facilities — CDSS citations, county benchmarks, and family-ready profiles. Refreshed weekly.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -59,11 +59,15 @@ export default async function CaliforniaHubPage() {
       name: PAGE_TITLE,
       url: pageCanonical,
       description: PAGE_DESC,
+      datePublished: data.stats.firstPublishedAt,
+      dateModified: data.stats.lastRefreshed,
     }),
     buildStateHubCollectionPage({
       name: `Memory care in ${state.name}`,
       url: pageCanonical,
       state,
+      datePublished: data.stats.firstPublishedAt,
+      dateModified: data.stats.lastRefreshed,
     }),
     buildFaqSchemaFromPairs(caStateConfig.faqs.map((f) => ({ q: f.q, a: f.a })), pageCanonical),
   ];

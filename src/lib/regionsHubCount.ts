@@ -39,34 +39,44 @@ export async function loadRegionHubSummary(
   totalCount: number;
   withDeficiency: number;
   findingsDate: string | null;
+  firstPublishedAt: string | null;
 }> {
   const { data: facRows, error: facErr } = await supabase
     .from("facilities")
-    .select("id, updated_at")
+    .select("id, updated_at, created_at")
     .eq("state_code", region.state.code)
     .eq("publishable", true)
     .in("city_slug", region.citySlugs as unknown as string[]);
 
   if (facErr) {
     console.error("[loadRegionHubSummary] facilities:", facErr.message);
-    return { totalCount: 0, withDeficiency: 0, findingsDate: null };
+    return { totalCount: 0, withDeficiency: 0, findingsDate: null, firstPublishedAt: null };
   }
 
   const facilityIds = (facRows ?? []).map((r: { id: string }) => r.id);
   const totalCount = facilityIds.length;
 
   let mostRecent: number = 0;
+  let earliest: number = Infinity;
   for (const r of facRows ?? []) {
     const ts = (r as { updated_at: string | null }).updated_at;
-    if (!ts) continue;
-    const t = new Date(ts).getTime();
-    if (t > mostRecent) mostRecent = t;
+    if (ts) {
+      const t = new Date(ts).getTime();
+      if (t > mostRecent) mostRecent = t;
+    }
+    const ca = (r as { created_at: string | null }).created_at;
+    if (ca) {
+      const t = new Date(ca).getTime();
+      if (t < earliest) earliest = t;
+    }
   }
   const findingsDate =
     mostRecent > 0 ? new Date(mostRecent).toISOString().split("T")[0] : null;
+  const firstPublishedAt =
+    earliest < Infinity ? new Date(earliest).toISOString() : null;
 
   if (totalCount === 0) {
-    return { totalCount: 0, withDeficiency: 0, findingsDate };
+    return { totalCount: 0, withDeficiency: 0, findingsDate, firstPublishedAt };
   }
 
   const { data: inspRows } = await supabase
@@ -103,5 +113,6 @@ export async function loadRegionHubSummary(
     totalCount,
     withDeficiency: facilitiesWithAnyDef.size,
     findingsDate,
+    firstPublishedAt,
   };
 }

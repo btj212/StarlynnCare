@@ -30,6 +30,7 @@ import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
 import { cityIntroForRegion } from "@/lib/content/cityIntros";
 import { formatCostRange, getStateCostBand } from "@/lib/content/stateCostBands";
+import { HubEligibility } from "@/components/hub/HubEligibility";
 
 export const revalidate = 3600;
 
@@ -49,23 +50,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let totalCount = 0;
   let withDeficiency = 0;
   let findingsDate: string | null = null;
+  let metaFirstPublishedAt: string | null = null;
   if (supabase) {
     const summary = await loadRegionHubSummary(supabase, region);
     if (summary.totalCount === 0) notFound();
     totalCount = summary.totalCount;
     withDeficiency = summary.withDeficiency;
     findingsDate = summary.findingsDate;
+    metaFirstPublishedAt = summary.firstPublishedAt;
   }
 
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const reg = REGULATOR_ABBR[region.state.code] ?? "state";
   const facilityNoun = region.state.code === "TX" ? "ALFs" : "facilities";
+  const isCounty = region.kind === "county";
 
-  // Data-driven snippet: facility count + cited-deficiency count + last refresh.
-  // Falls back to a static templated string when Supabase isn't configured (preview/dev).
+  // Title: county uses tiered fallback to stay ≤60 chars; city uses fixed pattern.
+  let metaTitle: string;
+  if (isCounty) {
+    const candidates = [
+      `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
+      `Memory Care in ${region.name} - ${region.state.name} Inspections`,
+      `Memory Care in ${region.name}, ${region.state.name}`,
+    ];
+    metaTitle = candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
+  } else {
+    const cityTitle = `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`;
+    metaTitle = cityTitle.length <= 60 ? cityTitle : `Memory Care in ${region.name}, ${region.state.name}`;
+  }
+
+  // Data-driven description: lead with facility count + cited count + agency + date.
   const dataDriven =
     totalCount > 0
-      ? `${totalCount} licensed memory care ${facilityNoun} in ${region.name}, ${region.state.name}. ${withDeficiency} with cited deficiencies on record. Independent ${reg} data, no commissions${findingsDate ? `, refreshed ${findingsDate}` : ""}.`
+      ? `${totalCount} licensed memory care ${facilityNoun} in ${region.name}. ${withDeficiency} with ${reg} citations on record${findingsDate ? `. Refreshed ${findingsDate}` : ""}.`
       : null;
 
   const fallbackByState: Record<string, string> = {
@@ -81,11 +98,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       `State inspection records for licensed memory care facilities in ${region.name}, ${region.state.name}.`,
   );
   return {
-    title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
+    title: metaTitle,
     description: desc,
     alternates: { canonical },
     openGraph: {
-      title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
+      title: metaTitle,
       description: desc,
       url: canonical,
       type: "website",
@@ -93,7 +110,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: "summary_large_image",
-      title: `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`,
+      title: metaTitle,
       description: desc,
       images: ["/og-default.png"],
     },
@@ -110,6 +127,7 @@ export default async function RegionPage({ params }: PageProps) {
   const supabase = tryPublicSupabaseClient();
   const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
   if (!region) notFound();
+  const isCounty = region.kind === "county";
   let facilities: ListFacility[] = [];
   let fetchError: string | null = null;
 
@@ -302,7 +320,14 @@ export default async function RegionPage({ params }: PageProps) {
   }
 
   const pageUrl = canonicalFor(`/${region.state.slug}/${region.slug}`);
-  const pageTitle = `Memory care in ${region.name}, ${region.state.name} | StarlynnCare`;
+  const pageTitleCandidates = isCounty
+    ? [
+        `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
+        `Memory Care in ${region.name} - ${region.state.name} Inspections`,
+        `Memory Care in ${region.name}, ${region.state.name}`,
+      ]
+    : [`Memory Care in ${region.name}, ${region.state.name} - Inspection Records`, `Memory Care in ${region.name}, ${region.state.name}`];
+  const pageTitle = pageTitleCandidates.find((c) => c.length <= 60) ?? pageTitleCandidates.at(-1)!;
   const pageDesc =
     region.state.code === "TX"
       ? `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — public LTCR record where published.`
@@ -326,19 +351,35 @@ export default async function RegionPage({ params }: PageProps) {
   // publishable rows. Falls back to null if Supabase is unreachable so the footnote omits
   // a date rather than misleadingly showing the build/deploy date.
   let findingsDate: string | null = null;
+  let firstPublishedAt: string | null = null;
   if (supabase) {
-    const { data: refreshRow } = await supabase
-      .from("facilities")
-      .select("updated_at")
-      .eq("state_code", region.state.code)
-      .eq("publishable", true)
-      .in("city_slug", region.citySlugs as unknown as string[])
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const row = refreshRow as { updated_at: string } | null;
+    const [refreshRow, firstRow] = await Promise.all([
+      supabase
+        .from("facilities")
+        .select("updated_at")
+        .eq("state_code", region.state.code)
+        .eq("publishable", true)
+        .in("city_slug", region.citySlugs as unknown as string[])
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("facilities")
+        .select("created_at")
+        .eq("state_code", region.state.code)
+        .eq("publishable", true)
+        .in("city_slug", region.citySlugs as unknown as string[])
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    const row = refreshRow.data as { updated_at: string } | null;
     findingsDate = row?.updated_at
       ? new Date(row.updated_at).toISOString().split("T")[0]
+      : null;
+    const firstRow2 = firstRow.data as { created_at: string } | null;
+    firstPublishedAt = firstRow2?.created_at
+      ? new Date(firstRow2.created_at).toISOString()
       : null;
   }
 
@@ -357,11 +398,15 @@ export default async function RegionPage({ params }: PageProps) {
       name: pageTitle,
       url: pageUrl,
       description: pageDesc,
+      datePublished: firstPublishedAt,
+      dateModified: findingsDate,
     }),
     buildCollectionPageSchema({
       name: `Memory care in ${region.name}`,
       url: pageUrl,
       region,
+      datePublished: firstPublishedAt,
+      dateModified: findingsDate,
     }),
     buildItemListSchema(
       `Memory care facilities in ${region.name}`,
@@ -417,16 +462,14 @@ export default async function RegionPage({ params }: PageProps) {
           },
         ];
 
-  const isCounty = region.kind === "county";
   const cityIntro = !isCounty ? cityIntroForRegion(region.state.code, region.slug) : null;
 
   return (
     <>
       <JsonLd objects={regionJsonLd} />
-      <GovernanceBar />
-      <SiteNav countStateCode={region.state.code} badge={region.state.name} ctaHref={`/${region.state.slug}/facilities`} ctaLabel={`Browse ${region.state.name} facilities`} />
-      <AreaWatchModal areaName={region.name} areaSlug={region.slug} source="city_modal" />
-      <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
+      {/* DOM reorder: <main> (H1) is first in source; GovernanceBar+SiteNav use flex order:-1 to appear visually above it. SiteNav sticky top-0 still functions since sticky is relative to the viewport scroll container, not the flex parent. */}
+      <div className="flex flex-col">
+        <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
         {/* ── Header ── */}
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
@@ -578,6 +621,11 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         )}
 
+        {/* ── Eligibility section (all regions, state-specific Medicaid/waiver content) ── */}
+        {!fetchError && (
+          <HubEligibility stateCode={region.state.code} regionName={region.name} />
+        )}
+
         {/* ── FAQ: county after stats block; city after cost band ── */}
         {isCounty && !fetchError && (
           <HubFaqSection regionName={region.name} faqPairs={faqPairs} />
@@ -596,8 +644,8 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* ── Top performers rail (county pages only) ── */}
-        {isCounty && !fetchError && totalCount > 0 && (
+        {/* ── Top performers rail (county and city pages) ── */}
+        {!fetchError && totalCount > 0 && (
           <TopGradedFacilities
             citySlugs={region.citySlugs}
             stateCode={region.state.code}
@@ -676,7 +724,13 @@ export default async function RegionPage({ params }: PageProps) {
             />
           </div>
         )}
-      </main>
+        </main>
+        <div className="-order-1">
+          <GovernanceBar />
+          <SiteNav countStateCode={region.state.code} badge={region.state.name} ctaHref={`/${region.state.slug}/facilities`} ctaLabel={`Browse ${region.state.name} facilities`} />
+          <AreaWatchModal areaName={region.name} areaSlug={region.slug} source="city_modal" />
+        </div>
+      </div>
       <SiteFooter />
     </>
   );

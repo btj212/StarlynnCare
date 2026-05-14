@@ -75,6 +75,40 @@ export function shortMonthYear(iso: string | null | undefined): string | null {
   });
 }
 
+const STATE_ABBR: Record<string, string> = {
+  California: "CA",
+  Washington: "WA",
+  Oregon: "OR",
+  Minnesota: "MN",
+  Texas: "TX",
+};
+
+/**
+ * Build a ≤60-character facility page title leading with the percentile rank.
+ * Falls back through shorter variants until one fits, or returns the bare facility
+ * name when no snapshot grade is available (YMYL — never invent a percentile rank).
+ */
+export function buildFacilityTitle(input: {
+  name: string;
+  stateName: string;
+  /** Composite percentile 0–100, higher = better. Null when peer set too thin. */
+  percentile: number | null;
+}): string {
+  const { name, stateName, percentile } = input;
+  if (percentile == null) return name.length <= 60 ? name : name.slice(0, 57) + "…";
+
+  const topPct = Math.max(1, 100 - percentile);
+  const abbr = STATE_ABBR[stateName] ?? stateName;
+  const candidates = [
+    `${name} · Top ${topPct}% of ${stateName} Memory Care`,
+    `${name} · Top ${topPct}% in ${stateName}`,
+    `${name} · Top ${topPct}% in ${abbr}`,
+    `${name} · Top ${topPct}%`,
+    name,
+  ];
+  return candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
+}
+
 export type FacilitySnippetVariant = "meta" | "prose";
 
 export interface FacilitySnippetArgs {
@@ -150,6 +184,12 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
     return `${facilityName} has ${citeFrag}${inspFrag ? `; ${inspFrag}` : ""}.`;
   }
 
-  const parts = [rankFrag, citeFrag, inspFrag].filter(Boolean);
-  return `What ${facilityName}'s website won't show you: ${parts.join(" · ")}.`;
+  // Meta variant: lead with the value (percentile/grade) so the differentiator
+  // lands in the visible snippet before Google truncates it.
+  if (rankFrag) {
+    const tail = [citeFrag, inspFrag].filter(Boolean).join(" · ");
+    return `${rankFrag}${tail ? ` · ${tail}` : ""}.`;
+  }
+  // No grade — lead with citations and inspection date.
+  return `${citeFrag}${inspFrag ? ` · ${inspFrag}` : ""}. Free public-record review on StarlynnCare.`;
 }

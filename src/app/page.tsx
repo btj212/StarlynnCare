@@ -7,6 +7,7 @@ import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
 import {
   buildHomeOrganizationGraph,
   buildPersonSchema,
+  buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import {
   SampleFacilityRotationProvider,
@@ -104,7 +105,16 @@ export default async function Home() {
     image: "/images/about/blake-jones.png",
     url: `${SITE_ORIGIN}/about#person-blake-jones`,
   });
-  const homeJsonLd = [buildHomeOrganizationGraph({ founderPersonNode })];
+  const homeJsonLd = [
+    buildHomeOrganizationGraph({ founderPersonNode }),
+    buildWebPageWithReviewer({
+      name: "Memory care facilities, ranked by state inspectors | StarlynnCare",
+      url: homeCanonical,
+      description: "No paid ads. No sales calls. Public inspection data from 5 states — California, Oregon, Washington, Minnesota, and Texas — analyzed and ranked for families.",
+      datePublished: "2025-01-01T00:00:00Z",
+      dateModified: data.lastRefreshed,
+    }),
+  ];
 
   return (
     <>
