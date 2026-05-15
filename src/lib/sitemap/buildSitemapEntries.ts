@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { SITE_ORIGIN } from "@/lib/seo/canonical";
 import { regionsForState } from "@/lib/regions";
 import { COVERED_STATES } from "@/lib/states";
+import { RESEARCH_INDEX } from "@/lib/content/research";
 
 export type SitemapUrlRow = {
   loc: string;
@@ -66,6 +67,17 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/editorial-policy", priority: "0.72", changefreq: "monthly" },
     { path: "/terms", priority: "0.55", changefreq: "yearly" },
     { path: "/privacy", priority: "0.55", changefreq: "yearly" },
+    { path: "/research", priority: "0.85", changefreq: "weekly" },
+    ...RESEARCH_INDEX.filter((r) => r.kind === "analysis").map((r) => ({
+      path: r.href,
+      priority: "0.78",
+      changefreq: "monthly" as const,
+    })),
+    ...RESEARCH_INDEX.filter((r) => r.kind === "flagship-report").map((r) => ({
+      path: r.href,
+      priority: "0.83",
+      changefreq: "monthly" as const,
+    })),
     { path: "/library", priority: "0.83", changefreq: "weekly" },
     { path: "/library/type-a-vs-type-b-deficiencies-explained", priority: "0.78", changefreq: "monthly" },
     { path: "/library/memory-care-vs-nursing-home", priority: "0.82", changefreq: "monthly" },
