@@ -61,6 +61,26 @@ export type InspectionRow = {
   } | null;
 };
 
+// ─────────────────────────────────────────────────────────────────
+// Narrative validity
+// ─────────────────────────────────────────────────────────────────
+
+const WA_PLACEHOLDER_RE = /^—:\s*WA DSHS report:/i;
+
+/**
+ * Returns true only when an inspection's raw_data.narrative is real inspector prose.
+ *
+ * Criteria (all must pass):
+ *   1. narrative field exists and is non-empty
+ *   2. length ≥ 100 chars (excludes single-label placeholders)
+ *   3. does not start with the known WA bundle-builder placeholder pattern
+ */
+export function inspectionHasRealNarrative(insp: InspectionRow): boolean {
+  const narrative = insp.raw_data?.narrative;
+  if (!narrative || narrative.trim().length < 100) return false;
+  return !WA_PLACEHOLDER_RE.test(narrative.trim());
+}
+
 export type DeficiencyRow = {
   id: string;
   inspection_id: string;
@@ -174,6 +194,14 @@ export interface FacilityProfile {
   limitedHistory: boolean;
   /** Which display tier is currently active. Always "free" until premium is built. */
   visibilityTier: InspectionVisibilityTier;
+
+  /**
+   * True when at least one inspection in the display window has real narrative text
+   * (not a URL placeholder). False for WA facilities where PDFs have not been parsed.
+   * When false the page degrades: grade/percentile are suppressed, AI summaries are
+   * hidden, and a banner explaining the gap is shown.
+   */
+  hasRealInspectionText: boolean;
 
   /** Raw output from facility_snapshot() RPC. null when unavailable. */
   snapshot: SnapshotPayload | null;
@@ -460,9 +488,20 @@ export async function loadFacilityProfile(params: {
   // Per-state config
   const cfg = getStateProfileConfig(state.code);
 
+  // ── Narrative validity gate ───────────────────────────────────────────────
+  // True when at least one visible inspection has real parsed narrative text.
+  // When false we soft-degrade: null out the grade so downstream consumers
+  // (hero prose, JSON-LD, FAQ schema) never emit unearned quality claims.
+  const hasRealInspectionText = inspections.some(inspectionHasRealNarrative);
+  const degradedSnapshot: SnapshotPayload | null =
+    snapshot && !hasRealInspectionText
+      ? { ...snapshot, grade: null }
+      : snapshot;
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Derived data
-  const timeline = deriveTimeline(snapshot);
-  const scopeSeverityGrid = deriveScopeSeverityGrid(snapshot);
+  const timeline = deriveTimeline(degradedSnapshot);
+  const scopeSeverityGrid = deriveScopeSeverityGrid(degradedSnapshot);
   const rulesCards = deriveRulesCards(cfg, deficiencies, inspections);
   const tourQuestions = (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [];
 
@@ -516,8 +555,8 @@ export async function loadFacilityProfile(params: {
       canonicalUrl,
       reviews: reviews.length ? reviews : undefined,
       extras: {
-        grade: snapshot?.grade?.letter ?? null,
-        percentile: snapshot?.grade?.composite_percentile ?? null,
+        grade: degradedSnapshot?.grade?.letter ?? null,
+        percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
         citationCount: totalDeficiencies,
         lastInspectionDate: lastNonComplaintInspection,
       },
@@ -547,7 +586,7 @@ export async function loadFacilityProfile(params: {
     inspectionCount: inspections.length,
     deficiencyCount: totalDeficiencies,
     lastInspectionDate: lastNonComplaintInspection,
-    grade: snapshot?.grade?.letter ?? null,
+    grade: degradedSnapshot?.grade?.letter ?? null,
     tourQuestions,
   });
   if (faqSchema) jsonLd.push(faqSchema);
@@ -573,7 +612,8 @@ export async function loadFacilityProfile(params: {
     limitedHistory: inspections.length < 4,
     visibilityTier: "free" as InspectionVisibilityTier,
 
-    snapshot,
+    hasRealInspectionText,
+    snapshot: degradedSnapshot,
     timeline,
     scopeSeverityGrid,
 

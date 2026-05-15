@@ -284,6 +284,47 @@ MN_PUBLISH_GATE_MONTHS = 48
 WA_PUBLISH_GATE_MONTHS = 48
 
 
+def recompute_has_inspection_text(
+    conn: psycopg.Connection,
+    state_code: str,
+    dry_run: bool = False,
+) -> int:
+    """
+    Set facilities.has_inspection_text based on whether any inspection in the
+    freshness window has real parsed narrative text (not a WA placeholder).
+
+    Uses the same SQL helper (inspection_has_real_narrative) that the audit
+    script uses, keeping definitions in sync. Does NOT change publishable.
+
+    Returns count of rows updated.
+    """
+    freshness_months = _FRESHNESS_MONTHS.get(state_code.upper())
+    if freshness_months is not None:
+        freshness_clause = f"AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{freshness_months} months')"
+    else:
+        freshness_clause = ""
+
+    sql = f"""
+        UPDATE facilities
+        SET has_inspection_text = EXISTS (
+            SELECT 1
+            FROM inspections i
+            WHERE i.facility_id = facilities.id
+              {freshness_clause}
+              AND inspection_has_real_narrative(i.id)
+        )
+        WHERE state_code = %s
+    """
+
+    if dry_run:
+        print(f"  Step 5: Would recompute has_inspection_text for {state_code} facilities")
+        return 0
+
+    with conn.cursor() as cur:
+        cur.execute(sql, (state_code,))
+        return cur.rowcount
+
+
 def promote_queue_with_tier1_signals(
     conn: psycopg.Connection,
     state_code: str,
@@ -380,6 +421,7 @@ def main() -> None:
         step4_updated = promote_queue_with_tier1_signals(conn, args.state, args.dry_run)
         step3a_updated = mark_chain_only_for_review(conn, args.state, args.dry_run)
         step3b_updated = mark_single_directory_for_review(conn, args.state, args.dry_run)
+        step5_updated = recompute_has_inspection_text(conn, args.state, args.dry_run)
 
         if not args.dry_run:
             conn.commit()
@@ -397,11 +439,12 @@ def main() -> None:
                 + step3a_updated
                 + step3b_updated
                 + step4_updated
+                + step5_updated
             )
             print(
                 f"\nTotal database rows touched: {total_rows_touched} "
                 f"(step4 promote: {step4_updated}, step3a chain-only: {step3a_updated}, "
-                f"step3b single-dir: {step3b_updated})"
+                f"step3b single-dir: {step3b_updated}, step5 has_inspection_text: {step5_updated})"
             )
         else:
             print(f"\nDry-run complete. No changes made to database.")

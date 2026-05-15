@@ -218,6 +218,15 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 </span>
               </div>
             )}
+
+            {/* PDF-links-only badge — shown when no inspection narrative has been parsed */}
+            {!profile.hasRealInspectionText && (
+              <div className="mt-3">
+                <span className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-amber-700 border border-amber-400 px-[5px] py-[2px] rounded-[2px]">
+                  Inspection text not parsed · PDF links only
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Verdict card */}
