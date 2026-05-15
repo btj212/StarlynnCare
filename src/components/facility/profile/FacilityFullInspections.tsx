@@ -6,13 +6,19 @@ import { FullHistoryWaitlist } from "./FullHistoryWaitlist";
 // Mirrors inspectionHasRealNarrative from loadFacilityProfile — duplicated here
 // so this component stays a pure function of its props with no cross-layer import.
 const WA_PLACEHOLDER_RE_UI = /^—:\s*WA DSHS report:/i;
+const URL_RE_UI = /^https?:\/\//i;
+
 function narrativeIsPlaceholder(narrative: string | null | undefined): boolean {
   if (!narrative || narrative.trim().length < 100) return true;
-  return WA_PLACEHOLDER_RE_UI.test(narrative.trim());
+  const text = narrative.trim();
+  if (WA_PLACEHOLDER_RE_UI.test(text)) return true;
+  // Multi-PDF concatenation: every non-empty line is a placeholder
+  const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  return lines.every((l) => WA_PLACEHOLDER_RE_UI.test(l) || l.startsWith("—:"));
 }
 
 function isPdfUrl(text: string | null | undefined): boolean {
-  return !!text && /^https?:\/\//i.test(text.trim());
+  return !!text && URL_RE_UI.test(text.trim());
 }
 
 function severityToneClass(tone: "danger" | "warn" | "info" | "ok"): string {

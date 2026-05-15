@@ -66,19 +66,58 @@ export type InspectionRow = {
 // ─────────────────────────────────────────────────────────────────
 
 const WA_PLACEHOLDER_RE = /^—:\s*WA DSHS report:/i;
+const URL_RE = /^https?:\/\//i;
 
 /**
- * Returns true only when an inspection's raw_data.narrative is real inspector prose.
+ * True when a deficiency has real text in its description or inspector_narrative —
+ * not a URL, not the WA placeholder label, and substantive length (≥ 50 chars).
  *
- * Criteria (all must pass):
- *   1. narrative field exists and is non-empty
- *   2. length ≥ 100 chars (excludes single-label placeholders)
- *   3. does not start with the known WA bundle-builder placeholder pattern
+ * OR stores allegation text in deficiency rows (not in raw_data.narrative), so
+ * this check is needed to correctly detect real data for OR, TX, and similar states.
  */
-export function inspectionHasRealNarrative(insp: InspectionRow): boolean {
-  const narrative = insp.raw_data?.narrative;
-  if (!narrative || narrative.trim().length < 100) return false;
-  return !WA_PLACEHOLDER_RE.test(narrative.trim());
+function deficiencyHasRealText(def: DeficiencyRow): boolean {
+  const candidates = [def.description, def.inspector_narrative];
+  for (const text of candidates) {
+    if (!text || text.trim().length < 50) continue;
+    if (URL_RE.test(text.trim())) continue;
+    if (WA_PLACEHOLDER_RE.test(text.trim())) continue;
+    if (text.trim().startsWith("WA DSHS report:")) continue;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Returns true when an inspection has real inspector prose — either in
+ * raw_data.narrative (CA, MN, some WA) or in its associated deficiency rows
+ * (OR allegation text). Uses deficiencies for the check so OR is not a false negative.
+ *
+ * Criteria for narrative path (all must pass):
+ *   1. narrative field exists and is non-empty
+ *   2. length ≥ 100 chars
+ *   3. does not start with the known WA bundle-builder placeholder pattern
+ *   4. does not consist entirely of WA placeholder lines (multi-PDF concatenation)
+ */
+export function inspectionHasRealNarrative(
+  insp: InspectionRow,
+  defs?: DeficiencyRow[],
+): boolean {
+  // Path 1: real text in raw_data.narrative (CA, MN, TX-native)
+  const narrative = insp.raw_data?.narrative?.trim();
+  if (narrative && narrative.length >= 100 && !WA_PLACEHOLDER_RE.test(narrative)) {
+    // Guard against multi-PDF placeholder concatenation: every non-empty line
+    // starts with "—: WA DSHS report:" — still fake even if total length > 100.
+    const lines = narrative.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    const allPlaceholder = lines.every(
+      (l) => WA_PLACEHOLDER_RE.test(l) || l.startsWith("—:"),
+    );
+    if (!allPlaceholder) return true;
+  }
+
+  // Path 2: real text in deficiency rows (OR violations CSV, structured exports)
+  if (defs && defs.some(deficiencyHasRealText)) return true;
+
+  return false;
 }
 
 export type DeficiencyRow = {
@@ -492,7 +531,9 @@ export async function loadFacilityProfile(params: {
   // True when at least one visible inspection has real parsed narrative text.
   // When false we soft-degrade: null out the grade so downstream consumers
   // (hero prose, JSON-LD, FAQ schema) never emit unearned quality claims.
-  const hasRealInspectionText = inspections.some(inspectionHasRealNarrative);
+  const hasRealInspectionText = inspections.some((i) =>
+    inspectionHasRealNarrative(i, deficienciesByInspection.get(i.id)),
+  );
   const degradedSnapshot: SnapshotPayload | null =
     snapshot && !hasRealInspectionText
       ? { ...snapshot, grade: null }
