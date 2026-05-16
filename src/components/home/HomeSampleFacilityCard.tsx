@@ -57,7 +57,7 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
             className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] px-2.5 py-1 justify-self-start sm:justify-self-end"
             style={{ background: "var(--color-teal-soft)", color: "var(--color-teal-deep)" }}
           >
-            Top {100 - composite}%
+            Top {Math.max(1, 100 - composite)}%
           </div>
         )}
       </div>

@@ -75,15 +75,24 @@ async function loadGradeCardFacilities(): Promise<HomeSampleFacility[]> {
         const { data: snap } = await supabase.rpc("facility_snapshot", { p_facility_id: picked.id });
         const s = snap as null | {
           grade?: { letter: string; composite_percentile: number } | null;
-          metrics?: { severity: { percentile: number }; repeats: { percentile: number }; frequency: { percentile: number } } | null;
+          metrics?: {
+            severity:  { percentile: number | null };
+            repeats:   { percentile: number | null; peer_median?: number | null };
+            frequency: { percentile: number | null };
+          } | null;
         };
+        const repPct     = s?.metrics?.repeats?.percentile ?? null;
+        const repMedian  = s?.metrics?.repeats?.peer_median ?? null;
+        // Suppress degenerate repeat rank (everyone ties at 100 because the
+        // peer median is 0 repeat citations — same logic as FacilityPeerRank).
+        const repPctFinal = (repMedian === 0 && repPct === 100) ? null : repPct;
         return {
           ...picked,
           care_category: picked.care_category as CareCategory,
           grade: s?.grade?.letter ?? null,
           composite: s?.grade?.composite_percentile ?? null,
-          sev_pct: s?.metrics?.severity?.percentile ?? null,
-          rep_pct: s?.metrics?.repeats?.percentile ?? null,
+          sev_pct:  s?.metrics?.severity?.percentile ?? null,
+          rep_pct:  repPctFinal,
           freq_pct: s?.metrics?.frequency?.percentile ?? null,
         } satisfies HomeSampleFacility;
       }),
