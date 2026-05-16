@@ -20,7 +20,25 @@ type MetricCellProps = {
 };
 
 function MetricCell({ label, percentile, desc }: MetricCellProps) {
-  const pct = percentile ?? 0;
+  // null means the metric is genuinely unavailable (e.g. no routine inspections
+  // for frequency rank) — render a suppressed card rather than a misleading 0th.
+  if (percentile === null) {
+    return (
+      <div className="bg-paper-2 p-7 pb-6 flex flex-col">
+        <div className="mb-4 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-ink-3">
+          {label}
+        </div>
+        <div className="font-[family-name:var(--font-display)] text-[28px] leading-[1.2] tracking-[-0.02em] text-ink-3 italic">
+          No routine<br />inspections<br />on file
+        </div>
+        <div className="mt-4 font-[family-name:var(--font-display)] text-[16px] italic leading-[1.3] text-ink-2">
+          {desc}
+        </div>
+      </div>
+    );
+  }
+
+  const pct = percentile;
   const fillColor = peerRankBarFillCss(pct);
 
   return (
