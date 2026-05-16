@@ -130,8 +130,28 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
         />
 
         <div className="grid gap-7 md:grid-cols-[1.5fr_1fr]">
-          <HeroPhoto urls={profile.photoUrls} name={facility.name} photoSources={profile.photoSources} />
-          <FacilityMap profile={profile} />
+          {/* AFH residential privacy: omit exterior photo and street-level map */}
+          {profile.isAfhResidential ? (
+            <div
+              className="h-[360px] w-full overflow-hidden flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 100%)" }}
+            >
+              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-white/70 text-center px-4">
+                Adult Family Home · exterior photo withheld for resident privacy
+              </span>
+            </div>
+          ) : (
+            <HeroPhoto urls={profile.photoUrls} name={facility.name} photoSources={profile.photoSources} />
+          )}
+          {profile.isAfhResidential ? (
+            <div className="h-[360px] w-full overflow-hidden flex items-center justify-center bg-paper-2">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-ink/40 text-center px-4">
+                Street view omitted · residential privacy
+              </span>
+            </div>
+          ) : (
+            <FacilityMap profile={profile} />
+          )}
         </div>
       </div>
     </section>

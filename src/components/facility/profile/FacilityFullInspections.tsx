@@ -210,8 +210,8 @@ function InspectionItem({
     : defs.length === 0
     ? "No findings"
     : tag
-    ? `${defs.length} · ${tag.label}`
-    : `${defs.length} deficienc${defs.length === 1 ? "y" : "ies"}`;
+    ? `${tag.label} · ${defs.length} finding${defs.length === 1 ? "" : "s"}`
+    : `${defs.length} finding${defs.length === 1 ? "" : "s"}`;
 
   const inspType = insp.is_complaint
     ? "Complaint Investigation"

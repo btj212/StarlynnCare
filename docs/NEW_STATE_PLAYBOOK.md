@@ -314,3 +314,41 @@ If you create illustration art for a state-specific article, register it in `src
 ```
 
 Thumbnails appear on the guides index page cards when available. The guides page gracefully omits the image container if no thumbnail is registered.
+
+---
+
+## CMS Nursing Home data (all states)
+
+CMS data is the easiest source for skilled nursing facilities and works for **all US states** — not just WA. Add this step for any new state with a significant SNF footprint.
+
+```bash
+# 1. Ingest NH directory (replace WA with your state code)
+python3 scrapers/cms_nh_directory_ingest.py --state XX
+
+# 2. Ingest NH health deficiencies
+python3 scrapers/cms_nh_deficiencies_ingest.py --state XX
+
+# 3. Recompute publishable (NHs start as needs_review — manually promote)
+python3 scrapers/recompute_publishable.py --state XX
+```
+
+CMS datasets:
+- Provider Information: `https://data.cms.gov/provider-data/dataset/4pq5-n9py`
+- Health Deficiencies: `https://data.cms.gov/provider-data/dataset/r5ix-sfxw`
+
+No API key required. Data updated monthly by CMS; safe to refresh weekly.
+
+NH facilities get `wa_facility_type='NH'` (WA) or equivalent and automatically use `waNhProfileConfig` (F-tag citations, CMS star ratings, federal scope-severity matrix). For non-WA states, add a matching `nh{State}ProfileConfig` in `src/lib/states/{STATE}/profileConfig.ts` and extend the `getStateProfileConfig` dispatcher.
+
+### Memory care classification for NHs
+
+CMS flags memory care SCUs via the Provider Information `Dementia Unit Type` or similar fields. Until that field is parsed, new NHs land in `needs_review`. Check CMS Compare for the facility to confirm a dementia/memory-care unit before setting `serves_memory_care=true` manually.
+
+### WA-specific multi-signal classification
+
+For WA, `serves_memory_care` is ORed from three independent signals:
+- `wa_memory_care_certified` — Memory Care unit certification
+- `wa_earc_sdc_contracted` — DSHS SDCP contract
+- `wa_dementia_specialty` — training-based dementia designation
+
+See `docs/WA_PIPELINE_V2.md` for the full WA runbook.

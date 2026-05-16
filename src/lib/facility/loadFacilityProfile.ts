@@ -266,6 +266,25 @@ export interface FacilityProfile {
   backLabel: string;
   breadcrumbTrail: { name: string; url: string }[];
   jsonLd: object[];
+
+  /**
+   * WA memory-care signal badges.
+   * Non-null only for WA facilities; null for all other states.
+   * Three independent regulatory signals, any of which qualifies the facility.
+   */
+  waMcSignals: {
+    memoryCare: boolean;
+    sdcp: boolean;
+    dementiaSpecialty: boolean;
+    cmsOverallRating: number | null;
+  } | null;
+
+  /**
+   * True for WA Adult Family Homes (2–6 bed residential houses).
+   * When true: no default street view, no exterior photos, smaller card treatment.
+   * Privacy flag per wa_afh_residential_flag column.
+   */
+  isAfhResidential: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -524,8 +543,8 @@ export async function loadFacilityProfile(params: {
     inspections.find((i) => (deficienciesByInspection.get(i.id) ?? []).length > 0)
       ?.inspection_date ?? null;
 
-  // Per-state config
-  const cfg = getStateProfileConfig(state.code);
+  // Per-state config — WA nursing homes get CMS/F-tag config
+  const cfg = getStateProfileConfig(state.code, facility.wa_facility_type);
 
   // ── Narrative validity gate ───────────────────────────────────────────────
   // True when at least one visible inspection has real parsed narrative text.
@@ -671,5 +690,17 @@ export async function loadFacilityProfile(params: {
     backLabel,
     breadcrumbTrail,
     jsonLd,
+
+    waMcSignals:
+      facility.state_code === "WA"
+        ? {
+            memoryCare: facility.wa_memory_care_certified ?? false,
+            sdcp: facility.wa_earc_sdc_contracted ?? facility.wa_dementia_care_contract ?? false,
+            dementiaSpecialty: facility.wa_dementia_specialty ?? false,
+            cmsOverallRating: facility.cms_overall_rating ?? null,
+          }
+        : null,
+
+    isAfhResidential: facility.wa_afh_residential_flag === true,
   };
 }

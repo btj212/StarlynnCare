@@ -13,4 +13,4 @@
 
 Post-COVID, California memory care deficiency rates have been on a worsening trajectory. The deficiency rate nearly doubled from 0.33 in 2021 to 0.77 in 2024 (+132%), as inspectors resumed full activity after the COVID shutdown. In 2025, the rate appears to moderate at 0.58 (partial year data). Facilities with explicit dementia-care designations rate at 1.02 vs 0.45 for general RCFEs in 2024, suggesting explicit MC facilities attract more scrutiny. Headline: 'CA memory care citation rates nearly doubled since 2021 — is this a quality crisis or stricter enforcement?'
 
-*Generated: 2026-05-11 17:10*
+*Generated: 2026-05-11 17:14*

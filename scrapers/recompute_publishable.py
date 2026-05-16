@@ -135,18 +135,21 @@ def recompute_serves_memory_care(
     """
     sql = """
         UPDATE facilities
-        SET serves_memory_care = (
-             mc_signal_explicit_name
-          OR memory_care_disclosure_filed
-          OR mc_signal_chain_curated
-          OR (mc_signal_apfm_listed AND mc_signal_caring_listed)
-          OR mc_review_status = 'reviewed_publish'
+        SET serves_memory_care = COALESCE(
+             COALESCE(mc_signal_explicit_name, false)
+          OR COALESCE(memory_care_disclosure_filed, false)
+          OR COALESCE(mc_signal_chain_curated, false)
+          OR (COALESCE(mc_signal_apfm_listed, false) AND COALESCE(mc_signal_caring_listed, false))
+          OR (mc_review_status = 'reviewed_publish')
           -- State-specific Tier-1 signals
-          OR (state_code = 'WA' AND wa_dementia_care_contract = true)
-          OR (state_code = 'OR' AND or_memory_care_endorsed = true)
-          OR (state_code = 'MN' AND mn_dementia_care_licensed = true)
-          OR (state_code = 'TX' AND tx_alzheimer_certified = true)
-        )
+          OR (state_code = 'WA' AND COALESCE(wa_dementia_care_contract, false))
+          OR (state_code = 'WA' AND COALESCE(wa_memory_care_certified, false))
+          OR (state_code = 'WA' AND COALESCE(wa_earc_sdc_contracted, false))
+          OR (state_code = 'WA' AND COALESCE(wa_dementia_specialty, false))
+          OR (state_code = 'OR' AND COALESCE(or_memory_care_endorsed, false))
+          OR (state_code = 'MN' AND COALESCE(mn_dementia_care_licensed, false))
+          OR (state_code = 'TX' AND COALESCE(tx_alzheimer_certified, false))
+        , false)
         WHERE state_code = %s
     """
 

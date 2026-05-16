@@ -29,6 +29,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               Watchers
             </Link>
+            <Link
+              href="/admin/prr-queue"
+              className="text-sm font-medium text-slate hover:text-ink"
+            >
+              PRR Queue
+            </Link>
           </div>
           <UserButton />
         </div>

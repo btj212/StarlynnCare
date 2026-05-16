@@ -12,7 +12,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const TITLE = "Privacy Policy";
 const DESC =
   "How StarlynnCare collects, uses, and protects information — including analytics data, voluntary submissions, and California residents' rights under CCPA.";
-const EFFECTIVE = "May 2026";
+const EFFECTIVE = "May 15, 2026";
 
 export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,
@@ -116,16 +116,17 @@ export default function PrivacyPage() {
               server-log and browser data, including:
             </p>
             <ul className="list-disc pl-6 space-y-1">
-              <li>IP address (anonymized or truncated by Google Analytics;</li>
+              <li>IP address (not stored in identifiable form by our analytics providers);</li>
               <li>Browser type, operating system, and device type;</li>
               <li>Pages visited, referring URL, and approximate geographic region;</li>
-              <li>Date and time of visit; and</li>
-              <li>Aggregate engagement metrics (scroll depth, session duration).</li>
+              <li>Date and time of visit;</li>
+              <li>Aggregate engagement metrics (scroll depth, session duration, click patterns); and</li>
+              <li>Session recordings and heatmaps (collected by Microsoft Clarity — see §5).</li>
             </ul>
             <p>
-              We use <strong>Google Analytics</strong> (Google LLC) and <strong>Ahrefs
-              Analytics</strong> (Ahrefs Pte. Ltd.) for this purpose. Neither service is used
-              to serve personalized advertising. See §5 below for opt-out options.
+              We use <strong>Microsoft Clarity</strong> (Microsoft Corporation) and <strong>PostHog</strong>{" "}
+              (PostHog, Inc.) for this purpose. Neither service is used to serve personalized
+              advertising. See §5 below for details and opt-out options.
             </p>
 
             <h3 className="font-semibold text-ink mt-6 mb-2">Voluntarily submitted data</h3>
@@ -199,17 +200,25 @@ export default function PrivacyPage() {
                 </thead>
                 <tbody className="divide-y divide-paper-rule text-ink-2">
                   <tr>
-                    <td className="py-3 pr-4 align-top font-medium">Google Analytics</td>
-                    <td className="py-3 pr-4 align-top">Aggregate site traffic analytics</td>
+                    <td className="py-3 pr-4 align-top font-medium">Microsoft Clarity</td>
+                    <td className="py-3 pr-4 align-top">
+                      Session recordings, heatmaps, and rage/dead-click analytics. Collects
+                      masked interaction data (keystrokes in form fields are masked by default).
+                      Data stored on Microsoft Azure servers.
+                    </td>
                     <td className="py-3 align-top">
-                      <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-teal underline underline-offset-2">
-                        GA opt-out
+                      <a href="https://learn.microsoft.com/en-us/clarity/setup-and-installation/opt-out" target="_blank" rel="noopener noreferrer" className="text-teal underline underline-offset-2">
+                        Clarity opt-out
                       </a>
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-3 pr-4 align-top font-medium">Ahrefs Analytics</td>
-                    <td className="py-3 pr-4 align-top">Aggregate traffic and referral analytics</td>
+                    <td className="py-3 pr-4 align-top font-medium">PostHog</td>
+                    <td className="py-3 pr-4 align-top">
+                      Product analytics: page views, navigation funnels, and aggregate
+                      engagement events. No personally identifiable information is deliberately
+                      sent. Data stored on PostHog Cloud (US region).
+                    </td>
                     <td className="py-3 align-top">Browser ad-block or uBlock Origin</td>
                   </tr>
                   <tr>
@@ -227,25 +236,39 @@ export default function PrivacyPage() {
             </div>
 
             <p className="mt-4">
-              Google Analytics is configured with IP anonymization. We do not enable Google
-              Signals or cross-device tracking. Ahrefs Analytics collects only aggregate,
-              anonymized traffic data.
+              <strong>Microsoft Clarity</strong> does not store your full IP address in
+              identifiable form and masks sensitive form fields (passwords, credit card inputs)
+              by default. Session recordings are retained for 90 days. Clarity data is processed
+              by Microsoft Corporation under their{" "}
+              <a href="https://privacy.microsoft.com/en-us/privacystatement" target="_blank" rel="noopener noreferrer" className="text-teal underline underline-offset-2">
+                privacy statement
+              </a>
+              .
             </p>
             <p>
-              You can prevent analytics cookie placement by using browser settings, private/
-              incognito browsing mode, or a browser extension such as uBlock Origin. We do not
-              honor Do Not Track (DNT) headers because our analytics configuration does not
-              perform behavioral tracking that DNT is designed to prevent.
+              <strong>PostHog</strong> collects pseudonymous session identifiers and aggregate
+              event data. We do not deliberately pass names, email addresses, or other directly
+              identifying information to PostHog. PostHog Cloud (US) is subject to PostHog&rsquo;s{" "}
+              <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer" className="text-teal underline underline-offset-2">
+                privacy policy
+              </a>
+              .
+            </p>
+            <p>
+              You can limit session recording and analytics by using a browser extension such
+              as uBlock Origin, or by opting out via the Clarity link above. We honor browser
+              Do Not Track (DNT) signals for PostHog event capture.
             </p>
           </Section>
 
           <Section id="data-retention" title="6. Data retention">
             <p>
-              Analytics data is retained according to each provider&rsquo;s standard retention
-              periods (typically 14 months for Google Analytics aggregates). Correction
-              submissions and contact messages are retained for as long as necessary to resolve
-              the underlying request, and thereafter for up to three years for legal-compliance
-              purposes. We periodically purge records no longer needed.
+              Analytics data is retained according to each provider&rsquo;s standard periods:
+              Microsoft Clarity session recordings are retained for 90 days; PostHog event data
+              is retained for up to 12 months on our current plan. Correction submissions and
+              contact messages are retained for as long as necessary to resolve the underlying
+              request, and thereafter for up to three years for legal-compliance purposes. We
+              periodically purge records no longer needed.
             </p>
           </Section>
 

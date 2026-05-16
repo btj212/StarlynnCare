@@ -227,7 +227,7 @@ export default function MethodologyPage() {
               expanding as we ingest new state licensing data.
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li><span className="font-medium text-ink">California</span> — 484 licensed RCFEs, covering counties statewide including Los Angeles, the San Francisco Bay Area, San Diego, Sacramento, and the Central Valley.</li>
+              <li><span className="font-medium text-ink">California</span> — licensed RCFEs across California, covering counties statewide including Los Angeles, the San Francisco Bay Area, San Diego, Sacramento, and the Central Valley.</li>
               <li><span className="font-medium text-ink">Minnesota</span> — 552 licensed assisted living facilities (ALDC and AL).</li>
               <li><span className="font-medium text-ink">Oregon</span> — 244 licensed residential care facilities and memory care communities.</li>
               <li><span className="font-medium text-ink">Washington</span> — 180 licensed assisted living facilities and adult family homes.</li>

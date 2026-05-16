@@ -12,4 +12,4 @@
 
 1 in 5 CA memory care facilities (21%, N=100) has been cited for the exact same regulatory violation three or more times. The most-repeated rule statewide is 87303(a) ('General Facility Maintenance'), indicating a systemic failure across operators to address basic general facility maintenance issues. The worst multi-category offender is Roundhill Care Homes, Inc. with 6 distinct violations repeated three or more times. Headline: '1 in 5 California memory care facilities has been cited for the same violation three or more times.'
 
-*Generated: 2026-05-11 16:59*
+*Generated: 2026-05-11 17:14*

@@ -5,6 +5,7 @@ import {
   regulatorLicensePageLabel,
 } from "@/lib/seo/schema";
 import { buildFacilitySnippet } from "@/lib/seo/meta";
+import { WaMcSignalBadges } from "./WaMcSignalBadges";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -226,6 +227,11 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                   Inspection text not parsed · PDF links only
                 </span>
               </div>
+            )}
+
+            {/* WA memory-care signal badges */}
+            {profile.waMcSignals && (
+              <WaMcSignalBadges signals={profile.waMcSignals} />
             )}
           </div>
 

@@ -13,4 +13,4 @@
 
 Among 23 CA memory care chains (≥2 facilities), the editorial story is in the large operators: Pacifica Senior Living (17 locations) ranks worst among chains with ≥5 CA facilities with a severity index of 0.30, versus Atria Senior Living (15 locations) at 0.04 — a 8x spread. Chains with systematic repeat-citation patterns include: Bvr, Inc., De Luna, Diosdado, Sandhill Assisted Living Llc, Mari, Antonia B & Bacani, Soledad F, Jaakk, Inc., Ageway Senior Care, Bl Homes, Inc., Eskaton, Welltower Pegasus Tenant Llc; Psl Associates Llc, Emeritus Corporation, Pacifica Senior Living, Carlton Senior Living, Llc, Aegis Senior Communities, Belmont Village, Merrill Gardens. Headline: 'These California memory care chains have the worst inspection records — ranked.'
 
-*Generated: 2026-05-11 16:59*
+*Generated: 2026-05-11 17:14*

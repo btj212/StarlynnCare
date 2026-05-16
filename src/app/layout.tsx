@@ -66,23 +66,15 @@ export default function RootLayout({
       <body>
         {/* GovernanceBar rendered per-page inside page layouts, not globally, to avoid auth pages */}
         <ClerkProvider>{children}</ClerkProvider>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-19JKWKER15"
-          strategy="afterInteractive"
-        />
-        <Script id="gtag-init" strategy="afterInteractive">
+        <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-19JKWKER15');
+            (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "wroc9wbsaf");
           `}
         </Script>
-        <Script
-          src="https://analytics.ahrefs.com/analytics.js"
-          data-key="IjDNyQvSmnNGFMK02hdywA"
-          strategy="afterInteractive"
-        />
       </body>
     </html>
   );

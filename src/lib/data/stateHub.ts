@@ -290,11 +290,17 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
       .in("facility_id", allIds);
     inspCount = ic ?? 0;
 
-    // Count severe deficiencies via inspection IDs for this state
+    // Count severe deficiencies in the last 24 months, scoped to this state's inspections.
+    // The UI label says "last 24 months" — the query must match.
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - 24);
+    const cutoff = cutoffDate.toISOString().split("T")[0];
+
     const { data: inspIdRows } = await supabase
       .from("inspections")
       .select("id")
-      .in("facility_id", allIds);
+      .in("facility_id", allIds)
+      .gte("inspection_date", cutoff);
     const inspIds = (inspIdRows ?? []).map((r: { id: string }) => r.id);
     if (inspIds.length > 0) {
       const { count: sc } = await supabase

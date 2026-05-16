@@ -276,8 +276,8 @@ function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
                 : defs.length === 0
                 ? "No findings"
                 : tag
-                ? `${defs.length} · ${tag.label}`
-                : `${defs.length} def.`}
+                ? `${tag.label} · ${defs.length}`
+                : `${defs.length} finding${defs.length === 1 ? "" : "s"}`}
             </div>
             <span className="text-right text-ink-3">→</span>
           </a>
