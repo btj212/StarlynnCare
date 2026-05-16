@@ -78,24 +78,33 @@ async function loadReviewData() {
     console.error("Failed to load red bucket:", redError);
   }
 
-  // Load listing reports for facilities in the yellow queue
   const yellowIds = (yellowRows || []).map(f => f.id);
-  let listingReports: ListingReport[] = [];
-  
-  if (yellowIds.length > 0) {
-    const { data: reports, error: reportsError } = await supabase
-      .from("mc_listing_reports")
-      .select("id, facility_id, reason, contact_email, created_at, status")
-      .in("facility_id", yellowIds)
-      .eq("status", "open")
-      .order("created_at", { ascending: false });
-    
-    if (reportsError) {
-      console.error("Failed to load listing reports:", reportsError);
-    } else {
-      listingReports = reports || [];
-    }
+
+  // Load ALL open listing reports across all states, joined with facility name/slug/state.
+  // The yellow-queue query above is CA-only; reports can come from any state.
+  const { data: allReports, error: reportsError } = await supabase
+    .from("mc_listing_reports")
+    .select(`
+      id, facility_id, reason, contact_email, created_at, status,
+      facilities ( name, slug, city_slug, state_code )
+    `)
+    .eq("status", "open")
+    .order("created_at", { ascending: false });
+
+  if (reportsError) {
+    console.error("Failed to load listing reports:", reportsError);
   }
+
+  // Narrow type after join
+  type ListingReportWithFacility = ListingReport & {
+    facilities: { name: string; slug: string; city_slug: string; state_code: string } | null;
+  };
+  const listingReports: ListingReportWithFacility[] = (allReports ?? []) as unknown as ListingReportWithFacility[];
+
+  // Subset for yellow-queue inline badges (CA only, matching yellowIds)
+  const yellowQueueReports: ListingReport[] = listingReports.filter(r =>
+    yellowIds.includes(r.facility_id)
+  );
 
   const keywordFlaggedIds = [
     ...(yellowRows || []).filter((f) => f.mc_signal_deficiency_keyword).map((f) => f.id),
@@ -167,6 +176,7 @@ async function loadReviewData() {
     yellowQueue: (yellowRows || []) as FacilityReview[],
     redBucket: (redRows || []) as FacilityReview[],
     listingReports,
+    yellowQueueReports,
     deficiencyExcerpts,
     queueEvidence,
   };
@@ -203,7 +213,8 @@ export default async function MCReviewPage() {
         <ReviewTabs
           yellowQueue={data.yellowQueue}
           redBucket={data.redBucket}
-          listingReports={data.listingReports}
+          listingReports={data.yellowQueueReports}
+          allListingReports={data.listingReports}
           deficiencyExcerpts={data.deficiencyExcerpts}
           queueEvidence={data.queueEvidence}
         />

@@ -31,6 +31,10 @@ type ListingReport = {
   status: string;
 };
 
+type ListingReportWithFacility = ListingReport & {
+  facilities: { name: string; slug: string; city_slug: string; state_code: string } | null;
+};
+
 type DeficiencyExcerpt = {
   facility_id: string;
   description: string;
@@ -50,6 +54,7 @@ interface ReviewTabsProps {
   yellowQueue: FacilityReview[];
   redBucket: FacilityReview[];
   listingReports: ListingReport[];
+  allListingReports: ListingReportWithFacility[];
   deficiencyExcerpts: DeficiencyExcerpt[];
   queueEvidence: QueueEvidence[];
 }
@@ -58,10 +63,11 @@ export function ReviewTabs({
   yellowQueue,
   redBucket,
   listingReports,
+  allListingReports,
   deficiencyExcerpts,
   queueEvidence,
 }: ReviewTabsProps) {
-  const [activeTab, setActiveTab] = useState<"yellow" | "red">("yellow");
+  const [activeTab, setActiveTab] = useState<"yellow" | "red" | "reports">("yellow");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResult, setSearchResult] = useState<FacilityReview | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -235,6 +241,16 @@ export function ReviewTabs({
           >
             Red Bucket ({redBucket.length})
           </button>
+          <button
+            onClick={() => setActiveTab("reports")}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "reports"
+                ? "border-orange-500 text-orange-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Listing Reports ({allListingReports.length})
+          </button>
         </nav>
       </div>
 
@@ -257,6 +273,65 @@ export function ReviewTabs({
                 officialSiteLink={renderOfficialSiteLink(facility)}
               />
             ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "reports" && (
+        <div className="space-y-4">
+          {allListingReports.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No open reports</div>
+          ) : (
+            allListingReports.map((report) => {
+              const fac = report.facilities;
+              const facilityPath = fac
+                ? `/${fac.state_code.toLowerCase()}/${fac.city_slug}/${fac.slug}`
+                : null;
+              return (
+                <div key={report.id} className="bg-white border border-orange-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="font-semibold text-ink">
+                        {fac?.name ?? report.facility_id}
+                      </div>
+                      {fac && (
+                        <div className="text-xs text-gray-500 uppercase tracking-wide mt-0.5">
+                          {fac.state_code}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(report.created_at).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="mt-2 p-3 bg-orange-50 border border-orange-100 rounded text-sm text-orange-900">
+                    {report.reason}
+                  </div>
+
+                  {report.contact_email && (
+                    <div className="mt-2 text-xs text-gray-600">
+                      Reply to:{" "}
+                      <a href={`mailto:${report.contact_email}`} className="text-blue-600 underline">
+                        {report.contact_email}
+                      </a>
+                    </div>
+                  )}
+
+                  {facilityPath && (
+                    <div className="mt-3 flex gap-4">
+                      <Link
+                        href={facilityPath}
+                        target="_blank"
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        View facility page →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
