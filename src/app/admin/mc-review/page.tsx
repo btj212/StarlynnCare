@@ -8,6 +8,7 @@ type FacilityReview = {
   name: string;
   slug: string;
   city: string;
+  state_code: string;
   street: string | null;
   website: string | null;
   mc_signal_chain_name: boolean;
@@ -46,7 +47,7 @@ type QueueEvidence = {
 };
 
 const SELECT_COLUMNS = `
-  id, license_number, name, slug, city, street, website,
+  id, license_number, name, slug, city, state_code, street, website,
   mc_signal_chain_name, mc_signal_explicit_name,
   mc_signal_deficiency_keyword, mc_signal_deficiency_keyword_source,
   mc_review_status, mc_review_notes, mc_reviewed_by, mc_reviewed_at,
@@ -59,8 +60,8 @@ async function loadReviewData() {
   const { data: yellowRows, error: yellowError } = await supabase
     .from("facilities")
     .select(SELECT_COLUMNS)
-    .eq("state_code", "CA")
     .eq("mc_review_status", "needs_review")
+    .order("state_code")
     .order("name");
 
   if (yellowError) {
@@ -70,7 +71,6 @@ async function loadReviewData() {
   const { data: redRows, error: redError } = await supabase
     .from("facilities")
     .select(SELECT_COLUMNS)
-    .eq("state_code", "CA")
     .eq("mc_review_status", "reviewed_reject")
     .order("mc_reviewed_at", { ascending: false });
 
@@ -218,6 +218,7 @@ export default async function MCReviewPage() {
           deficiencyExcerpts={data.deficiencyExcerpts}
           queueEvidence={data.queueEvidence}
         />
+
       </div>
     </div>
   );
