@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
-import { sendListingReportAlert } from "@/lib/email/listingReport";
+import { recordSubmission } from "@/lib/submissions/recordSubmission";
 
 // Basic rate limiting using a simple in-memory store
 // In production, this should use Redis or a proper rate limiting solution
@@ -146,14 +146,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fire-and-forget admin alert — never block the user response on this.
-    sendListingReportAlert({
+    // Admin alert + audit log — fire-and-forget, never blocks user response.
+    recordSubmission({
+      type: "listing_report",
+      email: contactEmail?.trim() || "(not provided)",
       facilityId,
-      facilityName: facility.name,
-      reason: reason.trim(),
-      contactEmail: contactEmail?.trim() || null,
-      reportId: report.id,
-    }).catch((err) => console.error("[listing-report] alert failed:", err));
+      summary: `${facility.name} · listing report`,
+      payload: {
+        reason: reason.trim(),
+        reportId: report.id,
+        contactEmail: contactEmail?.trim() || null,
+      },
+    }).catch((err) => console.error("[listing-report] recordSubmission failed:", err));
 
     return NextResponse.json({ 
       success: true, 

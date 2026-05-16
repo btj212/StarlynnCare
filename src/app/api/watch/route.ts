@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
 import { sendWatchConfirmation } from "@/lib/email/watch";
 import { addLoopsContact } from "@/lib/loops";
+import { recordSubmission } from "@/lib/submissions/recordSubmission";
 
 export async function POST(req: NextRequest) {
   let body: { email?: string; facilityId?: string; facilityName?: string; source?: string };
@@ -56,6 +57,16 @@ export async function POST(req: NextRequest) {
     facilityName,
     facilityId: facilityId,
   });
+
+  // Admin alert + audit log — fire-and-forget, never blocks user response.
+  recordSubmission({
+    type: "facility_watch",
+    email,
+    source: source ?? "facility_hero",
+    facilityId,
+    summary: `${facilityName} · ${source ?? "facility_hero"}`,
+    payload: { facilityName, facilityId },
+  }).catch((err) => console.error("[watch] recordSubmission failed:", err));
 
   return NextResponse.json({ ok: true });
 }

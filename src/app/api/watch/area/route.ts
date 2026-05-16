@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addLoopsContact } from "@/lib/loops";
+import { recordSubmission } from "@/lib/submissions/recordSubmission";
 
 export async function POST(req: NextRequest) {
   let body: { email?: string; areaName?: string; areaSlug?: string; source?: string };
@@ -26,6 +27,15 @@ export async function POST(req: NextRequest) {
     areaName,
     areaSlug,
   });
+
+  // Admin alert + audit log — fire-and-forget, never blocks user response.
+  recordSubmission({
+    type: "area_watch",
+    email,
+    source: source ?? "city_modal",
+    summary: `${areaName} · ${source ?? "city_modal"}`,
+    payload: { areaName, areaSlug },
+  }).catch((err) => console.error("[watch/area] recordSubmission failed:", err));
 
   return NextResponse.json({ ok: true });
 }

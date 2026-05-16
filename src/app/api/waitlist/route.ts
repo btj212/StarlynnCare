@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addToWaitlist } from "@/lib/waitlist";
+import { recordSubmission } from "@/lib/submissions/recordSubmission";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +22,15 @@ export async function POST(req: NextRequest) {
       path: path || "footer",
       createdAt: new Date().toISOString(),
     });
+
+    // Admin alert + audit log — fire-and-forget, never blocks user response.
+    recordSubmission({
+      type: "waitlist",
+      email: email.toLowerCase().trim(),
+      source: path || "footer",
+      summary: `Waitlist · ${zip?.trim() || "no zip"} · ${path || "footer"}`,
+      payload: { zip: zip?.trim() || null, path: path || "footer" },
+    }).catch((err) => console.error("[waitlist] recordSubmission failed:", err));
 
     return NextResponse.json({ ok: true });
   } catch (err) {

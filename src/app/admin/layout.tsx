@@ -35,6 +35,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               PRR Queue
             </Link>
+            <Link
+              href="/admin/submissions"
+              className="text-sm font-medium text-slate hover:text-ink"
+            >
+              Submissions
+            </Link>
           </div>
           <UserButton />
         </div>

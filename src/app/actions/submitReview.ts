@@ -2,6 +2,7 @@
 
 import { getServiceClient } from "@/lib/supabase/server";
 import { REVIEW_CATEGORIES, RELATIONSHIP_OPTIONS } from "@/components/reviews/categories";
+import { recordSubmission } from "@/lib/submissions/recordSubmission";
 
 export type ReviewState = {
   status: "idle" | "success" | "error";
@@ -93,6 +94,19 @@ export async function submitReview(
     console.error("submitReview error:", error);
     return { status: "error", message: "Something went wrong — please try again." };
   }
+
+  // Admin alert + audit log — fire-and-forget, never blocks user response.
+  recordSubmission({
+    type: "review",
+    email: reviewerEmail || "(not provided)",
+    facilityId,
+    summary: `Review for facility ${facilityId} by ${reviewerName}`,
+    payload: {
+      reviewerName,
+      reviewerRelationship,
+      overallSummary: overallSummary ? overallSummary.slice(0, 300) : null,
+    },
+  }).catch((err) => console.error("[submitReview] recordSubmission failed:", err));
 
   return {
     status: "success",
