@@ -41,16 +41,20 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
 async function getStateCounts(): Promise<Record<string, number>> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return {};
-  const { data } = await supabase
-    .from("facilities")
-    .select("state_code")
-    .eq("publishable", true);
-  const counts: Record<string, number> = {};
-  for (const row of data ?? []) {
-    const code = (row as { state_code: string }).state_code;
-    counts[code] = (counts[code] ?? 0) + 1;
-  }
-  return counts;
+  // Use one HEAD request per state to get exact counts — avoids the
+  // PostgREST 1000-row default cap that truncates a single select query
+  // across all states when the total publishable count exceeds 1000.
+  const results = await Promise.all(
+    COVERED_STATES.map((s) =>
+      supabase
+        .from("facilities")
+        .select("*", { count: "exact", head: true })
+        .eq("publishable", true)
+        .eq("state_code", s.code)
+        .then((r) => [s.code, r.count ?? 0] as [string, number])
+    )
+  );
+  return Object.fromEntries(results);
 }
 
 export default async function StatesPage() {
