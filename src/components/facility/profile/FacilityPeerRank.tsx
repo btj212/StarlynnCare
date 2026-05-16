@@ -16,20 +16,29 @@ const CARE_LABEL: Record<string, string> = {
 type MetricCellProps = {
   label: string;
   percentile: number | null;
+  peerMedian?: number | null;
   desc: string;
 };
 
-function MetricCell({ label, percentile, desc }: MetricCellProps) {
+function MetricCell({ label, percentile, peerMedian, desc }: MetricCellProps) {
+  // Suppress when the metric is degenerate: peer_median = 0 means the majority
+  // of the peer group has zero repeat citations, so everyone ties at 100th and
+  // the ranking carries no information. Treat identically to the null/no-data case.
+  const isDegenerate = peerMedian === 0 && percentile === 100;
+
   // null means the metric is genuinely unavailable (e.g. no routine inspections
   // for frequency rank) — render a suppressed card rather than a misleading 0th.
-  if (percentile === null) {
+  if (percentile === null || isDegenerate) {
+    const suppressedMsg = isDegenerate
+      ? <>Not enough repeat citations<br />among peers to rank.</>
+      : <>No routine inspections<br />on file.</>;
     return (
       <div className="bg-paper-2 p-7 pb-6 flex flex-col">
         <div className="mb-4 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-ink-3">
           {label}
         </div>
         <div className="font-[family-name:var(--font-display)] text-[28px] leading-[1.2] tracking-[-0.02em] text-ink-3 italic">
-          No routine<br />inspections<br />on file
+          {suppressedMsg}
         </div>
         <div className="mt-4 font-[family-name:var(--font-display)] text-[16px] italic leading-[1.3] text-ink-2">
           {desc}
@@ -122,6 +131,7 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
               <MetricCell
                 label="Repeat rank"
                 percentile={snapshot.metrics.repeats.percentile}
+                peerMedian={snapshot.metrics.repeats.peer_median}
                 desc="Repeat deficiencies as share of total."
               />
               <MetricCell

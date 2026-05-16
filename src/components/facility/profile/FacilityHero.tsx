@@ -55,10 +55,14 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
     return `${beds} ${licType} with no citations on file.`;
   })();
 
-  const lastInsp = profile.inspections.find((i) => !i.is_complaint);
+  // Use the most recent inspection of ANY type — complaint investigations are
+  // still real regulatory visits and omitting them understates recency.
+  const lastInsp = profile.inspections[0] ?? null;
   const lastInspFormatted = lastInsp?.inspection_date
     ? new Date(lastInsp.inspection_date + "T12:00:00").toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
     : null;
+  // "cited" only when the most recent visit itself produced a deficiency.
+  const lastInspCited = (lastInsp?.total_deficiency_count ?? 0) > 0;
 
   return (
     <div className="fp-verdict bg-ink text-paper p-7 relative">
@@ -101,7 +105,10 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
       </div>
       {lastInspFormatted && (
         <div className="mt-5 flex justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em] text-white/60">
-          <span>Last inspection · {lastInspFormatted} · {totals.lastCitation ? "cited" : "clean"}</span>
+          <span>
+            Last inspection · {lastInspFormatted}
+            {lastInsp?.is_complaint ? " (complaint)" : ""} · {lastInspCited ? "cited" : "clean"}
+          </span>
           <span>Source · {profile.cfg.agencyShort}</span>
         </div>
       )}
@@ -121,8 +128,9 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
 
   // Editorial prose summary — mirrors the meta description so Google has a
   // human-readable narrative line to lift even when it overrides our meta.
+  // Use the most recent visit of any type for recency accuracy.
   const lastInspectionDate =
-    profile.inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
+    profile.inspections[0]?.inspection_date ?? null;
   const snippet = buildFacilitySnippet({
     facilityName: facility.name,
     stateName: state.name,
