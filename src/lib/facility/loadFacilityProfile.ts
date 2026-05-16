@@ -61,6 +61,65 @@ export type InspectionRow = {
   } | null;
 };
 
+// ─────────────────────────────────────────────────────────────────
+// Narrative validity
+// ─────────────────────────────────────────────────────────────────
+
+const WA_PLACEHOLDER_RE = /^—:\s*WA DSHS report:/i;
+const URL_RE = /^https?:\/\//i;
+
+/**
+ * True when a deficiency has real text in its description or inspector_narrative —
+ * not a URL, not the WA placeholder label, and substantive length (≥ 50 chars).
+ *
+ * OR stores allegation text in deficiency rows (not in raw_data.narrative), so
+ * this check is needed to correctly detect real data for OR, TX, and similar states.
+ */
+function deficiencyHasRealText(def: DeficiencyRow): boolean {
+  const candidates = [def.description, def.inspector_narrative];
+  for (const text of candidates) {
+    if (!text || text.trim().length < 50) continue;
+    if (URL_RE.test(text.trim())) continue;
+    if (WA_PLACEHOLDER_RE.test(text.trim())) continue;
+    if (text.trim().startsWith("WA DSHS report:")) continue;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Returns true when an inspection has real inspector prose — either in
+ * raw_data.narrative (CA, MN, some WA) or in its associated deficiency rows
+ * (OR allegation text). Uses deficiencies for the check so OR is not a false negative.
+ *
+ * Criteria for narrative path (all must pass):
+ *   1. narrative field exists and is non-empty
+ *   2. length ≥ 100 chars
+ *   3. does not start with the known WA bundle-builder placeholder pattern
+ *   4. does not consist entirely of WA placeholder lines (multi-PDF concatenation)
+ */
+export function inspectionHasRealNarrative(
+  insp: InspectionRow,
+  defs?: DeficiencyRow[],
+): boolean {
+  // Path 1: real text in raw_data.narrative (CA, MN, TX-native)
+  const narrative = insp.raw_data?.narrative?.trim();
+  if (narrative && narrative.length >= 100 && !WA_PLACEHOLDER_RE.test(narrative)) {
+    // Guard against multi-PDF placeholder concatenation: every non-empty line
+    // starts with "—: WA DSHS report:" — still fake even if total length > 100.
+    const lines = narrative.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    const allPlaceholder = lines.every(
+      (l) => WA_PLACEHOLDER_RE.test(l) || l.startsWith("—:"),
+    );
+    if (!allPlaceholder) return true;
+  }
+
+  // Path 2: real text in deficiency rows (OR violations CSV, structured exports)
+  if (defs && defs.some(deficiencyHasRealText)) return true;
+
+  return false;
+}
+
 export type DeficiencyRow = {
   id: string;
   inspection_id: string;
@@ -175,6 +234,14 @@ export interface FacilityProfile {
   /** Which display tier is currently active. Always "free" until premium is built. */
   visibilityTier: InspectionVisibilityTier;
 
+  /**
+   * True when at least one inspection in the display window has real narrative text
+   * (not a URL placeholder). False for WA facilities where PDFs have not been parsed.
+   * When false the page degrades: grade/percentile are suppressed, AI summaries are
+   * hidden, and a banner explaining the gap is shown.
+   */
+  hasRealInspectionText: boolean;
+
   /** Raw output from facility_snapshot() RPC. null when unavailable. */
   snapshot: SnapshotPayload | null;
   /** 24-month trajectory derived from snapshot.trajectory_series. */
@@ -199,6 +266,25 @@ export interface FacilityProfile {
   backLabel: string;
   breadcrumbTrail: { name: string; url: string }[];
   jsonLd: object[];
+
+  /**
+   * WA memory-care signal badges.
+   * Non-null only for WA facilities; null for all other states.
+   * Three independent regulatory signals, any of which qualifies the facility.
+   */
+  waMcSignals: {
+    memoryCare: boolean;
+    sdcp: boolean;
+    dementiaSpecialty: boolean;
+    cmsOverallRating: number | null;
+  } | null;
+
+  /**
+   * True for WA Adult Family Homes (2–6 bed residential houses).
+   * When true: no default street view, no exterior photos, smaller card treatment.
+   * Privacy flag per wa_afh_residential_flag column.
+   */
+  isAfhResidential: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -457,12 +543,25 @@ export async function loadFacilityProfile(params: {
     inspections.find((i) => (deficienciesByInspection.get(i.id) ?? []).length > 0)
       ?.inspection_date ?? null;
 
-  // Per-state config
-  const cfg = getStateProfileConfig(state.code);
+  // Per-state config — WA nursing homes get CMS/F-tag config
+  const cfg = getStateProfileConfig(state.code, facility.wa_facility_type);
+
+  // ── Narrative validity gate ───────────────────────────────────────────────
+  // True when at least one visible inspection has real parsed narrative text.
+  // When false we soft-degrade: null out the grade so downstream consumers
+  // (hero prose, JSON-LD, FAQ schema) never emit unearned quality claims.
+  const hasRealInspectionText = inspections.some((i) =>
+    inspectionHasRealNarrative(i, deficienciesByInspection.get(i.id)),
+  );
+  const degradedSnapshot: SnapshotPayload | null =
+    snapshot && !hasRealInspectionText
+      ? { ...snapshot, grade: null }
+      : snapshot;
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Derived data
-  const timeline = deriveTimeline(snapshot);
-  const scopeSeverityGrid = deriveScopeSeverityGrid(snapshot);
+  const timeline = deriveTimeline(degradedSnapshot);
+  const scopeSeverityGrid = deriveScopeSeverityGrid(degradedSnapshot);
   const rulesCards = deriveRulesCards(cfg, deficiencies, inspections);
   const tourQuestions = (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [];
 
@@ -516,8 +615,8 @@ export async function loadFacilityProfile(params: {
       canonicalUrl,
       reviews: reviews.length ? reviews : undefined,
       extras: {
-        grade: snapshot?.grade?.letter ?? null,
-        percentile: snapshot?.grade?.composite_percentile ?? null,
+        grade: degradedSnapshot?.grade?.letter ?? null,
+        percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
         citationCount: totalDeficiencies,
         lastInspectionDate: lastNonComplaintInspection,
       },
@@ -547,7 +646,7 @@ export async function loadFacilityProfile(params: {
     inspectionCount: inspections.length,
     deficiencyCount: totalDeficiencies,
     lastInspectionDate: lastNonComplaintInspection,
-    grade: snapshot?.grade?.letter ?? null,
+    grade: degradedSnapshot?.grade?.letter ?? null,
     tourQuestions,
   });
   if (faqSchema) jsonLd.push(faqSchema);
@@ -573,7 +672,8 @@ export async function loadFacilityProfile(params: {
     limitedHistory: inspections.length < 4,
     visibilityTier: "free" as InspectionVisibilityTier,
 
-    snapshot,
+    hasRealInspectionText,
+    snapshot: degradedSnapshot,
     timeline,
     scopeSeverityGrid,
 
@@ -590,5 +690,17 @@ export async function loadFacilityProfile(params: {
     backLabel,
     breadcrumbTrail,
     jsonLd,
+
+    waMcSignals:
+      facility.state_code === "WA"
+        ? {
+            memoryCare: facility.wa_memory_care_certified ?? false,
+            sdcp: facility.wa_earc_sdc_contracted ?? facility.wa_dementia_care_contract ?? false,
+            dementiaSpecialty: facility.wa_dementia_specialty ?? false,
+            cmsOverallRating: facility.cms_overall_rating ?? null,
+          }
+        : null,
+
+    isAfhResidential: facility.wa_afh_residential_flag === true,
   };
 }

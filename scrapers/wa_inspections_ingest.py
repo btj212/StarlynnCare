@@ -81,12 +81,27 @@ def infer_severity(
     return s
 
 
+_WA_PLACEHOLDER_PREFIX = "WA DSHS report:"
+
+
+def _is_wa_placeholder(desc: str) -> bool:
+    """Return True when desc is the bundle-builder's PDF-link placeholder."""
+    return desc.startswith(_WA_PLACEHOLDER_PREFIX)
+
+
 def _narrative_from_deficiencies(deficiencies: list[dict[str, Any]]) -> str:
+    """
+    Concatenate real deficiency text into a narrative string for summarisation.
+
+    Returns empty string when every deficiency is a WA PDF-link placeholder
+    (description == "WA DSHS report: ..."). This prevents summarize_inspections.py
+    from asking Claude to summarise a URL and fabricating findings.
+    """
     parts: list[str] = []
     for d in deficiencies:
         code = (d.get("code") or "—")[:32]
         desc = (d.get("description") or d.get("inspector_narrative") or "").strip()
-        if not desc:
+        if not desc or _is_wa_placeholder(desc):
             continue
         parts.append(f"{code}: {desc}")
     return "\n\n".join(parts)[:12000]

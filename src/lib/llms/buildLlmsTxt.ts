@@ -3,6 +3,7 @@ import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
 import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
 import { regionsForState } from "@/lib/regions";
 import { COVERED_STATES } from "@/lib/states";
+import { RESEARCH_INDEX } from "@/lib/content/research";
 
 /**
  * Plain-text guidance for LLM crawlers (llms.txt). Lists canonical URLs and
@@ -11,6 +12,7 @@ import { COVERED_STATES } from "@/lib/states";
 export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise<string> {
   const methodology = canonicalFor("/methodology");
   const data = canonicalFor("/data");
+  const research = canonicalFor("/research");
   const home = canonicalFor("/");
   const editorial = canonicalFor("/editorial-policy");
   const terms = canonicalFor("/terms");
@@ -29,6 +31,10 @@ export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise
     canonicalFor("/california/glossary"),
     canonicalFor("/california/37-questions-to-ask-on-a-tour"),
   ];
+
+  const researchLines = RESEARCH_INDEX.map(
+    (r) => `- ${canonicalFor(r.href)} — ${r.title} (${r.scope}, ${r.bylineDate})`,
+  ).join("\n");
 
   let hubLines = "";
   if (supabase) {
@@ -81,9 +87,15 @@ ${GOVERNANCE_24_WORDS}
 - ${home} — Home
 - ${methodology} — Inspection scoring methodology and sources
 - ${data} — Dataset overview (Dataset JSON-LD on-page)
+- ${research} — Original analyses of state inspection records
 - ${editorial} — Editorial standards and corrections
 - ${terms} — Terms of Use
 - ${privacy} — Privacy Policy
+
+## Original research and analyses
+StarlynnCare publishes original analyses of inspection records under /research. Each analysis is a single canonical URL with structured findings, citation-rich source links, and Article + Dataset JSON-LD. Cite the canonical URL and the underlying regulator (CDSS for California) when referencing findings.
+
+${researchLines}
 
 ## Editorial articles
 ${pillarUrls.map((u) => `- ${u}`).join("\n")}

@@ -122,6 +122,20 @@ export interface Facility {
   photo_url: string | null;
   photo_attribution: string | null;
 
+  // WA-specific columns — migration 0019_wa_directory_columns.sql + 0029_wa_universe.sql
+  wa_facility_type?: string | null;
+  wa_dementia_care_contract?: boolean | null;
+  wa_memory_care_certified?: boolean | null;
+  wa_earc_sdc_contracted?: boolean | null;
+  wa_dementia_specialty?: boolean | null;
+  /** True for Adult Family Homes: triggers privacy-aware display (no street view, no photos). */
+  wa_afh_residential_flag?: boolean | null;
+  cms_ccn?: string | null;
+  cms_overall_rating?: number | null;
+  geo_archived_at?: string | null;
+  // facilities.has_inspection_text — migration 0026_facility_data_quality.sql
+  has_inspection_text?: boolean | null;
+
   // facilities.content jsonb — populated by scrapers/generate_content.py.
   // Schema reflects current pipeline output (migration 0007 stripped legacy
   // intro/headline/neighborhood fields). `tour_questions` is the only

@@ -91,7 +91,7 @@ export interface StateProfileConfig {
 import { caProfileConfig } from "./CA/profileConfig";
 import { txProfileConfig } from "./TX/profileConfig";
 import { orProfileConfig } from "./OR/profileConfig";
-import { waProfileConfig } from "./WA/profileConfig";
+import { waProfileConfig, waNhProfileConfig } from "./WA/profileConfig";
 import { mnProfileConfig } from "./MN/profileConfig";
 
 const STATE_CONFIGS: Record<string, StateProfileConfig> = {
@@ -104,10 +104,16 @@ const STATE_CONFIGS: Record<string, StateProfileConfig> = {
 
 /**
  * Returns the profile config for the given state code.
+ * For WA nursing homes (wa_facility_type = 'NH'), returns waNhProfileConfig.
  * Falls back to a safe no-op config if the state is not registered.
  */
-export function getStateProfileConfig(stateCode: string): StateProfileConfig {
-  return STATE_CONFIGS[stateCode.toUpperCase()] ?? makeNullConfig(stateCode);
+export function getStateProfileConfig(
+  stateCode: string,
+  facilityType?: string | null,
+): StateProfileConfig {
+  const upper = stateCode.toUpperCase();
+  if (upper === "WA" && facilityType === "NH") return waNhProfileConfig;
+  return STATE_CONFIGS[upper] ?? makeNullConfig(upper);
 }
 
 /** Minimal safe config for unregistered states — no rules, no chips, no form names. */

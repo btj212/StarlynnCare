@@ -3,6 +3,24 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 import type { Deficiency } from "@/lib/types";
 import { FullHistoryWaitlist } from "./FullHistoryWaitlist";
 
+// Mirrors inspectionHasRealNarrative from loadFacilityProfile — duplicated here
+// so this component stays a pure function of its props with no cross-layer import.
+const WA_PLACEHOLDER_RE_UI = /^—:\s*WA DSHS report:/i;
+const URL_RE_UI = /^https?:\/\//i;
+
+function narrativeIsPlaceholder(narrative: string | null | undefined): boolean {
+  if (!narrative || narrative.trim().length < 100) return true;
+  const text = narrative.trim();
+  if (WA_PLACEHOLDER_RE_UI.test(text)) return true;
+  // Multi-PDF concatenation: every non-empty line is a placeholder
+  const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  return lines.every((l) => WA_PLACEHOLDER_RE_UI.test(l) || l.startsWith("—:"));
+}
+
+function isPdfUrl(text: string | null | undefined): boolean {
+  return !!text && URL_RE_UI.test(text.trim());
+}
+
 function severityToneClass(tone: "danger" | "warn" | "info" | "ok"): string {
   switch (tone) {
     case "danger": return "bg-rust text-white";
@@ -47,16 +65,31 @@ function DeficiencyBlock({
           </span>
         )}
       </div>
-      {(def.inspector_narrative || def.description) && (
-        <>
-          <div className="mb-2 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-rust">
-            Verbatim citation text{regCode ? ` · ${regCode}` : ""}
-          </div>
-          <p className="font-[family-name:var(--font-display)] text-[18px] italic leading-[1.4] text-ink">
-            &ldquo;{def.inspector_narrative ?? def.description}&rdquo;
-          </p>
-        </>
-      )}
+      {(def.inspector_narrative || def.description) && (() => {
+        const narrative = def.inspector_narrative ?? def.description;
+        const isUrl = isPdfUrl(narrative);
+        const isPlaceholder = !isUrl && (
+          (def.description ?? "").startsWith("WA DSHS report:") ||
+          (def.inspector_narrative ?? "").startsWith("WA DSHS report:")
+        );
+        if (isUrl || isPlaceholder) {
+          return (
+            <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 italic">
+              Only the regulator&rsquo;s PDF report is available — open it via the link below.
+            </p>
+          );
+        }
+        return (
+          <>
+            <div className="mb-2 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-rust">
+              Verbatim citation text{regCode ? ` · ${regCode}` : ""}
+            </div>
+            <p className="font-[family-name:var(--font-display)] text-[18px] italic leading-[1.4] text-ink">
+              &ldquo;{narrative}&rdquo;
+            </p>
+          </>
+        );
+      })()}
     </div>
   );
 }
@@ -95,8 +128,8 @@ function ExpandedRow({
         </div>
       )}
 
-      {/* 1. AI plain-language summary */}
-      {insp.narrative_summary && (
+      {/* 1. AI plain-language summary — suppressed when raw narrative is a placeholder */}
+      {insp.narrative_summary && !narrativeIsPlaceholder(insp.raw_data?.narrative) && (
         <div className="mb-4 rounded-sm border border-teal/25 bg-teal-soft/40 px-4 py-3.5">
           <p className="mb-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wide text-teal">
             Plain-language summary
@@ -177,8 +210,8 @@ function InspectionItem({
     : defs.length === 0
     ? "No findings"
     : tag
-    ? `${defs.length} · ${tag.label}`
-    : `${defs.length} deficienc${defs.length === 1 ? "y" : "ies"}`;
+    ? `${tag.label} · ${defs.length} finding${defs.length === 1 ? "" : "s"}`
+    : `${defs.length} finding${defs.length === 1 ? "" : "s"}`;
 
   const inspType = insp.is_complaint
     ? "Complaint Investigation"
@@ -268,7 +301,7 @@ function InspectionItem({
 
 
 export function FacilityFullInspections({ profile }: { profile: FacilityProfile }) {
-  const { inspections, deficienciesByInspection, totals, cfg, hiddenOlderCount, oldestHiddenYear } = profile;
+  const { inspections, deficienciesByInspection, totals, cfg, hiddenOlderCount, oldestHiddenYear, hasRealInspectionText } = profile;
 
   return (
     <section id="full-record" className="border-b border-paper-rule py-16">
@@ -286,6 +319,21 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
               : `${inspections.length} inspection${inspections.length === 1 ? "" : "s"} in the public record, most recent first. Click any row to expand — cited rows open automatically.`
           }
         />
+
+        {/* PDF-links-only banner — shown when no inspection has parsed narrative text */}
+        {inspections.length > 0 && !hasRealInspectionText && (
+          <div className="mb-6 flex items-start gap-3 rounded-sm border border-amber-400 bg-amber-50 px-5 py-4">
+            <span className="mt-0.5 shrink-0 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.1em] text-amber-700">
+              Note
+            </span>
+            <p className="text-[13.5px] leading-relaxed text-amber-900">
+              Inspection reports for this facility have not yet been parsed — we only have links to the
+              regulator&rsquo;s PDF documents. Open the PDFs below to see the actual findings.
+              Citation text, plain-language summaries, and quality scores are not available until
+              the PDFs are processed.
+            </p>
+          </div>
+        )}
 
         {/* Summary strip */}
         {inspections.length > 0 && (

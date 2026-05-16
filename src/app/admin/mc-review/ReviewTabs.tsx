@@ -9,6 +9,7 @@ type FacilityReview = {
   name: string;
   slug: string;
   city: string;
+  state_code: string;
   street: string | null;
   website: string | null;
   mc_signal_chain_name: boolean;
@@ -31,6 +32,10 @@ type ListingReport = {
   status: string;
 };
 
+type ListingReportWithFacility = ListingReport & {
+  facilities: { name: string; slug: string; city_slug: string; state_code: string } | null;
+};
+
 type DeficiencyExcerpt = {
   facility_id: string;
   description: string;
@@ -50,6 +55,7 @@ interface ReviewTabsProps {
   yellowQueue: FacilityReview[];
   redBucket: FacilityReview[];
   listingReports: ListingReport[];
+  allListingReports: ListingReportWithFacility[];
   deficiencyExcerpts: DeficiencyExcerpt[];
   queueEvidence: QueueEvidence[];
 }
@@ -58,13 +64,23 @@ export function ReviewTabs({
   yellowQueue,
   redBucket,
   listingReports,
+  allListingReports,
   deficiencyExcerpts,
   queueEvidence,
 }: ReviewTabsProps) {
-  const [activeTab, setActiveTab] = useState<"yellow" | "red">("yellow");
+  const [activeTab, setActiveTab] = useState<"yellow" | "red" | "reports">("yellow");
+  const [stateFilter, setStateFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResult, setSearchResult] = useState<FacilityReview | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Derive unique states present in each queue for filter pills
+  const yellowStates = Array.from(new Set(yellowQueue.map(f => f.state_code))).sort();
+  const redStates = Array.from(new Set(redBucket.map(f => f.state_code))).sort();
+  const activeStates = activeTab === "yellow" ? yellowStates : activeTab === "red" ? redStates : [];
+
+  const filteredYellow = stateFilter === "ALL" ? yellowQueue : yellowQueue.filter(f => f.state_code === stateFilter);
+  const filteredRed = stateFilter === "ALL" ? redBucket : redBucket.filter(f => f.state_code === stateFilter);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,7 +232,7 @@ export function ReviewTabs({
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex space-x-8">
           <button
-            onClick={() => setActiveTab("yellow")}
+            onClick={() => { setActiveTab("yellow"); setStateFilter("ALL"); }}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === "yellow"
                 ? "border-amber-500 text-amber-600"
@@ -226,7 +242,7 @@ export function ReviewTabs({
             Yellow Queue ({yellowQueue.length})
           </button>
           <button
-            onClick={() => setActiveTab("red")}
+            onClick={() => { setActiveTab("red"); setStateFilter("ALL"); }}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === "red"
                 ? "border-red-500 text-red-600"
@@ -235,18 +251,63 @@ export function ReviewTabs({
           >
             Red Bucket ({redBucket.length})
           </button>
+          <button
+            onClick={() => setActiveTab("reports")}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "reports"
+                ? "border-orange-500 text-orange-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Listing Reports ({allListingReports.length})
+          </button>
         </nav>
       </div>
+
+      {/* State filter pills — only shown for yellow/red tabs */}
+      {activeTab !== "reports" && activeStates.length > 1 && (
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">State:</span>
+          <button
+            onClick={() => setStateFilter("ALL")}
+            className={`px-3 py-1 rounded-full text-xs font-medium border ${
+              stateFilter === "ALL"
+                ? "bg-gray-800 text-white border-gray-800"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
+            }`}
+          >
+            All ({activeTab === "yellow" ? yellowQueue.length : redBucket.length})
+          </button>
+          {activeStates.map(s => {
+            const count = activeTab === "yellow"
+              ? yellowQueue.filter(f => f.state_code === s).length
+              : redBucket.filter(f => f.state_code === s).length;
+            return (
+              <button
+                key={s}
+                onClick={() => setStateFilter(s)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                  stateFilter === s
+                    ? "bg-gray-800 text-white border-gray-800"
+                    : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
+                }`}
+              >
+                {s} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Tab Content */}
       {activeTab === "yellow" && (
         <div className="space-y-4">
-          {yellowQueue.length === 0 ? (
+          {filteredYellow.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No facilities awaiting review
             </div>
           ) : (
-            yellowQueue.map((facility) => (
+            filteredYellow.map((facility) => (
               <YellowQueueRow
                 key={facility.id}
                 facility={facility}
@@ -261,14 +322,73 @@ export function ReviewTabs({
         </div>
       )}
 
+      {activeTab === "reports" && (
+        <div className="space-y-4">
+          {allListingReports.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No open reports</div>
+          ) : (
+            allListingReports.map((report) => {
+              const fac = report.facilities;
+              const facilityPath = fac
+                ? `/${fac.state_code.toLowerCase()}/${fac.city_slug}/${fac.slug}`
+                : null;
+              return (
+                <div key={report.id} className="bg-white border border-orange-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="font-semibold text-ink">
+                        {fac?.name ?? report.facility_id}
+                      </div>
+                      {fac && (
+                        <div className="text-xs text-gray-500 uppercase tracking-wide mt-0.5">
+                          {fac.state_code}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(report.created_at).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="mt-2 p-3 bg-orange-50 border border-orange-100 rounded text-sm text-orange-900">
+                    {report.reason}
+                  </div>
+
+                  {report.contact_email && (
+                    <div className="mt-2 text-xs text-gray-600">
+                      Reply to:{" "}
+                      <a href={`mailto:${report.contact_email}`} className="text-blue-600 underline">
+                        {report.contact_email}
+                      </a>
+                    </div>
+                  )}
+
+                  {facilityPath && (
+                    <div className="mt-3 flex gap-4">
+                      <Link
+                        href={facilityPath}
+                        target="_blank"
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        View facility page →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
       {activeTab === "red" && (
         <div className="space-y-4">
-          {redBucket.length === 0 ? (
+          {filteredRed.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No rejected facilities
             </div>
           ) : (
-            redBucket.map((facility) => (
+            filteredRed.map((facility) => (
               <RedBucketRow
                 key={facility.id}
                 facility={facility}
@@ -334,6 +454,7 @@ function YellowQueueRow({
             {facility.name}
           </h3>
           <div className="text-sm text-gray-600">
+            <span className="font-mono text-xs uppercase tracking-wide text-gray-400 mr-2">{facility.state_code}</span>
             {facility.city} • {facility.license_number}
             {facility.street && ` • ${facility.street}`}
           </div>

@@ -68,6 +68,7 @@ export async function SiteFooter() {
               <Link href="/oregon" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Oregon facilities</Link>
               <Link href="/washington" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Washington facilities</Link>
               <Link href="/data" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Dataset overview</Link>
+              <Link href="/research" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Research &amp; analyses</Link>
               <Link href="/llms.txt" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors flex items-center gap-1">
                 llms.txt <span className="text-rust text-[10px]">↗</span>
               </Link>

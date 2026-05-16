@@ -12,4 +12,4 @@
 
 The correlation between ZIP-level household income and memory care deficiency rate is r=0.23 — essentially flat, suggesting no strong geographic-income gradient in CA memory care quality. The Q4 High income quartile shows the highest average deficiency rate. Notably, several high-income ZIPs (ZIP 94560 ($159,465 income, 5.97 defic/insp), ZIP 94555 ($20…) also rank poorly, suggesting money alone does not buy better care environments. Income data sourced from Census ACS 2022 (484 ZIPs direct, 0 approximated).
 
-*Generated: 2026-05-11 17:09*
+*Generated: 2026-05-11 17:14*
