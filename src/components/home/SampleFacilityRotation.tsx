@@ -44,15 +44,17 @@ export function SampleFacilityRotationProvider({
   const len = facilities.length;
   const [index, setIndex] = useState(0);
 
+  // Auto-advance always runs — reducedMotion only suppresses the CSS fade
+  // transition, not the card swap itself (WCAG 2.3.3 allows pausing, not
+  // requires stopping content that isn't decorative).
   useEffect(() => {
     if (len <= 1) return;
-    if (reducedMotion) return;
     const id = window.setInterval(
       () => setIndex((i) => (i + 1) % len),
       ROTATE_MS,
     );
     return () => window.clearInterval(id);
-  }, [len, reducedMotion]);
+  }, [len]);
 
   const facility = len > 0 ? facilities[index % len]! : null;
 

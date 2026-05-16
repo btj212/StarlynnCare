@@ -48,10 +48,13 @@ async function loadGradeCardFacilities(): Promise<HomeSampleFacility[]> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return [];
 
+  // Paginate to cover all publishable facilities — PostgREST defaults to 1000
+  // rows which would cut off WA/MN facilities from the rotation pool.
   const { data: idRows } = await supabase
     .from("facilities")
     .select("id")
-    .eq("publishable", true);
+    .eq("publishable", true)
+    .range(0, 4999);
 
   const allIds = (idRows ?? []).map((r: { id: string }) => r.id);
   const hourSeed = Math.floor(Date.now() / 3600000);
