@@ -65,15 +65,22 @@ export async function recordSubmission(args: RecordSubmissionArgs): Promise<void
   }
   const details = detailLines.join("\n");
 
-  let alertStatus: "sent" | "failed" = "sent";
+  const hasAlertConfig =
+    !!process.env.LOOPS_API_KEY &&
+    !!process.env.LOOPS_ADMIN_ALERT_ID &&
+    !!process.env.ADMIN_ALERT_EMAIL;
+
+  let alertStatus: "sent" | "failed" | "skipped" = hasAlertConfig ? "sent" : "skipped";
   let alertError: string | null = null;
 
-  try {
-    await sendAdminAlert({ eventType: type, email, summary, details, submittedAt });
-  } catch (err) {
-    alertStatus = "failed";
-    alertError = err instanceof Error ? err.message : String(err);
-    console.error("[record-submission] alert failed:", alertError);
+  if (hasAlertConfig) {
+    try {
+      await sendAdminAlert({ eventType: type, email, summary, details, submittedAt });
+    } catch (err) {
+      alertStatus = "failed";
+      alertError = err instanceof Error ? err.message : String(err);
+      console.error("[record-submission] alert failed:", alertError);
+    }
   }
 
   // Best-effort update — not awaited on the critical path.
