@@ -65,6 +65,38 @@ def _deficiency_key(inspection_id: str, code: str, desc: str) -> str:
     return f"__wa_{h}"
 
 
+# WA DSHS ALF severity taxonomy → integer severity used by facility_snapshot.
+# IJ/Type A map to severity >= 3 (the "severe" threshold in the state hub stat).
+_WA_SEVERITY_MAP: dict[str, int] = {
+    "ij":                 4,
+    "immediate jeopardy": 4,
+    "type a":             3,
+    "typea":              3,
+    "type-a":             3,
+    "class 1":            3,
+    "class1":             3,
+    "class i":            3,
+    "type b":             2,
+    "typeb":              2,
+    "type-b":             2,
+    "class 2":            2,
+    "class2":             2,
+    "class ii":           2,
+    "type c":             1,
+    "typec":              1,
+    "type-c":             1,
+    "class 3":            1,
+    "class3":             1,
+    "class iii":          1,
+}
+
+
+def _map_wa_severity(raw: str | None) -> int | None:
+    if not raw:
+        return None
+    return _WA_SEVERITY_MAP.get(raw.strip().lower())
+
+
 def get_pending_backfill(
     conn: psycopg.Connection,
     facility_id: str | None,
@@ -191,6 +223,8 @@ def backfill_inspection(
 
             key = _deficiency_key(inspection_id, code, desc)
             final_code = code if code else key
+            severity_int = _map_wa_severity(severity_raw)
+            is_ij = severity_raw and severity_raw.strip().lower() in ("ij", "immediate jeopardy")
 
             # Check for duplicates from previous runs
             cur.execute(
@@ -204,16 +238,18 @@ def backfill_inspection(
                 """
                 INSERT INTO deficiencies
                   (id, inspection_id, code, description, inspector_narrative,
-                   state_severity_raw, immediate_jeopardy)
+                   state_severity_raw, severity, immediate_jeopardy)
                 VALUES
                   (gen_random_uuid(), %s::uuid, %s, %s, null,
-                   %s, false)
+                   %s, %s, %s)
                 """,
                 (
                     inspection_id,
                     final_code,
                     desc,
                     severity_raw,
+                    severity_int,
+                    bool(is_ij),
                 ),
             )
             inserted += cur.rowcount
