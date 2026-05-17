@@ -627,7 +627,6 @@ export async function loadFacilityProfile(params: {
       canonicalUrl,
       reviews: reviews.length ? reviews : undefined,
       extras: {
-        grade: degradedSnapshot?.grade?.letter ?? null,
         percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
         citationCount: totalDeficiencies,
         lastInspectionDate: lastNonComplaintInspection,
@@ -658,7 +657,7 @@ export async function loadFacilityProfile(params: {
     inspectionCount: inspections.length,
     deficiencyCount: totalDeficiencies,
     lastInspectionDate: lastNonComplaintInspection,
-    grade: degradedSnapshot?.grade?.letter ?? null,
+    percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
     tourQuestions,
   });
   if (faqSchema) jsonLd.push(faqSchema);

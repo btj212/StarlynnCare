@@ -24,9 +24,7 @@ import { buildFacilitySnippet } from "@/lib/seo/meta";
  * `facilityDescription` falls back to the legacy location-only sentence.
  */
 export type FacilitySchemaExtras = {
-  /** Composite letter grade from facility_snapshot RPC. Null when peer-set too thin. */
-  grade?: string | null;
-  /** Composite percentile 0–100, higher = better. */
+  /** Composite percentile 0–100, higher = better. Null when peer-set too thin. */
   percentile?: number | null;
   /** Total deficiencies on record. */
   citationCount?: number;
@@ -147,8 +145,7 @@ function facilityDescription(
   // we put in the SERP snippet. Knowledge-panel & AI Overview surfaces lift from here.
   if (
     extras &&
-    (extras.grade != null ||
-      extras.percentile != null ||
+    (extras.percentile != null ||
       (extras.citationCount ?? 0) > 0 ||
       extras.lastInspectionDate)
   ) {
@@ -156,7 +153,7 @@ function facilityDescription(
       facilityName: facility.name,
       stateName,
       stateCode: facility.state_code,
-      grade: extras.grade ?? null,
+      grade: null,
       percentile: extras.percentile ?? null,
       citationCount: extras.citationCount ?? 0,
       lastInspectionDate: extras.lastInspectionDate ?? null,
@@ -831,7 +828,7 @@ export function buildFacilityFaqSchema(input: {
   inspectionCount: number;
   deficiencyCount: number;
   lastInspectionDate: string | null;
-  grade: string | null;
+  percentile: number | null;
   tourQuestions: string[];
 }): object | null {
   const pairs: Array<{ q: string; a: string }> = [];
@@ -849,10 +846,13 @@ export function buildFacilityFaqSchema(input: {
     });
   }
 
-  if (input.grade) {
+  if (input.percentile != null) {
+    const rankStr = input.percentile >= 50
+      ? `top ${Math.max(1, 100 - input.percentile)}%`
+      : `bottom ${Math.max(1, input.percentile)}%`;
     pairs.push({
-      q: `What is ${input.facilityName}'s quality grade?`,
-      a: `${input.facilityName} received a grade of ${input.grade} from StarlynnCare based on deficiency severity, repeat citations, inspection frequency, and peer comparison across ${input.stateName} memory care facilities.`,
+      q: `How does ${input.facilityName} compare to similar ${input.stateName} facilities?`,
+      a: `Based on deficiency severity, repeat citations, and inspection frequency, ${input.facilityName} ranks in the ${rankStr} of ${input.stateName} memory care facilities in peer comparison on StarlynnCare.`,
     });
   }
 
