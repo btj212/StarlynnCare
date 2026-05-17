@@ -190,7 +190,7 @@ def main() -> None:
 
             cur.execute(
                 f"""
-                SELECT id, name, address, city, state_code, photo_urls, photo_sources
+                SELECT id, name, street, city, state_code, photo_urls, photo_sources
                 FROM facilities
                 WHERE {" AND ".join(where)}
                 ORDER BY name

@@ -571,6 +571,27 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* ── Facility list ── */}
+        {!fetchError && totalCount > 0 && (
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
+            <SectionHead
+              label={isCounty ? `§ ${region.name} Facilities` : "§ All Facilities in this City"}
+              title={
+                isCounty
+                  ? <>{region.name} — <em>every licensed facility, documented in the public record.</em></>
+                  : <>Memory care options in {region.name}, <em>documented in the public record.</em></>
+              }
+            />
+            <FacilityListClient
+              facilities={facilities}
+              stateSlug={region.state.slug}
+              regionName={region.name}
+              hiddenSmallCount={smallCount}
+              initialShowSmall={visibleCount === 0 && smallCount > 0}
+            />
+          </div>
+        )}
+
         {/* ── Regulator primer (all city + county pages, all states) ── */}
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
@@ -704,26 +725,6 @@ export default async function RegionPage({ params }: PageProps) {
           />
         )}
 
-        {/* ── Facility list ── */}
-        {!fetchError && totalCount > 0 && (
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
-            <SectionHead
-              label={isCounty ? `§ ${region.name} Facilities` : "§ All Facilities in this City"}
-              title={
-                isCounty
-                  ? <>{region.name} — <em>every licensed facility, documented in the public record.</em></>
-                  : <>Memory care options in {region.name}, <em>documented in the public record.</em></>
-              }
-            />
-            <FacilityListClient
-              facilities={facilities}
-              stateSlug={region.state.slug}
-              regionName={region.name}
-              hiddenSmallCount={smallCount}
-              initialShowSmall={visibleCount === 0 && smallCount > 0}
-            />
-          </div>
-        )}
         </main>
         <div className="-order-1">
           <GovernanceBar />
