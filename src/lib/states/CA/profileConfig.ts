@@ -12,4 +12,5 @@ export const caProfileConfig: StateProfileConfig = {
   formatSeverityTag: caFormatSeverityTag,
   formNameForDeficiency: caFormNameForDeficiency,
   rulebook: CA_RULEBOOK,
+  regulatorPortalUrl: "https://www.ccld.dss.ca.gov/carefacilitysearch/",
 };

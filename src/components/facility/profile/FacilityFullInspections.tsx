@@ -387,10 +387,10 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
           </div>
         )}
 
-        {inspections.length > 0 && (
+        {inspections.length > 0 && cfg.regulatorPortalUrl && (
           <div className="mt-4 flex justify-end">
             <a
-              href="https://www.ccld.dss.ca.gov/carefacilitysearch/"
+              href={cfg.regulatorPortalUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="border-b border-rust pb-px font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.06em] text-rust"

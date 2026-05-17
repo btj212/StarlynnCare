@@ -29,7 +29,7 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
   ].filter((a) => a.show);
 
   return (
-    <div className="fp-subnav sticky top-0 z-30 border-b border-paper-rule bg-paper/92 backdrop-blur-[20px]">
+    <div className="fp-subnav sticky top-[52px] z-30 border-b border-paper-rule bg-paper/92 backdrop-blur-[20px]">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <div className="flex items-center justify-between gap-4 py-3">
           {/* Breadcrumb */}

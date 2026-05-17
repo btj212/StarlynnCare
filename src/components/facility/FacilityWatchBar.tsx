@@ -93,7 +93,7 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
               {!expanded ? (
                 <button
                   onClick={() => setExpanded(true)}
-                  className="text-left font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-white/80 hover:text-white transition-colors md:cursor-default"
+                  className="min-h-[44px] text-left font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-white/80 hover:text-white transition-colors md:cursor-default"
                 >
                   <span className="md:hidden">Get alerts for {shortName} →</span>
                   <span className="hidden md:inline">Watch {shortName} free →</span>
@@ -110,13 +110,13 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
-                    className="h-9 w-full max-w-[220px] border-0 bg-white/10 px-3 font-[family-name:var(--font-mono)] text-[12px] text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none"
+                    className="h-11 w-full max-w-[220px] border-0 bg-white/10 px-3 font-[family-name:var(--font-mono)] text-[12px] text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none"
                     disabled={formState === "submitting"}
                   />
                   <button
                     type="submit"
                     disabled={formState === "submitting" || !email.trim()}
-                    className="h-9 px-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    className="h-11 px-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                     style={{ backgroundColor: "var(--color-teal)" }}
                   >
                     {formState === "submitting" ? "…" : "Watch →"}
@@ -137,13 +137,13 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="h-9 w-[220px] border-0 bg-white/10 px-3 font-[family-name:var(--font-mono)] text-[12px] text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none"
+                  className="h-11 w-[220px] border-0 bg-white/10 px-3 font-[family-name:var(--font-mono)] text-[12px] text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none"
                   disabled={formState === "submitting"}
                 />
                 <button
                   type="submit"
                   disabled={formState === "submitting" || !email.trim()}
-                  className="h-9 px-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className="h-11 px-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                   style={{ backgroundColor: "var(--color-teal)" }}
                 >
                   {formState === "submitting" ? "…" : "Watch Free →"}
@@ -153,11 +153,11 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
           </>
         )}
 
-        {/* Dismiss */}
+        {/* Dismiss — min 44×44 tap target */}
         <button
           onClick={handleDismiss}
           aria-label="Dismiss"
-          className="ml-2 flex-shrink-0 font-[family-name:var(--font-mono)] text-[14px] leading-none transition-opacity hover:opacity-100"
+          className="ml-2 flex h-11 w-11 flex-shrink-0 items-center justify-center font-[family-name:var(--font-mono)] text-[18px] leading-none transition-opacity hover:opacity-100"
           style={{ color: "rgba(255,255,255,0.5)" }}
         >
           ×

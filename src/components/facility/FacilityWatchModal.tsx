@@ -83,11 +83,11 @@ export function FacilityWatchModal({ facilityId, facilityName }: FacilityWatchMo
           animation: "slideUp 250ms ease forwards",
         }}
       >
-        {/* Close */}
+        {/* Close — min 44×44 tap target */}
         <button
           onClick={handleClose}
           aria-label="Close"
-          className="absolute right-4 top-4 font-[family-name:var(--font-mono)] text-[18px] leading-none transition-opacity hover:opacity-70"
+          className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center font-[family-name:var(--font-mono)] text-[18px] leading-none transition-opacity hover:opacity-70"
           style={{ color: "var(--color-ink-3)" }}
         >
           ×

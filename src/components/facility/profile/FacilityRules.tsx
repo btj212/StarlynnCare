@@ -91,11 +91,18 @@ export function FacilityRules({ rulesCards }: Props) {
             return (
               <div
                 key={rule.id}
-                className="cursor-pointer border-b border-paper-rule/60 py-5 last:border-b-0"
-                onClick={() => setOpenId(isOpen ? null : rule.id)}
+                className="border-b border-paper-rule/60 py-5 last:border-b-0"
               >
-                {/* Row */}
-                <div className="grid items-center gap-4" style={{ gridTemplateColumns: "56px 1fr auto auto" }}>
+                {/* Header row — the only tap target for toggling */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isOpen}
+                  className="cursor-pointer grid items-center gap-4"
+                  style={{ gridTemplateColumns: "56px 1fr auto auto" }}
+                  onClick={() => setOpenId(isOpen ? null : rule.id)}
+                  onKeyDown={(e) => e.key === "Enter" || e.key === " " ? setOpenId(isOpen ? null : rule.id) : undefined}
+                >
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal-soft text-teal">
                     <RuleIconEl icon={rule.icon} />
                   </div>
@@ -122,7 +129,7 @@ export function FacilityRules({ rulesCards }: Props) {
                   </span>
                 </div>
 
-                {/* Expanded body */}
+                {/* Expanded body — not a tap target, closes the header only */}
                 {isOpen && (
                   <div className="mt-4 grid gap-8 pl-[74px] sm:grid-cols-2">
                     <div>

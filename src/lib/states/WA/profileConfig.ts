@@ -66,4 +66,5 @@ export const waProfileConfig: StateProfileConfig = {
   formatSeverityTag: waFormatSeverityTag,
   formNameForDeficiency: () => null,
   rulebook: [],
+  regulatorPortalUrl: "https://fortress.wa.gov/dshs/adsaapps/lookup/BHPubLookup.aspx",
 };
