@@ -98,6 +98,7 @@ import { txProfileConfig } from "./TX/profileConfig";
 import { orProfileConfig } from "./OR/profileConfig";
 import { waProfileConfig, waNhProfileConfig } from "./WA/profileConfig";
 import { mnProfileConfig } from "./MN/profileConfig";
+import { utProfileConfig } from "./UT/profileConfig";
 
 const STATE_CONFIGS: Record<string, StateProfileConfig> = {
   CA: caProfileConfig,
@@ -105,6 +106,7 @@ const STATE_CONFIGS: Record<string, StateProfileConfig> = {
   OR: orProfileConfig,
   WA: waProfileConfig,
   MN: mnProfileConfig,
+  UT: utProfileConfig,
 };
 
 /**

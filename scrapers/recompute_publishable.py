@@ -28,6 +28,7 @@ Usage
     python recompute_publishable.py --state OR    # Oregon endorsement + inspection freshness
     python recompute_publishable.py --state MN    # Minnesota dementia-care flag + freshness
     python recompute_publishable.py --state WA    # Washington dementia contract + freshness
+    python recompute_publishable.py --state UT    # Utah SECURE_BEDS > 0 gate + freshness
 """
 
 from __future__ import annotations
@@ -153,6 +154,9 @@ def recompute_serves_memory_care(
           OR (state_code = 'OR' AND COALESCE(mce_endorsed, false))
           OR (state_code = 'MN' AND COALESCE(mn_dementia_care_licensed, false))
           OR (state_code = 'TX' AND COALESCE(tx_alzheimer_certified, false))
+          -- UT: SECURE_BEDS > 0 is the statutory primary signal (R432-270-16 Secure Units).
+          -- Set directly by ut_arcgis_facilities_ingest.py; this is belt-and-suspenders.
+          OR (state_code = 'UT' AND COALESCE(secure_beds, 0) > 0)
         , false)
         WHERE state_code = %s
     """
@@ -167,12 +171,16 @@ def recompute_serves_memory_care(
 
 
 # Freshness gate per state (months). CA has no freshness gate — CDSS is comprehensive.
+# UT: 36 months — public portal only exposes last 36 months; also matches the coverage
+#     window (records only go back to October 2023). Facilities with no inspections in
+#     this window are not yet inspectable via public data and should not be published.
 _FRESHNESS_MONTHS: dict[str, int | None] = {
     "CA": None,
     "TX": 48,
     "OR": 36,
     "MN": 48,
     "WA": 48,
+    "UT": 36,
 }
 
 
