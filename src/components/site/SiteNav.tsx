@@ -48,14 +48,16 @@ export async function SiteNav({
 
         {/* Brand mark */}
         <Link href="/" className="flex items-center gap-2 sm:gap-2.5 no-underline min-w-0 shrink" aria-label="StarlynnCare home">
-          {/* Star logo mark */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo-mark.png"
-            alt=""
-            aria-hidden
-            className="w-[28px] h-[28px] rounded-full shrink-0 object-cover"
-          />
+          {/* Six-arm asterisk mark */}
+          <svg viewBox="-50 -50 100 100" className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px] shrink-0" aria-hidden fill="currentColor" style={{ color: "var(--color-ink)" }}>
+            <g transform="rotate(0)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(60)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(120)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(180)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(240)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(300)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <circle r="3.2"/>
+          </svg>
           <span
             className="font-[family-name:var(--font-display)] text-[22px] sm:text-[26px] md:text-[28px] tracking-[-0.01em] text-ink"
           >

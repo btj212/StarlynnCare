@@ -31,10 +31,20 @@ export const metadata: Metadata = {
   title: "California Memory Care, Ranked by Inspection Data | StarlynnCare",
   description:
     "California memory care with real CDSS inspection records, citations, and quality context. No referral commissions.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16.png", type: "image/png", sizes: "16x16" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
   openGraph: {
-    title: "California Memory Care, Ranked by Inspection Data | StarlynnCare",
+    title: "StarlynnCare — Memory care you can trust, ranked by regulators.",
     description:
-      "Real inspection records. No commissions. Built for families searching for memory care in California.",
+      "Real inspection records. No commissions. Built for families searching for memory care.",
     url: "https://www.starlynncare.com",
     siteName: "StarlynnCare",
     type: "website",
@@ -43,15 +53,15 @@ export const metadata: Metadata = {
         url: "/og-default.png",
         width: 1200,
         height: 630,
-        alt: "StarlynnCare",
+        alt: "StarlynnCare — asterisk mark with wordmark on paper background",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "California Memory Care, Ranked by Inspection Data | StarlynnCare",
+    title: "StarlynnCare — Memory care you can trust, ranked by regulators.",
     description:
-      "Real inspection records. No commissions. Built for families searching for memory care in California.",
+      "Real inspection records. No commissions. Built for families searching for memory care.",
     images: ["/og-default.png"],
   },
 };
