@@ -112,8 +112,8 @@ export default function AboutPage() {
                 signal.
               </p>
               <p>
-                Facility grades are derived from peer comparison within each state, not across states. A grade
-                reflects how a facility&rsquo;s citation history compares to similarly-licensed facilities in the
+                Peer rankings are derived from inspection data within each state, not across states. A facility&rsquo;s
+                percentile reflects how its citation history compares to similarly-licensed facilities in the
                 same regulatory environment — not against a national average that would obscure what
                 California&rsquo;s inspection frequency actually looks like relative to Minnesota&rsquo;s. The
                 methodology is published and linkable. Discharge planners and geriatric care managers are welcome
@@ -221,12 +221,12 @@ export default function AboutPage() {
             </h2>
             <div className="mt-5 space-y-4 text-base leading-relaxed text-slate">
               <p>
-                StarlynnCare&rsquo;s editorial decisions — which facilities appear, how they are graded,
+                StarlynnCare&rsquo;s editorial decisions — which facilities appear, how they are ranked,
                 what the guides say — are made by the founders without operator input. Neither Blake nor Star
                 holds equity in any licensed memory care operator reviewed on this site. No pending commercial
                 relationships with operators exist. Future partnerships — research grants, foundation funding,
                 or data licensing arrangements — will be disclosed on this page if they could materially
-                influence how facilities are graded or ranked.
+                influence how facilities are ranked.
               </p>
               <p>
                 Errors happen. When primary regulatory records contradict something published on a facility

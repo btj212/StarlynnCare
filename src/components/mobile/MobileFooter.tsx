@@ -11,7 +11,7 @@ export function MobileFooter({ lastRefreshed }: { lastRefreshed: string | null }
         Starlynn<em className="not-italic" style={{ color: "#EBDDB8" }}>Care</em>
       </div>
       <p className="stmt">
-        Independent care facility publisher. We grade every licensed memory care facility in California against the
+        Independent care facility publisher. We rank every licensed memory care facility against the
         state&apos;s own public inspection record.
       </p>
       <nav className="links" aria-label="Footer links">

@@ -373,7 +373,7 @@ export default function CaliforniaCostGuidePage() {
               Type-A vs. Type-B deficiencies →
             </Link>
             <Link href="/methodology" className="text-teal underline underline-offset-4">
-              How StarlynnCare grades facilities →
+              How we rank facilities →
             </Link>
           </div>
           <DataFootnote

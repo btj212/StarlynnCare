@@ -293,7 +293,7 @@ export default function TypeATypeBPage() {
             </p>
             <p>
               <Link href="/methodology" className="text-teal underline underline-offset-4 hover:text-teal/80">
-                How we compute inspection grades →
+                How we rank facilities →
               </Link>
             </p>
             <p>

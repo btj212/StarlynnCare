@@ -96,7 +96,7 @@ export async function SiteFooter() {
               Methodology
             </h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Methodology links">
-              <Link href="/methodology" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">How we grade</Link>
+              <Link href="/methodology" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Our methodology</Link>
               <Link href="/methodology#cdss" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Source records</Link>
               <Link href="/editorial-policy" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Editorial policy</Link>
               <Link href="/california/glossary" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">California glossary</Link>

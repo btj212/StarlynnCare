@@ -235,13 +235,13 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   // Clamp the displayed rank so we never print "top 0%" / "bottom 0%" — at the
   // tails (percentile === 100 or === 0) say "top 1%" / "bottom 1%" instead.
   let rankFrag: string | null = null;
-  if (grade && percentile != null) {
+  if (percentile != null) {
     if (percentile >= 50) {
       const topPct = Math.max(1, 100 - percentile);
-      rankFrag = `Grade ${grade}, ranked in the top ${topPct}% of ${stateName} memory care`;
+      rankFrag = `Ranked in the top ${topPct}% of ${stateName} memory care`;
     } else {
       const bottomPct = Math.max(1, percentile);
-      rankFrag = `Grade ${grade}, ranked in the bottom ${bottomPct}% of ${stateName} memory care`;
+      rankFrag = `Ranked in the bottom ${bottomPct}% of ${stateName} memory care`;
     }
   }
 
