@@ -119,6 +119,7 @@ WITH visit_counts AS (
     FROM deficiencies d
     JOIN inspections i ON i.id = d.inspection_id
     WHERE d.code IS NOT NULL
+      AND i.inspection_date >= CURRENT_DATE - INTERVAL '36 months'
     GROUP BY i.facility_id, d.code
 )
 SELECT
@@ -431,7 +432,7 @@ def _check_scraper_freshness(cur) -> None:
     for row in rows:
         state = row["state_code"]
         seen_states.add(state)
-        days_ago = float(row["days_ago"] or 999)
+        days_ago = float(row["days_ago"] if row["days_ago"] is not None else 999)
         check(
             f"{state}: most recent update within 90 days",
             days_ago <= 90,
