@@ -212,8 +212,15 @@ def main() -> None:
                     continue
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE facilities SET photo_url = %s, photo_attribution = %s WHERE id = %s",
-                        (public_url, PHOTO_ATTRIBUTION, fac_id),
+                        """UPDATE facilities
+                           SET photo_url = %s,
+                               photo_attribution = %s,
+                               photo_urls = ARRAY[%s],
+                               photo_sources = jsonb_build_array(
+                                   jsonb_build_object('url', %s, 'source', 'streetview', 'attribution', %s)
+                               )
+                           WHERE id = %s""",
+                        (public_url, PHOTO_ATTRIBUTION, public_url, public_url, PHOTO_ATTRIBUTION, fac_id),
                     )
                 conn.commit()
                 print(f"  ✓ Street View image uploaded to Storage")

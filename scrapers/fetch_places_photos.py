@@ -81,7 +81,6 @@ def find_place(name: str, address: str, city: str, state: str) -> str | None:
     payload = json.dumps({
         "textQuery": query,
         "maxResultCount": 1,
-        "locationBias": {},
     }).encode()
     req = urllib.request.Request(
         PLACES_TEXT_SEARCH,
@@ -179,8 +178,9 @@ def main() -> None:
             params: list = [args.state.upper()]
 
             if not args.refetch:
-                # Only target facilities whose gallery has ≤1 photo (just Street View)
-                where.append("(photo_urls IS NULL OR array_length(photo_urls, 1) <= 1)")
+                # Only target facilities whose gallery has ≤1 photo (just Street View).
+                # array_length returns NULL for empty arrays, so coalesce to 0.
+                where.append("(photo_urls IS NULL OR coalesce(array_length(photo_urls, 1), 0) <= 1)")
 
             if args.city_slugs:
                 parts = [p.strip() for p in args.city_slugs.split(",") if p.strip()]
