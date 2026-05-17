@@ -138,7 +138,7 @@ export default function OrLicensingPage() {
     <>
       <JsonLd objects={jsonLd} />
       <GovernanceBar />
-      <SiteNav />
+      <SiteNav badge="Oregon" ctaHref="/oregon/facilities" ctaLabel="Oregon memory care facilities" stateNavHref="/oregon" />
 
       <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>

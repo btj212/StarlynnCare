@@ -268,7 +268,7 @@ export default async function FacilityPage({ params }: PageProps) {
         </main>
         <div className="-order-1">
           <GovernanceBar />
-          <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} />
+          <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} stateNavHref={`/${state.slug}`} />
         </div>
       </div>
 

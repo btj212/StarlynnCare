@@ -123,6 +123,7 @@ export default async function StatePage({ params }: PageProps) {
               badge={state.name}
               ctaHref={`/${state.slug}/facilities`}
               ctaLabel={`${state.name} memory care facilities`}
+              stateNavHref={`/${state.slug}`}
             />
             <AreaWatchModal areaName={state.name} areaSlug={state.slug} source="state_modal" delayMs={20000} />
             <main>
@@ -425,7 +426,7 @@ export default async function StatePage({ params }: PageProps) {
         </main>
         <div className="-order-1">
           <GovernanceBar />
-          <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} />
+          <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} stateNavHref={`/${state.slug}`} />
           <AreaWatchModal areaName={state.name} areaSlug={state.slug} source="state_modal" delayMs={20000} />
         </div>
       </div>

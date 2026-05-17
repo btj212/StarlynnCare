@@ -194,6 +194,7 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
         badge={state.name}
         ctaHref={`/${state.slug}`}
         ctaLabel={`${state.name} overview`}
+        stateNavHref={`/${state.slug}`}
       />
       <main style={{ background: "var(--color-paper)" }}>
         {/* ── Header ── */}

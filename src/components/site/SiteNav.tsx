@@ -22,8 +22,10 @@ type SiteNavProps = {
   ctaHref?: string;
   /** CTA aria-label suffix (defaults to "California memory care facilities"). */
   ctaLabel?: string;
-  /** When true, shows "States" nav link instead of "California". */
+  /** When true, shows "States" nav link instead of a state link. */
   national?: boolean;
+  /** State hub href for the inline nav link. Defaults to "/california". Label uses `badge`. */
+  stateNavHref?: string;
 };
 
 /**
@@ -35,6 +37,7 @@ export async function SiteNav({
   ctaHref = "/california",
   ctaLabel = "California memory care facilities",
   national = false,
+  stateNavHref = "/california",
 }: SiteNavProps = {}) {
   const facilityCount = await getFacilityCount(countStateCode);
   const countLabel = facilityCount > 0 ? facilityCount.toLocaleString() : "1,000+";
@@ -75,8 +78,8 @@ export async function SiteNav({
               States
             </Link>
           ) : (
-            <Link href="/california" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
-              California
+            <Link href={stateNavHref} className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+              {badge}
             </Link>
           )}
           <Link href="/data" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
