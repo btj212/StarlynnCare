@@ -30,10 +30,20 @@ export function FacilityPhotoGrid({ photoUrls, photoSources, facilityName }: Pro
   }
 
   const slots = photoUrls.slice(0, 4);
-  // Collect unique attributions to display once at the bottom
-  const attributions = Array.from(
-    new Set(photoSources.slice(0, 4).map((s) => s.attribution).filter(Boolean))
+
+  // Build a single accurate attribution line:
+  // - Always credit "© Google" (covers both Street View and Places)
+  // - Append any unique photographer names from Places authorAttributions
+  const photographerNames = Array.from(
+    new Set(
+      photoSources.slice(0, 4)
+        .map((s) => s.attribution)
+        .filter((a): a is string => Boolean(a) && a !== "© Google Street View" && a !== "Google Places" && a !== "© Google")
+    )
   );
+  const attributionLine = photographerNames.length > 0
+    ? `© Google · ${photographerNames.join(", ")}`
+    : "© Google";
 
   return (
     <div className="relative overflow-hidden" style={{ aspectRatio: "4/3" }}>
@@ -50,12 +60,10 @@ export function FacilityPhotoGrid({ photoUrls, photoSources, facilityName }: Pro
           </div>
         ))}
       </div>
-      {/* Subtle Google attribution — white/40 per ToS, bottom-right */}
-      {attributions.length > 0 && (
-        <div className="absolute bottom-1.5 right-2 font-[family-name:var(--font-mono)] text-[9px] tracking-[0.06em] text-white/40 pointer-events-none select-none">
-          {attributions.join(" · ")}
-        </div>
-      )}
+      {/* Google attribution — required by ToS, readable but unobtrusive */}
+      <div className="absolute bottom-1.5 right-2 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-white/70 pointer-events-none select-none" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
+        {attributionLine}
+      </div>
     </div>
   );
 }
@@ -84,8 +92,8 @@ function SinglePhoto({
         </span>
       )}
       {attribution && (
-        <div className="absolute bottom-1 right-1.5 font-[family-name:var(--font-mono)] text-[9px] tracking-[0.06em] text-white/40 pointer-events-none select-none">
-          {attribution}
+        <div className="absolute bottom-1 right-1.5 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-white/70 pointer-events-none select-none" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
+          {attribution === "© Google Street View" || attribution === "Google Places" ? "© Google" : attribution}
         </div>
       )}
     </div>
