@@ -215,9 +215,9 @@ def main() -> None:
                         """UPDATE facilities
                            SET photo_url = %s,
                                photo_attribution = %s,
-                               photo_urls = ARRAY[%s],
+                               photo_urls = ARRAY[%s::text],
                                photo_sources = jsonb_build_array(
-                                   jsonb_build_object('url', %s, 'source', 'streetview', 'attribution', %s)
+                                   jsonb_build_object('url', %s::text, 'source', 'streetview'::text, 'attribution', %s::text)
                                )
                            WHERE id = %s""",
                         (public_url, PHOTO_ATTRIBUTION, public_url, public_url, PHOTO_ATTRIBUTION, fac_id),
