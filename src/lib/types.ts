@@ -133,6 +133,20 @@ export interface Facility {
   cms_ccn?: string | null;
   cms_overall_rating?: number | null;
   geo_archived_at?: string | null;
+
+  // OR-specific columns — migration 0033_or_universe.sql
+  external_id?: string | null;
+  detail_url_id?: string | null;
+  /** Adult Foster Home class (1/2/3) from OR portal detail page. Null for non-AFH. */
+  afh_class?: number | null;
+  /** ORS 443.886 Memory Care Endorsement. */
+  mce_endorsed?: boolean | null;
+  /** Provenance for mce_endorsed: "CSS portal" | "PRA list" | "name match". */
+  mce_evidence?: string | null;
+  /** APD Enhanced Oversight & Supervision program. */
+  enhanced_oversight?: boolean | null;
+  /** ORS 443.886(6): facility markets as memory care without holding MCE endorsement. */
+  unendorsed_mc_violation?: boolean | null;
   // facilities.has_inspection_text — migration 0026_facility_data_quality.sql
   has_inspection_text?: boolean | null;
 

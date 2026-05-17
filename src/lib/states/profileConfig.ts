@@ -16,7 +16,7 @@ import type { Deficiency } from "@/lib/types";
 // Types
 // ─────────────────────────────────────────────────────────────────
 
-export type SeverityTone = "danger" | "warn" | "info" | "ok";
+export type SeverityTone = "danger" | "warn" | "info" | "ok" | "mute";
 
 export type RuleIcon =
   | "training"
@@ -82,6 +82,11 @@ export interface StateProfileConfig {
    * Section hides entirely when this is empty.
    */
   rulebook: Rule[];
+  /**
+   * URL of the state regulator's public portal (optional).
+   * Surfaced as a "View on regulator portal" link in footnotes when present.
+   */
+  regulatorPortalUrl?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────

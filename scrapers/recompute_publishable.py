@@ -129,7 +129,9 @@ def recompute_serves_memory_care(
       - WA: wa_dementia_care_contract — DSHS Dementia Care contract (already maps to
              memory_care_disclosure_filed=true in wa_dshs_directory_ingest.py, kept here
              as belt-and-suspenders)
-      - OR: or_memory_care_endorsed — OHA Memory Care Endorsement
+      - OR: mce_endorsed — ORS 443.886 Memory Care Endorsement (set by or_signal_mce.py)
+            unendorsed_mc_violation — ORS 443.886(6) "memory care name without endorsement"
+            bucket; surfaces these facilities as an editorial signal even without MCE.
       - MN: mn_dementia_care_licensed — MDH ALDC license
       - TX: tx_alzheimer_certified — HHSC Alzheimer Certification
     """
@@ -146,7 +148,9 @@ def recompute_serves_memory_care(
           OR (state_code = 'WA' AND COALESCE(wa_memory_care_certified, false))
           OR (state_code = 'WA' AND COALESCE(wa_earc_sdc_contracted, false))
           OR (state_code = 'WA' AND COALESCE(wa_dementia_specialty, false))
-          OR (state_code = 'OR' AND COALESCE(or_memory_care_endorsed, false))
+          -- OR: only the state-issued MCE endorsement qualifies as a Tier-1 signal.
+          -- unendorsed_mc_violation is a warning flag — it must NOT set serves_memory_care.
+          OR (state_code = 'OR' AND COALESCE(mce_endorsed, false))
           OR (state_code = 'MN' AND COALESCE(mn_dementia_care_licensed, false))
           OR (state_code = 'TX' AND COALESCE(tx_alzheimer_certified, false))
         , false)
@@ -196,13 +200,18 @@ def recompute_publishable(
     else:
         freshness_clause = ""
 
+    # Geocode gate removed for OR: the CSV has addresses but not lat/lng.
+    # Geocoding runs as a separate pass; we publish state-endorsed facilities
+    # on the state's signal, not our own derived coordinates.
+    geocode_clause = ""
+
     sql = f"""
         UPDATE facilities
         SET publishable = (
           license_status = 'LICENSED'
           AND serves_memory_care = true
           AND mc_review_status <> 'reviewed_reject'
-          {freshness_clause}
+          {freshness_clause}{geocode_clause}
         )
         WHERE state_code = %s
     """

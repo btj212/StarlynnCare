@@ -280,6 +280,18 @@ export interface FacilityProfile {
   } | null;
 
   /**
+   * OR memory-care signal badges.
+   * Non-null only for OR facilities; null for all other states.
+   */
+  orMcSignals: {
+    mceEndorsed: boolean;
+    mceEvidence: string | null;
+    afhClass: number | null;
+    enhancedOversight: boolean;
+    unendorsedMcViolation: boolean;
+  } | null;
+
+  /**
    * True for WA Adult Family Homes (2–6 bed residential houses).
    * When true: no default street view, no exterior photos, smaller card treatment.
    * Privacy flag per wa_afh_residential_flag column.
@@ -698,6 +710,17 @@ export async function loadFacilityProfile(params: {
             sdcp: facility.wa_earc_sdc_contracted ?? facility.wa_dementia_care_contract ?? false,
             dementiaSpecialty: facility.wa_dementia_specialty ?? false,
             cmsOverallRating: facility.cms_overall_rating ?? null,
+          }
+        : null,
+
+    orMcSignals:
+      facility.state_code === "OR"
+        ? {
+            mceEndorsed: facility.mce_endorsed ?? false,
+            mceEvidence: facility.mce_evidence ?? null,
+            afhClass: facility.afh_class ?? null,
+            enhancedOversight: facility.enhanced_oversight ?? false,
+            unendorsedMcViolation: facility.unendorsed_mc_violation ?? false,
           }
         : null,
 

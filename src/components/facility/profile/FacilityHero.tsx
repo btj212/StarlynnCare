@@ -6,6 +6,7 @@ import {
 } from "@/lib/seo/schema";
 import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
+import { OrMcSignalBadges } from "./OrMcSignalBadges";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -240,6 +241,11 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {/* WA memory-care signal badges */}
             {profile.waMcSignals && (
               <WaMcSignalBadges signals={profile.waMcSignals} />
+            )}
+
+            {/* OR memory-care signal badges */}
+            {profile.orMcSignals && (
+              <OrMcSignalBadges signals={profile.orMcSignals} />
             )}
           </div>
 

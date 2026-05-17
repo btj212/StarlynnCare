@@ -1,26 +1,35 @@
 #!/usr/bin/env python3
 """
-Oregon DHS LTC Licensing — inspection / deficiency ingest.
+Oregon Inspections CSV Ingest — OR Universe, Phase 1.
 
-Loads format_version: 1 bundles produced by or_ltc_to_bundle.py into inspections +
-deficiencies for facilities with or_memory_care_endorsed = true.
+Ingests the full Inspections export from ltclicensing.oregon.gov.
+
+Actual CSV columns (as downloaded 2026-05-16):
+  Date | Provider ID | Name | Type | Event ID | Inspection type(s) | Deficiencies cited
+
+NOTE: The Inspections CSV does NOT contain PDF report URLs. The PDF pipeline
+(or_pdf_download.py) must source URLs from individual facility detail pages.
+For Phase 1 this means or_pdf_inventory stays empty until a separate scrape
+of detail pages is added. The structured violation counts are still captured.
+
+Inspection type(s) field values observed:
+  "Monitoring", "Standard", "Complaint", "Initial", "Annual", "Revisit", etc.
+  These are mapped to is_complaint / is_relicensure / is_followup.
 
 Usage:
-  python3 scrapers/or_inspections_ingest.py --import-json path/to/bundle.json
-  python3 scrapers/or_inspections_ingest.py --smoke
+  python3 scrapers/or_inspections_ingest.py --input data/or_inspections.csv
+  python3 scrapers/or_inspections_ingest.py --input data/or_inspections.csv --dry-run
+  python3 scrapers/or_inspections_ingest.py --input data/or_inspections.csv --limit 100
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
+import csv
 import os
 import re
 import sys
-import time
-import uuid
-from datetime import date, datetime, timezone
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -28,77 +37,7 @@ import psycopg
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRAPERS_DIR = Path(__file__).resolve().parent
-
-
-def pad_license_or(raw: Any) -> str:
-    if raw is None or str(raw).strip() == "":
-        return "0000000000"
-    digits = re.sub(r"\D", "", str(raw))
-    if not digits:
-        return "0000000000"
-    return digits.zfill(10)
-
-
 STATE_CODE = "OR"
-SCRAPER_NAME = "or_dhs_ltc_inspections"
-SOURCE_AGENCY = "OR DHS LTC Licensing"
-SMOKE_FIXTURE = SCRAPERS_DIR / "fixtures" / "or_inspections_smoke.json"
-REQUEST_DELAY_SECS = 1.0
-
-_SEVERITY_HINTS: list[tuple[tuple[str, ...], int]] = [
-    (("immediate jeopardy", "ij", "priority 1", "i/j"), 4),
-    (("type a", "pattern a", "class a", "serious", "actual harm"), 3),
-    (("type b", "pattern b", "class b", "potential", "lesser"), 2),
-    (("type c", "class c", "no harm", "administrative"), 1),
-]
-
-
-def infer_severity(
-    state_severity_raw: str | None,
-    explicit: int | None,
-    immediate_jeopardy: bool,
-) -> int | None:
-    if explicit is not None and 1 <= explicit <= 4:
-        s = explicit
-    else:
-        s = None
-        if state_severity_raw:
-            low = state_severity_raw.lower().strip()
-            for keys, val in _SEVERITY_HINTS:
-                if any(k in low for k in keys):
-                    s = val
-                    break
-    if immediate_jeopardy and (s is None or s < 4):
-        s = 4
-    if s is not None and (s < 1 or s > 4):
-        return None
-    return s
-
-
-def _narrative_from_deficiencies(deficiencies: list[dict[str, Any]]) -> str:
-    parts: list[str] = []
-    for d in deficiencies:
-        code = (d.get("code") or "—")[:32]
-        desc = (d.get("description") or d.get("inspector_narrative") or "").strip()
-        if not desc:
-            continue
-        parts.append(f"{code}: {desc}")
-    return "\n\n".join(parts)[:12000]
-
-
-def _deficiency_dedupe_key(inspection_id: str, d: dict[str, Any]) -> str:
-    code = (d.get("code") or "")[:64]
-    desc = (d.get("description") or d.get("inspector_narrative") or "")[:240]
-    h = hashlib.sha256(f"{inspection_id}|{code}|{desc}".encode()).hexdigest()[:32]
-    return h
-
-
-def final_deficiency_code(d: dict[str, Any], dedupe_key: str) -> str:
-    raw = d.get("code")
-    if raw is not None and str(raw).strip():
-        return str(raw).strip()[:200]
-    return f"__or_{dedupe_key}"
 
 
 def load_env() -> None:
@@ -106,462 +45,176 @@ def load_env() -> None:
         p = REPO_ROOT / name
         if p.is_file():
             load_dotenv(p)
+            return
 
 
-def fetch_target_facilities(
-    conn: psycopg.Connection,
-    *,
-    license_filter: str | None,
-    limit: int | None,
-) -> list[dict[str, Any]]:
-    q = """
-        SELECT id::text, name, license_number
-        FROM facilities
-        WHERE state_code = 'OR'
-          AND or_memory_care_endorsed = true
-          AND license_status = 'LICENSED'
-    """
-    params: list[Any] = []
-    if license_filter:
-        q += " AND license_number = %s"
-        params.append(pad_license_or(license_filter))
-    q += " ORDER BY license_number, name"
-    if limit is not None:
-        q += f" LIMIT {int(limit)}"
-    with conn.cursor() as cur:
-        cur.execute(q, params)
-        cols = [d[0] for d in cur.description]
-        return [dict(zip(cols, row)) for row in cur.fetchall()]
+def get_conn() -> psycopg.Connection:
+    url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
+    if not url:
+        raise RuntimeError("DATABASE_URL / POSTGRES_URL not set")
+    return psycopg.connect(url)
 
 
-def inspection_exists(
-    cur: psycopg.Cursor,
-    facility_id: str,
-    source_url: str,
-    inspection_date: date,
-) -> str | None:
-    cur.execute(
-        """
-        SELECT id::text FROM inspections
-        WHERE facility_id = %s::uuid
-          AND source_url = %s
-          AND inspection_date = %s
-        """,
-        (facility_id, source_url, inspection_date),
-    )
-    row = cur.fetchone()
-    return str(row[0]) if row else None
-
-
-def deficiency_row_exists(cur: psycopg.Cursor, inspection_id: str, code: str) -> bool:
-    cur.execute(
-        """
-        SELECT 1 FROM deficiencies
-        WHERE inspection_id = %s::uuid
-          AND code = %s
-        """,
-        (inspection_id, code),
-    )
-    return cur.fetchone() is not None
-
-
-def insert_inspection(
-    conn: psycopg.Connection,
-    facility_id: str,
-    payload: dict[str, Any],
-    scrape_run_id: str,
-) -> str | None:
-    raw = dict(payload.get("raw_data") or {})
-    raw["narrative"] = payload.get("narrative") or raw.get("narrative")
-    raw["outcome"] = payload.get("outcome") or raw.get("outcome")
-    incident_date = _parse_date_loose(payload.get("incident_date"))
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO inspections (
-                facility_id, inspection_date, incident_date, inspection_type,
-                is_complaint, complaint_id,
-                total_deficiency_count,
-                source_url, source_agency, scrape_run_id,
-                raw_data
-            ) VALUES (
-                %s::uuid, %s, %s, %s,
-                %s, %s,
-                %s,
-                %s, %s, %s::uuid,
-                %s
-            )
-            ON CONFLICT (facility_id, inspection_date, inspection_type, COALESCE(source_agency, ''))
-            DO NOTHING
-            RETURNING id::text
-            """,
-            (
-                facility_id,
-                payload["inspection_date"],
-                incident_date,
-                payload.get("inspection_type") or "standard",
-                bool(payload.get("is_complaint")),
-                payload.get("complaint_id"),
-                int(payload.get("total_deficiency_count") or 0),
-                payload["source_url"],
-                SOURCE_AGENCY,
-                scrape_run_id,
-                psycopg.types.json.Jsonb(raw),
-            ),
-        )
-        row = cur.fetchone()
-        if row is None:
-            return None  # duplicate — already exists
-        return str(row[0])
-
-
-def _parse_date_loose(value: Any) -> date | None:
-    if value is None:
+def parse_date(raw: str) -> date | None:
+    raw = raw.strip()
+    if not raw:
         return None
-    s = str(value).strip()
-    if not s:
-        return None
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"):
+    from datetime import datetime
+    for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y"):
         try:
-            return datetime.strptime(s, fmt).date()
+            return datetime.strptime(raw, fmt).date()
         except ValueError:
-            continue
+            pass
+    return None
+
+
+def parse_inspection_types(types_str: str) -> tuple[bool, str]:
+    """
+    Parse the "Inspection type(s)" field.
+    Returns (is_complaint, inspection_type_label).
+    """
+    t = types_str.strip().lower()
+    is_complaint = "complaint" in t
+    if "revisit" in t or "follow-up" in t or "followup" in t or "monitoring" in t:
+        label = "follow-up"
+    elif "complaint" in t:
+        label = "complaint"
+    elif "annual" in t or "standard" in t or "relicensure" in t or "routine" in t:
+        label = "standard"
+    elif "initial" in t:
+        label = "initial"
+    else:
+        label = types_str.strip() or "standard"
+    return is_complaint, label
+
+
+def parse_deficiency_count(raw: str) -> int | None:
+    if not raw:
+        return None
     try:
-        return date.fromisoformat(s[:10])
-    except ValueError:
+        return int(float(raw))
+    except (ValueError, TypeError):
         return None
 
 
-def insert_deficiency(
-    conn: psycopg.Connection,
-    inspection_id: str,
-    d: dict[str, Any],
-    dedupe_key: str,
-) -> None:
-    state_raw = (d.get("state_severity_raw") or "").strip() or None
-    ij = bool(d.get("immediate_jeopardy"))
-    sev = infer_severity(state_raw, d.get("severity"), ij)
-    code = final_deficiency_code(d, dedupe_key)
-    desc = (d.get("description") or "")[:4000] or None
-    narr = (d.get("inspector_narrative") or "")[:8000] or None
-    cls = d.get("class") or state_raw
-    cited = _parse_date_loose(d.get("cited_date"))
-    corrected = _parse_date_loose(d.get("corrected_date"))
-    status = d.get("status")
-    if not status and corrected:
-        status = "corrected"
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO deficiencies (
-                inspection_id,
-                code, category,
-                severity, class,
-                immediate_jeopardy,
-                description, inspector_narrative,
-                state_severity_raw,
-                cited_date, corrected_date, status
-            ) VALUES (
-                %s::uuid,
-                %s, %s,
-                %s, %s,
-                %s,
-                %s, %s,
-                %s,
-                %s, %s, %s
-            )
-            """,
-            (
-                inspection_id,
-                code,
-                (d.get("category") or "")[:500] or None,
-                sev,
-                cls,
-                ij,
-                desc,
-                narr,
-                state_raw,
-                cited,
-                corrected,
-                status,
-            ),
-        )
+INSP_INSERT_SQL = """
+INSERT INTO inspections (
+    facility_id, inspection_date,
+    inspection_type, is_complaint,
+    total_deficiency_count, source_url, source_agency
+)
+VALUES (
+    %(facility_id)s, %(inspection_date)s,
+    %(inspection_type)s, %(is_complaint)s,
+    %(total_deficiency_count)s, %(source_url)s, %(source_agency)s
+)
+"""
 
 
-def load_bundle(path: Path) -> dict[str, Any]:
-    with path.open(encoding="utf-8") as f:
-        return json.load(f)
+def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
+    with open(input_path, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        all_rows = list(reader)
 
+    if limit:
+        all_rows = all_rows[:limit]
 
-def _update_inspection_raw_data_and_count(
-    conn: psycopg.Connection,
-    inspection_id: str,
-    raw_patch: dict[str, Any],
-    total_deficiency_count: int,
-) -> None:
-    """Merge raw_patch into existing inspection raw_data and update deficiency count."""
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            UPDATE inspections
-            SET raw_data = raw_data || %s,
-                total_deficiency_count = %s
-            WHERE id = %s::uuid
-            """,
-            (
-                psycopg.types.json.Jsonb(raw_patch),
-                total_deficiency_count,
-                inspection_id,
-            ),
-        )
+    print(f"  Loaded {len(all_rows)} rows from {input_path.name}")
 
+    if dry_run:
+        for row in all_rows[:5]:
+            pid   = row.get("Provider ID", "")
+            dt    = row.get("Date", "")
+            typ   = row.get("Inspection type(s)", "")
+            defs  = row.get("Deficiencies cited", "")
+            eid   = row.get("Event ID", "")
+            print(f"    pid={pid:12s}  date={dt}  eid={eid:10s}  type={typ:20s}  defs={defs}")
+        print("  ... (dry-run, no DB writes)")
+        return
 
-def process_bundle_for_facility(
-    conn: psycopg.Connection,
-    facility: dict[str, Any],
-    inspections: list[dict[str, Any]],
-    scrape_run_id: str,
-    dry_run: bool,
-    force_deficiencies: bool = False,
-) -> dict[str, int]:
-    stats = {"inspections": 0, "deficiencies": 0, "skipped": 0, "reingested": 0}
-    fac_id = facility["id"]
-    for insp in inspections:
-        defs = insp.get("deficiencies") or []
-        if not insp.get("inspection_date") or not insp.get("source_url"):
-            stats["skipped"] += 1
-            continue
-        idate = insp["inspection_date"]
-        if isinstance(idate, str):
-            idate_p = date.fromisoformat(idate[:10])
-        else:
-            stats["skipped"] += 1
-            continue
+    conn = get_conn()
+    ok = err = skip = 0
 
-        raw = insp.get("raw_data") if isinstance(insp.get("raw_data"), dict) else {}
-        narrative = _narrative_from_deficiencies(defs)
-        # Use CSV deficiency count for inspection-side records that have no individual defs
-        csv_count = insp.get("total_deficiency_count")
-        def_count = len(defs) if defs else (csv_count if csv_count is not None else 0)
-        payload = {
-            "inspection_date": idate_p,
-            "inspection_type": insp.get("inspection_type"),
-            "is_complaint": insp.get("is_complaint"),
-            "complaint_id": insp.get("complaint_id"),
-            "source_url": insp["source_url"],
-            "total_deficiency_count": def_count,
-            "raw_data": raw,
-            "narrative": narrative or insp.get("narrative"),
-            "outcome": insp.get("outcome"),
-        }
-
-        if dry_run:
-            stats["inspections"] += 1
-            stats["deficiencies"] += len(defs)
-            continue
-
-        assert conn is not None
-        with conn.cursor() as cur:
-            existing = inspection_exists(cur, fac_id, payload["source_url"], idate_p)
-
-        if existing:
-            if not force_deficiencies:
-                stats["skipped"] += 1
+    with conn:
+        for row in all_rows:
+            external_id = row.get("Provider ID", "").strip()
+            if not external_id:
+                skip += 1
                 continue
-            # Force mode: delete existing deficiencies and re-insert from bundle.
-            # Patch raw_data with any new fields (e.g. violation_type) and correct count.
-            raw_patch = {k: v for k, v in raw.items() if k in ("violation_type",)}
-            _update_inspection_raw_data_and_count(conn, existing, raw_patch, def_count)
-            with conn.cursor() as cur:
-                cur.execute(
-                    "DELETE FROM deficiencies WHERE inspection_id = %s::uuid",
-                    (existing,),
-                )
-            insp_id = existing
-            stats["reingested"] += 1
-        else:
-            insp_id = insert_inspection(conn, fac_id, payload, scrape_run_id)
-            if insp_id is None:
-                stats["skipped"] += 1
-                continue
-            stats["inspections"] += 1
 
-        for d in defs:
-            dk = _deficiency_dedupe_key(insp_id, d)
-            insert_deficiency(conn, insp_id, d, dk)
-            stats["deficiencies"] += 1
+            inspection_date = parse_date(row.get("Date", ""))
+            if not inspection_date:
+                skip += 1
+                continue
+
+            types_raw = row.get("Inspection type(s)", "")
+            def_count = parse_deficiency_count(row.get("Deficiencies cited", ""))
+            is_complaint, insp_type = parse_inspection_types(types_raw)
+
+            try:
+                with conn.cursor() as cur:
+                    # Savepoint: lets us rollback only this row on failure
+                    cur.execute("SAVEPOINT sp_insp")
+                    try:
+                        cur.execute(
+                            "SELECT id FROM facilities WHERE state_code = 'OR' AND external_id = %s LIMIT 1",
+                            (external_id,),
+                        )
+                        fac_row = cur.fetchone()
+                        if not fac_row:
+                            cur.execute("RELEASE SAVEPOINT sp_insp")
+                            skip += 1
+                            continue
+                        facility_id = fac_row[0]
+
+                        cur.execute(
+                            INSP_INSERT_SQL,
+                            {
+                                "facility_id": facility_id,
+                                "inspection_date": inspection_date,
+                                "inspection_type": insp_type,
+                                "is_complaint": is_complaint,
+                                "total_deficiency_count": def_count,
+                                "source_url": "https://ltclicensing.oregon.gov/Inspections",
+                                "source_agency": "OR-ODHS",
+                            },
+                        )
+                        cur.execute("RELEASE SAVEPOINT sp_insp")
+                        ok += 1
+                    except Exception as exc:
+                        cur.execute("ROLLBACK TO SAVEPOINT sp_insp")
+                        cur.execute("RELEASE SAVEPOINT sp_insp")
+                        print(f"  WARN: {external_id} {inspection_date} — {exc}", file=sys.stderr)
+                        err += 1
+            except Exception as exc_outer:
+                print(f"  WARN outer: {external_id} — {exc_outer}", file=sys.stderr)
+                err += 1
 
         conn.commit()
 
-    # One courteous pause per facility (not per inspection — violation bundles can be large)
-    time.sleep(REQUEST_DELAY_SECS)
-    return stats
-
-
-def match_bundle_to_facilities(
-    bundle: dict[str, Any],
-    facilities: list[dict[str, Any]],
-    *,
-    dry_run: bool = False,
-) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
-    if dry_run:
-        out: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
-        for block in bundle.get("facilities") or []:
-            lic = pad_license_or(block.get("license_number"))
-            out.append(
-                (
-                    {
-                        "id": "00000000-0000-0000-0000-000000000001",
-                        "name": "(dry-run)",
-                        "license_number": lic,
-                    },
-                    block.get("inspections") or [],
-                )
-            )
-        return out
-
-    by_lic = {pad_license_or(f["license_number"]): f for f in facilities}
-    out2: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
-    for block in bundle.get("facilities") or []:
-        lic = pad_license_or(block.get("license_number"))
-        fac = by_lic.get(lic)
-        if not fac:
-            print(f"  [skip] bundle license {lic} not in target facility list", file=sys.stderr)
-            continue
-        out2.append((fac, block.get("inspections") or []))
-    return out2
+    print(
+        f"  Inspections: {ok} upserted, {skip} skipped (no facility match or no date), {err} errors"
+    )
+    print(
+        "  NOTE: No PDF URLs in Inspections CSV. or_pdf_inventory will be seeded "
+        "separately when facility detail-page scraping is added."
+    )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Oregon DHS LTC inspection ingest (import-json)")
-    parser.add_argument("--import-json", type=str, default=None)
+    parser = argparse.ArgumentParser(description="Ingest OR Inspections CSV.")
+    parser.add_argument("--input", required=True, help="Path to Inspections CSV")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--smoke", action="store_true", help=f"Load {SMOKE_FIXTURE}")
-    parser.add_argument("--license", type=str, default=None, help="Only this padded license / provider id")
     parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument(
-        "--force-deficiencies",
-        action="store_true",
-        help=(
-            "For already-ingested inspections: delete their deficiency rows and re-insert "
-            "from the bundle. Also patches raw_data (adds violation_type) and corrects "
-            "total_deficiency_count. Use after a bundle rebuild to fix severity/type data "
-            "without losing AI narrative_summary values."
-        ),
-    )
     args = parser.parse_args()
 
     load_env()
-    json_path = Path(args.import_json) if args.import_json else None
-    if args.smoke:
-        json_path = SMOKE_FIXTURE
-
-    if not json_path or not json_path.is_file():
-        print(
-            "Provide --import-json PATH or --smoke (requires scrapers/fixtures/or_inspections_smoke.json).",
-            file=sys.stderr,
-        )
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(f"ERROR: file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    bundle = load_bundle(json_path)
-    if bundle.get("format_version") != 1:
-        print("Warning: format_version != 1 — proceeding anyway.", file=sys.stderr)
-
-    facilities: list[dict[str, Any]] = []
-    if args.dry_run:
-        print("(dry-run: DATABASE_URL optional)")
-    elif not os.environ.get("DATABASE_URL"):
-        print("DATABASE_URL is not set.", file=sys.stderr)
-        sys.exit(1)
-    else:
-        with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
-            facilities = fetch_target_facilities(
-                conn, license_filter=args.license, limit=args.limit
-            )
-
-    if not args.dry_run and not facilities:
-        print("No OR memory-care-endorsed LICENSED facilities matched filters.")
-        sys.exit(0)
-
-    paired = match_bundle_to_facilities(bundle, facilities, dry_run=args.dry_run)
-    if not paired:
-        print("No bundle facilities matched the database query.", file=sys.stderr)
-        sys.exit(1)
-
-    scrape_run_id = str(uuid.uuid4())
-    started_at = datetime.now(timezone.utc)
-    totals = {"inspections": 0, "deficiencies": 0, "skipped": 0, "reingested": 0}
-
-    force_defs = args.force_deficiencies
-
-    if args.dry_run:
-        for fac, insp_list in paired:
-            print(f"[dry-run] {fac['name']} ({fac['license_number']}): {len(insp_list)} inspection blocks")
-            st = process_bundle_for_facility(
-                None, fac, insp_list, scrape_run_id, dry_run=True  # type: ignore[arg-type]
-            )
-            for k in totals:
-                totals[k] += st.get(k, 0)  # type: ignore[operator]
-        print(json.dumps({"totals": totals, "scrape_run_id": scrape_run_id}, indent=2))
-        return
-
-    with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO scrape_runs (state_code, scraper_name, status, started_at)
-                VALUES (%s, %s, 'running', %s)
-                RETURNING id::text
-                """,
-                (STATE_CODE, SCRAPER_NAME, started_at),
-            )
-            scrape_run_id = str(cur.fetchone()[0])
-        conn.commit()
-
-        err_parts: list[str] = []
-        try:
-            for fac, insp_list in paired:
-                print(f"\n→ {fac['name']} | license {fac['license_number']}")
-                try:
-                    st = process_bundle_for_facility(
-                        conn, fac, insp_list, scrape_run_id, dry_run=False,
-                        force_deficiencies=force_defs,
-                    )
-                    for k in totals:
-                        totals[k] += st.get(k, 0)  # type: ignore[operator]
-                    print(
-                        f"   inspections +{st['inspections']}, deficiencies +{st['deficiencies']}, "
-                        f"reingested {st.get('reingested', 0)}, skipped {st['skipped']}"
-                    )
-                except Exception as e:  # noqa: BLE001
-                    err_parts.append(f"{fac['license_number']}: {e}")
-                    conn.rollback()
-                    print(f"   ERROR: {e}", file=sys.stderr)
-
-        finally:
-            status = "success" if not err_parts else "partial"
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE scrape_runs SET
-                        completed_at = now(),
-                        status = %s,
-                        records_found = %s,
-                        records_new = %s,
-                        error_log = %s
-                    WHERE id = %s::uuid
-                    """,
-                    (
-                        status,
-                        totals["inspections"],
-                        totals["inspections"],
-                        "\n".join(err_parts) or None,
-                        scrape_run_id,
-                    ),
-                )
-            conn.commit()
-
-    print(f"\nDone. scrape_run_id={scrape_run_id} totals={totals}")
+    ingest(input_path, args.dry_run, args.limit)
 
 
 if __name__ == "__main__":

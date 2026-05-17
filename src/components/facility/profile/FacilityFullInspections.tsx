@@ -21,7 +21,7 @@ function isPdfUrl(text: string | null | undefined): boolean {
   return !!text && URL_RE_UI.test(text.trim());
 }
 
-function severityToneClass(tone: "danger" | "warn" | "info" | "ok"): string {
+function severityToneClass(tone: "danger" | "warn" | "info" | "ok" | "mute"): string {
   switch (tone) {
     case "danger": return "bg-rust text-white";
     case "warn":   return "bg-gold-soft text-[#6E5520]";

@@ -1,3 +1,14 @@
+# RETIRED — do not run.
+# Replaced by the OR Full Universe rebuild (migration 0033_or_universe.sql).
+# New pipeline: or_providers_ingest.py, or_inspections_ingest.py, or_violations_ingest.py,
+#               or_regulatory_actions_ingest.py, or_signal_mce.py, or_afh_detail.py, etc.
+# Key reason: this script zero-pads Provider IDs, breaking alphanumeric IDs like '50M300'.
+# See scripts/or_overnight_run.sh for the replacement orchestration.
+#
+# Original content preserved below for reference.
+# ─────────────────────────────────────────────────────────────────────────────
+import sys; print('ERROR: or_ltc_to_bundle.py is retired. Run or_providers_ingest.py instead.', file=sys.stderr); sys.exit(1)
+
 #!/usr/bin/env python3
 """
 Join Oregon DHS LTC inspections CSV + violations CSV → format_version: 1 bundle
@@ -6,9 +17,9 @@ for [`scrapers/or_inspections_ingest.py`](./or_inspections_ingest.py).
 Join: inspections.Event ID ↔ violations.Report number (same provider).
 
 Usage:
-  python3 scrapers/or_ltc_to_bundle.py \\
-    --inspections .firecrawl/or-scrape/inspections-2026-05-08.csv \\
-    --violations .firecrawl/or-scrape/violations-2026-05-08.csv \\
+  python3 scrapers/or_ltc_to_bundle.py \
+    --inspections .firecrawl/or-scrape/inspections-2026-05-08.csv \
+    --violations .firecrawl/or-scrape/violations-2026-05-08.csv \
     --output .firecrawl/or-scrape/bundle.json
 
 Optional: --roster-csv providers.csv — only include Provider IDs present in roster (memory-care export).

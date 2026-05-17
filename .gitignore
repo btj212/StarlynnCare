@@ -54,3 +54,6 @@ next-env.d.ts
 
 # WA skipped PDFs — 367MB of binary files, tracked via ocr_wa_image_pdfs.py instead
 scrapers/wa-skipped-pdfs/
+
+# Raw data exports (CSVs from OR/WA/CA portals — large, not committed)
+data/*.csv

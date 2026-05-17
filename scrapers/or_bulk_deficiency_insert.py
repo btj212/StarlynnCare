@@ -1,3 +1,14 @@
+# RETIRED — do not run.
+# Replaced by the OR Full Universe rebuild (migration 0033_or_universe.sql).
+# New pipeline: or_providers_ingest.py, or_inspections_ingest.py, or_violations_ingest.py,
+#               or_regulatory_actions_ingest.py, or_signal_mce.py, or_afh_detail.py, etc.
+# Key reason: this script zero-pads Provider IDs, breaking alphanumeric IDs like '50M300'.
+# See scripts/or_overnight_run.sh for the replacement orchestration.
+#
+# Original content preserved below for reference.
+# ─────────────────────────────────────────────────────────────────────────────
+import sys; print('ERROR: or_bulk_deficiency_insert.py is retired. Run or_providers_ingest.py instead.', file=sys.stderr); sys.exit(1)
+
 #!/usr/bin/env python3
 """
 Fast bulk re-ingest of OR deficiency rows from a format_version:1 bundle.
@@ -255,7 +266,8 @@ def main() -> None:
             if def_rows or new_insp_count:
                 print(f"  lic={lic} +{len(def_rows)} defs, +{new_insp_count} new insp")
 
-        print(f"\nDone. deficiencies={total_defs}, new_inspections={total_new_insp}, skipped_facilities={skipped_fac}")
+        print(f"
+Done. deficiencies={total_defs}, new_inspections={total_new_insp}, skipped_facilities={skipped_fac}")
 
 
 if __name__ == "__main__":

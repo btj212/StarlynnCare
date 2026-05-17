@@ -1,3 +1,14 @@
+# RETIRED — do not run.
+# Replaced by the OR Full Universe rebuild (migration 0033_or_universe.sql).
+# New pipeline: or_providers_ingest.py, or_inspections_ingest.py, or_violations_ingest.py,
+#               or_regulatory_actions_ingest.py, or_signal_mce.py, or_afh_detail.py, etc.
+# Key reason: this script zero-pads Provider IDs, breaking alphanumeric IDs like '50M300'.
+# See scripts/or_overnight_run.sh for the replacement orchestration.
+#
+# Original content preserved below for reference.
+# ─────────────────────────────────────────────────────────────────────────────
+import sys; print('ERROR: or_dhs_ltc_directory_ingest.py is retired. Run or_providers_ingest.py instead.', file=sys.stderr); sys.exit(1)
+
 #!/usr/bin/env python3
 """
 Ingest Oregon DHS LTC Licensing provider CSV (memory-care export) into facilities.
