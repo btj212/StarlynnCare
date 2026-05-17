@@ -47,15 +47,14 @@ export async function SiteNav({
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-3.5 md:py-[22px] flex flex-nowrap items-center justify-between gap-3 sm:gap-6 min-w-0">
 
         {/* Brand mark */}
-        <Link href="/" className="flex items-baseline gap-2 sm:gap-2.5 no-underline min-w-0 shrink" aria-label="StarlynnCare home">
-          {/* Radial-gradient sphere */}
-          <span
-            className="inline-block w-[22px] h-[22px] rounded-full relative top-[3px] shrink-0"
-            style={{
-              background: "radial-gradient(circle at 35% 35%, #C4923B 0 30%, #B8533A 31% 60%, #143F3D 61% 100%)",
-              boxShadow: "inset 0 0 0 1px #1A2620",
-            }}
+        <Link href="/" className="flex items-center gap-2 sm:gap-2.5 no-underline min-w-0 shrink" aria-label="StarlynnCare home">
+          {/* Star logo mark */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-mark.png"
+            alt=""
             aria-hidden
+            className="w-[28px] h-[28px] rounded-full shrink-0 object-cover"
           />
           <span
             className="font-[family-name:var(--font-display)] text-[22px] sm:text-[26px] md:text-[28px] tracking-[-0.01em] text-ink"

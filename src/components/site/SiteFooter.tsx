@@ -33,15 +33,9 @@ export async function SiteFooter() {
 
           {/* Brand block */}
           <div>
-            <div className="flex items-baseline gap-2.5 mb-4">
-              <span
-                className="inline-block w-[20px] h-[20px] rounded-full relative top-[2px] shrink-0"
-                style={{
-                  background: "radial-gradient(circle at 35% 35%, #C4923B 0 30%, #B8533A 31% 60%, #143F3D 61% 100%)",
-                  boxShadow: "inset 0 0 0 1px #1A2620",
-                }}
-                aria-hidden
-              />
+            <div className="flex items-center gap-2.5 mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark.png" alt="" aria-hidden className="w-[24px] h-[24px] rounded-full shrink-0 object-cover" />
               <span className="font-[family-name:var(--font-display)] text-[24px] text-ink">
                 Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
               </span>
