@@ -7,6 +7,7 @@ import {
 import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
+import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -32,16 +33,14 @@ function formatAddr(facility: FacilityProfile["facility"]): string {
 }
 
 function VerdictCard({ profile }: { profile: FacilityProfile }) {
-  const { facility, totals, photoUrls } = profile;
-  const photo = photoUrls[0] ?? null;
-  const attribution = facility.photo_attribution ?? null;
+  const { facility, totals, photoUrls, photoSources } = profile;
+  const hasGrid = photoUrls.length >= 4;
   const suggestSubject = encodeURIComponent(`Photo submission: ${facility.name}`);
   const suggestBody = encodeURIComponent(
     `Hi,\n\nI'd like to submit a photo for ${facility.name}.\n\nPlease attach the photo to this email.\n\nThank you.`,
   );
   const suggestHref = `mailto:hello@starlynncare.com?subject=${suggestSubject}&body=${suggestBody}`;
 
-  // Generate verdict copy from content or derive from totals
   const copy: string = (() => {
     const beds = facility.beds ? `A ${facility.beds}-bed` : "A";
     const licType = SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility";
@@ -56,63 +55,68 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
     return `${beds} ${licType} with no citations on file.`;
   })();
 
-  // Use the most recent inspection of ANY type — complaint investigations are
-  // still real regulatory visits and omitting them understates recency.
   const lastInsp = profile.inspections[0] ?? null;
   const lastInspFormatted = lastInsp?.inspection_date
     ? new Date(lastInsp.inspection_date + "T12:00:00").toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
     : null;
-  // "cited" only when the most recent visit itself produced a deficiency.
   const lastInspCited = (lastInsp?.total_deficiency_count ?? 0) > 0;
 
   return (
-    <div className="fp-verdict bg-ink text-paper p-7 relative">
-      <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] text-gold mb-3.5 flex items-center gap-2">
-        <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
-        Facility · {facility.city ?? profile.state.name}
-      </div>
-      <div className="grid gap-5" style={{ gridTemplateColumns: "110px 1fr" }}>
-        {/* Photo or gradient placeholder */}
-        <div className="flex flex-col gap-1.5">
-          <div className="relative aspect-square overflow-hidden" style={{ background: "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 60%, #6F8479 100%)" }}>
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt={facility.name} className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
-              <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.22em] text-white/70">
-                Photo
-              </span>
-            )}
+    <div className="fp-verdict bg-ink text-paper relative overflow-hidden">
+      {/* ── Photo grid (full-width when 4+, otherwise compact) ── */}
+      {hasGrid ? (
+        <FacilityPhotoGrid
+          photoUrls={photoUrls}
+          photoSources={photoSources}
+          facilityName={facility.name}
+        />
+      ) : null}
+
+      <div className={hasGrid ? "p-7" : "p-7"}>
+        <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] text-gold mb-3.5 flex items-center gap-2">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
+          Facility · {facility.city ?? profile.state.name}
+        </div>
+
+        {/* When < 4 photos: compact side-by-side with single photo */}
+        {!hasGrid ? (
+          <div className="grid gap-5" style={{ gridTemplateColumns: "110px 1fr" }}>
+            <div className="flex flex-col gap-1.5">
+              <FacilityPhotoGrid
+                photoUrls={photoUrls}
+                photoSources={photoSources}
+                facilityName={facility.name}
+              />
+              <div className="font-[family-name:var(--font-mono)] text-[10px] leading-tight opacity-50">
+                <a
+                  href={suggestHref}
+                  className="block text-paper/70 hover:opacity-100 transition-opacity whitespace-nowrap"
+                >
+                  operator? submit a photo →
+                </a>
+              </div>
+            </div>
+            <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
+              <span dangerouslySetInnerHTML={{ __html: copy.replace(/(citation|citations|no citations on file)/gi, "<em>$1</em>") }} />
+            </div>
           </div>
-          {/* Attribution + suggest link */}
-          <div className="font-[family-name:var(--font-mono)] text-[10px] leading-tight opacity-50">
-            {attribution && (
-              <span className="block text-paper truncate" title={attribution}>
-                {attribution}
-              </span>
-            )}
-            <a
-              href={suggestHref}
-              className="block text-paper/70 hover:opacity-100 transition-opacity whitespace-nowrap"
-            >
-              operator? submit a photo →
-            </a>
+        ) : (
+          /* When 4+ photos: full-width copy below the grid */
+          <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
+            <span dangerouslySetInnerHTML={{ __html: copy.replace(/(citation|citations|no citations on file)/gi, "<em>$1</em>") }} />
           </div>
-        </div>
-        {/* Copy */}
-        <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
-          <span dangerouslySetInnerHTML={{ __html: copy.replace(/(citation|citations|no citations on file)/gi, "<em>$1</em>") }} />
-        </div>
+        )}
+
+        {lastInspFormatted && (
+          <div className="mt-5 flex justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em] text-white/60">
+            <span>
+              Last inspection · {lastInspFormatted}
+              {lastInsp?.is_complaint ? " (complaint)" : ""} · {lastInspCited ? "cited" : "clean"}
+            </span>
+            <span>Source · {profile.cfg.agencyShort}</span>
+          </div>
+        )}
       </div>
-      {lastInspFormatted && (
-        <div className="mt-5 flex justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em] text-white/60">
-          <span>
-            Last inspection · {lastInspFormatted}
-            {lastInsp?.is_complaint ? " (complaint)" : ""} · {lastInspCited ? "cited" : "clean"}
-          </span>
-          <span>Source · {profile.cfg.agencyShort}</span>
-        </div>
-      )}
     </div>
   );
 }
