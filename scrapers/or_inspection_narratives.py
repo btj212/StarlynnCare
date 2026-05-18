@@ -147,13 +147,22 @@ def upsert_citations(
     citations: list[dict[str, Any]],
     dry_run: bool,
 ) -> int:
-    """Delete existing CSV-derived deficiencies and insert the parsed ones. Returns count inserted."""
+    """Delete existing CSV-derived deficiencies, insert parsed ones, and
+    backfill inspections.raw_data.narrative so the summarizer can run.
+    Returns count inserted."""
+    import json as _json
+
     if not citations:
         return 0
     if dry_run:
         for c in citations:
             print(f"      [{c['code']}] narrative={repr(str(c['inspector_narrative'])[:80])}")
         return len(citations)
+
+    # Concatenate all inspector narratives for the inspection-level summary.
+    combined_narrative = "\n\n".join(
+        c["inspector_narrative"] for c in citations if c.get("inspector_narrative")
+    )
 
     with conn.cursor() as cur:
         cur.execute("SAVEPOINT sp_narr")
@@ -179,6 +188,14 @@ def upsert_citations(
                     c["inspector_narrative"],
                     c["plan_of_correction"],
                 ))
+            # Backfill inspections.raw_data.narrative so summarize_inspections.py can run
+            if combined_narrative:
+                cur.execute(
+                    """UPDATE inspections
+                       SET raw_data = COALESCE(raw_data, '{}'::jsonb) || %s::jsonb
+                       WHERE id = %s""",
+                    (_json.dumps({"narrative": combined_narrative}), inspection_id),
+                )
             cur.execute("RELEASE SAVEPOINT sp_narr")
         except Exception as exc:
             cur.execute("ROLLBACK TO SAVEPOINT sp_narr")
@@ -191,6 +208,7 @@ def upsert_citations(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke", action="store_true", help="3 publishable facilities, 3 recent inspections each")
+    parser.add_argument("--publishable-only", action="store_true", help="Only process inspections for publishable facilities")
     parser.add_argument("--facility-id", help="Single facility UUID")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true", help="Fetch + parse but no DB writes")
@@ -207,7 +225,7 @@ def main() -> None:
     if args.facility_id:
         where.append("f.id = %s")
         params.append(args.facility_id)
-    elif args.smoke:
+    elif args.smoke or args.publishable_only:
         where.append("f.publishable = true")
 
     order = "ORDER BY f.name, i.inspection_date DESC"
