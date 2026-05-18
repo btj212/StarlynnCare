@@ -480,8 +480,9 @@ export async function loadFacilityProfile(params: {
   if (!facility) {
     const supabase = tryPublicSupabaseClient();
     if (supabase) {
+      // First try: state-code prefixed suffix (e.g. ecumen-north-branch → ecumen-north-branch-mn652)
       const statePrefix = state.code.toLowerCase();
-      const { data: candidates } = await supabase
+      const { data: statePrefixCandidates } = await supabase
         .from("facilities")
         .select("slug")
         .eq("state_code", state.code)
@@ -489,8 +490,22 @@ export async function loadFacilityProfile(params: {
         .eq("publishable", true)
         .like("slug", `${facilitySlug}-${statePrefix}%`)
         .limit(2);
-      if (candidates && candidates.length === 1) {
-        return { kind: "redirect", canonicalSlug: (candidates[0] as { slug: string }).slug };
+      if (statePrefixCandidates && statePrefixCandidates.length === 1) {
+        return { kind: "redirect", canonicalSlug: (statePrefixCandidates[0] as { slug: string }).slug };
+      }
+
+      // Second try: any suffix (e.g. brightcreek-at-sea-view → brightcreek-at-sea-view-50r368)
+      // Only redirect if there is exactly one match to avoid ambiguity.
+      const { data: anySuffixCandidates } = await supabase
+        .from("facilities")
+        .select("slug")
+        .eq("state_code", state.code)
+        .eq("city_slug", regionSlug)
+        .eq("publishable", true)
+        .like("slug", `${facilitySlug}-%`)
+        .limit(2);
+      if (anySuffixCandidates && anySuffixCandidates.length === 1) {
+        return { kind: "redirect", canonicalSlug: (anySuffixCandidates[0] as { slug: string }).slug };
       }
     }
     return "not_found";
