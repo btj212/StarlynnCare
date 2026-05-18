@@ -116,6 +116,11 @@ export default function EditorialPolicyPage() {
               NIH, Genworth, and state agency landing pages may inform educational framing; they do not replace
               facility-specific verification on tour.
             </p>
+            <p>
+              StarlynnCare indexes records produced by state and federal regulators in the course of statutory
+              inspections. The site does not solicit voluntary data submissions from facilities, accept paid
+              placement, or derive content from facility-side surveys.
+            </p>
           </Section>
 
           <Section id="corrections" title="Corrections & reader feedback">

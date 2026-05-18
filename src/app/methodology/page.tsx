@@ -9,6 +9,7 @@ import { buildBreadcrumbList, buildWebPageWithReviewer } from "@/lib/seo/schema"
 
 const METHODOLOGY_PATH = "/methodology";
 const methodologyCanonical = canonicalFor(METHODOLOGY_PATH);
+const EFFECTIVE = "May 2026";
 const methodologyDesc =
   "Our methodology: primary data sources, how we compute each metric, tier thresholds, and why we do not publish a single composite score.";
 
@@ -144,6 +145,9 @@ export default function MethodologyPage() {
             inspection records. We do not invent data, accept paid placements,
             or produce a single letter grade. Instead, we show four independent
             signals and let families weigh them.
+          </p>
+          <p className="mt-3 text-[14px] font-[family-name:var(--font-mono)] text-muted">
+            Last updated {EFFECTIVE}
           </p>
 
           <section
