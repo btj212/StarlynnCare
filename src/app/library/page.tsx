@@ -206,7 +206,7 @@ export default function LibraryIndexPage() {
         <div className="mx-auto max-w-[1100px] px-4 sm:px-6 md:px-10 py-16 space-y-20">
           <section id="decision-guides">
             <SectionHead
-              label="§ 1 · Decision guides"
+              label="Decision guides"
               title={<>Choosing care settings <em>without the sales narrative.</em></>}
             />
             <ArticleGrid items={SECTION_DECISION} />
@@ -214,7 +214,7 @@ export default function LibraryIndexPage() {
 
           <section id="costs-payers">
             <SectionHead
-              label="§ 2 · Costs & payers"
+              label="Costs & payers"
               title={<>Money, Medi-Cal, and <em>what quotes hide.</em></>}
             />
             <ArticleGrid items={SECTION_COSTS} />
@@ -222,7 +222,7 @@ export default function LibraryIndexPage() {
 
           <section id="public-record">
             <SectionHead
-              label="§ 3 · Reading the public record"
+              label="Reading the public record"
               title={<>CDSS inspections, citations, and <em>tours that match reality.</em></>}
             />
             <ArticleGrid items={SECTION_RECORD} />
@@ -230,7 +230,7 @@ export default function LibraryIndexPage() {
 
           <section id="clinical-literacy">
             <SectionHead
-              label="§ 4 · Clinical literacy"
+              label="Clinical literacy"
               title={<>Diagnosis vocabulary <em>for families — not clinicians.</em></>}
             />
             <ArticleGrid items={SECTION_CLINICAL} />

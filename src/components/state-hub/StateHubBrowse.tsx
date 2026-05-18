@@ -4,7 +4,7 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 import type { CountyRow, CityRow } from "@/lib/data/stateHub";
 
 type Props = {
-  sectionLabel: string;
+  sectionLabel?: string;
   sectionTitle: ReactNode;
   stateSlug: string;
   browseSectionTitle: string;

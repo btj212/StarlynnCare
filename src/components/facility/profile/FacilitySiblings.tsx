@@ -98,7 +98,7 @@ export async function FacilitySiblings({ profile }: { profile: FacilityProfile }
     <section id="siblings" className="border-b border-paper-rule py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
-          label="§ 07 · Nearby"
+          label="Nearby"
           title={
             <>
               Other facilities <em>in {countyLabel ?? cityLabel}.</em>

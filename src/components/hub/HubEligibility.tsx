@@ -20,7 +20,7 @@ export function HubEligibility({ stateCode, regionName }: HubEligibilityProps) {
     <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
         <SectionHead
-          label="§ Payment & eligibility"
+          label="Payment & eligibility"
           title={
             <>
               Paying for memory care <em>in {regionName}.</em>

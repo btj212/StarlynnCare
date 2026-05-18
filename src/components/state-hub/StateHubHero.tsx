@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { ZipSearch } from "@/components/site/ZipSearch";
 
 type Props = {
-  eyebrow: string;
+  eyebrow?: string;
   title: ReactNode;
   subtitle: string;
   illustrationSrc: string;
@@ -25,13 +25,15 @@ export function StateHubHero({
   return (
     <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14 md:py-16">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6 sm:mb-7 font-[family-name:var(--font-mono)] text-[10.5px] sm:text-[11.5px] uppercase tracking-[0.18em] text-rust">
-          <span className="h-px w-6 sm:w-9 shrink-0 bg-rust opacity-60" aria-hidden />
-          <span className="min-w-0 flex-1 basis-[min(100%,14rem)] sm:flex-none sm:basis-auto">
-            {eyebrow}
-          </span>
-          <span className="h-px min-w-[2rem] flex-1 basis-0 bg-rust opacity-60 max-sm:hidden" aria-hidden />
-        </div>
+        {eyebrow && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6 sm:mb-7 font-[family-name:var(--font-mono)] text-[10.5px] sm:text-[11.5px] uppercase tracking-[0.18em] text-rust">
+            <span className="h-px w-6 sm:w-9 shrink-0 bg-rust opacity-60" aria-hidden />
+            <span className="min-w-0 flex-1 basis-[min(100%,14rem)] sm:flex-none sm:basis-auto">
+              {eyebrow}
+            </span>
+            <span className="h-px min-w-[2rem] flex-1 basis-0 bg-rust opacity-60 max-sm:hidden" aria-hidden />
+          </div>
+        )}
 
         <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1.15fr_1fr]">
           <div>

@@ -123,5 +123,29 @@ export const MN_FAQS: FaqItem[] = [
   },
 ];
 
+/** Utah DLBC framing. */
+export const UT_FAQS: FaqItem[] = [
+  {
+    q: "Where does Utah memory care inspection data come from?",
+    a: "Primary sources: the Utah Dept. of Health & Human Services Division of Licensing and Background Checks (DLBC), which regulates Assisted Living Facilities (Type I and Type II) under Utah Admin. Code R432-270. Inspection findings and complaint outcomes are published publicly via the Utah CCL portal at ccl.utah.gov. StarlynnCare also overlays CMS inspection data for nursing facilities.",
+  },
+  {
+    q: "What is the difference between a Type I and Type II Assisted Living Facility in Utah?",
+    a: "Type I ALFs provide services to residents who need assistance with activities of daily living but who are ambulatory or able to self-transfer. Type II ALFs serve residents who are non-ambulatory or who require physical assistance with transfers and may need a higher level of personal care — including many residents with moderate-to-advanced dementia.",
+  },
+  {
+    q: "Do you accept payments from facilities or operators?",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+  },
+  {
+    q: "How often is Utah data updated?",
+    a: "After each ingest run from DLBC licensing records and the Utah CCL public API. Source dates appear on each facility profile.",
+  },
+  {
+    q: "Can a facility correct or respond to information on its profile?",
+    a: "Yes. Every profile includes a verified-operator response field, edited by us only for length. We do not remove DLBC findings at operator request.",
+  },
+];
+
 /** Same as `CA_FAQS` — kept for `homeFaqs` re-exports and legacy `HOME_FAQS` imports. */
 export const HOME_FAQS = CA_FAQS;

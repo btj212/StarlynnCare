@@ -3,7 +3,7 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 
 type Props = {
-  label: string;
+  label?: string;
   title: ReactNode;
   stats: StatItem[];
   /** Optional refresh date footnotes ("Data refreshed YYYY-MM-DD ..."). */

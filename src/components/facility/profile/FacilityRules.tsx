@@ -76,7 +76,7 @@ export function FacilityRules({ rulesCards }: Props) {
     <section id="rules" className="border-b border-paper-rule py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
-          label="§ 04 · The Rulebook"
+          label="The Rulebook"
           title={
             <>
               The rules that <em>apply to this facility.</em>

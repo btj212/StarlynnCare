@@ -36,6 +36,7 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   WA: "DSHS · Specialized Dementia Care ALFs",
   MN: "MDH · ALF with Dementia Care license",
   TX: "HHSC · Alzheimer-certified assisted living",
+  UT: "DLBC · Type I & II Assisted Living · R432-270",
 };
 
 async function getStateCounts(): Promise<Record<string, number>> {
@@ -103,7 +104,7 @@ export default async function StatesPage() {
 
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
           <SectionHead
-            label="§ Covered states"
+            label="Covered states"
             title={<>Five states, <em>one editorial standard.</em></>}
           />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

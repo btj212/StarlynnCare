@@ -116,7 +116,6 @@ export function NationalHomeSections({ data }: Props) {
       >
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
           <SectionHead
-            label="§ 01 · The Public Record"
             title={<>National facility data, <em>curated from 5 state regulators.</em></>}
           />
           <StatBlock stats={nationalStats} />
@@ -131,7 +130,6 @@ export function NationalHomeSections({ data }: Props) {
       >
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
           <SectionHead
-            label="§ 02 · States We Cover"
             title={<>Choose your state, <em>or start with a city below.</em></>}
           />
           <StatesWeCoverGrid states={states} />
@@ -154,7 +152,6 @@ export function NationalHomeSections({ data }: Props) {
       >
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
           <SectionHead
-            label="§ 03 · Browse by City"
             title={<>Top cities by facility count, <em>across all states.</em></>}
           />
           <div className="columns-1 sm:columns-2 lg:columns-3 [column-gap:2rem]">
@@ -185,8 +182,7 @@ export function NationalHomeSections({ data }: Props) {
       >
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
           <SectionHead
-            label="§ 04 · The Record"
-            title={<>Five data signals. <em>Compared to peers.</em></>}
+            title={<>Three data signals. <em>Compared to peers.</em></>}
           />
           <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1fr_1.05fr]">
             <div>

@@ -14,7 +14,7 @@ export function HubFaqSection({
     <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
         <SectionHead
-          label="§ Frequently asked"
+          label="Frequently asked"
           title={<>About memory care in <em>{regionName}.</em></>}
         />
         <div className="grid gap-8 md:grid-cols-2 max-w-[88ch]">

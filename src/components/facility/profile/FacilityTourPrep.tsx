@@ -13,7 +13,7 @@ export function FacilityTourPrep({ profile }: { profile: FacilityProfile }) {
     <section id="tour" className="border-b border-paper-rule py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
-          label="§ 05 · Tour Prep"
+          label="Tour Prep"
           title={
             <>
               Questions to ask <em>before you visit.</em>

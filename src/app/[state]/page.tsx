@@ -264,7 +264,7 @@ export default async function StatePage({ params }: PageProps) {
           {counties.filter((r) => countyCount(r) + countySmallCount(r) > 0).length > 0 && (
             <section aria-labelledby="counties-heading">
               <SectionHead
-                label="§ Counties we cover"
+                label="Counties we cover"
                 title={<>Browse by county, <em>or jump to a city below.</em></>}
               />
               <div className="grid gap-4 sm:grid-cols-2">
@@ -301,7 +301,7 @@ export default async function StatePage({ params }: PageProps) {
           {cities.length > 0 && (
             <section className="mt-16" aria-labelledby="cities-heading">
               <SectionHead
-                label="§ Cities"
+                label="Cities"
                 title={<>All cities in {state.name} <em>with live profiles.</em></>}
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -426,7 +426,7 @@ export default async function StatePage({ params }: PageProps) {
         </main>
         <div className="-order-1">
           <GovernanceBar />
-          <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} stateNavHref={`/${state.slug}`} />
+          <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} stateNavHref={`/${state.slug}`} hideStateLink />
           <AreaWatchModal areaName={state.name} areaSlug={state.slug} source="state_modal" delayMs={20000} />
         </div>
       </div>

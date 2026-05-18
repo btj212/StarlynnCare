@@ -6,7 +6,7 @@ import { SyncedHomeSampleCardDesktop } from "@/components/home/SampleFacilityRot
 type Step = { n: string; t: string; p: string };
 
 type Props = {
-  sectionLabel: string;
+  sectionLabel?: string;
   sectionTitle: ReactNode;
   explainerTitle: string;
   explainerBody: ReactNode;

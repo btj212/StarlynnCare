@@ -58,6 +58,7 @@ export const REGULATOR_ABBR: Record<string, string> = {
   OR: "OR DHS",
   WA: "DSHS",
   MN: "MDH",
+  UT: "DLBC",
 };
 
 /**

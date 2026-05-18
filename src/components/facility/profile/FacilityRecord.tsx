@@ -296,7 +296,7 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
     <section id="record" className="border-b border-paper-rule py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
-          label="§ 03 · The Record"
+          label="The Record"
           title={
             <>
               Citation history, <em>plotted month by month.</em>

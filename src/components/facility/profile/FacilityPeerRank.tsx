@@ -107,7 +107,7 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
     <section id="peer" className="bg-ink py-16 text-paper">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
-          label="§ 02 · Peer Comparison"
+          label="Peer Comparison"
           title={<>Compared to {peerTitle}</>}
           deck={
             `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.inspectionWindowMonths}-month window. Higher percentile = better performance on inspection record.` +
