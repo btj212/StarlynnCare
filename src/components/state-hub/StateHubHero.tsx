@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { ZipSearch } from "@/components/site/ZipSearch";
+import { HeroFacilitySearch } from "./HeroFacilitySearch";
 
 type Props = {
   eyebrow?: string;
@@ -11,6 +12,9 @@ type Props = {
   /** e.g. "Live across 58 CA counties" */
   liveLabel: string;
   roadmapNote?: string;
+  stateSlug: string;
+  stateName: string;
+  facilityCount: number;
 };
 
 export function StateHubHero({
@@ -21,6 +25,9 @@ export function StateHubHero({
   illustrationAlt,
   liveLabel,
   roadmapNote = "· Texas Q2 · Florida Q2",
+  stateSlug,
+  stateName,
+  facilityCount,
 }: Props) {
   return (
     <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
@@ -52,7 +59,13 @@ export function StateHubHero({
               <ZipSearch variant="editorial" />
             </div>
 
-            <div className="mt-3.5 flex flex-wrap items-center gap-3 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.08em] text-ink-3">
+            <HeroFacilitySearch
+              stateSlug={stateSlug}
+              stateName={stateName}
+              facilityCount={facilityCount}
+            />
+
+            <div className="mt-4 flex flex-wrap items-center gap-3 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.08em] text-ink-3">
               <span className="flex items-center gap-1.5 text-grade-a">
                 <span className="live-dot" aria-hidden />
                 {liveLabel}

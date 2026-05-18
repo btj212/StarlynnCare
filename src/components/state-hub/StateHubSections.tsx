@@ -47,6 +47,9 @@ export function StateHubSections({ data, config }: Props) {
           counties.length > 0 ? `Live across ${counties.length} ${countyCode} counties` : `Live across ${stateName}`
         }
         roadmapNote=""
+        stateSlug={stateSlug}
+        stateName={stateName}
+        facilityCount={stats.facilities}
       />
 
       <StateHubStats
