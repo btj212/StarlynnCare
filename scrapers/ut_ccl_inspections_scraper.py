@@ -154,10 +154,11 @@ INSPECTION_SQL = """
 DEFICIENCY_SQL = """
     INSERT INTO deficiencies (
         inspection_id,
-        code, description, category,
+        code, description, inspector_narrative, plan_of_correction,
+        category,
         severity, immediate_jeopardy,
         is_repeat, state_severity_raw
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     ON CONFLICT DO NOTHING
 """
 
@@ -171,7 +172,7 @@ def store_detail(
 ) -> tuple[int, int]:
     """Upsert inspections + findings from a facility detail response."""
     inspections = detail.get("inspections") or []
-    source_url = f"https://provider.dlbc.utah.gov/ccl/facilities/{ccl_id}"
+    source_url = f"https://ccl.utah.gov/facility/{ccl_id}"
 
     insp_count = 0
     def_count = 0
@@ -217,6 +218,10 @@ def store_detail(
             for finding in findings:
                 code = str(finding.get("ruleNumber") or f"UT-{finding.get('ruleId', 'UNK')}")
                 desc = finding.get("ruleDescription") or ""
+                # findingText is the full inspector narrative ("During the inspection...")
+                narrative = finding.get("findingText") or None
+                # correctionAction is the licensor's plan-of-correction follow-up
+                poc = finding.get("correctionAction") or None
                 sev_int, is_ij = _map_finding_severity(finding)
                 category = finding.get("findingCategory") or None
                 is_repeat = category in ("REPEAT_CITED",) if category else False
@@ -226,7 +231,7 @@ def store_detail(
                 sp2 = f"sp_d_{code[:30].replace('-', '_').replace('(', '').replace(')', '')}"
                 try:
                     cur.execute(f"SAVEPOINT {sp2}")
-                    cur.execute(DEFICIENCY_SQL, (inspection_id, code, desc, category, sev_int, is_ij, is_repeat, state_severity_raw))
+                    cur.execute(DEFICIENCY_SQL, (inspection_id, code, desc, narrative, poc, category, sev_int, is_ij, is_repeat, state_severity_raw))
                     cur.execute(f"RELEASE SAVEPOINT {sp2}")
                     def_count += 1
                 except Exception as exc:

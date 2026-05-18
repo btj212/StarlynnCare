@@ -395,7 +395,7 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
               rel="noopener noreferrer"
               className="border-b border-rust pb-px font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.06em] text-rust"
             >
-              Open all raw {cfg.agencyShort} PDFs →
+              View {cfg.agencyShort} public records →
             </a>
           </div>
         )}
