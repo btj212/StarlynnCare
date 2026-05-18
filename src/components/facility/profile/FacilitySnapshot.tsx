@@ -118,7 +118,7 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
     <section id="snapshot" className="border-b border-paper-rule py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
-          label="§ 01 · Snapshot"
+          label="Snapshot"
           title={
             headline ? (
               <>{headline.split(",")[0]}, <em>{headline.split(",").slice(1).join(",").trim() || "reviewed on public record."}</em></>

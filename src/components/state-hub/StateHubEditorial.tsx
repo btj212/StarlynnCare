@@ -6,7 +6,7 @@ import { getArticleThumbnail } from "@/lib/content/articleThumbnails";
 import type { EditorialCard } from "@/lib/stateHubConfigs/types";
 
 type Props = {
-  sectionLabel: string;
+  sectionLabel?: string;
   sectionTitle: ReactNode;
   cards: EditorialCard[];
   year: number;

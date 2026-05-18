@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { CareCategory } from "@/lib/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,9 +230,16 @@ export function FacilityListClient({
   /** When all indexed facilities are small-tier, show them by default so the list is not empty. */
   initialShowSmall?: boolean;
 }) {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [chip, setChip] = useState<FilterChip>("all");
   const [showSmall, setShowSmall] = useState(initialShowSmall);
+
+  // Sync query if the URL param changes (e.g. browser back/forward).
+  useEffect(() => {
+    const q = searchParams.get("q") ?? "";
+    setQuery(q);
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();

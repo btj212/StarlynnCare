@@ -307,7 +307,7 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
     <section id="full-record" className="border-b border-paper-rule py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
-          label="§ 06 · Full Inspection Record"
+          label="Full Inspection Record"
           title={
             <>
               Every {cfg.agencyShort} visit, <em>verbatim.</em>
@@ -395,7 +395,7 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
               rel="noopener noreferrer"
               className="border-b border-rust pb-px font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.06em] text-rust"
             >
-              Open all raw {cfg.agencyShort} PDFs →
+              View {cfg.agencyShort} public records →
             </a>
           </div>
         )}

@@ -596,7 +596,7 @@ export default async function RegionPage({ params }: PageProps) {
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
             <SectionHead
-              label="§ How memory care is regulated here"
+              label="How memory care is regulated here"
               title={<>The public record behind <em>every profile.</em></>}
             />
             <div
@@ -611,7 +611,7 @@ export default async function RegionPage({ params }: PageProps) {
           <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
             <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
               <SectionHead
-                label="§ Cost"
+                label="Cost"
                 title={<>What memory care costs <em>in this city.</em></>}
               />
               <p className="text-[16px] leading-[1.7] text-ink-2 max-w-[60ch]">

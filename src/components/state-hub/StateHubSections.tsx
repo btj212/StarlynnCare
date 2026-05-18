@@ -17,8 +17,8 @@ type Props = {
 };
 
 export function StateHubSections({ data, config }: Props) {
-  const { season, year } = getSeasonAndYear();
-  const { stateSlug, stateName, stateCode, edition } = config;
+  const { year } = getSeasonAndYear();
+  const { stateSlug, stateName, stateCode } = config;
   const statItems = buildStateStatItems(data.stats, config);
   const statFootnotes = buildStateStatFootnotes(data.stats, config);
   const { counties, topCities, stats, sampleReviews } = data;
@@ -28,7 +28,6 @@ export function StateHubSections({ data, config }: Props) {
   return (
     <>
       <StateHubHero
-        eyebrow={`${stateName} Edition · ${edition} · ${season} ${year}`}
         title={
           <>
             The <em className="italic text-rust">best</em> memory care
@@ -48,17 +47,18 @@ export function StateHubSections({ data, config }: Props) {
           counties.length > 0 ? `Live across ${counties.length} ${countyCode} counties` : `Live across ${stateName}`
         }
         roadmapNote=""
+        stateSlug={stateSlug}
+        stateName={stateName}
+        facilityCount={stats.facilities}
       />
 
       <StateHubStats
-        label="§ 01 · The Public Record"
         title={<>The {stateName} facility data you need, <em>curated + analyzed for you.</em></>}
         stats={statItems}
         footnotes={statFootnotes}
       />
 
       <StateHubMethodology
-        sectionLabel="§ 02 · The Record"
         sectionTitle={<>Three data signals. <em>Compared to peers.</em></>}
         explainerTitle="Data you can trace to a citation number."
         explainerBody={
@@ -75,7 +75,6 @@ export function StateHubSections({ data, config }: Props) {
       />
 
       <StateHubBrowse
-        sectionLabel={`§ 03 · Browse ${stateName}`}
         sectionTitle={<>Start with your county, <em>or jump to your city.</em></>}
         stateSlug={stateSlug}
         browseSectionTitle={`By county · ${counties.length} live`}
@@ -88,7 +87,6 @@ export function StateHubSections({ data, config }: Props) {
       />
 
       <StateHubEditorial
-        sectionLabel="§ 04 · The Reports"
         sectionTitle={<>An editorial desk for memory care, <em>backed by primary-source data.</em></>}
         cards={config.editorialCards}
         year={year}

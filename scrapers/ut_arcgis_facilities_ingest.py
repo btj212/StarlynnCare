@@ -23,6 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import re
+
 import psycopg
 import requests
 from dotenv import load_dotenv
@@ -86,6 +88,13 @@ def fetch_all_facilities() -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
+def slugify(text: str) -> str:
+    s = text.lower().strip()
+    s = re.sub(r"[^a-z0-9]+", "-", s)
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s or "facility"
+
+
 def epoch_ms_to_date(epoch_ms: int | None) -> datetime | None:
     """Convert ArcGIS epoch milliseconds to a Python date."""
     if epoch_ms is None:
@@ -143,8 +152,12 @@ def transform_feature(feature: dict[str, Any]) -> dict[str, Any]:
     elif license_type and "Type I" in license_type:
         subtype = "Type I"
 
-    # Derive state_code slug for source_url
+    # Slugs — required NOT NULL columns
     id_number = external_id or "unknown"
+    city_slug = slugify(city) if city else "unknown-city"
+    name_slug = slugify(facility_name) if facility_name else "facility"
+    # slug must be unique per (state_code, city_slug); append external_id to guarantee uniqueness
+    slug = f"{name_slug}-{slugify(id_number)}"
 
     return {
         "state_code": "UT",
@@ -157,11 +170,13 @@ def transform_feature(feature: dict[str, Any]) -> dict[str, Any]:
         "license_status": license_status,
         "license_expiration": expiration_date,
         "initial_license_date": epoch_ms_to_date(attrs.get("INITIAL_REGULATION_DATE")),
-        "licensed_beds": capacity,
+        "beds": capacity,
         "secure_beds": secure_beds,
         "secure_bed_ratio": secure_bed_ratio,
         "street": address_line1 or None,
         "city": city,
+        "city_slug": city_slug,
+        "slug": slug,
         "county": attrs.get("COUNTY"),
         "zip": str(attrs.get("ZIP")) if attrs.get("ZIP") else None,
         "phone": attrs.get("TELEPHONE"),
@@ -184,8 +199,8 @@ UPSERT_SQL = """
         state_code, external_id, state_internal_id, cms_ccn,
         name, license_type, license_subtype, license_status,
         license_expiration, initial_license_date,
-        licensed_beds, secure_beds, secure_bed_ratio,
-        street, city, county, zip, phone,
+        beds, secure_beds, secure_bed_ratio,
+        street, city, city_slug, slug, county, zip, phone,
         administrator_name,
         latitude, longitude,
         serves_memory_care, mc_review_status, publishable,
@@ -194,14 +209,14 @@ UPSERT_SQL = """
         %(state_code)s, %(external_id)s, %(state_internal_id)s, %(cms_ccn)s,
         %(name)s, %(license_type)s, %(license_subtype)s, %(license_status)s,
         %(license_expiration)s, %(initial_license_date)s,
-        %(licensed_beds)s, %(secure_beds)s, %(secure_bed_ratio)s,
-        %(street)s, %(city)s, %(county)s, %(zip)s, %(phone)s,
+        %(beds)s, %(secure_beds)s, %(secure_bed_ratio)s,
+        %(street)s, %(city)s, %(city_slug)s, %(slug)s, %(county)s, %(zip)s, %(phone)s,
         %(administrator_name)s,
         %(latitude)s, %(longitude)s,
         %(serves_memory_care)s, %(mc_review_status)s, %(publishable)s,
         %(source_url)s
     )
-    ON CONFLICT (state_code, external_id) DO UPDATE SET
+    ON CONFLICT (state_code, external_id) WHERE state_code = 'UT' AND external_id IS NOT NULL DO UPDATE SET
         state_internal_id  = EXCLUDED.state_internal_id,
         cms_ccn            = EXCLUDED.cms_ccn,
         name               = EXCLUDED.name,
@@ -210,11 +225,12 @@ UPSERT_SQL = """
         license_status     = EXCLUDED.license_status,
         license_expiration = EXCLUDED.license_expiration,
         initial_license_date = EXCLUDED.initial_license_date,
-        licensed_beds      = EXCLUDED.licensed_beds,
+        beds               = EXCLUDED.beds,
         secure_beds        = EXCLUDED.secure_beds,
         secure_bed_ratio   = EXCLUDED.secure_bed_ratio,
         street             = EXCLUDED.street,
         city               = EXCLUDED.city,
+        city_slug          = EXCLUDED.city_slug,
         county             = EXCLUDED.county,
         zip                = EXCLUDED.zip,
         phone              = EXCLUDED.phone,
@@ -253,7 +269,11 @@ def upsert_batch(
     records: list[dict[str, Any]],
     dry_run: bool,
 ) -> tuple[int, int]:
-    """Upsert records; return (success_count, error_count)."""
+    """Upsert records; return (success_count, error_count).
+
+    If a record fails due to a duplicate cms_ccn constraint, retry with cms_ccn=None.
+    Duplicate CCNs in UGRC source data are a known data-quality issue.
+    """
     success = 0
     errors = 0
     with conn.cursor() as cur:
@@ -266,8 +286,26 @@ def upsert_batch(
                 success += 1
             except Exception as exc:
                 cur.execute(f"ROLLBACK TO SAVEPOINT {sp}")
+                # Retry once with cms_ccn nulled if it was a CCN uniqueness conflict
+                if "cms_ccn" in str(exc) and rec.get("cms_ccn"):
+                    retry = {**rec, "cms_ccn": None}
+                    sp2 = sp + "_r"
+                    try:
+                        cur.execute(f"SAVEPOINT {sp2}")
+                        cur.execute(UPSERT_SQL, retry)
+                        cur.execute(f"RELEASE SAVEPOINT {sp2}")
+                        success += 1
+                        print(
+                            f"  WARN {rec.get('external_id')}: duplicate cms_ccn={rec['cms_ccn']} — stored with cms_ccn=NULL",
+                            flush=True,
+                        )
+                        continue
+                    except Exception as exc2:
+                        cur.execute(f"ROLLBACK TO SAVEPOINT {sp2}")
+                        print(f"  ERROR {rec.get('external_id')} (retry): {exc2}", flush=True)
+                else:
+                    print(f"  ERROR {rec.get('external_id')}: {exc}", flush=True)
                 errors += 1
-                print(f"  ERROR {rec.get('external_id')}: {exc}", flush=True)
     return success, errors
 
 
@@ -327,7 +365,8 @@ def main() -> None:
         conn.commit()
 
     print(f"\nDone. success={success} errors={errors}", flush=True)
-    if errors:
+    # Exit non-zero only if a significant fraction failed (>5% threshold)
+    if errors and total and (errors / total) > 0.05:
         sys.exit(1)
 
 

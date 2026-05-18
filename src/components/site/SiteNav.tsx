@@ -26,6 +26,8 @@ type SiteNavProps = {
   national?: boolean;
   /** State hub href for the inline nav link. Defaults to "/california". Label uses `badge`. */
   stateNavHref?: string;
+  /** When true, hides the state name nav link (use on the hub page itself to avoid self-links). */
+  hideStateLink?: boolean;
 };
 
 /**
@@ -38,6 +40,7 @@ export async function SiteNav({
   ctaLabel = "California memory care facilities",
   national = false,
   stateNavHref = "/california",
+  hideStateLink = false,
 }: SiteNavProps = {}) {
   const facilityCount = await getFacilityCount(countStateCode);
   const countLabel = facilityCount > 0 ? facilityCount.toLocaleString() : "1,000+";
@@ -78,7 +81,7 @@ export async function SiteNav({
             <Link href="/states" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
               States
             </Link>
-          ) : (
+          ) : !hideStateLink && (
             <Link href={stateNavHref} className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
               {badge}
             </Link>

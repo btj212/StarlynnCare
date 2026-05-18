@@ -41,7 +41,7 @@ export const utProfileConfig: StateProfileConfig = {
   code: "UT",
   agencyShort: "DLBC",
   agencyLong: "Utah Dept. of Health & Human Services · Division of Licensing and Background Checks",
-  citationPrefix: "R432-",
+  citationPrefix: "",
   inspectionWindowMonths: 36,
   timelineWindowMonths: 24,
   formatSeverityTag: utFormatSeverityTag,

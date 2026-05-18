@@ -120,7 +120,7 @@ export default function ResearchHubPage() {
           {flagship.length > 0 && (
             <section id="flagship">
               <SectionHead
-                label="§ 1 · Featured report"
+                label="Featured report"
                 title={
                   <>
                     Long-form investigations <em>built from the dataset.</em>
@@ -133,7 +133,7 @@ export default function ResearchHubPage() {
 
           <section id="analyses">
             <SectionHead
-              label="§ 2 · Analyses"
+              label="Analyses"
               title={
                 <>
                   Standalone findings <em>from the inspection record.</em>

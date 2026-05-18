@@ -15,7 +15,6 @@ export function StateHubFaq({ faqs }: Props) {
     >
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
         <SectionHead
-          label="§ 06 · Common Questions"
           title={<>What families and clinicians <em>ask us first.</em></>}
         />
         <HomeFaq faqs={faqs} />
