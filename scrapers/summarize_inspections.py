@@ -164,9 +164,15 @@ Critical noncompliance level").
 The input may contain multiple findings from the same inspection visit, each labeled with the
 relevant rule number (e.g. R432-270-18). Summarize the inspection visit as a whole in 2-3 sentences.
 
+IMPORTANT — inspection type: The "Inspection type" field provided is the authoritative visit type.
+Use it — do not override it based on language in the narrative text. Follow-up inspections check
+whether violations from a prior annual inspection were corrected; the narrative may reference that
+original annual inspection, but this visit is still a follow-up, not an annual inspection.
+
 Rules:
 1. Write exactly 2-3 sentences covering the visit as a whole. No bullet points. No headers. No markdown.
-2. State what kind of visit it was (routine inspection, complaint investigation, follow-up) when clear.
+2. Use the provided inspection type to describe the visit (e.g. "a follow-up inspection", "a complaint
+   investigation", "a monitoring visit", "a routine annual inspection").
 3. State what was found — describe the nature of the violations, not just their count.
 4. If a death, injury, or harm is described, state what happened factually. Do not soften it.
 5. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", etc.).
