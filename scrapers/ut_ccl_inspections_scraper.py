@@ -173,9 +173,18 @@ INSPECTION_SQL = """
     INSERT INTO inspections (
         facility_id, inspection_date, inspection_type,
         total_deficiency_count, source_url, source_agency
-    ) VALUES (%s, %s, %s, %s, %s, %s)
+    ) VALUES (%s, %s, %s, %s, '', 'UT-CCL')
     ON CONFLICT DO NOTHING
     RETURNING id
+"""
+
+# Deficiency: guard against re-insert by checking existence first.
+# No unique index on (inspection_id, code) globally since other states
+# legitimately cite the same code twice in one inspection.
+DEFICIENCY_EXISTS_SQL = """
+    SELECT 1 FROM deficiencies
+    WHERE inspection_id = %s AND code = %s
+    LIMIT 1
 """
 
 DEFICIENCY_SQL = """
@@ -186,7 +195,6 @@ DEFICIENCY_SQL = """
         severity, immediate_jeopardy,
         is_repeat, state_severity_raw
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    ON CONFLICT DO NOTHING
 """
 
 
@@ -221,7 +229,7 @@ def store_detail(
             sp = f"sp_{ccl_id}_{insp_date.isoformat().replace('-', '')}"
             try:
                 cur.execute(f"SAVEPOINT {sp}")
-                cur.execute(INSPECTION_SQL, (facility_id, insp_date, insp_type, def_count_raw, source_url, "UT-CCL"))
+                cur.execute(INSPECTION_SQL, (facility_id, insp_date, insp_type, def_count_raw))
                 row = cur.fetchone()
                 inspection_id = row[0] if row else None
                 cur.execute(f"RELEASE SAVEPOINT {sp}")
@@ -233,7 +241,7 @@ def store_detail(
 
             if inspection_id is None:
                 cur.execute(
-                    "SELECT id FROM inspections WHERE facility_id=%s AND inspection_date=%s AND inspection_type=%s",
+                    "SELECT id FROM inspections WHERE facility_id=%s AND inspection_date=%s AND inspection_type=%s AND source_agency='UT-CCL'",
                     (facility_id, insp_date, insp_type),
                 )
                 row2 = cur.fetchone()
@@ -254,6 +262,12 @@ def store_detail(
                 is_repeat = category in ("REPEAT_CITED",) if category else False
                 # state_severity_raw stores the CCL noncomplianceLevel for traceability
                 state_severity_raw = finding.get("noncomplianceLevel") or None
+
+                # Skip if this (inspection_id, code) already exists — prevents duplicates
+                # on re-runs since the deficiencies table has no unique constraint on these.
+                cur.execute(DEFICIENCY_EXISTS_SQL, (inspection_id, code))
+                if cur.fetchone():
+                    continue
 
                 sp2 = f"sp_d_{code[:30].replace('-', '_').replace('(', '').replace(')', '')}"
                 try:
