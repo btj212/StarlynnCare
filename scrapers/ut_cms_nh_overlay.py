@@ -20,6 +20,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import os
 import sys
 from datetime import date
@@ -31,13 +33,10 @@ from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# CMS Socrata API — public, no key needed (rate-limited to ~1000 rows/req)
-CMS_BASE = "https://data.cms.gov/resource"
+# CMS Provider Data Catalog — metastore API for discovering current CSV URLs
+CMS_METASTORE = "https://data.cms.gov/provider-data/api/1/metastore/schemas/dataset/items"
 DEFICIENCY_DATASET = "r5ix-sfxw"  # Health Deficiencies
 PROVIDER_DATASET = "4pq5-n9py"    # Provider Information
-
-STATE_FILTER = "STATE=UT"
-PAGE_SIZE = 5000
 
 
 def load_env() -> None:
@@ -48,40 +47,62 @@ def load_env() -> None:
 
 
 # ---------------------------------------------------------------------------
-# CMS fetch helpers
+# CMS fetch helpers — CSV download approach (faster than DKAN pagination)
 # ---------------------------------------------------------------------------
 
 
-def fetch_cms_pages(dataset: str, where_clause: str) -> list[dict]:
-    """Paginate through CMS Socrata API and return all rows."""
+def _get_csv_url(dataset_id: str) -> str:
+    """Discover the current CSV download URL from the CMS metastore."""
+    r = requests.get(f"{CMS_METASTORE}/{dataset_id}", timeout=15)
+    r.raise_for_status()
+    dist = r.json().get("distribution", [])
+    for item in dist:
+        if item.get("mediaType") == "text/csv":
+            return item["downloadURL"]
+    raise RuntimeError(f"No CSV distribution found for dataset {dataset_id}")
+
+
+def _normalize_key(k: str) -> str:
+    """Convert 'CMS Certification Number (CCN)' → 'cms_certification_number_ccn'."""
+    import re
+    k = k.lower().strip()
+    k = re.sub(r"[^a-z0-9]+", "_", k)
+    k = k.strip("_")
+    return k
+
+
+def fetch_cms_csv(dataset_id: str, state_col: str, state_value: str = "UT") -> list[dict]:
+    """Download full CMS CSV and filter to a single state in memory.
+
+    Column headers are normalized to snake_case so downstream code can use
+    keys like 'cms_certification_number_ccn' and 'scope_severity_code'.
+    """
+    url = _get_csv_url(dataset_id)
+    print(f"  Downloading {url.split('/')[-1]} …", flush=True)
+    r = requests.get(url, timeout=180, stream=True)
+    r.raise_for_status()
+    content = r.content.decode("utf-8-sig")  # strip BOM if present
+    reader = csv.DictReader(io.StringIO(content))
+    # Normalize headers once
+    normalized_state_col = _normalize_key(state_col)
     rows = []
-    offset = 0
-    while True:
-        url = (
-            f"{CMS_BASE}/{dataset}.json"
-            f"?$where={where_clause}&$limit={PAGE_SIZE}&$offset={offset}"
-        )
-        r = requests.get(url, timeout=30)
-        r.raise_for_status()
-        page = r.json()
-        if not page:
-            break
-        rows.extend(page)
-        print(f"  … {len(rows)} rows fetched", flush=True)
-        if len(page) < PAGE_SIZE:
-            break
-        offset += PAGE_SIZE
+    for raw_row in reader:
+        norm_row = {_normalize_key(k): v for k, v in raw_row.items()}
+        if norm_row.get(normalized_state_col, "").strip() == state_value:
+            rows.append(norm_row)
+    print(f"  … {len(rows)} {state_value} rows (of {reader.line_num} total)", flush=True)
     return rows
 
 
 def fetch_deficiencies() -> list[dict]:
     print("Fetching CMS Health Deficiencies for UT …", flush=True)
-    return fetch_cms_pages(DEFICIENCY_DATASET, f"statecode='UT'")
+    # state_col matches header "State" → normalized key "state"
+    return fetch_cms_csv(DEFICIENCY_DATASET, "state", "UT")
 
 
 def fetch_provider_info() -> list[dict]:
     print("Fetching CMS Provider Information for UT …", flush=True)
-    return fetch_cms_pages(PROVIDER_DATASET, f"state='UT'")
+    return fetch_cms_csv(PROVIDER_DATASET, "state", "UT")
 
 
 # ---------------------------------------------------------------------------
@@ -104,57 +125,46 @@ def update_provider_info(
     facility_map: dict[str, str],
     dry_run: bool,
 ) -> None:
-    """Update facilities with CMS overall rating and bed counts."""
-    updated = 0
+    """Update facilities with CMS overall rating — single batched UPDATE."""
+    batch: list[tuple] = []
     for p in providers:
-        ccn = p.get("provnum") or p.get("cms_certification_number_ccn_")
+        ccn = p.get("provnum") or p.get("cms_certification_number_ccn")
         if not ccn or ccn not in facility_map:
             continue
         fid = facility_map[ccn]
-        overall_rating = p.get("overall_rating")
+        raw = p.get("overall_rating")
         try:
-            overall_rating = int(overall_rating) if overall_rating else None
+            overall_rating = int(raw) if raw else None
         except (ValueError, TypeError):
             overall_rating = None
-        if not dry_run:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE facilities
-                    SET cms_overall_rating = %s
-                    WHERE id = %s
-                    """,
-                    (overall_rating, fid),
-                )
-        updated += 1
-    print(f"  CMS provider info: {updated} facilities updated", flush=True)
+        batch.append((overall_rating, fid))
+
+    if batch and not dry_run:
+        with conn.cursor() as cur:
+            cur.executemany(
+                "UPDATE facilities SET cms_overall_rating = %s WHERE id = %s",
+                batch,
+            )
+    print(f"  CMS provider info: {len(batch)} facilities updated", flush=True)
 
 
 INSPECTION_UPSERT_SQL = """
     INSERT INTO inspections (
         facility_id, inspection_date, inspection_type,
-        deficiency_count, complaint_id, source_url
-    ) VALUES (%s, %s, %s, %s, %s, %s)
-    ON CONFLICT (facility_id, inspection_date, inspection_type)
-    DO UPDATE SET
-        deficiency_count = EXCLUDED.deficiency_count,
-        source_url       = EXCLUDED.source_url
+        total_deficiency_count, complaint_id, source_url, source_agency
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+    ON CONFLICT DO NOTHING
     RETURNING id
 """
 
 DEFICIENCY_UPSERT_SQL = """
     INSERT INTO deficiencies (
-        inspection_id, facility_id,
-        code, description,
-        severity_int, is_ij,
-        scope, citation_count
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    ON CONFLICT (inspection_id, code)
-    DO UPDATE SET
-        description  = EXCLUDED.description,
-        severity_int = EXCLUDED.severity_int,
-        is_ij        = EXCLUDED.is_ij,
-        scope        = EXCLUDED.scope
+        inspection_id,
+        ftag, code, category, description,
+        scope_severity_code, immediate_jeopardy,
+        scope, severity
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    ON CONFLICT DO NOTHING
 """
 
 # CMS scope-severity matrix → our severity_int
@@ -189,7 +199,7 @@ def load_deficiencies(
     from collections import defaultdict
     groups: dict[tuple[str, str, str], list[dict]] = defaultdict(list)
     for row in deficiencies:
-        ccn = row.get("provnum") or row.get("cms_certification_number_ccn_") or ""
+        ccn = row.get("provnum") or row.get("cms_certification_number_ccn") or ""
         survey_date = row.get("survey_date") or row.get("surv_date") or ""
         survey_type = row.get("survey_type") or "ANNUAL"
         groups[(ccn, survey_date, survey_type)].append(row)
@@ -219,19 +229,15 @@ def load_deficiencies(
                 deficiency_count += len(rows)
                 continue
 
-            sp = f"sp_insp_{ccn}_{insp_date.isoformat().replace('-', '')}"
             try:
-                cur.execute(f"SAVEPOINT {sp}")
                 cur.execute(
                     INSPECTION_UPSERT_SQL,
-                    (fid, insp_date, insp_type, len(rows), None, source_url),
+                    (fid, insp_date, insp_type, len(rows), None, source_url, "CMS"),
                 )
                 insp_id_row = cur.fetchone()
                 inspection_id = insp_id_row[0] if insp_id_row else None
-                cur.execute(f"RELEASE SAVEPOINT {sp}")
                 inspection_count += 1
             except Exception as exc:
-                cur.execute(f"ROLLBACK TO SAVEPOINT {sp}")
                 print(f"  INSPECTION ERROR {ccn} {insp_date}: {exc}", flush=True)
                 continue
 
@@ -247,23 +253,32 @@ def load_deficiencies(
             if inspection_id is None:
                 continue
 
+            _SCOPE_TEXT = {
+                "A": "isolated", "B": "isolated", "C": "isolated",
+                "D": "pattern",  "E": "pattern",  "F": "pattern",
+                "G": "widespread","H": "widespread","I": "widespread",
+                "J": "widespread","K": "widespread","L": "widespread",
+            }
+            batch: list[tuple] = []
             for def_row in rows:
-                tag = def_row.get("tag_number") or def_row.get("deficiency_tag_number") or "F000"
+                tag_num = def_row.get("deficiency_tag_number") or def_row.get("tag_number") or "000"
+                prefix = (def_row.get("deficiency_prefix") or "F").strip()
+                ftag = f"{prefix}{int(tag_num):04d}" if str(tag_num).isdigit() else str(tag_num)
+                category = def_row.get("deficiency_category") or ""
                 description = def_row.get("deficiency_description") or def_row.get("description") or ""
                 sev_int, is_ij = _cms_scope_severity(def_row)
-                scope = def_row.get("scope_severity_code") or None
-                sp2 = f"sp_def_{ccn}_{tag}"
+                scope_sev = (def_row.get("scope_severity_code") or "").strip().upper()
+                scope_letter = scope_sev[-1] if scope_sev else None
+                scope_text = _SCOPE_TEXT.get(scope_letter) if scope_letter else None
+                batch.append((inspection_id, ftag, ftag, category, description,
+                               scope_sev or None, is_ij, scope_text, sev_int))
+
+            if batch:
                 try:
-                    cur.execute(f"SAVEPOINT {sp2}")
-                    cur.execute(
-                        DEFICIENCY_UPSERT_SQL,
-                        (inspection_id, fid, tag, description, sev_int, is_ij, scope, 1),
-                    )
-                    cur.execute(f"RELEASE SAVEPOINT {sp2}")
-                    deficiency_count += 1
+                    cur.executemany(DEFICIENCY_UPSERT_SQL, batch)
+                    deficiency_count += len(batch)
                 except Exception as exc:
-                    cur.execute(f"ROLLBACK TO SAVEPOINT {sp2}")
-                    print(f"  DEFICIENCY ERROR {ccn}/{tag}: {exc}", flush=True)
+                    print(f"  DEFICIENCY BATCH ERROR {ccn}: {exc}", flush=True)
 
     print(
         f"  CMS deficiencies: {inspection_count} inspections, {deficiency_count} deficiency records "
@@ -295,13 +310,13 @@ def main() -> None:
 
     if args.dry_run:
         # Show stats without connecting to DB
-        ccns = {r.get("provnum") or r.get("cms_certification_number_ccn_") for r in deficiencies}
+        ccns = {r.get("provnum") or r.get("cms_certification_number_ccn") for r in deficiencies}
         print(f"\nUnique CCNs in deficiency data: {len(ccns)}")
         print("Dry run — no DB writes.")
         return
 
     dsn = os.environ["DATABASE_URL"]
-    with psycopg.connect(dsn) as conn:
+    with psycopg.connect(dsn, options="-c statement_timeout=120000") as conn:
         facility_map = load_facility_map(conn)
         print(f"\nUT facilities with CMS CCN in DB: {len(facility_map)}", flush=True)
 

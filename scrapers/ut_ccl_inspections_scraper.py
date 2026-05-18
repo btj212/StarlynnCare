@@ -145,40 +145,21 @@ def load_target_facilities(conn: psycopg.Connection) -> list[dict]:
 INSPECTION_SQL = """
     INSERT INTO inspections (
         facility_id, inspection_date, inspection_type,
-        deficiency_count, source_url
-    ) VALUES (%s, %s, %s, %s, %s)
-    ON CONFLICT (facility_id, inspection_date, inspection_type)
-    DO UPDATE SET
-        deficiency_count = EXCLUDED.deficiency_count,
-        source_url       = EXCLUDED.source_url
+        total_deficiency_count, source_url, source_agency
+    ) VALUES (%s, %s, %s, %s, %s, %s)
+    ON CONFLICT DO NOTHING
     RETURNING id
 """
 
 DEFICIENCY_SQL = """
     INSERT INTO deficiencies (
-        inspection_id, facility_id,
-        code, description, severity_int, is_ij,
-        is_repeat, finding_category
+        inspection_id,
+        code, description, category,
+        severity, immediate_jeopardy,
+        is_repeat, state_severity_raw
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    ON CONFLICT (inspection_id, code) DO UPDATE SET
-        description    = EXCLUDED.description,
-        severity_int   = EXCLUDED.severity_int,
-        is_ij          = EXCLUDED.is_ij,
-        is_repeat      = EXCLUDED.is_repeat,
-        finding_category = EXCLUDED.finding_category
+    ON CONFLICT DO NOTHING
 """
-
-
-def _has_finding_category_column(conn: psycopg.Connection) -> bool:
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT COUNT(*) FROM information_schema.columns
-            WHERE table_name='deficiencies' AND column_name='finding_category'
-            """
-        )
-        row = cur.fetchone()
-        return row and row[0] > 0
 
 
 def store_detail(
@@ -186,7 +167,6 @@ def store_detail(
     facility_id: str,
     ccl_id: int,
     detail: dict,
-    has_finding_category: bool,
     dry_run: bool,
 ) -> tuple[int, int]:
     """Upsert inspections + findings from a facility detail response."""
@@ -213,7 +193,7 @@ def store_detail(
             sp = f"sp_{ccl_id}_{insp_date.isoformat().replace('-', '')}"
             try:
                 cur.execute(f"SAVEPOINT {sp}")
-                cur.execute(INSPECTION_SQL, (facility_id, insp_date, insp_type, def_count_raw, source_url))
+                cur.execute(INSPECTION_SQL, (facility_id, insp_date, insp_type, def_count_raw, source_url, "UT-CCL"))
                 row = cur.fetchone()
                 inspection_id = row[0] if row else None
                 cur.execute(f"RELEASE SAVEPOINT {sp}")
@@ -240,25 +220,13 @@ def store_detail(
                 sev_int, is_ij = _map_finding_severity(finding)
                 category = finding.get("findingCategory") or None
                 is_repeat = category in ("REPEAT_CITED",) if category else False
+                # state_severity_raw stores the CCL noncomplianceLevel for traceability
+                state_severity_raw = finding.get("noncomplianceLevel") or None
 
                 sp2 = f"sp_d_{code[:30].replace('-', '_').replace('(', '').replace(')', '')}"
                 try:
                     cur.execute(f"SAVEPOINT {sp2}")
-                    if has_finding_category_column:
-                        cur.execute(DEFICIENCY_SQL, (inspection_id, facility_id, code, desc, sev_int, is_ij, is_repeat, category))
-                    else:
-                        cur.execute(
-                            """
-                            INSERT INTO deficiencies (inspection_id, facility_id, code, description, severity_int, is_ij, is_repeat)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (inspection_id, code) DO UPDATE SET
-                                description = EXCLUDED.description,
-                                severity_int = EXCLUDED.severity_int,
-                                is_ij = EXCLUDED.is_ij,
-                                is_repeat = EXCLUDED.is_repeat
-                            """,
-                            (inspection_id, facility_id, code, desc, sev_int, is_ij, is_repeat),
-                        )
+                    cur.execute(DEFICIENCY_SQL, (inspection_id, code, desc, category, sev_int, is_ij, is_repeat, state_severity_raw))
                     cur.execute(f"RELEASE SAVEPOINT {sp2}")
                     def_count += 1
                 except Exception as exc:
@@ -288,10 +256,8 @@ def main() -> None:
         dsn = os.environ["DATABASE_URL"]
         conn = psycopg.connect(dsn)
         facilities = load_target_facilities(conn)
-        has_finding_category = _has_finding_category_column(conn)
     else:
         conn = None
-        has_finding_category = False
         # Smoke test: use a known memory care facility
         facilities = [{"id": "stub", "external_id": "F23-106982", "name": "Abbington Manor Memory Care", "city": "Sandy"}]
 
@@ -335,7 +301,7 @@ def main() -> None:
                         print(f"      {f.get('ruleNumber')} [{f.get('noncomplianceLevel')}] {f.get('ruleDescription', '')[:60]}", flush=True)
 
             if conn:
-                insp_c, def_c = store_detail(conn, fac["id"], ccl_id, detail, has_finding_category, dry_run=False)
+                insp_c, def_c = store_detail(conn, fac["id"], ccl_id, detail, dry_run=False)
                 conn.commit()
             else:
                 insp_c = len(inspections)
