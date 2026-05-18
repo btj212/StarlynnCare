@@ -305,7 +305,7 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
           deck={
             totals.deficiencies === 0
               ? "No citations in the last 36 months."
-              : `${totals.deficiencies} deficiencie${totals.deficiencies === 1 ? "" : "s"} on record. Each bar is a month with a citation.`
+              : `${totals.deficiencies} ${totals.deficiencies === 1 ? "deficiency" : "deficiencies"} on record. Each bar is a month with a citation.`
           }
         />
 
