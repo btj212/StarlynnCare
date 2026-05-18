@@ -68,11 +68,24 @@ def _parse_date(raw: str | None) -> date | None:
         return None
 
 
-def _insp_type(types_str: str | None) -> str:
+def _insp_type(types_str: str | None) -> tuple[str, bool]:
     raw = (types_str or "").lower()
-    if "complaint" in raw:
-        return "complaint"
-    return "annual"
+    is_complaint = "complaint" in raw or "investigation" in raw
+    if "annual" in raw or "federal survey" in raw or "licensure" in raw or "recertification" in raw:
+        itype = "annual"
+    elif "follow-up" in raw or "follow up" in raw:
+        itype = "follow-up"
+    elif "monitoring" in raw:
+        itype = "monitoring"
+    elif "focus" in raw:
+        itype = "focused"
+    elif "initial" in raw:
+        itype = "initial"
+    elif is_complaint:
+        itype = "complaint"
+    else:
+        itype = "inspection"
+    return itype, is_complaint
 
 
 def fetch_facility_detail(ccl_id: int) -> dict | None:

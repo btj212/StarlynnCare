@@ -113,11 +113,38 @@ def _parse_date(raw: str | None) -> date | None:
         return None
 
 
-def _insp_type(types_str: str | None) -> str:
+def _insp_type(types_str: str | None) -> tuple[str, bool]:
+    """Return (inspection_type, is_complaint) from the CCL inspectionTypes string.
+
+    CCL types seen in production:
+      "Unannounced, Annual Inspection"
+      "Follow-Up Inspection"
+      "Complaint, Investigation Inspection"
+      "Conditional, Monitoring Inspection"
+      "Conditional, Monitoring Inspection, Follow-Up Inspection"
+      "CMS Federal Survey Inspection"
+      "Focus Inspection"
+      "Initial Licensing Inspection"
+    """
     raw = (types_str or "").lower()
-    if "complaint" in raw:
-        return "complaint"
-    return "annual"
+    is_complaint = "complaint" in raw or "investigation" in raw
+
+    if "annual" in raw or "federal survey" in raw or "licensure" in raw or "recertification" in raw:
+        itype = "annual"
+    elif "follow-up" in raw or "follow up" in raw:
+        itype = "follow-up"
+    elif "monitoring" in raw:
+        itype = "monitoring"
+    elif "focus" in raw:
+        itype = "focused"
+    elif "initial" in raw:
+        itype = "initial"
+    elif is_complaint:
+        itype = "complaint"
+    else:
+        itype = "inspection"
+
+    return itype, is_complaint
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +209,7 @@ def store_detail(
             insp_date = _parse_date(insp.get("inspectionDate"))
             if not insp_date:
                 continue
-            insp_type = _insp_type(insp.get("inspectionTypes"))
+            insp_type, is_complaint = _insp_type(insp.get("inspectionTypes"))
             findings = insp.get("findings") or []
             def_count_raw = len(findings)
 
