@@ -7,7 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify-schema": "tsx scripts/verify-schema.ts"
+    "verify-schema": "tsx scripts/verify-schema.ts",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:scrapers": "cd scrapers && python -m pytest tests/ -v",
+    "test:scrapers:live": "cd scrapers && python -m pytest tests/ -v -m live_api",
+    "test:scrapers:db": "cd scrapers && python -m pytest tests/ -v -m db",
+    "test:scrapers:fast": "cd scrapers && python -m pytest tests/ -v -m 'not live_api and not db'",
+    "test": "npm run test:unit && npm run test:scrapers:fast"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.2.3",
@@ -19,16 +29,19 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.6",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.6"
   }
 }
