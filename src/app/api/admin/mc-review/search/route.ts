@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
 
     const supabase = getServiceClient();
     const searchTerm = query.trim();
+    // Audit L4 — `%` and `_` are LIKE wildcards. Escape so a search for "%"
+    // does not match every row; only affects the substring branch below.
+    const ilikeTerm = searchTerm.replace(/[\\%_]/g, "\\$&");
 
     let facility: unknown = null;
 
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
         .from("facilities")
         .select(SELECT_COLUMNS)
         .eq("state_code", "CA")
-        .ilike("name", `%${searchTerm}%`)
+        .ilike("name", `%${ilikeTerm}%`)
         .limit(1);
       if (data && data.length > 0) facility = data[0];
     }
