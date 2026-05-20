@@ -46,23 +46,10 @@ async function loadPrrRequests(): Promise<PrrRequest[]> {
 
 async function loadCoverageGaps(): Promise<CoverageGap[]> {
   const supabase = getServiceClient();
-  // Facilities that have NO inspection older than 3 years (history gap)
-  const { data, error } = await supabase.rpc("exec", {
-    sql: `
-      SELECT f.license_number, f.name, f.city,
-             MIN(i.inspection_date)::text AS oldest_inspection
-      FROM facilities f
-      LEFT JOIN inspections i ON i.facility_id = f.id
-      WHERE f.state_code = 'WA'
-        AND f.publishable = true
-        AND f.license_number IS NOT NULL
-      GROUP BY f.license_number, f.name, f.city
-      HAVING MAX(i.inspection_date) IS NULL
-          OR MAX(i.inspection_date) < NOW() - INTERVAL '3 years'
-      ORDER BY f.name
-      LIMIT 100
-    `,
-  });
+  // Facilities that have NO inspection in the last 3 years (history gap).
+  // Implemented as a SECURITY INVOKER SQL function — see migration 0040,
+  // which replaced the raw `exec(sql)` RPC that previously powered this view.
+  const { data, error } = await supabase.rpc("wa_prr_coverage_gaps");
 
   if (error) return [];
   return (data ?? []) as CoverageGap[];
