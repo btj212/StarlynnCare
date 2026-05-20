@@ -4,10 +4,17 @@ export async function sendWatchConfirmation({
   to,
   facilityName,
   confirmationToken,
+  unsubscribeToken,
 }: {
   to: string;
   facilityName: string;
   confirmationToken: string;
+  /**
+   * Distinct from `confirmationToken` — the unsubscribe page filters by
+   * `unsubscribe_token`. Audit M5 fixed the bug where the email re-used
+   * confirmationToken in the unsubscribe link, making the link a no-op.
+   */
+  unsubscribeToken: string;
 }): Promise<void> {
   const apiKey = process.env.LOOPS_API_KEY;
   const transactionalId = process.env.LOOPS_WATCH_CONFIRM_ID;
@@ -18,7 +25,7 @@ export async function sendWatchConfirmation({
   }
 
   const confirmUrl = canonicalFor(`/watch/confirm/${confirmationToken}`);
-  const unsubscribeUrl = canonicalFor(`/watch/unsubscribe/${confirmationToken}`);
+  const unsubscribeUrl = canonicalFor(`/watch/unsubscribe/${unsubscribeToken}`);
 
   const res = await fetch("https://app.loops.so/api/v1/transactional", {
     method: "POST",

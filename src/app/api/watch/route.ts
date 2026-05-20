@@ -5,6 +5,7 @@ import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
+import { isValidEmail } from "@/lib/security/email";
 
 export async function POST(req: NextRequest) {
   const limit = await rateLimit(`watch:${clientIp(req)}`, 5, 10 * 60);
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Invalid email" }, { status: 400 });
   }
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
       { email, facility_id: facilityId, source: source ?? "facility_hero" },
       { onConflict: "email,facility_id", ignoreDuplicates: false },
     )
-    .select("confirmation_token")
+    .select("confirmation_token, unsubscribe_token")
     .single();
 
   if (error) {
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
       to: email,
       facilityName,
       confirmationToken: data.confirmation_token,
+      unsubscribeToken: data.unsubscribe_token,
     });
   } catch (emailErr) {
     console.error("[watch] email error:", emailErr);
