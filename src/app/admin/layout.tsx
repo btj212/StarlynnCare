@@ -1,5 +1,13 @@
 import { UserButton } from "@clerk/nextjs";
+import type { Metadata } from "next";
 import Link from "next/link";
+
+// Audit L5 — belt-and-suspenders: middleware redirects unauthenticated
+// users, and robots.txt disallows /admin, but emit a noindex header in
+// case either fails open.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
