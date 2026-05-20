@@ -873,3 +873,23 @@ export function buildFacilityFaqSchema(input: {
   if (!pairs.length) return null;
   return buildFaqSchemaFromPairs(pairs, input.pageUrl);
 }
+
+/**
+ * SpeakableSpecification — tells voice / agent surfaces which sections of a
+ * hub page are safe to read aloud verbatim. Selectors must match real DOM ids
+ * on the rendered page (e.g. #hub-lede, #hub-stats).
+ */
+export function buildSpeakableSchema(input: {
+  url: string;
+  cssSelectors: string[];
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    url: input.url,
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: input.cssSelectors,
+    },
+  };
+}

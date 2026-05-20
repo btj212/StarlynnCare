@@ -72,3 +72,26 @@ Legacy aliases (`navy`, `warm-white`, `slate`, `muted`, `sc-border`, `footer-bg`
 2. **Site chrome**: `<SiteNav />` (async server component, fetches live facility count) + `<SiteFooter />` (async, fetches last-refreshed date).
 3. **No fictional numbers**: any stat visible to users must come from the DB or a confirmed policy constant (`GOVERNANCE_24_WORDS`, `0` commissions). Never paste prototype placeholder numbers into production.
 
+## 9. GEO conventions for hub pages
+
+Hub pages (state, county, city) and editorial articles must follow this pattern to maximize AI Mode / AI Overviews / agent-search citation eligibility:
+
+1. **Visible date stamp.** Render `<UpdatedStamp isoDate={findingsDate} />` (`src/components/editorial/UpdatedStamp.tsx`) directly under the H1+lede block. Source the date from the latest `facilities.updated_at` for that scope. Omit when `findingsDate` is null (Supabase unreachable).
+
+2. **Speakable JSON-LD.** Append `buildSpeakableSchema({ url, cssSelectors: ["#hub-lede", "#hub-stats"] })` to the page's JSON-LD array. Selectors must target `id` attributes on real DOM elements. The lede paragraph carries `id="hub-lede"`; the StatBlock wrapper carries `id="hub-stats"`.
+
+3. **Methodology callout above the facility list.** A one-to-two sentence `<aside>` in monospace text linking to `/methodology`. This is the signal AI systems extract as evidence that the site documents its scoring rules.
+
+4. **Enforcement / regulatory-context paragraph** when relevant. For CA county hubs with Type-A citations in the last 12 months, render a prose paragraph above the citation grid naming the count and linking to CDSS. Pattern: paragraph → structured list/table. The paragraph is what AI surfaces as a citation; the table provides supporting detail.
+
+5. **FAQ answers as factual sentences.** Each answer in `buildCityFaqs` should be 2-4 factual sentences, not question-bait. At least one Q/A pair must reference StarlynnCare's methodology or data sourcing. Generic questions ("What is memory care?") do not belong in hub FAQs — keep the scope to *this county/city's licensed memory care landscape*.
+
+### Machine-readable facility data
+
+The per-state JSON API at `/api/facilities/[state]` (e.g. `/api/facilities/california`) exposes the same data the `LocalBusiness` JSON-LD encodes. It is referenced from `/llms.txt` so AI crawlers prefer the JSON path over HTML extraction. Fields: canonical URL, license number, state regulator URL, capacity, care category, last inspection date, total deficiency count, `updated_at`.
+
+- Route: `src/app/api/facilities/[state]/route.ts`
+- Revalidate: 3600 (matches hub cadence)
+- CORS: `Access-Control-Allow-Origin: *` (intentional — researchers and AI crawlers are welcome)
+
+

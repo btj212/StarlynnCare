@@ -163,7 +163,11 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
       a:
         totalCount === 0
           ? `StarlynnCare has not yet indexed publishable facilities for ${cityName}.`
-          : `Of the ${totalCount} licensed memory care facilities indexed in ${cityName}, ${facilitiesWithDeficiency} (${severePct}%) carry a documented ${s.deficiencyLabel} in the indexed inspection record. Specific findings appear on each profile with inspection date and source link.`,
+          : `Of the ${totalCount} licensed memory care facilities indexed in ${cityName}, ${facilitiesWithDeficiency} (${severePct}%) carry a documented ${s.deficiencyLabel} in the indexed inspection record. Specific findings appear on each profile with inspection date and source link. StarlynnCare sources all deficiency data directly from state regulator records — no facility-side surveys or paid submissions are used. See the <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">methodology</a> for how deficiency classes are mapped across states.`,
+    },
+    {
+      q: `How does StarlynnCare rank memory care facilities in ${cityName}?`,
+      a: `StarlynnCare does not assign a single letter grade. Instead, each profile shows four independent signals derived from state inspection records: deficiency severity (Type-A vs. Type-B in California, equivalent classes in other states), repeat citation rate, inspection frequency relative to peers, and trajectory over time. Facilities with too few inspections on record show a "limited history" notice rather than a misleading score. All underlying data is sourced from mandatory public records — CDSS for California, HHSC LTCR for Texas, DHS for Oregon, and equivalent agencies for other states. Full methodology is at <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">starlynncare.com/methodology</a>.`,
     },
     {
       q: `What should I look for on a memory care tour in ${cityName}?`,

@@ -7,6 +7,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { UpdatedStamp } from "@/components/editorial/UpdatedStamp";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
 import { AreaWatchModal } from "@/components/facility/AreaWatchModal";
 import { TopGradedFacilities } from "@/components/facility/TopGradedFacilities";
@@ -22,6 +23,7 @@ import {
   buildCollectionPageSchema,
   buildFaqSchemaFromPairs,
   buildItemListSchema,
+  buildSpeakableSchema,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
@@ -414,6 +416,7 @@ export default async function RegionPage({ params }: PageProps) {
       itemListFacilities,
     ),
     buildFaqSchemaFromPairs(faqPairs, pageUrl),
+    buildSpeakableSchema({ url: pageUrl, cssSelectors: ["#hub-lede", "#hub-stats"] }),
   ];
 
   // ── Additional data for content blocks ────────────────────────────────────
@@ -492,6 +495,7 @@ export default async function RegionPage({ params }: PageProps) {
               Memory care in {region.name}
             </h1>
             <p
+              id="hub-lede"
               className="font-[family-name:var(--font-display)] italic text-[20px] leading-[1.4] text-ink-3 max-w-[50ch]"
             >
               {region.state.code === "TX" ? (
@@ -506,6 +510,7 @@ export default async function RegionPage({ params }: PageProps) {
                 </>
               )}
             </p>
+            {findingsDate && <UpdatedStamp isoDate={findingsDate} />}
             {cityIntro && (
               <p className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch]">
                 {cityIntro}
@@ -561,7 +566,7 @@ export default async function RegionPage({ params }: PageProps) {
                   />
                 )}
 
-                <div className="mt-10">
+                <div id="hub-stats" className="mt-10">
                   <StatBlock stats={regionStatItems} />
                 </div>
               </>
@@ -582,6 +587,14 @@ export default async function RegionPage({ params }: PageProps) {
                   : <>Memory care options in {region.name}, <em>documented in the public record.</em></>
               }
             />
+            <aside className="mb-6 text-[13px] font-[family-name:var(--font-mono)] text-ink-3">
+              Listings are sorted alphabetically; tier badges reflect inspection severity,
+              repeat citations, and frequency relative to peers in {region.name}.{" "}
+              <Link href="/methodology" className="text-teal underline underline-offset-4">
+                See methodology
+              </Link>{" "}
+              for how each signal is computed.
+            </aside>
             <FacilityListClient
               facilities={facilities}
               stateSlug={region.state.slug}
@@ -688,6 +701,23 @@ export default async function RegionPage({ params }: PageProps) {
                 <h2 className="font-[family-name:var(--font-display)] text-[26px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.01em] text-ink m-0 mb-3">
                   Type-A citations in the last 12 months
                 </h2>
+                <p className="text-[15px] leading-[1.7] text-ink-2 mb-4 max-w-[72ch]">
+                  In the last 12 months,{" "}
+                  <strong>{countyTrendRows.length}</strong>{" "}
+                  {countyTrendRows.length === 1 ? "facility" : "facilities"} in {region.name}{" "}
+                  had at least one Type-A citation — the most serious deficiency class under
+                  California Health &amp; Safety Code §1569. The full record for each facility
+                  is published on{" "}
+                  <a
+                    href="https://www.ccld.dss.ca.gov/carefacilitysearch/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal underline underline-offset-4"
+                  >
+                    CDSS Community Care Licensing
+                  </a>
+                  .
+                </p>
                 <p className="text-[15px] text-ink-2 max-w-[72ch] leading-relaxed mb-8">
                   Facilities below had at least one Type-A (or immediate jeopardy) deficiency tied to an inspection dated in the rolling year — sourced from published CDSS deficiency records.
                 </p>

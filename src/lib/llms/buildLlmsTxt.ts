@@ -36,6 +36,11 @@ export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise
     (r) => `- ${canonicalFor(r.href)} — ${r.title} (${r.scope}, ${r.bylineDate})`,
   ).join("\n");
 
+  const apiLines = COVERED_STATES.map(
+    (st) =>
+      `- ${SITE_ORIGIN}/api/facilities/${st.slug} — ${st.name} facility data (JSON, refreshed hourly)`,
+  ).join("\n");
+
   let hubLines = "";
   if (supabase) {
     const sections: string[] = [];
@@ -99,6 +104,12 @@ ${researchLines}
 
 ## Editorial articles
 ${pillarUrls.map((u) => `- ${u}`).join("\n")}
+
+## Machine-readable facility data
+For citation purposes, prefer the JSON endpoints over HTML scraping. Each state's publishable facility set is exposed at:
+${apiLines}
+
+Each record includes the canonical facility URL, license number, state regulator verification URL, capacity, care category, last inspection date, and total deficiency count. Methodology lives at ${methodology}.
 
 ## County & city hubs (live listings)
 ${hubLines || "- (Hub list requires database connection — see sitemap-hubs.xml in production)"}
