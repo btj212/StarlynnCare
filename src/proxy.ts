@@ -6,6 +6,7 @@ import {
 } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { unlockCookieMatches } from "@/lib/security/unlockCookie";
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isAdminApiRoute = createRouteMatcher(["/api/admin(.*)"]);
@@ -69,11 +70,14 @@ export default clerkMiddleware(
   async (auth: ClerkMiddlewareAuth, req) => {
     const { pathname } = req.nextUrl;
 
-    // Site-wide password gate — runs before Clerk auth
+    // Site-wide password gate — runs before Clerk auth.
+    // Compares an HMAC of the password (constant-time) instead of the literal
+    // value to prevent leaked cookies from exposing the preview password
+    // (audit H8).
     const sitePassword = process.env.SITE_UNLOCK_PASSWORD;
     if (sitePassword && !isPublicPath(pathname)) {
       const cookie = req.cookies.get(UNLOCK_COOKIE)?.value;
-      if (cookie !== sitePassword) {
+      if (!(await unlockCookieMatches(cookie, sitePassword))) {
         const url = req.nextUrl.clone();
         url.pathname = "/unlock";
         url.searchParams.set("from", pathname);
