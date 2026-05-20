@@ -95,7 +95,10 @@ export async function GET(
     .order("name", { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Audit M3 — log internals server-side, return a generic message to
+    // the public so PostgREST error strings don't leak schema/RLS hints.
+    console.error("[facilities-api]", stateInfo.code, error.message);
+    return NextResponse.json({ error: "Unable to load facilities" }, { status: 500 });
   }
 
   const rows = (data ?? []) as unknown as FacilityRow[];
@@ -135,8 +138,12 @@ export async function GET(
   return NextResponse.json(payload, {
     headers: {
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      // Public dataset — CORS is intentionally open for third-party analysts
+      // and JSON-LD consumers. Vary: Origin so a cached CORS response cannot
+      // be poisoned for callers from a different origin (audit L1).
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Vary": "Origin",
     },
   });
 }
