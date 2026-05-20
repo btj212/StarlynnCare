@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { submitReview, type ReviewState } from "@/app/actions/submitReview";
 import { REVIEW_CATEGORIES, RELATIONSHIP_OPTIONS } from "./categories";
 import { StarRating } from "./StarRating";
+import { Honeypot } from "@/components/security/Honeypot";
 
 const initialState: ReviewState = { status: "idle" };
 
@@ -37,6 +38,7 @@ export function ReviewForm({ facilityId }: { facilityId: string }) {
 
   return (
     <form action={formAction} className="space-y-8">
+      <Honeypot />
       {state.status === "error" && state.message && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {state.message}

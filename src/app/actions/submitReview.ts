@@ -1,8 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { getServiceClient } from "@/lib/supabase/server";
 import { REVIEW_CATEGORIES, RELATIONSHIP_OPTIONS } from "@/components/reviews/categories";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
+import { rateLimit } from "@/lib/security/rateLimit";
+import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 
 export type ReviewState = {
   status: "idle" | "success" | "error";
@@ -15,6 +18,27 @@ export async function submitReview(
   _prevState: ReviewState,
   formData: FormData,
 ): Promise<ReviewState> {
+  // Audit H6 — rate limit by IP before doing any DB work.
+  const hdrs = await headers();
+  const xff = hdrs.get("x-forwarded-for");
+  const ip = (xff ? xff.split(",")[0]?.trim() : null) ?? hdrs.get("x-real-ip") ?? "unknown";
+  const limit = await rateLimit(`review:${ip}`, 5, 60 * 60);
+  if (!limit.allowed) {
+    return {
+      status: "error",
+      message: "Too many submissions from your network. Please try again later.",
+    };
+  }
+
+  // Audit M2 — honeypot + render-age timing trap. Return a generic success
+  // so bots don't learn the form is gated.
+  if (looksLikeBot(formData.get(HONEYPOT_FIELD), formData.get(HONEYPOT_TS_FIELD))) {
+    return {
+      status: "success",
+      message: "Thank you. Your review has been received and will appear after a brief review by our team.",
+    };
+  }
+
   // -- Extract & validate fields --
   const reviewerName = (formData.get("reviewer_name") as string | null)?.trim() ?? "";
   const reviewerRelationship = (formData.get("reviewer_relationship") as string | null) ?? "";

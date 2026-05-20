@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Honeypot } from "@/components/security/Honeypot";
+import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD } from "@/lib/security/honeypot";
 
 interface ReportListingFormProps {
   facilityId: string;
@@ -14,7 +16,7 @@ export function ReportListingForm({ facilityId, facilityName }: ReportListingFor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     if (!reason.trim()) {
@@ -22,7 +24,14 @@ export function ReportListingForm({ facilityId, facilityName }: ReportListingFor
     }
 
     setIsSubmitting(true);
-    
+
+    // Pull the hidden honeypot + timestamp out of the DOM so the API can see
+    // them — audit M2. Empty string is fine; the server only rejects when
+    // the honeypot is non-empty.
+    const fd = new FormData(e.currentTarget);
+    const honeypot = (fd.get(HONEYPOT_FIELD) as string | null) ?? "";
+    const ts = (fd.get(HONEYPOT_TS_FIELD) as string | null) ?? "";
+
     try {
       const response = await fetch("/api/listing-report", {
         method: "POST",
@@ -33,6 +42,8 @@ export function ReportListingForm({ facilityId, facilityName }: ReportListingFor
           facilityId,
           reason: reason.trim(),
           contactEmail: email.trim() || null,
+          [HONEYPOT_FIELD]: honeypot,
+          [HONEYPOT_TS_FIELD]: ts,
         }),
       });
 
@@ -78,6 +89,7 @@ export function ReportListingForm({ facilityId, facilityName }: ReportListingFor
         
         <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <Honeypot />
             <div>
               <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
                 What's incorrect about this listing?

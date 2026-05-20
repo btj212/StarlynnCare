@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addToWaitlist } from "@/lib/waitlist";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
+import { rateLimit, clientIp } from "@/lib/security/rateLimit";
+import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 
 export async function POST(req: NextRequest) {
   try {
+    const limit = await rateLimit(`waitlist:${clientIp(req)}`, 5, 10 * 60);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 },
+      );
+    }
+
     const body = await req.json();
+
+    if (looksLikeBot(body?.[HONEYPOT_FIELD], body?.[HONEYPOT_TS_FIELD])) {
+      return NextResponse.json({ ok: true });
+    }
+
     const { email, zip, path } = body;
 
     if (!email || typeof email !== "string") {
