@@ -3,6 +3,7 @@ import { addToWaitlist } from "@/lib/waitlist";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
+import { isValidEmail } from "@/lib/security/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,12 +23,7 @@ export async function POST(req: NextRequest) {
 
     const { email, zip, path } = body;
 
-    if (!email || typeof email !== "string") {
-      return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 

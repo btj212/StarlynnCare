@@ -6,6 +6,7 @@ import { REVIEW_CATEGORIES, RELATIONSHIP_OPTIONS } from "@/components/reviews/ca
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
+import { isValidEmail } from "@/lib/security/email";
 
 export type ReviewState = {
   status: "idle" | "success" | "error";
@@ -54,7 +55,7 @@ export async function submitReview(
     fieldErrors.reviewer_relationship = "Please select your relationship to the resident.";
   }
   if (overallSummary.length > 2000) fieldErrors.overall_summary = "Summary must be 2,000 characters or fewer.";
-  if (reviewerEmail && !/^[^@]+@[^@]+\.[^@]+$/.test(reviewerEmail)) {
+  if (reviewerEmail && !isValidEmail(reviewerEmail)) {
     fieldErrors.reviewer_email = "Please enter a valid email address.";
   }
 
