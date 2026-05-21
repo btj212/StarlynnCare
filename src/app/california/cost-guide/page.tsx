@@ -254,7 +254,11 @@ export default function CaliforniaCostGuidePage() {
             <Link href="/california/cost-by-city" className="font-medium text-teal underline-offset-4 hover:underline">
               Memory care costs by California city &amp; region
             </Link>
-            .
+            . For East Bay families, the{" "}
+            <Link href="/california/alameda-county" className="font-medium text-teal underline-offset-4 hover:underline">
+              Alameda County hub
+            </Link>{" "}
+            shows real CDSS inspection data alongside cost context for all 93 licensed facilities in the county.
           </p>
 
           <H2 id="whats-included">What you&apos;re paying for</H2>

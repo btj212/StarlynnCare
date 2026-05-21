@@ -1853,3 +1853,23 @@ export function regionFromSlug(
 export function regionsForState(stateCode: string): ReadonlyArray<Region> {
   return REGIONS.filter((r) => r.state.code === stateCode.toUpperCase());
 }
+
+/**
+ * Returns the county Region that contains `citySlug` for the given state,
+ * or null if the city is not part of a mapped county.
+ */
+export function parentCountyForCity(
+  stateCode: string,
+  citySlug: string,
+): Region | null {
+  const code = stateCode.toUpperCase();
+  const city = citySlug.toLowerCase();
+  return (
+    REGIONS.find(
+      (r) =>
+        r.state.code === code &&
+        r.kind === "county" &&
+        (r.citySlugs as readonly string[]).includes(city),
+    ) ?? null
+  );
+}

@@ -150,8 +150,49 @@ export default async function DataPage() {
             </h2>
             <p>
               Profiles on this site are the primary consumer of the dataset.
-              Machine-readable bulk export may be offered later; the
-              methodology page documents current ingest and refresh practices.
+              Machine-readable bulk export is available in two formats:
+            </p>
+            <ul className="list-disc space-y-3 pl-5">
+              <li>
+                <strong className="text-ink">CSV — CC-BY download.</strong>{" "}
+                A flat export of all publishable California facilities with license number, city, care
+                category, last inspection date, and total deficiency count. Licensed{" "}
+                <a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  className="font-medium text-teal underline-offset-2 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  CC BY 4.0
+                </a>{" "}
+                — attribution required, no share-alike restriction.{" "}
+                <a
+                  href="/api/export/ca-inspections"
+                  className="font-medium text-teal underline-offset-2 hover:underline"
+                >
+                  Download CSV →
+                </a>
+              </li>
+              <li>
+                <strong className="text-ink">JSON — per-state API.</strong>{" "}
+                Live JSON endpoint for each covered state:{" "}
+                <code className="font-[family-name:var(--font-mono)] text-[13px] bg-paper-2 px-1.5 py-0.5 rounded">
+                  /api/facilities/california
+                </code>
+                ,{" "}
+                <code className="font-[family-name:var(--font-mono)] text-[13px] bg-paper-2 px-1.5 py-0.5 rounded">
+                  /api/facilities/texas
+                </code>
+                , etc. Returns schema.org/Dataset-wrapped facility records with
+                regulator verification URLs. CORS-open for third-party use.
+              </li>
+            </ul>
+            <p className="text-[14px] text-ink-3 pt-2">
+              Attribution: StarlynnCare, {lastDatasetRefresh ?? "2026"}.{" "}
+              Source data: CDSS Community Care Licensing.{" "}
+              <Link href="/methodology" className="text-teal underline underline-offset-2 hover:underline">
+                Methodology →
+              </Link>
             </p>
           </section>
         </article>

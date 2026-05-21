@@ -213,7 +213,9 @@ export default function MediCalMemoryCarePage() {
             </p>
             <p>
               <strong className="font-medium text-ink">Where it operates.</strong> ALW is available in approximately
-              fifteen California counties as of this writing, including Alameda, Contra Costa, Fresno, Kern, Los Angeles,
+              fifteen California counties as of this writing, including{" "}
+              <Link href="/california/alameda-county" className="text-teal underline underline-offset-4">Alameda</Link>
+              , Contra Costa, Fresno, Kern, Los Angeles,
               Orange, Riverside, Sacramento, San Bernardino, San Diego, San Francisco, San Joaquin, San Mateo, Santa Clara,
               and Sonoma. The state has periodically proposed expansion. The current participating-county list lives on the DHCS
               ALW page and should always be checked there before relying on what any directory (including this one) says about

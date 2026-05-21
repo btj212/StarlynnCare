@@ -41,18 +41,32 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   );
   const suggestHref = `mailto:hello@starlynncare.com?subject=${suggestSubject}&body=${suggestBody}`;
 
+  const percentile = profile.snapshot?.grade?.composite_percentile ?? null;
+
   const copy: string = (() => {
     const beds = facility.beds ? `A ${facility.beds}-bed` : "A";
     const licType = SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility";
+
+    let line1: string;
     if (totals.lastCitation) {
       const d = new Date(totals.lastCitation + "T12:00:00");
       const mo = d.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
       const clean = totals.deficiencies === 1
         ? `one citation on file (${mo})`
         : `${totals.deficiencies} citation${totals.deficiencies === 1 ? "" : "s"} on file — most recent ${mo}`;
-      return `${beds} ${licType} with ${clean}.`;
+      line1 = `${beds} ${licType} with ${clean}.`;
+    } else {
+      line1 = `${beds} ${licType} with no citations on file.`;
     }
-    return `${beds} ${licType} with no citations on file.`;
+
+    if (percentile !== null) {
+      const pctLabel =
+        percentile <= 10 ? "bottom 10th percentile" :
+        percentile >= 90 ? "top 10th percentile" :
+        `${Math.round(percentile)}th percentile`;
+      return `${line1} Ranks in the ${pctLabel} among ${facility.state_code === "CA" ? "California" : "state"} peers.`;
+    }
+    return line1;
   })();
 
   const lastInsp = profile.inspections[0] ?? null;

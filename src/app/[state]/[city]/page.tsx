@@ -30,7 +30,8 @@ import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
-import { cityIntroForRegion } from "@/lib/content/cityIntros";
+import { parentCountyForCity } from "@/lib/regions";
+import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
 import { formatCostRange, getStateCostBand } from "@/lib/content/stateCostBands";
 import { HubEligibility } from "@/components/hub/HubEligibility";
 
@@ -130,6 +131,10 @@ export default async function RegionPage({ params }: PageProps) {
   const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
   if (!region) notFound();
   const isCounty = region.kind === "county";
+  // For city pages: look up parent county so we can show a county breadcrumb link
+  const parentCounty = !isCounty
+    ? parentCountyForCity(region.state.code, region.slug)
+    : null;
   let facilities: ListFacility[] = [];
   let fetchError: string | null = null;
 
@@ -466,6 +471,7 @@ export default async function RegionPage({ params }: PageProps) {
         ];
 
   const cityIntro = !isCounty ? cityIntroForRegion(region.state.code, region.slug) : null;
+  const countyIntroParas = isCounty ? countyIntroParasForRegion(region.state.code, region.slug) : null;
 
   return (
     <>
@@ -484,6 +490,14 @@ export default async function RegionPage({ params }: PageProps) {
               <Link href={`/${region.state.slug}`} className="hover:text-teal transition-colors">
                 {region.state.name}
               </Link>
+              {parentCounty && (
+                <>
+                  <span aria-hidden>›</span>
+                  <Link href={`/${region.state.slug}/${parentCounty.slug}`} className="hover:text-teal transition-colors">
+                    {parentCounty.name}
+                  </Link>
+                </>
+              )}
               <span aria-hidden>›</span>
               <span className="text-ink-3">{region.name}</span>
             </nav>
@@ -515,6 +529,15 @@ export default async function RegionPage({ params }: PageProps) {
               <p className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch]">
                 {cityIntro}
               </p>
+            )}
+            {countyIntroParas && countyIntroParas.length > 0 && (
+              <div className="mt-8 space-y-4 max-w-[72ch]">
+                {countyIntroParas.map((para, i) => (
+                  <p key={i} className="text-[17px] leading-[1.65] text-ink-2">
+                    {para}
+                  </p>
+                ))}
+              </div>
             )}
           </div>
         </div>

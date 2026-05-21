@@ -148,6 +148,14 @@ export default function CaliforniaGlossaryPage() {
             note="Definitions cross-checked against the CDSS Title 22 regulations and current CDSS public guidance; verify with your county licensing analyst before relying on any term in a regulatory dispute"
           />
 
+          <p className="mt-8 text-[15px] leading-relaxed text-ink-2 max-w-[68ch]">
+            These terms apply to every California facility profile. To see how they play out in practice across a real market,{" "}
+            <Link href="/california/alameda-county" className="text-teal underline underline-offset-4 hover:text-teal/80">
+              browse all 93 Alameda County facilities
+            </Link>{" "}
+            — each profile links directly to the CDSS source record for every citation.
+          </p>
+
           <p className="text-[14px] text-ink-3 pt-8 border-t border-paper-rule">
             <Link href="/editorial-policy" className="text-teal underline underline-offset-4 hover:text-teal/80">
               Editorial policy &amp; sourcing standards →

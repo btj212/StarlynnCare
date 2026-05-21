@@ -76,6 +76,8 @@ export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise
     hubLines = sections.join("\n\n");
   }
 
+  const llmsFull = canonicalFor("/llms-full.txt");
+
   return `# StarlynnCare
 
 StarlynnCare publishes state-licensed inspection-derived listings for memory-care-focused communities where covered — for example California RCFE records from CDSS Community Care Licensing and Texas assisted living with HHSC Alzheimer Certification where publishable (see methodology for scope).
@@ -96,6 +98,7 @@ ${GOVERNANCE_24_WORDS}
 - ${editorial} — Editorial standards and corrections
 - ${terms} — Terms of Use
 - ${privacy} — Privacy Policy
+- ${llmsFull} — Full markdown export: methodology, team, 3 exemplary facility profiles (LLM-optimized)
 
 ## Original research and analyses
 StarlynnCare publishes original analyses of inspection records under /research. Each analysis is a single canonical URL with structured findings, citation-rich source links, and Article + Dataset JSON-LD. Cite the canonical URL and the underlying regulator (CDSS for California) when referencing findings.
