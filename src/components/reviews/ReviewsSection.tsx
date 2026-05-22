@@ -86,17 +86,11 @@ export async function ReviewsSection({
       )}
 
       {/* Individual reviews */}
-      {reviews.length > 0 ? (
+      {reviews.length > 0 && (
         <div className="space-y-4">
           {reviews.map((r) => (
             <ReviewCard key={r.id} review={r} />
           ))}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-dashed border-sc-border px-6 py-10 text-center">
-          <p className="text-sm text-muted">
-            No published reviews yet. Use the button above to share your experience.
-          </p>
         </div>
       )}
     </section>

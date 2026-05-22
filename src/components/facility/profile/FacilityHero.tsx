@@ -7,6 +7,7 @@ import {
 import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
+import { ordinalSuffix } from "@/lib/format/ordinalSuffix";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
@@ -60,10 +61,11 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
     }
 
     if (percentile !== null) {
+      const rounded = Math.round(percentile);
       const pctLabel =
         percentile <= 10 ? "bottom 10th percentile" :
         percentile >= 90 ? "top 10th percentile" :
-        `${Math.round(percentile)}th percentile`;
+        `${rounded}${ordinalSuffix(rounded)} percentile`;
       return `${line1} Ranks in the ${pctLabel} among ${facility.state_code === "CA" ? "California" : "state"} peers.`;
     }
     return line1;

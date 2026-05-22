@@ -1,6 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
-import type { NationalHomeData } from "@/lib/data/nationalHome";
+import type { NationalHomeData, HeroSparkSeries } from "@/lib/data/nationalHome";
 import { MobileTopbar } from "@/components/mobile/MobileTopbar";
 import { MobileTrustBar } from "@/components/mobile/MobileTrustBar";
 import {
@@ -8,10 +7,12 @@ import {
 } from "@/components/home/SampleFacilityRotation";
 import { MobileHomeFaq } from "@/components/mobile/MobileHomeFaq";
 import { MobileFooter } from "@/components/mobile/MobileFooter";
+import { HeroSparkChart } from "@/components/national-home/HeroSparkChart";
 import { CA_FAQS } from "@/lib/content/stateFaqs";
 
 type Props = {
   data: NationalHomeData;
+  sparkSeries: HeroSparkSeries[];
 };
 
 const STATE_REGULATORS: Record<string, string> = {
@@ -22,8 +23,12 @@ const STATE_REGULATORS: Record<string, string> = {
   TX: "HHSC",
 };
 
-export function MobileNationalHomeView({ data }: Props) {
+const MIN_LIVE_THRESHOLD = 100;
+
+export function MobileNationalHomeView({ data, sparkSeries }: Props) {
   const { totalFacilities, totalInspections, totalSevereCitations, states, topCities, sampleReviews, lastRefreshed } = data;
+  const liveStates = states.filter((s) => s.facilityCount >= MIN_LIVE_THRESHOLD);
+  const pilotStates = states.filter((s) => s.facilityCount > 0 && s.facilityCount < MIN_LIVE_THRESHOLD);
   const firstReview = sampleReviews[0] ?? null;
 
   const statItems = [
@@ -43,29 +48,26 @@ export function MobileNationalHomeView({ data }: Props) {
         </div>
         <h2>
           Memory care you can <em>trust,</em>{" "}
-          <span className="ul">ranked by regulators.</span>
+          ranked by regulators.
         </h2>
         <p className="deck">
           Public inspection data. No paid ads. No sales calls. Every claim sourced to a state record.
         </p>
       </section>
 
-      <div className="m-illo">
-        <Image
-          src="/illustrations/family.png"
-          alt="Illustrated family walking together — representing the families we help navigate memory care decisions"
-          width={1200}
-          height={900}
-          className="h-full w-full object-cover"
-          sizes="100vw"
-          priority
-        />
-      </div>
+      {sparkSeries.length > 0 && (
+        <div className="px-[18px] pb-2">
+          <HeroSparkChart series={sparkSeries} />
+        </div>
+      )}
 
       <MobileTrustBar />
 
       <section className="m-section tight">
-        <div className="label">§ 01 · The Public Record</div>
+        <div className="label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>§ 01 · The Public Record</span>
+          <span style={{ opacity: 0.5, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase" }}>swipe →</span>
+        </div>
         <h2>
           National facility data, <em>from 5 state regulators.</em>
         </h2>
@@ -186,7 +188,12 @@ export function MobileNationalHomeView({ data }: Props) {
           <span className="live-dot" aria-hidden />
           {totalFacilities > 0 ? `${totalFacilities.toLocaleString()} facilities live` : "Live across 5 states"}
         </span>
-        <span className="text-ink-4"> · CA · OR · WA · MN · TX</span>
+        {liveStates.length > 0 && (
+          <span className="text-ink-4"> · {liveStates.map((s) => s.stateCode).join(" · ")}</span>
+        )}
+        {pilotStates.length > 0 && (
+          <span className="text-ink-4 text-[9px]"> · Pilot: {pilotStates.map((s) => `${s.stateCode} (${s.facilityCount})`).join(" · ")}</span>
+        )}
       </div>
 
       <section className="m-section border-t-2 border-ink bg-rust text-paper px-[18px] py-10 -mx-0">

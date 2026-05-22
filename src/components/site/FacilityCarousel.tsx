@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { CareCategory } from "@/lib/types";
 import { peerRankBarFillHex } from "@/lib/peerRankBar";
+import { ordinalSuffix } from "@/lib/format/ordinalSuffix";
 
 const CATEGORY_LABEL: Partial<Record<CareCategory, string>> = {
   rcfe_memory_care: "RCFE · Memory care",
@@ -151,7 +152,7 @@ function CardInner({ f }: { f: CarouselFacility }) {
                         className="text-[10px] font-semibold leading-none tabular-nums"
                         style={{ color: barColor }}
                       >
-                        {val}<span className="font-normal opacity-70">th</span>
+                        {val}<span className="font-normal opacity-70">{ordinalSuffix(val)}</span>
                       </span>
                     )}
                   </div>

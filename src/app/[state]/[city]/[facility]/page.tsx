@@ -21,9 +21,9 @@ import { FacilityRules, type SerializableRuleCard } from "@/components/facility/
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
 import { FacilityWatchSignup } from "@/components/facility/FacilityWatchSignup";
 import { FacilityWatchBar } from "@/components/facility/FacilityWatchBar";
-import { FacilityWatchModal } from "@/components/facility/FacilityWatchModal";
 import { FacilityFullInspections } from "@/components/facility/profile/FacilityFullInspections";
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
+import { FullHistoryWaitlist } from "@/components/facility/profile/FullHistoryWaitlist";
 
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 
@@ -164,7 +164,6 @@ export default async function FacilityPage({ params }: PageProps) {
 
         {/* § 00 · Hero */}
         <FacilityHero profile={profile} />
-        <FacilityWatchModal facilityId={facility.id} facilityName={facility.name} />
 
         {/* Clinical byline — surfaces RN reviewer in DOM for E-E-A-T */}
         <div className="border-b border-paper-rule bg-paper-2">
@@ -207,13 +206,15 @@ export default async function FacilityPage({ params }: PageProps) {
         {/* § 07 · Full verbatim inspection record */}
         <FacilityFullInspections profile={profile} />
 
-        {/* Free-tier display cap notice */}
+        {/* Archived inspection notice — waitlist framing, no "withholding safety data" tone */}
         {profile.hiddenOlderCount > 0 && profile.oldestHiddenYear !== null && (
           <div className="mx-auto max-w-[1280px] px-4 md:px-8 pb-2">
-            <p className="text-[12.5px] text-ink-3 font-[family-name:var(--font-mono)]">
-              {profile.hiddenOlderCount} older inspection{profile.hiddenOlderCount !== 1 ? "s" : ""}{" "}
-              ({profile.oldestHiddenYear}–{new Date().getFullYear() - 3}) are available with a premium membership.
-            </p>
+            <FullHistoryWaitlist
+              facilityId={facility.id}
+              facilityName={facility.name}
+              hiddenCount={profile.hiddenOlderCount}
+              oldestYear={profile.oldestHiddenYear}
+            />
           </div>
         )}
 

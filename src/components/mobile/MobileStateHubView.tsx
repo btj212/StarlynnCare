@@ -57,7 +57,10 @@ export function MobileStateHubView({ data, config }: Props) {
       <MobileTrustBar />
 
       <section className="m-section tight">
-        <div className="label">§ 01 · The Public Record</div>
+        <div className="label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>§ 01 · The Public Record</span>
+          <span style={{ opacity: 0.5, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase" }}>swipe →</span>
+        </div>
         <h2>
           The {stateName} facility data you need, <em>curated + analyzed for you.</em>
         </h2>

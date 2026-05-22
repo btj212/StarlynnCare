@@ -25,6 +25,16 @@ function TimelineRail({ timeline, windowMonths }: { timeline: TimelinePoint[]; w
 
   const peerMedianY = 50; // visual mid-point of the rail (percentage)
 
+  // Compute a representative peer-median score for the legend.
+  // Use the most recent non-zero value from the series.
+  const repPeerMedian = (() => {
+    const vals = [...timeline].reverse().map((p) => p.peerMedianScore).filter((v) => v > 0);
+    return vals[0] ?? null;
+  })();
+
+  const lastPoint = timeline[timeline.length - 1];
+  const isLastCurrent = lastPoint?.isCurrent ?? false;
+
   // Axis labels
   const firstMonth = timeline[0]?.month ?? "";
   const lastMonth = timeline[timeline.length - 1]?.month ?? "";
@@ -41,11 +51,17 @@ function TimelineRail({ timeline, windowMonths }: { timeline: TimelinePoint[]; w
   return (
     <div className="space-y-3">
       <div className="flex items-end justify-between">
-        <div className="font-[family-name:var(--font-display)] text-[64px] leading-[0.9] tracking-[-0.02em] text-grade-a">
-          {totalWeighted.toFixed(0)}
-          <span className="font-[family-name:var(--font-mono)] ml-2 text-[0.32em] tracking-wide text-ink-3">
-            weighted score · {windowMonths} mo
-          </span>
+        <div>
+          <div className="font-[family-name:var(--font-display)] text-[64px] leading-[0.9] tracking-[-0.02em] text-grade-a">
+            {totalWeighted.toFixed(0)}
+            <span className="font-[family-name:var(--font-mono)] ml-2 text-[0.32em] tracking-wide text-ink-3">
+              weighted score · {windowMonths} mo
+            </span>
+          </div>
+          <div className="mt-1 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-ink-3">
+            0–100 scale · lower = better
+            {repPeerMedian !== null ? ` · peer median ${repPeerMedian.toFixed(0)}` : " · peer median dashed line below"}
+          </div>
         </div>
         <div className="max-w-[38ch] text-right font-[family-name:var(--font-display)] text-[17px] italic text-ink-2">
           {totalWeighted === 0
@@ -82,6 +98,7 @@ function TimelineRail({ timeline, windowMonths }: { timeline: TimelinePoint[]; w
                 width: 14,
                 height,
                 background: p.cited ? "var(--color-rust)" : "var(--color-paper-rule)",
+                opacity: p.isCurrent ? 0.4 : 1,
               }}
             />
           );
@@ -104,7 +121,13 @@ function TimelineRail({ timeline, windowMonths }: { timeline: TimelinePoint[]; w
       {/* Axis labels */}
       <div className="flex justify-between font-[family-name:var(--font-mono)] text-[10px] text-ink-3 tracking-[0.06em]">
         <span>{fmtAxis(firstMonth)}</span>
-        <span>{fmtAxis(lastMonth)}</span>
+        <span>
+          {isLastCurrent ? (
+            <span className="italic opacity-70">as of {fmtAxis(lastMonth)}</span>
+          ) : (
+            fmtAxis(lastMonth)
+          )}
+        </span>
       </div>
     </div>
   );

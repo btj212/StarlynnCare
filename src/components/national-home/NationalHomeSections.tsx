@@ -1,6 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
-import type { NationalHomeData } from "@/lib/data/nationalHome";
+import type { NationalHomeData, HeroSparkSeries } from "@/lib/data/nationalHome";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { StatBlock } from "@/components/editorial/StatBlock";
 import { StateHubReviews } from "@/components/state-hub/StateHubReviews";
@@ -9,14 +8,21 @@ import { StateHubCta } from "@/components/state-hub/StateHubCta";
 import { StatesWeCoverGrid } from "./StatesWeCoverGrid";
 import { ZipSearch } from "@/components/site/ZipSearch";
 import { SyncedHomeSampleCardDesktop } from "@/components/home/SampleFacilityRotation";
+import { HeroSparkChart } from "./HeroSparkChart";
 import { CA_FAQS } from "@/lib/content/stateFaqs";
 
 type Props = {
   data: NationalHomeData;
+  sparkSeries: HeroSparkSeries[];
 };
 
-export function NationalHomeSections({ data }: Props) {
+const MIN_LIVE_THRESHOLD = 100;
+
+export function NationalHomeSections({ data, sparkSeries }: Props) {
   const { totalFacilities, totalInspections, totalSevereCitations, states, topCities, sampleReviews } = data;
+
+  const liveStates = states.filter((s) => s.facilityCount >= MIN_LIVE_THRESHOLD);
+  const pilotStates = states.filter((s) => s.facilityCount > 0 && s.facilityCount < MIN_LIVE_THRESHOLD);
 
   const nationalStats = [
     {
@@ -64,12 +70,7 @@ export function NationalHomeSections({ data }: Props) {
               >
                 Memory care you can{" "}
                 <em className="italic text-rust">trust,</em>{" "}
-                <span
-                  className="px-1"
-                  style={{ backgroundImage: "linear-gradient(transparent 70%, var(--color-gold-soft) 70%)" }}
-                >
-                  ranked by regulators.
-                </span>
+                ranked by regulators.
               </h1>
 
               <p className="font-[family-name:var(--font-display)] italic text-[18px] sm:text-[22px] leading-[1.45] text-ink-3 mb-6 sm:mb-8 max-w-[40ch]">
@@ -85,24 +86,21 @@ export function NationalHomeSections({ data }: Props) {
                   <span className="live-dot" aria-hidden />
                   {totalFacilities > 0 ? `${totalFacilities.toLocaleString()} facilities live` : "Live across 5 states"}
                 </span>
-                <span className="text-ink-4">· CA · OR · WA · MN · TX</span>
+                {liveStates.length > 0 && (
+                  <span className="text-ink-4">
+                    · {liveStates.map((s) => s.stateCode).join(" · ")}
+                  </span>
+                )}
+                {pilotStates.length > 0 && (
+                  <span className="text-ink-4 text-[10px]">
+                    · Pilot: {pilotStates.map((s) => `${s.stateCode} (${s.facilityCount})`).join(" · ")}
+                  </span>
+                )}
               </div>
             </div>
 
             <div className="hidden md:block">
-              <div
-                className="relative w-full border border-paper-rule overflow-hidden"
-                style={{ aspectRatio: "1/1", background: "var(--color-paper-2)" }}
-              >
-                <Image
-                  src="/illustrations/family.png"
-                  alt="Illustrated family walking together — representing the families we help navigate memory care decisions"
-                  fill
-                  sizes="(max-width: 768px) 0px, 40vw"
-                  className="object-cover"
-                  priority
-                />
-              </div>
+              <HeroSparkChart series={sparkSeries} />
             </div>
           </div>
         </div>

@@ -198,6 +198,9 @@
   padding: 0 18px 4px;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  /* Fade-out right edge to signal scrollability */
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, black calc(100% - 36px), transparent);
 }
 .m-stat-strip::-webkit-scrollbar { display: none; }
 .m-stat-card {

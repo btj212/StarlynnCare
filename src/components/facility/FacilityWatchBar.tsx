@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { submitWatch } from "@/lib/watch/submitWatch";
 
 interface FacilityWatchBarProps {
@@ -16,7 +16,6 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
   const [expanded, setExpanded] = useState(false);
   const [email, setEmail] = useState("");
   const [formState, setFormState] = useState<FormState>("idle");
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem(`watch-bar-dismissed-${facilityId}`)) {
@@ -24,21 +23,13 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
       return;
     }
 
-    timerRef.current = setTimeout(() => setVisible(true), 20000);
-
     const onScroll = () => {
       const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
-      if (pct >= 0.4) {
-        setVisible(true);
-        if (timerRef.current) clearTimeout(timerRef.current);
-      }
+      if (pct >= 0.6) setVisible(true);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      window.removeEventListener("scroll", onScroll);
-    };
+    return () => window.removeEventListener("scroll", onScroll);
   }, [facilityId]);
 
   const handleDismiss = () => {
@@ -95,8 +86,8 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
                   onClick={() => setExpanded(true)}
                   className="min-h-[44px] text-left font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-white/80 hover:text-white transition-colors md:cursor-default"
                 >
-                  <span className="md:hidden">Get alerts for {shortName} →</span>
-                  <span className="hidden md:inline">Watch {shortName} free →</span>
+                  <span className="md:hidden">This record can change. Get notified →</span>
+                  <span className="hidden md:inline">This record can change. We&rsquo;ll tell you when it does →</span>
                 </button>
               ) : (
                 <form

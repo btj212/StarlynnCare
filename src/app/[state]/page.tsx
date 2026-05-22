@@ -113,7 +113,9 @@ export default async function StatePage({ params }: PageProps) {
         <JsonLd objects={stateJsonLd} />
         <SampleFacilityRotationProvider facilities={data.gradeCardFacilities}>
           <div className="m-app md:hidden">
-            <MobileStateHubView data={data} config={richConfig} />
+            <main>
+              <MobileStateHubView data={data} config={richConfig} />
+            </main>
           </div>
           <MobileStickyCtaBar />
           <div className="hidden md:block">

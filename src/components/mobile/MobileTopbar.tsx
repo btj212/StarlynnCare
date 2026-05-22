@@ -7,7 +7,7 @@ import { ZipSearch } from "@/components/site/ZipSearch";
  */
 export function MobileTopbar() {
   return (
-    <header className="m-topbar">
+    <div className="m-topbar">
       <div className="m-topbar-row">
         <Link href="/" className="m-brand no-underline text-ink" aria-label="StarlynnCare home">
           <span className="mark" aria-hidden />
@@ -45,6 +45,6 @@ export function MobileTopbar() {
         </details>
       </div>
       <ZipSearch variant="mobileShell" />
-    </header>
+    </div>
   );
 }

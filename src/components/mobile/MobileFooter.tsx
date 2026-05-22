@@ -6,7 +6,7 @@ export function MobileFooter({ lastRefreshed }: { lastRefreshed: string | null }
   const refresh = lastRefreshed ?? "weekly";
 
   return (
-    <footer className="m-foot">
+    <div className="m-foot">
       <div className="brand-line">
         Starlynn<em className="not-italic" style={{ color: "#EBDDB8" }}>Care</em>
       </div>
@@ -28,6 +28,6 @@ export function MobileFooter({ lastRefreshed }: { lastRefreshed: string | null }
       <div className="meta">
         © {year} StarlynnCare, PBC · Data refreshed {refresh} · CDSS · CMS Care Compare
       </div>
-    </footer>
+    </div>
   );
 }

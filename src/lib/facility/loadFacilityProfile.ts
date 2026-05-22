@@ -189,6 +189,8 @@ export type TimelinePoint = {
   facilityScore: number;
   peerMedianScore: number;
   cited: boolean;
+  /** True when this point is the current calendar month (data still accumulating). */
+  isCurrent?: boolean;
 };
 
 export type ScopeSeverityCell = {
@@ -382,12 +384,18 @@ async function fetchSnapshot(facilityId: string): Promise<SnapshotPayload | null
 
 function deriveTimeline(snapshot: SnapshotPayload | null): TimelinePoint[] {
   if (!snapshot) return [];
-  return snapshot.trajectory_series.map((p) => ({
-    month: p.month,
-    facilityScore: p.facility_score,
-    peerMedianScore: p.peer_median_score,
-    cited: p.facility_score > 0,
-  }));
+  // Cap at current month — future entries are data artefacts, not real citations.
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return snapshot.trajectory_series
+    .filter((p) => p.month <= currentMonth)
+    .map((p) => ({
+      month: p.month,
+      facilityScore: p.facility_score,
+      peerMedianScore: p.peer_median_score,
+      cited: p.facility_score > 0,
+      isCurrent: p.month === currentMonth,
+    }));
 }
 
 const SCOPE_ORDER = ["isolated", "pattern", "widespread"] as const;
