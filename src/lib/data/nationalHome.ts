@@ -62,7 +62,7 @@ export async function loadHeroSparkSeries(): Promise<HeroSparkSeries[]> {
   // Bucket by state + YYYY-MM
   const buckets = new Map<string, Map<string, number>>();
   for (const row of rows) {
-    const insp = row.inspections as { inspection_date: string; facilities: { state_code: string } } | null;
+    const insp = row.inspections as unknown as { inspection_date: string; facilities: { state_code: string } } | null;
     if (!insp) continue;
     const stateCode = insp.facilities?.state_code;
     const dateStr = insp.inspection_date;
