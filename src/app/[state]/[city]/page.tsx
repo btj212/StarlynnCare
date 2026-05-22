@@ -168,14 +168,24 @@ export default async function RegionPage({ params }: PageProps) {
       if (raw.length > 0) {
         const ids = raw.map((f) => f.id);
 
-        // 2. Inspections
-        const { data: inspData, error: inspErr } = await supabase
-          .from("inspections")
-          .select("id, facility_id, inspection_date")
-          .in("facility_id", ids);
-
-        if (inspErr) {
-          console.error("[hub] inspections query failed:", inspErr.message);
+        // 2. Inspections — chunked to avoid URL-length limits and PostgREST's
+        //    default 1000-row cap. Large county pages can have 100+ facilities
+        //    with hundreds of inspections each; without chunking the counts are
+        //    silently truncated and citation badges show 0.
+        const INSP_CHUNK = 150;
+        const allInspData: Array<{ id: string; facility_id: string; inspection_date: string }> = [];
+        for (let ci = 0; ci < ids.length; ci += INSP_CHUNK) {
+          const chunk = ids.slice(ci, ci + INSP_CHUNK);
+          const { data: chunkData, error: chunkErr } = await supabase
+            .from("inspections")
+            .select("id, facility_id, inspection_date")
+            .in("facility_id", chunk)
+            .limit(5000);
+          if (chunkErr) {
+            console.error("[hub] inspections chunk failed:", chunkErr.message);
+            break;
+          }
+          if (chunkData) allInspData.push(...(chunkData as typeof allInspData));
         }
 
         const cutoff3y = new Date();
@@ -185,15 +195,15 @@ export default async function RegionPage({ params }: PageProps) {
         const inspCountByFac = new Map<string, number>();
         const recentInspCountByFac = new Map<string, number>();
         const inspFacMap = new Map<string, string>();
-        for (const i of inspData ?? []) {
+        for (const i of allInspData) {
           inspCountByFac.set(i.facility_id, (inspCountByFac.get(i.facility_id) ?? 0) + 1);
           inspFacMap.set(i.id, i.facility_id);
-          if ((i as { inspection_date: string }).inspection_date >= cutoff3yStr) {
+          if (i.inspection_date >= cutoff3yStr) {
             recentInspCountByFac.set(i.facility_id, (recentInspCountByFac.get(i.facility_id) ?? 0) + 1);
           }
         }
 
-        const inspIds = (inspData ?? []).map((i: { id: string }) => i.id);
+        const inspIds = allInspData.map((i) => i.id);
 
         // 3. Deficiencies — chunked to avoid URL-length limits on the IN clause.
         //    Each chunk query uses a high explicit limit (5000) to bypass PostgREST's
@@ -281,16 +291,25 @@ export default async function RegionPage({ params }: PageProps) {
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
     const isoDate = twelveMonthsAgo.toISOString().split("T")[0];
 
-    const { data: inspRows } = await supabase
-      .from("inspections")
-      .select("id, facility_id")
-      .in("facility_id", ids)
-      .gte("inspection_date", isoDate);
+    // Chunk to avoid URL-length limits; date filter reduces rows but county
+    // pages can still have 100+ facilities in scope.
+    const TREND_INSP_CHUNK = 150;
+    const trendInspRows: Array<{ id: string; facility_id: string }> = [];
+    for (let ci = 0; ci < ids.length; ci += TREND_INSP_CHUNK) {
+      const chunk = ids.slice(ci, ci + TREND_INSP_CHUNK);
+      const { data: chunkData } = await supabase
+        .from("inspections")
+        .select("id, facility_id")
+        .in("facility_id", chunk)
+        .gte("inspection_date", isoDate)
+        .limit(5000);
+      if (chunkData) trendInspRows.push(...(chunkData as typeof trendInspRows));
+    }
 
     const facilityByInsp = new Map(
-      (inspRows ?? []).map((r: { id: string; facility_id: string }) => [r.id, r.facility_id]),
+      trendInspRows.map((r) => [r.id, r.facility_id]),
     );
-    const inspIds = (inspRows ?? []).map((r: { id: string }) => r.id);
+    const inspIds = trendInspRows.map((r) => r.id);
 
     const typeAByFac = new Map<string, number>();
     const TREND_CHUNK = 200;

@@ -79,14 +79,23 @@ export async function loadRegionHubSummary(
     return { totalCount: 0, withDeficiency: 0, findingsDate, firstPublishedAt };
   }
 
-  const { data: inspRows } = await supabase
-    .from("inspections")
-    .select("id, facility_id")
-    .in("facility_id", facilityIds);
-
+  // Chunk to avoid URL-length limits and PostgREST's 1000-row default cap.
+  const INSP_CHUNK = 150;
   const inspFacMap = new Map<string, string>();
-  for (const i of (inspRows ?? []) as Array<{ id: string; facility_id: string }>) {
-    inspFacMap.set(i.id, i.facility_id);
+  for (let ci = 0; ci < facilityIds.length; ci += INSP_CHUNK) {
+    const chunk = facilityIds.slice(ci, ci + INSP_CHUNK);
+    const { data: inspRows, error: inspErr } = await supabase
+      .from("inspections")
+      .select("id, facility_id")
+      .in("facility_id", chunk)
+      .limit(5000);
+    if (inspErr) {
+      console.error("[loadRegionHubSummary] inspections:", inspErr.message);
+      break;
+    }
+    for (const i of (inspRows ?? []) as Array<{ id: string; facility_id: string }>) {
+      inspFacMap.set(i.id, i.facility_id);
+    }
   }
   const inspIds = [...inspFacMap.keys()];
 

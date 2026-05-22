@@ -94,24 +94,33 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
       if (raw.length > 0) {
         const ids = raw.map((f) => f.id);
 
-        // Inspections
-        const { data: inspData, error: inspErr } = await supabase
-          .from("inspections")
-          .select("id, facility_id")
-          .in("facility_id", ids);
-
-        if (inspErr) {
-          console.error("[facilities] inspections query failed:", inspErr.message);
+        // Inspections — chunked to avoid URL-length limits and PostgREST's default
+        // 1000-row cap. CA has thousands of inspections across ~2000 facilities;
+        // without chunking + explicit limit, most facilities get 0 citations displayed.
+        const INSP_CHUNK = 150;
+        const allInspData: Array<{ id: string; facility_id: string }> = [];
+        for (let ci = 0; ci < ids.length; ci += INSP_CHUNK) {
+          const chunk = ids.slice(ci, ci + INSP_CHUNK);
+          const { data: chunkData, error: chunkErr } = await supabase
+            .from("inspections")
+            .select("id, facility_id")
+            .in("facility_id", chunk)
+            .limit(5000);
+          if (chunkErr) {
+            console.error("[facilities] inspections chunk failed:", chunkErr.message);
+            break;
+          }
+          if (chunkData) allInspData.push(...(chunkData as typeof allInspData));
         }
 
         const inspCountByFac = new Map<string, number>();
         const inspFacMap = new Map<string, string>();
-        for (const i of inspData ?? []) {
+        for (const i of allInspData) {
           inspCountByFac.set(i.facility_id, (inspCountByFac.get(i.facility_id) ?? 0) + 1);
           inspFacMap.set(i.id, i.facility_id);
         }
 
-        const inspIds = (inspData ?? []).map((i: { id: string }) => i.id);
+        const inspIds = allInspData.map((i) => i.id);
 
         // Deficiencies — chunked to avoid URL-length limits
         const DEF_CHUNK = 150;

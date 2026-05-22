@@ -107,18 +107,24 @@ export async function GET(
   const defByFac = new Map<string, number>();
   if (rows.length > 0) {
     const facilityIds = rows.map((f) => f.id);
-    const { data: inspData } = await supabase
-      .from("inspections")
-      .select("facility_id, total_deficiency_count")
-      .in("facility_id", facilityIds);
-    for (const insp of (inspData ?? []) as Array<{
-      facility_id: string;
-      total_deficiency_count: number | null;
-    }>) {
-      defByFac.set(
-        insp.facility_id,
-        (defByFac.get(insp.facility_id) ?? 0) + (insp.total_deficiency_count ?? 0),
-      );
+    // Chunk to avoid URL-length limits and PostgREST's 1000-row default cap.
+    const INSP_CHUNK = 150;
+    for (let ci = 0; ci < facilityIds.length; ci += INSP_CHUNK) {
+      const chunk = facilityIds.slice(ci, ci + INSP_CHUNK);
+      const { data: inspData } = await supabase
+        .from("inspections")
+        .select("facility_id, total_deficiency_count")
+        .in("facility_id", chunk)
+        .limit(5000);
+      for (const insp of (inspData ?? []) as Array<{
+        facility_id: string;
+        total_deficiency_count: number | null;
+      }>) {
+        defByFac.set(
+          insp.facility_id,
+          (defByFac.get(insp.facility_id) ?? 0) + (insp.total_deficiency_count ?? 0),
+        );
+      }
     }
   }
 
