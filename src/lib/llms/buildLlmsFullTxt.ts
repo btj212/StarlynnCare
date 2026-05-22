@@ -71,7 +71,7 @@ export async function buildLlmsFullTxtBody(
       .order("last_inspection_date", { ascending: false })
       .limit(3);
 
-    const baseRows = (fData ?? []) as Array<Omit<FacilityExemplar, "total_deficiency_count" | "serious_citations">>;
+    const baseRows = (fData ?? []) as unknown as Array<Omit<FacilityExemplar, "total_deficiency_count" | "serious_citations">>;
 
     // Compute deficiency counts from inspections/deficiencies tables
     const totalByFac = new Map<string, number>();
