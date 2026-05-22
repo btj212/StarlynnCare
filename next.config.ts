@@ -81,6 +81,17 @@ const nextConfig: NextConfig = {
         destination: "/california/citrus-heights/:path*",
         permanent: true,
       },
+      // UT guide pages Google crawled that don't exist — redirect to state hub
+      {
+        source: "/utah/memory-care-vs-nursing-home",
+        destination: "/utah",
+        permanent: true,
+      },
+      {
+        source: "/utah/memory-care-licensing",
+        destination: "/utah",
+        permanent: true,
+      },
     ];
   },
 };

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
@@ -146,7 +146,9 @@ export default async function FacilityPage({ params }: PageProps) {
     );
   }
 
-  if (result === "not_found") notFound();
+  // Unpublished or missing facility — redirect to city hub rather than hard 404.
+  // Preserves crawl budget for the ~550 previously-crawled-but-unpublishable URLs.
+  if (result === "not_found") redirect(`/${stateSlug}/${regionSlug}`);
 
   const profile = result as import("@/lib/facility/loadFacilityProfile").FacilityProfile;
   const { facility, state, county, backHref, backLabel } = profile;
