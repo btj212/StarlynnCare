@@ -39,8 +39,6 @@ type FacilityRow = {
   latitude: string | null;
   longitude: string | null;
   last_inspection_date: string | null;
-  total_deficiency_count: number | null;
-  serious_citations: number | null;
   updated_at: string;
 };
 
@@ -67,8 +65,7 @@ export async function GET() {
     .from("facilities")
     .select(
       "id, name, slug, city_slug, license_number, license_type, care_category, " +
-      "city, zip, beds, latitude, longitude, last_inspection_date, " +
-      "total_deficiency_count, serious_citations, updated_at",
+      "city, zip, beds, latitude, longitude, last_inspection_date, updated_at",
     )
     .eq("state_code", "CA")
     .eq("publishable", true)
@@ -80,6 +77,57 @@ export async function GET() {
   }
 
   const rows = (data ?? []) as unknown as FacilityRow[];
+
+  // Compute total and serious deficiency counts from the inspections + deficiencies tables.
+  // total_deficiency_count lives on inspections; serious = class "Type A" or severity >= 3.
+  const totalByFac = new Map<string, number>();
+  const seriousByFac = new Map<string, number>();
+  if (rows.length > 0) {
+    const facilityIds = rows.map((f) => f.id);
+
+    const { data: inspData } = await supabase
+      .from("inspections")
+      .select("id, facility_id, total_deficiency_count")
+      .in("facility_id", facilityIds);
+
+    const inspRows = (inspData ?? []) as Array<{
+      id: string;
+      facility_id: string;
+      total_deficiency_count: number | null;
+    }>;
+    const inspFacMap = new Map<string, string>();
+    for (const i of inspRows) {
+      inspFacMap.set(i.id, i.facility_id);
+      totalByFac.set(
+        i.facility_id,
+        (totalByFac.get(i.facility_id) ?? 0) + (i.total_deficiency_count ?? 0),
+      );
+    }
+
+    const inspIds = inspRows.map((i) => i.id);
+    if (inspIds.length > 0) {
+      const CHUNK = 150;
+      for (let ci = 0; ci < inspIds.length; ci += CHUNK) {
+        const chunk = inspIds.slice(ci, ci + CHUNK);
+        const { data: defData } = await supabase
+          .from("deficiencies")
+          .select("inspection_id, class, severity")
+          .in("inspection_id", chunk);
+        for (const d of (defData ?? []) as Array<{
+          inspection_id: string;
+          class: string | null;
+          severity: number | null;
+        }>) {
+          const fid = inspFacMap.get(d.inspection_id);
+          if (!fid) continue;
+          const isSerious = d.class === "Type A" || (d.severity ?? 0) >= 3;
+          if (isSerious) {
+            seriousByFac.set(fid, (seriousByFac.get(fid) ?? 0) + 1);
+          }
+        }
+      }
+    }
+  }
   const generatedAt = new Date().toISOString().split("T")[0];
 
   const lines: string[] = [
@@ -104,8 +152,8 @@ export async function GET() {
         f.latitude != null ? Number(f.latitude) : null,
         f.longitude != null ? Number(f.longitude) : null,
         f.last_inspection_date,
-        Number(f.total_deficiency_count ?? 0),
-        Number(f.serious_citations ?? 0),
+        totalByFac.get(f.id) ?? 0,
+        seriousByFac.get(f.id) ?? 0,
         canonicalFor(`/california/${f.city_slug}/${f.slug}`),
         regulatorLicensePageFor("CA", f.license_number),
         f.updated_at.split("T")[0],

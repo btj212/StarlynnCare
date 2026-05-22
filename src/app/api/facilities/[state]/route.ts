@@ -24,7 +24,6 @@ type FacilityRow = {
   serves_memory_care: boolean;
   capacity_tier: string | null;
   last_inspection_date: string | null;
-  total_deficiency_count: number | null;
   updated_at: string | null;
 };
 
@@ -88,7 +87,7 @@ export async function GET(
       "id, name, slug, city_slug, street, city, zip, state_code, " +
       "latitude, longitude, license_number, license_type, beds, " +
       "care_category, serves_memory_care, capacity_tier, " +
-      "last_inspection_date, total_deficiency_count, updated_at",
+      "last_inspection_date, updated_at",
     )
     .eq("state_code", stateInfo.code)
     .eq("publishable", true)
@@ -102,6 +101,26 @@ export async function GET(
   }
 
   const rows = (data ?? []) as unknown as FacilityRow[];
+
+  // total_deficiency_count lives on the inspections table, not facilities.
+  // Sum across all non-complaint inspections per facility.
+  const defByFac = new Map<string, number>();
+  if (rows.length > 0) {
+    const facilityIds = rows.map((f) => f.id);
+    const { data: inspData } = await supabase
+      .from("inspections")
+      .select("facility_id, total_deficiency_count")
+      .in("facility_id", facilityIds);
+    for (const insp of (inspData ?? []) as Array<{
+      facility_id: string;
+      total_deficiency_count: number | null;
+    }>) {
+      defByFac.set(
+        insp.facility_id,
+        (defByFac.get(insp.facility_id) ?? 0) + (insp.total_deficiency_count ?? 0),
+      );
+    }
+  }
 
   const facilities: StateFacility[] = rows.map((f) => ({
     id: f.id,
@@ -121,7 +140,7 @@ export async function GET(
     capacity_tier: f.capacity_tier,
     regulator_url: regulatorLicensePageFor(f.state_code, f.license_number),
     last_inspection_date: f.last_inspection_date,
-    total_deficiency_count: Number(f.total_deficiency_count ?? 0),
+    total_deficiency_count: defByFac.get(f.id) ?? 0,
     updated_at: f.updated_at,
   }));
 

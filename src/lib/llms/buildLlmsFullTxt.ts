@@ -13,8 +13,8 @@ type FacilityExemplar = {
   care_category: string;
   beds: number | null;
   last_inspection_date: string | null;
-  total_deficiency_count: number | null;
-  serious_citations: number | null;
+  total_deficiency_count: number;
+  serious_citations: number;
   updated_at: string;
 };
 
@@ -55,22 +55,71 @@ export async function buildLlmsFullTxtBody(
   const aboutUrl = canonicalFor("/about");
   const dataUrl = canonicalFor("/data");
 
-  // Pull 3 exemplary CA facilities — pick those with the most inspection data
-  // so the entries are maximally illustrative for LLM consumers.
+  // Pull 3 exemplary CA facilities — pick recently inspected ones so the
+  // entries are maximally illustrative for LLM consumers.
   let exemplars: FacilityExemplar[] = [];
   if (supabase) {
-    const { data } = await supabase
+    const { data: fData } = await supabase
       .from("facilities")
       .select(
         "id, name, slug, city_slug, city, license_number, care_category, " +
-        "beds, last_inspection_date, total_deficiency_count, serious_citations, updated_at",
+        "beds, last_inspection_date, updated_at",
       )
       .eq("state_code", "CA")
       .eq("publishable", true)
       .not("last_inspection_date", "is", null)
-      .order("total_deficiency_count", { ascending: false })
+      .order("last_inspection_date", { ascending: false })
       .limit(3);
-    exemplars = (data ?? []) as unknown as FacilityExemplar[];
+
+    const baseRows = (fData ?? []) as Array<Omit<FacilityExemplar, "total_deficiency_count" | "serious_citations">>;
+
+    // Compute deficiency counts from inspections/deficiencies tables
+    const totalByFac = new Map<string, number>();
+    const seriousByFac = new Map<string, number>();
+    if (baseRows.length > 0) {
+      const facilityIds = baseRows.map((f) => f.id);
+      const { data: inspData } = await supabase
+        .from("inspections")
+        .select("id, facility_id, total_deficiency_count")
+        .in("facility_id", facilityIds);
+      const inspRows = (inspData ?? []) as Array<{
+        id: string;
+        facility_id: string;
+        total_deficiency_count: number | null;
+      }>;
+      const inspFacMap = new Map<string, string>();
+      for (const i of inspRows) {
+        inspFacMap.set(i.id, i.facility_id);
+        totalByFac.set(
+          i.facility_id,
+          (totalByFac.get(i.facility_id) ?? 0) + (i.total_deficiency_count ?? 0),
+        );
+      }
+      const inspIds = inspRows.map((i) => i.id);
+      if (inspIds.length > 0) {
+        const { data: defData } = await supabase
+          .from("deficiencies")
+          .select("inspection_id, class, severity")
+          .in("inspection_id", inspIds);
+        for (const d of (defData ?? []) as Array<{
+          inspection_id: string;
+          class: string | null;
+          severity: number | null;
+        }>) {
+          const fid = inspFacMap.get(d.inspection_id);
+          if (!fid) continue;
+          if (d.class === "Type A" || (d.severity ?? 0) >= 3) {
+            seriousByFac.set(fid, (seriousByFac.get(fid) ?? 0) + 1);
+          }
+        }
+      }
+    }
+
+    exemplars = baseRows.map((f) => ({
+      ...f,
+      total_deficiency_count: totalByFac.get(f.id) ?? 0,
+      serious_citations: seriousByFac.get(f.id) ?? 0,
+    }));
   }
 
   const exemplarSection =
