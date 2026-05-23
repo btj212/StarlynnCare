@@ -52,6 +52,17 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
       "Illustrated grandparent and grandchild walking together — representing the choice Washington families face between memory care ALFs and skilled nursing facilities",
   },
 
+  "/washington/why-dshs-contract-isnt-a-quality-badge": {
+    src: "/illustrations/family.png",
+    alt:
+      "Illustrated family — representing Washington families researching what a DSHS Dementia Care contract means for memory care quality",
+  },
+  "/washington/how-to-read-our-inspection-data": {
+    src: "/illustrations/beach-grandparent-grandchild.png",
+    alt:
+      "Illustrated grandparent and grandchild walking together — representing the families who rely on inspection data to make Washington memory care decisions",
+  },
+
   // ── Minnesota articles ──────────────────────────────────────────────────────
   "/minnesota/memory-care-licensing": {
     src: "/illustrations/family.png",

@@ -261,12 +261,15 @@ def insert_deficiency(
     dedupe_key: str,
 ) -> None:
     state_raw = (d.get("state_severity_raw") or "").strip() or None
-    ij = bool(d.get("immediate_jeopardy"))
-    sev = infer_severity(state_raw, d.get("severity"), ij)
+    raw_ij = bool(d.get("immediate_jeopardy"))
+    sev = infer_severity(state_raw, d.get("severity"), raw_ij)
+    # Promote immediate_jeopardy if severity inference resolved to 4 (IJ tier)
+    # even when the source bundle didn't set the boolean explicitly.
+    ij = raw_ij or (sev == 4)
     code = final_deficiency_code(d, dedupe_key)
     desc = (d.get("description") or "")[:4000] or None
     narr = (d.get("inspector_narrative") or "")[:8000] or None
-    cls = d.get("class") or state_raw
+    cls = d.get("class")  # do not fall back to state_raw; visit-type labels must not populate class
     cited = _parse_date_loose(d.get("cited_date"))
     corrected = _parse_date_loose(d.get("corrected_date"))
     status = d.get("status")

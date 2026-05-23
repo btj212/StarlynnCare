@@ -185,6 +185,23 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     live: true,
   },
 
+  {
+    slug: "/washington/why-dshs-contract-isnt-a-quality-badge",
+    title: "Why a DSHS Dementia Care contract isn't a quality badge",
+    desc: "What the contract is, what the WA inspection record shows, and why we don't elevate it to badge status on facility profiles.",
+    states: ["WA"],
+    tags: ["inspection", "licensing"],
+    live: true,
+  },
+  {
+    slug: "/washington/how-to-read-our-inspection-data",
+    title: "How to read our Washington inspection data",
+    desc: "Complaint concentration, severity definitions, and what we deliberately don't show on WA facility profiles.",
+    states: ["WA"],
+    tags: ["inspection"],
+    live: true,
+  },
+
   // ── Minnesota ─────────────────────────────────────────────────────────────
   {
     slug: "/minnesota/memory-care-licensing",

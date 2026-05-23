@@ -107,7 +107,7 @@ def parse_detail_html(path: Path, lic_from_name: str) -> dict[str, Any]:
                 "category": type_label,
                 "description": f"WA DSHS report: {type_label} ({month:02d}/{year})",
                 "inspector_narrative": href,
-                "state_severity_raw": type_label,
+                "state_severity_raw": None,  # type_label is a visit-type label, not a severity; belongs in category only
                 "cited_date": iso_date,
                 "immediate_jeopardy": False,
             }
