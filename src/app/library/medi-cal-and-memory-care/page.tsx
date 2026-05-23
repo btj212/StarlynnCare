@@ -73,9 +73,12 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="font-[family-name:var(--font-display)] font-normal text-[clamp(22px,3vw,32px)] leading-[1.1] tracking-[-0.01em] text-ink mt-16 mb-5"
+      className="font-[family-name:var(--font-display)] font-normal text-[clamp(22px,3vw,32px)] leading-[1.1] tracking-[-0.01em] text-ink mt-16 mb-5 group/h2"
     >
-      {children}
+      <a href={`#${id}`} className="no-underline text-ink hover:text-ink">
+        {children}
+        <span className="ml-2 font-[family-name:var(--font-mono)] text-[14px] text-rust/40 opacity-0 group-hover/h2:opacity-100 transition-opacity select-none" aria-hidden>#</span>
+      </a>
     </h2>
   );
 }

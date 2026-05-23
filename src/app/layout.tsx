@@ -9,7 +9,7 @@ const instrumentSerif = Instrument_Serif({
   weight: ["400"],
   style: ["normal", "italic"],
   variable: "--font-display",
-  display: "swap",
+  display: "optional",
 });
 
 const interTight = Inter_Tight({
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "StarlynnCare — Memory care you can trust, ranked by regulators.",
+    title: "StarlynnCare — Find memory care you can trust, ranked with regulator data.",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care.",
     url: "https://www.starlynncare.com",
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StarlynnCare — Memory care you can trust, ranked by regulators.",
+    title: "StarlynnCare — Find memory care you can trust, ranked with regulator data.",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care.",
     images: ["/og-default.png"],
@@ -79,11 +79,13 @@ export default function RootLayout({
         <Script src="https://analytics.ahrefs.com/analytics.js" data-key="IjDNyQvSmnNGFMK02hdywA" strategy="afterInteractive" />
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
-            (function(c,l,a,r,i,t,y){
-              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "wroc9wbsaf");
+            if (window.location.hostname === 'www.starlynncare.com') {
+              (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "wroc9wbsaf");
+            }
           `}
         </Script>
       </body>

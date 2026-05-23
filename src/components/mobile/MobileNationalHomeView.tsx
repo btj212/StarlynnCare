@@ -47,8 +47,8 @@ export function MobileNationalHomeView({ data }: Props) {
           5 States · Vol. 01 · 2026
         </div>
         <h1>
-          Memory care you can <em>trust,</em>{" "}
-          ranked by regulators.
+          Find memory care you can <em>trust,</em>{" "}
+          ranked with regulator data.
         </h1>
         <p className="deck">
           Public inspection data. No paid ads. No sales calls. Every claim sourced to a state record.
