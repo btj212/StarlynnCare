@@ -35,58 +35,6 @@ export type NationalHomeData = {
   }>;
 };
 
-export type SparkPoint = { month: string; count: number };
-export type HeroSparkSeries = { stateCode: string; points: SparkPoint[] };
-
-/**
- * Per-state severe-deficiency counts by month for the last 24 months.
- * Used by the homepage hero spark chart.
- */
-export async function loadHeroSparkSeries(): Promise<HeroSparkSeries[]> {
-  const supabase = tryPublicSupabaseClient();
-  if (!supabase) return [];
-
-  const now = new Date();
-  const cutoff = new Date(now.getFullYear(), now.getMonth() - 23, 1);
-  const cutoffIso = cutoff.toISOString().slice(0, 10);
-
-  // Pull severe deficiency rows joined to inspection date + state
-  const { data: rows } = await supabase
-    .from("deficiencies")
-    .select("severity, inspections!inner(inspection_date, facilities!inner(state_code))")
-    .gte("severity", 3)
-    .gte("inspections.inspection_date", cutoffIso);
-
-  if (!rows || rows.length === 0) return [];
-
-  // Bucket by state + YYYY-MM
-  const buckets = new Map<string, Map<string, number>>();
-  for (const row of rows) {
-    const insp = row.inspections as unknown as { inspection_date: string; facilities: { state_code: string } } | null;
-    if (!insp) continue;
-    const stateCode = insp.facilities?.state_code;
-    const dateStr = insp.inspection_date;
-    if (!stateCode || !dateStr) continue;
-    const month = dateStr.slice(0, 7);
-    if (!buckets.has(stateCode)) buckets.set(stateCode, new Map());
-    const sm = buckets.get(stateCode)!;
-    sm.set(month, (sm.get(month) ?? 0) + 1);
-  }
-
-  // Build ordered month labels for the last 24 months
-  const months: string[] = [];
-  for (let i = 23; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-  }
-
-  const RENDER_STATES = ["CA", "OR", "WA", "MN", "TX"];
-  return RENDER_STATES.map((code) => ({
-    stateCode: code,
-    points: months.map((m) => ({ month: m, count: buckets.get(code)?.get(m) ?? 0 })),
-  }));
-}
-
 /**
  * Loads data for the national homepage.
  * - Total counts across all covered states.

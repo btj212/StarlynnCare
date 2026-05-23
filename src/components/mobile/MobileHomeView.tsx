@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { StatItem } from "@/components/editorial/StatBlock";
 import { MobileTopbar } from "@/components/mobile/MobileTopbar";
 import { MobileTrustBar } from "@/components/mobile/MobileTrustBar";
+import { ZipSearch } from "@/components/site/ZipSearch";
 import {
   SyncedHomeSampleCardMobile,
 } from "@/components/home/SampleFacilityRotation";
@@ -59,7 +60,7 @@ export function MobileHomeView({
 }) {
   return (
     <>
-      <MobileTopbar />
+      <MobileTopbar stateCode="CA" />
 
       <section className="m-hero">
         <div className="eyebrow">
@@ -72,6 +73,9 @@ export function MobileHomeView({
         <p className="deck">
           No paid ads. No sales calls. Every claim sourced and dated to a public state record.
         </p>
+        <div className="mt-4">
+          <ZipSearch variant="mobileShell" />
+        </div>
       </section>
 
       <div className="m-illo">

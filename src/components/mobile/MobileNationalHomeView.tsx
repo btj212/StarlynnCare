@@ -1,18 +1,18 @@
+import Image from "next/image";
 import Link from "next/link";
-import type { NationalHomeData, HeroSparkSeries } from "@/lib/data/nationalHome";
+import type { NationalHomeData } from "@/lib/data/nationalHome";
 import { MobileTopbar } from "@/components/mobile/MobileTopbar";
 import { MobileTrustBar } from "@/components/mobile/MobileTrustBar";
+import { ZipSearch } from "@/components/site/ZipSearch";
 import {
   SyncedHomeSampleCardMobile,
 } from "@/components/home/SampleFacilityRotation";
 import { MobileHomeFaq } from "@/components/mobile/MobileHomeFaq";
 import { MobileFooter } from "@/components/mobile/MobileFooter";
-import { HeroSparkChart } from "@/components/national-home/HeroSparkChart";
 import { CA_FAQS } from "@/lib/content/stateFaqs";
 
 type Props = {
   data: NationalHomeData;
-  sparkSeries: HeroSparkSeries[];
 };
 
 const STATE_REGULATORS: Record<string, string> = {
@@ -25,7 +25,7 @@ const STATE_REGULATORS: Record<string, string> = {
 
 const MIN_LIVE_THRESHOLD = 100;
 
-export function MobileNationalHomeView({ data, sparkSeries }: Props) {
+export function MobileNationalHomeView({ data }: Props) {
   const { totalFacilities, totalInspections, totalSevereCitations, states, topCities, sampleReviews, lastRefreshed } = data;
   const liveStates = states.filter((s) => s.facilityCount >= MIN_LIVE_THRESHOLD);
   const pilotStates = states.filter((s) => s.facilityCount > 0 && s.facilityCount < MIN_LIVE_THRESHOLD);
@@ -53,13 +53,22 @@ export function MobileNationalHomeView({ data, sparkSeries }: Props) {
         <p className="deck">
           Public inspection data. No paid ads. No sales calls. Every claim sourced to a state record.
         </p>
+        <div className="mt-4">
+          <ZipSearch variant="mobileShell" />
+        </div>
       </section>
 
-      {sparkSeries.length > 0 && (
-        <div className="px-[18px] pb-2">
-          <HeroSparkChart series={sparkSeries} />
-        </div>
-      )}
+      <div className="m-illo">
+        <Image
+          src="/illustrations/family.png"
+          alt="Illustrated family walking together — representing the families we help navigate memory care decisions"
+          width={1200}
+          height={900}
+          className="h-full w-full object-cover"
+          sizes="100vw"
+          priority
+        />
+      </div>
 
       <MobileTrustBar />
 
@@ -134,6 +143,20 @@ export function MobileNationalHomeView({ data, sparkSeries }: Props) {
         <h2>
           Ranked on public record. <em>Transparent methodology.</em>
         </h2>
+      </section>
+
+      <div className="m-illo">
+        <Image
+          src="/illustrations/couch-grandmother-grandkids-reading.png"
+          alt="Illustrated grandmother reading a book to two young grandchildren on a couch — representing the relationships dementia care planning aims to preserve"
+          width={1200}
+          height={900}
+          className="h-full w-full object-cover"
+          sizes="100vw"
+        />
+      </div>
+
+      <section className="m-section tight" style={{ paddingTop: 0 }}>
         <p className="mb-4 text-[14px] leading-relaxed text-ink-2 px-[18px] -mx-[18px]">
           Each facility is ranked against peers in its state using publicly available inspection records from state licensing agencies.{" "}
           <Link href="/methodology" className="text-teal underline underline-offset-4">

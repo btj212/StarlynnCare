@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { NationalHomeData, HeroSparkSeries } from "@/lib/data/nationalHome";
+import Image from "next/image";
+import type { NationalHomeData } from "@/lib/data/nationalHome";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { StatBlock } from "@/components/editorial/StatBlock";
 import { StateHubReviews } from "@/components/state-hub/StateHubReviews";
@@ -8,17 +9,15 @@ import { StateHubCta } from "@/components/state-hub/StateHubCta";
 import { StatesWeCoverGrid } from "./StatesWeCoverGrid";
 import { ZipSearch } from "@/components/site/ZipSearch";
 import { SyncedHomeSampleCardDesktop } from "@/components/home/SampleFacilityRotation";
-import { HeroSparkChart } from "./HeroSparkChart";
 import { CA_FAQS } from "@/lib/content/stateFaqs";
 
 type Props = {
   data: NationalHomeData;
-  sparkSeries: HeroSparkSeries[];
 };
 
 const MIN_LIVE_THRESHOLD = 100;
 
-export function NationalHomeSections({ data, sparkSeries }: Props) {
+export function NationalHomeSections({ data }: Props) {
   const { totalFacilities, totalInspections, totalSevereCitations, states, topCities, sampleReviews } = data;
 
   const liveStates = states.filter((s) => s.facilityCount >= MIN_LIVE_THRESHOLD);
@@ -100,7 +99,19 @@ export function NationalHomeSections({ data, sparkSeries }: Props) {
             </div>
 
             <div className="hidden md:block">
-              <HeroSparkChart series={sparkSeries} />
+              <div
+                className="relative w-full border border-paper-rule overflow-hidden"
+                style={{ aspectRatio: "1/1", background: "var(--color-paper-2)" }}
+              >
+                <Image
+                  src="/illustrations/family.png"
+                  alt="Illustrated family walking together — representing the families we help navigate memory care decisions"
+                  fill
+                  sizes="(max-width: 768px) 0px, 40vw"
+                  className="object-cover"
+                  priority
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -182,6 +193,15 @@ export function NationalHomeSections({ data, sparkSeries }: Props) {
           <SectionHead
             title={<>Three data signals. <em>Compared to peers.</em></>}
           />
+          <div className="relative mb-12 border border-paper-rule overflow-hidden" style={{ aspectRatio: "21/9", background: "var(--color-paper-2)" }}>
+            <Image
+              src="/illustrations/couch-grandmother-grandkids-reading.png"
+              alt="Illustrated grandmother reading a book to two young grandchildren on a couch — representing the relationships dementia care planning aims to preserve"
+              fill
+              sizes="1280px"
+              className="object-cover"
+            />
+          </div>
           <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1fr_1.05fr]">
             <div>
               <h3 className="font-[family-name:var(--font-display)] text-[26px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.01em] m-0 mb-4">

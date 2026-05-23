@@ -6,6 +6,7 @@ import { buildStateStatItems } from "@/lib/stateHubConfigs/types";
 import { getSeasonAndYear } from "@/lib/data/stateHub";
 import { MobileTopbar } from "@/components/mobile/MobileTopbar";
 import { MobileTrustBar } from "@/components/mobile/MobileTrustBar";
+import { ZipSearch } from "@/components/site/ZipSearch";
 import { MobileHomeFaq } from "@/components/mobile/MobileHomeFaq";
 import { MobileFooter } from "@/components/mobile/MobileFooter";
 import {
@@ -27,7 +28,7 @@ export function MobileStateHubView({ data, config }: Props) {
 
   return (
     <>
-      <MobileTopbar />
+      <MobileTopbar stateCode={stateCode} />
 
       <section className="m-hero">
         <div className="eyebrow">
@@ -40,6 +41,11 @@ export function MobileStateHubView({ data, config }: Props) {
         <p className="deck">
           No paid ads. No sales calls. Every claim sourced and dated to a public state record.
         </p>
+        {showZipSearch && (
+          <div className="mt-4">
+            <ZipSearch variant="mobileShell" />
+          </div>
+        )}
       </section>
 
       <div className="m-illo">

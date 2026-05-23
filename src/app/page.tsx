@@ -12,10 +12,10 @@ import {
 import {
   SampleFacilityRotationProvider,
 } from "@/components/home/SampleFacilityRotation";
-import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
+import { MobileDigestBar } from "@/components/mobile/MobileDigestBar";
 import { MobileNationalHomeView } from "@/components/mobile/MobileNationalHomeView";
 import { NationalHomeSections } from "@/components/national-home/NationalHomeSections";
-import { loadNationalHomeData, loadHeroSparkSeries } from "@/lib/data/nationalHome";
+import { loadNationalHomeData } from "@/lib/data/nationalHome";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { seededShuffle, SAMPLE_CARD_ROTATION_COUNT } from "@/lib/data/stateHub";
 import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
@@ -101,10 +101,9 @@ async function loadGradeCardFacilities(): Promise<HomeSampleFacility[]> {
 }
 
 export default async function Home() {
-  const [data, gradeCardFacilities, sparkSeries] = await Promise.all([
+  const [data, gradeCardFacilities] = await Promise.all([
     loadNationalHomeData(),
     loadGradeCardFacilities(),
-    loadHeroSparkSeries(),
   ]);
 
   // Single homepage @graph chains Organization ↔ WebSite ↔ founder ↔ reviewer Person
@@ -136,10 +135,10 @@ export default async function Home() {
       <SampleFacilityRotationProvider facilities={gradeCardFacilities}>
         <div className="m-app md:hidden">
           <main>
-            <MobileNationalHomeView data={data} sparkSeries={sparkSeries} />
+            <MobileNationalHomeView data={data} />
           </main>
         </div>
-        <MobileStickyCtaBar />
+        <MobileDigestBar />
 
         <div className="hidden md:block">
           <GovernanceBar scope="national" />
@@ -152,7 +151,7 @@ export default async function Home() {
           />
 
           <main>
-            <NationalHomeSections data={data} sparkSeries={sparkSeries} />
+            <NationalHomeSections data={data} />
           </main>
 
           <SiteFooter />

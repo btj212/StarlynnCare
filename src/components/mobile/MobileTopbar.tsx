@@ -1,11 +1,16 @@
 import Link from "next/link";
-import { ZipSearch } from "@/components/site/ZipSearch";
+
+type Props = {
+  /** Pass the two-letter state code to show the edition badge (e.g. "CA"). Omit on national pages. */
+  stateCode?: string;
+};
 
 /**
- * Sticky mobile topbar: brand, compact nav, ZIP search (brief §3).
+ * Sticky mobile topbar: brand + compact nav only.
+ * ZIP search lives in the m-hero section so it scrolls away with content.
  * Uses `.m-topbar` from mobile-shell.css — only render inside `.m-app` on <md viewports.
  */
-export function MobileTopbar() {
+export function MobileTopbar({ stateCode }: Props = {}) {
   return (
     <div className="m-topbar">
       <div className="m-topbar-row">
@@ -14,7 +19,7 @@ export function MobileTopbar() {
           <span>
             Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
           </span>
-          <span className="ca">CA</span>
+          {stateCode && <span className="ca">{stateCode}</span>}
         </Link>
 
         <details className="relative group">
@@ -44,7 +49,6 @@ export function MobileTopbar() {
           </nav>
         </details>
       </div>
-      <ZipSearch variant="mobileShell" />
     </div>
   );
 }
