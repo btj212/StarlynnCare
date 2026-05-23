@@ -190,7 +190,7 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     title: "Why a DSHS Dementia Care contract isn't a quality badge",
     desc: "What the contract is, what the WA inspection record shows, and why we don't elevate it to badge status on facility profiles.",
     states: ["WA"],
-    tags: ["inspection", "licensing"],
+    tags: ["inspection"],
     live: true,
   },
   {

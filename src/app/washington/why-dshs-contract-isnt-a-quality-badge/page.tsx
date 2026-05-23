@@ -332,6 +332,15 @@ export default function WaDshsContractPage() {
             </dl>
           </div>
 
+          <div className="mt-12">
+            <Link
+              href="/washington/facilities"
+              className="inline-flex items-center gap-2 border border-ink px-5 py-3 font-[family-name:var(--font-mono)] text-[12px] uppercase tracking-[0.1em] text-ink hover:bg-ink hover:text-paper transition-colors"
+            >
+              Browse Washington memory care facilities →
+            </Link>
+          </div>
+
           <div className="mt-16 rounded-lg border border-paper-rule bg-paper-2 px-5 py-6">
             <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-ink-3 mb-3">
               Continue reading
