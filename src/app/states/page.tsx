@@ -15,7 +15,7 @@ export const revalidate = 3600;
 const PAGE_CANONICAL = canonicalFor("/states");
 const PAGE_TITLE = "Memory care by state | StarlynnCare";
 const PAGE_DESC =
-  "Inspection-backed memory care facility directories for California, Oregon, Washington, Minnesota, and Texas — sourced from each state's regulator.";
+  "Inspection-backed memory care facility directories for California, Oregon, Washington, Minnesota, and more — sourced from each state's regulator.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -105,10 +105,11 @@ export default async function StatesPage() {
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
           <SectionHead
             label="Covered states"
-            title={<>Five states, <em>one editorial standard.</em></>}
+            title={<>Four states, <em>one editorial standard.</em></>}
           />
+          {/* TX hidden until full HHSC dataset is ingested — remove filter to restore */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {COVERED_STATES.map((state) => {
+            {COVERED_STATES.filter((s) => s.code !== "TX").map((state) => {
               const count = counts[state.code] ?? 0;
               return (
                 <Link
