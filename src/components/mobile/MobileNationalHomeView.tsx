@@ -101,7 +101,8 @@ export function MobileNationalHomeView({ data }: Props) {
         </h2>
       </section>
       <div className="m-chips">
-        {states.map((s) => (
+        {/* TX hidden until full HHSC dataset is ingested — remove filter to restore */}
+        {states.filter((s) => s.stateCode !== "TX").map((s) => (
           <Link key={s.stateCode} href={`/${s.stateSlug}`} className="m-chip">
             <span>{s.stateName}</span>
             <span className="n">{s.facilityCount > 0 ? s.facilityCount : "—"}</span>

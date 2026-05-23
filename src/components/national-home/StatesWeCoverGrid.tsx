@@ -21,10 +21,15 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   TX: "Alzheimer-certified assisted living · HHSC LTCR records",
 };
 
+// TX is temporarily hidden from the grid — only 1 facility live (pilot).
+// Remove this filter once the full HHSC dataset is ingested.
+const HIDDEN_STATE_CODES = ["TX"];
+
 export function StatesWeCoverGrid({ states }: Props) {
+  const visibleStates = states.filter((s) => !HIDDEN_STATE_CODES.includes(s.stateCode));
   return (
-    <div className="grid grid-cols-1 gap-px bg-paper-rule sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 border border-paper-rule">
-      {states.map((s) => (
+    <div className="grid grid-cols-1 gap-px bg-paper-rule sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-paper-rule">
+      {visibleStates.map((s) => (
         <Link
           key={s.stateCode}
           href={`/${s.stateSlug}`}
