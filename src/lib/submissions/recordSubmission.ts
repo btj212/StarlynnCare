@@ -4,6 +4,7 @@ import { sendAdminAlert } from "@/lib/email/adminAlert";
 export type SubmissionEventType =
   | "facility_watch"
   | "area_watch"
+  | "digest_subscriber"
   | "listing_report"
   | "review"
   | "waitlist";
