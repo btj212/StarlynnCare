@@ -48,7 +48,7 @@ export function FacilityPhotoGrid({ photoUrls, photoSources, facilityName }: Pro
   return (
     <div className="relative overflow-hidden" style={{ aspectRatio: "4/3" }}>
       <div className="grid grid-cols-2 gap-[2px] h-full">
-        {slots.map((url, i) => (
+          {slots.map((url, i) => (
           <div key={i} className="relative overflow-hidden bg-ink/20">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -56,6 +56,9 @@ export function FacilityPhotoGrid({ photoUrls, photoSources, facilityName }: Pro
               alt={i === 0 ? facilityName : `${facilityName} — photo ${i + 1}`}
               className="absolute inset-0 h-full w-full object-cover"
               loading={i === 0 ? "eager" : "lazy"}
+              width={600}
+              height={400}
+              decoding="async"
             />
           </div>
         ))}
@@ -85,6 +88,9 @@ function SinglePhoto({
           src={photo}
           alt={facilityName}
           className="absolute inset-0 h-full w-full object-cover"
+          width={400}
+          height={400}
+          decoding="async"
         />
       ) : (
         <span className="absolute inset-0 grid place-items-center font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.22em] text-white/70">

@@ -152,14 +152,15 @@ function ExpandedRow({
         </div>
       )}
 
-      {/* 4. Full inspector notes — primary CTA dropdown */}
+      {/* 4. Full inspector notes — expandable text disclosure */}
       {rawNarrative && (
-        <details className="mt-4 group/notes">
-          <summary className="inline-flex cursor-pointer list-none items-center gap-2 border border-rust px-4 py-2.5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-rust hover:bg-rust hover:text-white transition-colors [&::-webkit-details-marker]:hidden">
-            <span>Full inspector notes</span>
-            <svg viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 shrink-0 transition-transform duration-200 group-open/notes:rotate-180" aria-hidden>
-              <path d="M8 10L3 5h10L8 10z" />
+        <details className="mt-5 group/notes">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-rust hover:text-rust/70 transition-colors [&::-webkit-details-marker]:hidden">
+            <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 shrink-0 transition-transform duration-200 group-open/notes:rotate-90" aria-hidden>
+              <path d="M6 4l6 4-6 4V4z" />
             </svg>
+            <span className="group-open/notes:hidden">Read raw inspector notes</span>
+            <span className="hidden group-open/notes:inline">Close inspector notes</span>
           </summary>
           <p className="mt-3 border-l-2 border-rust/30 pl-4 text-[13px] leading-relaxed text-ink-2 whitespace-pre-line">
             {rawNarrative}

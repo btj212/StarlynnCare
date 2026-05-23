@@ -144,7 +144,7 @@ export default function AboutPage() {
                   <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
                     Rebecca Lynn Starkey, BSN, RN, PHN
                   </h2>
-                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-teal">
+                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-ink-3">
                     Co-founder · Clinical voice
                   </p>
                 </div>
@@ -187,7 +187,7 @@ export default function AboutPage() {
                   <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
                     Blake Jones
                   </h2>
-                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-teal">
+                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-ink-3">
                     Co-founder · Systems & storytelling
                   </p>
                 </div>
