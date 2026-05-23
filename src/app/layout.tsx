@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "StarlynnCare — Memory care you can trust, ranked with regulator data.",
+    title: "StarlynnCare — Find memory care you can trust, ranked with regulator data.",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care.",
     url: "https://www.starlynncare.com",
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StarlynnCare — Memory care you can trust, ranked with regulator data.",
+    title: "StarlynnCare — Find memory care you can trust, ranked with regulator data.",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care.",
     images: ["/og-default.png"],

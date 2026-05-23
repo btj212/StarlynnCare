@@ -67,7 +67,7 @@ export function NationalHomeSections({ data }: Props) {
                 className="font-[family-name:var(--font-display)] font-normal leading-[0.98] tracking-[-0.02em] text-ink mb-5 sm:mb-6 max-w-none md:max-w-[16ch]"
                 style={{ fontSize: "clamp(32px, 5vw + 0.5rem, 84px)" }}
               >
-                Memory care you can{" "}
+                Find memory care you can{" "}
                 <em className="italic text-rust">trust,</em>{" "}
                 ranked with regulator data.
               </h1>
