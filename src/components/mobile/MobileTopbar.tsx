@@ -15,7 +15,15 @@ export function MobileTopbar({ stateCode }: Props = {}) {
     <div className="m-topbar">
       <div className="m-topbar-row">
         <Link href="/" className="m-brand no-underline text-ink" aria-label="StarlynnCare home">
-          <span className="mark" aria-hidden />
+          <svg viewBox="-50 -50 100 100" className="mark" aria-hidden fill="currentColor" style={{ color: "var(--color-ink)" }}>
+            <g transform="rotate(0)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(60)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(120)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(180)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(240)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <g transform="rotate(300)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
+            <circle r="3.2"/>
+          </svg>
           <span>
             Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
           </span>

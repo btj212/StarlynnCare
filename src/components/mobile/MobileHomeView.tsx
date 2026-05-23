@@ -66,10 +66,10 @@ export function MobileHomeView({
         <div className="eyebrow">
           California Edition · Vol. 02 · {season} {year}
         </div>
-        <h2>
+        <h1>
           The <em>best</em> memory care in California,{" "}
           <span className="ul">ranked by the state&apos;s own inspectors.</span>
-        </h2>
+        </h1>
         <p className="deck">
           No paid ads. No sales calls. Every claim sourced and dated to a public state record.
         </p>

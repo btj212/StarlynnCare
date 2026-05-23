@@ -24,7 +24,7 @@ export function MobileStateHubView({ data, config }: Props) {
   const { stateName, stateSlug, stateCode, edition, showZipSearch } = config;
   const statItems = buildStateStatItems(data.stats, config);
   const { counties, topCities, stats, sampleReviews } = data;
-  const firstReview = sampleReviews[0] ?? null;
+  const reviewsToShow = sampleReviews.slice(0, 3);
 
   return (
     <>
@@ -34,10 +34,10 @@ export function MobileStateHubView({ data, config }: Props) {
         <div className="eyebrow">
           {stateName} Edition · {edition} · {season} {year}
         </div>
-        <h2>
+        <h1>
           The <em>best</em> memory care in {stateName},{" "}
           <span className="ul">ranked by the state&apos;s own inspectors.</span>
-        </h2>
+        </h1>
         <p className="deck">
           No paid ads. No sales calls. Every claim sourced and dated to a public state record.
         </p>
@@ -63,13 +63,13 @@ export function MobileStateHubView({ data, config }: Props) {
       <MobileTrustBar />
 
       <section className="m-section tight">
-        <div className="label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>§ 01 · The Public Record</span>
-          <span style={{ opacity: 0.5, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase" }}>swipe →</span>
-        </div>
+        <div className="label">§ 01 · The Public Record</div>
         <h2>
           The {stateName} facility data you need, <em>curated + analyzed for you.</em>
         </h2>
+        <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-ink-4 -mt-2 mb-3">
+          swipe for more →
+        </p>
       </section>
       <div className="m-stat-strip">
         {statItems.map((s, i) => (
@@ -226,7 +226,7 @@ export function MobileStateHubView({ data, config }: Props) {
         })}
       </div>
 
-      {firstReview && (
+      {reviewsToShow.length > 0 && (
         <>
           <section className="m-section">
             <div className="label">§ 05 · Verified Family</div>
@@ -234,25 +234,29 @@ export function MobileStateHubView({ data, config }: Props) {
               From people who have actually <em>moved a parent in.</em>
             </h2>
           </section>
-          <div className="m-review">
-            <span className="stars" aria-hidden>
-              {"★".repeat(firstReview.rating)}
-              {"☆".repeat(Math.max(0, 5 - firstReview.rating))}
-            </span>
-            <p className="quote">{firstReview.body}</p>
-            <div className="who">
-              {firstReview.reviewer_name && <span className="name">{firstReview.reviewer_name}</span>}
-              {(firstReview.facility_name || firstReview.facility_city) && (
-                <span>
-                  {firstReview.facility_name}
-                  {firstReview.facility_city ? ` · ${firstReview.facility_city}` : ""}
+          <div className="m-review-stack">
+            {reviewsToShow.map((review) => (
+              <div key={review.id} className="m-review">
+                <span className="stars" aria-hidden>
+                  {"★".repeat(review.rating)}
+                  {"☆".repeat(Math.max(0, 5 - review.rating))}
                 </span>
-              )}
-              <span className="verified">
-                ✓ Identity verified ·{" "}
-                {new Date(firstReview.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-              </span>
-            </div>
+                <p className="quote">{review.body}</p>
+                <div className="who">
+                  {review.reviewer_name && <span className="name">{review.reviewer_name}</span>}
+                  {(review.facility_name || review.facility_city) && (
+                    <span>
+                      {review.facility_name}
+                      {review.facility_city ? ` · ${review.facility_city}` : ""}
+                    </span>
+                  )}
+                  <span className="verified">
+                    ✓ Identity verified ·{" "}
+                    {new Date(review.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}
@@ -263,7 +267,7 @@ export function MobileStateHubView({ data, config }: Props) {
           What families <em>ask first.</em>
         </h2>
       </section>
-      <MobileHomeFaq faqs={config.faqs.slice(0, 4)} />
+      <MobileHomeFaq faqs={config.faqs} />
 
       <div className="px-[18px] py-4 font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em]">
         <span className="inline-flex items-center gap-1.5 text-grade-a">
@@ -273,18 +277,19 @@ export function MobileStateHubView({ data, config }: Props) {
         <span className="text-ink-4"> · {stats.facilities.toLocaleString()} facilities indexed</span>
       </div>
 
-      <section className="m-section border-t-2 border-ink bg-rust text-paper px-[18px] py-10 -mx-0">
-        <h2 className="m-0 font-[family-name:var(--font-display)] text-[clamp(1.5rem,5vw,2rem)] font-normal leading-tight tracking-[-0.015em] text-white">
+      <section className="m-cta">
+        <h2 className="m-0 font-[family-name:var(--font-display)] text-[clamp(1.625rem,5.5vw,2.125rem)] font-normal leading-[1.05] tracking-[-0.015em] text-white">
           Find the right facility, <em>without the sales funnel.</em>
         </h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-white/85">
-          Compare peer rankings, read every dated citation. No operator is paying for placement here.
+        <p className="mt-3 text-[15px] leading-relaxed text-white/85 max-w-[40ch]">
+          Search by ZIP, compare peer rankings, read every dated citation. Free, forever, with no operator behind the recommendation.
         </p>
         <Link
-          href={`/${stateSlug}`}
-          className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-sm border border-white/30 bg-ink px-5 py-2.5 text-[14px] font-medium text-paper no-underline"
+          href={`/${stateSlug}/facilities`}
+          className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-ink px-5 text-[14px] font-medium text-paper no-underline"
         >
-          Browse {stateName} facilities →
+          Search {stats.facilities.toLocaleString()} {stateName} facilities
+          <span aria-hidden>→</span>
         </Link>
       </section>
 
