@@ -69,7 +69,7 @@ export function NationalHomeSections({ data }: Props) {
               >
                 Memory care you can{" "}
                 <em className="italic text-rust">trust,</em>{" "}
-                ranked by regulators.
+                ranked with regulator data.
               </h1>
 
               <p className="font-[family-name:var(--font-display)] italic text-[18px] sm:text-[22px] leading-[1.45] text-ink-3 mb-6 sm:mb-8 max-w-[40ch]">

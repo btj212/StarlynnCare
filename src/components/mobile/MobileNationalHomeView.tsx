@@ -48,7 +48,7 @@ export function MobileNationalHomeView({ data }: Props) {
         </div>
         <h1>
           Memory care you can <em>trust,</em>{" "}
-          ranked by regulators.
+          ranked with regulator data.
         </h1>
         <p className="deck">
           Public inspection data. No paid ads. No sales calls. Every claim sourced to a state record.

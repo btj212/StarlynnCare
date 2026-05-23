@@ -1,7 +1,7 @@
 {
   "name": "StarlynnCare",
   "short_name": "Starlynn",
-  "description": "Memory care you can trust, ranked by regulators.",
+  "description": "Memory care you can trust, ranked with regulator data.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#efe6d2",
