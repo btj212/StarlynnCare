@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { EditorialHero } from "@/components/editorial/EditorialHero";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -197,6 +198,11 @@ export default function WaDshsContractPage() {
             <div className="mt-8">
               <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
             </div>
+            <EditorialHero
+              src="/illustrations/desk-family-reviewing-records.png"
+              alt="Illustrated adult daughter and elderly grandmother reviewing documents together at a desk under a lamp — representing families reading the public DSHS inspection record"
+              priority
+            />
           </div>
         </div>
 

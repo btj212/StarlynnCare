@@ -28,11 +28,23 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
       "Illustrated grandmother reading a book to two young grandchildren on a couch — representing the relationships dementia care planning aims to preserve",
   },
 
+  // ── California articles ─────────────────────────────────────────────────────
+  "/california/37-questions-to-ask-on-a-tour": {
+    src: "/illustrations/family-facility-tour-hallway.png",
+    alt:
+      "Illustrated daughter and elderly mother being welcomed by a staff member in a sunlit facility hallway — representing a family touring a memory care facility",
+  },
+  "/california/cost-guide": {
+    src: "/illustrations/family-financial-planning-table.png",
+    alt:
+      "Illustrated family and elderly grandfather sitting at a table with a calculator and financial documents — representing the cost planning conversations families have when researching memory care",
+  },
+
   // ── Oregon articles ─────────────────────────────────────────────────────────
   "/oregon/memory-care-licensing": {
-    src: "/illustrations/family.png",
+    src: "/illustrations/residential-care-home-exterior.png",
     alt:
-      "Illustrated family — representing the families researching Oregon DHS Memory Care Endorsement requirements and how to read a facility profile",
+      "Illustrated exterior of a residential care home with a garden and an elderly resident on the porch — representing the licensed residential care settings Oregon DHS regulates",
   },
   "/oregon/memory-care-vs-nursing-home": {
     src: "/illustrations/beach-grandparent-grandchild.png",
@@ -42,32 +54,31 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
 
   // ── Washington articles ─────────────────────────────────────────────────────
   "/washington/memory-care-licensing": {
-    src: "/illustrations/family.png",
+    src: "/illustrations/residential-care-home-exterior.png",
     alt:
-      "Illustrated family — representing Washington families researching DSHS Specialized Dementia Care contracts and memory care licensing requirements",
+      "Illustrated exterior of a residential care home with a garden and an elderly resident on the porch — representing the licensed memory care settings DSHS regulates in Washington",
   },
   "/washington/memory-care-vs-nursing-home": {
     src: "/illustrations/beach-grandparent-grandchild.png",
     alt:
       "Illustrated grandparent and grandchild walking together — representing the choice Washington families face between memory care ALFs and skilled nursing facilities",
   },
-
   "/washington/why-dshs-contract-isnt-a-quality-badge": {
-    src: "/illustrations/family.png",
+    src: "/illustrations/desk-family-reviewing-records.png",
     alt:
-      "Illustrated family — representing Washington families researching what a DSHS Dementia Care contract means for memory care quality",
+      "Illustrated adult daughter and elderly grandmother reviewing documents together at a desk under a lamp — representing families reading the public DSHS inspection record",
   },
   "/washington/how-to-read-our-inspection-data": {
-    src: "/illustrations/beach-grandparent-grandchild.png",
+    src: "/illustrations/person-reading-chair-window.png",
     alt:
-      "Illustrated grandparent and grandchild walking together — representing the families who rely on inspection data to make Washington memory care decisions",
+      "Illustrated person reading a report in an armchair by a sunny window — representing a family member researching Washington inspection data before making a memory care decision",
   },
 
   // ── Minnesota articles ──────────────────────────────────────────────────────
   "/minnesota/memory-care-licensing": {
-    src: "/illustrations/family.png",
+    src: "/illustrations/residential-care-home-exterior.png",
     alt:
-      "Illustrated family — representing Minnesota families researching Assisted Living Facility with Dementia Care licensing under Minn. Stat. ch. 144G",
+      "Illustrated exterior of a residential care home with a garden and an elderly resident on the porch — representing the licensed memory care settings Minnesota DHS regulates",
   },
   "/minnesota/memory-care-vs-nursing-home": {
     src: "/illustrations/beach-grandparent-grandchild.png",
@@ -77,9 +88,9 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
 
   // ── Texas articles ──────────────────────────────────────────────────────────
   "/texas/type-a-b-c-licensing": {
-    src: "/illustrations/family.png",
+    src: "/illustrations/residential-care-home-exterior.png",
     alt:
-      "Illustrated family — representing Texas families researching HHSC Type A, B, and C assisted living licensing requirements",
+      "Illustrated exterior of a residential care home with a garden and an elderly resident on the porch — representing the Texas HHSC licensed assisted living facilities families are choosing between",
   },
   "/texas/memory-care-vs-nursing-home": {
     src: "/illustrations/beach-grandparent-grandchild.png",

@@ -104,8 +104,8 @@ export function NationalHomeSections({ data }: Props) {
                 style={{ aspectRatio: "1/1", background: "var(--color-paper-2)" }}
               >
                 <Image
-                  src="/illustrations/family.png"
-                  alt="Illustrated family walking together — representing the families we help navigate memory care decisions"
+                  src="/illustrations/hallway-family-staff-conversation.png"
+                  alt="Illustrated family member speaking with a facility staff member in a hallway, holding documents — representing the conversations families have when researching memory care options"
                   fill
                   sizes="(max-width: 768px) 0px, 40vw"
                   className="object-cover"
