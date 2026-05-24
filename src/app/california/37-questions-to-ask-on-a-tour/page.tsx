@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { buildArticleSchema, buildBreadcrumbList } from "@/lib/seo/schema";
 
 const PAGE_PATH = "/california/37-questions-to-ask-on-a-tour";
@@ -132,6 +133,11 @@ export default function ThirtySevenQuestionsPage() {
             <div className="mt-8">
               <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
             </div>
+            <EditorialHero
+              src="/illustrations/family-facility-tour-hallway.png"
+              alt="Illustrated daughter and elderly mother being welcomed by a staff member in a sunlit facility hallway — representing a family touring a memory care facility"
+              priority
+            />
           </div>
         </div>
 

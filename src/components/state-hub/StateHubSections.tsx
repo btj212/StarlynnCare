@@ -41,8 +41,8 @@ export function StateHubSections({ data, config }: Props) {
           </>
         }
         subtitle="No paid ads. No sales calls. Every claim sourced and dated to a public state record."
-        illustrationSrc="/illustrations/family.png"
-        illustrationAlt={`Illustrated family walking together — representing the families we help navigate memory care decisions in ${stateName}`}
+        illustrationSrc="/illustrations/hallway-family-staff-conversation.png"
+        illustrationAlt={`Illustrated family member speaking with a facility staff member in a hallway — representing the conversations ${stateName} families have when researching memory care options`}
         liveLabel={
           counties.length > 0 ? `Live across ${counties.length} ${countyCode} counties` : `Live across ${stateName}`
         }

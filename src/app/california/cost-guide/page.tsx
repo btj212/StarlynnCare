@@ -8,6 +8,7 @@ import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
 import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { EditorialHero } from "@/components/editorial/EditorialHero";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -178,6 +179,11 @@ export default function CaliforniaCostGuidePage() {
             <div className="mt-8">
               <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
             </div>
+            <EditorialHero
+              src="/illustrations/family-financial-planning-table.png"
+              alt="Illustrated family and elderly grandfather sitting at a table with a calculator and financial documents — representing the cost planning conversations families have when researching memory care"
+              priority
+            />
           </div>
         </div>
 
