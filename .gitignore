@@ -47,6 +47,7 @@ scrapers/.venv/
 next-env.d.ts
 .xhawk/
 .claude/settings.local.json
+.claude/worktrees/
 .firecrawl/
 
 # scraper run logs
