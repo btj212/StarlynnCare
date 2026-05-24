@@ -29,6 +29,7 @@ Usage
     python recompute_publishable.py --state MN    # Minnesota dementia-care flag + freshness
     python recompute_publishable.py --state WA    # Washington dementia contract + freshness
     python recompute_publishable.py --state UT    # Utah SECURE_BEDS > 0 gate + freshness
+    python recompute_publishable.py --state IL    # Illinois il_dementia_program_flag OR il_mc_name_match + freshness
 """
 
 from __future__ import annotations
@@ -157,6 +158,11 @@ def recompute_serves_memory_care(
           -- UT: SECURE_BEDS > 0 is the statutory primary signal (R432-270-16 Secure Units).
           -- Set directly by ut_arcgis_facilities_ingest.py; this is belt-and-suspenders.
           OR (state_code = 'UT' AND COALESCE(secure_beds, 0) > 0)
+          -- IL: either portal-confirmed dementia program (Tier 2) or name-match (Tier 1).
+          -- mc_signal_explicit_name already fires on name keywords, but these two
+          -- IL-specific columns give per-column auditability for future review.
+          OR (state_code = 'IL' AND COALESCE(il_dementia_program_flag, false))
+          OR (state_code = 'IL' AND COALESCE(il_mc_name_match, false))
         , false)
         WHERE state_code = %s
     """
@@ -181,6 +187,9 @@ _FRESHNESS_MONTHS: dict[str, int | None] = {
     "MN": 48,
     "WA": 48,
     "UT": 36,
+    # IL: FOIA window is Jan 2024 – May 2026; 36 months matches OR gate and keeps
+    # the publishable set fresh. Facilities with no events in 36 months are stale.
+    "IL": 36,
 }
 
 

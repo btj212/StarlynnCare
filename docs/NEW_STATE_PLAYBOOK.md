@@ -106,7 +106,7 @@ Each page must include:
 - `export const metadata: Metadata` with `alternates.canonical` via `canonicalFor(PAGE_PATH)`
 - `buildArticleSchema`, `buildBreadcrumbList`, `buildFaqSchemaFromPairs` JSON-LD
 - Breadcrumb trail: Home → [State] → Guides → Article
-- `<AuthorByline lastReviewed={DATE_PUBLISHED} />`
+- `<AuthorByline />` — no `lastReviewed` date. We omit "Last reviewed [date]" site-wide; a stale-looking date does more harm than the E-E-A-T it was meant to add.
 - At least 5 FAQ pairs (these become the FAQ schema and are indexed by LLMs)
 - A "Continue reading" block at the bottom linking to related articles and `/[stateSlug]/guides`
 

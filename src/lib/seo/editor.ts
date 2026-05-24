@@ -6,4 +6,4 @@ export const STARLYNN_AUTHOR_CREDENTIALS = "BSN, RN, PHN";
 /** California Board of Registered Nursing license — verifiable at search.dca.ca.gov */
 export const STARLYNN_AUTHOR_LICENSE = "95100373";
 
-export const STARLYNN_AUTHOR_IMAGE_PATH = "/images/about/star.png";
+export const STARLYNN_AUTHOR_IMAGE_PATH = "/images/about/star-headshot.png";

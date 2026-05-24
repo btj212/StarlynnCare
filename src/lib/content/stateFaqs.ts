@@ -147,5 +147,29 @@ export const UT_FAQS: FaqItem[] = [
   },
 ];
 
+/** Illinois IDPH Division of Assisted Living framing. */
+export const IL_FAQS: FaqItem[] = [
+  {
+    q: "Where does Illinois inspection data come from?",
+    a: "Primary source: the Illinois Department of Public Health (IDPH) Division of Assisted Living, which regulates Assisted Living Establishments (ALEs) and Shared Housing Establishments (SHEs) under 77 Ill. Adm. Code Part 295. Inspection and complaint records were obtained through a Freedom of Information Act (FOIA) request and are supplemented by per-event complaint reports from the IDPH LLCS portal at llcs.dph.illinois.gov.",
+  },
+  {
+    q: "What do Type 1, Type 2, and Type 3 violations mean in Illinois?",
+    a: "Illinois classifies ALE/SHE violations by severity under Part 295. Type 1 is the most serious — involving immediate jeopardy, death, or actual harm — and typically carries the highest fines. Type 2 covers situations with potential for harm or repeated non-compliance. Type 3 is the least severe, covering administrative or technical deficiencies. Illinois does not use federal F-tags or the California-style Type A/B classification.",
+  },
+  {
+    q: "Does StarlynnCare cover all Illinois assisted living facilities?",
+    a: "No. StarlynnCare indexes only facilities with a confirmed memory care or dementia care focus — either because their name includes 'memory care', 'dementia', or 'Alzheimer', or because the IDPH portal identifies them as operating a dementia special-care unit. Non-memory-care ALEs are excluded.",
+  },
+  {
+    q: "Do you accept payments from facilities or operators?",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Data is derived solely from state inspection records and verified family reviews.",
+  },
+  {
+    q: "How often is Illinois data updated?",
+    a: "The founding dataset covers January 2024 through May 2026 and was received via FOIA request. Per-event complaint PDFs are fetched from the IDPH LLCS portal as they become available. Each facility profile shows the exact inspection exit date and source link.",
+  },
+];
+
 /** Same as `CA_FAQS` — kept for `homeFaqs` re-exports and legacy `HOME_FAQS` imports. */
 export const HOME_FAQS = CA_FAQS;

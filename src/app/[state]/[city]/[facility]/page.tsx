@@ -168,13 +168,7 @@ export default async function FacilityPage({ params }: PageProps) {
         {/* Clinical byline — surfaces RN reviewer in DOM for E-E-A-T */}
         <div className="border-b border-paper-rule bg-paper-2">
           <div className="mx-auto max-w-[1280px] px-4 md:px-8 py-6">
-            <AuthorByline
-              lastReviewed={
-                profile.inspections.find((i) => !i.is_complaint)?.inspection_date ??
-                facility.updated_at
-              }
-              className="border-b-0 pb-0 mb-0"
-            />
+            <AuthorByline className="border-b-0 pb-0 mb-0" />
           </div>
         </div>
 

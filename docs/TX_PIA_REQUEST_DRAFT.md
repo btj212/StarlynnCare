@@ -1,5 +1,10 @@
 # Texas Public Information Act (PIA) Request — DRAFT
 
+> **2026-05 status:** HHSC fulfilled the bulk request below with two Excel files (FVH + IntakeHistory) — see [`docs/TX_DATA_SOURCES.md` → "Bulk PIA inputs"](./TX_DATA_SOURCES.md). Those files contain coded violation references and complaint outcomes but **no inspector narratives**. To get narratives, follow the per-event records-request workflow at the bottom of this doc.
+
+---
+
+
 **Status:** Draft — review and edit before sending.
 **Why this matters:** Manual TULIP capture (see [`scrapers/tx_tulip_to_bundle.py`](../scrapers/tx_tulip_to_bundle.py)) works for tens of facilities. Bulk coverage of all ~515 Alzheimer-certified Texas ALFs requires this PIA. The HHSC PIA office historically returns CSV / Excel keyed to license number — directly compatible with [`scrapers/tx_pia_to_bundle.py`](../scrapers/tx_pia_to_bundle.py) → `tx_inspections_ingest.py --import-json` (no further code changes needed; the parser is column-name tolerant).
 **Recipient:** Texas Health & Human Services Commission — Records Management / Public Information coordinator (use the current contact on [hhs.texas.gov](https://www.hhs.texas.gov/) *Open Records* or *Public Information* as of send date).
@@ -70,6 +75,81 @@ Thank you,
   3. `python3 scrapers/tx_inspections_ingest.py --import-json .firecrawl/tx-pia/bundle.json`
   4. `python3 scrapers/recompute_publishable.py --state TX` (current gate: 48 months — see `recompute_publishable.py` `TX_PUBLISH_GATE_MONTHS`).
 - Verbatim LTCR labels land in `deficiencies.state_severity_raw` ([`0014_tx_scaffold_columns.sql`](../supabase/migrations/0014_tx_scaffold_columns.sql)). Incident dates land in `inspections.incident_date` ([`0016_inspections_incident_date.sql`](../supabase/migrations/0016_inspections_incident_date.sql)) — **capture-everything** policy, gate at publish time.
+
+---
+
+## Narrative records request (per-event follow-up)
+
+Use this after HHSC has delivered the bulk FVH + IntakeHistory files. The bulk files contain coded references but no inspector-narrative text; per-event records requests fill that gap.
+
+**Recipient:**
+
+- Email: `RSLTCR.RecordsMgmt@hhs.texas.gov` (preferred)
+- Fax: `512-438-2738`
+- Mail: HHSC — Regulatory Services — LTC — Regulatory · Records Management — MC: E-349 · PO Box 149030, Austin TX 78714-9030
+
+**Constraints:**
+
+- Records requests >100 pages incur a charge — split into smaller batches.
+- Investigations within the last 45 days are unavailable.
+
+**Generate batch emails automatically:**
+
+```bash
+python3 scrapers/tx_narrative_request_batch.py \
+  --bundle .firecrawl/tx-pia/2026-05-bulk/bundle.json \
+  --out-dir out/tx-narrative-requests/
+```
+
+Defaults: `--memory-care-only` (Alzheimer-certified subset), `--severity-min B`, `--batch-size 25` (≈100 pages at ~4 pages/event). Each batch produces:
+
+- `batch-NNN.csv` — structured audit trail (license, EVENTID/RS Case No., date, severity letters).
+- `batch-NNN.email.txt` — ready-to-paste email body for `RSLTCR.RecordsMgmt@hhs.texas.gov`.
+
+The batcher's email body uses the template structure below. Customize `[your name]` / `[contact info]` and adjust the request preamble before sending the first time, then re-run the batcher to regenerate all batches with the updated template.
+
+```
+Subject: Records request — assisted living survey/complaint narratives (batch N of M)
+
+Per your reply on the recent ALF facility visit history / intake history bulk
+delivery, I am submitting a follow-up records request for inspector-narrative
+records on the following events. Please provide the published narrative
+(violation findings, inspector observations, and any Statement of Findings
+text) for each event listed.
+
+If this batch's total page count exceeds 100 pages, please notify me with a
+cost estimate before processing so I can split or revise the request.
+
+Note: I have excluded any events from the last 45 days, as your reply
+indicated those may not yet be available.
+
+Events (N total in this batch):
+[table generated from batch-NNN.csv: # | Type | License | Facility | City | Date |
+ EVENTID-or-RSCaseNo | Detail (S/S letters or outcome)]
+
+Identifiers:
+  - "EVENTID" matches the EVENTID column in FVH; pair with EXIT DATE.
+  - "RS Case No." matches IntakeHistory.
+
+[your name]
+[contact info]
+```
+
+**Smoke test before bulk send:**
+
+```bash
+python3 scrapers/tx_narrative_request_batch.py \
+  --license <one-license> --batch-size 8 \
+  --out-dir out/tx-narrative-requests/smoke/
+```
+
+Send a single 5-8 event batch first. Use the response to:
+
+1. Confirm Texas's response format (PDF? text? per-event? bundled?).
+2. Calibrate per-event page count.
+3. Verify EVENTID + EXIT_DATE and RS Case No. are sufficient identifiers.
+
+Then run the full memory-care batch generation, knowing the batch-size + cost trajectory in advance.
 
 ## What the PIA fulfilment should produce (specification for the parser)
 

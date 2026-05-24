@@ -43,6 +43,106 @@ Private research doc for Phase 5 ingest. **Do not treat URLs below as API contra
 - **LTCR** publishes various **inspection, investigation, and provider performance** materials over time (formats and portals move). Before scraping at scale: check HHSC “Reports”, “Facilities”, and Texas Open Data for **ALF / assisted living** datasets with inspection counts or survey IDs.
 - If no machine-readable bulk history is available (or join keys are unstable), use the Texas **Public Information Act** template in [`docs/TX_PIA_REQUEST_DRAFT.md`](./TX_PIA_REQUEST_DRAFT.md) for a CSV/Excel extract keyed to license number.
 
+## Bulk PIA inputs (2026-05 fulfilment)
+
+HHSC LTCR Records Management responded to the bulk PIA request with **two Excel files** covering 2020-05-06 through 2026-05-06 (per their retention policy). **Neither file contains inspector-narrative text** — narratives must be requested per-event in a follow-up records request.
+
+**Contact for narrative follow-ups:**
+
+- Email: `RSLTCR.RecordsMgmt@hhs.texas.gov`
+- Fax: `512-438-2738`
+- Mail: HHSC — Regulatory Services — LTC — Regulatory · Records Management — MC: E-349 · PO Box 149030, Austin TX 78714-9030
+
+**Constraints from the response email:**
+
+- Records requests >100 pages incur a charge.
+- Investigations within the last 45 days are unavailable while processing completes.
+
+### File 1 — FVH (Facility Visit History)
+
+`FVH_AllALFs_<startdate>_<enddate>.xlsx` (~2.5 MB at 6-year window). Columns:
+
+```
+CARES Region, ABBREV, STATEID, NAME, Address, City, Zip,
+EVENTID, EntranceDate, EXIT_DATE, VisitType, VisitSequence,
+FullBook, FullBookType, Investigation, InfectionControl,
+SurveyLocation, StateViolations
+```
+
+Key fields:
+
+- **STATEID** — HHSC internal facility ID (`tx_facility_id`); 6-digit when zero-padded. Join key.
+- **EVENTID** — opaque 6-character survey identifier. Use this + `EXIT_DATE` to request narratives.
+- **VisitType** — `Health` or `LSC` (Life Safety Code).
+- **Investigation** — `Yes` when the visit was complaint/incident-driven (these get `is_complaint = true` in the bundle).
+- **StateViolations** — coded string like `P-0031 s/s: 0; P-2554 s/s: F` — rule code (`P-XXXX`) plus CMS scope/severity letter (`A`–`L`, or `0` for no finding). Parsed by [`scrapers/tx_pia_to_bundle.py`](../scrapers/tx_pia_to_bundle.py) `parse_state_violations()`. Letters `J/K/L` → `immediate_jeopardy = true`. Letter `A` and `0` are excluded by the narrative request batcher's default severity floor (`B`).
+
+### File 2 — IntakeHistory (Complaints + Incidents)
+
+`IntakeHistory_AllALFs_<startdate>_<enddate>.xlsx` (~5.4 MB at 6-year window). Columns:
+
+```
+Facility ID, Agency/Facility, Program Type, Agency/Facility Address,
+RS Case No., Case Type, Priority, Date Received,
+Date/Time Sent to Region, Status, Allegation, Findings
+```
+
+Key fields:
+
+- **Facility ID** — same `tx_facility_id` as FVH `STATEID`. Join key.
+- **RS Case No.** — opaque 6–7 digit complaint identifier. Use this to request narratives.
+- **Case Type** — `Complaint` (~70%) or `Incident` (~30%).
+- **Findings** — `UNSUBSTANTIATED` (88%), `SUBSTANTIATED AND CITED` (~6%), `SUBSTANTIATED BUT NOT CITED` (~6%), plus tiny tail (`WITHDRAWN`, `REFERRED TO DFPS`). Bundle synthesizes a deficiency row only for `SUBSTANTIATED AND CITED`. Both substantiated variants count toward the narrative-request universe by default.
+- **Allegation** — high-level category like `RESIDENT/PATIENT/CLIENT NEGLECT`. Stored verbatim in `deficiencies.category`.
+- HHSC sometimes lists one complaint twice when it has multiple allegation categories — [`scrapers/tx_narrative_request_batch.py`](../scrapers/tx_narrative_request_batch.py) deduplicates by `(license, RS Case No.)` before generating request batches.
+
+### Two-step ingest workflow
+
+1. **Generate roster lookup** (one-time, before first parse):
+    ```bash
+    python3 scrapers/tx_export_facility_lookup.py
+    # writes scrapers/data/tx_facility_lookup.csv (gitignored)
+    ```
+2. **Parse the bulk files into a bundle:**
+    ```bash
+    python3 scrapers/tx_pia_to_bundle.py \
+      --input .firecrawl/tx-pia/2026-05-bulk/FVH_AllALFs_<dates>.xlsx \
+      --input .firecrawl/tx-pia/2026-05-bulk/IntakeHistory_AllALFs_<dates>.xlsx \
+      --output .firecrawl/tx-pia/2026-05-bulk/bundle.json
+    ```
+   The parser auto-detects sheet shape (FVH / IntakeHistory / legacy TULIP-style) and dispatches to the right processor.
+
+3. **Generate narrative request batches** (memory-care subset only by default):
+    ```bash
+    python3 scrapers/tx_narrative_request_batch.py \
+      --bundle .firecrawl/tx-pia/2026-05-bulk/bundle.json \
+      --out-dir out/tx-narrative-requests/
+    ```
+   Defaults: `--memory-care-only` (Alzheimer-cert subset), `--severity-min B`, `--batch-size 25`. Outputs per-batch CSV (audit trail) plus an email body ready to paste into a reply to `RSLTCR.RecordsMgmt@hhs.texas.gov`.
+
+4. **Smoke test before the full ask:**
+    ```bash
+    python3 scrapers/tx_narrative_request_batch.py \
+      --license <one-license> --batch-size 8 \
+      --out-dir out/tx-narrative-requests/smoke/
+    ```
+   Send that single batch first. Calibrate `--est-pages-per-event` based on the actual page count Texas returns, then run the full batch generation.
+
+5. **(Future) When narratives arrive:** a separate merger script will join per-`EVENTID` / per-`RS Case No.` narrative responses onto the bundle's deficiency rows, then `tx_inspections_ingest.py --import-json` ingests into Supabase.
+
+### Reference numbers (2026-05 delivery, six-year window)
+
+After matching against the metro-filtered roster (1,389 facilities) and the Alzheimer-certified subset (515):
+
+| Metric | All metros | Alz-cert (memory care) |
+|---|---:|---:|
+| Bundle facilities (any event) | 1,375 | 512 |
+| Inspection events (visits) | ~15,800 | ~1,350 |
+| Inspections with B+ violations | ~4,300 | 484 |
+| Complaint events | ~53,900 | ~40,600 |
+| Substantiated complaints (any) | — | 4,439 raw / 3,562 deduped |
+| Narrative-request universe (default filters) | — | 4,046 events / ~162 batches |
+
 ## Phase 2 scraper architecture (sketch)
 
 1. **Join:** `(state_code, license_number)` or `tx_facility_id` → TULIP Account Id (one-time resolution table or cache in Postgres optional).

@@ -1,0 +1,5 @@
+# Operational data — generated locally, not committed.
+# tx_facility_lookup.csv: STATEID/Facility ID → license_number roster pulled
+# from Supabase by tx_export_facility_lookup.py. Used by tx_pia_to_bundle.py
+# and tx_narrative_request_batch.py to resolve HHSC's STATEID join key.
+tx_facility_lookup.csv

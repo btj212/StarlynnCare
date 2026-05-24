@@ -4,6 +4,8 @@ These rules apply to every task in this project unless explicitly overridden.
 
 This is a vibecoded project. The developer works in Cursor with Claude APIs, deploys to Vercel, and iterates fast. Code quality matters but shipping matters more.
 
+**Read `MEMORY.md` and `ERRORS.md` at the root of this repo before non-trivial work.** `MEMORY.md` logs durable architecture/data decisions and what was rejected. `ERRORS.md` logs approaches that have already failed on this codebase and what worked instead. Never contradict a logged decision without flagging it first. Add new entries when (a) you make a decision worth not re-deriving next session or (b) an approach took more than two attempts to work.
+
 ## Rule 1 — Think Before Coding
 
 State assumptions explicitly. If uncertain, ask rather than guess.
@@ -68,6 +70,7 @@ For vibecoded projects: if there are no tests yet, do not add a test suite unles
 After completing each step in a multi-step task: summarize what was done, what is verified, what is left.
 Do not continue from a state you cannot describe back to me.
 If you lose track, stop and restate.
+At the end of any task that touches more than one file, list every file changed (one line per file describing what changed), every file you considered but intentionally did not touch, and any follow-up work surfaced along the way.
 
 ## Rule 11 — Match the codebase's conventions, even if you disagree
 

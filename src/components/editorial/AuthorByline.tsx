@@ -7,8 +7,8 @@ import {
 } from "@/lib/seo/editor";
 
 interface AuthorBylineProps {
-  /** ISO date string for “Last reviewed” */
-  lastReviewed: string;
+  /** ISO date string for "Last reviewed". Omit to hide the date line (e.g. on facility pages). */
+  lastReviewed?: string;
   className?: string;
 }
 
@@ -17,11 +17,13 @@ interface AuthorBylineProps {
  * credentials, and verifiable RN license number.
  */
 export function AuthorByline({ lastReviewed, className = "" }: AuthorBylineProps) {
-  const formatted = new Date(lastReviewed).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formatted = lastReviewed
+    ? new Date(lastReviewed).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
 
   return (
     <aside
@@ -31,9 +33,9 @@ export function AuthorByline({ lastReviewed, className = "" }: AuthorBylineProps
         <Image
           src={STARLYNN_AUTHOR_IMAGE_PATH}
           alt=""
-          width={48}
-          height={48}
-          className="object-cover object-[center_30%] brightness-110"
+          width={96}
+          height={96}
+          className="h-full w-full object-cover"
         />
       </div>
       <div className="min-w-0">
@@ -51,9 +53,11 @@ export function AuthorByline({ lastReviewed, className = "" }: AuthorBylineProps
             search.dca.ca.gov
           </a>
         </p>
-        <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] text-ink-3">
-          Last reviewed {formatted}
-        </p>
+        {formatted ? (
+          <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] text-ink-3">
+            Last reviewed {formatted}
+          </p>
+        ) : null}
       </div>
     </aside>
   );

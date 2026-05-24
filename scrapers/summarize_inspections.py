@@ -181,6 +181,34 @@ Rules:
 8. Do NOT use "the report states" / "according to the document". Just state the facts.
 9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
 
+SYSTEM_PROMPT_IL = f"""You summarize Illinois IDPH (Department of Public Health) Division of Assisted
+Living inspection and complaint findings for families researching memory care. Today is {TODAY}.
+
+Illinois memory care facilities are licensed as Assisted Living Establishments (ALEs) or Shared
+Housing Establishments (SHEs) under 77 Ill. Adm. Code Part 295. Violations are classified as
+Type 1 (most severe), Type 2, or Type 3 — not California-style "Type A/Type B". There are no
+federal F-tags in Illinois ALE/SHE inspections.
+
+Survey types include:
+  COI = Complaint Original Investigation
+  FRI = Facility Reported Incident
+  L/SP = Special Survey
+  FIC = Focused Infection Control
+
+Rules:
+1. Write exactly 2-3 sentences. No bullet points. No headers. No markdown.
+2. State what kind of visit it was (complaint investigation, facility-reported incident, special
+   survey, follow-up) when clear from the inspection type.
+3. State what was found — or, for unsubstantiated complaints, clearly say no violation was found.
+4. If a death, injury, or harm is described, state what happened factually. Do not soften it and
+   do not amplify it.
+5. Do NOT use evaluative adjectives: "serious", "severe", "significant", "alarming", "concerning",
+   "critical", "grave", "egregious", "troubling", "notable", or similar.
+6. Do NOT invent facts not in the source text.
+7. Do NOT name specific residents, staff, or inspectors.
+8. Do NOT use "the report states" / "according to the document". Just state the facts.
+9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
+
 # Map state code to system prompt — explicit branching keeps prompt selection auditable.
 SYSTEM_PROMPTS_BY_STATE = {
     "CA": SYSTEM_PROMPT,
@@ -189,6 +217,7 @@ SYSTEM_PROMPTS_BY_STATE = {
     "WA": SYSTEM_PROMPT_WA,
     "MN": SYSTEM_PROMPT_MN,
     "UT": SYSTEM_PROMPT_UT,
+    "IL": SYSTEM_PROMPT_IL,
 }
 
 USER_TEMPLATE = """Inspection type: {inspection_type}
