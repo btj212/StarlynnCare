@@ -6,6 +6,24 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-05 — Pennsylvania data plane: DHS HSD XLSX + CMS NF overlay
+
+**Decided:**
+- PA source of truth for PCH/ALR is the DHS Human Services Provider Directory XLSX bulk export (no auth, one GET, refreshed daily). Filter to `Program Office = 'Office of Long-Term Living'` → 1,057 facilities, 365 with memory care signals.
+- PA nursing facilities (657) come from `cms_nh_directory_ingest.py --state PA` — there is zero overlap because DHS export excludes NFs.
+- `mc_designation_type` stores the 3-value string from the `Special Care/Secure Dementia Care Unit` column: `null` / `'Secure Dementia Care Unit'` / `'Special Care'`. **Never** use `= true`; always `IS NOT NULL`.
+- PA inspection URL ID is `license_number[:-1]` (last check digit stripped): 223010 → id=22301. This is asserted at script startup on 4 known fixtures.
+- `memory_care_disclosure_filed` is mirrored from `serves_memory_care` at ingest time so `recompute_publishable.py` needs no per-facility branching.
+- Freshness gate: 36 months (matches OR/UT).
+
+**Result (2026-05-24):** 355 publishable PA facilities, 12,774 inspections, 10,601 PDF inventory rows. Reference facilities (Rittenhouse 223010, Serenity Gardens 231010, Cambridge Village 456560) all `publishable=t, mc_review_status='auto_published'`.
+
+**Rejected:** Pre-filtering at scrape time to MC-only facilities (would miss unnamed facilities); using the DOH scraper for PCH/ALR (DOH only covers NFs).
+
+**Source:** `scrapers/pa_hsd_directory_ingest.py`, `supabase/migrations/0044_pa_universe.sql`, `scrapers/pa-memory-care-data-methodology.md`.
+
+---
+
 ## 2026-05 — No "Last reviewed [date]" on Star's byline, anywhere
 
 **Decided:** `AuthorByline` renders Star's name, credentials, and verifiable RN license, but **never** a "Last reviewed" date. `lastReviewed` is an optional prop kept for backward compatibility — do not pass it in new code. New guides per `docs/NEW_STATE_PLAYBOOK.md` use `<AuthorByline />` with no date prop.

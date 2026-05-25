@@ -30,6 +30,7 @@ Usage
     python recompute_publishable.py --state WA    # Washington dementia contract + freshness
     python recompute_publishable.py --state UT    # Utah SECURE_BEDS > 0 gate + freshness
     python recompute_publishable.py --state IL    # Illinois il_dementia_program_flag OR il_mc_name_match + freshness
+    python recompute_publishable.py --state PA    # Pennsylvania mc_designation_type IS NOT NULL OR ALR-Special Care + freshness
 """
 
 from __future__ import annotations
@@ -163,6 +164,14 @@ def recompute_serves_memory_care(
           -- IL-specific columns give per-column auditability for future review.
           OR (state_code = 'IL' AND COALESCE(il_dementia_program_flag, false))
           OR (state_code = 'IL' AND COALESCE(il_mc_name_match, false))
+          -- PA: DHS HSD bulk export carries the memory-care designation directly.
+          -- `mc_designation_type` is a 3-value string column (null / 'Secure Dementia Care Unit'
+          -- / 'Special Care') — use IS NOT NULL, never `= true`. The ALR-Special Care
+          -- license type is itself a memory-care designation. Both signals are also
+          -- mirrored into memory_care_disclosure_filed at ingest, so this branch is
+          -- belt-and-suspenders. See scrapers/pa-memory-care-data-methodology.md.
+          OR (state_code = 'PA' AND mc_designation_type IS NOT NULL)
+          OR (state_code = 'PA' AND license_type = 'ASSISTED LIVING - SPECIAL CARE')
         , false)
         WHERE state_code = %s
     """
@@ -190,6 +199,10 @@ _FRESHNESS_MONTHS: dict[str, int | None] = {
     # IL: FOIA window is Jan 2024 – May 2026; 36 months matches OR gate and keeps
     # the publishable set fresh. Facilities with no events in 36 months are stale.
     "IL": 36,
+    # PA: DHS DHS posts inspection PDFs on a rolling basis with no public
+    # date filter; 36 months matches OR/UT and aligns with the DHS practice
+    # of keeping the most recent 3 years of inspection summaries visible.
+    "PA": 36,
 }
 
 
