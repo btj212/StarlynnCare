@@ -46,11 +46,15 @@ def load_env() -> None:
             return
 
 
-def get_conn() -> psycopg.Connection:
+def get_dsn() -> str:
     url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
     if not url:
         raise RuntimeError("DATABASE_URL / POSTGRES_URL not set")
-    return psycopg.connect(url)
+    return url
+
+
+def get_conn() -> psycopg.Connection:
+    return psycopg.connect(get_dsn())
 
 
 def make_session() -> requests.Session:
@@ -96,7 +100,7 @@ def download_pdf(
 
 
 def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> None:
-    conn = get_conn()
+    dsn = get_dsn()
     session = make_session()
 
     where_clauses = ["p.download_status = 'pending'"]
@@ -108,18 +112,20 @@ def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> Non
     where_sql = " AND ".join(where_clauses)
     limit_sql = f"LIMIT {limit}" if limit else ""
 
-    with conn.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT p.id, p.pdf_url, p.facility_id
-            FROM pa_pdf_inventory p
-            WHERE {where_sql}
-            ORDER BY p.created_at
-            {limit_sql}
-            """,
-            params,
-        )
-        rows = cur.fetchall()
+    # Fetch the work list up front with a short-lived connection.
+    with psycopg.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT p.id, p.pdf_url, p.facility_id
+                FROM pa_pdf_inventory p
+                WHERE {where_sql}
+                ORDER BY p.created_at
+                {limit_sql}
+                """,
+                params,
+            )
+            rows = cur.fetchall()
 
     print(f"  {len(rows)} PDFs to download", flush=True)
 
@@ -135,7 +141,8 @@ def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> Non
     for inv_id, pdf_url, facility_id in rows:
         try:
             local_path, digest, size = download_pdf(session, pdf_url, PDF_CACHE_DIR, str(inv_id))
-            with conn:
+            # Fresh connection per update — avoids session pooler idle-timeout disconnect
+            with psycopg.connect(dsn) as conn:
                 with conn.cursor() as cur:
                     cur.execute(
                         """
@@ -149,16 +156,19 @@ def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> Non
             ok += 1
             print(f"  OK  {pdf_url[-50:]}  {size//1024}KB", flush=True)
         except Exception as exc:
-            with conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
-                        UPDATE pa_pdf_inventory
-                        SET download_status = 'error', download_error = %s
-                        WHERE id = %s
-                        """,
-                        (str(exc)[:500], inv_id),
-                    )
+            try:
+                with psycopg.connect(dsn) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            UPDATE pa_pdf_inventory
+                            SET download_status = 'error', download_error = %s
+                            WHERE id = %s
+                            """,
+                            (str(exc)[:500], inv_id),
+                        )
+            except Exception as db_exc:
+                print(f"  DB ERR writing error status: {db_exc}", file=sys.stderr, flush=True)
             err += 1
             print(f"  ERR {pdf_url[-50:]}: {exc}", file=sys.stderr, flush=True)
         polite_sleep()

@@ -141,6 +141,18 @@ COUNTY_CITY_SLUGS: dict[str, tuple[str, ...]] = {
         "sunnyvale",
     ),
     "SAN_FRANCISCO": ("san-francisco",),
+    "VENTURA": (
+        "camarillo",
+        "fillmore",
+        "moorpark",
+        "ojai",
+        "oxnard",
+        "port-hueneme",
+        "santa-paula",
+        "simi-valley",
+        "thousand-oaks",
+        "ventura",
+    ),
 }
 
 
