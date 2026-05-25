@@ -235,13 +235,13 @@ function worstSubMetricFragment(
   frequencyPct: number | null | undefined,
   repeatsPct: number | null | undefined,
 ): { percentile: number; label: string } | null {
-  const candidates: Array<{ pct: number; label: string }> = [
-    { pct: severityPct ?? Infinity, label: "citation severity" },
-    { pct: frequencyPct ?? Infinity, label: "citation frequency" },
-    { pct: repeatsPct ?? Infinity, label: "repeat-citation rate" },
-  ].filter((c) => c.pct !== Infinity && c.pct < 50 && composite - c.pct >= 10);
+  const candidates: Array<{ percentile: number; label: string }> = [
+    { percentile: severityPct ?? Infinity, label: "citation severity" },
+    { percentile: frequencyPct ?? Infinity, label: "citation frequency" },
+    { percentile: repeatsPct ?? Infinity, label: "repeat-citation rate" },
+  ].filter((c) => c.percentile !== Infinity && c.percentile < 50 && composite - c.percentile >= 10);
   if (candidates.length === 0) return null;
-  return candidates.reduce((a, b) => (b.pct < a.pct ? b : a));
+  return candidates.reduce((a, b) => (b.percentile < a.percentile ? b : a));
 }
 
 export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
