@@ -89,6 +89,24 @@ export interface StateProfileConfig {
   regulatorPortalUrl?: string;
 }
 
+/**
+ * Returns the correct agency short/long labels for a single inspection row.
+ *
+ * Some states (notably Utah) mix federal CMS nursing-home data with state ALF
+ * data in the same facility profile.  The DB stores `source_agency` ("CMS",
+ * "UT-CCL", "WA-DSHS", etc.) on each inspection row so we can surface the
+ * right label instead of always showing the state regulator abbreviation.
+ */
+export function agencyLabelForInspection(
+  insp: { source_agency: string | null },
+  cfg: StateProfileConfig,
+): { short: string; long: string } {
+  if (insp.source_agency === "CMS") {
+    return { short: "CMS", long: "Centers for Medicare & Medicaid Services" };
+  }
+  return { short: cfg.agencyShort, long: cfg.agencyLong };
+}
+
 // ─────────────────────────────────────────────────────────────────
 // State registrations (import from per-state modules)
 // ─────────────────────────────────────────────────────────────────

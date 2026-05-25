@@ -1,5 +1,6 @@
 import type { FacilityProfile, TimelinePoint, ScopeSeverityCell } from "@/lib/facility/loadFacilityProfile";
 import { SectionHead } from "@/components/editorial/SectionHead";
+import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import Link from "next/link";
 
 // ─── Timeline rail ─────────────────────────────────────────────────────────
@@ -286,7 +287,7 @@ function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
                 {insp.is_complaint ? "Complaint Investigation" : insp.inspection_type === "other" ? "Other Visit" : "Annual Compliance Visit"}
               </div>
               <div className="mt-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.06em] text-ink-3">
-                {insp.is_complaint && outcome ? `${outcome}` : cfg.agencyShort}
+                {insp.is_complaint && outcome ? `${outcome}` : agencyLabelForInspection(insp, cfg).short}
               </div>
             </div>
             <div

@@ -183,4 +183,43 @@ These are not data decisions but they're durable enough to log here:
 
 Append session summaries here (most recent first). Format: `YYYY-MM-DD — summary`.
 
+---
+
+## 2026-05 — Physical city sourced from Census Geocoder; historical slugs drive 301s
+
+**Decided:**
+- `facilities.city` and `facilities.city_slug` must reflect the **physical city** (Census Place) — never the USPS mailing city from the source directory feed.
+- Physical city is derived by calling the US Census Geocoder coordinates endpoint (`geocoding.geo.census.gov`) with each facility's lat/lon after geocoding. Prefer Incorporated Places over Census Designated Places.
+- When the Census Place differs from the existing slug, `scrapers/recompute_physical_city.py` rewrites `city` + `city_slug` and appends the old slug to `facilities.historical_city_slugs text[]`.
+- `loadFacilityProfile` checks `historical_city_slugs` when a `(state, city_slug, facility_slug)` lookup misses and 301-redirects to the canonical path via `permanentRedirect` (true 301, not Next's default 307/308).
+- Required step in every state pipeline: run **after** `geocode_facilities.py`, **before** `recompute_publishable.py`.
+
+**Why:**
+- UGRC's UT ArcGIS layer silently mis-categorised every SLC-metro suburb (Taylorsville, Murray, West Jordan, etc.) under `salt-lake-city` for ~6 months.
+- A YMYL directory where the URL says one city and the page body says another fails Google Quality Rater guidelines for health/medical content. URL/JSON-LD/page text must all agree.
+
+**Rejected:**
+- USPS city as truth (silent mis-locate; caused the Utah audit finding).
+- Render-time display override only (URL/content canonical mismatch — YMYL trap; described in SEO_GEO_CONVENTIONS.md §3).
+
+**Source:** `supabase/migrations/0045_facility_historical_slugs.sql`, `scrapers/recompute_physical_city.py`, `src/lib/facility/loadFacilityProfile.ts`.
+
+---
+
+## 2026-05 — Hero shows worst sub-metric, not composite, for bottom-half facilities
+
+**Decided:** For facilities in the bottom half of their peer group, `FacilityHero.tsx` (and `buildFacilitySnippet` in `meta.ts`) surfaces the **worst single sub-metric** (severity, frequency, or repeat-citation rate) instead of the composite average, when any sub-metric is ≥ 10 percentile points below the composite. The metric label is shown inline ("bottom 14% on citation severity among Utah peers"). Top-half framing stays as-is.
+
+**Why:** The composite is the average of three metrics; a facility can score 44th composite while severity ranks 14th. Showing composite on a YMYL directory soft-pedals the actual safety signal. The rule "show the worst sub-metric when meaningfully divergent" is the most informative single number a family can act on.
+
+**Source:** `src/components/facility/profile/FacilityHero.tsx`, `src/lib/seo/meta.ts`.
+
+---
+
+## 2026-05 — Per-inspection source labeling (CMS vs. state regulator)
+
+**Decided:** Utah (and potentially other states) stores both federal CMS nursing-home inspections (`source_agency = 'CMS'`) and state ALF inspections (`source_agency = 'UT-CCL'`) in the same facility profile. Every UI that says "DLBC citations" on a CMS-sourced row was wrong. `agencyLabelForInspection(insp, cfg)` in `profileConfig.ts` returns the correct label per row. Applied in `FacilityHero.tsx`, `FacilityRecord.tsx`, `FacilityFullInspections.tsx`.
+
+**Source:** `src/lib/states/profileConfig.ts`, component files above.
+
 <!-- New session summaries go above this line -->

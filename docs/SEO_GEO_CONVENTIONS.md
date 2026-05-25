@@ -72,6 +72,41 @@ Legacy aliases (`navy`, `warm-white`, `slate`, `muted`, `sc-border`, `footer-bg`
 2. **Site chrome**: `<SiteNav />` (async server component, fetches live facility count) + `<SiteFooter />` (async, fetches last-refreshed date).
 3. **No fictional numbers**: any stat visible to users must come from the DB or a confirmed policy constant (`GOVERNANCE_24_WORDS`, `0` commissions). Never paste prototype placeholder numbers into production.
 
+## 8b. Physical city — authoritative source and 301 redirect policy
+
+### Source of truth
+
+`facilities.city` and `facilities.city_slug` must reflect the **physical city** (US Census Incorporated Place or Census Designated Place), never the USPS mailing city from a state directory feed.
+
+**Why it matters:** State directory feeds publish USPS mailing addresses. USPS assigns many suburb addresses to nearby larger cities for mail routing (e.g. Taylorsville, UT → "Salt Lake City"). A YMYL directory where the URL says one city and the page body says another creates a canonical inconsistency that fails Google Quality Rater guidelines for health/medical content.
+
+### How physical city is derived
+
+After `scrapers/geocode_facilities.py` fills `latitude`/`longitude`, run:
+
+```bash
+python -u scrapers/recompute_physical_city.py --state XX --apply
+```
+
+This calls the [US Census Geocoder](https://geocoding.geo.census.gov/geocoder/geographies/coordinates) (free, public, government-run) for each facility's coordinates and resolves the containing Incorporated Place (preferred) or Census Designated Place. Results are cached in `data/.cache/census_geo.json` so re-runs are idempotent.
+
+### Slug rewrite and 301 redirects
+
+When `recompute_physical_city.py` changes a facility's `city_slug`, the prior slug is appended to `facilities.historical_city_slugs text[]`. `loadFacilityProfile` in `src/lib/facility/loadFacilityProfile.ts` checks this array on a cache miss and calls `permanentRedirect` (true HTTP 301) to the canonical city/facility path.
+
+Three things must always agree for any given facility:
+1. `/{state}/{city_slug}/{facility_slug}` URL
+2. Visible city in the breadcrumb and page body
+3. `LocalBusiness.address.addressLocality` in JSON-LD
+
+**Never use a render-time display override** (e.g. `displayCity` that differs from `city_slug`) to paper over a slug that hasn't been updated — this is the "Option C trap" documented in MEMORY.md 2026-05.
+
+### Required by the new-state playbook
+
+Step 2 of every new-state pipeline is `recompute_physical_city.py`. Skipping it ships USPS mailing cities and requires a post-launch URL migration. See `docs/NEW_STATE_PLAYBOOK.md` for the complete pipeline sequence.
+
+---
+
 ## 9. GEO conventions for hub pages
 
 Hub pages (state, county, city) and editorial articles must follow this pattern to maximize AI Mode / AI Overviews / agent-search citation eligibility:

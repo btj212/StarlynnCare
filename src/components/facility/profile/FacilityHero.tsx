@@ -1,10 +1,11 @@
-import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
-import type { CareCategory } from "@/lib/types";
+import type { FacilityProfile, DeficiencyRow } from "@/lib/facility/loadFacilityProfile";
+import type { CareCategory, Deficiency } from "@/lib/types";
 import {
   regulatorLicensePageFor,
   regulatorLicensePageLabel,
 } from "@/lib/seo/schema";
 import { buildFacilitySnippet } from "@/lib/seo/meta";
+import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
 import { ordinalSuffix } from "@/lib/format/ordinalSuffix";
@@ -34,7 +35,7 @@ function formatAddr(facility: FacilityProfile["facility"]): string {
 }
 
 function VerdictCard({ profile }: { profile: FacilityProfile }) {
-  const { facility, totals, photoUrls, photoSources } = profile;
+  const { facility, totals, photoUrls, photoSources, snapshot, timeline, deficienciesByInspection, inspections, cfg } = profile;
   const hasGrid = photoUrls.length >= 4;
   const suggestSubject = encodeURIComponent(`Photo submission: ${facility.name}`);
   const suggestBody = encodeURIComponent(
@@ -42,8 +43,60 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   );
   const suggestHref = `mailto:hello@starlynncare.com?subject=${suggestSubject}&body=${suggestBody}`;
 
-  const percentile = profile.snapshot?.grade?.composite_percentile ?? null;
+  const compositePercentile = snapshot?.grade?.composite_percentile ?? null;
+  const severityPct = snapshot?.metrics.severity.percentile ?? null;
+  const frequencyPct = snapshot?.metrics.frequency.percentile ?? null;
+  const repeatsPct = snapshot?.metrics.repeats.percentile ?? null;
 
+  // For bottom-half: find worst sub-metric at least 10 pts below composite
+  const worstSubMetric = (() => {
+    if (compositePercentile === null || compositePercentile >= 50) return null;
+    const candidates = [
+      { pct: severityPct, label: "citation severity" },
+      { pct: frequencyPct, label: "citation frequency" },
+      { pct: repeatsPct, label: "repeat-citation rate" },
+    ].filter((c): c is { pct: number; label: string } =>
+      c.pct !== null && c.pct < 50 && compositePercentile - c.pct >= 10,
+    );
+    if (candidates.length === 0) return null;
+    return candidates.reduce((a, b) => (b.pct < a.pct ? b : a));
+  })();
+
+  // Severity ratio callout: totalWeighted vs. representative peer median
+  const totalWeighted = timeline.reduce((s, p) => s + p.facilityScore, 0);
+  const peerMedianRep = [...timeline].reverse().find((p) => p.peerMedianScore > 0)?.peerMedianScore ?? null;
+  const severityRatio =
+    totalWeighted >= 5 && peerMedianRep && peerMedianRep > 0
+      ? Math.round(totalWeighted / peerMedianRep)
+      : null;
+  const showRatioCallout = severityRatio !== null && severityRatio >= 3;
+
+  // Detect the most recent severe finding (sev ≥ 3 or IJ) within the last 90 days
+  const cutoffStr = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 90);
+    return d.toISOString().split("T")[0];
+  })();
+  const recentSevereFinding: { date: string; def: DeficiencyRow; tag: { label: string; tone: string } | null } | null = (() => {
+    for (const insp of inspections) {
+      if (insp.inspection_date < cutoffStr) break;
+      const defs = deficienciesByInspection.get(insp.id) ?? [];
+      const severe = defs.find(
+        (d) => d.immediate_jeopardy || (d.severity !== null && d.severity >= 3),
+      );
+      if (severe) {
+        return {
+          date: insp.inspection_date,
+          def: severe,
+          tag: cfg.formatSeverityTag(severe as unknown as Deficiency),
+        };
+      }
+    }
+    return null;
+  })();
+
+  // Hero prose copy
+  const stateName = facility.state_code === "CA" ? "California" : "state";
   const copy: string = (() => {
     const beds = facility.beds ? `A ${facility.beds}-bed` : "A";
     const licType = SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility";
@@ -60,18 +113,24 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
       line1 = `${beds} ${licType} with no citations on file.`;
     }
 
-    if (percentile !== null) {
-      const rounded = Math.round(percentile);
+    if (compositePercentile !== null) {
+      if (compositePercentile >= 50) {
+        const topPct = Math.max(1, 100 - Math.round(compositePercentile));
+        return `${line1} Ranks in the top ${topPct}% among ${stateName} peers.`;
+      }
+      if (worstSubMetric) {
+        return `${line1} Ranks in the bottom ${Math.max(1, Math.round(worstSubMetric.pct))}% on ${worstSubMetric.label} among ${stateName} peers.`;
+      }
+      const rounded = Math.round(compositePercentile);
       const pctLabel =
-        percentile <= 10 ? "bottom 10th percentile" :
-        percentile >= 90 ? "top 10th percentile" :
+        compositePercentile <= 10 ? "bottom 10th percentile" :
         `${rounded}${ordinalSuffix(rounded)} percentile`;
-      return `${line1} Ranks in the ${pctLabel} among ${facility.state_code === "CA" ? "California" : "state"} peers.`;
+      return `${line1} Ranks in the ${pctLabel} among ${stateName} peers.`;
     }
     return line1;
   })();
 
-  const lastInsp = profile.inspections[0] ?? null;
+  const lastInsp = inspections[0] ?? null;
   const lastInspFormatted = lastInsp?.inspection_date
     ? new Date(lastInsp.inspection_date + "T12:00:00").toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
     : null;
@@ -123,13 +182,37 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
           </div>
         )}
 
+        {/* Severity ratio callout — only when facility is ≥ 3× peer median */}
+        {showRatioCallout && (
+          <div className="mt-4 border-t border-white/15 pt-3.5">
+            <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-gold/70 mb-0.5">
+              Citation severity vs. peers
+            </div>
+            <div className="font-[family-name:var(--font-display)] text-[26px] leading-tight tracking-[-0.01em] text-gold">
+              {severityRatio}× peer median
+            </div>
+            <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-white/40 mt-0.5">
+              {Math.round(totalWeighted)} weighted score · peer median {peerMedianRep?.toFixed(0)} · {cfg.inspectionWindowMonths}-mo window
+            </div>
+          </div>
+        )}
+
         {lastInspFormatted && (
-          <div className="mt-5 flex justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em] text-white/60">
-            <span>
-              Last inspection · {lastInspFormatted}
-              {lastInsp?.is_complaint ? " (complaint)" : ""} · {lastInspCited ? "cited" : "clean"}
-            </span>
-            <span>Source · {profile.cfg.agencyShort}</span>
+          <div className="mt-5 flex justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em]">
+            {recentSevereFinding ? (
+              <span className="text-rust">
+                Most recent severe finding ·{" "}
+                {new Date(recentSevereFinding.date + "T12:00:00").toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })}
+                {recentSevereFinding.def.code ? ` · ${cfg.citationPrefix}${recentSevereFinding.def.code}` : ""}
+                {recentSevereFinding.tag ? ` · ${recentSevereFinding.tag.label}` : ""}
+              </span>
+            ) : (
+              <span className="text-white/60">
+                Last inspection · {lastInspFormatted}
+                {lastInsp?.is_complaint ? " (complaint)" : ""} · {lastInspCited ? "cited" : "no findings"}
+              </span>
+            )}
+            <span className="text-white/60">Source · {lastInsp ? agencyLabelForInspection(lastInsp, cfg).short : cfg.agencyShort}</span>
           </div>
         )}
       </div>
@@ -158,6 +241,9 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
     stateCode: state.code,
     grade: profile.snapshot?.grade?.letter ?? null,
     percentile: profile.snapshot?.grade?.composite_percentile ?? null,
+    severityPercentile: profile.snapshot?.metrics.severity.percentile ?? null,
+    frequencyPercentile: profile.snapshot?.metrics.frequency.percentile ?? null,
+    repeatsPercentile: profile.snapshot?.metrics.repeats.percentile ?? null,
     citationCount: profile.totals.deficiencies,
     lastInspectionDate,
     variant: "prose",

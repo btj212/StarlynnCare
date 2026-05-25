@@ -52,6 +52,10 @@ export type InspectionRow = {
   total_deficiency_count: number | null;
   narrative_summary: string | null;
   source_url: string | null;
+  /** Populated at ingest time: "CMS", "UT-CCL", "OR-DHS", "WA-DSHS", etc.
+   *  Used to correctly label citations when a facility mixes CMS NF data with
+   *  state ALF data (e.g. Utah). */
+  source_agency: string | null;
   raw_data: {
     outcome?: string;
     inspector_name?: string;
@@ -337,7 +341,7 @@ async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
   const { data: inspData } = await supabase
     .from("inspections")
     .select(
-      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, raw_data",
+      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, source_agency, raw_data",
     )
     .eq("facility_id", facilityId)
     .order("inspection_date", { ascending: false })
@@ -460,8 +464,18 @@ function deriveRulesCards(
 // Main export
 // ─────────────────────────────────────────────────────────────────
 
-/** Returned when the requested slug is a clean alias that maps to a canonical suffixed slug. */
-export type FacilityRedirect = { kind: "redirect"; canonicalSlug: string };
+/**
+ * Returned when the requested URL maps to a different canonical URL.
+ * - `canonicalSlug`: the canonical facility slug (always present)
+ * - `canonicalCitySlug`: the canonical city slug; set only when the city-slug
+ *    changed (Census Geocoder rewrite). When undefined the caller uses the
+ *    current regionSlug so existing clean-slug redirects keep working.
+ */
+export type FacilityRedirect = {
+  kind: "redirect";
+  canonicalSlug: string;
+  canonicalCitySlug?: string;
+};
 
 export async function loadFacilityProfile(params: {
   stateSlug: string;
@@ -514,6 +528,32 @@ export async function loadFacilityProfile(params: {
         .limit(2);
       if (anySuffixCandidates && anySuffixCandidates.length === 1) {
         return { kind: "redirect", canonicalSlug: (anySuffixCandidates[0] as { slug: string }).slug };
+      }
+
+      // Third try: city-slug has changed (Census Geocoder rewrite).
+      // Look up the facility by slug alone across the whole state — if exactly
+      // one match exists and its historical_city_slugs contains regionSlug,
+      // redirect to the new canonical city/facility path.
+      const { data: historicalCandidates } = await supabase
+        .from("facilities")
+        .select("city_slug, slug, historical_city_slugs")
+        .eq("state_code", state.code)
+        .eq("slug", facilitySlug)
+        .eq("publishable", true)
+        .limit(2);
+      if (historicalCandidates && historicalCandidates.length === 1) {
+        const row = historicalCandidates[0] as {
+          city_slug: string;
+          slug: string;
+          historical_city_slugs: string[];
+        };
+        if (row.historical_city_slugs.includes(regionSlug)) {
+          return {
+            kind: "redirect",
+            canonicalSlug: row.slug,
+            canonicalCitySlug: row.city_slug,
+          };
+        }
       }
     }
     return "not_found";

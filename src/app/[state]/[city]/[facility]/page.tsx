@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { redirect, permanentRedirect } from "next/navigation";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (result === "not_found" || result === "unconfigured") {
     return { title: "Facility | StarlynnCare" };
   }
-  // Clean-slug alias — metadata will be generated after the 301 redirect resolves.
+  // Redirect (clean-slug alias or city-slug rewrite) — metadata generated after resolution.
   if (typeof result === "object" && "kind" in result && result.kind === "redirect") {
     return { title: "Facility | StarlynnCare" };
   }
@@ -122,10 +122,12 @@ export default async function FacilityPage({ params }: PageProps) {
   const result = await loadFacilityProfile({ stateSlug, regionSlug, facilitySlug });
 
   // Supabase not configured — show a dev hint
-  // Clean-slug redirect: e.g. /minnesota/north-branch/ecumen-north-branch
-  // → /minnesota/north-branch/ecumen-north-branch-mn652
+  // Permanent redirect: covers two cases:
+  //   1. Clean-slug alias → canonical suffixed slug (same city, e.g. ecumen-north-branch → ecumen-north-branch-mn652)
+  //   2. City-slug rewrite after Census Geocoder (e.g. /utah/salt-lake-city/monument-… → /utah/taylorsville/monument-…)
   if (typeof result === "object" && result !== null && "kind" in result && result.kind === "redirect") {
-    redirect(`/${stateSlug}/${regionSlug}/${result.canonicalSlug}`);
+    const canonicalCity = result.canonicalCitySlug ?? regionSlug;
+    permanentRedirect(`/${stateSlug}/${canonicalCity}/${result.canonicalSlug}`);
   }
 
   if (result === "unconfigured") {

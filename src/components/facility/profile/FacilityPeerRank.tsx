@@ -142,7 +142,7 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
               />
             </div>
             <p className="mt-5 font-[family-name:var(--font-mono)] text-[11px] text-paper/50 tracking-[0.06em] leading-relaxed">
-              Rankings based on {cfg.inspectionWindowMonths}-month CDSS inspection data. Severity and frequency: fewer citations = higher percentile. Repeat rate: lower repeat citation share = higher percentile.
+              Rankings based on {cfg.inspectionWindowMonths}-month {cfg.agencyShort} inspection data. Severity and frequency: fewer citations = higher percentile. Repeat rate: lower repeat citation share = higher percentile.
             </p>
           </>
         )}
