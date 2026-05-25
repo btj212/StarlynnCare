@@ -6,3 +6,8 @@ python-dotenv>=1.0.0
 anthropic>=0.40.0
 rapidfuzz>=3.0.0
 openpyxl>=3.1.0
+
+# Test suite — install before running tests/python/
+pytest>=8.0.0
+pytest-dotenv>=0.5.2
+supabase>=2.0.0
