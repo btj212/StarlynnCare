@@ -53,7 +53,9 @@ function TimelineRail({ timeline, windowMonths }: { timeline: TimelinePoint[]; w
     <div className="space-y-3">
       <div className="flex items-end justify-between">
         <div>
-          <div className="font-[family-name:var(--font-display)] text-[64px] leading-[0.9] tracking-[-0.02em] text-grade-a">
+          <div className={`font-[family-name:var(--font-display)] text-[64px] leading-[0.9] tracking-[-0.02em] ${
+            repPeerMedian !== null && totalWeighted > repPeerMedian * 1.5 ? "text-rust" : "text-grade-a"
+          }`}>
             {totalWeighted.toFixed(0)}
             <span className="font-[family-name:var(--font-mono)] ml-2 text-[0.32em] tracking-wide text-ink-3">
               weighted score · {windowMonths} mo
