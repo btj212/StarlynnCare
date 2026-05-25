@@ -75,11 +75,15 @@ def load_env() -> None:
             return
 
 
-def get_conn() -> psycopg.Connection:
+def get_dsn() -> str:
     url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
     if not url:
         raise RuntimeError("DATABASE_URL / POSTGRES_URL not set")
-    return psycopg.connect(url)
+    return url
+
+
+def get_conn() -> psycopg.Connection:
+    return psycopg.connect(get_dsn())
 
 
 def has_text_layer(pdf_path: Path) -> bool:
@@ -180,22 +184,24 @@ def parse_pdf(inv_id: str, local_path: str, dry_run: bool) -> tuple[str, list[di
 
 
 def run(dry_run: bool, limit: int | None) -> None:
-    conn = get_conn()
+    dsn = get_dsn()
     limit_sql = f"LIMIT {limit}" if limit else ""
 
-    with conn.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT id, local_path, facility_id, inspection_id
-            FROM pa_pdf_inventory
-            WHERE parse_status = 'pending'
-              AND download_status = 'done'
-              AND local_path IS NOT NULL
-            ORDER BY created_at
-            {limit_sql}
-            """
-        )
-        rows = cur.fetchall()
+    # Fetch work list with a short-lived connection
+    with psycopg.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT id, local_path, facility_id, inspection_id
+                FROM pa_pdf_inventory
+                WHERE parse_status = 'pending'
+                  AND download_status = 'done'
+                  AND local_path IS NOT NULL
+                ORDER BY created_at
+                {limit_sql}
+                """
+            )
+            rows = cur.fetchall()
 
     print(f"  {len(rows)} PDFs to parse", flush=True)
 
@@ -207,7 +213,8 @@ def run(dry_run: bool, limit: int | None) -> None:
                 skipped += 1
                 continue
 
-            with conn:
+            # Fresh connection per update — avoids session pooler idle-timeout disconnect
+            with psycopg.connect(dsn) as conn:
                 with conn.cursor() as cur:
                     cur.execute(
                         """
@@ -224,16 +231,19 @@ def run(dry_run: bool, limit: int | None) -> None:
             )
 
         except Exception as exc:
-            with conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
-                        UPDATE pa_pdf_inventory
-                        SET parse_status = 'error', parse_error = %s
-                        WHERE id = %s
-                        """,
-                        (str(exc)[:500], inv_id),
-                    )
+            try:
+                with psycopg.connect(dsn) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            UPDATE pa_pdf_inventory
+                            SET parse_status = 'error', parse_error = %s
+                            WHERE id = %s
+                            """,
+                            (str(exc)[:500], inv_id),
+                        )
+            except Exception as db_exc:
+                print(f"  DB ERR writing error status: {db_exc}", file=sys.stderr, flush=True)
             err += 1
             print(f"  ERR {str(inv_id)[:8]}: {exc}", file=sys.stderr, flush=True)
 

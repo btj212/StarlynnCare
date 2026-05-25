@@ -37,7 +37,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "Does Washington use 'Type A' or 'Type B' deficiency labels?",
-    a: "No. Washington does not use California's Type A / Type B classification. DSHS uses its own deficiency severity terminology — findings are described in inspection narratives with scope (isolated, pattern, widespread) and severity levels. StarlynnCare surfaces these in plain language on each Washington profile.",
+    a: "No. Washington does not use California's Type A / Type B classification. DSHS uses its own deficiency terminology — findings for ALFs are characterized as isolated vs. systemic (recurring) deficiencies. StarlynnCare surfaces these in plain language on each Washington profile.",
   },
   {
     q: "Does Washington have Medicaid funding for memory care in ALFs?",
@@ -155,7 +155,7 @@ export default function WaLicensingPage() {
           <H2 id="inspections">DSHS inspections and deficiency records</H2>
           <Prose>
             <p>
-              DSHS Residential Care Services inspects Washington ALFs annually and following complaints. For Specialized Dementia Care facilities, inspectors evaluate both standard ALF requirements and the dementia program-specific standards. Washington does not use California&apos;s Type A / Type B classification — findings are documented with scope (isolated, pattern, widespread) and severity descriptors in the inspection narrative.
+              DSHS Residential Care Services inspects Washington ALFs annually and following complaints. For Specialized Dementia Care facilities, inspectors evaluate both standard ALF requirements and the dementia program-specific standards. Washington does not use California&apos;s Type A / Type B classification — ALF findings are characterized as isolated vs. systemic (recurring) deficiencies with severity descriptors in the inspection narrative.
             </p>
           </Prose>
 

@@ -83,11 +83,15 @@ def load_env() -> None:
             return
 
 
-def get_conn() -> psycopg.Connection:
+def get_dsn() -> str:
     url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
     if not url:
         raise RuntimeError("DATABASE_URL / POSTGRES_URL not set")
-    return psycopg.connect(url)
+    return url
+
+
+def get_conn() -> psycopg.Connection:
+    return psycopg.connect(get_dsn())
 
 
 def _parse_dollar_amount(text: str | None) -> int | None:
@@ -228,38 +232,41 @@ def backfill_one(
 
 
 def run(dry_run: bool, limit: int | None) -> None:
-    conn = get_conn()
+    dsn = get_dsn()
     limit_sql = f"LIMIT {limit}" if limit else ""
 
-    with conn.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT id, local_path, inspection_id
-            FROM pa_pdf_inventory
-            WHERE parse_status = 'done'
-              AND backfill_status = 'pending'
-              AND local_path IS NOT NULL
-            ORDER BY created_at
-            {limit_sql}
-            """
-        )
-        rows = cur.fetchall()
+    # Fetch work list with a short-lived connection
+    with psycopg.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT id, local_path, inspection_id
+                FROM pa_pdf_inventory
+                WHERE parse_status = 'done'
+                  AND backfill_status = 'pending'
+                  AND local_path IS NOT NULL
+                ORDER BY created_at
+                {limit_sql}
+                """
+            )
+            rows = cur.fetchall()
 
     print(f"  {len(rows)} PDFs to backfill", flush=True)
 
     ok = err = total_defs = 0
     for inv_id, local_path, inspection_id in rows:
-        try:
-            n = backfill_one(
-                conn,
-                str(inv_id),
-                str(inspection_id) if inspection_id else None,
-                local_path,
-                dry_run,
-            )
-            total_defs += n
-            if not dry_run:
-                with conn:
+        # Fresh connection per row — avoids session pooler idle-timeout disconnect
+        with psycopg.connect(dsn) as conn:
+            try:
+                n = backfill_one(
+                    conn,
+                    str(inv_id),
+                    str(inspection_id) if inspection_id else None,
+                    local_path,
+                    dry_run,
+                )
+                total_defs += n
+                if not dry_run:
                     with conn.cursor() as cur:
                         cur.execute(
                             """
@@ -269,21 +276,23 @@ def run(dry_run: bool, limit: int | None) -> None:
                             """,
                             (inv_id,),
                         )
-            ok += 1
-        except Exception as exc:
-            if not dry_run:
-                with conn:
-                    with conn.cursor() as cur:
-                        cur.execute(
-                            """
-                            UPDATE pa_pdf_inventory
-                            SET backfill_status = 'error', backfill_error = %s
-                            WHERE id = %s
-                            """,
-                            (str(exc)[:500], inv_id),
-                        )
-            err += 1
-            print(f"  ERR {str(inv_id)[:8]}: {exc}", file=sys.stderr, flush=True)
+                ok += 1
+            except Exception as exc:
+                if not dry_run:
+                    try:
+                        with conn.cursor() as cur:
+                            cur.execute(
+                                """
+                                UPDATE pa_pdf_inventory
+                                SET backfill_status = 'error', backfill_error = %s
+                                WHERE id = %s
+                                """,
+                                (str(exc)[:500], inv_id),
+                            )
+                    except Exception:
+                        pass
+                err += 1
+                print(f"  ERR {str(inv_id)[:8]}: {exc}", file=sys.stderr, flush=True)
 
     print(
         f"  Done — {ok} PDFs processed, {total_defs} deficiency rows written, {err} errors",

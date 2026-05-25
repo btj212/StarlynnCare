@@ -22,7 +22,7 @@ const ARTICLE_HEADLINE =
 const TITLE = "Medi-Cal & Memory Care in California — ALW Guide";
 const DESC =
   "Medi-Cal and RCFE memory care in California: how the Assisted Living Waiver works, participating counties, SSI room-and-board, and share of cost.";
-const DATE_PUBLISHED = "2026-05-04";
+const DATE_PUBLISHED = "2026-05-25";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   {
@@ -31,7 +31,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "What is the Assisted Living Waiver?",
-    a: "A Medi-Cal Home and Community-Based Services waiver authorized under California Welfare and Institutions Code §14132.275 and administered by DHCS. It funds personal care, supervision, medication assistance, and dementia programming in participating RCFEs for residents who would otherwise qualify for nursing facility placement.",
+    a: "A Medi-Cal Home and Community-Based Services waiver authorized under California Welfare and Institutions Code §14132.26 and administered by DHCS. It funds personal care, supervision, medication assistance, and dementia programming in participating RCFEs for residents who would otherwise qualify for nursing facility placement.",
   },
   {
     q: "How long are ALW waitlists?",
@@ -187,7 +187,7 @@ export default function MediCalMemoryCarePage() {
               medical providers, and the standard Medi-Cal long-term care benefit does not extend to them by default. The
               exception, and the reason this page exists, is the{" "}
               <strong className="font-medium text-ink">Assisted Living Waiver</strong> — a Home and Community-Based Services
-              waiver authorized under California Welfare and Institutions Code §14132.275 and administered by the Department of
+              waiver authorized under California Welfare and Institutions Code §14132.26 and administered by the Department of
               Health Care Services (DHCS). ALW covers a defined set of personal care, supervision, and medication assistance
               services in participating RCFEs in participating counties.
             </p>
@@ -237,8 +237,8 @@ export default function MediCalMemoryCarePage() {
               rate set by the state, sorted into tiers based on the resident&apos;s care needs. This covers personal care,
               supervision, medication assistance, and the dementia-specific programming components of memory care. It does{" "}
               <strong className="font-medium text-ink">not</strong> cover room and board. Room and board is paid by the
-              resident from their SSI/SSP benefit, which is capped at a state-set figure — roughly $1,200 per month in 2026,
-              adjusted annually.
+              resident from their SSI/SSP benefit, which is capped at a state-set figure — $1,444 per month in 2026 (per PIN 25-19-CCLD,
+              effective January 1, 2026), adjusted annually.
             </p>
             <p>
               <strong className="font-medium text-ink">What this means for the family&apos;s actual monthly bill.</strong> A
@@ -369,8 +369,8 @@ export default function MediCalMemoryCarePage() {
           </Prose>
 
           <DataFootnote
-            source="Educational overview · consult DHCS, county Medi-Cal, or a certified benefits advisor for eligibility"
-            refreshed={DATE_PUBLISHED}
+            source="CA W&I Code §14132.26 · DHCS Assisted Living Waiver · PIN 25-19-CCLD (2026 SSI/SSP rates) · Educational overview · consult DHCS, county Medi-Cal, or a certified benefits advisor for eligibility"
+            refreshed="2026-05-25"
             note="Policies and county participation change. Verify ALW county lists and rates on the official DHCS site before making financial decisions."
           />
 
