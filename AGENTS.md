@@ -10,6 +10,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 2. **JSON-LD:** use builders in [`src/lib/seo/schema.ts`](src/lib/seo/schema.ts) and render with [`src/components/seo/JsonLd.tsx`](src/components/seo/JsonLd.tsx) — no inline one-off `<script type="application/ld+json">` in pages.
 3. **Minimum structured data:** at least `BreadcrumbList` (+ `WebPage` with `reviewedBy` for editorial hubs).
 4. **Never fabricate:** no `aggregateRating` without published reviews; no `geo` without real lat/lng; no fake CDSS `sameAs` without a license number.
+5. **Physical city:** derived from lat/lon via the Census Geocoder at ingest (`scrapers/recompute_physical_city.py`). Never overwrite `facility.city` or `facility.city_slug` from a directory CSV without re-running that script. Prior slugs are preserved in `historical_city_slugs[]` for 301 redirects. See `docs/SEO_GEO_CONVENTIONS.md §8b` and `ERRORS.md 2026-05`.
 
 Full details: [`docs/SEO_GEO_CONVENTIONS.md`](docs/SEO_GEO_CONVENTIONS.md).
 

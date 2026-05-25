@@ -40,7 +40,7 @@ export function AuthorByline({ lastReviewed, className = "" }: AuthorBylineProps
       </div>
       <div className="min-w-0">
         <p className="font-[family-name:var(--font-sans)] font-semibold text-[15px] text-ink m-0">
-          Reviewed by {STARLYNN_AUTHOR_DISPLAY_NAME}, {STARLYNN_AUTHOR_CREDENTIALS}
+          Methodology overseen by {STARLYNN_AUTHOR_DISPLAY_NAME}, {STARLYNN_AUTHOR_CREDENTIALS}
         </p>
         <p className="mt-1 font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.06em]">
           California RN License {STARLYNN_AUTHOR_LICENSE} · Verify at{" "}

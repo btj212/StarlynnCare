@@ -1,4 +1,5 @@
 import type { FacilityProfile, InspectionRow, DeficiencyRow } from "@/lib/facility/loadFacilityProfile";
+import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import type { Deficiency } from "@/lib/types";
 import { FullHistoryWaitlist } from "./FullHistoryWaitlist";
@@ -177,7 +178,7 @@ function ExpandedRow({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.06em] text-ink-3 hover:text-ink-2 transition-colors"
           >
-            View official {cfg.agencyShort} report
+            View official {agencyLabelForInspection(insp, cfg).short} report
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-3 w-3 shrink-0" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 13L13 3M7 3h6v6" />
             </svg>
@@ -311,7 +312,7 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
           label="Full Inspection Record"
           title={
             <>
-              Every {cfg.agencyShort} visit, <em>verbatim.</em>
+              Every inspection visit, <em>verbatim.</em>
             </>
           }
           deck={
@@ -396,7 +397,7 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
               rel="noopener noreferrer"
               className="border-b border-rust pb-px font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.06em] text-rust"
             >
-              View {cfg.agencyShort} public records →
+              View {cfg.agencyShort} inspection portal →
             </a>
           </div>
         )}

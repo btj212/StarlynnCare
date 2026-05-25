@@ -230,14 +230,33 @@ manageable and avoid rate-limit errors.
 Run steps in this exact order to avoid wasted API calls on unpublishable facilities:
 
 ```
-1. scrapers/geocode_facilities.py --state XX       # fill lat/lon
-2. scrapers/recompute_publishable.py --state XX     # set publishable = true
-3. scrapers/fetch_streetview.py --state XX          # photos (Google Street View)
-4. scrapers/summarize_inspections.py --state XX     # AI summaries (Anthropic)
-5. scrapers/generate_content.py --state XX          # AI tour questions (Anthropic)
+1. scrapers/geocode_facilities.py --state XX          # fill lat/lon
+2. scrapers/recompute_physical_city.py --state XX --apply
+                                                      # ← REQUIRED: rewrite city + city_slug
+                                                      #   from Census Geocoder (lat/lon → Physical Place)
+                                                      #   Must run AFTER geocode, BEFORE publishable.
+                                                      #   Preserves old slugs in historical_city_slugs[]
+                                                      #   for 301 redirects. See ERRORS.md 2026-05.
+3. scrapers/recompute_publishable.py --state XX       # set publishable = true
+4. scrapers/fetch_streetview.py --state XX            # photos (Google Street View)
+5. scrapers/summarize_inspections.py --state XX       # AI summaries (Anthropic)
+6. scrapers/generate_content.py --state XX            # AI tour questions (Anthropic)
 ```
 
-Steps 3-5 are independent once step 2 has run; run them in parallel if you have the budget.
+Steps 4-6 are independent once step 3 has run; run them in parallel if you have the budget.
+
+**Post-ingest city sanity check** — after step 2, run:
+```sql
+SELECT city_slug, count(*)
+  FROM facilities
+ WHERE state_code = 'XX' AND publishable = TRUE
+ GROUP BY 1
+HAVING count(*) > 0.30 * (
+  SELECT count(*) FROM facilities WHERE state_code = 'XX' AND publishable = TRUE
+)
+ORDER BY 2 DESC;
+```
+Any row that comes back means more than 30% of the state's facilities share one city slug. This is a red flag for a USPS-city collapse (e.g. all suburbs assigned to the major metro). Investigate before publishing.
 
 ### Estimated record counts and runtimes (May 2026 baseline)
 

@@ -8,6 +8,24 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-05 — State directory feeds publish USPS mailing city, not physical city
+
+**What didn't work:** Trusting the source feed's `CITY` field from UGRC's Utah ArcGIS facility layer. USPS assigns every SLC-metro suburb (Taylorsville, Murray, West Jordan, Holladay, etc.) to "Salt Lake City" for mail routing. Six months of Utah pages had wrong city slugs in the URL, breadcrumb, JSON-LD, and page copy.
+
+**What worked instead:** Re-derive physical city from lat/lon via the Census Geocoder **after** geocoding, **before** `recompute_publishable.py`. Run `scrapers/recompute_physical_city.py --state XX --apply`. This pattern applies to TX (CCAD), MN (MDH), and IL (IDPH) too — they all inherit USPS conventions for metro suburbs. Prior slugs are stored in `historical_city_slugs[]` for 301 redirects.
+
+**Do not:** Set `facility.city` from a directory CSV without running `recompute_physical_city.py`. Do not use a render-time override to patch the display name while leaving the slug wrong — URL/JSON-LD/page text must all agree on a YMYL directory.
+
+---
+
+## 2026-05 — `inspections.source_agency` was populated at ingest but SELECT ignored it
+
+**What didn't work:** Using `cfg.agencyShort` for every inspection row in the UI. Utah facility profiles mix CMS nursing-home inspections (`source_agency = 'CMS'`, F-tags) with state ALF inspections (`source_agency = 'UT-CCL'`, R432 codes). Every CMS row showed "DLBC citations" and "View official DLBC report" linking to medicare.gov.
+
+**What worked instead:** Add `source_agency` to the `fetchInspectionsAndDeficiencies` SELECT and `InspectionRow` type; call `agencyLabelForInspection(insp, cfg)` at every UI touch-point. See `src/lib/states/profileConfig.ts`.
+
+---
+
 ## 2026-05 — UT facility detail endpoint: no stable URL found
 
 **What didn't work:** Direct GET on `provider.dlbc.utah.gov/ccl/facilities/<id>`, `/ccl/facility/<id>`, `/ccl/facilities/<id>/inspections`, `/ccl/facilities/<id>/compliance`. All redirect or 404. Also probed `cclapi.dlbc.utah.gov/api/public/...` — no documented detail-by-id route surfaced.

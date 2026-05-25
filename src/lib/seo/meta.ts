@@ -197,6 +197,10 @@ export interface FacilitySnippetArgs {
   grade: string | null;
   /** Composite percentile 0–100, higher = better. Null when grade missing. */
   percentile: number | null;
+  /** Sub-metric percentiles — used to surface the worst signal instead of the composite. */
+  severityPercentile?: number | null;
+  frequencyPercentile?: number | null;
+  repeatsPercentile?: number | null;
   /** Total deficiencies on record. */
   citationCount: number;
   /** Most recent non-complaint inspection date as ISO yyyy-mm-dd. */
@@ -219,6 +223,27 @@ export interface FacilitySnippetArgs {
  * always returns at least the citation fragment ("no CDSS citations on record"
  * when zero), so callers never get an empty string.
  */
+/**
+ * For bottom-half facilities: find the sub-metric that is at least 10 points
+ * worse than the composite and has the lowest percentile. Returns null when no
+ * sub-metric differs by the threshold, when all sub-metrics are null, or when
+ * the composite is top-half (we only call this for bottom-half facilities).
+ */
+function worstSubMetricFragment(
+  composite: number,
+  severityPct: number | null | undefined,
+  frequencyPct: number | null | undefined,
+  repeatsPct: number | null | undefined,
+): { percentile: number; label: string } | null {
+  const candidates: Array<{ percentile: number; label: string }> = [
+    { percentile: severityPct ?? Infinity, label: "citation severity" },
+    { percentile: frequencyPct ?? Infinity, label: "citation frequency" },
+    { percentile: repeatsPct ?? Infinity, label: "repeat-citation rate" },
+  ].filter((c) => c.percentile !== Infinity && c.percentile < 50 && composite - c.percentile >= 10);
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.percentile < a.percentile ? b : a));
+}
+
 export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   const {
     facilityName,
@@ -226,6 +251,9 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
     stateCode,
     grade,
     percentile,
+    severityPercentile,
+    frequencyPercentile,
+    repeatsPercentile,
     citationCount,
     lastInspectionDate,
     variant = "meta",
@@ -241,8 +269,19 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
       const topPct = Math.max(1, 100 - percentile);
       rankFrag = `Ranked in the top ${topPct}% of ${stateName} memory care`;
     } else {
-      const bottomPct = Math.max(1, percentile);
-      rankFrag = `Ranked in the bottom ${bottomPct}% of ${stateName} memory care`;
+      // For bottom-half, prefer the worst sub-metric when the gap is ≥ 10 pts
+      const worst = worstSubMetricFragment(
+        percentile,
+        severityPercentile,
+        frequencyPercentile,
+        repeatsPercentile,
+      );
+      if (worst) {
+        rankFrag = `Ranked in the bottom ${Math.max(1, Math.round(worst.percentile))}% on ${worst.label} among ${stateName} peers`;
+      } else {
+        const bottomPct = Math.max(1, Math.round(percentile));
+        rankFrag = `Ranked in the bottom ${bottomPct}% of ${stateName} memory care`;
+      }
     }
   }
 
