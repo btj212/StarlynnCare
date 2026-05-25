@@ -54,8 +54,8 @@ function TimelineRail({ timeline, windowMonths }: { timeline: TimelinePoint[]; w
         <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-ink-3">
           {repPeerMedian !== null ? `Peer median ${repPeerMedian.toFixed(0)} · dashed` : "Peer median shown dashed"}
         </div>
-        <div className="text-right font-[family-name:var(--font-display)] text-[17px] italic text-ink-2">
-          {totalWeighted === 0
+        <div className="max-w-[38ch] text-right font-[family-name:var(--font-display)] text-[17px] italic text-ink-2">
+          {lastCited == null
             ? "No citation activity in this window."
             : `${lastCitedLabel ? `Last citation: ${lastCitedLabel}.` : ""} Compared against peer median (dashed).`}
         </div>
