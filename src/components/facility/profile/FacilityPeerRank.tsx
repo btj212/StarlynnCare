@@ -61,7 +61,7 @@ function MetricCell({ label, percentile, peerMedian, desc }: MetricCellProps) {
         style={{ color: fillColor }}
       >
         {pct}
-        <sup className="font-[family-name:var(--font-mono)] text-[0.3em] tracking-[0.04em] text-ink-2 align-super">{ordinalSuffix(pct)}</sup>
+        <sup className="font-[family-name:var(--font-mono)] text-[0.3em] tracking-[0.04em] text-ink-2 align-super">{ordinalSuffix(pct)}%</sup>
       </div>
       <div className="mt-4 font-[family-name:var(--font-display)] text-[16px] italic leading-[1.3] text-ink-2">
         {desc}

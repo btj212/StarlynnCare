@@ -14,7 +14,6 @@ function TimelineRail({ timeline, windowMonths }: { timeline: TimelinePoint[]; w
     );
   }
 
-  const totalWeighted = timeline.reduce((s, p) => s + p.facilityScore, 0);
   const lastCited = [...timeline].reverse().find((p) => p.cited);
   const lastCitedLabel = lastCited
     ? (() => {
@@ -52,21 +51,10 @@ function TimelineRail({ timeline, windowMonths }: { timeline: TimelinePoint[]; w
   return (
     <div className="space-y-3">
       <div className="flex items-end justify-between">
-        <div>
-          <div className={`font-[family-name:var(--font-display)] text-[64px] leading-[0.9] tracking-[-0.02em] ${
-            repPeerMedian !== null && totalWeighted > repPeerMedian * 1.5 ? "text-rust" : "text-grade-a"
-          }`}>
-            {totalWeighted.toFixed(0)}
-            <span className="font-[family-name:var(--font-mono)] ml-2 text-[0.32em] tracking-wide text-ink-3">
-              weighted score · {windowMonths} mo
-            </span>
-          </div>
-          <div className="mt-1 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-ink-3">
-            0–100 scale · lower = better
-            {repPeerMedian !== null ? ` · peer median ${repPeerMedian.toFixed(0)}` : " · peer median dashed line below"}
-          </div>
+        <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-ink-3">
+          {repPeerMedian !== null ? `Peer median ${repPeerMedian.toFixed(0)} · dashed` : "Peer median shown dashed"}
         </div>
-        <div className="max-w-[38ch] text-right font-[family-name:var(--font-display)] text-[17px] italic text-ink-2">
+        <div className="text-right font-[family-name:var(--font-display)] text-[17px] italic text-ink-2">
           {totalWeighted === 0
             ? "No citation activity in this window."
             : `${lastCitedLabel ? `Last citation: ${lastCitedLabel}.` : ""} Compared against peer median (dashed).`}
