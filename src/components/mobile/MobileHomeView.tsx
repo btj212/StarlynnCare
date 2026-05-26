@@ -78,9 +78,9 @@ export function MobileHomeView({
         </div>
       </section>
 
-      <div className="m-illo">
+      <div className="m-illo" aria-hidden style={{ pointerEvents: "none" }}>
         <Image
-          src="/illustrations/family.png"
+          src="/illustrations/hallway-family-staff-conversation.png"
           alt="Illustrated family walking together — the only people imagery on StarlynnCare until verified family photography ships"
           width={1200}
           height={900}

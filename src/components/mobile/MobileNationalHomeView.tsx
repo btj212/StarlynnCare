@@ -58,10 +58,10 @@ export function MobileNationalHomeView({ data }: Props) {
         </div>
       </section>
 
-      <div className="m-illo">
+      <div className="m-illo" aria-hidden style={{ pointerEvents: "none" }}>
         <Image
-          src="/illustrations/family.png"
-          alt="Illustrated family walking together — representing the families we help navigate memory care decisions"
+          src="/illustrations/hallway-family-staff-conversation.png"
+          alt=""
           width={1200}
           height={900}
           className="h-full w-full object-cover"
@@ -146,7 +146,7 @@ export function MobileNationalHomeView({ data }: Props) {
         </h2>
       </section>
 
-      <div className="m-illo">
+      <div className="m-illo" aria-hidden style={{ pointerEvents: "none" }}>
         <Image
           src="/illustrations/couch-grandmother-grandkids-reading.png"
           alt="Illustrated grandmother reading a book to two young grandchildren on a couch — representing the relationships dementia care planning aims to preserve"

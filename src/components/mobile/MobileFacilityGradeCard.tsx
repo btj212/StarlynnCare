@@ -40,7 +40,7 @@ export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFac
   const profileUrl = `/${stateSlug}/${facility.city_slug}/${facility.slug}`;
 
   return (
-    <article className="m-facility">
+    <TrackedProfileLink href={profileUrl} facilityId={facility.id} className="m-facility block no-underline">
       <div className="m-fc-head">
         <div className="m-fc-photo" aria-hidden />
         <div className="min-w-0">
@@ -66,14 +66,8 @@ export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFac
       </div>
       <div className="m-fc-foot">
         <span>{stateInfo?.name ?? facility.state_code} · public inspection data</span>
-        <TrackedProfileLink
-          href={profileUrl}
-          facilityId={facility.id}
-          className="text-teal no-underline font-medium hover:text-teal-deep"
-        >
-          View profile →
-        </TrackedProfileLink>
+        <span className="text-teal font-medium">View profile →</span>
       </div>
-    </article>
+    </TrackedProfileLink>
   );
 }

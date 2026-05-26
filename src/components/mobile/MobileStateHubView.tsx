@@ -48,10 +48,10 @@ export function MobileStateHubView({ data, config }: Props) {
         )}
       </section>
 
-      <div className="m-illo">
+      <div className="m-illo" aria-hidden style={{ pointerEvents: "none" }}>
         <Image
-          src="/illustrations/family.png"
-          alt={`Illustrated family walking together — representing families navigating memory care decisions in ${stateName}`}
+          src="/illustrations/hallway-family-staff-conversation.png"
+          alt=""
           width={1200}
           height={900}
           className="h-full w-full object-cover"
