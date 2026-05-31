@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { NationalStateSummary } from "@/lib/data/nationalHome";
+import { ProximityGroup, proximityItemProps } from "@/components/interaction/ProximityGroup";
 
 type Props = {
   states: NationalStateSummary[];
@@ -28,12 +31,18 @@ const HIDDEN_STATE_CODES = ["TX"];
 export function StatesWeCoverGrid({ states }: Props) {
   const visibleStates = states.filter((s) => !HIDDEN_STATE_CODES.includes(s.stateCode));
   return (
-    <div className="grid grid-cols-1 gap-px bg-paper-rule sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-paper-rule">
+    <ProximityGroup
+      className="grid grid-cols-1 gap-px bg-paper-rule sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-paper-rule"
+      radius={180}
+      intensity={0.035}
+    >
       {visibleStates.map((s) => (
         <Link
           key={s.stateCode}
           href={`/${s.stateSlug}`}
-          className="group flex flex-col gap-3 bg-paper p-6 no-underline text-ink hover:bg-paper-2 transition-colors"
+          {...proximityItemProps(
+            "group flex flex-col gap-3 bg-paper p-6 no-underline text-ink hover:bg-paper-2 transition-colors",
+          )}
         >
           <div className="flex items-start justify-between gap-2">
             <span
@@ -72,6 +81,6 @@ export function StatesWeCoverGrid({ states }: Props) {
           </span>
         </Link>
       ))}
-    </div>
+    </ProximityGroup>
   );
 }
