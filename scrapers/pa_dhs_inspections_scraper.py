@@ -204,12 +204,17 @@ def load_target_facilities(
     """
     Return PA facilities that should be scraped: serves_memory_care + LICENSED +
     have an external_id. Returns dicts with id, external_id, name, city, license_type.
+
+    When external_id is set, skip the serves_memory_care filter so a single facility
+    can be targeted (e.g. Cumberland Crossing Manor on a custom report page).
     """
     where_extra = ""
     params: list[Any] = []
     if external_id:
         where_extra = " AND external_id = %s"
         params.append(external_id)
+
+    mc_clause = "" if external_id else "AND serves_memory_care = true"
 
     sql = f"""
         SELECT id::text AS id,
@@ -220,7 +225,7 @@ def load_target_facilities(
                inspection_index_url
         FROM facilities
         WHERE state_code = 'PA'
-          AND serves_memory_care = true
+          {mc_clause}
           AND license_status = 'LICENSED'
           AND external_id IS NOT NULL
           {where_extra}

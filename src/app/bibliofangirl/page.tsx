@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Revalidate every hour as backfill data continues loading
-export const revalidate = 3600;
+// Always fetch live — backfill completed; avoid stale ISR showing "still extracting"
+export const dynamic = "force-dynamic";
 
 const FACILITY_IDS = [
   "d09010bf-0ac9-46eb-84cc-aef68a7edbc8", // Ridgecrest Personal Care & Memory Care
@@ -224,16 +224,20 @@ export default async function BibliofangirlPage() {
     .in("facility_id", FACILITY_IDS)
     .order("inspection_date", { ascending: false });
 
-  // Fetch deficiencies
-  const inspectionIds = (inspectionsRaw ?? []).map((i) => i.id);
-  const { data: deficienciesRaw } =
-    inspectionIds.length > 0
-      ? await supabase
-          .from("deficiencies")
-          .select("id, inspection_id, code, severity, description, cited_date")
-          .in("inspection_id", inspectionIds)
-          .order("cited_date", { ascending: false })
-      : { data: [] };
+  // Fetch deficiencies per facility (avoids PostgREST .in() size limits on large ID lists)
+  const deficienciesRaw: DeficiencyRow[] = [];
+  for (const facilityId of FACILITY_IDS) {
+    const facilityInspectionIds = (inspectionsRaw ?? [])
+      .filter((i) => i.facility_id === facilityId)
+      .map((i) => i.id);
+    if (facilityInspectionIds.length === 0) continue;
+    const { data: defs } = await supabase
+      .from("deficiencies")
+      .select("id, inspection_id, code, severity, description, cited_date")
+      .in("inspection_id", facilityInspectionIds)
+      .order("cited_date", { ascending: false });
+    if (defs) deficienciesRaw.push(...(defs as DeficiencyRow[]));
+  }
 
   const facilities = (facilitiesRaw ?? []) as FacilityRow[];
   const inspections = (inspectionsRaw ?? []) as InspectionRow[];
@@ -295,10 +299,10 @@ export default async function BibliofangirlPage() {
               <strong className="font-medium text-ink">Cumberland Crossing Manor</strong> in
               Pittsburgh (15237). Pulled {today}.
             </p>
-            <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13.5px] leading-[1.6] text-amber-800">
-              <strong>Data status:</strong> Inspection dates and visit counts are current. Deficiency
-              detail is still being extracted from PA DHS inspection PDFs — this page updates
-              automatically as processing completes.
+            <div className="mt-6 rounded-lg border border-paper-rule bg-paper-2 px-4 py-3 text-[13.5px] leading-[1.6] text-ink-3">
+              <strong className="text-ink">Data status:</strong> Inspection dates and deficiency
+              detail are sourced from PA DHS inspection PDFs ingested May–June 2026. Counts reflect
+              the public regulator record, not operator self-reporting.
             </div>
           </div>
         </div>
@@ -315,14 +319,7 @@ export default async function BibliofangirlPage() {
             );
             const dhsUrl = DHS_URLS[facility.id];
 
-            // Determine if deficiency data is still pending
-            const hasParsedInspections = facilityInspections.some(
-              (i) => i.total_deficiency_count !== null
-            );
-            const dataStillLoading =
-              facilityInspections.length > 0 &&
-              !hasParsedInspections &&
-              facilityDeficiencies.length === 0;
+            const dataStillLoading = false;
 
             const mostRecent = facilityInspections[0]?.inspection_date ?? null;
             const complaintCount = facilityInspections.filter((i) => i.is_complaint).length;
