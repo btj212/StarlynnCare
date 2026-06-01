@@ -174,6 +174,16 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
       a: `What predicts safety usually isn't what admissions directors highlight. From clinician and family interviews, the most under-asked items: staff-to-resident ratio at night and on weekends, skin-check and wound-prevention protocol, medication management and error reporting, shower frequency, and how the facility handles behavioral escalation. We publish a free 37-question tour checklist you can print (${resolvedTourUrl}).`,
     },
     {
+      q: `Where can I find inspection reports for memory care facilities in ${cityName}?`,
+      a: `Every facility profile on StarlynnCare links directly to its state inspection records — the same documents regulators use to evaluate compliance. For California facilities, reports come from the CDSS Community Care Licensing portal; for Texas, from HHSC LTCR; for Oregon, DHS Long-Term Care Licensing; for Washington, DSHS. On each facility profile, navigate to the "Inspection record" section to see full verbatim citations with dates and regulatory citations. You can also access the underlying raw data at ${canonicalFor("/api/facilities/" + region.state.slug)} (open dataset).`,
+    },
+    {
+      q: isCounty
+        ? `What are the ratings for memory care facilities in ${cityName}?`
+        : `How are memory care facilities in ${cityName} rated?`,
+      a: `StarlynnCare uses state inspection data — not self-reported surveys or paid placements — to evaluate facilities. Each profile surfaces four signals: citation severity (e.g. Type-A vs. Type-B in California), citation frequency relative to peers, repeat-finding rate, and inspection recency. Facilities with too few inspections receive a "limited history" label rather than a misleading composite score. You can sort the list of ${cityName} facilities by inspection record using the "By record" sort toggle to see the cleanest inspection histories first. No referral commissions influence how facilities appear.`,
+    },
+    {
       q: s.medicaidQ(cityName),
       a: s.medicaidA(cityName),
     },

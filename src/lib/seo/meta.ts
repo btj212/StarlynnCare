@@ -93,10 +93,13 @@ const hasMemoryCare = (s: string) => /\bmemory\s+care\b/i.test(s);
  * Top-half facilities (composite_percentile ≥ 50) get a comparative rank claim:
  *   "Autumn Glow · Top 14% of California Memory Care"
  *
- * Bottom-half and unrated facilities get a geographic anchor with no quality
- * claim. The "Memory Care" phrase is skipped when it already appears in the
- * facility name to avoid duplication:
- *   "Sunrise Memory Care · Pasadena, CA"
+ * Bottom-half and unrated facilities lead with the inspection/citation hook
+ * when `citationCount` is supplied — this is the unique differentiator vs
+ * A Place for Mom / Caring.com who structurally can't show this:
+ *   "Anaheim Villa · 0 Citations · Memory Care, Anaheim CA"
+ *   "Sunrise Memory Care · 3 Citations · Pasadena, CA"
+ *
+ * When citationCount is omitted, falls back to geographic anchor:
  *   "Oakwood Gardens · Memory Care in Pasadena, CA"
  *
  * YMYL rule: never invent a percentile rank. Null → no claim.
@@ -107,8 +110,10 @@ export function buildFacilityTitle(input: {
   /** Composite percentile 0–100, higher = better. Null when peer set too thin. */
   percentile: number | null;
   city: string;
+  /** Total deficiency count. When provided, surfaces as a SERP hook for non-top-half facilities. */
+  citationCount?: number | null;
 }): string {
-  const { name, stateName, percentile, city } = input;
+  const { name, stateName, percentile, city, citationCount } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
 
   // Top-half — comparative ranking claim allowed.
@@ -124,8 +129,31 @@ export function buildFacilityTitle(input: {
     return candidates.find((c) => c.length <= MAX_TITLE) ?? candidates.at(-1)!;
   }
 
-  // Bottom-half or unrated — geographic anchor, zero quality claim.
-  // Skip "Memory Care" phrase when already present in the facility name.
+  // Bottom-half or unrated — lead with citation hook when available, otherwise
+  // geographic anchor. Skip "Memory Care" phrase when already in facility name.
+  if (citationCount != null) {
+    const citeHook =
+      citationCount === 0
+        ? "0 Citations"
+        : `${citationCount} Citation${citationCount === 1 ? "" : "s"}`;
+    const citeVariants: string[] = hasMemoryCare(name)
+      ? [
+          `${name} · ${citeHook} · ${city}, ${abbr}`,
+          `${name} · ${citeHook} · ${abbr}`,
+          `${name} · ${citeHook}`,
+          name,
+        ]
+      : [
+          `${name} · ${citeHook} · Memory Care, ${city} ${abbr}`,
+          `${name} · ${citeHook} · ${city}, ${abbr}`,
+          `${name} · ${citeHook} · ${abbr}`,
+          `${name} · ${citeHook}`,
+          name,
+        ];
+    return citeVariants.find((c) => c.length <= MAX_TITLE) ?? citeVariants.at(-1)!;
+  }
+
+  // No citation count — fall back to geographic anchor.
   const geoVariants: string[] = hasMemoryCare(name)
     ? [
         `${name} · ${city}, ${abbr}`,
@@ -175,16 +203,15 @@ export function buildFacilityDescription(f: {
   // Top-half — comparative claim.
   if (f.percentile != null && f.percentile >= 50) {
     const topPct = Math.max(1, 100 - f.percentile);
-    // Very elite (top 10%): lean into the transparency angle.
     const tail =
       topPct <= 10
-        ? `See the full inspection record on StarlynnCare.`
-        : `Free public-record review on StarlynnCare.`;
+        ? `View the full inspection record on StarlynnCare.`
+        : `View inspection record — no referral commissions.`;
     return `Top ${topPct}% of ${f.stateName} memory care · ${citations}${inspPart}. ${tail}`;
   }
 
   // Bottom-half or unrated — facts only, no ranking language.
-  return `${f.name} in ${f.city}, ${f.stateName} · ${citations}${inspPart}. Free public-record review on StarlynnCare.`;
+  return `${f.name} in ${f.city}, ${f.stateName} · ${citations}${inspPart}. View the full ${f.agency} inspection record on StarlynnCare.`;
 }
 
 export type FacilitySnippetVariant = "meta" | "prose";

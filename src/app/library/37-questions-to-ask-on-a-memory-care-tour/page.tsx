@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { LibraryCta } from "@/components/editorial/LibraryCta";
 import { buildArticleSchema, buildBreadcrumbList } from "@/lib/seo/schema";
 
 const PAGE_PATH = "/library/37-questions-to-ask-on-a-memory-care-tour";
@@ -175,6 +176,8 @@ export default function ThirtySevenQuestionsUniversalPage() {
             refreshed={DATE_PUBLISHED}
             note="Questions are framed to translate across state regulatory frameworks; specific staffing, disclosure, and reporting requirements vary by state — confirm the rules that apply to the facility you tour"
           />
+
+          <LibraryCta stateSlug="california" stateName="California" />
 
           <p className="text-[13px] text-ink-4 font-[family-name:var(--font-mono)]">
             Total prompts: {BEFORE.length + DURING.length + AFTER.length}. For state-specific licensing terms you

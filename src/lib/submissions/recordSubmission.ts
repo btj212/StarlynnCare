@@ -7,7 +7,8 @@ export type SubmissionEventType =
   | "digest_subscriber"
   | "listing_report"
   | "review"
-  | "waitlist";
+  | "waitlist"
+  | "shortlist_watch";
 
 export interface RecordSubmissionArgs {
   type: SubmissionEventType;

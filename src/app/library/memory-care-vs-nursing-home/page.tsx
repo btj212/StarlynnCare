@@ -8,6 +8,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { LibraryCta } from "@/components/editorial/LibraryCta";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -383,6 +384,8 @@ export default function MemoryCareVsNursingHomePage() {
               . This page describes how California regulates memory care and skilled nursing settings; it is not medical, legal, or financial advice for an individual person or facility.
             </p>
           </div>
+
+          <LibraryCta stateSlug="california" stateName="California" />
 
           <div className="mt-10 flex flex-col gap-3 text-[14px] text-ink-3">
             <Link href="/memory-care-vs-assisted-living" className="text-teal underline underline-offset-4">

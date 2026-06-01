@@ -8,6 +8,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { LibraryCta } from "@/components/editorial/LibraryCta";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -161,6 +162,8 @@ export default function WhenMemoryCarePage() {
               ))}
             </dl>
           </div>
+
+          <LibraryCta stateSlug="california" stateName="California" />
 
           <div className="mt-12 flex flex-col gap-3 text-[14px]">
             <Link href="/states" className="text-teal underline underline-offset-4">

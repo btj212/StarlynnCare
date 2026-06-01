@@ -163,12 +163,16 @@ export async function GET(
   return NextResponse.json(payload, {
     headers: {
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-      // Public dataset — CORS is intentionally open for third-party analysts
-      // and JSON-LD consumers. Vary: Origin so a cached CORS response cannot
-      // be poisoned for callers from a different origin (audit L1).
+      // Public dataset — CORS is intentionally open for third-party analysts,
+      // LLM crawlers, and JSON-LD consumers. Vary: Origin prevents cache poisoning.
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Vary": "Origin",
+      // Suppress Google web-search indexing of the raw API response while keeping
+      // the data open for LLM/GEO citation (ChatGPT, Perplexity, etc.).
+      // robots.txt already disallows /api/ but X-Robots-Tag is the belt-and-suspenders
+      // signal for crawlers that do follow API links from other pages.
+      "X-Robots-Tag": "noindex",
     },
   });
 }

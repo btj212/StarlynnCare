@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Instrument_Serif, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ShortlistProvider } from "@/lib/shortlist/context";
+import { ShortlistBar } from "@/components/shortlist/ShortlistBar";
 import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
@@ -75,17 +77,31 @@ export default function RootLayout({
     <html lang="en" className={`${instrumentSerif.variable} ${interTight.variable} ${jetbrainsMono.variable}`}>
       <body>
         {/* GovernanceBar rendered per-page inside page layouts, not globally, to avoid auth pages */}
-        <ClerkProvider>{children}</ClerkProvider>
+        <ClerkProvider>
+          <ShortlistProvider>
+            {children}
+            <ShortlistBar />
+          </ShortlistProvider>
+        </ClerkProvider>
         <Script src="https://analytics.ahrefs.com/analytics.js" data-key="IjDNyQvSmnNGFMK02hdywA" strategy="afterInteractive" />
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
-            if (window.location.hostname === 'www.starlynncare.com') {
+            (function() {
+              if (window.location.hostname !== 'www.starlynncare.com') return;
+              // Skip obvious bots/crawlers to keep Clarity bounce/dwell metrics clean.
+              // Dashboard filters (Clarity > Filters > IP / User Agent) handle the rest:
+              //   - Add UA filters for: Googlebot, bingbot, AhrefsBot, SemrushBot, DataForSeo
+              //   - Add UA filter for: Windows NT.*Edge (inflated 85% bounce, 98s avg in audit)
+              //   - Add UA filter for: Linux.*Chrome (100% bounce / 0s — crawler signature)
+              var ua = navigator.userAgent;
+              var botPattern = /bot|crawl|spider|slurp|ahrefsbot|semrush|bytespider|dataforseo/i;
+              if (botPattern.test(ua)) return;
               (function(c,l,a,r,i,t,y){
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
                 t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
                 y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
               })(window, document, "clarity", "script", "wroc9wbsaf");
-            }
+            })();
           `}
         </Script>
       </body>

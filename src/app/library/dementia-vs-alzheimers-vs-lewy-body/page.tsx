@@ -8,6 +8,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { LibraryCta } from "@/components/editorial/LibraryCta";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -160,6 +161,8 @@ export default function DementiaTypesPage() {
               ))}
             </dl>
           </div>
+
+          <LibraryCta stateSlug="california" stateName="California" />
 
           <div className="mt-12">
             <Link href="/library/when-is-it-time-for-memory-care" className="text-teal underline underline-offset-4">

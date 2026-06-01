@@ -12,6 +12,7 @@ import {
   buildFaqSchemaFromPairs,
 } from "@/lib/seo/schema";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { LibraryCta } from "@/components/editorial/LibraryCta";
 
 const PAGE_PATH = "/library/type-a-vs-type-b-deficiencies-explained";
 const canonicalUrl = canonicalFor(PAGE_PATH);
@@ -284,6 +285,8 @@ export default function TypeATypeBPage() {
               referral revenue influences how a facility is ranked or displayed.
             </p>
           </Prose>
+
+          <LibraryCta stateSlug="california" stateName="California" />
 
           <div className="mt-10 pt-8 border-t border-paper-rule flex flex-col gap-3 text-[14px] text-ink-3">
             <p>

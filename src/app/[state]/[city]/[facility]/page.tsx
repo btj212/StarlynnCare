@@ -26,6 +26,7 @@ import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings
 import { FullHistoryWaitlist } from "@/components/facility/profile/FullHistoryWaitlist";
 
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 
 // Kept components
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
@@ -69,6 +70,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     stateName: state.name,
     percentile: compositePercentile,
     city: facility.city ?? state.name,
+    citationCount: profile.totals.deficiencies,
   });
 
   const desc = clipMetaDescription(
@@ -189,6 +191,29 @@ export default async function FacilityPage({ params }: PageProps) {
           facilityName={facility.name}
           citationCount={profile.totals.deficiencies}
         />
+
+        {/* Shortlist save — shown alongside watch; both are conversion actions */}
+        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+          <div className="mx-auto max-w-[1280px] px-4 md:px-8 py-4 flex items-center gap-4">
+            <span className="text-sm text-ink-3">Save for comparison:</span>
+            <ShortlistButton
+              pill
+              item={{
+                id: facility.id,
+                name: facility.name,
+                slug: facility.slug,
+                city_slug: facility.city_slug,
+                state_slug: state.slug,
+                city: facility.city ?? null,
+                beds: facility.beds ?? null,
+                total_citations: profile.totals.deficiencies,
+                serious_citations: profile.totals.typeA,
+                inspections: profile.totals.inspections,
+                care_category: facility.care_category,
+              }}
+            />
+          </div>
+        </div>
 
         {/* § 03 · Citation record — timeline + heatmap + inspection list */}
         <FacilityRecord profile={profile} />

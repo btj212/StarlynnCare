@@ -172,6 +172,9 @@ export async function GET() {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Vary": "Origin",
+      // Suppress Google web-search indexing of the raw CSV while keeping it open
+      // for LLM/GEO citation and third-party analysts.
+      "X-Robots-Tag": "noindex",
     },
   });
 }

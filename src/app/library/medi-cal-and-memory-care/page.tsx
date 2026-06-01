@@ -8,6 +8,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { LibraryCta } from "@/components/editorial/LibraryCta";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -387,6 +388,8 @@ export default function MediCalMemoryCarePage() {
               ))}
             </dl>
           </div>
+
+          <LibraryCta stateSlug="california" stateName="California" />
 
           <div className="mt-12 pt-8 border-t border-paper-rule space-y-4 text-[15px] leading-relaxed text-ink-2">
             <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust">

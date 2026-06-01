@@ -68,18 +68,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const facilityNoun = region.state.code === "TX" ? "ALFs" : "facilities";
   const isCounty = region.kind === "county";
 
-  // Title: county uses tiered fallback to stay ≤60 chars; city uses fixed pattern.
+  // Title: lead with the citation-count hook when data is available — this is the
+  // unique differentiator vs A Place for Mom / Caring.com who can't show it.
+  // County/city both fall back to static patterns when totalCount is 0.
+  const stateAbbr = region.state.code;
   let metaTitle: string;
   if (isCounty) {
-    const candidates = [
-      `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
-      `Memory Care in ${region.name} - ${region.state.name} Inspections`,
-      `Memory Care in ${region.name}, ${region.state.name}`,
-    ];
+    const candidates = withDeficiency > 0
+      ? [
+          `${withDeficiency} Facilities Cited · Memory Care in ${region.name}, ${stateAbbr}`,
+          `${withDeficiency} Cited · Memory Care in ${region.name}, ${stateAbbr}`,
+          `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
+          `Memory Care in ${region.name} - ${region.state.name} Inspections`,
+          `Memory Care in ${region.name}, ${region.state.name}`,
+        ]
+      : [
+          `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
+          `Memory Care in ${region.name} - ${region.state.name} Inspections`,
+          `Memory Care in ${region.name}, ${region.state.name}`,
+        ];
     metaTitle = candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
   } else {
-    const cityTitle = `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`;
-    metaTitle = cityTitle.length <= 60 ? cityTitle : `Memory Care in ${region.name}, ${region.state.name}`;
+    const candidates = withDeficiency > 0
+      ? [
+          `${withDeficiency} Facilities Cited · Memory Care in ${region.name}, ${stateAbbr}`,
+          `${withDeficiency} Cited · Memory Care in ${region.name}, ${stateAbbr}`,
+          `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`,
+          `Memory Care in ${region.name}, ${region.state.name}`,
+        ]
+      : [
+          `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`,
+          `Memory Care in ${region.name}, ${region.state.name}`,
+        ];
+    metaTitle = candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
   }
 
   // Data-driven description: lead with facility count + cited count + agency + date.
@@ -618,24 +639,37 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* ── Top performers rail — positioned before the full list so it anchors the
+            "ranked by inspection record" frame before the user hits the grid ── */}
+        {!fetchError && totalCount > 0 && (
+          <TopGradedFacilities
+            citySlugs={region.citySlugs}
+            stateCode={region.state.code}
+            stateSlug={region.state.slug}
+            countyName={region.name}
+            isCity={!isCounty}
+          />
+        )}
+
         {/* ── Facility list ── */}
         {!fetchError && totalCount > 0 && (
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
             <SectionHead
-              label={isCounty ? `§ ${region.name} Facilities` : "§ All Facilities in this City"}
+              label={isCounty ? `§ ${region.name} — All Facilities` : "§ All Facilities"}
               title={
                 isCounty
-                  ? <>{region.name} — <em>every licensed facility, documented in the public record.</em></>
-                  : <>Memory care options in {region.name}, <em>documented in the public record.</em></>
+                  ? <>{region.name} — <em>every licensed facility ranked by inspection record.</em></>
+                  : <>All memory care in {region.name}, <em>ranked by inspection record.</em></>
               }
             />
             <aside className="mb-6 text-[13px] font-[family-name:var(--font-mono)] text-ink-3">
-              Listings are sorted alphabetically; tier badges reflect inspection severity,
-              repeat citations, and frequency relative to peers in {region.name}.{" "}
+              Use <strong className="font-semibold text-ink-2">By record</strong> to sort fewest citations first.
+              Tier badges reflect inspection severity, repeat citations, and citation frequency relative to
+              peers in {region.name}.{" "}
               <Link href="/methodology" className="text-teal underline underline-offset-4">
                 See methodology
-              </Link>{" "}
-              for how each signal is computed.
+              </Link>
+              .
             </aside>
             <FacilityListClient
               facilities={facilities}
@@ -718,16 +752,6 @@ export default async function RegionPage({ params }: PageProps) {
               <p className="mt-2 text-ink-2">{fetchError}</p>
             </div>
           </div>
-        )}
-
-        {/* ── Top performers rail (county and city pages) ── */}
-        {!fetchError && totalCount > 0 && (
-          <TopGradedFacilities
-            citySlugs={region.citySlugs}
-            stateCode={region.state.code}
-            stateSlug={region.state.slug}
-            countyName={region.name}
-          />
         )}
 
         {/* ── County citation spotlight (Type-A in last 12 months, CA counties only) ── */}

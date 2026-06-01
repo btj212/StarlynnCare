@@ -6,6 +6,8 @@ interface TopGradedFacilitiesProps {
   stateCode: string;
   stateSlug: string;
   countyName: string;
+  /** When true, adjusts copy from county framing to city framing. */
+  isCity?: boolean;
 }
 
 type FacilityRow = {
@@ -77,6 +79,7 @@ export async function TopGradedFacilities({
   stateCode,
   stateSlug,
   countyName,
+  isCity = false,
 }: TopGradedFacilitiesProps) {
   const facilities = await loadTopGraded(citySlugs, stateCode);
   if (facilities.length === 0) return null;
@@ -85,12 +88,15 @@ export async function TopGradedFacilities({
     <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
         <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
-          § Top performers in {countyName}
+          § {isCity ? "Top-ranked in" : "Top performers in"} {countyName}
         </div>
         <h2
           className="font-[family-name:var(--font-display)] font-normal text-[clamp(28px,4vw,44px)] leading-[1.06] tracking-[-0.015em] text-ink mb-8"
         >
-          Highest-performing facilities <em>by state inspection record.</em>
+          {isCity
+            ? <>Best memory care in {countyName} — <em>ranked by inspection record.</em></>
+            : <>Highest-performing facilities <em>by state inspection record.</em></>
+          }
         </h2>
 
         <div className="grid gap-0 border-t border-ink md:grid-cols-2 lg:grid-cols-4">

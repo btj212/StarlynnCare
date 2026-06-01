@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { CareCategory } from "@/lib/types";
+import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -128,14 +129,27 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
     f.serves_memory_care ||
     Boolean(f.tx_alzheimer_certified);
 
+  const shortlistItem = {
+    id: f.id,
+    name: f.name,
+    slug: f.slug,
+    city_slug: f.city_slug,
+    state_slug: stateSlug,
+    city: f.city,
+    beds: f.beds,
+    total_citations: f.total_citations,
+    serious_citations: f.serious_citations,
+    inspections: f.inspections,
+    care_category: f.care_category,
+  };
+
   return (
-    <Link
-      href={href}
-      className="group flex flex-col overflow-hidden rounded-xl border border-sc-border bg-white shadow-card transition-shadow hover:shadow-card-hover"
+    <div
+      className="group relative flex flex-col overflow-hidden rounded-xl border border-sc-border bg-white shadow-card transition-shadow hover:shadow-card-hover"
       style={signal.type === "serious" ? { borderColor: "#f5c6c6" } : undefined}
     >
       {/* Photo / gradient */}
-      <div className="relative h-32 w-full overflow-hidden shrink-0">
+      <Link href={href} className="block shrink-0 h-32 relative overflow-hidden">
         {f.photo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -157,10 +171,16 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
             {signal.count} serious
           </span>
         )}
-      </div>
+      </Link>
+
+      {/* Shortlist bookmark — positioned in top-right corner */}
+      <ShortlistButton
+        item={shortlistItem}
+        className="absolute top-2 right-2 shadow-sm"
+      />
 
       {/* Body */}
-      <div className="flex flex-1 flex-col gap-2 p-4">
+      <Link href={href} className="flex flex-1 flex-col gap-2 p-4 no-underline">
         {/* Tier 1: name */}
         <p className="font-semibold text-ink leading-snug group-hover:text-teal transition-colors line-clamp-2">
           {f.name}
@@ -185,8 +205,8 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
             .filter(Boolean)
             .join(" · ")}
         </p>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
 
@@ -209,11 +229,14 @@ function SectionHead({ title, count }: { title: string; count: number }) {
 // Main client component
 // ─────────────────────────────────────────────────────────────────────────────
 
+type SortBy = "name" | "record";
+
 const CHIPS: { id: FilterChip; label: string }[] = [
   { id: "all", label: "All" },
   { id: "large", label: "50+ beds" },
   { id: "medium", label: "7–49 beds" },
   { id: "no_citations", label: "No citations" },
+  { id: "has_citations", label: "Has citations" },
 ];
 
 export function FacilityListClient({
@@ -222,6 +245,7 @@ export function FacilityListClient({
   regionName,
   hiddenSmallCount,
   initialShowSmall = false,
+  defaultSortBy = "name",
 }: {
   facilities: ListFacility[];
   stateSlug: string;
@@ -229,11 +253,14 @@ export function FacilityListClient({
   hiddenSmallCount: number;
   /** When all indexed facilities are small-tier, show them by default so the list is not empty. */
   initialShowSmall?: boolean;
+  /** Default sort order. Pass "record" to surface fewest-citations-first. */
+  defaultSortBy?: SortBy;
 }) {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [chip, setChip] = useState<FilterChip>("all");
   const [showSmall, setShowSmall] = useState(initialShowSmall);
+  const [sortBy, setSortBy] = useState<SortBy>(defaultSortBy);
 
   // Sync query if the URL param changes (e.g. browser back/forward).
   useEffect(() => {
@@ -243,7 +270,7 @@ export function FacilityListClient({
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return facilities.filter((f) => {
+    const base = facilities.filter((f) => {
       // Search
       if (q && !f.name.toLowerCase().includes(q) && !f.city?.toLowerCase().includes(q)) {
         return false;
@@ -258,7 +285,21 @@ export function FacilityListClient({
       if (chip === "small") return f.capacity_tier === "small";
       return true;
     });
-  }, [facilities, query, chip, showSmall]);
+
+    if (sortBy === "record") {
+      // Fewest citations first; ties broken by most inspections (more data = more signal),
+      // then alphabetically. Facilities with no inspection data sort last.
+      return [...base].sort((a, b) => {
+        const aNoData = a.inspections === 0;
+        const bNoData = b.inspections === 0;
+        if (aNoData !== bNoData) return aNoData ? 1 : -1;
+        if (a.total_citations !== b.total_citations) return a.total_citations - b.total_citations;
+        if (b.inspections !== a.inspections) return b.inspections - a.inspections;
+        return a.name.localeCompare(b.name);
+      });
+    }
+    return base;
+  }, [facilities, query, chip, showSmall, sortBy]);
 
   const isFiltered = query.trim() !== "" || chip !== "all";
 
@@ -337,6 +378,31 @@ export function FacilityListClient({
               {showSmall ? "Hide" : "Show"} ≤6-bed homes ({hiddenSmallCount})
             </button>
           )}
+          {/* Sort toggle */}
+          <div className="ml-auto flex items-center gap-1.5 text-xs text-muted">
+            <span className="hidden sm:inline">Sort:</span>
+            <button
+              onClick={() => setSortBy("name")}
+              className={`px-2.5 py-1 rounded transition-colors font-semibold ${
+                sortBy === "name"
+                  ? "bg-ink text-paper"
+                  : "bg-transparent text-ink-3 hover:text-ink"
+              }`}
+            >
+              A–Z
+            </button>
+            <button
+              onClick={() => setSortBy("record")}
+              className={`px-2.5 py-1 rounded transition-colors font-semibold ${
+                sortBy === "record"
+                  ? "bg-ink text-paper"
+                  : "bg-transparent text-ink-3 hover:text-ink"
+              }`}
+              title="Fewest citations first — facilities with the cleanest inspection records at the top"
+            >
+              By record
+            </button>
+          </div>
         </div>
       </div>
 
