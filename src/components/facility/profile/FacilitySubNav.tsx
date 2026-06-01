@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
+import { FacilitySubNavAnchors } from "@/components/facility/profile/FacilitySubNavAnchors";
 
 const PHONE_RE = /(\d{3})(\d{3})(\d{4})/;
 function formatPhone(raw: string | null): string | null {
@@ -48,17 +49,7 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
             <span className="text-ink-3">{facility.name}</span>
           </nav>
 
-          {/* Anchors — hidden on mobile */}
-          <nav
-            className="hidden items-center gap-[22px] font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.06em] md:flex"
-            aria-label="On this page"
-          >
-            {anchors.map((a) => (
-              <a key={a.href} href={a.href} className="text-ink-3 hover:text-rust transition-colors">
-                {a.label}
-              </a>
-            ))}
-          </nav>
+          <FacilitySubNavAnchors anchors={anchors} />
 
           {/* Actions */}
           <div className="flex shrink-0 items-center gap-2">
