@@ -141,16 +141,31 @@ export function ZipSearch({
   const [zip, setZip] = useState("");
   const [status, setStatus] = useState<"idle" | "not-covered">("idle");
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const clean = zip.trim();
-    const dest = COVERED_ZIPS[clean];
-    if (dest) {
-      emitZipSearchSubmit({ zip: clean });
-      router.push(dest);
-    } else {
+    if (!clean) return;
+
+    if (/^\d{5}$/.test(clean)) {
+      const zipDest = COVERED_ZIPS[clean];
+      if (zipDest) {
+        emitZipSearchSubmit({ zip: clean });
+        router.push(zipDest);
+        return;
+      }
       setStatus("not-covered");
+      return;
     }
+
+    const { resolveLocationQuery } = await import("@/lib/search/resolveLocationQuery");
+    const cityDest = resolveLocationQuery(clean);
+    if (cityDest) {
+      emitZipSearchSubmit({ zip: clean });
+      router.push(cityDest);
+      return;
+    }
+
+    setStatus("not-covered");
   }
 
   if (variant === "mobileShell") {
@@ -159,12 +174,11 @@ export function ZipSearch({
         <form onSubmit={handleSubmit} className="m-search w-full min-w-0" style={{ borderRadius: 0, fontSize: 16 }}>
           <input
             type="text"
-            inputMode="numeric"
-            pattern="[0-9]{5}"
-            maxLength={5}
+            inputMode="text"
+            autoComplete="off"
             value={zip}
             onChange={(e) => {
-              setZip(e.target.value.replace(/\D/g, ""));
+              setZip(e.target.value);
               setStatus("idle");
             }}
             placeholder="Enter ZIP or city"
@@ -182,7 +196,7 @@ export function ZipSearch({
         </form>
         {status === "not-covered" && (
           <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.04em] px-0.5">
-            ZIP not in coverage yet —{" "}
+            ZIP or city not in coverage yet —{" "}
             <Link href="/california" className="text-rust underline underline-offset-2">
               browse California
             </Link>
@@ -203,12 +217,11 @@ export function ZipSearch({
         >
           <input
             type="text"
-            inputMode="numeric"
-            pattern="[0-9]{5}"
-            maxLength={5}
+            inputMode="text"
+            autoComplete="off"
             value={zip}
             onChange={(e) => {
-              setZip(e.target.value.replace(/\D/g, ""));
+              setZip(e.target.value);
               setStatus("idle");
             }}
             placeholder="Enter a city or ZIP code"
@@ -226,7 +239,7 @@ export function ZipSearch({
         </form>
         {status === "not-covered" && (
           <p className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3 tracking-[0.04em]">
-            ZIP not covered yet —{" "}
+            City or ZIP not covered yet —{" "}
             <Link href="/california" className="text-rust underline underline-offset-2">
               browse California
             </Link>
@@ -242,17 +255,16 @@ export function ZipSearch({
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
-          inputMode="numeric"
-          pattern="[0-9]{5}"
-          maxLength={5}
+          inputMode="text"
+          autoComplete="off"
           value={zip}
           onChange={(e) => {
-            setZip(e.target.value.replace(/\D/g, ""));
+            setZip(e.target.value);
             setStatus("idle");
           }}
-          placeholder="Enter your zip code"
+          placeholder="Enter a city or ZIP code"
           className="w-40 rounded-md border border-sc-border bg-white px-4 py-3 text-sm text-ink placeholder:text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-teal/40 focus:border-teal transition"
-          aria-label="Zip code"
+          aria-label="City or ZIP code"
         />
         <button
           type="submit"
@@ -264,7 +276,7 @@ export function ZipSearch({
 
       {status === "not-covered" && (
         <p className="text-xs text-muted">
-          We don&apos;t cover that zip yet —{" "}
+          We don&apos;t cover that city or ZIP yet —{" "}
           <Link
             href="/california/alameda-county"
             className="text-teal underline underline-offset-2 hover:text-teal-mid"
