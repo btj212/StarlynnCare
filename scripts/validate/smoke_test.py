@@ -24,7 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from validate._lib import check, fetch_page, get_conn, run_all_checks  # noqa: E402
 
-PRODUCTION_URL = "https://starlynn.care"
+PRODUCTION_URL = "https://www.starlynncare.com"
 PUBLISHABLE_STATES = ("CA", "OR", "WA", "MN", "TX")
 
 # Known top-5 repeat offenders for the CA report page check

@@ -23,7 +23,7 @@ from validate._html_parse import (  # noqa: E402
 )
 from validate._lib import check, fetch_page, get_conn, run_all_checks  # noqa: E402
 
-PRODUCTION_URL = "https://starlynn.care"
+PRODUCTION_URL = "https://www.starlynncare.com"
 STATE_SLUG = {
     "CA": "california",
     "OR": "oregon",

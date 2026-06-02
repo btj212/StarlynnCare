@@ -22,7 +22,7 @@ from validate._html_parse import (  # noqa: E402
 )
 from validate._lib import REPO_ROOT, fetch_page, get_conn  # noqa: E402
 
-PRODUCTION_URL = "https://starlynn.care"
+PRODUCTION_URL = "https://www.starlynncare.com"
 AUDIT_PATH = REPO_ROOT / "docs/audits/soft404-report.md"
 
 NOT_FOUND_MARKERS = (

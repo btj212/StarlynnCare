@@ -90,7 +90,7 @@ def fetch_page(url: str, timeout: int = 10) -> tuple[int, str]:
         headers={
             "User-Agent": (
                 "StarlynnCare-Validator/1.0 "
-                "(https://starlynn.care; validation bot)"
+                "(https://www.starlynncare.com; validation bot)"
             )
         },
     )

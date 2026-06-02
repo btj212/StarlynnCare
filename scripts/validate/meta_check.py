@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from validate._html_parse import extract_meta_description, extract_title  # noqa: E402
 from validate._lib import check, fetch_page, get_conn, run_all_checks  # noqa: E402
 
-PRODUCTION_URL = "https://starlynn.care"
+PRODUCTION_URL = "https://www.starlynncare.com"
 PUBLISHABLE_STATES = ("CA", "OR", "WA", "MN", "TX")
 STATE_SLUG = {
     "CA": "california",

@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from validate._html_parse import extract_sitemap_locs, path_from_url  # noqa: E402
 from validate._lib import REPO_ROOT, fetch_page, get_conn  # noqa: E402
 
-PRODUCTION_URL = "https://starlynn.care"
+PRODUCTION_URL = "https://www.starlynncare.com"
 AUDIT_PATH = REPO_ROOT / "docs/audits/sitemap-diff.md"
 STATE_SLUG = {
     "CA": "california",
