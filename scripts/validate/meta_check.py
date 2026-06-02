@@ -100,8 +100,10 @@ def _sample_urls(base_url: str) -> list[tuple[str, str]]:
                     urls.append((path, path))
                 cur.execute(
                     """
-                    SELECT DISTINCT city_slug FROM facilities
-                    WHERE publishable = true AND state_code = %s
+                    SELECT city_slug FROM (
+                        SELECT DISTINCT city_slug FROM facilities
+                        WHERE publishable = true AND state_code = %s
+                    ) AS t
                     ORDER BY random() LIMIT 2
                     """,
                     (state,),
