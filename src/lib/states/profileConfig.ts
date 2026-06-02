@@ -118,6 +118,7 @@ import { waProfileConfig, waNhProfileConfig } from "./WA/profileConfig";
 import { mnProfileConfig } from "./MN/profileConfig";
 import { utProfileConfig } from "./UT/profileConfig";
 import { ilProfileConfig } from "./IL/profileConfig";
+import { paProfileConfig } from "./PA/profileConfig";
 
 const STATE_CONFIGS: Record<string, StateProfileConfig> = {
   CA: caProfileConfig,
@@ -127,6 +128,7 @@ const STATE_CONFIGS: Record<string, StateProfileConfig> = {
   MN: mnProfileConfig,
   UT: utProfileConfig,
   IL: ilProfileConfig,
+  PA: paProfileConfig,
 };
 
 /**

@@ -191,13 +191,13 @@ def backfill_one(
                     inspector_narrative, plan_of_correction,
                     severity, immediate_jeopardy,
                     civil_money_penalty,
-                    status
+                    status, cited_date, state_severity_raw
                 ) VALUES (
                     %(inspection_id)s, %(code)s, %(description)s,
                     %(inspector_narrative)s, %(plan_of_correction)s,
                     %(severity)s, %(immediate_jeopardy)s,
                     %(civil_money_penalty)s,
-                    %(status)s
+                    %(status)s, %(cited_date)s, %(state_severity_raw)s
                 )
                 """,
                 {
@@ -213,6 +213,8 @@ def backfill_one(
                         "corrected" if corrected is True
                         else ("open" if corrected is False else None)
                     ),
+                    "cited_date": parse_date_str(d.get("date")),
+                    "state_severity_raw": sev_raw if sev_raw else None,
                 },
             )
         written += 1

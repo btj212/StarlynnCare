@@ -107,6 +107,11 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     // Minnesota-specific articles (live)
     { path: "/minnesota/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/minnesota/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    // Pennsylvania hub + guides + articles (live)
+    { path: "/pennsylvania", priority: "0.88", changefreq: "weekly" },
+    { path: "/pennsylvania/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/pennsylvania/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/pennsylvania/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
   ];
 
   return paths.map((p) => ({

@@ -6,6 +6,30 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-06 — Pennsylvania frontend launch (overrides prior "skip new states" decision)
+
+**Context:** `MEMORY.md` 2026-04 and `.cursor/plans/post_audit_growth_plan.plan.md` both said "skip more US states until CA county replication or TX shows ranking lift." This launch **overrides that decision** per explicit user direction.
+
+**Decided:**
+- PA launches with the full MN/OR/WA/TX "directory-first + small focused pages" architecture.
+- Profile config: `agencyShort: "PA DHS"`, `agencyLong: "PA DHS OLTL"`, `citationPrefix: ""` (codes already include `55 Pa Code §`), `inspectionWindowMonths: 36`.
+- Severity tier: Citation (1/info) → Civil Money Penalty (2/warn) → Provisional License (3/danger) → Immediate Jeopardy / Revocation / Substantiated Abuse (4/danger).
+- Hub config registered in `stateHubConfigs/index.ts` as `pennsylvania`; `PA_FAQS` added to `stateFaqs.ts`.
+- 6 county hubs with Alameda-style long-form intros: Montgomery (48 fac), Allegheny (44), Bucks (29), Chester (26), Lancaster (19), Delaware (16).
+- Top-city intros in `cityIntros.ts` for Pittsburgh, Philadelphia, Lancaster, Allentown, York, West Chester, Harrisburg, Erie, King of Prussia, Exton.
+- Two state editorial articles: `memory-care-licensing` (PCH vs ALR, Special Care/SDCU) and `memory-care-vs-nursing-home` (DHS vs DOH+CMS).
+- Data gap fix: `cited_date` backfilled from `inspections.inspection_date` (proxy; exact dates in sidecars but file-based approach was 10h; DB approach was 6s). `state_severity_raw` derived from `deficiencies.severity` integer column. 42,753/42,753 rows covered.
+- `pa_pdf_backfill.py` patched for future runs: INSERT now includes `cited_date` and `state_severity_raw`.
+- `pa_backfill_date_severity.py` written as sidecar-based remediation script (kept for reference; DB approach was used instead for speed).
+
+**Result (2026-06-02):** 355 publishable PA facilities, 42,753 deficiencies, all with cited_date + state_severity_raw populated.
+
+**Intentional non-goals:** Not recovering the 94 errored PDFs (OCR failures, corrupt files). No PA cost-band / glossary pages (old CA model; pivot away from it). No rulebook entries yet (ship empty `[]` per OR/UT/IL pattern).
+
+**Source:** `cursor/pennsylvania-launch` branch; plan in `.cursor/plans/pennsylvania_launch_82e8a3ae.plan.md`.
+
+---
+
 ## 2026-05 — Pennsylvania data plane: DHS HSD XLSX + CMS NF overlay
 
 **Decided:**

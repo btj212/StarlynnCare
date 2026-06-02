@@ -33,6 +33,7 @@ const TEXAS = stateFromSlug("texas")!;
 const OREGON = stateFromSlug("oregon")!;
 const MINNESOTA = stateFromSlug("minnesota")!;
 const WASHINGTON = stateFromSlug("washington")!;
+const PENNSYLVANIA = stateFromSlug("pennsylvania")!;
 
 /**
  * Alameda County cities — incorporated places only. If a CDSS record has a
@@ -1836,6 +1837,115 @@ export const REGIONS: ReadonlyArray<Region> = [
       "victoria",
     ],
   },
+
+  // ── Pennsylvania ─────────────────────────────────────────────────────────
+
+  // Montgomery County — 48 publishable facilities; suburban Philadelphia's largest MC market
+  {
+    slug: "montgomery-county",
+    name: "Montgomery County",
+    kind: "county",
+    state: PENNSYLVANIA,
+    citySlugs: [
+      "abington", "ambler", "audubon", "bala-cynwyd", "blue-bell",
+      "collegeville", "dresher", "east-norriton", "harleysville", "hatboro",
+      "haverford", "huntingdon-valley", "king-of-prussia", "lafayette-hill",
+      "lansdale", "limerick", "lower-gwynedd", "north-wales", "phoenixville",
+      "plymouth-meeting", "pottstown", "rydal", "schwenksville", "souderton",
+      "willow-grove", "worcester", "wyncote", "wyndmoor", "zieglerville",
+    ],
+  },
+
+  // Allegheny County — 44 publishable facilities; Pittsburgh metro
+  {
+    slug: "allegheny-county",
+    name: "Allegheny County",
+    kind: "county",
+    state: PENNSYLVANIA,
+    citySlugs: [
+      "allison-park", "bethel-park", "bridgeville", "cheswick", "coraopolis",
+      "elizabeth", "glenshaw", "jefferson-hills", "mckees-rocks", "monroeville",
+      "moon-township", "mt-lebanon", "oakmont", "pittsburgh", "south-park-townshi",
+      "turtle-creek", "upper-saint-clair", "upper-st-clair", "verona",
+      "warrendale", "wexford",
+    ],
+  },
+
+  // Bucks County — 29 publishable facilities; northeast of Philadelphia
+  {
+    slug: "bucks-county",
+    name: "Bucks County",
+    kind: "county",
+    state: PENNSYLVANIA,
+    citySlugs: [
+      "bensalem", "doylestown", "dublin", "hatboro", "holland", "jamison",
+      "langhorne", "new-hope", "newtown", "quakertown", "richboro",
+      "richlandtown", "sellersville", "southampton", "telford", "warminster",
+      "warrington", "yardley",
+    ],
+  },
+
+  // Chester County — 26 publishable facilities; Main Line and western suburbs
+  {
+    slug: "chester-county",
+    name: "Chester County",
+    kind: "county",
+    state: PENNSYLVANIA,
+    citySlugs: [
+      "chester-springs", "devon", "downingtown", "exton", "honey-brook",
+      "kennett-square", "malvern", "paoli", "phoenixville", "pottstown",
+      "wayne", "west-brandywine", "west-chester", "west-grove",
+    ],
+  },
+
+  // Lancaster County — 19 publishable facilities; Lancaster city and surrounding communities
+  {
+    slug: "lancaster-county",
+    name: "Lancaster County",
+    kind: "county",
+    state: PENNSYLVANIA,
+    citySlugs: [
+      "ephrata", "lancaster", "landisville", "lititz", "manheim",
+      "maytown", "millersville", "new-holland", "quarryville",
+    ],
+  },
+
+  // Delaware County — 16 publishable facilities; southwestern Philadelphia suburbs
+  {
+    slug: "delaware-county",
+    name: "Delaware County",
+    kind: "county",
+    state: PENNSYLVANIA,
+    citySlugs: [
+      "bryn-mawr", "chester", "glen-mills", "haverford", "media",
+      "newtown-square", "rosemont",
+    ],
+  },
+
+  // PA city regions — individual city hubs for top markets
+  ...([
+    ["pittsburgh", "Pittsburgh"],
+    ["philadelphia", "Philadelphia"],
+    ["lancaster", "Lancaster"],
+    ["allentown", "Allentown"],
+    ["york", "York"],
+    ["west-chester", "West Chester"],
+    ["harrisburg", "Harrisburg"],
+    ["erie", "Erie"],
+    ["king-of-prussia", "King of Prussia"],
+    ["bethlehem", "Bethlehem"],
+    ["reading", "Reading"],
+    ["doylestown", "Doylestown"],
+    ["mechanicsburg", "Mechanicsburg"],
+    ["wexford", "Wexford"],
+    ["exton", "Exton"],
+  ] as [string, string][]).map<Region>(([slug, name]) => ({
+    slug,
+    name,
+    kind: "city" as const,
+    state: PENNSYLVANIA,
+    citySlugs: [slug],
+  })),
 ];
 
 export function regionFromSlug(

@@ -6,7 +6,8 @@ const SCOPE_LABELS: Record<string, string> = {
   WA: "EST 2025 IN WA",
   MN: "EST 2025 IN MN",
   TX: "EST 2025 IN TX",
-  national: "EST 2025 · 5 STATES",
+  PA: "EST 2026 IN PA",
+  national: "EST 2025 · 8 STATES",
 };
 
 type GovernanceBarProps = {
