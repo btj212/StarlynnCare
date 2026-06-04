@@ -19,34 +19,35 @@ import type { Deficiency } from "@/lib/types";
  * The `code` field holds a 55 Pa Code citation (e.g. "55 Pa Code § 2600.171").
  */
 function paFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone } | null {
-  // Integer severity mapped at ingest — prefer it first
+  // state_severity_raw is most specific — check it first when available
+  const raw = d.state_severity_raw ?? d.class;
+  if (raw) {
+    const lower = raw.toLowerCase().trim();
+    if (lower === "immediate jeopardy" || lower === "ij")
+      return { label: "Immediate Jeopardy", tone: "danger" };
+    if (lower === "revocation" || lower === "license revocation" || lower === "license refusal")
+      return { label: "Revocation", tone: "danger" };
+    if (lower === "substantiated abuse" || lower === "abuse" || lower === "neglect")
+      return { label: "Substantiated Abuse", tone: "danger" };
+    if (lower === "provisional license")
+      return { label: "Provisional License", tone: "danger" };
+    if (lower.includes("civil money penalty") || lower === "cmp")
+      return { label: "Civil Money Penalty", tone: "warn" };
+    if (lower === "citation" || lower === "deficiency")
+      return { label: "Citation", tone: "info" };
+  }
+
+  // Fall back to boolean flags and integer severity
   if (d.immediate_jeopardy) return { label: "Immediate Jeopardy", tone: "danger" };
   if (d.severity !== undefined && d.severity !== null) {
-    if (d.severity >= 4) return { label: "Immediate Jeopardy / Revocation", tone: "danger" };
+    if (d.severity >= 4) return { label: "Immediate Jeopardy", tone: "danger" };
     if (d.severity === 3) return { label: "Provisional License", tone: "danger" };
     if (d.severity === 2) return { label: "Civil Money Penalty", tone: "warn" };
     if (d.severity === 1) return { label: "Citation", tone: "info" };
   }
 
-  // Fallback to raw string stored in state_severity_raw
-  const raw = d.state_severity_raw ?? d.class;
-  if (!raw) return null;
-  const lower = raw.toLowerCase().trim();
-
-  if (lower === "immediate jeopardy" || lower === "ij")
-    return { label: "Immediate Jeopardy", tone: "danger" };
-  if (lower === "revocation" || lower === "license revocation" || lower === "license refusal")
-    return { label: "Revocation", tone: "danger" };
-  if (lower === "substantiated abuse" || lower === "abuse" || lower === "neglect")
-    return { label: "Substantiated Abuse", tone: "danger" };
-  if (lower === "provisional license")
-    return { label: "Provisional License", tone: "danger" };
-  if (lower.includes("civil money penalty") || lower === "cmp")
-    return { label: "Civil Money Penalty", tone: "warn" };
-  if (lower === "citation" || lower === "deficiency")
-    return { label: "Citation", tone: "info" };
-
-  return { label: raw, tone: "mute" };
+  if (raw) return { label: raw, tone: "mute" };
+  return null;
 }
 
 export const paProfileConfig: StateProfileConfig = {
