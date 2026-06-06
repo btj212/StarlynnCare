@@ -676,18 +676,26 @@ export default async function RegionPage({ params }: PageProps) {
         {isCounty && countyIntroParas && countyIntroParas.length > 0 && (
           <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
             <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-10">
-              <details>
-                <summary className="cursor-pointer font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-ink-3 hover:text-ink transition-colors border-t-2 border-ink pt-2.5 inline-block select-none">
-                  About {region.name}
-                </summary>
-                <div className="mt-6 space-y-4 max-w-[72ch]">
-                  {countyIntroParas.map((para, i) => (
-                    <p key={i} className="text-[17px] leading-[1.65] text-ink-2">
-                      {para}
-                    </p>
-                  ))}
-                </div>
-              </details>
+              <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust mb-5 border-t-2 border-ink pt-2.5 inline-block">
+                About {region.name}
+              </p>
+              <div className="space-y-4 max-w-[72ch]">
+                <p className="text-[17px] leading-[1.65] text-ink-2">{countyIntroParas[0]}</p>
+              </div>
+              {countyIntroParas.length > 1 && (
+                <details className="mt-4">
+                  <summary className="cursor-pointer text-[14px] text-teal hover:underline select-none list-none [&::-webkit-details-marker]:hidden">
+                    Read more ↓
+                  </summary>
+                  <div className="mt-4 space-y-4 max-w-[72ch]">
+                    {countyIntroParas.slice(1).map((para, i) => (
+                      <p key={i} className="text-[17px] leading-[1.65] text-ink-2">
+                        {para}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
           </div>
         )}
