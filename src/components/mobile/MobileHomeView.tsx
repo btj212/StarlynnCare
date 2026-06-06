@@ -67,8 +67,8 @@ export function MobileHomeView({
           California Edition · Vol. 02 · {season} {year}
         </div>
         <h1>
-          The <em>best</em> memory care in California,{" "}
-          <span className="ul">ranked by the state&apos;s own inspectors.</span>
+          Find the <em>best</em> memory care in California,{" "}
+          <span className="ul">verified by real state inspections.</span>
         </h1>
         <p className="deck">
           No paid ads. No sales calls. Every claim sourced and dated to a public state record.

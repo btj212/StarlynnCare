@@ -30,13 +30,13 @@ export function StateHubSections({ data, config }: Props) {
       <StateHubHero
         title={
           <>
-            The <em className="italic text-rust">best</em> memory care
+            Find the <em className="italic text-rust">best</em> memory care
             in {stateName},{" "}
             <span
               className="px-1"
               style={{ backgroundImage: "linear-gradient(transparent 70%, var(--color-gold-soft) 70%)" }}
             >
-              ranked by the state&rsquo;s own inspectors.
+              verified by real state inspections.
             </span>
           </>
         }

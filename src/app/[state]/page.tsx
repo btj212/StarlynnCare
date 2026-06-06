@@ -95,7 +95,7 @@ export default async function StatePage({ params }: PageProps) {
       buildWebPageWithReviewer({
         name: `Memory Care in ${state.name} - State Inspection Data`,
         url: canonicalFor(`/${state.slug}`),
-        description: `Inspection-backed memory care facility profiles across ${state.name} — ranked by the state's own regulator data.`,
+        description: `Inspection-backed memory care facility profiles across ${state.name} — verified by real state inspection records.`,
         datePublished: data.stats.firstPublishedAt,
         dateModified: data.stats.lastRefreshed,
       }),
