@@ -23,7 +23,10 @@ export function HubFaqSection({
               <h3 className="font-[family-name:var(--font-display)] text-[19px] leading-[1.35] text-ink mb-2">
                 {qa.q}
               </h3>
-              <p className="text-[15px] leading-[1.65] text-ink-2 whitespace-pre-wrap">{qa.a}</p>
+              <p
+                className="text-[15px] leading-[1.65] text-ink-2 [&_a]:text-teal [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-ink [&_a]:transition-colors"
+                dangerouslySetInnerHTML={{ __html: qa.a }}
+              />
             </div>
           ))}
         </div>
