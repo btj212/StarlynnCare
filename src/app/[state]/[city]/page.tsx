@@ -570,15 +570,6 @@ export default async function RegionPage({ params }: PageProps) {
                 {cityIntro}
               </p>
             )}
-            {countyIntroParas && countyIntroParas.length > 0 && (
-              <div className="mt-8 space-y-4 max-w-[72ch]">
-                {countyIntroParas.map((para, i) => (
-                  <p key={i} className="text-[17px] leading-[1.65] text-ink-2">
-                    {para}
-                  </p>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
@@ -678,6 +669,26 @@ export default async function RegionPage({ params }: PageProps) {
               hiddenSmallCount={smallCount}
               initialShowSmall={visibleCount === 0 && smallCount > 0}
             />
+          </div>
+        )}
+
+        {/* ── County editorial intro — below grid for UX; preserved for AEO/GEO ── */}
+        {isCounty && countyIntroParas && countyIntroParas.length > 0 && (
+          <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-10">
+              <details>
+                <summary className="cursor-pointer font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-ink-3 hover:text-ink transition-colors border-t-2 border-ink pt-2.5 inline-block select-none">
+                  About {region.name}
+                </summary>
+                <div className="mt-6 space-y-4 max-w-[72ch]">
+                  {countyIntroParas.map((para, i) => (
+                    <p key={i} className="text-[17px] leading-[1.65] text-ink-2">
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </details>
+            </div>
           </div>
         )}
 
