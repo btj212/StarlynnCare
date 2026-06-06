@@ -12,6 +12,7 @@ import {
 import {
   SampleFacilityRotationProvider,
 } from "@/components/home/SampleFacilityRotation";
+import { COVERED_STATES } from "@/lib/states";
 import { MobileDigestBar } from "@/components/mobile/MobileDigestBar";
 import { MobileNationalHomeView } from "@/components/mobile/MobileNationalHomeView";
 import { NationalHomeSections } from "@/components/national-home/NationalHomeSections";
@@ -25,15 +26,16 @@ export const revalidate = 3600;
 
 const homeCanonical = canonicalFor("/");
 
+const _stateNameList = COVERED_STATES.map((s) => s.name).join(", ");
+const _homeDesc = `No paid ads. No sales calls. Public inspection data from ${COVERED_STATES.length} states — ${_stateNameList} — analyzed and ranked for families.`;
+
 export const metadata: Metadata = {
   title: "Memory care facilities, ranked by state inspectors | StarlynnCare",
-  description:
-    "No paid ads. No sales calls. Public inspection data from 5 states — California, Oregon, Washington, Minnesota, and Texas — analyzed and ranked for families.",
+  description: _homeDesc,
   alternates: { canonical: homeCanonical },
   openGraph: {
     title: "Memory care facilities, ranked by state inspectors | StarlynnCare",
-    description:
-      "No paid ads. No sales calls. Public inspection data from 5 states — California, Oregon, Washington, Minnesota, and Texas — analyzed and ranked for families.",
+    description: _homeDesc,
     url: homeCanonical,
     type: "website",
     images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],

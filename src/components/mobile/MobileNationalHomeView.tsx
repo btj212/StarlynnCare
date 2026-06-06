@@ -32,9 +32,9 @@ export function MobileNationalHomeView({ data }: Props) {
   const reviewsToShow = sampleReviews.slice(0, 3);
 
   const statItems = [
-    { n: totalFacilities > 0 ? totalFacilities.toLocaleString() : "0", label: "Licensed memory care facilities indexed across 5 states", src: "Multi-state" },
+    { n: totalFacilities > 0 ? totalFacilities.toLocaleString() : "0", label: `Licensed memory care facilities indexed across ${liveStates.length} states`, src: "Multi-state" },
     { n: totalInspections > 0 ? totalInspections.toLocaleString() : "0", label: "State inspection reports, parsed and dated", src: "Regulators", delta: "Updated regularly" },
-    { n: totalSevereCitations > 0 ? totalSevereCitations.toLocaleString() : "0", label: "Severe deficiencies on file in the last 24 months", src: "5 states" },
+    { n: totalSevereCitations > 0 ? totalSevereCitations.toLocaleString() : "0", label: "Severe deficiencies on file in the last 24 months", src: "State regulators" },
     { n: "0", label: "Referral commissions, lead fees, or paid placements accepted from operators", src: "Policy", delta: "Since day one" },
   ];
 
@@ -44,7 +44,7 @@ export function MobileNationalHomeView({ data }: Props) {
 
       <section className="m-hero">
         <div className="eyebrow">
-          5 States · Vol. 01 · 2026
+          {liveStates.length} States · Vol. 01 · 2026
         </div>
         <h1>
           Find memory care you can <em>trust,</em>{" "}
@@ -75,7 +75,7 @@ export function MobileNationalHomeView({ data }: Props) {
       <section className="m-section tight">
         <div className="label">§ 01 · The Public Record</div>
         <h2>
-          National facility data, <em>from 5 state regulators.</em>
+          National facility data, <em>from state regulators.</em>
         </h2>
         <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-ink-4 -mt-2 mb-3">
           swipe for more →
@@ -214,7 +214,7 @@ export function MobileNationalHomeView({ data }: Props) {
       <div className="px-[18px] py-4 font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em]">
         <span className="inline-flex items-center gap-1.5 text-grade-a">
           <span className="live-dot" aria-hidden />
-          {totalFacilities > 0 ? `${totalFacilities.toLocaleString()} facilities live` : "Live across 5 states"}
+          {totalFacilities > 0 ? `${totalFacilities.toLocaleString()} facilities live` : `Live across ${liveStates.length} states`}
         </span>
         {liveStates.length > 0 && (
           <span className="text-ink-4"> · {liveStates.map((s) => s.stateCode).join(" · ")}</span>

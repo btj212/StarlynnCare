@@ -26,8 +26,8 @@ export function NationalHomeSections({ data }: Props) {
   const nationalStats = [
     {
       n: totalFacilities > 0 ? totalFacilities.toLocaleString() : "0",
-      label: "Licensed memory care facilities indexed across 5 states",
-      src: "CDSS · DHS · DSHS · MDH · HHSC",
+      label: `Licensed memory care facilities indexed across ${liveStates.length} states`,
+      src: "CDSS · DHS · DSHS · MDH · HHSC · PA DHS",
     },
     {
       n: totalInspections > 0 ? totalInspections.toLocaleString() : "0",
@@ -38,7 +38,7 @@ export function NationalHomeSections({ data }: Props) {
     {
       n: totalSevereCitations > 0 ? totalSevereCitations.toLocaleString() : "0",
       label: "Severe deficiencies on file in the last 24 months",
-      src: "5 state regulators",
+      src: "State regulators",
     },
     {
       n: "0",
@@ -56,7 +56,7 @@ export function NationalHomeSections({ data }: Props) {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6 sm:mb-7 font-[family-name:var(--font-mono)] text-[10.5px] sm:text-[11.5px] uppercase tracking-[0.18em] text-rust">
             <span className="h-px w-6 sm:w-9 shrink-0 bg-rust opacity-60" aria-hidden />
             <span className="min-w-0 flex-1 basis-[min(100%,14rem)] sm:flex-none sm:basis-auto">
-              5 States · Vol. 01 · 2026
+              {liveStates.length} States · Vol. 01 · 2026
             </span>
             <span className="h-px min-w-[2rem] flex-1 basis-0 bg-rust opacity-60 max-sm:hidden" aria-hidden />
           </div>
@@ -83,7 +83,7 @@ export function NationalHomeSections({ data }: Props) {
               <div className="mt-3.5 flex flex-wrap items-center gap-3 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.08em] text-ink-3">
                 <span className="flex items-center gap-1.5 text-grade-a">
                   <span className="live-dot" aria-hidden />
-                  {totalFacilities > 0 ? `${totalFacilities.toLocaleString()} facilities live` : "Live across 5 states"}
+                  {totalFacilities > 0 ? `${totalFacilities.toLocaleString()} facilities live` : `Live across ${liveStates.length} states`}
                 </span>
                 {liveStates.length > 0 && (
                   <span className="text-ink-4">
@@ -125,7 +125,7 @@ export function NationalHomeSections({ data }: Props) {
       >
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
           <SectionHead
-            title={<>National facility data, <em>curated from 5 state regulators.</em></>}
+            title={<>National facility data, <em>curated from state regulators.</em></>}
           />
           <StatBlock stats={nationalStats} />
         </div>
