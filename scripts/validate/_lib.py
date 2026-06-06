@@ -90,7 +90,7 @@ def fetch_page(url: str, timeout: int = 10) -> tuple[int, str]:
         headers={
             "User-Agent": (
                 "StarlynnCare-Validator/1.0 "
-                "(https://starlynn.care; validation bot)"
+                "(https://www.starlynncare.com; validation bot)"
             )
         },
     )
@@ -100,4 +100,5 @@ def fetch_page(url: str, timeout: int = 10) -> tuple[int, str]:
     except urllib.error.HTTPError as e:
         return e.code, str(e)
     except Exception as e:
+        print(f"    fetch error: {type(e).__name__}: {e}", file=sys.stderr)
         return -1, str(e)

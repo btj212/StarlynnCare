@@ -12,7 +12,7 @@
  * (RCFE, CDSS, Medi-Cal, CCL, HHSC, etc.) — see docs/NEW_STATE_PLAYBOOK.md.
  */
 
-export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "all";
+export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "PA" | "all";
 
 export type ArticleTag =
   | "licensing"
@@ -216,6 +216,24 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     title: "Memory care vs. nursing home in Minnesota",
     desc: "MDH regulates Minnesota ALF-DC memory care; CMS and MDH (Ch. 144A) regulate nursing homes (SNFs). Different records, different Medicaid funding.",
     states: ["MN"],
+    tags: ["decision", "licensing"],
+    live: true,
+  },
+
+  // ── Pennsylvania ──────────────────────────────────────────────────────────
+  {
+    slug: "/pennsylvania/memory-care-licensing",
+    title: "Pennsylvania memory care licensing — PCH vs. ALR and the Special Care designation",
+    desc: "Pennsylvania licenses memory care under DHS OLTL as Personal Care Homes (55 Pa Code Ch 2600) and Assisted Living Residences (Ch 2800). What the Special Care / Secure Dementia Care Unit designation means and how to read a PA profile.",
+    states: ["PA"],
+    tags: ["licensing", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/pennsylvania/memory-care-vs-nursing-home",
+    title: "Memory care vs. nursing home in Pennsylvania",
+    desc: "DHS OLTL regulates PA PCH/ALR memory care; PA DOH and CMS regulate nursing homes (SNFs). Different regulators, different inspection records, different Medicaid funding.",
+    states: ["PA"],
     tags: ["decision", "licensing"],
     live: true,
   },

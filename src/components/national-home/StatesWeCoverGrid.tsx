@@ -14,6 +14,7 @@ const STATE_REGULATORS: Record<string, string> = {
   WA: "DSHS",
   MN: "MDH",
   TX: "HHSC",
+  PA: "PA DHS",
 };
 
 const STATE_DESCRIPTIONS: Record<string, string> = {
@@ -22,6 +23,7 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   WA: "Specialized Dementia Care ALFs · DSHS ALF Reports portal",
   MN: "ALF with Dementia Care license · MN Dept. of Health",
   TX: "Alzheimer-certified assisted living · HHSC LTCR records",
+  PA: "PCH & ALR Special Care designations · PA DHS OLTL portal",
 };
 
 // TX is temporarily hidden from the grid — only 1 facility live (pilot).

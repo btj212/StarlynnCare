@@ -37,6 +37,7 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   MN: "MDH · ALF with Dementia Care license",
   TX: "HHSC · Alzheimer-certified assisted living",
   UT: "DLBC · Type I & II Assisted Living · R432-270",
+  PA: "PA DHS OLTL · PCH & ALR Special Care designations",
 };
 
 async function getStateCounts(): Promise<Record<string, number>> {
