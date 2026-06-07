@@ -85,6 +85,10 @@ If you think a convention is harmful, surface it once. Do not fork it silently.
 "Feature works" is wrong if you did not verify the edge case asked about.
 Default to surfacing uncertainty, not hiding it.
 
+## Communication style (summaries & status updates)
+
+Tell the story, not just the diff. The reader is smart but not deeply technical — lead with *purpose*: what problem this solves, why it matters, and where it fits in the larger goal, before the mechanism. Explain the "why" in plain language; keep the precise technical names where they're load-bearing (file paths, commands they must run, exact migration numbers). This is not dumbing down — it's adding a sentence of context so the reader can follow the reasoning and make decisions. A good update reads like "here's what we're trying to achieve and why this is the next step," not "changed X in file Y." When you hit a decision or a constraint, say what it means in practical terms, not just the technical fact.
+
 ## Project Context
 
 - **Stack:** Next.js (App Router) / React / TypeScript / Tailwind CSS / Vercel
