@@ -33,7 +33,7 @@ const DATE_PUBLISHED = "2026-06-07";
 const FAQ_PAIRS = [
   {
     q: "Do larger Pennsylvania memory care facilities have worse inspection records?",
-    a: "On average, yes — at least by the metric of severe deficiency findings (severity ≥ 3 on the PA DHS scale). Facilities with 100 or more beds average 5.1 severe findings per facility, compared to 1.3 for homes with fewer than 20 beds. However, this analysis has important caveats: there are only 3 small-facility data points (n=3), which is too few for statistical confidence. Larger facilities may also accumulate more findings simply because they are larger and have more inspection surface area and more residents. Families should look at per-resident metrics and individual facility profiles rather than this category-level average.",
+    a: "On average, yes — by severe deficiency findings (severity ≥ 3 on the PA DHS scale). Facilities with 100 or more beds average 5.1 severe findings per facility, compared to 1.3 for homes with fewer than 20 beds. The Small-tier sample (n=3) is too thin for a statistically meaningful comparison, but the Medium-to-Large-to-XL progression is consistent and based on 43, 140, and 168 facilities respectively. Category averages are a starting screen. Individual facility records are the actual data point for any placement decision.",
   },
   {
     q: "What does 'severe' mean in a PA DHS inspection record?",
@@ -41,7 +41,7 @@ const FAQ_PAIRS = [
   },
   {
     q: "Why might large facilities have more severe citations per facility?",
-    a: "Several non-causal explanations exist. Larger facilities are more complex to operate and have more regulatory exposure — more residents, more staff, more inspectable processes. They also tend to have longer license histories, which means more total inspection cycles. Some large-chain facilities in Pennsylvania may operate in cost-constrained segments despite appearing premium. None of these explanations mean a large facility is necessarily unsafe — individual records vary widely even within the XL tier.",
+    a: "Larger facilities have more regulatory surface area — more residents, more staff, more medication passes. Survey teams find more because there is more to inspect. Pennsylvania's XL-tier facilities are also disproportionately chain-operated, and multi-site operators have been cited in PA DHS enforcement actions for staffing shortfalls. The pattern is real, but it plays out differently at the individual facility level. Several XL-tier facilities in PA have clean records; several small ones have poor ones.",
   },
   {
     q: "What bed-size tiers does StarlynnCare use for Pennsylvania?",
@@ -206,33 +206,26 @@ export default async function StoryCPage() {
         </section>
 
         <h2 className="font-[family-name:var(--font-display)] font-normal text-[clamp(22px,3vw,32px)] leading-[1.1] tracking-[-0.01em] text-ink mt-16 mb-5">
-          What drives the size-severity correlation?
+          Why large facilities accumulate more severe citations
         </h2>
         <div className="text-[16.5px] leading-[1.75] text-ink-2 max-w-[72ch] space-y-5">
           <p>
-            The relationship between facility size and severe deficiencies in Pennsylvania is
-            statistically consistent across the three well-powered tiers (Medium, Large, XL), but
-            interpreting causation is difficult. Several mechanisms likely contribute:
+            The pattern holds across the three well-populated tiers (Medium, Large, XL). Two
+            structural factors explain most of it:
           </p>
-          <ul className="list-disc pl-6 space-y-2">
-            <li>
-              <strong className="font-medium text-ink">Regulatory surface area</strong> — larger
-              facilities have more residents, more staff, and more inspectable care processes.
-              A survey team inspecting 150 residents has more opportunities to find violations
-              than one inspecting 35 residents.
-            </li>
-            <li>
-              <strong className="font-medium text-ink">Chain and investor ownership</strong> —
-              Pennsylvania&apos;s largest facilities are disproportionately operated by national
-              chains, which some research associates with thinner staffing ratios relative to
-              resident acuity.
-            </li>
-            <li>
-              <strong className="font-medium text-ink">Acuity mix</strong> — XL facilities in PA
-              often serve residents with higher medical complexity, which increases clinical risk
-              and potential citation exposure.
-            </li>
-          </ul>
+          <p>
+            First, regulatory surface area scales with size. A survey team reviewing 150 residents
+            has more opportunities to find violations than one reviewing 35. More staff, more
+            medication passes, more care processes — each is an inspection point. Raw deficiency
+            counts are partly a function of how much there is to inspect.
+          </p>
+          <p>
+            Second, Pennsylvania&apos;s largest facilities are disproportionately operated by
+            national chains. Multi-site operators in PA have been cited in state enforcement
+            actions for cost-cutting on staffing — thinner ratios relative to resident acuity
+            increase the probability of findings in medication management and abuse prevention,
+            which are the most common categories for severe citations.
+          </p>
           <DataFootnote
             source={`${PA_DATA_SOURCE} · ${PA_DATA_WINDOW}`}
             refreshed={PA_DATA_AS_OF}
@@ -240,23 +233,20 @@ export default async function StoryCPage() {
         </div>
 
         <h2 className="font-[family-name:var(--font-display)] font-normal text-[clamp(22px,3vw,32px)] leading-[1.1] tracking-[-0.01em] text-ink mt-16 mb-5">
-          What this means for families
+          Size is a screen, not a sentence
         </h2>
         <div className="text-[16.5px] leading-[1.75] text-ink-2 max-w-[72ch] space-y-5">
           <p>
-            This finding should not lead families to reflexively prefer small facilities — the
-            Small-tier sample is too thin (n={smallTier?.n ?? 3}) to draw reliable conclusions,
-            and many large PA facilities maintain excellent records. What it challenges is the
-            intuition that a larger, better-branded facility automatically means a safer
-            environment.
+            The Small-tier sample (n={smallTier?.n ?? 3}) is too thin to support a conclusion
+            about small homes as a category. There are simply too few of them in Pennsylvania.
+            The useful finding is in the XL-to-Large-to-Medium progression, which is consistent
+            and well-powered: as bed count increases, average severe citations increase.
           </p>
           <p>
-            The right approach is to look at{" "}
-            <strong className="font-medium text-ink">
-              individual facility records, sorted by inspection record quality
-            </strong>
-            , rather than size category. A 120-bed PA facility with no severe findings in five
-            years is safer, by this metric, than a 45-bed facility with multiple IJ citations.
+            A 120-bed PA facility with zero severe findings in five years is safer by this metric
+            than a 45-bed facility with four IJ citations. Size is a useful filter when you have
+            no other information. Once you have the individual inspection record, it supersedes
+            bed count entirely.
           </p>
         </div>
 

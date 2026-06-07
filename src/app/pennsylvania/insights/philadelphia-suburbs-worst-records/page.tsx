@@ -40,7 +40,7 @@ const FAQ_PAIRS = [
   },
   {
     q: "Why do wealthy suburban counties rank so high for memory care deficiencies?",
-    a: "Higher deficiency rates in affluent suburban counties do not mean that residents in those counties receive worse care on average — several explanations are possible. Larger facilities tend to accumulate more deficiency findings over time; Chester and Montgomery counties both have many large-capacity facilities. Wealthier suburban markets may also attract investors who build more facilities, increasing the total inspection surface. Additionally, PA DHS OLTL may conduct more frequent complaint investigations in counties with more active family advocacy. Families should examine individual facility records rather than county averages when making decisions.",
+    a: "A few structural factors contribute. Chester and Montgomery counties have high concentrations of large-capacity facilities — larger facilities accumulate more total deficiency findings across inspection cycles. Wealthier suburban markets attract more facility investment, which increases the number of inspection targets. PA DHS OLTL also responds to family complaints; more engaged families means more complaint-triggered inspections on top of routine surveys. None of that cancels the finding. The per-facility rate controls for facility count, and Chester still outpaces Allegheny on IJ findings per facility.",
   },
   {
     q: "How does Allegheny County (Pittsburgh) compare to the Philadelphia collar counties?",
@@ -224,19 +224,20 @@ export default async function StoryBPage() {
             <strong className="font-medium text-ink">
               {allegheny?.ijTotal ?? 136} total immediate-jeopardy findings
             </strong>{" "}
-            on record — a per-facility IJ rate of {alleghenyIjPerFac}.
+            on record — {alleghenyIjPerFac} IJ findings per facility.
           </p>
           <p>
-            Chester County, with roughly 40% fewer facilities (
-            {chester?.facilities ?? 26}), has accumulated{" "}
-            {chester?.ijTotal ?? 109} IJ findings — a per-facility rate of{" "}
-            <strong className="font-medium text-ink">{chesterIjPerFac} IJ findings per facility</strong>,
-            meaningfully higher than Pittsburgh&apos;s suburban footprint.
+            Chester County, with {chester?.facilities ?? 26} facilities — roughly 40% fewer than
+            Allegheny — has accumulated {chester?.ijTotal ?? 109} IJ findings:{" "}
+            <strong className="font-medium text-ink">{chesterIjPerFac} per facility</strong>.
+            Chester has a higher per-facility IJ rate than Pennsylvania&apos;s largest urban county
+            despite operating in one of the state&apos;s wealthiest markets.
           </p>
           <p>
-            This comparison is not an indictment of individual facilities in Chester County —
-            several have clean or near-clean records. It is a reminder that a wealthier suburban
-            address and a higher price point do not guarantee a better PA DHS inspection record.
+            The relationship between price and inspection record does not run in the direction
+            families typically assume. Several Chester County facilities have strong records;
+            several have the worst in the state. Sorting by inspection grade, not zip code,
+            is the only way to separate them.
           </p>
           <DataFootnote
             source={`${PA_DATA_SOURCE} · ${PA_DATA_WINDOW}`}
@@ -245,23 +246,18 @@ export default async function StoryBPage() {
         </div>
 
         <h2 className="font-[family-name:var(--font-display)] font-normal text-[clamp(22px,3vw,32px)] leading-[1.1] tracking-[-0.01em] text-ink mt-16 mb-5">
-          How to use this data when choosing a facility
+          What county data does and doesn&apos;t tell you
         </h2>
         <div className="text-[16.5px] leading-[1.75] text-ink-2 max-w-[72ch] space-y-5">
           <p>
-            County averages are a planning-level signal. Families should not avoid Chester or
-            Montgomery County based solely on the aggregate rate — many individual facilities in
-            both counties have strong records. What county data reveals is that{" "}
-            <strong className="font-medium text-ink">
-              price and prestige do not predict inspection record quality
-            </strong>
-            . A facility in a lower-cost rural county may have a significantly cleaner record than
-            a premium-branded suburban facility.
+            County averages locate you in the right search area, but the within-county variance is
+            large. Chester County contains facilities with 0 IJ findings and facilities with 10+.
+            The aggregate rate flags that the county warrants scrutiny — it doesn&apos;t identify
+            which facilities to avoid or which to trust.
           </p>
           <p>
-            StarlynnCare&apos;s PA directory lets families view individual facility records sorted
-            by inspection record grade, so county-level patterns translate into specific facility
-            comparisons.
+            Suburb and price point are poor proxies for inspection quality. The data is public,
+            free, and sortable on every county hub and facility profile on StarlynnCare.
           </p>
         </div>
 

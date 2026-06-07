@@ -43,11 +43,11 @@ const FAQ_PAIRS = [
   },
   {
     q: "Why do small rural facilities sometimes have high immediate-jeopardy counts?",
-    a: "Smaller facilities are not inherently more dangerous — a high IJ count can reflect a longer inspection history, a single period of serious staffing problems, or a facility that received heightened scrutiny following a complaint investigation. Context matters: families should review which regulation sections were cited, whether deficiencies were corrected, and how the facility's record compares to regional peers. StarlynnCare's facility profile for Penn Highlands Jefferson Manor displays the full citation timeline.",
+    a: "A high IJ count can accumulate from a single period of serious staffing problems, from repeated complaint-triggered inspections, or from a long license history with multiple routine survey cycles. The citation codes matter: IJ findings in medication management, abuse prevention, and supervision of cognitively impaired residents represent different risk profiles. The StarlynnCare profile shows which regulation sections were cited and in which inspection year — that timeline tells you whether the problems are historical or recent.",
   },
   {
     q: "How does this compare to the Pennsylvania state average?",
-    a: "The statewide average for immediate-jeopardy findings varies by facility size. Among the approximately 354 publishable PA memory care facilities in the StarlynnCare dataset, the median IJ count is significantly lower than Penn Highlands Jefferson Manor's 21 findings. However, direct IJ-count comparisons across facilities require controlling for inspection frequency and facility age — a facility with a longer license history has had more inspection cycles and therefore more opportunity to accumulate findings.",
+    a: "Among the 354 publishable PA memory care facilities in the StarlynnCare dataset, the median IJ count is significantly lower than 21. Raw IJ-count comparisons favor facilities with shorter license histories or fewer inspection cycles. The county hub pages on StarlynnCare show where a facility's IJ count ranks against its county peers — a more useful comparison than statewide rankings that don't control for license age.",
   },
 ];
 
@@ -189,28 +189,28 @@ export default async function StoryAPage() {
         </h2>
         <div className="text-[16.5px] leading-[1.75] text-ink-2 max-w-[72ch] space-y-5">
           <p>
-            Jefferson County sits in rural north-central Pennsylvania — a region that does not
-            appear in most memory care conversations dominated by Philadelphia and Pittsburgh metros.
-            Penn Highlands Jefferson Manor is a licensed Personal Care Home with{" "}
-            {top?.beds ?? 48} beds serving a community with limited alternatives.
+            Jefferson County sits in rural north-central Pennsylvania — absent from most memory
+            care market conversations, which concentrate on Philadelphia and Pittsburgh. Penn
+            Highlands Jefferson Manor is a licensed Personal Care Home with {top?.beds ?? 48} beds
+            serving a county where families have few nearby alternatives.
           </p>
           <p>
-            The 21 IJ findings span multiple inspection cycles in the facility&apos;s PA DHS OLTL
-            record. IJ citations require an immediate plan of correction — each one represents a
-            moment when surveyors concluded residents were at risk of serious harm. A facility can
-            accumulate IJ findings over years; the count here reflects the facility&apos;s full
-            history, not a single incident.
+            IJ citations accumulate across inspection cycles, not from a single event. PA DHS OLTL
+            issues an IJ finding when surveyors determine that a practice or condition placed one
+            or more residents at immediate risk of serious harm or death. The facility must submit
+            an acceptable plan of correction before surveyors close the finding. The 21 here span
+            the full inspection history on record.
           </p>
           <p>
-            Families researching rural PA memory care should use the{" "}
+            The{" "}
             <Link
               href={`/pennsylvania/brookville/${top?.slug ?? "penn-highlands-jefferson-manor-p-c-406242"}`}
               className="text-teal underline underline-offset-2 hover:text-teal/70"
             >
-              facility&apos;s StarlynnCare profile
+              facility&apos;s profile
             </Link>{" "}
-            to review the specific regulation sections cited, the inspection dates, and whether
-            corrections were accepted. Count alone does not tell the full story — pattern does.
+            shows the specific 55 Pa Code sections cited, the inspection dates, and enforcement
+            escalations — the citation codes and their dates tell more than the headline count.
           </p>
         </div>
         <DataFootnote
@@ -219,32 +219,22 @@ export default async function StoryAPage() {
         />
 
         <h2 className="font-[family-name:var(--font-display)] font-normal text-[clamp(22px,3vw,32px)] leading-[1.1] tracking-[-0.01em] text-ink mt-16 mb-5">
-          What families should look for beyond the count
+          What the IJ record actually shows
         </h2>
         <div className="text-[16.5px] leading-[1.75] text-ink-2 max-w-[72ch] space-y-5">
           <p>
-            An IJ count is a starting point. On any PA facility profile, families should examine:
+            IJ findings cite specific regulation sections. Whether they cluster in staffing
+            ratios, medication administration, or abuse/neglect definitions tells you which
+            category of risk the facility struggled with — and when. A facility with 21 findings
+            concentrated in 2018–2020 and a clean record since reads differently than one with
+            findings distributed evenly through last year.
           </p>
-          <ul className="list-disc pl-6 space-y-2">
-            <li>
-              <strong className="font-medium text-ink">Regulation codes cited</strong> — are
-              findings concentrated in staffing sections, medication management, or abuse
-              prevention?
-            </li>
-            <li>
-              <strong className="font-medium text-ink">Correction status</strong> — did the
-              facility correct findings promptly, or were enforcement escalations required?
-            </li>
-            <li>
-              <strong className="font-medium text-ink">Trajectory</strong> — is the IJ rate
-              declining in recent years, or has it increased?
-            </li>
-            <li>
-              <strong className="font-medium text-ink">Alternatives in the area</strong> — in
-              rural counties, limited nearby options can make context even more important than raw
-              rankings.
-            </li>
-          </ul>
+          <p>
+            In rural counties with limited competition, facilities face less market pressure to
+            correct chronic problems. PA DHS OLTL can issue a Provisional License or initiate
+            Revocation proceedings when citations remain uncorrected — both of which appear on
+            the StarlynnCare profile.
+          </p>
         </div>
 
         {/* FAQ */}
