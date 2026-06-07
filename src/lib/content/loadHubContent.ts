@@ -1,5 +1,10 @@
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
+// Render-time HTML guard lives in the pure, client-safe hubGate module so the
+// admin editor (a Client Component) can reuse it without pulling in server-only
+// code. Re-exported here for existing call sites (e.g. the city page).
+export { sanitizeHubHtml } from "@/lib/content/hubGate";
+
 export type PublishedHubContent = {
   title: string | null;
   bodyHtml: string;
@@ -30,28 +35,4 @@ export async function loadPublishedHubContent(
 
   if (error || !data || !data.body_html) return null;
   return { title: data.title ?? null, bodyHtml: data.body_html };
-}
-
-/**
- * Conservative render-time guard for stored hub HTML.
- *
- * Hub HTML is authored by the LLM generator (constrained tag set) and edited by
- * an authenticated admin in the TipTap tool, and is sanitized again on approval
- * — so this is defense-in-depth, not the primary control. It strips dangerous
- * elements, inline event handlers, and javascript:/data: URLs. If we ever need
- * to harden against a hostile author we'd add a real sanitizer (one dependency);
- * for an admin-only authorship model this targeted strip is sufficient.
- */
-export function sanitizeHubHtml(html: string): string {
-  return html
-    .replace(
-      /<(script|style|iframe|object|embed|link|meta)\b[\s\S]*?<\/\1>/gi,
-      "",
-    )
-    .replace(/<(script|style|iframe|object|embed|link|meta)\b[^>]*\/?>/gi, "")
-    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, "")
-    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, "")
-    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, "")
-    .replace(/(href|src)\s*=\s*"(?:javascript|data):[^"]*"/gi, '$1="#"')
-    .replace(/(href|src)\s*=\s*'(?:javascript|data):[^']*'/gi, "$1='#'");
 }
