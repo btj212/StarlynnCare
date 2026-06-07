@@ -86,6 +86,33 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
       "Illustrated grandparent and grandchild walking together — representing the choice Minnesota families face between memory care ALFs and skilled nursing facilities",
   },
 
+  // ── Pennsylvania articles ───────────────────────────────────────────────────
+  "/pennsylvania/memory-care-licensing": {
+    src: "/illustrations/residential-care-home-exterior.png",
+    alt:
+      "Illustrated exterior of a residential care home with a garden and an elderly resident on the porch — representing the PA DHS OLTL licensed PCH and ALR settings this guide covers",
+  },
+  "/pennsylvania/memory-care-vs-nursing-home": {
+    src: "/illustrations/beach-grandparent-grandchild.png",
+    alt:
+      "Illustrated grandparent and grandchild walking together — representing the choice Pennsylvania families face between DHS-licensed memory care and DOH/CMS-regulated skilled nursing facilities",
+  },
+  "/pennsylvania/insights/pa-rural-home-highest-immediate-jeopardy": {
+    src: "/illustrations/residential-care-home-exterior.png",
+    alt:
+      "Illustrated exterior of a residential care home — representing the PA DHS OLTL licensed facility at the center of this immediate-jeopardy analysis",
+  },
+  "/pennsylvania/insights/philadelphia-suburbs-worst-records": {
+    src: "/illustrations/desk-family-reviewing-records.png",
+    alt:
+      "Illustrated adult daughter and grandmother reviewing documents at a desk — representing families evaluating PA DHS inspection records for Philadelphia-area suburban memory care facilities",
+  },
+  "/pennsylvania/insights/bigger-not-safer": {
+    src: "/illustrations/person-reading-chair-window.png",
+    alt:
+      "Illustrated person reading a report in an armchair by a sunny window — representing a family member researching PA inspection data before choosing between large and small memory care facilities",
+  },
+
   // ── Texas articles ──────────────────────────────────────────────────────────
   "/texas/type-a-b-c-licensing": {
     src: "/illustrations/residential-care-home-exterior.png",

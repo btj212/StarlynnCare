@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { SiteNav } from "@/components/site/SiteNav";
@@ -25,6 +26,8 @@ interface ArticleLayoutProps {
   children: React.ReactNode;
   /** Optional sources section rendered at the bottom of the article. */
   sources?: React.ReactNode;
+  /** Optional hero image displayed as a full-width banner between the header and body. */
+  heroImage?: { src: string; alt: string };
 }
 
 /**
@@ -41,6 +44,7 @@ export function ArticleLayout({
   breadcrumbs,
   children,
   sources,
+  heroImage,
 }: ArticleLayoutProps) {
   const allButLast = breadcrumbs.slice(0, -1);
   const current = breadcrumbs[breadcrumbs.length - 1];
@@ -89,6 +93,20 @@ export function ArticleLayout({
             <ShareBar url={canonicalUrl} title={headline} />
           </div>
         </div>
+
+        {/* Hero image */}
+        {heroImage && (
+          <div className="relative w-full overflow-hidden border-b border-paper-rule" style={{ aspectRatio: "16/7" }}>
+            <Image
+              src={heroImage.src}
+              alt={heroImage.alt}
+              fill
+              className="object-cover"
+              sizes="(max-width: 860px) 100vw, 860px"
+              priority
+            />
+          </div>
+        )}
 
         {/* Article body */}
         <div className="mx-auto max-w-[860px] px-4 sm:px-6 md:px-10 py-14">

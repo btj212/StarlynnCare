@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { SiteNav } from "@/components/site/SiteNav";
@@ -27,18 +28,30 @@ const STORIES = [
     title: "A 48-bed rural PA home holds the state's highest immediate-jeopardy count",
     desc: "Penn Highlands Jefferson Manor in rural Brookville, Jefferson County recorded 21 immediate-jeopardy findings — more than any other memory care facility in Pennsylvania.",
     eyebrow: "Immediate jeopardy · Story A",
+    image: {
+      src: "/illustrations/residential-care-home-exterior.png",
+      alt: "Illustrated exterior of a residential care home with a garden and an elderly resident on the porch",
+    },
   },
   {
     slug: "/pennsylvania/insights/philadelphia-suburbs-worst-records",
     title: "Philadelphia's affluent suburbs have some of PA's worst memory care records",
     desc: "Chester and Montgomery counties, home to some of Pennsylvania's wealthiest ZIP codes, rank among the state's highest for deficiencies per facility — with collar-county IJ rates outpacing Pittsburgh metro.",
     eyebrow: "County comparison · Story B",
+    image: {
+      src: "/illustrations/desk-family-reviewing-records.png",
+      alt: "Illustrated family reviewing documents at a desk — representing families working through inspection records",
+    },
   },
   {
     slug: "/pennsylvania/insights/bigger-not-safer",
     title: "Bigger isn't safer: PA's largest memory care facilities average nearly 4× more severe citations",
     desc: "Pennsylvania facilities with 100+ beds average 5.1 severe findings per facility — nearly four times the rate of homes with fewer than 20 beds. Scale does not predict safety.",
     eyebrow: "Facility size analysis · Story C",
+    image: {
+      src: "/illustrations/person-reading-chair-window.png",
+      alt: "Illustrated person reading a report in an armchair by a window",
+    },
   },
 ];
 
@@ -116,23 +129,34 @@ export default function PaInsightsIndexPage() {
             title={<>Three findings from Pennsylvania&apos;s inspection record</>}
           />
 
-          <div className="mt-8 space-y-6">
+          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
             {STORIES.map((story) => (
               <Link
                 key={story.slug}
                 href={story.slug}
-                className="flex flex-col gap-3 rounded-lg border border-paper-rule bg-paper-2 px-6 py-5 no-underline hover:border-rust/35 transition-colors"
+                className="flex flex-col gap-0 rounded-lg border border-paper-rule bg-paper-2 no-underline hover:border-rust/35 transition-colors overflow-hidden"
               >
-                <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-rust">
-                  {story.eyebrow}
+                <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/3" }}>
+                  <Image
+                    src={story.image.src}
+                    alt={story.image.alt}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
                 </div>
-                <h2 className="font-[family-name:var(--font-display)] font-normal text-[clamp(18px,2.5vw,24px)] leading-[1.2] tracking-[-0.01em] text-ink m-0">
-                  {story.title}
-                </h2>
-                <p className="text-[15px] leading-[1.65] text-ink-3 m-0">{story.desc}</p>
-                <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-teal mt-1">
-                  Read the analysis →
-                </span>
+                <div className="flex flex-col gap-3 px-5 py-5">
+                  <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-rust">
+                    {story.eyebrow}
+                  </div>
+                  <h2 className="font-[family-name:var(--font-display)] font-normal text-[clamp(16px,2vw,20px)] leading-[1.2] tracking-[-0.01em] text-ink m-0">
+                    {story.title}
+                  </h2>
+                  <p className="text-[14px] leading-[1.65] text-ink-3 m-0">{story.desc}</p>
+                  <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-teal mt-1">
+                    Read the analysis →
+                  </span>
+                </div>
               </Link>
             ))}
           </div>

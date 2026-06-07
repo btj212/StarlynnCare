@@ -103,6 +103,10 @@ export default async function StoryCPage() {
         dek={DESC}
         lastReviewed={DATE_PUBLISHED}
         canonicalUrl={canonicalUrl}
+        heroImage={{
+          src: "/illustrations/person-reading-chair-window.png",
+          alt: "Illustrated person reading a report in an armchair by a window — representing a family member working through PA DHS inspection data before making a memory care placement decision",
+        }}
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Pennsylvania", href: "/pennsylvania" },

@@ -102,6 +102,10 @@ export default async function StoryAPage() {
         dek={DESC}
         lastReviewed={DATE_PUBLISHED}
         canonicalUrl={canonicalUrl}
+        heroImage={{
+          src: "/illustrations/residential-care-home-exterior.png",
+          alt: "Illustrated exterior of a residential care home with a garden — representing the licensed PA DHS memory care facilities at the center of this analysis",
+        }}
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Pennsylvania", href: "/pennsylvania" },
