@@ -112,6 +112,11 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/pennsylvania/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/pennsylvania/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/pennsylvania/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    // Pennsylvania insights data stories (live)
+    { path: "/pennsylvania/insights", priority: "0.80", changefreq: "monthly" },
+    { path: "/pennsylvania/insights/pa-rural-home-highest-immediate-jeopardy", priority: "0.78", changefreq: "monthly" },
+    { path: "/pennsylvania/insights/philadelphia-suburbs-worst-records", priority: "0.78", changefreq: "monthly" },
+    { path: "/pennsylvania/insights/bigger-not-safer", priority: "0.78", changefreq: "monthly" },
   ];
 
   return paths.map((p) => ({

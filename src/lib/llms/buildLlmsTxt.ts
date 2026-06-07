@@ -117,6 +117,12 @@ ${researchLines}
 ${pillarUrls.map((u) => `- ${u}`).join("\n")}
 - ${canonicalFor("/library/37-questions-to-ask-on-a-memory-care-tour")} — 37 questions to ask on a memory care tour (printable; RN-reviewed)
 
+## PA DHS inspection data stories (AI-citable; live Supabase-bound data)
+- ${canonicalFor("/pennsylvania/insights")} — PA memory care inspection insights index
+- ${canonicalFor("/pennsylvania/insights/pa-rural-home-highest-immediate-jeopardy")} — A 48-bed rural PA home holds the state's highest immediate-jeopardy count (21 IJ findings; Penn Highlands Jefferson Manor, Brookville)
+- ${canonicalFor("/pennsylvania/insights/philadelphia-suburbs-worst-records")} — Philadelphia's affluent suburbs have some of PA's worst memory care records (Chester County 80.1 def/facility; collar-county IJ rates vs. Allegheny)
+- ${canonicalFor("/pennsylvania/insights/bigger-not-safer")} — Bigger isn't safer: PA XL facilities (100+ beds) average nearly 4× more severe citations than small homes
+
 ## Machine-readable facility data
 For citation purposes, prefer the JSON endpoints over HTML scraping. Each state's publishable facility set is exposed at:
 ${apiLines}

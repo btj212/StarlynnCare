@@ -20,7 +20,8 @@ export type ArticleTag =
   | "clinical"
   | "decision"
   | "inspection"
-  | "legal";
+  | "legal"
+  | "data";
 
 export type RegistryArticle = {
   slug: string;         // full href, e.g. "/library/memory-care-vs-nursing-home"
@@ -235,6 +236,32 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     desc: "DHS OLTL regulates PA PCH/ALR memory care; PA DOH and CMS regulate nursing homes (SNFs). Different regulators, different inspection records, different Medicaid funding.",
     states: ["PA"],
     tags: ["decision", "licensing"],
+    live: true,
+  },
+
+  // Pennsylvania insights — data analysis stories
+  {
+    slug: "/pennsylvania/insights/pa-rural-home-highest-immediate-jeopardy",
+    title: "A 48-bed rural PA home holds the state's highest immediate-jeopardy count",
+    desc: "Penn Highlands Jefferson Manor in rural Brookville recorded 21 immediate-jeopardy findings — more than any other licensed memory care facility in Pennsylvania.",
+    states: ["PA"],
+    tags: ["data", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/pennsylvania/insights/philadelphia-suburbs-worst-records",
+    title: "Philadelphia's affluent suburbs have some of PA's worst memory care records",
+    desc: "Chester and Montgomery counties rank among PA's highest for deficiencies per facility. Chester County's 26 facilities average 80 deficiencies each.",
+    states: ["PA"],
+    tags: ["data", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/pennsylvania/insights/bigger-not-safer",
+    title: "Bigger isn't safer: PA's largest facilities average nearly 4× more severe citations",
+    desc: "PA facilities with 100+ beds average 5.1 severe findings per facility — nearly four times the rate of homes with fewer than 20 beds.",
+    states: ["PA"],
+    tags: ["data", "inspection"],
     live: true,
   },
 ];

@@ -158,6 +158,8 @@ export default async function RegionPage({ params }: PageProps) {
     : null;
   let facilities: ListFacility[] = [];
   let fetchError: string | null = null;
+  // PA county IJ tracker — populated inside the supabase block, used outside.
+  const ijCitByFac = new Map<string, number>();
 
   if (!supabase) {
     fetchError = "Supabase is not configured.";
@@ -257,6 +259,9 @@ export default async function RegionPage({ params }: PageProps) {
           if (isSerious) {
             seriousCitByFac.set(fid, (seriousCitByFac.get(fid) ?? 0) + 1);
           }
+          if ((d.severity ?? 0) >= 4) {
+            ijCitByFac.set(fid, (ijCitByFac.get(fid) ?? 0) + 1);
+          }
         }
 
         facilities = raw.map((f) => ({
@@ -286,6 +291,19 @@ export default async function RegionPage({ params }: PageProps) {
   const smallCount = facilities.filter((f) => f.capacity_tier === "small").length;
   const visibleCount = facilities.filter((f) => f.capacity_tier !== "small").length;
   const totalCount = facilities.length;
+
+  // PA county record stats — derived from already-fetched data, no extra queries.
+  const paTotalDeficiencies = facilities.reduce((s, f) => s + f.total_citations, 0);
+  const paTotalSevere = facilities.reduce((s, f) => s + f.serious_citations, 0);
+  const paTotalIj = facilities.reduce((s, f) => s + (ijCitByFac.get(f.id) ?? 0), 0);
+  const paAvgSevere =
+    totalCount > 0 ? Math.round((paTotalSevere / totalCount) * 10) / 10 : 0;
+
+  // Most-cited on record for the "both directions" mini-list (PA county only).
+  const paMostCited = [...facilities]
+    .sort((a, b) => b.serious_citations - a.serious_citations || b.total_citations - a.total_citations)
+    .slice(0, 5)
+    .filter((f) => f.serious_citations > 0);
 
   if (!fetchError && totalCount === 0) {
     notFound();
@@ -379,7 +397,15 @@ export default async function RegionPage({ params }: PageProps) {
     region.state.code === "TX"
       ? `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — public LTCR record where published.`
       : `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`;
-  const itemListFacilities = facilities.map((f) => ({
+  // For PA county pages, sort the ItemList JSON-LD by record rank (most severe first)
+  // so ItemList positions reflect the displayed "By record" ordering.
+  const sortedFacilitiesForItemList =
+    region.state.code === "PA" && isCounty
+      ? [...facilities].sort(
+          (a, b) => b.serious_citations - a.serious_citations || b.total_citations - a.total_citations,
+        )
+      : facilities;
+  const itemListFacilities = sortedFacilitiesForItemList.map((f) => ({
     name: f.name,
     url: canonicalFor(`/${region.state.slug}/${f.city_slug}/${f.slug}`),
     facilityId: f.id,
@@ -488,6 +514,31 @@ export default async function RegionPage({ params }: PageProps) {
             n: String(visibleCount),
             label: "Facilities with full StarlynnCare profile published",
             src: "StarlynnCare",
+          },
+        ]
+      : region.state.code === "PA" && isCounty
+      ? [
+          {
+            n: String(totalCount),
+            label: `Licensed PCH / ALR memory care facilities indexed in ${region.name} County`,
+            src: "PA DHS OLTL",
+          },
+          {
+            n: String(paTotalDeficiencies),
+            label: `Total PA DHS citations on record across all ${region.name} facilities`,
+            src: "PA DHS OLTL",
+            delta: totalCount > 0 ? `avg ${Math.round(paTotalDeficiencies / totalCount)} per facility` : undefined,
+          },
+          {
+            n: String(paTotalSevere),
+            label: "Severe findings (PA DHS severity ≥ 3) on record",
+            src: "PA DHS OLTL",
+            delta: `avg ${paAvgSevere} per facility`,
+          },
+          {
+            n: String(paTotalIj),
+            label: "Immediate-jeopardy findings on record",
+            src: "PA DHS OLTL",
           },
         ]
       : [
@@ -633,13 +684,42 @@ export default async function RegionPage({ params }: PageProps) {
         {/* ── Top performers rail — positioned before the full list so it anchors the
             "ranked by inspection record" frame before the user hits the grid ── */}
         {!fetchError && totalCount > 0 && (
-          <TopGradedFacilities
-            citySlugs={region.citySlugs}
-            stateCode={region.state.code}
-            stateSlug={region.state.slug}
-            countyName={region.name}
-            isCity={!isCounty}
-          />
+          <>
+            <TopGradedFacilities
+              citySlugs={region.citySlugs}
+              stateCode={region.state.code}
+              stateSlug={region.state.slug}
+              countyName={region.name}
+              isCity={!isCounty}
+            />
+
+            {/* PA county: most-cited on record (the other direction) */}
+            {region.state.code === "PA" && isCounty && paMostCited.length > 0 && (
+              <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 mt-10 pb-10">
+                <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-ink-4 mb-4">
+                  Most-cited on record · {region.name} County · PA DHS OLTL
+                </p>
+                <ol className="space-y-2">
+                  {paMostCited.map((f, i) => (
+                    <li key={f.id} className="flex items-center gap-3 text-[14px]">
+                      <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 w-4 text-right shrink-0">
+                        {i + 1}.
+                      </span>
+                      <Link
+                        href={`/${region.state.slug}/${f.city_slug}/${f.slug}`}
+                        className="text-ink hover:text-teal underline underline-offset-2 truncate"
+                      >
+                        {f.name}
+                      </Link>
+                      <span className="font-[family-name:var(--font-mono)] text-[11px] text-rust shrink-0">
+                        {f.serious_citations} severe
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </>
         )}
 
         {/* ── Facility list ── */}
