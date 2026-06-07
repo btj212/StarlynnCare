@@ -6,6 +6,24 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-06 — City-first hub strategy + automated content pipeline (overrides county-replication framing)
+
+**Context:** `post_audit_growth_plan.plan.md` and prior MEMORY framing centered CA fan-out on *county* hubs (Alameda → LA/OC/SD). Ahrefs keyword data shows effectively **zero search volume for county queries** — demand is city-level ("memory care <city>") and "near me." This overrides the county-replication emphasis.
+
+**Decided:**
+- CA depth is built as **city hubs at scale** (the existing `/[state]/[city]` route + `cityIntros`), not county hubs. County hubs are de-emphasized, not removed. "Near me" intent is served by city hubs + facility-page geo/`LocalBusiness` schema.
+- **Content replication is automated through a generation → human review/edit → publish pipeline.** Generated city/hub content is LLM-drafted, grounded in Supabase stats with citations, and is **never auto-published** — a human edits it in a rich-text (bold/paragraph/etc.) review tool and approves before it goes live.
+- **Data accuracy is fully automated, not human-checked.** Per owner direction, no human reviews the underlying numbers. New ingest data automatically triggers a **content audit** of every published page whose numeric claims derive from that data; any drift sends the page back to "needs re-review." This extends the existing Layer-1/2 validation (the chain-scorecard-drift pattern) to all generated content.
+
+**Phase order (revised this session):**
+1. **Phase 1** — city-first content replication engine + rich-text review middleware + automated content-data drift audit.
+2. **Phase 3** — automated CA data-story / analysis pages from RPCs (PA-insights pattern). **Higher leverage than cost.**
+3. **Phase 2** — cost data plane + state-wide reporting. **Gated:** ship only if a *real* cost data source is found. Generic competitor-derived ranges = fluff = do not publish (YMYL).
+
+**Source:** This session. Supersedes the county-replication emphasis in `.cursor/plans/post_audit_growth_plan.plan.md`, which should be updated separately (not edited here, per the "don't edit `.cursor/plans/` plan files" rule).
+
+---
+
 ## 2026-06 — Pennsylvania frontend launch (overrides prior "skip new states" decision)
 
 **Context:** `MEMORY.md` 2026-04 and `.cursor/plans/post_audit_growth_plan.plan.md` both said "skip more US states until CA county replication or TX shows ranking lift." This launch **overrides that decision** per explicit user direction.
