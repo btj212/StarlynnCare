@@ -1,0 +1,286 @@
+2026-05-01 23:39:16,663 - INFO - --cities-from-db top-75: ['anaheim', 'buena-park', 'burbank', 'carlsbad', 'carmichael', 'carson', 'cathedral-city', 'cerritos', 'chatsworth', 'chula-vista', 'citrus-heights', 'claremont', 'corona', 'costa-mesa', 'el-cajon', 'elk-grove', 'escondido', 'fair-oaks', 'folsom', 'fountain-valley', 'fremont', 'fullerton', 'garden-grove', 'glendale', 'glendora', 'granada-hills', 'hayward', 'hemet', 'huntington-beach', 'la-mesa', 'laguna-hills', 'laguna-niguel', 'lake-forest', 'lancaster', 'livermore', 'long-beach', 'los-angeles', 'mission-viejo', 'moreno-valley', 'murrieta', 'north-hills', 'north-hollywood', 'northridge', 'oakland', 'oceanside', 'orange', 'orangevale', 'palm-desert', 'palmdale', 'pasadena', 'placentia', 'pleasant-hill', 'poway', 'rancho-palos-verdes', 'redwood-city', 'reseda', 'riverside', 'sacramento', 'san-bruno', 'san-clemente', 'san-diego', 'san-francisco', 'san-marcos', 'san-mateo', 'santa-ana', 'torrance', 'tustin', 'union-city', 'valencia', 'van-nuys', 'vista', 'west-hills', 'whittier', 'woodland-hills', 'yorba-linda']
+2026-05-01 23:39:16,663 - INFO - 
+============================================================
+2026-05-01 23:39:16,663 - INFO - SCRAPING CARING.COM
+2026-05-01 23:39:16,663 - INFO - ============================================================
+2026-05-01 23:39:16,663 - INFO - Starting scrape of Caring.com
+2026-05-01 23:39:17,187 - INFO - Filtered by --cities-from-db: 65 of 282 URLs
+2026-05-01 23:39:17,188 - INFO - --resume: skipping 0 URLs already in caring-ca-mc.json, 65 remaining
+2026-05-01 23:39:17,188 - INFO - Processing 1/65: https://www.caring.com/senior-living/memory-care-facilities/california/anaheim
+2026-05-01 23:39:17,188 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/anaheim
+2026-05-01 23:39:47,269 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:39:47,280 - INFO -   Found 20 facilities
+2026-05-01 23:39:47,783 - INFO - Processing 2/65: https://www.caring.com/senior-living/memory-care-facilities/california/buena-park
+2026-05-01 23:39:47,783 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/buena-park
+2026-05-01 23:40:17,592 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:40:17,597 - INFO -   Found 20 facilities
+2026-05-01 23:40:18,104 - INFO - Processing 3/65: https://www.caring.com/senior-living/memory-care-facilities/california/burbank
+2026-05-01 23:40:18,104 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/burbank
+2026-05-01 23:40:48,587 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:40:48,590 - INFO -   Found 20 facilities
+2026-05-01 23:40:49,096 - INFO - Processing 4/65: https://www.caring.com/senior-living/memory-care-facilities/california/carlsbad
+2026-05-01 23:40:49,096 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/carlsbad
+2026-05-01 23:41:18,841 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:41:18,843 - INFO -   Found 20 facilities
+2026-05-01 23:41:19,344 - INFO - Processing 5/65: https://www.caring.com/senior-living/memory-care-facilities/california/carmichael
+2026-05-01 23:41:19,344 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/carmichael
+2026-05-01 23:41:51,348 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:41:51,350 - INFO -   Found 20 facilities
+2026-05-01 23:41:51,853 - INFO - Processing 6/65: https://www.caring.com/senior-living/memory-care-facilities/california/carson
+2026-05-01 23:41:51,853 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/carson
+2026-05-01 23:42:24,043 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:42:24,048 - INFO -   Found 20 facilities
+2026-05-01 23:42:24,552 - INFO - Processing 7/65: https://www.caring.com/senior-living/memory-care-facilities/california/cathedral-city
+2026-05-01 23:42:24,552 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/cathedral-city
+2026-05-01 23:42:52,144 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:42:52,153 - INFO -   Found 20 facilities
+2026-05-01 23:42:52,658 - INFO - Processing 8/65: https://www.caring.com/senior-living/memory-care-facilities/california/chatsworth
+2026-05-01 23:42:52,658 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/chatsworth
+2026-05-01 23:43:20,115 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:43:20,118 - INFO -   Found 19 facilities
+2026-05-01 23:43:20,625 - INFO - Processing 9/65: https://www.caring.com/senior-living/memory-care-facilities/california/chula-vista
+2026-05-01 23:43:20,625 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/chula-vista
+2026-05-01 23:43:50,840 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:43:50,842 - INFO -   Found 20 facilities
+2026-05-01 23:43:51,345 - INFO - Processing 10/65: https://www.caring.com/senior-living/memory-care-facilities/california/citrus-heights
+2026-05-01 23:43:51,345 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/citrus-heights
+2026-05-01 23:44:20,249 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:44:20,250 - INFO -   Found 20 facilities
+2026-05-01 23:44:20,753 - INFO - Processing 11/65: https://www.caring.com/senior-living/memory-care-facilities/california/claremont
+2026-05-01 23:44:20,753 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/claremont
+2026-05-01 23:44:48,099 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:44:48,101 - INFO -   Found 20 facilities
+2026-05-01 23:44:48,603 - INFO - Processing 12/65: https://www.caring.com/senior-living/memory-care-facilities/california/corona
+2026-05-01 23:44:48,603 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/corona
+2026-05-01 23:45:18,281 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:45:18,286 - INFO -   Found 20 facilities
+2026-05-01 23:45:18,794 - INFO - Processing 13/65: https://www.caring.com/senior-living/memory-care-facilities/california/costa-mesa
+2026-05-01 23:45:18,794 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/costa-mesa
+2026-05-01 23:45:50,069 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:45:50,072 - INFO -   Found 20 facilities
+2026-05-01 23:45:50,579 - INFO - Processing 14/65: https://www.caring.com/senior-living/memory-care-facilities/california/el-cajon
+2026-05-01 23:45:50,579 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/el-cajon
+2026-05-01 23:46:22,059 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:46:22,062 - INFO -   Found 20 facilities
+2026-05-01 23:46:22,572 - INFO - Processing 15/65: https://www.caring.com/senior-living/memory-care-facilities/california/elk-grove
+2026-05-01 23:46:22,575 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/elk-grove
+2026-05-01 23:46:52,960 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:46:52,966 - INFO -   Found 20 facilities
+2026-05-01 23:46:53,470 - INFO - Processing 16/65: https://www.caring.com/senior-living/memory-care-facilities/california/escondido
+2026-05-01 23:46:53,470 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/escondido
+2026-05-01 23:47:22,778 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:47:22,782 - INFO -   Found 20 facilities
+2026-05-01 23:47:23,287 - INFO - Processing 17/65: https://www.caring.com/senior-living/memory-care-facilities/california/fair-oaks
+2026-05-01 23:47:23,288 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/fair-oaks
+2026-05-01 23:47:41,829 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:47:41,830 - ERROR - LLM extraction failed for https://www.caring.com/senior-living/memory-care-facilities/california/fair-oaks: Expecting value: line 1 column 1 (char 0)
+2026-05-01 23:47:42,331 - INFO - Processing 18/65: https://www.caring.com/senior-living/memory-care-facilities/california/folsom
+2026-05-01 23:47:42,331 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/folsom
+2026-05-01 23:48:12,094 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:48:12,096 - INFO -   Found 20 facilities
+2026-05-01 23:48:12,602 - INFO - Processing 19/65: https://www.caring.com/senior-living/memory-care-facilities/california/fountain-valley
+2026-05-01 23:48:12,603 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/fountain-valley
+2026-05-01 23:48:41,277 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:48:41,283 - INFO -   Found 20 facilities
+2026-05-01 23:48:41,797 - INFO - Processing 20/65: https://www.caring.com/senior-living/memory-care-facilities/california/fremont
+2026-05-01 23:48:41,797 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/fremont
+2026-05-01 23:49:11,414 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:49:11,417 - INFO -   Found 20 facilities
+2026-05-01 23:49:11,927 - INFO - Processing 21/65: https://www.caring.com/senior-living/memory-care-facilities/california/fullerton
+2026-05-01 23:49:11,927 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/fullerton
+2026-05-01 23:49:40,621 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:49:40,633 - INFO -   Found 20 facilities
+2026-05-01 23:49:41,136 - INFO - Processing 22/65: https://www.caring.com/senior-living/memory-care-facilities/california/garden-grove
+2026-05-01 23:49:41,136 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/garden-grove
+2026-05-01 23:50:11,012 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:50:11,016 - INFO -   Found 20 facilities
+2026-05-01 23:50:11,524 - INFO - Processing 23/65: https://www.caring.com/senior-living/memory-care-facilities/california/glendale
+2026-05-01 23:50:11,524 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/glendale
+2026-05-01 23:50:42,425 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:50:42,427 - INFO -   Found 20 facilities
+2026-05-01 23:50:42,929 - INFO - Processing 24/65: https://www.caring.com/senior-living/memory-care-facilities/california/hayward
+2026-05-01 23:50:42,929 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/hayward
+2026-05-01 23:51:13,270 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:51:13,286 - INFO -   Found 20 facilities
+2026-05-01 23:51:13,795 - INFO - Processing 25/65: https://www.caring.com/senior-living/memory-care-facilities/california/hemet
+2026-05-01 23:51:13,796 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/hemet
+2026-05-01 23:51:42,838 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:51:42,842 - INFO -   Found 20 facilities
+2026-05-01 23:51:43,349 - INFO - Processing 26/65: https://www.caring.com/senior-living/memory-care-facilities/california/huntington-beach
+2026-05-01 23:51:43,349 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/huntington-beach
+2026-05-01 23:52:12,211 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:52:12,212 - INFO -   Found 20 facilities
+2026-05-01 23:52:12,720 - INFO - Processing 27/65: https://www.caring.com/senior-living/memory-care-facilities/california/laguna-hills
+2026-05-01 23:52:12,720 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/laguna-hills
+2026-05-01 23:52:41,532 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:52:41,535 - INFO -   Found 20 facilities
+2026-05-01 23:52:42,042 - INFO - Processing 28/65: https://www.caring.com/senior-living/memory-care-facilities/california/laguna-niguel
+2026-05-01 23:52:42,042 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/laguna-niguel
+2026-05-01 23:53:11,511 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:53:11,513 - INFO -   Found 20 facilities
+2026-05-01 23:53:12,024 - INFO - Processing 29/65: https://www.caring.com/senior-living/memory-care-facilities/california/lake-forest
+2026-05-01 23:53:12,024 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/lake-forest
+2026-05-01 23:53:40,791 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:53:40,794 - INFO -   Found 20 facilities
+2026-05-01 23:53:41,304 - INFO - Processing 30/65: https://www.caring.com/senior-living/memory-care-facilities/california/la-mesa
+2026-05-01 23:53:41,304 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/la-mesa
+2026-05-01 23:54:10,746 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:54:10,750 - INFO -   Found 20 facilities
+2026-05-01 23:54:11,259 - INFO - Processing 31/65: https://www.caring.com/senior-living/memory-care-facilities/california/lancaster
+2026-05-01 23:54:11,259 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/lancaster
+2026-05-01 23:54:25,505 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:54:25,506 - INFO -   Found 3 facilities
+2026-05-01 23:54:26,024 - INFO - Processing 32/65: https://www.caring.com/senior-living/memory-care-facilities/california/livermore
+2026-05-01 23:54:26,025 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/livermore
+2026-05-01 23:54:56,381 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:54:56,385 - INFO -   Found 20 facilities
+2026-05-01 23:54:56,888 - INFO - Processing 33/65: https://www.caring.com/senior-living/memory-care-facilities/california/long-beach
+2026-05-01 23:54:56,888 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/long-beach
+2026-05-01 23:55:26,761 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:55:26,764 - INFO -   Found 20 facilities
+2026-05-01 23:55:27,269 - INFO - Processing 34/65: https://www.caring.com/senior-living/memory-care-facilities/california/los-angeles
+2026-05-01 23:55:27,269 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/los-angeles
+2026-05-01 23:55:57,503 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:55:57,508 - INFO -   Found 20 facilities
+2026-05-01 23:55:58,015 - INFO - Processing 35/65: https://www.caring.com/senior-living/memory-care-facilities/california/mission-viejo
+2026-05-01 23:55:58,015 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/mission-viejo
+2026-05-01 23:56:27,196 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:56:27,200 - INFO -   Found 20 facilities
+2026-05-01 23:56:27,710 - INFO - Processing 36/65: https://www.caring.com/senior-living/memory-care-facilities/california/moreno-valley
+2026-05-01 23:56:27,710 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/moreno-valley
+2026-05-01 23:56:57,709 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:56:57,711 - INFO -   Found 20 facilities
+2026-05-01 23:56:58,218 - INFO - Processing 37/65: https://www.caring.com/senior-living/memory-care-facilities/california/murrieta
+2026-05-01 23:56:58,218 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/murrieta
+2026-05-01 23:57:27,605 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:57:27,609 - INFO -   Found 20 facilities
+2026-05-01 23:57:28,111 - INFO - Processing 38/65: https://www.caring.com/senior-living/memory-care-facilities/california/northridge
+2026-05-01 23:57:28,111 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/northridge
+2026-05-01 23:57:55,176 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:57:55,180 - INFO -   Found 20 facilities
+2026-05-01 23:57:55,690 - INFO - Processing 39/65: https://www.caring.com/senior-living/memory-care-facilities/california/oakland
+2026-05-01 23:57:55,690 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/oakland
+2026-05-01 23:58:25,007 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:58:25,010 - INFO -   Found 20 facilities
+2026-05-01 23:58:25,516 - INFO - Processing 40/65: https://www.caring.com/senior-living/memory-care-facilities/california/oceanside
+2026-05-01 23:58:25,516 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/oceanside
+2026-05-01 23:58:54,210 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:58:54,212 - INFO -   Found 20 facilities
+2026-05-01 23:58:54,719 - INFO - Processing 41/65: https://www.caring.com/senior-living/memory-care-facilities/california/orange
+2026-05-01 23:58:54,719 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/orange
+2026-05-01 23:59:24,942 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:59:24,946 - INFO -   Found 20 facilities
+2026-05-01 23:59:25,456 - INFO - Processing 42/65: https://www.caring.com/senior-living/memory-care-facilities/california/orangevale
+2026-05-01 23:59:25,456 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/orangevale
+2026-05-01 23:59:57,962 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-01 23:59:57,971 - INFO -   Found 20 facilities
+2026-05-01 23:59:58,477 - INFO - Processing 43/65: https://www.caring.com/senior-living/memory-care-facilities/california/palm-desert
+2026-05-01 23:59:58,477 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/palm-desert
+2026-05-02 00:00:32,146 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:00:32,149 - INFO -   Found 15 facilities
+2026-05-02 00:00:32,666 - INFO - Processing 44/65: https://www.caring.com/senior-living/memory-care-facilities/california/pasadena
+2026-05-02 00:00:32,666 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/pasadena
+2026-05-02 00:01:19,235 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:01:19,237 - INFO -   Found 20 facilities
+2026-05-02 00:01:19,744 - INFO - Processing 45/65: https://www.caring.com/senior-living/memory-care-facilities/california/placentia
+2026-05-02 00:01:19,744 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/placentia
+2026-05-02 00:01:54,031 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:01:54,037 - INFO -   Found 20 facilities
+2026-05-02 00:01:54,540 - INFO - Processing 46/65: https://www.caring.com/senior-living/memory-care-facilities/california/pleasant-hill
+2026-05-02 00:01:54,540 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/pleasant-hill
+2026-05-02 00:02:23,501 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:02:23,506 - INFO -   Found 20 facilities
+2026-05-02 00:02:24,012 - INFO - Processing 47/65: https://www.caring.com/senior-living/memory-care-facilities/california/poway
+2026-05-02 00:02:24,013 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/poway
+2026-05-02 00:02:53,904 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:02:53,906 - INFO -   Found 20 facilities
+2026-05-02 00:02:54,408 - INFO - Processing 48/65: https://www.caring.com/senior-living/memory-care-facilities/california/redwood-city
+2026-05-02 00:02:54,408 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/redwood-city
+2026-05-02 00:03:23,074 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:03:23,075 - INFO -   Found 20 facilities
+2026-05-02 00:03:23,581 - INFO - Processing 49/65: https://www.caring.com/senior-living/memory-care-facilities/california/riverside
+2026-05-02 00:03:23,582 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/riverside
+2026-05-02 00:03:53,759 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:03:53,761 - INFO -   Found 20 facilities
+2026-05-02 00:03:54,265 - INFO - Processing 50/65: https://www.caring.com/senior-living/memory-care-facilities/california/sacramento
+2026-05-02 00:03:54,265 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/sacramento
+2026-05-02 00:04:24,283 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:04:24,283 - INFO -   Found 20 facilities
+2026-05-02 00:04:24,787 - INFO - Processing 51/65: https://www.caring.com/senior-living/memory-care-facilities/california/san-clemente
+2026-05-02 00:04:24,787 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/san-clemente
+2026-05-02 00:04:51,684 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:04:51,686 - INFO -   Found 20 facilities
+2026-05-02 00:04:52,196 - INFO - Processing 52/65: https://www.caring.com/senior-living/memory-care-facilities/california/san-diego
+2026-05-02 00:04:52,197 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/san-diego
+2026-05-02 00:05:22,353 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:05:22,358 - INFO -   Found 20 facilities
+2026-05-02 00:05:22,863 - INFO - Processing 53/65: https://www.caring.com/senior-living/memory-care-facilities/california/san-francisco
+2026-05-02 00:05:22,863 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/san-francisco
+2026-05-02 00:05:50,995 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:05:50,997 - INFO -   Found 20 facilities
+2026-05-02 00:05:51,500 - INFO - Processing 54/65: https://www.caring.com/senior-living/memory-care-facilities/california/san-marcos
+2026-05-02 00:05:51,500 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/san-marcos
+2026-05-02 00:06:21,162 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:06:21,172 - INFO -   Found 20 facilities
+2026-05-02 00:06:21,683 - INFO - Processing 55/65: https://www.caring.com/senior-living/memory-care-facilities/california/san-mateo
+2026-05-02 00:06:21,683 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/san-mateo
+2026-05-02 00:06:35,173 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:06:35,175 - INFO -   Found 0 facilities
+2026-05-02 00:06:35,694 - INFO - Processing 56/65: https://www.caring.com/senior-living/memory-care-facilities/california/santa-ana
+2026-05-02 00:06:35,694 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/santa-ana
+2026-05-02 00:07:04,065 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:07:04,066 - INFO -   Found 20 facilities
+2026-05-02 00:07:04,569 - INFO - Processing 57/65: https://www.caring.com/senior-living/memory-care-facilities/california/torrance
+2026-05-02 00:07:04,569 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/torrance
+2026-05-02 00:07:34,854 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:07:34,859 - INFO -   Found 20 facilities
+2026-05-02 00:07:35,365 - INFO - Processing 58/65: https://www.caring.com/senior-living/memory-care-facilities/california/tustin
+2026-05-02 00:07:35,365 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/tustin
+2026-05-02 00:08:05,698 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:08:05,703 - INFO -   Found 20 facilities
+2026-05-02 00:08:06,205 - INFO - Processing 59/65: https://www.caring.com/senior-living/memory-care-facilities/california/union-city
+2026-05-02 00:08:06,205 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/union-city
+2026-05-02 00:08:17,461 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:08:17,462 - INFO -   Found 0 facilities
+2026-05-02 00:08:17,965 - INFO - Processing 60/65: https://www.caring.com/senior-living/memory-care-facilities/california/valencia
+2026-05-02 00:08:17,965 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/valencia
+2026-05-02 00:08:49,116 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:08:49,118 - INFO -   Found 20 facilities
+2026-05-02 00:08:49,620 - INFO - Processing 61/65: https://www.caring.com/senior-living/memory-care-facilities/california/vista
+2026-05-02 00:08:49,620 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/vista
+2026-05-02 00:09:18,949 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:09:18,950 - INFO -   Found 20 facilities
+2026-05-02 00:09:19,453 - INFO - Processing 62/65: https://www.caring.com/senior-living/memory-care-facilities/california/west-hills
+2026-05-02 00:09:19,454 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/west-hills
+2026-05-02 00:09:44,008 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:09:44,014 - INFO -   Found 16 facilities
+2026-05-02 00:09:44,519 - INFO - Processing 63/65: https://www.caring.com/senior-living/memory-care-facilities/california/whittier
+2026-05-02 00:09:44,519 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/whittier
+2026-05-02 00:10:13,817 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:10:13,819 - INFO -   Found 20 facilities
+2026-05-02 00:10:14,329 - INFO - Processing 64/65: https://www.caring.com/senior-living/memory-care-facilities/california/woodland-hills
+2026-05-02 00:10:14,329 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/woodland-hills
+2026-05-02 00:10:41,083 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:10:41,085 - INFO -   Found 19 facilities
+2026-05-02 00:10:41,594 - INFO - Processing 65/65: https://www.caring.com/senior-living/memory-care-facilities/california/yorba-linda
+2026-05-02 00:10:41,594 - INFO - Extracting facilities from: https://www.caring.com/senior-living/memory-care-facilities/california/yorba-linda
+2026-05-02 00:11:09,916 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-05-02 00:11:09,919 - INFO -   Found 20 facilities
+2026-05-02 00:11:11,076 - INFO - Scraping complete for caring:
+2026-05-02 00:11:11,076 - INFO -   Pages scraped: 65
+2026-05-02 00:11:11,076 - INFO -   Pages failed: 1
+2026-05-02 00:11:11,077 - INFO -   Raw facilities: 1212
+2026-05-02 00:11:11,077 - INFO -   Unique facilities: 426
+2026-05-02 00:11:11,077 - INFO -   Credits used: 0
+2026-05-02 00:11:11,083 - INFO - Results saved to .firecrawl/directory-match/caring-ca-mc.json (new this run: 426, total: 438)
+2026-05-02 00:11:11,083 - INFO - 
+Sample facilities from caring:
+2026-05-02 00:11:11,083 - INFO -   1. Walnut Village - 891 S Walnut St., Anaheim 92802
+2026-05-02 00:11:11,083 - INFO -   2. Kaego's Richman Gardens - 317 N. Richman Ave., Fullerton 92832
+2026-05-02 00:11:11,083 - INFO -   3. Ivy Terrace at Fullerton - 1510 E Commonwealth Ave, Fullerton 92831
+2026-05-02 00:11:11,083 - INFO -   4. Palms Retirement Center - 312 N Roosevelt Ave., Fullerton 92832
+2026-05-02 00:11:11,083 - INFO -   5. Brookdale Garden Grove - 10200 Chapman Avenue, Garden Grove 92840
+2026-05-02 00:11:11,083 - INFO - 
+============================================================
+2026-05-02 00:11:11,083 - INFO - SCRAPING COMPLETE
+2026-05-02 00:11:11,083 - INFO - ============================================================

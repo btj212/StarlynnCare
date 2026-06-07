@@ -1,0 +1,31 @@
+{
+  "format_version": 1,
+  "note": "Smoke fixture for or_inspections_ingest.py --smoke. Replace license_number with a real OR facility license_number from DB after roster ingest.",
+  "facilities": [
+    {
+      "license_number": "0000000001",
+      "inspections": [
+        {
+          "inspection_date": "2024-03-15",
+          "inspection_type": "standard",
+          "is_complaint": false,
+          "complaint_id": null,
+          "source_url": "https://ltclicensing.oregon.gov/Inspections#or-0000000001-EVT1-2024-03-15",
+          "raw_data": {
+            "fixture": true,
+            "event_id": "EVT1"
+          },
+          "deficiencies": [
+            {
+              "code": null,
+              "category": "Licensing Violation",
+              "description": "Sample: care planning documentation incomplete for memory-care residents.",
+              "state_severity_raw": "Licensing Violation",
+              "immediate_jeopardy": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

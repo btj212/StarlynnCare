@@ -1,0 +1,170 @@
+== StarlynnCare ingest: Next 5 counties ==
+Sun Apr 26 22:53:42 PDT 2026
+
+--- County: LOS ANGELES (log: logs/ingest-LOS_ANGELES-20260426-225342.log) ---
+Fetching Los Angeles County RCFE roster from CA Open Data …
+CKAN rows received: 2659
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (2659 total records)
+============================================================
+
+By license status:
+  CLOSED                804
+  LICENSED             1648
+  ON PROBATION            1
+  PENDING               206
+
+By care category:
+  ccrc                           28
+  rcfe_general                 2553
+  rcfe_memory_care               78
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)    2232
+  medium  (7–49 beds)    94
+  large   (50+ beds)    333
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 80
+Publishable (LICENSED + memory-care): 52
+============================================================
+
+Upserting 2659 rows …
+Done. New rows: 2659  Updated: 0  scrape_run: 4d6418ad-1e75-4988-901c-306cc0ae37f3
+
+--- County: SAN DIEGO (log: logs/ingest-SAN_DIEGO-20260426-225741.log) ---
+Fetching San Diego County RCFE roster from CA Open Data …
+CKAN rows received: 929
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (929 total records)
+============================================================
+
+By license status:
+  CLOSED                294
+  LICENSED              581
+  PENDING                54
+
+By care category:
+  ccrc                           14
+  rcfe_general                  871
+  rcfe_memory_care               44
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)     685
+  medium  (7–49 beds)   100
+  large   (50+ beds)    144
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 44
+Publishable (LICENSED + memory-care): 26
+============================================================
+
+Upserting 929 rows …
+Done. New rows: 929  Updated: 0  scrape_run: ae399ae8-924a-42ce-a060-a3d204fdb53a
+
+--- County: ORANGE (log: logs/ingest-ORANGE-20260426-225908.log) ---
+Fetching Orange County RCFE roster from CA Open Data …
+CKAN rows received: 1663
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (1663 total records)
+============================================================
+
+By license status:
+  CLOSED                538
+  LICENSED             1054
+  PENDING                71
+
+By care category:
+  ccrc                           15
+  rcfe_general                 1589
+  rcfe_memory_care               59
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)    1462
+  medium  (7–49 beds)    32
+  large   (50+ beds)    169
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 59
+Publishable (LICENSED + memory-care): 38
+============================================================
+
+Upserting 1663 rows …
+Done. New rows: 1663  Updated: 0  scrape_run: a35da192-155a-4e97-8166-00f3c166c318
+
+--- County: SACRAMENTO (log: logs/ingest-SACRAMENTO-20260426-230138.log) ---
+Fetching Sacramento County RCFE roster from CA Open Data …
+CKAN rows received: 1054
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (1054 total records)
+============================================================
+
+By license status:
+  CLOSED                347
+  LICENSED              634
+  ON PROBATION            7
+  PENDING                66
+
+By care category:
+  ccrc                            1
+  rcfe_general                 1028
+  rcfe_memory_care               25
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)     919
+  medium  (7–49 beds)    52
+  large   (50+ beds)     83
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 25
+Publishable (LICENSED + memory-care): 16
+============================================================
+
+Upserting 1054 rows …
+Done. New rows: 1054  Updated: 0  scrape_run: ec38c7c1-9ccd-4120-86bf-68ff516b5b05
+
+--- County: RIVERSIDE (log: logs/ingest-RIVERSIDE-20260426-230315.log) ---
+Fetching Riverside County RCFE roster from CA Open Data …
+CKAN rows received: 867
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (867 total records)
+============================================================
+
+By license status:
+  CLOSED                268
+  LICENSED              530
+  ON PROBATION            1
+  PENDING                68
+
+By care category:
+  ccrc                            8
+  rcfe_general                  842
+  rcfe_memory_care               17
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)     720
+  medium  (7–49 beds)    64
+  large   (50+ beds)     83
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 18
+Publishable (LICENSED + memory-care): 15
+============================================================
+
+Upserting 867 rows …
+Done. New rows: 867  Updated: 0  scrape_run: 83def85a-faf5-4c96-8736-f65e4a8db14b

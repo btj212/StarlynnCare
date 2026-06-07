@@ -1,0 +1,31 @@
+Fetching Orange County RCFE roster from CA Open Data …
+CKAN rows received: 1663
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (1663 total records)
+============================================================
+
+By license status:
+  CLOSED                538
+  LICENSED             1054
+  PENDING                71
+
+By care category:
+  ccrc                           15
+  rcfe_general                 1589
+  rcfe_memory_care               59
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)    1462
+  medium  (7–49 beds)    32
+  large   (50+ beds)    169
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 59
+Publishable (LICENSED + memory-care): 38
+============================================================
+
+Upserting 1663 rows …
+Done. New rows: 1663  Updated: 0  scrape_run: a35da192-155a-4e97-8166-00f3c166c318

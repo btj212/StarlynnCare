@@ -1,0 +1,13 @@
+
+=== APFM ===
+  loaded 731 listings from apfm-ca-mc.json
+  listings=731  matched=526  updated=75
+
+=== CARING ===
+  loaded 490 listings from caring-ca-mc.json
+  listings=490  matched=356  updated=34
+
+=== Totals ===
+  listings   1221
+  matched    882
+  updated    109

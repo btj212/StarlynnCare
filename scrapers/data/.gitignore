@@ -1,0 +1,12 @@
+# Operational data — generated locally, not committed.
+# tx_facility_lookup.csv: STATEID/Facility ID → license_number roster pulled
+# from Supabase by tx_export_facility_lookup.py. Used by tx_pia_to_bundle.py
+# and tx_narrative_request_batch.py to resolve HHSC's STATEID join key.
+tx_facility_lookup.csv
+
+# PA HSD bulk export snapshots — refreshed daily by DHS; either re-pull
+# via pa_hsd_directory_ingest.py --fetch-live or copy the latest from
+# the Claude session outputs.
+pa_hsd_full.xlsx
+pa_long_term_living.csv
+pa_memory_care_only.csv

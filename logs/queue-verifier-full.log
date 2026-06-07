@@ -1,0 +1,88 @@
+Queue facilities to verify: 86
+mc_yes       1.0 | Brookdale Anaheim
+mc_no        0.95 | Brookdale Brea
+mc_yes       1.0 | Brookdale Brookhurst
+mc_no        0.95 | Brookdale Central Whittier
+uncertain    0.6 | Brookdale Chatsworth
+mc_no        1.0 | Brookdale Diablo Lodge
+mc_yes       1.0 | Brookdale Folsom
+mc_yes       1.0 | Brookdale Garden Grove
+mc_no        0.95 | Brookdale Gardens of Tarzana
+mc_no        0.95 | Brookdale Irvine
+mc_yes       1.0 | Brookdale Mirage Inn
+mc_no        0.95 | Brookdale Monrovia
+mc_no        0.95 | Brookdale Murrieta
+mc_no        0.95 | Brookdale Nohl Ranch
+mc_yes       0.95 | Brookdale Ocean House
+mc_yes       1.0 | Brookdale Oceanside
+uncertain    0.0 | Brookdale Place of San Marcos
+uncertain    0.0 | Brookdale Redwood City
+mc_no        0.95 | Brookdale San Ramon
+mc_no        0.95 | Brookdale Santa Monica Gardens
+mc_yes       1.0 | Brookdale Sunwest
+mc_no        0.95 | Brookdale Uptown Whittier
+uncertain    0.0 | Brookdale Valley View
+mc_yes       1.0 | Coterie Cathedral Hill
+mc_yes       1.0 | Ivy Park at Bonita
+mc_yes       0.95 | Ivy Park at Cathedral Hill
+mc_yes       1.0 | Ivy Park at Claremont
+mc_yes       0.95 | Ivy Park at Culver City
+mc_yes       0.95 | Ivy Park at Escondido
+mc_yes       1.0 | Ivy Park at Escondido
+mc_yes       1.0 | Ivy Park at Fullerton
+mc_yes       1.0 | Ivy Park at Huntington Beach
+mc_yes       1.0 | Ivy Park at la Jolla
+mc_yes       1.0 | Ivy Park at la Palma
+mc_yes       0.95 | Ivy Park at Laguna Woods
+[skip] empty scrape: Ivy Park at Mission Viejo
+mc_yes       1.0 | Ivy Park at Murrieta
+mc_yes       0.95 | Ivy Park at Otay Ranch
+mc_yes       1.0 | Ivy Park at Palo Alto
+mc_yes       1.0 | Ivy Park at Palos Verdes
+mc_yes       1.0 | Ivy Park at Playa Vista
+mc_yes       1.0 | Ivy Park at Sabre Springs
+mc_yes       1.0 | Ivy Park at Sacramento
+mc_yes       1.0 | Ivy Park at Sacramento
+mc_no        0.95 | Ivy Park at San Juan Capistrano
+mc_yes       1.0 | Ivy Park at San Marino
+mc_yes       1.0 | Ivy Park at Santa Monica
+mc_yes       1.0 | Ivy Park at Seal Beach
+mc_yes       1.0 | Ivy Park at Studio City
+mc_yes       1.0 | Ivy Park at Tustin
+mc_yes       1.0 | Ivy Park at West Hills
+mc_yes       1.0 | Ivy Park at Woodland Hills
+[skip] empty scrape: Ivy Park of Belmont
+mc_yes       1.0 | Ivy Park of Wellington
+mc_no        0.95 | Merrill Gardens at Bankers Hill
+mc_yes       0.95 | Merrill Gardens at Huntington Beach
+mc_yes       0.95 | Merrill Gardens at Lafayette
+mc_yes       0.95 | Merrill Gardens at Rolling Hills Estates
+mc_yes       0.95 | Merrill Gardens at West Covina
+mc_yes       0.95 | Oakmont of Burlingame
+mc_yes       1.0 | Oakmont of East Sacramento
+mc_yes       0.95 | Oakmont of Escondido Hills
+mc_yes       0.95 | Oakmont of Fair Oaks
+mc_yes       1.0 | Oakmont of Folsom
+mc_yes       0.95 | Oakmont of Fullerton
+uncertain    0.0 | Oakmont of Huntington Beach
+mc_yes       0.95 | Oakmont of Orange
+uncertain    0.0 | Oakmont of Pacific Beach
+mc_yes       0.95 | Oakmont of Redwood City
+uncertain    0.3 | Oakmont of Santa Clarita
+uncertain    0.0 | Oakmont of Torrance
+mc_yes       0.95 | Oakmont of Whittier
+mc_yes       1.0 | Park View Place
+mc_yes       1.0 | San Francisco Towers
+uncertain    0.0 | Sunrise Assisted Living of Carmichael
+uncertain    0.0 | Sunrise Assisted Living of Fair Oaks
+mc_yes       0.95 | Sunrise Assisted Living of Hermosa Beach
+mc_yes       1.0 | Sunrise at Sterling Canyon
+mc_yes       0.95 | Sunrise at Yorba Linda
+mc_yes       1.0 | Sunrise of Beverly Hills
+mc_yes       1.0 | Sunrise of Mission Viejo
+mc_yes       1.0 | Sunrise of Oceanside
+mc_yes       1.0 | Sunrise of Orange
+mc_yes       1.0 | Sunrise of San Mateo
+mc_yes       0.92 | Watermark at Beverly Hills, the
+mc_yes       0.95 | Watermark at Rosewood Gardens, the
+Done. Processed 84.

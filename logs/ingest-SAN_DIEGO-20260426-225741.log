@@ -1,0 +1,31 @@
+Fetching San Diego County RCFE roster from CA Open Data …
+CKAN rows received: 929
+Using cached Transparency API data: /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+
+============================================================
+Alameda County RCFE summary (929 total records)
+============================================================
+
+By license status:
+  CLOSED                294
+  LICENSED              581
+  PENDING                54
+
+By care category:
+  ccrc                           14
+  rcfe_general                  871
+  rcfe_memory_care               44
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)     685
+  medium  (7–49 beds)   100
+  large   (50+ beds)    144
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 44
+Publishable (LICENSED + memory-care): 26
+============================================================
+
+Upserting 929 rows …
+Done. New rows: 929  Updated: 0  scrape_run: ae399ae8-924a-42ce-a060-a3d204fdb53a

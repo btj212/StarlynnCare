@@ -1,0 +1,20 @@
+{
+  "format_version": 1,
+  "note": "Smoke fixture for wa_inspections_ingest.py. Replace license_number after WA roster ingest.",
+  "facilities": [
+    {
+      "license_number": "0000000001",
+      "inspections": [
+        {
+          "inspection_date": "2024-06-01",
+          "inspection_type": "standard",
+          "is_complaint": false,
+          "complaint_id": null,
+          "source_url": "https://fortress.wa.gov/dshs/adsaapps/lookup/BHPubFacDetail.aspx?licnum=1",
+          "raw_data": { "fixture": true },
+          "deficiencies": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+# TULIP public search shell (excerpt) — 2026-05-04
+# Full HTML is mostly Lightning / Experience Cloud bootstrap. Provider data loads via
+# POST .../aura with serviceComponent after the user completes search (reCAPTCHA-gated).
+# See docs/TX_DATA_SOURCES.md for feasibility verdict and import-json workflow.

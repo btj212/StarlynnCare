@@ -1,0 +1,491 @@
+Log: logs/gate-retry-phase2-20260502-131043.log
+
+========== angel-comfort-care-2-6228 ==========
+Facilities loaded: 1
+
+[1/1] Angel Comfort Care 2 (Anaheim)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 4 asks about regulatory oversight and inspection frequency, which are general policy questions not specific to this facility's compliance record or documentation.
+    - Question 4 closes with a generic regulatory question that could apply to any memory-care facility regardless of its inspection history or deficiencies.
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 0
+  Skipped       : 0 (already had content)
+  Failed gate   : 1
+  Errors        : 0
+=======================================================
+
+========== care-celine-5457 ==========
+Facilities loaded: 1
+
+[1/1] Care Celine (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== carewell-manor-2482 ==========
+Facilities loaded: 1
+
+[1/1] Carewell Manor (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== carnelian-villas-5680 ==========
+Facilities loaded: 1
+
+[1/1] Carnelian Villas (Anaheim)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== capriana-6242 ==========
+Facilities loaded: 1
+
+[1/1] Capriana (Brea)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== claremont-place-603786 ==========
+Facilities loaded: 1
+
+[1/1] Claremont Place (Claremont)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== pacifica-senior-living-south-coast-5272 ==========
+Facilities loaded: 1
+
+[1/1] Pacifica Senior Living South Coast (Costa Mesa)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== sea-bluffs-the-6345 ==========
+Facilities loaded: 1
+
+[1/1] Sea Bluffs, the (Dana Point)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== gardens-at-escondido-604545 ==========
+Facilities loaded: 1
+
+[1/1] Gardens at Escondido (Escondido)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== folsom-countryhouse-700902 ==========
+Facilities loaded: 1
+
+[1/1] Folsom Countryhouse (Folsom)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== ivy-terrace-at-fullerton-6017 ==========
+Facilities loaded: 1
+
+[1/1] Ivy Terrace at Fullerton (Fullerton)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== ivy-terrace-at-garden-grove-6019 ==========
+Facilities loaded: 1
+
+[1/1] Ivy Terrace at Garden Grove (Garden Grove)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== clearwater-at-glendora-603606 ==========
+Facilities loaded: 1
+
+[1/1] Clearwater at Glendora (Glendora)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== huntington-terrace-4796 ==========
+Facilities loaded: 1
+
+[1/1] Huntington Terrace (Huntington Beach)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== activcare-laguna-hills-5986 ==========
+Facilities loaded: 1
+
+[1/1] Activcare Laguna Hills (Laguna Hills)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== watermark-laguna-niguel-6360 ==========
+Facilities loaded: 1
+
+[1/1] Watermark Laguna Niguel (Laguna Niguel)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== sakura-gardens-at-los-angeles-602192 ==========
+Facilities loaded: 1
+
+[1/1] Sakura Gardens at los Angeles (Los Angeles)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== morningstar-senior-living-of-mission-viejo-6248 ==========
+Facilities loaded: 1
+
+[1/1] Morningstar Senior Living of Mission Viejo (Mission Viejo)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== atria-newport-beach-5789 ==========
+Facilities loaded: 1
+
+[1/1] Atria Newport Beach (Newport Beach)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== astoria-park-senior-living-603566 ==========
+Facilities loaded: 1
+
+[1/1] Astoria Park Senior Living (Pasadena)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== crescendo-senior-living-6473 ==========
+Facilities loaded: 1
+
+[1/1] Crescendo Senior Living (Placentia)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== regency-place-701107 ==========
+Facilities loaded: 1
+
+[1/1] Regency Place (Sacramento)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== rancho-penasquitos-senior-living-604542 ==========
+Facilities loaded: 1
+
+[1/1] Rancho Penasquitos Senior Living (San Diego)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== westmont-of-carmel-valley-604692 ==========
+Facilities loaded: 1
+
+[1/1] Westmont of Carmel Valley (San Diego)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== autumn-glow-600141 ==========
+Facilities loaded: 1
+
+[1/1] Autumn Glow (San Francisco)
+  Generating…
+  Running quality gate…
+  ✗ Quality gate FAILED:
+    - Question 1 closes with 'during the tour' but uses generic language about corrective-action plans that could apply to any facility.
+    - Question 2 references Title 22 §87705/§87706 but lacks facility-specific grounding beyond the citation count.
+    - Question 3 asks about Title 22 §87705 requirements in generic terms with no facility-specific deficiency or citation reference.
+    - The array contains exactly 4 questions, which is the approved minimum and should pass, but questions 1–3 lack sufficient facility-specific grounding to satisfy the requirement that every element not be interchangeable across facilities.
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 0
+  Skipped       : 0 (already had content)
+  Failed gate   : 1
+  Errors        : 0
+=======================================================
+
+========== rancho-vista-senior-living-604134 ==========
+Facilities loaded: 1
+
+[1/1] Rancho Vista Senior Living (Vista)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================
+
+========== la-posada-603504 ==========
+Facilities loaded: 1
+
+[1/1] La Posada (Whittier)
+  Generating…
+  Running quality gate…
+  ✓ Quality gate passed
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 1
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================

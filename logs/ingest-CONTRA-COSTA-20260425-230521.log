@@ -1,0 +1,531 @@
+== StarlynnCare ingest: CONTRA COSTA ==
+Log: logs/ingest-CONTRA-COSTA-20260425-230521.log
+
+Fetching Contra Costa County RCFE roster from CA Open Data …
+CKAN rows received: 594
+Downloading Transparency API data (~30 MB) from https://www.ccld.dss.ca.gov/transparencyapi/api/Facility/any …
+Cached to /tmp/ccld_facility_all_cache.json
+Transparency lookup: 24258 facilities loaded
+Skipped 431 records due to county/city sanity filters
+
+============================================================
+Alameda County RCFE summary (163 total records)
+============================================================
+
+By license status:
+  CLOSED                 34
+  LICENSED              121
+  PENDING                 8
+
+By care category:
+  ccrc                            1
+  rcfe_general                  148
+  rcfe_memory_care               14
+
+By capacity tier (≤6 / 7–49 / 50+):
+  small   (≤6 beds)     138
+  medium  (7–49 beds)     7
+  large   (50+ beds)     18
+  unknown (no beds)       0
+
+Serves memory care (name-matched): 14
+Publishable (LICENSED + memory-care): 121
+============================================================
+
+Upserting 163 rows …
+Done. New rows: 163  Updated: 0  scrape_run: 8bd56f9a-f619-4f84-867c-836d9aa5fc2b
+Facilities to geocode: 163
+
+→ A Hananiah Place of San Ramon | 2752 Mohawk Circle, San Ramon, 94583, CA, USA
+  ✓ 37.752149, -121.963541
+
+→ A Springtime Residence | 2752 Mohawk Cr., San Ramon, 94583, CA, USA
+  ✓ 37.752149, -121.963541
+
+→ Abigail's Guest Home | 10061 la Paz Avenue, San Ramon, 94583, CA, USA
+  ✓ 37.750017, -121.942142
+
+→ Aegis Assisted Living of Moraga | 950 Country Club Drive, Moraga, 94556, CA, USA
+  ✓ 37.833036, -122.130205
+
+→ Aegis Assisted Living of Pleasant Hill | 1660 Oak Park Blvd, Pleasant Hill, 94523, CA, USA
+  ✓ 37.933632, -122.065017
+
+→ Aegis Living Pleasant Hill | 1660 Oak Park Blvd, Pleasant Hill, 94523, CA, USA
+  ✓ 37.933632, -122.065017
+
+→ Alamo Care Home | 2795 Miranda Ave., Alamo, 94507, CA, USA
+  ✓ 37.863577, -122.019638
+
+→ Alamo Residence Home | 2978 Miranda Ave, Alamo, 94507, CA, USA
+  ✓ 37.858224, -122.019833
+
+→ Alamo Residence Home, Inc. | 2978 Miranda Avenue, Alamo, 94507, CA, USA
+  ✓ 37.858224, -122.019833
+
+→ Alamo Villa | 2795 Miranda Avenue, Alamo, 94507, CA, USA
+  ✓ 37.863577, -122.019638
+
+→ Amiable Care Home | 5180 Valley View Road, El Sobrante, 94803, CA, USA
+  ✓ 37.966196, -122.282981
+
+→ Angel's Crest Home Ii | 1864 Camino Ramon, Danville, 94526, CA, USA
+  ✓ 37.788896, -121.979982
+
+→ Ask Assisted Living Llc | 3414 Deer Hill Rd, Lafayette, 94549, CA, USA
+  ✓ 37.896881, -122.109266
+
+→ Ask: Hidden Valley Care Home | 33 Hidden Valley Road, Lafayette, 94549, CA, USA
+  ✓ 37.886728, -122.156913
+
+→ Aster Garden Care Home, Inc | 2046 Arnold Drive, Martinez, 94553, CA, USA
+  ✓ 37.992017, -122.084197
+
+→ Atria Park of Lafayette | 1545 Pleasant Hill Rd, Lafayette, 94549, CA, USA
+  ✓ 37.925415, -122.095550
+
+→ B. Ruiz Carehome 2 | 30 Merganser Ct, Oakley, 94561, CA, USA
+  ✓ 37.994723, -121.686776
+
+→ Belmont Village San Ramon | 1000 Walnut Drive, San Ramon, 94583, CA, USA
+  ✓ 37.762312, -121.954302
+
+→ Better Living Care Home | 106 Vivian Drive, Pleasant Hill, 94523, CA, USA
+  ✓ 37.951887, -122.063365
+
+→ Bina's Adult Care Llc | 5667 San Pablo Dam Rd, El Sobrante, 94803, CA, USA
+  ✓ 37.956887, -122.278186
+
+→ Blackhawk Senior Residential Care | 209 Farm Hill Court, Danville, 94526, CA, USA
+  ✓ 37.814897, -121.984352
+
+→ Bluegarden Care | 2729 Marsh Dr, San Ramon, 94583, CA, USA
+  ✓ 37.768655, -121.981653
+
+→ Bluemeadow Care | 3262 Montevideo Dr, San Ramon, 94583, CA, USA
+  ✓ 37.752417, -121.942950
+
+→ Boyd Senior Care Home | 345 Boyd Road, Pleasant Hill, 94523, CA, USA
+  ✓ 37.943808, -122.070630
+
+→ Brookdale Danville | 400 W el Pintado Rd, Danville, 94506, CA, USA
+  ✓ 37.828091, -121.999593
+
+→ Brookdale Diablo Lodge | 950 Diablo Road, Danville, 94526, CA, USA
+  ✓ 37.834136, -121.980727
+
+→ Brookdale San Ramon | 18888 Bollinger Canyon Rd, San Ramon, 94583, CA, USA
+  ✓ 37.776306, -121.997045
+
+→ Buttons Elderly Care Llc | 1448 Buttons Court, Oakley, 94561, CA, USA
+  ✓ 37.995458, -121.721030
+
+→ California Sunshine Rcfe | 5837 Mitchell Canyon Ct., Clayton, 94517, CA, USA
+  ✓ 37.937148, -121.942929
+
+→ Camelia Gardens | 1523 Camelia Court, Oakley, 94561, CA, USA
+  ✓ 37.995038, -121.722409
+
+→ Camino Ramon Home for Seniors | 931 Camino Ramon, Danville, 94526, CA, USA
+  ✓ 37.801419, -121.987833
+
+→ Caring Angels Care Home | 3107 del Oceano Drive, Lafayette, 94549, CA, USA
+  ✓ 37.929304, -122.094100
+
+→ Carter Place | 27 Carter Ct., El Sobrante, 94803, CA, USA
+  ✓ 37.963979, -122.284189
+
+→ Casa Blanca Retirement Homes | 1055 Ina Drive, Alamo, 94507, CA, USA
+  ✓ 37.857146, -122.025301
+
+→ Casa Rivera Assisted Living & Memory Care Llc | 1272 Donald Dr, Rodeo, 94572, CA, USA
+  ✓ 38.025851, -122.244199
+
+→ Casa San Ramon | 3203 Munras Place, San Ramon, 94583, CA, USA
+  ✓ 37.748348, -121.942344
+
+→ Castle Crest Home I | 113 Crest Avenue, Alamo, 94507, CA, USA
+  ✓ 37.879007, -122.053547
+
+→ Cathedral Care Home - Oakley | 1916 Cinnamon Ridge Drive, Oakley, 94561, CA, USA
+  ✓ 37.976982, -121.709810
+
+→ Chateau Iii | 175 Cleaveland Road, Pleasant Hill, 94523, CA, USA
+  ✓ 37.941133, -122.063288
+
+→ Chateau Pleasant Hill | 2726-2770 Pleasant Hill Rd., Pleasant Hill, 94523, CA, USA
+  ✓ 37.957024, -122.090680
+
+→ Cherish Care Home Inc. | 15 Dickson Lane, Martinez, 94553, CA, USA
+  ✓ 37.982768, -122.109705
+
+→ Coral Home Care Llc | 180 Coral Bell Way, Oakley, 94561, CA, USA
+  ✓ 37.974596, -121.725036
+
+→ Cordial Care Home | 2957 Hannan Drive, Pleasant Hill, 94523, CA, USA
+  ✓ 37.959959, -122.084488
+
+→ Danville Care Home | 209 Paraiso Drive, Danville, 94526, CA, USA
+  ✓ 37.806181, -121.984689
+
+→ Danville Courtyard | 836 el Quanito Drive, Danville, 94526, CA, USA
+  ✓ 37.833663, -121.989479
+
+→ Danville Home for Seniors | 44 Dubost Court, Danville, 94526, CA, USA
+  ✓ 37.786095, -121.978772
+
+→ Danville Paradise | 1207 Greenbrook Drive, Danville, 94526, CA, USA
+  ✓ 37.806115, -121.977029
+
+→ Diana's Care Home | 27402 Manon Avenue, Hayward, 94544, CA, USA
+  ✓ 37.637414, -122.069932
+
+→ Dipina Board and Care | 63 Saint Ramon Court, Danville, 94526, CA, USA
+  ✓ 37.786880, -121.979232
+
+→ Discovery Commons San Ramon | 12720 Alcosta Blvd, San Ramon, 94583, CA, USA
+  ✓ 37.773349, -121.956977
+
+→ Dysico Care Home, Rcfe | 461 Turrin Drive, Pleasant Hill, 94523, CA, USA
+  ✓ 37.945131, -122.074027
+
+→ Eaton Place | 20 Eaton Court, Alamo, 94507, CA, USA
+  ✓ 37.852253, -122.026991
+
+→ Ecolux Assisted Living | 200 Eagle Nest Dr, Oakley, 94561, CA, USA
+  ✓ 37.977722, -121.713153
+
+→ Ecolux Assisted Living | 158 Mira Vista Dr, Oakley, 94561, CA, USA
+  ✓ 37.978186, -121.713127
+
+→ Eden Senior Care | 10 Sheila Ct, Pleasant Hill, 94523, CA, USA
+  ✓ 37.930521, -122.074876
+
+→ Elisabeth Care Home | 1612 N Marta Drive, Pleasant Hill, 94523, CA, USA
+  ✓ 37.954788, -122.056074
+
+→ Emmaus Homecare Inc. | 3203 Munras Place, San Ramon, 94583, CA, USA
+  ✓ 37.748348, -121.942344
+
+→ Fairway Hills Care Home Llc | 17 Winged Foot Ct, San Ramon, 94583, CA, USA
+  ✓ 37.732157, -121.926520
+
+→ Gines Residential Care Home Iii | 2565 Stone Valley Road, Alamo, 94507, CA, USA
+  ✓ 37.847156, -121.997230
+
+→ Golden Hill Homes, Inc. | 9474 Alcosta Blvd, San Ramon, 94583, CA, USA
+  ✓ 37.737507, -121.924832
+
+→ Golden Hills Home Care | 9474 Alcosta Blvd, San Ramon, 94583, CA, USA
+  ✓ 37.737507, -121.924832
+
+→ Golden Luxe Residences - Oakley | 5161 Grapevine Lane, Oakley, 94561, CA, USA
+  ✓ 37.979565, -121.710962
+
+→ Golden Pond | 1296 Greenbrook Drive, Danville, 94526, CA, USA
+  ✓ 37.801124, -121.974960
+
+→ Golden Stay Llc | 2968 Bonnie Lane, Pleasant Hill, 94523, CA, USA
+  ✓ 37.928505, -122.079924
+
+→ Good Shepherd of Danville | 287 Verde Mesa, Danville, 94526, CA, USA
+  ✓ 37.843095, -121.971247
+
+→ Good Shepherd of San Ramon | 2752 Mohawk Cir, San Ramon, 94583, CA, USA
+  ✓ 37.752149, -121.963541
+
+→ Granny's Loving Angels Llc | 1000 el Capitan Drive, Danville, 94526, CA, USA
+  ✓ 37.797772, -121.966826
+
+→ Green Valley Care Home | 116 Valdivia Circle, San Ramon, 94583, CA, USA
+  ✓ 37.764470, -121.970817
+
+→ Hailey's Care Home | 3831 la Colina Road, El Sobrante, 94803, CA, USA
+  ✓ 37.960765, -122.309071
+
+→ Happy Valley-home for Our Parents | 3292 Walnut Lane, Lafayette, 94549, CA, USA
+  ✓ 37.873869, -122.101878
+
+→ Heavenly Care Elderly Home | 341 Boyd Road, Pleasant Hill, 94523, CA, USA
+  ✓ 37.943903, -122.070313
+
+→ Hidden Valley Care Home | 33 Hidden Valley Road, Lafayette, 94549, CA, USA
+  ✓ 37.886728, -122.156913
+
+→ Hm Love & Care Home | 508 Kayann Court, El Sobrante, 94803, CA, USA
+  ✓ 37.958484, -122.282170
+
+→ Home Sweet Alamo | 3 Navajo Court, Alamo, 94507, CA, USA
+  ✓ 37.871352, -122.051559
+
+→ Home Sweet Elsie | 280 Elsie Dr, Danville, 94526, CA, USA
+  ✓ 37.827747, -122.000347
+
+→ Immaculate Home at Withers | 3151 Withers Avenue, Lafayette, 94549, CA, USA
+  ✓ 37.931799, -122.094583
+
+→ Immaculate Home at Withers | 3151 Withers Avenue, Lafayette, 94549, CA, USA
+  ✓ 37.931799, -122.094583
+
+→ Ivy Park at San Ramon | 9199 Fircest Lane, San Ramon, 94583, CA, USA
+  ✓ 37.728686, -121.926511
+
+→ Ivy Park at San Ramon | 9199 Firecrest Ln, San Ramon, 94583, CA, USA
+  ✓ 37.728686, -121.926511
+
+→ Kai's Care Home | 2400 Marcia Drive, Pleasant Hill, 94523, CA, USA
+  ✓ 37.943471, -122.055144
+
+→ Karo Mina Care Home | 2866 Laramie Avenue, San Ramon, 94583, CA, USA
+  ✓ 37.734620, -121.944632
+
+→ Lafayette Care Home | 3640 Baker Lane, Lafayette, 94549, CA, USA
+  ✓ 37.895828, -122.129646
+
+→ Lafayette Care Home Ii | 22 Camino Court, Lafayette, 94549, CA, USA
+  ✓ 37.900456, -122.090430
+
+→ Lafayette Gardens | 3486 Monroe Avenue, Lafayette, 94549, CA, USA
+  ✓ 37.889699, -122.115575
+
+→ Lafayette Heights Res. Care | 34 Camino Justin, Lafayette, 94549, CA, USA
+  ✓ 37.898731, -122.090085
+
+→ Las Trampas - Sheila House | 9 Sheila Court, Pleasant Hill, 94523, CA, USA
+  ✓ 37.930133, -122.075080
+
+→ Light of Grace I | 34 Morning Glory Ct., Oakley, 94561, CA, USA
+  ✓ 37.976587, -121.697753
+
+→ Loving Hands Care Home Llc | 748 Vaqueros Ave, Rodeo, 94572, CA, USA
+  ✓ 38.026877, -122.263734
+
+→ Lynwood Guest Home | 725 las Barrancas Drive, Danville, 94526, CA, USA
+  ✓ 37.830450, -122.011669
+
+→ Magnolia Garden Assisted Living | 205 el Pinto Road, Danville, 94526, CA, USA
+  ✓ 37.836675, -122.009509
+
+→ Magnolia Garden at Danville | 205 el Pinto Road, Danville, 94526, CA, USA
+  ✓ 37.836675, -122.009509
+
+→ Martinez Guest Home Llc | 1518 Center Ave., Martinez, 94553, CA, USA
+  ✓ 37.983459, -122.096086
+
+→ Maureen House | 590 Maureen Lane, Pleasant Hill, 94523, CA, USA
+  ✓ 37.950271, -122.079720
+
+→ Megan Care Home | 118 Megan Ct, Alamo, 94507, CA, USA
+  ✓ 37.853161, -122.015561
+
+→ Memory Care of Contra Costa | 540 Patterson Boulevard, Pleasant Hill, 94523, CA, USA
+  ✓ 37.935279, -122.072382
+
+→ Merisol Care Home | 4102 Pleiades Place, Union City, 94587, CA, USA
+  ✓ 37.587512, -122.066159
+
+→ Merrill Gardens at Lafayette | 1010 2nd St, Lafayette, 94549, CA, USA
+  ✓ 37.893260, -122.113123
+
+→ Moraga Retreat Care | 715 Moraga Road, Moraga, 94556, CA, USA
+  ✓ 37.849194, -122.125280
+
+→ Moraga Retreat Care On Woodford | 3 Woodford Drive, Moraga, 94556, CA, USA
+  ✓ 37.866272, -122.124102
+
+→ Moraga Royale | 1600 Canyon Road, Moraga, 94556, CA, USA
+  ✓ 37.832718, -122.129621
+
+→ Navajo Care Home | 3 Navajo Court, Alamo, 94507, CA, USA
+  ✓ 37.871352, -122.051559
+
+→ New Alamo Residence Home | 836 Stone Valley Rd, Alamo, 94507, CA, USA
+  ✓ 37.852525, -122.016878
+
+→ New Rivershore Care Home | 23 Steele Court, Bay Point, 94565, CA, USA
+  ✓ 38.031387, -121.952477
+
+→ Oakley Assisted Living Ii , Llc | 1449 Buttons Ct, Oakley, 94561, CA, USA
+  ✓ 37.995022, -121.721016
+
+→ Oakley Assisted Living Llc | 531 O'hara Ave, Oakley, 94561, CA, USA
+  ✓ 37.994091, -121.714266
+
+→ Olympic Residential Care Home | 2252 Olympic Drive, Martinez, 94553, CA, USA
+  ✓ 37.985056, -122.081947
+
+→ Olympic Retirement Home | 1862 Olympic Drive, Martinez, 94553, CA, USA
+  ✓ 37.986696, -122.088091
+
+→ Palm Garden Home Care | 280 Elsie Drive, Danville, 94526, CA, USA
+  ✓ 37.827747, -122.000347
+
+→ Paradise Villa Senior Care Ii | 10 Sheila Ct, Pleasant Hill, 94523, CA, USA
+  ✓ 37.930521, -122.074876
+
+→ Paraiso Gardens | 217 Paraiso Drive, Danville, 94526, CA, USA
+  ✓ 37.806168, -121.984321
+
+→ Penny's Guest Home | 78 Ryegate Place, San Ramon, 94583, CA, USA
+  ✓ 37.746303, -121.952555
+
+→ Pine Valley Homes | 9675 Tareyton Avenue, San Ramon, 94583, CA, USA
+  ✓ 37.732360, -121.946146
+
+→ Pleasant Hill Oasis | 40 Boyd Rd, Pleasant Hill, 94523, CA, USA
+  ✓ 37.942864, -122.061921
+
+→ Pleasant Hill Villa Home Care | 3021 Putnam Blvd, Pleasant Hill, 94523, CA, USA
+  ✓ 37.930204, -122.073820
+
+→ Pleasant Hill Villa Home Care 2 | 2968 Bonnie Lane, Pleasant Hill, 94523, CA, USA
+  ✓ 37.928505, -122.079924
+
+→ Pleasant Hill Villa Home Care 3 | 1900 Hoover Ave, Pleasant Hill, 94523, CA, USA
+  ✓ 37.929928, -122.073790
+
+→ Poet's Vista Residential Care | 204 Roberta Avenue, Pleasant Hill, 94523, CA, USA
+  ✓ 37.939237, -122.072540
+
+→ Priority Care Home I | 985 Coral Ridge Circle, Rodeo, 94572, CA, USA
+  ✓ 38.020053, -122.257922
+
+→ Priority Care Home Ii | 4387 Santa Rita Road, El Sobrante, 94803, CA, USA
+  ✓ 37.972601, -122.297106
+
+→ Queens Care Home, Llc | 3200 de Anza Place, San Ramon, 94583, CA, USA
+  ✓ 37.747394, -121.941660
+
+→ Ramona Care Home | 2160 Ramona Drive, Pleasant Hill, 94523, CA, USA
+  ✓ 37.946630, -122.055648
+
+→ Reliez Valley Care Home | 656 Sterling Drive, Martinez, 94553, CA, USA
+  ✓ 37.961201, -122.107242
+
+→ Reutlinger Community, the | 4000 Camino Tassajara, Danville, 94526, CA, USA
+  ✓ 37.798586, -121.906352
+
+→ Rose Cottage Elderly Home | 1972 Jeanette Drive, Pleasant Hill, 94523, CA, USA
+  ✓ 37.950950, -122.069482
+
+→ Rose Cottage Rcfe | 1972 Jeanette Dr, Pleasant Hill, 94523, CA, USA
+  ✓ 37.950950, -122.069482
+
+→ Round Hill Care Homes, Inc. | 22 Dartmouth Place, Danville, 94526, CA, USA
+  ✓ 37.811665, -121.986216
+
+→ Roundhill Care Homes, Inc. | 3053 Roundhill Road, Alamo, 94507, CA, USA
+  ✓ 37.859837, -122.012579
+
+→ Sacred Hands Living Iii | 536 Lake Park Ct, Oakley, 94561, CA, USA
+  ✓ 37.984296, -121.633919
+
+→ Safe Haven Oakley Llc | 228 Golden State Parkway, Oakley, 94561, CA, USA
+  ✓ 37.994390, -121.672420
+
+→ Santa Clara Care Home | 170 Santa Clara Drive, Danville, 94526, CA, USA
+  ✓ 37.803424, -121.986114
+
+→ Serene Care Winchester | 4984 Winchester Dr, Oakley, 94561, CA, USA
+  ✓ 37.980118, -121.725692
+
+→ Serene Suites | 1955 Treadway Ln, Pleasant Hill, 94523, CA, USA
+  ✓ 37.951472, -122.062648
+
+→ Serving Hands Llc | 245 la Pera Circle, Danville, 94526, CA, USA
+  ✓ 37.784731, -121.973308
+
+→ Seventh Heaven | 1338 7th Street, Rodeo, 94572, CA, USA
+  ✓ 38.031142, -122.259431
+
+→ Seventh Heaven Care Home | 1338 7th Street, Rodeo, 94572, CA, USA
+  ✓ 38.031142, -122.259431
+
+→ Silver Crest Homecare | 204 Chaps Court, Oakley, 94561, CA, USA
+  ✓ 37.987115, -121.745179
+
+→ Silverway Assisted Living | 2366 Caballo Ranchero Drive, Diablo, 94528, CA, USA
+  ✓ 37.839800, -121.954973
+
+→ Springtime Residence Llc | 2752 Mohawk Circle, San Ramon, 94583, CA, USA
+  ✓ 37.752149, -121.963541
+
+→ Spyglass Senior Villa I | 39 Calla Ct, Oakley, 94561, CA, USA
+  ✓ 37.975461, -121.717239
+
+→ Spyglass Senior Villa Ii | 75 Bottle Brush Ct, Oakley, 94561, CA, USA
+  ✓ 37.972543, -121.719241
+
+→ Stonehedge Guest Home | 1415 Stonehedge Dr, Pleasant Hill, 94523, CA, USA
+  ✓ 37.975156, -122.100725
+
+→ Sunny Days Care | 3133 Kittery Avenue, San Ramon, 94583, CA, USA
+  ✓ 37.743323, -121.944592
+
+→ Sunrise Assisted Living of Danville | 1027 Diablo Rd, Danville, 94526, CA, USA
+  ✓ 37.834085, -121.978899
+
+→ Sunvalley Residential Care Home | 67 College Way, Pleasant Hill, 94523, CA, USA
+  ✓ 37.970422, -122.065424
+
+→ Tareyton Home, Llc | 9675 Tareyton Ave., San Ramon, 94583, CA, USA
+  ✓ 37.732360, -121.946146
+
+→ Tender Touch Residential Care Home | 58 Midhill Road, Martinez, 94553, CA, USA
+  ✓ 37.997880, -122.098410
+
+→ Teresa's Quality Comfort Care, Llc | 1786 Concannon Dr, Oakley, 94561, CA, USA
+  ✓ 38.007421, -121.725862
+
+→ Trinity Care Home #2 | 110 Avocado Ct., San Ramon, 94583, CA, USA
+  ✓ 37.735050, -121.942776
+
+→ Trinity Care Home 3 | 744 Acorn Ct., San Ramon, 94583, CA, USA
+  ✓ 37.736518, -121.936878
+
+→ Trinity Care Home 4 | 55 San Vicente Court, Danville, 94526, CA, USA
+  ✓ 37.784437, -121.973244
+
+→ True Tranquility | 2419 Imperial Court, Discovery Bay, 94505, CA, USA
+  ✓ 37.890089, -121.612967
+
+→ Turrin House | 461 Turrin Drive, Pleasant Hill, 94523, CA, USA
+  ✓ 37.945131, -122.074027
+
+→ Villa Board and Care Home | 831 Coral Dr., Rodeo, 94572, CA, USA
+  ✓ 38.018952, -122.253096
+
+→ Villa Nueva Care Home 4 | 58 Midhill Rd, Martinez, 94553, CA, USA
+  ✓ 37.997880, -122.098410
+
+→ Villa Vittoria | 1124 Breckenridge Court, Martinez, 94553, CA, USA
+  ✓ 37.998390, -122.100365
+
+→ Vita | 4012 Blacksmith Cir, Oakley, 94561, CA, USA
+  ✓ 37.971207, -121.712312
+
+→ Watermark at San Ramon, the | 12720 Alcosta Blvd, San Ramon, 94583, CA, USA
+  ✓ 37.773349, -121.956977
+
+→ Welcome Home Senior Residence (alamo Ii) | 10 Castle Crest Road, Alamo, 94507, CA, USA
+  ✓ 37.873649, -122.051922
+
+→ Welcome Home Senior Residence (alamo) | 220 Bolla Avenue, Alamo, 94507, CA, USA
+  ✓ 37.856183, -122.011964
+
+→ Welcome Home Senior Residence-alamo 3 | 110 Paseo de Sol, Alamo, 94507, CA, USA
+  ✓ 37.865858, -122.025534
+
+→ Willow Glen Residence | 2040 Mendocino Drive, Bay Point, 94565, CA, USA
+  ✓ 38.024691, -121.941597
+
+→ Woodlands Iv | 3292 Walnut Ln, Lafayette, 94549, CA, USA
+  ✓ 37.873869, -122.101878
+
+→ Yvonne's Home Care Services | 2681 Rim Rd, San Pablo Drive, 94804, CA, USA
+  ✓ 37.996182, -122.326228
+
+Done. 163 geocoded, 0 failed.
+usage: ccld_citations_ingest.py [-h] [--dry-run] [--publishable] [--smoke]
+                                [--license LICENSE] [--refetch]
+ccld_citations_ingest.py: error: unrecognized arguments: --state CA

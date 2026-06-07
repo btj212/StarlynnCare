@@ -1,0 +1,75 @@
+Facilities loaded: 13
+
+[1/13] Danville Care Home (Danville)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[2/13] Carter Place (El Sobrante)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[3/13] Hm Love & Care Home (El Sobrante)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[4/13] Aster Garden Care Home, Inc (Martinez)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[5/13] Laurel Heights (Morgan Hill)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[6/13] Rose Cottage Rcfe (Pleasant Hill)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[7/13] Sequoia Home (Redwood City)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[8/13] Villa Board and Care Home (Rodeo)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[9/13] Pacaldo Llc (San Bruno)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[10/13] Sunshine Care Home Facility Llc (San Bruno)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[11/13] Portola Place (San Mateo)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[12/13] San Mateo Villa (San Mateo)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+[13/13] Trinity Care Home 3 (San Ramon)
+  Generating…
+  ⚠ Skipping quality gate (--skip-quality-gate)
+  ✓ Written to DB
+
+=======================================================
+Content generation complete
+=======================================================
+  Written       : 13
+  Skipped       : 0 (already had content)
+  Failed gate   : 0
+  Errors        : 0
+=======================================================

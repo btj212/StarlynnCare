@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" font-family="&#39;Cormorant Garamond&#39;, &#39;EB Garamond&#39;, &#39;Cormorant&#39;, Georgia, &#39;Times New Roman&#39;, serif">
+  <g transform="translate(60 80)" fill="#1d2a1c">
+    <g transform="rotate(0)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"></path></g>
+    <g transform="rotate(60)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"></path></g>
+    <g transform="rotate(120)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"></path></g>
+    <g transform="rotate(180)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"></path></g>
+    <g transform="rotate(240)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"></path></g>
+    <g transform="rotate(300)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"></path></g>
+    <circle r="3.2"></circle>
+  </g>
+  <text x="140" y="106" font-size="80" font-weight="600" fill="#1d2a1c" letter-spacing="-0.5" dominant-baseline="alphabetic">Starlynn<tspan font-style="italic" font-weight="500" fill="#b8513a">Care</tspan></text>
+</svg>

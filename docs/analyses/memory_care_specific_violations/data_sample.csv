@@ -1,0 +1,16 @@
+regulation_id,count,avg_severity,label,is_mc
+87303(a),363,2.15702479338843,General Maintenance,False
+87309(a),352,2.9488636363636362,Personnel Records,False
+87303(e)(2),226,2.814159292035398,Broken/Unsafe Equipment,False
+87465(h)(2),192,2.9791666666666665,Medication Self-Admin,False
+87411(a),147,2.54421768707483,Staffing Ratio,False
+87411(f),145,2.0620689655172413,Staff Training Records,False
+87465(a)(4),134,2.6417910447761193,Medication Storage,False
+87468.1(a)(2),133,2.5037593984962405,Dignity & Respect,False
+87468.2(a)(4),114,2.517543859649123,Personal Privacy,False
+87608(a)(3),113,2.3008849557522124,Dementia Activities,False
+87465(c)(2),113,2.8230088495575223,Controlled Substances,False
+87411(c)(1),111,2.081081081081081,Personal Care Competency,False
+87705(c)(5),103,2.0970873786407767,Dementia Supervision,True
+87506(a),103,2.1067961165048543,Admission Agreement,False
+87211(a)(1),96,2.0729166666666665,Physical Plant — Sanitary,False

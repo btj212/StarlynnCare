@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xhawk - Agent Readiness Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Chivo+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+    background: linear-gradient(135deg, #0a0e14 0%, #1a1f2e 50%, #0a0e14 100%);
+    color: #e6edf3; line-height: 1.6;
+    padding: 0; margin: 0;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Grid Pattern Background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(224, 122, 95, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(224, 122, 95, 0.08) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Animated gradient background glow */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 100% 60% at 50% -30%, rgba(224, 122, 95, 0.25), transparent);
+    animation: pulse-slow 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Floating orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  .orb-1 {
+    top: 25%;
+    left: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(224, 122, 95, 0.45) 0%, transparent 70%);
+    animation: float-slow 8s ease-in-out infinite;
+  }
+  
+  .orb-2 {
+    bottom: 25%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.35) 0%, transparent 70%);
+    animation: float-slow-reverse 10s ease-in-out infinite;
+  }
+
+  .container {
+    position: relative;
+    z-index: 10;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  h1 { 
+    font-family: 'Chivo Mono', monospace;
+    font-size: 2.75rem;
+    font-weight: 600; 
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #E07A5F, #22c55e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  h2 { 
+    font-family: 'Chivo Mono', monospace;
+    font-size: 1.5rem; 
+    font-weight: 600; 
+    margin: 3rem 0 1.5rem; 
+    color: #e6edf3;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  h2::before {
+    content: '';
+    width: 4px;
+    height: 1.5rem;
+    background: linear-gradient(180deg, #E07A5F, #22c55e);
+    border-radius: 2px;
+  }
+  
+  h3 { font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
+
+  .header {
+    text-align: center;
+    padding: 1rem 2rem 3rem;
+    background: transparent;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  
+  .logo-link {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    transition: transform 0.3s ease, filter 0.3s ease;
+  }
+
+  .logo-link:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 25px rgba(224, 122, 95, 0.6));
+  }
+
+  .logo-top {
+    width: 100px;
+    height: auto;
+    filter: drop-shadow(0 0 15px rgba(224, 122, 95, 0.4));
+  }
+  
+  .repo-name { 
+    color: #a8b2d1; 
+    font-size: 0.9rem; 
+    margin-bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .score-ring {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 150px; height: 150px; border-radius: 50%;
+    border: 6px solid #dc2626; 
+    background: linear-gradient(135deg, #7f1d1d 0%, rgba(22, 27, 34, 0.8) 100%);
+    margin: 1.5rem 0;
+    box-shadow: 
+      0 0 30px #dc262640,
+      0 0 60px #dc262620,
+      inset 0 2px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    animation: pulse-ring 3s ease-in-out infinite;
+  }
+  
+  .score-ring::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #dc262630 0%, transparent 70%);
+    filter: blur(20px);
+    z-index: -1;
+  }
+  
+  .score-ring .number { 
+    font-size: 3.5rem; 
+    font-weight: 700; 
+    color: #f87171;
+    font-family: 'Chivo Mono', monospace;
+    filter: drop-shadow(0 2px 8px #f8717150);
+    line-height: 1;
+  }
+  
+  .score-ring .max { 
+    font-size: 1rem; 
+    color: #8b949e;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .badge {
+    display: inline-block; 
+    padding: 0.5rem 1.25rem; 
+    border-radius: 9999px;
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, #7f1d1d 0%, rgba(22, 27, 34, 0.9) 100%);
+    color: #f87171; 
+    border: 2px solid #dc2626;
+    box-shadow: 0 4px 20px #dc262640;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+  }
+  
+  .powered-by {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    background: rgba(0, 212, 255, 0.15);
+    color: #00d4ff;
+    letter-spacing: 0.05em;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    margin-top: 0.75rem;
+  }
+
+  .score-scale-bar {
+    position: relative;
+    max-width: 600px;
+    margin: 1.5rem auto 0;
+    padding-top: 2rem;
+  }
+
+  .scale-track {
+    display: flex;
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  .scale-zone {
+    position: relative;
+    height: 100%;
+  }
+
+  .scale-zone-hostile { width: 50%; background: linear-gradient(90deg, #7f1d1d, #dc2626); }
+  .scale-zone-capable { width: 25%; background: linear-gradient(90deg, #713f12, #d97706); }
+  .scale-zone-ready   { width: 15%; background: linear-gradient(90deg, #0c4a6e, #0284c7); }
+  .scale-zone-native  { width: 10%; background: linear-gradient(90deg, #064e3b, #059669); }
+
+  .scale-labels {
+    display: flex;
+    margin-top: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: #8b949e;
+  }
+
+  .scale-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .scale-label-hostile { width: 50%; }
+  .scale-label-capable { width: 25%; }
+  .scale-label-ready   { width: 15%; }
+  .scale-label-native  { width: 10%; }
+
+  .scale-label-name {
+    font-weight: 600;
+    font-size: 0.7rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .scale-label-hostile .scale-label-name { color: #f87171; }
+  .scale-label-capable .scale-label-name { color: #fbbf24; }
+  .scale-label-ready .scale-label-name   { color: #38bdf8; }
+  .scale-label-native .scale-label-name  { color: #34d399; }
+
+  .scale-label-scope {
+    color: #6b7280;
+    font-size: 0.6rem;
+  }
+
+  .scale-marker {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+  }
+
+  .scale-marker-label {
+    font-family: 'Chivo Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+  }
+
+  .scale-marker-arrow {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+  }
+
+  .subtitle {
+    color: #a8b2d1;
+    font-size: 0.9rem;
+    max-width: 650px;
+    margin: 1.5rem auto 0;
+    line-height: 1.7;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(22, 27, 34, 0.6);
+    border: 1px solid rgba(224, 122, 95, 0.15);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+  }
+
+  .section-help {
+    background: linear-gradient(135deg, rgba(224, 122, 95, 0.08) 0%, rgba(34, 197, 94, 0.08) 100%);
+    border-left: 3px solid #E07A5F;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0 2rem;
+    color: #a8b2d1;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .section-help strong {
+    color: #E07A5F;
+    font-weight: 600;
+  }
+
+  .dimensions { display: grid; gap: 1rem; margin-top: 1rem; }
+  
+  .dim-card {
+    background: linear-gradient(135deg, rgba(22, 27, 34, 0.9) 0%, rgba(22, 27, 34, 0.7) 100%);
+    border: 1px solid rgba(224, 122, 95, 0.2);
+    border-radius: 12px; 
+    overflow: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .dim-card:hover {
+    border-color: rgba(224, 122, 95, 0.4);
+    box-shadow: 0 4px 20px rgba(224, 122, 95, 0.15);
+    transform: translateY(-2px);
+  }
+  
+  .dim-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    padding: 1.25rem; 
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  
+  .dim-header:hover { 
+    background: rgba(224, 122, 95, 0.05); 
+  }
+  
+  .dim-name { 
+    font-weight: 600;
+    font-size: 1rem;
+    color: #e6edf3;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .dim-score-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.75rem; 
+  }
+  
+  .dim-score { 
+    font-family: 'Chivo Mono', monospace; 
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #a8b2d1;
+  }
+  
+  .dim-bar { 
+    width: 120px; 
+    height: 8px; 
+    background: rgba(255,255,255,0.08); 
+    border-radius: 4px; 
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+  }
+  
+  .dim-bar-fill { 
+    height: 100%; 
+    border-radius: 4px; 
+    transition: width 0.6s ease;
+    background: linear-gradient(90deg, #E07A5F 0%, #22c55e 100%);
+    box-shadow: 0 0 10px currentColor;
+  }
+  
+  .dim-body { 
+    padding: 0 1.25rem 1.25rem; 
+    display: none; 
+    border-top: 1px solid rgba(224, 122, 95, 0.1); 
+  }
+  
+  .dim-body.open { 
+    display: block; 
+    padding-top: 1.25rem;
+    animation: slideDown 0.3s ease;
+  }
+
+  .dim-description {
+    background: linear-gradient(135deg, rgba(224, 122, 95, 0.06) 0%, rgba(34, 197, 94, 0.06) 100%);
+    border-left: 3px solid rgba(224, 122, 95, 0.4);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #a8b2d1;
+  }
+
+  .dim-description strong {
+    color: #e6edf3;
+    font-weight: 600;
+  }
+
+  .dim-description .dim-why {
+    color: #E07A5F;
+    font-weight: 600;
+  }
+
+  .dim-description code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    color: #e6edf3;
+  }
+
+  .dim-example-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .dim-example-box {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  .dim-example-box.present {
+    border: 1px solid rgba(52, 211, 153, 0.3);
+  }
+
+  .dim-example-box.missing {
+    border: 1px solid rgba(248, 113, 113, 0.3);
+  }
+
+  .dim-example-box .box-title {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .dim-example-box.present .box-title { color: #34d399; }
+  .dim-example-box.missing .box-title { color: #f87171; }
+
+  .reasoning { color: #8b949e; font-size: 0.85rem; margin-bottom: 0.75rem; }
+
+  .signal-list { list-style: none; }
+  .signal-item {
+    display: flex; align-items: flex-start; gap: 0.5rem;
+    padding: 0.35rem 0; font-size: 0.85rem;
+  }
+  .signal-found { color: #34d399; }
+  .signal-missing { color: #f87171; }
+  .signal-icon { flex-shrink: 0; margin-top: 2px; }
+  .signal-evidence { color: #8b949e; font-size: 0.75rem; margin-left: 1.25rem; font-family: monospace; }
+
+  .rec-card {
+    background: linear-gradient(135deg, rgba(22, 27, 34, 0.9) 0%, rgba(22, 27, 34, 0.7) 100%);
+    border: 1px solid rgba(224, 122, 95, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+
+  .rec-card:hover {
+    border-color: rgba(224, 122, 95, 0.4);
+    box-shadow: 0 4px 20px rgba(224, 122, 95, 0.15);
+  }
+  .rec-header {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .rec-header:hover {
+    background: rgba(224, 122, 95, 0.05);
+  }
+  .rec-summary {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #a8b2d1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rec-priority {
+    padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;
+    background: rgba(56,189,248,0.2); color: #38bdf8;
+    flex-shrink: 0;
+  }
+  .rec-priority.p1 { background: rgba(248,113,113,0.2); color: #f87171; }
+  .rec-priority.p2 { background: rgba(251,191,36,0.2); color: #fbbf24; }
+  .rec-dim { color: #8b949e; font-size: 0.75rem; flex-shrink: 0; }
+  .rec-body {
+    padding: 0 1.25rem 1.25rem;
+    display: none;
+    border-top: 1px solid rgba(224, 122, 95, 0.1);
+  }
+  .rec-body.open {
+    display: block;
+    padding-top: 1.25rem;
+    animation: slideDown 0.3s ease;
+  }
+  .rec-action { font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .rec-impact { color: #34d399; font-size: 0.8rem; }
+  .rec-example {
+    background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem;
+    font-family: monospace; font-size: 0.8rem; color: #8b949e;
+    white-space: pre-wrap;
+  }
+  .rec-path { font-family: monospace; font-size: 0.8rem; color: #E07A5F; margin-bottom: 0.25rem; }
+
+  .rec-code-refs {
+    margin-top: 0.5rem; padding: 0.5rem 0.75rem;
+    background: rgba(0,0,0,0.3); border-radius: 6px;
+    border-left: 2px solid #E07A5F;
+  }
+  .rec-refs-label { color: #8b949e; font-size: 0.75rem; margin-bottom: 0.25rem; }
+  .rec-ref { margin: 0.25rem 0; }
+  .rec-ref-file {
+    font-family: monospace; font-size: 0.8rem; color: #1AB9FF;
+  }
+  .rec-ref-snippet {
+    display: block; font-family: monospace; font-size: 0.75rem;
+    color: #6d6899; margin-top: 0.15rem; padding-left: 0.5rem;
+    border-left: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .code-insights-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem; margin: 1rem 0;
+  }
+  .insight-card {
+    background: linear-gradient(135deg, rgba(22,27,34,0.8), rgba(22,27,34,0.4));
+    border: 1px solid rgba(224,122,95,0.15); border-radius: 10px;
+    padding: 1rem; transition: border-color 0.3s;
+  }
+  .insight-card:hover { border-color: rgba(224,122,95,0.4); }
+  .insight-header {
+    display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;
+  }
+  .insight-icon { font-size: 1.1rem; }
+  .insight-label { font-weight: 600; color: #e6edf3; font-size: 0.9rem; }
+  .insight-count {
+    margin-left: auto; font-size: 0.75rem; color: #E07A5F;
+    background: rgba(224,122,95,0.15); padding: 0.15rem 0.5rem; border-radius: 10px;
+  }
+  .insight-files { list-style: none; padding: 0; }
+  .insight-files li {
+    padding: 0.3rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.8rem;
+  }
+  .insight-files li:last-child { border-bottom: none; }
+  .insight-path { font-family: monospace; color: #1AB9FF; }
+  .insight-lines { color: #8b949e; font-size: 0.75rem; margin-left: 0.5rem; }
+  .insight-snippet {
+    display: block; font-family: monospace; font-size: 0.75rem;
+    color: #6d6899; margin-top: 0.2rem; padding-left: 0.5rem;
+    border-left: 1px solid rgba(224,122,95,0.2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .insight-more { color: #8b949e; font-style: italic; font-size: 0.8rem; }
+
+  /* Deficiency cards */
+  .deficiency-card {
+    background: linear-gradient(135deg, rgba(22,27,34,0.8), rgba(22,27,34,0.4));
+    border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 0.75rem;
+    transition: border-color 0.3s;
+  }
+  .deficiency-card.critical {
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    border-left: 3px solid #f87171;
+  }
+  .deficiency-card.high {
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-left: 3px solid #fbbf24;
+  }
+  .deficiency-card.moderate {
+    border: 1px solid rgba(139, 148, 158, 0.3);
+    border-left: 3px solid #8b949e;
+  }
+  .deficiency-header {
+    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;
+  }
+  .deficiency-severity {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    padding: 0.15rem 0.5rem; border-radius: 4px;
+  }
+  .deficiency-severity.critical { background: rgba(248,113,113,0.2); color: #f87171; }
+  .deficiency-severity.high { background: rgba(251,191,36,0.2); color: #fbbf24; }
+  .deficiency-severity.moderate { background: rgba(139,148,158,0.2); color: #8b949e; }
+  .deficiency-label { font-weight: 600; color: #e6edf3; font-size: 0.95rem; }
+  .deficiency-dim { font-size: 0.75rem; color: #8b949e; margin-left: auto; }
+  .deficiency-desc { color: #a8b2d1; font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.5rem; }
+  .deficiency-quickfix {
+    font-size: 0.8rem; color: #22c55e; padding: 0.5rem 0.75rem;
+    background: rgba(34,197,94,0.08); border-radius: 6px;
+    border-left: 2px solid rgba(34,197,94,0.4);
+  }
+  .deficiency-evidence {
+    margin-top: 0.5rem; font-size: 0.75rem; color: #8b949e;
+    font-family: monospace;
+  }
+  .deficiency-evidence span { color: #1AB9FF; }
+
+  .files-section { margin-top: 2rem; }
+  .file-list { list-style: none; }
+  .file-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0; font-size: 0.85rem; font-family: monospace;
+  }
+  .file-scope {
+    padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.7rem;
+    background: rgba(224, 122, 95, 0.2); color: #E07A5F;
+  }
+
+  .section-toggle {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .section-toggle:hover {
+    opacity: 0.85;
+  }
+
+  .section-content {
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+
+  .section-content.collapsed {
+    max-height: 0 !important;
+    overflow: hidden;
+  }
+
+  .footer {
+    margin-top: 3rem; padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    text-align: center; color: #8b949e; font-size: 0.8rem;
+  }
+
+  .autonomy-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin: 1rem 0;
+    background: linear-gradient(135deg, rgba(22, 27, 34, 0.6) 0%, rgba(22, 27, 34, 0.4) 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+  
+  .autonomy-table th, .autonomy-table td {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(224, 122, 95, 0.1);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .autonomy-table td:first-child,
+  .autonomy-table td:nth-child(2) {
+    white-space: nowrap;
+  }
+  
+  .autonomy-table th { 
+    color: #a8b2d1; 
+    font-weight: 600;
+    background: rgba(224, 122, 95, 0.08);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+  
+  .autonomy-table tr {
+    transition: all 0.3s ease;
+  }
+  
+  .autonomy-table tr:hover {
+    background: rgba(224, 122, 95, 0.05);
+  }
+  
+  .current-row { 
+    background: linear-gradient(90deg, rgba(224, 122, 95, 0.15) 0%, rgba(34, 197, 94, 0.15) 100%) !important;
+    border-left: 3px solid #E07A5F;
+    font-weight: 600;
+  }
+
+  .chevron { 
+    transition: transform 0.3s ease; 
+    display: inline-block;
+    color: #E07A5F;
+    margin-right: 0.5rem;
+  }
+  
+  .chevron.open { 
+    transform: rotate(90deg); 
+  }
+  
+  /* Animations */
+  @keyframes float-slow {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(40px, -40px) scale(1.15); }
+  }
+  
+  @keyframes float-slow-reverse {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-40px, 40px) scale(1.15); }
+  }
+  
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  
+  @keyframes pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.02); opacity: 0.9; }
+  }
+  
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Animated floating orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="container">
+  <a href="https://xhawk.ai" target="_blank" rel="noopener noreferrer" class="logo-link" title="Visit XHawk">
+    <img src="https://xhawk.ai/xhawk-logo-white.png" class="logo-top" alt="XHawk Logo" />
+  </a>
+  <div class="header">
+    <h1>Coding Agent Readiness Score</h1>
+    <div class="repo-name">btj212/StarlynnCare</div>
+    <a href="https://xhawk.ai" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+      <div class="powered-by" style="cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(0, 212, 255, 0.25)'; this.style.borderColor='rgba(0, 212, 255, 0.5)';" onmouseout="this.style.background='rgba(0, 212, 255, 0.15)'; this.style.borderColor='rgba(0, 212, 255, 0.3)';">Powered by xhawk</div>
+    </a>
+  </div>
+
+  <h2>What does xhawk readiness score mean?</h2>
+  <div class="section-help">
+    Readiness Score is your <strong>Autonomy Gating</strong> score. Coding Agents work great if your source code is ready for them. Missing instructions or lack of documentation means your coding agents grep, guess, and ship unreliable code &mdash; breaking conventions they never knew existed. This report shows exactly where the gaps are.
+  </div>
+<table class="autonomy-table">
+  <thead>
+    <tr><th>Score Range</th><th>Classification</th><th>Recommended Agent Scope</th></tr>
+  </thead>
+  <tbody>
+    <tr class="current-row"><td>0 &ndash; 49</td><td>Agent Hostile</td><td>Read-only, suggestions only. Agent can review code and propose changes, but a human should write and apply all edits.</td></tr>
+    <tr class=""><td>50 &ndash; 74</td><td>Agent Capable</td><td>Single-file changes with human review. Agent can edit one file at a time &mdash; bug fixes, small features, test additions &mdash; but every change needs a human to verify before merging.</td></tr>
+    <tr class=""><td>75 &ndash; 89</td><td>Agent Ready</td><td>Multi-file refactors and feature work. Agent can make coordinated changes across files &mdash; add endpoints, update tests, refactor modules &mdash; with lighter review.</td></tr>
+    <tr class=""><td>90 &ndash; 100</td><td>Agent Native</td><td>Autonomous tasks end-to-end. Agent can pick up issues, implement features, write tests, and open PRs with minimal supervision. Trust the guardrails you&rsquo;ve built.</td></tr>
+  </tbody>
+</table>
+
+  <div class="header" style="padding-top: 1rem;">
+    <div class="score-ring">
+      <div>
+        <div class="number" style="color: #f87171;">15</div>
+      </div>
+    </div>
+    <div><span class="badge">Agent Hostile</span></div>
+    <div class="score-scale-bar">
+      <div class="scale-marker" style="left: 15%;">
+        <div class="scale-marker-label" style="background: #7f1d1d; color: #f87171; border: 1px solid #dc2626;">
+          15
+        </div>
+        <div class="scale-marker-arrow" style="border-top: 6px solid #dc2626;"></div>
+      </div>
+      <div class="scale-track">
+        <div class="scale-zone scale-zone-hostile"></div>
+        <div class="scale-zone scale-zone-capable"></div>
+        <div class="scale-zone scale-zone-ready"></div>
+        <div class="scale-zone scale-zone-native"></div>
+      </div>
+      <div class="scale-labels">
+        <div class="scale-label scale-label-hostile">
+          <span class="scale-label-name">Hostile</span>
+          <span class="scale-label-scope">0 &ndash; 49</span>
+        </div>
+        <div class="scale-label scale-label-capable">
+          <span class="scale-label-name">Capable</span>
+          <span class="scale-label-scope">50 &ndash; 74</span>
+        </div>
+        <div class="scale-label scale-label-ready">
+          <span class="scale-label-name">Ready</span>
+          <span class="scale-label-scope">75 &ndash; 89</span>
+        </div>
+        <div class="scale-label scale-label-native">
+          <span class="scale-label-name">Native</span>
+          <span class="scale-label-scope">90 &ndash; 100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <h2>Deficiencies</h2>
+  <div class="section-help">
+    <strong>What&rsquo;s missing:</strong> These are gaps in your codebase documentation that put AI agents at risk. Each deficiency represents a category of knowledge that agents need but cannot find. Fix these to prevent agents from breaking conventions, degrading performance, or introducing security vulnerabilities.
+  </div>
+  <div class="deficiency-card critical">
+    <div class="deficiency-header">
+      <span class="deficiency-severity critical">critical</span>
+      <span class="deficiency-label">No Safety Guidelines</span>
+      <span class="deficiency-dim">Negative Knowledge &mdash; 0% covered</span>
+    </div>
+    <div class="deficiency-desc">Your codebase has no documented prohibitions or anti-patterns for agents. Without explicit &quot;do not&quot; rules, agents will confidently break invariants — editing immutable files, bypassing auth checks, or refactoring safety-critical code.</div>
+    <div class="deficiency-quickfix">&rarr; Add a &quot;## Forbidden Actions&quot; section to AGENTS.md listing things agents must never do.</div>
+    
+  </div>
+<div class="deficiency-card critical">
+    <div class="deficiency-header">
+      <span class="deficiency-severity critical">critical</span>
+      <span class="deficiency-label">No Risk Zone Markers</span>
+      <span class="deficiency-dim">Risk-Aware Zones &mdash; 0% covered</span>
+    </div>
+    <div class="deficiency-desc">Security-sensitive areas (auth, billing, infrastructure) are not flagged in your guidance docs. Agents have no way to know which code requires extra caution or human review.</div>
+    <div class="deficiency-quickfix">&rarr; Add a &quot;## High-Risk Zones&quot; section listing auth, billing, and infra paths with &quot;ask before modifying&quot; rules.</div>
+    
+  </div>
+<div class="deficiency-card critical">
+    <div class="deficiency-header">
+      <span class="deficiency-severity critical">critical</span>
+      <span class="deficiency-label">No Performance Documentation</span>
+      <span class="deficiency-dim">Performance Intent &mdash; 0% covered</span>
+    </div>
+    <div class="deficiency-desc">Performance-critical paths, SLA targets, and optimization intent are undocumented. Agents will &quot;clean up&quot; hand-tuned queries, replace optimized code with idiomatic-but-slow alternatives, and degrade latency without knowing it.</div>
+    <div class="deficiency-quickfix">&rarr; Add a &quot;## Performance-Critical Paths&quot; section documenting hot paths and &quot;do not refactor&quot; zones.</div>
+    
+  </div>
+<div class="deficiency-card high">
+    <div class="deficiency-header">
+      <span class="deficiency-severity high">high</span>
+      <span class="deficiency-label">No Agent Guidance Files</span>
+      <span class="deficiency-dim">Externalized Memory &mdash; 25% covered</span>
+    </div>
+    <div class="deficiency-desc">Your codebase has little or no documented conventions, architecture decisions, or agent-specific guidance. Agents guess at folder structure, naming, and patterns — every session is a coin flip.</div>
+    <div class="deficiency-quickfix">&rarr; Create a root AGENTS.md with your project structure, conventions, and key architecture decisions.</div>
+    
+  </div>
+<div class="deficiency-card high">
+    <div class="deficiency-header">
+      <span class="deficiency-severity high">high</span>
+      <span class="deficiency-label">No Scoped Context</span>
+      <span class="deficiency-dim">Context Locality &mdash; 33% covered</span>
+    </div>
+    <div class="deficiency-desc">All guidance is concentrated in root-level files (or missing entirely). Agents editing code in subdirectories cannot find relevant local rules — they either miss constraints or wade through a monolithic root doc.</div>
+    <div class="deficiency-quickfix">&rarr; Add AGENTS.md files in key subdirectories (src/api/, src/auth/) with directory-specific rules.</div>
+    
+  </div>
+
+
+  <h2 class="section-toggle" data-section="dims"><span class="chevron open">&#9654;</span> Dimension Breakdown</h2>
+  <div class="section-content" id="section-dims">
+  <div class="section-help">
+    <strong>What this measures:</strong> Seven dimensions that determine whether AI coding agents can work effectively in your codebase. Each dimension checks for a specific type of documented knowledge that agents need but can't infer from code alone. Click each dimension to see what was found and what's missing.
+  </div>
+  <div class="dimensions">
+<div class="dim-card">
+  <div class="dim-header">
+    <div class="dim-name"><span class="chevron">&#9654;</span> Externalized Memory</div>
+    <div class="dim-score-row">
+      <span class="dim-score">5 / 20</span>
+      <div class="dim-bar"><div class="dim-bar-fill" style="width:25%; background:#f87171"></div></div>
+    </div>
+  </div>
+  <div class="dim-body">
+    <div class="dim-description">
+      <strong>Do you have written-down rules and conventions that an AI agent can read?</strong><br><br>
+      <span class="dim-why">Why this matters:</span> Agents don't know your team's conventions unless you write them down. Without files like <code>AGENTS.md</code> or <code>ARCHITECTURE.md</code>, every agent session starts from zero &mdash; it has to guess your folder structure, naming conventions, and architectural decisions from code alone.
+      <div class="dim-example-grid">
+        <div class="dim-example-box present">
+          <div class="box-title">What "present" looks like</div>
+          Your root <code>AGENTS.md</code> says things like:<br><code>"All API handlers go in src/handlers/. Use camelCase for functions, PascalCase for types. We use the repository pattern &mdash; services never talk to the database directly."</code>
+        </div>
+        <div class="dim-example-box missing">
+          <div class="box-title">What "missing" looks like</div>
+          You ask the agent to "add a new endpoint." It creates the file in <code>src/utils/</code> because it guessed wrong about your folder structure. It uses snake_case because it saw one old file that used it. Every session is a coin flip.
+        </div>
+      </div>
+    </div>
+    <p class="reasoning">Found: Substantive guidance content. Missing: Root AGENTS.md, Folder-level agent docs, Supporting guidance files. Agents will need to infer most conventions from code patterns.</p>
+    <ul class="signal-list">
+      
+        <li class="signal-item signal-found">
+          <span class="signal-icon">&#10003;</span>
+          <span>Substantive guidance content (+5)</span>
+        </li>
+        <div class="signal-evidence">README.md (62 lines)</div>
+      
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Root AGENTS.md (+5 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Folder-level agent docs (+5 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Supporting guidance files (+5 available)</span>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+<div class="dim-card">
+  <div class="dim-header">
+    <div class="dim-name"><span class="chevron">&#9654;</span> Context Locality</div>
+    <div class="dim-score-row">
+      <span class="dim-score">5 / 15</span>
+      <div class="dim-bar"><div class="dim-bar-fill" style="width:33.33333333333333%; background:#f87171"></div></div>
+    </div>
+  </div>
+  <div class="dim-body">
+    <div class="dim-description">
+      <strong>Is your documentation placed near the code it describes, or is everything in one giant file at the root?</strong><br><br>
+      <span class="dim-why">Why this matters:</span> A single huge doc at the root is like giving a new hire the entire company wiki on day one. Agents work best when context is scoped &mdash; a short <code>AGENTS.md</code> next to the code it describes is more effective than burying that same rule deep inside a giant root-level document.
+      <div class="dim-example-grid">
+        <div class="dim-example-box present">
+          <div class="box-title">What "present" looks like</div>
+          Root <code>AGENTS.md</code> has global rules. Then <code>src/api/AGENTS.md</code> says <code>"All endpoints return { data, error } format. Use middleware for auth &mdash; never check tokens in handlers."</code> The agent finds the right rules for the code it's editing.
+        </div>
+        <div class="dim-example-box missing">
+          <div class="box-title">What "missing" looks like</div>
+          The agent is editing a file in <code>src/api/</code> and has to scan through a 1,500-line root document to figure out if there are any API-specific conventions. It misses the rule on line 847 and writes the endpoint wrong.
+        </div>
+      </div>
+    </div>
+    <p class="reasoning">Minimal local context. Most guidance is global, forcing agents to apply broad rules to specific code.</p>
+    <ul class="signal-list">
+      
+        <li class="signal-item signal-found">
+          <span class="signal-icon">&#10003;</span>
+          <span>No monolithic docs (+5)</span>
+        </li>
+        
+      
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Local context files (+5 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Multi-scope coverage (+5 available)</span>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+<div class="dim-card">
+  <div class="dim-header">
+    <div class="dim-name"><span class="chevron">&#9654;</span> Negative Knowledge</div>
+    <div class="dim-score-row">
+      <span class="dim-score">0 / 20</span>
+      <div class="dim-bar"><div class="dim-bar-fill" style="width:0%; background:#f87171"></div></div>
+    </div>
+  </div>
+  <div class="dim-body">
+    <div class="dim-description">
+      <strong>Have you documented what the agent should NOT do?</strong><br><br>
+      <span class="dim-why">Why this matters:</span> Agents fail more from doing the wrong thing than from not doing the right thing. Telling an agent "build a REST API" without saying "NEVER do X" means it will confidently do X if it technically works. Prohibitions are your strongest guardrails.
+      <div class="dim-example-grid">
+        <div class="dim-example-box present">
+          <div class="box-title">What "present" looks like</div>
+          Your docs say:<br><code>"NEVER modify migration files after they're merged to main."</code><br><code>"Do NOT import from internal packages &mdash; use the public API."</code><br><code>"Requires human review: any changes to the auth middleware."</code>
+        </div>
+        <div class="dim-example-box missing">
+          <div class="box-title">What "missing" looks like</div>
+          You ask the agent to "fix the user query." It edits a migration file that's already been applied to production, breaking the database. Nothing told it those files are immutable after deploy.
+        </div>
+      </div>
+    </div>
+    <p class="reasoning">No explicit prohibitions found. This is the highest-risk gap: agents fail more often from missing prohibitions than missing instructions. Without &quot;do not&quot; rules, agents will confidently break invariants.</p>
+    <ul class="signal-list">
+      
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Explicit prohibitions (+7 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Forbidden patterns documented (+7 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Human review gates (+6 available)</span>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+<div class="dim-card">
+  <div class="dim-header">
+    <div class="dim-name"><span class="chevron">&#9654;</span> Risk-Aware Zones</div>
+    <div class="dim-score-row">
+      <span class="dim-score">0 / 20</span>
+      <div class="dim-bar"><div class="dim-bar-fill" style="width:0%; background:#f87171"></div></div>
+    </div>
+  </div>
+  <div class="dim-body">
+    <div class="dim-description">
+      <strong>Have you flagged which parts of the codebase are dangerous to touch without extra caution?</strong><br><br>
+      <span class="dim-why">Why this matters:</span> Not all code is equal. Changing a button color is low-risk; changing authentication logic could lock out every user. Agents treat all code the same unless you tell them which areas are security-sensitive, handle money, or need human review.
+      <div class="dim-example-grid">
+        <div class="dim-example-box present">
+          <div class="box-title">What "present" looks like</div>
+          Your docs say:<br><code>"src/auth/ &mdash; Security-critical. Changes require human review."</code><br><code>"src/billing/ &mdash; Handles real payments. Never modify charge logic without approval."</code><br><code>"Confirm before changing: CI configs, env vars, deploy scripts."</code>
+        </div>
+        <div class="dim-example-box missing">
+          <div class="box-title">What "missing" looks like</div>
+          You ask the agent to "clean up the login flow." It simplifies the token validation logic to make it "more readable," accidentally removing a critical expiry check. It had no idea this was high-risk code.
+        </div>
+      </div>
+    </div>
+    <p class="reasoning">No risk boundaries defined. The agent treats all code equally - auth changes get the same caution as CSS tweaks. This is dangerous for codebases with security-sensitive areas.</p>
+    <ul class="signal-list">
+      
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Security-sensitive areas flagged (+7 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>PII boundaries documented (+7 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Execution gates defined (+6 available)</span>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+<div class="dim-card">
+  <div class="dim-header">
+    <div class="dim-name"><span class="chevron">&#9654;</span> Performance Intent</div>
+    <div class="dim-score-row">
+      <span class="dim-score">0 / 15</span>
+      <div class="dim-bar"><div class="dim-bar-fill" style="width:0%; background:#f87171"></div></div>
+    </div>
+  </div>
+  <div class="dim-body">
+    <div class="dim-description">
+      <strong>Have you marked code that looks messy but is intentionally optimized for speed?</strong><br><br>
+      <span class="dim-why">Why this matters:</span> Agents love to "clean up" code. If you have a hand-optimized function that looks ugly but is fast on purpose, an agent will happily refactor it into a clean, readable version that runs much slower. Without markers, agents can't tell intentional optimization from tech debt.
+      <div class="dim-example-grid">
+        <div class="dim-example-box present">
+          <div class="box-title">What "present" looks like</div>
+          Your docs say:<br><code>"The search indexer uses raw SQL intentionally &mdash; do not refactor to the ORM. This is our hot path at P99 &lt; 50ms."</code><br><code>"The cache layer is denormalized by design. Do not 'normalize' it."</code>
+        </div>
+        <div class="dim-example-box missing">
+          <div class="box-title">What "missing" looks like</div>
+          You ask the agent to "refactor the data layer." It replaces a hand-tuned SQL query with three chained ORM calls because they're "cleaner." The endpoint goes from 50ms to 800ms. Your users notice.
+        </div>
+      </div>
+    </div>
+    <p class="reasoning">No performance intent documented. Agents will refactor &quot;ugly but fast&quot; code into &quot;clean but slow&quot; code because they cannot distinguish intentional optimization from tech debt.</p>
+    <ul class="signal-list">
+      
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Hot paths identified (+5 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Known bottlenecks documented (+5 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Optimization intent documented (+5 available)</span>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+<div class="dim-card">
+  <div class="dim-header">
+    <div class="dim-name"><span class="chevron">&#9654;</span> Cognitive Load</div>
+    <div class="dim-score-row">
+      <span class="dim-score">6 / 10</span>
+      <div class="dim-bar"><div class="dim-bar-fill" style="width:60%; background:#fbbf24"></div></div>
+    </div>
+  </div>
+  <div class="dim-body">
+    <div class="dim-description">
+      <strong>Is your documentation concise and focused, or is there so much that it becomes noise?</strong><br><br>
+      <span class="dim-why">Why this matters:</span> More docs doesn't mean better. If guidance files are too long or too numerous, the agent's context window fills up with irrelevant information and it starts ignoring or misapplying rules. A focused 2-page guide beats a 100-page manual nobody reads.
+      <div class="dim-example-grid">
+        <div class="dim-example-box present">
+          <div class="box-title">What "present" looks like</div>
+          You have 8 guidance files, each under 200 lines. The root <code>AGENTS.md</code> covers the big picture. Subdirectory files cover local rules. No content is repeated between files. Every line is something the agent needs to know.
+        </div>
+        <div class="dim-example-box missing">
+          <div class="box-title">What "missing" looks like</div>
+          Your root <code>AGENTS.md</code> is 2,000 lines long with the entire project history, meeting notes, and duplicated content. The agent's context fills up with noise, and it misses the "NEVER modify migrations" rule on line 1,847.
+        </div>
+      </div>
+    </div>
+    <p class="reasoning">Some noise in agent context. Consider trimming long files and removing duplication.</p>
+    <ul class="signal-list">
+      
+        <li class="signal-item signal-found">
+          <span class="signal-icon">&#10003;</span>
+          <span>Minimal duplication (+3)</span>
+        </li>
+        <div class="signal-evidence">1 files, 62 total lines, 62 avg lines</div>
+      
+        <li class="signal-item signal-found">
+          <span class="signal-icon">&#10003;</span>
+          <span>Focused guidance set (+3)</span>
+        </li>
+        <div class="signal-evidence">1 guidance files found</div>
+      
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Concise guidance files (+4 available)</span>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+<div class="dim-card">
+  <div class="dim-header">
+    <div class="dim-name"><span class="chevron">&#9654;</span> Agent Adoption</div>
+    <div class="dim-score-row">
+      <span class="dim-score">0 / 5</span>
+      <div class="dim-bar"><div class="dim-bar-fill" style="width:0%; background:#f87171"></div></div>
+    </div>
+  </div>
+  <div class="dim-body">
+    <div class="dim-description">
+      <strong>Are AI coding agents actually using your guidance files in practice?</strong><br><br>
+      <span class="dim-why">Why this matters:</span> Having guidance docs is only half the story. This dimension checks whether agents on your machine have active sessions for this repo and whether those sessions reference your guidance files. It's the difference between "docs exist" and "docs are being used."
+      <div class="dim-example-grid">
+        <div class="dim-example-box present">
+          <div class="box-title">What "present" looks like</div>
+          Claude Code has 45 sessions for this repo, 12 of which reference <code>AGENTS.md</code> or <code>CLAUDE.md</code>. Gemini CLI has 7 sessions with 2 referencing guidance files. Your docs are actively consumed by multiple agents.
+        </div>
+        <div class="dim-example-box missing">
+          <div class="box-title">What "missing" looks like</div>
+          You have coding agents installed but zero sessions for this repo, or sessions never reference your guidance files. The docs may exist but agents aren't reading them &mdash; check that file paths are discoverable.
+        </div>
+      </div>
+    </div>
+    <p class="reasoning">1 agent(s) installed (Claude Code). No sessions found for this repo — agents may not have been used here yet.</p>
+    <ul class="signal-list">
+      
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Active agent usage (+2 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Guidance files referenced (+2 available)</span>
+        </li>
+      
+        <li class="signal-item signal-missing">
+          <span class="signal-icon">&#10007;</span>
+          <span>Multi-agent coverage (+1 available)</span>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+  </div>
+  </div>
+
+
+
+<h2 class="section-toggle" data-section="agents"><span class="chevron open">&#9654;</span> Agent Discovery</h2>
+  <div class="section-content" id="section-agents">
+    <div class="section-help">
+    <strong>Local coding agents detected:</strong> We scanned your machine for installed AI coding agents and checked their session history for this repository. This shows whether agents are actively using your guidance files.
+  </div>
+  <table class="autonomy-table">
+    <thead>
+      <tr><th>Agent</th><th>Status</th><th>Sessions</th><th>Guidance Usage</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+      <td style="font-weight: 600;">Claude Code</td>
+      <td><span style="color: #34d399;">&#10003; Installed</span> <span style="color: #8b949e;">(2.1.114 (Claude Code))</span></td>
+      <td>No sessions for this repo</td>
+      <td>&mdash;</td>
+    </tr>
+<tr>
+      <td style="font-weight: 600;">Codex</td>
+      <td><span style="color: #8b949e;">Not installed</span></td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+    </tr>
+<tr>
+      <td style="font-weight: 600;">Gemini CLI</td>
+      <td><span style="color: #8b949e;">Not installed</span></td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+    </tr>
+<tr>
+      <td style="font-weight: 600;">Cursor</td>
+      <td><span style="color: #8b949e;">Not installed</span></td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+    </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2 class="section-toggle" data-section="recs"><span class="chevron open">&#9654;</span> Recommendations</h2>
+  <div class="section-content" id="section-recs">
+    <div class="section-help">
+      <strong>How to improve:</strong> Prioritized actions to boost your agent readiness score. Each recommendation references actual code in your repository. Click any item to expand details.
+    </div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p1">P1</span>
+    <span class="rec-dim">Negative Knowledge</span>
+    <span class="rec-summary">Add &quot;Do NOT&quot; rules to AGENTS.md files listing things agents must never do.</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Add &quot;Do NOT&quot; rules to AGENTS.md files listing things agents must never do.</p>
+    
+    <p class="rec-impact">+7 points</p>
+    
+    <div class="rec-example">## Forbidden Actions
+- Do NOT modify the database migration files after they&#39;ve been applied
+- NEVER bypass authentication middleware
+- Do NOT change API response shapes without versioning</div>
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p1">P1</span>
+    <span class="rec-dim">Negative Knowledge</span>
+    <span class="rec-summary">Document anti-patterns and common mistakes agents should avoid.</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Document anti-patterns and common mistakes agents should avoid.</p>
+    
+    <p class="rec-impact">+7 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p1">P1</span>
+    <span class="rec-dim">Risk-Aware Zones</span>
+    <span class="rec-summary">Flag auth, billing, and infrastructure code as high-risk in guidance docs.</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Flag auth, billing, and infrastructure code as high-risk in guidance docs.</p>
+    
+    <p class="rec-impact">+7 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p1">P1</span>
+    <span class="rec-dim">Risk-Aware Zones</span>
+    <span class="rec-summary">Document where personal data is handled and what compliance rules apply.</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Document where personal data is handled and what compliance rules apply.</p>
+    
+    <p class="rec-impact">+7 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Externalized Memory</span>
+    <span class="rec-summary">Create a root AGENTS.md file with codebase conventions, architecture decisions, ...</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Create a root AGENTS.md file with codebase conventions, architecture decisions, and agent-specific guidance.</p>
+    <p class="rec-path">AGENTS.md</p>
+    <p class="rec-impact">+5 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Externalized Memory</span>
+    <span class="rec-summary">Add AGENTS.md files in key directories (src/api/, src/auth/, etc.) with scoped r...</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Add AGENTS.md files in key directories (src/api/, src/auth/, etc.) with scoped rules.</p>
+    <p class="rec-path">src/AGENTS.md</p>
+    <p class="rec-impact">+5 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Externalized Memory</span>
+    <span class="rec-summary">Add a CLAUDE.md, .cursorrules, or ARCHITECTURE.md with tool-specific or architec...</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Add a CLAUDE.md, .cursorrules, or ARCHITECTURE.md with tool-specific or architectural guidance.</p>
+    <p class="rec-path">ARCHITECTURE.md</p>
+    <p class="rec-impact">+5 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Context Locality</span>
+    <span class="rec-summary">Create folder-level AGENTS.md files near the code they describe, rather than put...</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Create folder-level AGENTS.md files near the code they describe, rather than putting everything in the root.</p>
+    
+    <p class="rec-impact">+5 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Context Locality</span>
+    <span class="rec-summary">Add guidance files at multiple directory levels to enable hierarchical context r...</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Add guidance files at multiple directory levels to enable hierarchical context resolution.</p>
+    
+    <p class="rec-impact">+5 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Negative Knowledge</span>
+    <span class="rec-summary">Mark areas where agents should ask for human review before making changes.</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Mark areas where agents should ask for human review before making changes.</p>
+    
+    <p class="rec-impact">+6 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Risk-Aware Zones</span>
+    <span class="rec-summary">Add &quot;ask before acting&quot; rules for high-impact areas.</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Add &quot;ask before acting&quot; rules for high-impact areas.</p>
+    
+    <p class="rec-impact">+6 points</p>
+    
+    <div class="rec-example">## Human Review Required
+- Changes to /src/auth/ require human review
+- Billing logic changes: ask before modifying
+- Infrastructure configs: confirm with team lead</div>
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Performance Intent</span>
+    <span class="rec-summary">Document performance-critical code paths so agents do not inadvertently degrade ...</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Document performance-critical code paths so agents do not inadvertently degrade them.</p>
+    
+    <p class="rec-impact">+5 points</p>
+    
+    <div class="rec-example">## Performance-Critical Paths
+- /api/search: P99 &lt; 100ms, do not add blocking calls
+- Database query builder: intentionally optimized, do not refactor
+- WebSocket handler: high-throughput, avoid allocations in hot loop</div>
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Performance Intent</span>
+    <span class="rec-summary">Document known bottlenecks, SLA requirements, and performance constraints.</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Document known bottlenecks, SLA requirements, and performance constraints.</p>
+    
+    <p class="rec-impact">+5 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p2">P2</span>
+    <span class="rec-dim">Performance Intent</span>
+    <span class="rec-summary">Add &quot;intentionally optimized - do not refactor&quot; notes to perf-critical code guid...</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Add &quot;intentionally optimized - do not refactor&quot; notes to perf-critical code guidance.</p>
+    
+    <p class="rec-impact">+5 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p3">P3</span>
+    <span class="rec-dim">Cognitive Load</span>
+    <span class="rec-summary">Trim guidance files to under 500 lines. Move details to local files.</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Trim guidance files to under 500 lines. Move details to local files.</p>
+    
+    <p class="rec-impact">+4 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p3">P3</span>
+    <span class="rec-dim">Agent Adoption</span>
+    <span class="rec-summary">Improve Active agent usage for agent_adoption</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Improve Active agent usage for agent_adoption</p>
+    
+    <p class="rec-impact">+2 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p3">P3</span>
+    <span class="rec-dim">Agent Adoption</span>
+    <span class="rec-summary">Improve Guidance files referenced for agent_adoption</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Improve Guidance files referenced for agent_adoption</p>
+    
+    <p class="rec-impact">+2 points</p>
+    
+    
+  </div>
+</div>
+<div class="rec-card">
+  <div class="rec-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.chevron').classList.toggle('open');">
+    <span class="chevron">&#9654;</span>
+    <span class="rec-priority p3">P3</span>
+    <span class="rec-dim">Agent Adoption</span>
+    <span class="rec-summary">Improve Multi-agent coverage for agent_adoption</span>
+  </div>
+  <div class="rec-body">
+    <p class="rec-action">Improve Multi-agent coverage for agent_adoption</p>
+    
+    <p class="rec-impact">+1 points</p>
+    
+    
+  </div>
+</div>
+  </div>
+
+
+  <div class="files-section">
+    <h2 class="section-toggle" data-section="files"><span class="chevron open">&#9654;</span> Guidance Files Found</h2>
+    <div class="section-content" id="section-files">
+      <div class="section-help">
+        <strong>Documentation discovered:</strong> These files contain agent guidance, architecture docs, and context that was analyzed for your score. Global files affect all code, while local files provide scoped context.
+      </div>
+      <ul class="file-list">
+        
+          <li class="file-item">
+            <span class="file-scope">global</span>
+            README.md
+            <span style="color:#8b949e">(62 lines)</span>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+  <!-- CTA Section -->
+  <div style="
+    margin: 3rem 0;
+    padding: 1.25rem 1.5rem;
+    background: transparent;
+    border: 1px solid rgba(224, 122, 95, 0.2);
+    border-radius: 10px;
+    text-align: center;
+  ">
+    <p style="
+      color: #a8b2d1;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 0.75rem;
+    ">
+      Want to improve your score? XHawk auto-generates the guidance files your agents need.
+    </p>
+    <a href="https://xhawk.ai" target="_blank" rel="noopener noreferrer" style="
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      background: linear-gradient(135deg, #E07A5F, #22c55e);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.3s ease;
+    " onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
+      Try XHawk Context Engine &rarr;
+    </a>
+  </div>
+
+  <div class="footer">
+    <p style="font-family: 'JetBrains Mono', monospace;">Generated 4/20/2026, 6:23:55 PM &middot; Powered by <a href="https://xhawk.ai" target="_blank" rel="noopener noreferrer" style="color: #E07A5F; font-weight: 600; text-decoration: none; transition: color 0.3s ease;" onmouseover="this.style.color='#22c55e';" onmouseout="this.style.color='#E07A5F';">xhawk</a></p>
+    <p style="margin-top: 1rem; font-style: italic; color: #a8b2d1; line-height: 1.6; font-family: 'JetBrains Mono', monospace;">
+      "Agent readiness measures how much of your team's engineering judgment<br>
+      has been made explicit, scoped, and machine-readable."
+    </p>
+  </div>
+</div>
+
+<script>
+// Toggle dimension card expansion
+document.querySelectorAll('.dim-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const body = header.nextElementSibling;
+    const chevron = header.querySelector('.chevron');
+    body.classList.toggle('open');
+    chevron.classList.toggle('open');
+  });
+});
+
+// Toggle collapsible sections
+document.querySelectorAll('.section-toggle').forEach(toggle => {
+  const sectionId = toggle.getAttribute('data-section');
+  const content = document.getElementById('section-' + sectionId);
+  if (!content) return;
+  toggle.addEventListener('click', () => {
+    const chevron = toggle.querySelector('.chevron');
+    content.classList.toggle('collapsed');
+    chevron.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>

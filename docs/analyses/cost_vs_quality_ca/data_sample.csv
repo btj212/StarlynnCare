@@ -1,0 +1,485 @@
+name,city,county,county_median_price,severity_index,beds,operator_name
+Elisabeth Care Home,Pleasant Hill,Contra Costa,6800,23.833333333333332,6,Samuel D'autruche Inc.
+"Above & Beyond Rcfe, Inc.",Hayward,Contra Costa,6800,18.333333333333332,6,"Above & Beyond Rcfe, Inc."
+Bluegarden Care,San Ramon,Contra Costa,6800,16.666666666666668,6,Bluegarden Care Llc
+Bluemeadow Care,San Ramon,Contra Costa,6800,16.166666666666668,6,"Bluemeadow Care, Llc"
+La Concepcion Residential Care Home,Fremont,Contra Costa,6800,16.0,6,"Concepcion, Cristina"
+George Anne Home,San Mateo,San Mateo,7800,15.833333333333334,6,"Gong, Peter"
+Villa Board and Care Home,Rodeo,Contra Costa,6800,15.333333333333334,6,"Villa, Daniel D."
+Graces Home,Anaheim,Riverside,5200,15.0,6,Ngoc Mai
+"Roundhill Care Homes, Inc.",Alamo,Contra Costa,6800,15.0,6,"Roundhill Care Homes, Inc."
+Opal Care Llc,Oakland,Alameda,7200,13.6,15,Opal Care Llc
+St Joseph Senior Care,Newark,Contra Costa,6800,12.333333333333334,6,Zenaida C Bautista
+Mary's Manor,Fremont,Contra Costa,6800,11.833333333333334,6,"Sunderraj, Mary"
+California Mentor-marineview Home,San Leandro,Contra Costa,6800,11.75,4,"National Mentor Healthcare, Llc"
+Heart and Soul Communities Ii,San Leandro,Contra Costa,6800,11.333333333333334,6,Ericka Tillis
+Vanessa Care Home Ii,San Mateo,San Mateo,7800,11.166666666666666,6,Rosita Nicolas and Ida Galati
+A & P Care Home for Seniors,Fremont,Contra Costa,6800,10.666666666666666,6,"A & P Joint Ventures, Inc."
+Merisol Care,Fremont,Contra Costa,6800,10.5,6,"Mari, Antonia"
+St. Lourdes Home,Hayward,Contra Costa,6800,10.5,6,"Balintona, Justino G."
+Good Shepherd of Danville,Danville,Contra Costa,6800,9.833333333333334,6,"Senior Legacy Health Care Services, Inc"
+Montgomery Springs Manor,Hayward,Contra Costa,6800,9.733333333333333,15,"Ltp Horizons, Llc"
+Hartnell Home Care,Union City,Contra Costa,6800,9.666666666666666,6,"Sandajan, Maria Luz L."
+Araville Residential Care Home Ii,San Bruno,San Francisco,8200,9.666666666666666,6,"Paniza, Dorie & Lamberto"
+Elle's Home,Hayward,Contra Costa,6800,9.333333333333334,6,Elle's Home Llc
+St. Therese Care Home Ii,Union City,Contra Costa,6800,9.166666666666666,6,St. Therese Hope Corp Dba St. Therese Care Home Ii
+Ahau Boarding Care Home,San Bruno,San Francisco,8200,9.0,5,"Latu, Temaleti T."
+Sandhill Assisted Living Llc,Menlo Park,San Francisco,8200,9.0,6,Sandhill Assisted Living Llc
+Mori Manor,San Leandro,Contra Costa,6800,8.857142857142858,14,"Mori Manor, Llc"
+K & J Residential Care Home,Fremont,Contra Costa,6800,8.666666666666666,6,"Liang, Ksai"
+Charitys Residence,Oakland,Alameda,7200,8.666666666666666,6,Caridad O. Aquino
+Always Tlc,Foster City,San Mateo,7800,8.333333333333334,6,Tomas L. Consunji & Christine L. Consunji
+Grace Home Care - Lloyd,Livermore,Contra Costa,6800,8.166666666666666,6,Del Rosario-fajardo Corporation
+Reliez Valley Care Home,Martinez,Contra Costa,6800,8.166666666666666,6,Jmel Corporation Dba Reliez Valley Care Home
+Tri City Care Home,Union City,Contra Costa,6800,8.166666666666666,6,"Bvr, Inc."
+New Rivershore Care Home,Bay Point,Contra Costa,6800,8.166666666666666,6,"Balancio, Aurora"
+C & L Home for the Elderly,Union City,Contra Costa,6800,7.833333333333333,6,Mimj Corporation
+Alamo Care Home,Alamo,Contra Costa,6800,7.666666666666667,6,Alamo Care Home Llc
+Sunshine Care Home Facility Llc,San Bruno,San Francisco,8200,7.666666666666667,6,Sunshine Care Home Facility Llc
+Carewell Manor,Anaheim,Riverside,5200,7.5,6,"Wilson, Carol R."
+C & R Home for the Elderly,Union City,Contra Costa,6800,7.333333333333333,6,"San Miguel, Precilla & Romeo"
+West Valley Care Home,Campbell,Santa Clara,7500,7.166666666666667,6,"Zhang, Biao"
+Colonial Acres Residential Care Home,Hayward,Contra Costa,6800,7.15,20,"Olivarez, John Ronald"
+California Sunshine Rcfe,Clayton,Contra Costa,6800,7.0,6,"Sylvia Usa, Llc"
+Loving Hands Care Home Llc,Rodeo,Contra Costa,6800,6.833333333333333,6,Loving Hands Care Home Llc
+Merisol Care Home,Union City,Contra Costa,6800,6.666666666666667,6,"Mari, Antonia B & Bacani, Soledad F"
+Hrs Care Home,Livermore,Contra Costa,6800,6.666666666666667,6,"De Luna, Diosdado"
+Harmony Homes Llc,Union City,Contra Costa,6800,6.666666666666667,6,Harmony Homes Llc
+Carnelian Villas,Anaheim,Riverside,5200,6.666666666666667,6,Carnelian Villas Llc
+Galicia's Tulip Care Home #2,Hayward,Contra Costa,6800,6.5,6,"Galicia, Rolando & Consuelo"
+Tri City Care Home Ii,Fremont,Contra Costa,6800,6.333333333333333,6,"Bvr, Inc."
+Shannen Guest Home,Livermore,Contra Costa,6800,6.333333333333333,6,"De Luna, Diosdado"
+Ageway Boarding Care #3,Union City,Contra Costa,6800,6.333333333333333,6,Ageway Senior Care
+Cordial Care Home,Pleasant Hill,Contra Costa,6800,5.833333333333333,6,Cordial Care Home Inc
+Begonia Residential Care Home,Union City,Contra Costa,6800,5.833333333333333,6,"Bolloso, Jovita"
+Acacia Guest Home-anaheim,Anaheim,Riverside,5200,5.666666666666667,6,Acacia Guest Home Llc
+"Old Oak Golden Villa, Llc",Livermore,Contra Costa,6800,5.666666666666667,6,"Old Oak Golden Villa, Llc"
+Boyd Senior Care Home,Pleasant Hill,Contra Costa,6800,5.666666666666667,6,"Perdiguerra, Lilia"
+Common Destiny,Fremont,Contra Costa,6800,5.5,6,"Common Destiny, Llc"
+Maureen House,Pleasant Hill,Contra Costa,6800,5.5,6,Our Families for Senior Inc.
+Sunrise Private Care,Livermore,Contra Costa,6800,5.5,6,"Nagy, Levente"
+Britta Care,Anaheim,Riverside,5200,5.333333333333333,6,Advanced Care Llc
+Merisol Care Home,Union City,Contra Costa,6800,5.333333333333333,6,"Mari, Antonia B & Bacani, Soledad F"
+Muriel's Residential Facility,Fremont,Contra Costa,6800,5.166666666666667,6,"Jenkins, Irene Muriel & Arthur Russell"
+A Gabriela's Villa-livermore,Livermore,Contra Costa,6800,5.166666666666667,6,"C.j.l. Joint Ventures, Inc."
+Pleasant Hill Villa Home Care,Pleasant Hill,Contra Costa,6800,5.0,6,Pleasant Hill Villa Home Care
+Abigail's Guest Home,Pleasanton,Contra Costa,6800,5.0,6,"Jaakk, Inc."
+Sunvalley Residential Care Home,Pleasant Hill,Contra Costa,6800,5.0,6,"Sunvalley Residential Care Home, Inc."
+Valle Verde Care Home Iii,Pleasanton,Contra Costa,6800,4.666666666666667,6,Jgv Group. Inc.
+Ava Bella Care Home,Union City,Contra Costa,6800,4.5,6,Avabella Care Home Llc
+Angel Comfort Care 2,Anaheim,Riverside,5200,4.333333333333333,6,Angel Comfort Care Inc
+Royal Colony View Place,Hayward,Contra Costa,6800,4.25,8,"Royal Colony View Place, Llc"
+Care Celine,Anaheim,Riverside,5200,4.166666666666667,6,Celaron Manors Llc
+Abigail's Guest Home,San Ramon,Contra Costa,6800,4.0,6,"Jaakk, Inc."
+Amistad Assisted Living and Memory Care Home,Corona,Riverside,5200,4.0,6,Perpetual Inspirations
+Olympic Residential Care Home,Martinez,Contra Costa,6800,4.0,6,"Gozun, Conchita Q."
+Gonzales Home,San Francisco,San Francisco,8200,4.0,6,"Gonzales, Rogelio & Prosperidad"
+Casa Pastel Care Home,Mountain View,San Francisco,8200,4.0,6,"Zhao, Ping Jing"
+Hidden Lane Villa,Los Altos,San Francisco,8200,4.0,6,"Carr, Theresa"
+Heavenly Care Home,Newark,Contra Costa,6800,3.6666666666666665,6,Heavenly Care Home Llc
+Sandhill Assisted Living Llc,Menlo Park,San Francisco,8200,3.6666666666666665,6,Sandhill Assisted Living Llc
+Sweet Care Home in Gilroy,Gilroy,Santa Clara,7500,3.5,6,Sweet Care Llc
+Portola Place,San Mateo,San Mateo,7800,3.5,6,"Atienza, Armand"
+Pacaldo Llc,San Bruno,San Francisco,8200,3.5,6,Pacaldo Llc
+Peninsula Village,San Mateo,San Mateo,7800,3.3333333333333335,6,"S.f. Sun Care Group, Llc"
+"Oakley Assisted Living Ii , Llc",Oakley,Contra Costa,6800,3.1666666666666665,6,Oakley Assisted Living Ii Llc
+Victoria Hills Assisted Living and Memory Care,Riverside,Orange,6000,3.0,6,Alara Health Services Inc.
+Lafayette Gardens,Lafayette,Contra Costa,6800,3.0,6,Saxena Family Llc
+Kennedy Guest Home,Livermore,Contra Costa,6800,3.0,6,"Kennedy Guest Home, Llc"
+Continuance Care Home Llc,Hayward,Contra Costa,6800,3.0,16,Continuance Care Home Llc
+Muriel's Residential Facility Ii,Fremont,Contra Costa,6800,2.8333333333333335,6,Irene & Arthur Jenkins
+Emerald Home Care,Dublin,Contra Costa,6800,2.8333333333333335,6,Emerald Home Care
+Stonehedge Guest Home,Pleasant Hill,Contra Costa,6800,2.8333333333333335,6,Stonehedge Llc
+B. Ruiz Carehome 2,Oakley,Contra Costa,6800,2.8333333333333335,6,B Ruiz Care Home Inc
+Olivia's Care Home Ii,San Mateo,San Mateo,7800,2.8333333333333335,6,Primecare Llc
+"Dysico Care Home, Rcfe",Pleasant Hill,Contra Costa,6800,2.5,6,"Dysico Care Home, Inc"
+Granny's Loving Angels Llc,Danville,Contra Costa,6800,2.5,6,Granny's Loving Angels Llc
+Hearts at Millwood Assisted Living,Millbrae,San Francisco,8200,2.5,6,Hearts at Millwood Rcfe Inc
+Assisted Living and Memory Care by Inspirations,Corona,Riverside,5200,2.3333333333333335,6,Our Holy Mother Assisted Living Community Inc
+Ramona Care Home,Pleasant Hill,Contra Costa,6800,2.3333333333333335,6,"Lingbanan, Victoria M."
+Safe Haven Oakley Llc,Oakley,Contra Costa,6800,2.3333333333333335,6,Safe Haven Oakley Llc
+Pleasant Hill Manor,Hayward,Contra Costa,6800,2.1666666666666665,6,Richard W. Gindlesberger
+Millbrae Family Care Home,Millbrae,San Francisco,8200,2.1666666666666665,6,Josver Residential Care
+"Khivi Care, Llc",Livermore,Contra Costa,6800,2.1666666666666665,6,"Khivi Care, Llc"
+Ageway Boarding Care #2,San Mateo,San Mateo,7800,2.1666666666666665,6,Ageway Senior Care
+Enchanted Garden for Seniors,San Mateo,San Mateo,7800,2.1666666666666665,6,"Giusto Jr., Jack & Giusto, Ferlene"
+Blossom Garden Senior Home,Hayward,Contra Costa,6800,2.111111111111111,9,"Blossom Garden Senior Home, Llc"
+Aegis Residential Living,Mission Viejo,Orange,6000,2.0,6,Salvador Diaz Jr
+Paradise Care Home,Mountain View,San Francisco,8200,2.0,6,"Zhao, Ping Jing"
+Santa Barbara Memory Care,Santa Barbara,Santa Barbara,6300,1.9722222222222223,36,"Pac Coast Inc,gp of Pac Coast Lp;santa Barbara Mgr"
+Milan Villa Senior Living,Livermore,Contra Costa,6800,1.875,24,"La Jolla Cove Holdings, Llc"
+Hennelly House,San Mateo,San Mateo,7800,1.6666666666666667,6,"Stefanac, Suzi"
+Chateau Sabelle,San Mateo,San Mateo,7800,1.6666666666666667,6,"Castle, Nancy"
+Divine Grace Villa,Anaheim,Riverside,5200,1.6666666666666667,6,"Divine Grace Villa, Inc."
+Caringbridge Inc.,Anaheim,Riverside,5200,1.6666666666666667,6,Caringbridge Inc.
+April Garden Villa of Saratoga,Saratoga,Santa Clara,7500,1.6,5,"De la Fuente, Valentin"
+Navajo Care Home,Alamo,Contra Costa,6800,1.5,6,Bethel Care Inc
+A New Haven Care Home - Hampton,Livermore,Contra Costa,6800,1.5,6,"Soleta Holdings, Inc."
+Janet's Residential Facility for the Elderly,San Francisco,San Francisco,8200,1.5,8,"Spires, Janet"
+Unity Memory Home Care,Antelope,Sacramento,5400,1.5,6,Unity Memory Care Inc
+"Ark, the",Redwood City,San Francisco,8200,1.5,6,Caring Hearts Senior Living Llc
+Rosegate,San Leandro,Contra Costa,6800,1.475,40,"Kati Knox & Associates, Inc.;rosemont Gardens,inc."
+Better Living Care Home,Pleasant Hill,Contra Costa,6800,1.375,8,"Bl Homes, Inc."
+Francel Guest Home Ii,Anaheim,Riverside,5200,1.3571428571428572,14,"Francel Guest Home, Inc."
+Family Connect Memory Care Inc,Torrance,Los Angeles,5800,1.3333333333333333,6,Family Connect Memory Care Inc
+Villa Vittoria,Martinez,Contra Costa,6800,1.3333333333333333,6,"Baiocchi, Vickie"
+Cayco's Care Home,San Francisco,San Francisco,8200,1.3333333333333333,6,Maribel G Cayco
+Eden Assisted Living,Castro Valley,Contra Costa,6800,1.3333333333333333,6,Special Request Llc
+Citrus Gardens,Hemet,Orange,6000,1.2363636363636363,55,Citrus Gardens Leasing Llc
+"D'nalor Care Homes, Llc",Oakland,Alameda,7200,1.1666666666666667,6,"D'nalor Care Homes, Llc"
+San Mateo Villa,San Mateo,San Mateo,7800,1.1666666666666667,6,"Viducich, Elizabeth & Loncar, Violet"
+Heritage Place,San Mateo,San Mateo,7800,1.1666666666666667,12,"Heritage Residential Care, Inc.; Almacare Inc"
+La Posada,Whittier,Los Angeles,5800,1.0789473684210527,114,Posada Sl Llc
+Scott Villa,Hayward,Contra Costa,6800,1.0571428571428572,35,Scott Villas Corporation
+Burlingame Senior Living,Burlingame,San Francisco,8200,1.0222222222222221,90,Pacifica Burlingame Lp;burlingame Mgr Llc
+Pleasant Hill Oasis,Pleasant Hill,Contra Costa,6800,1.0204081632653061,49,Ph Senior Care Llc; Northstar Senior Living Inc
+Seabright Assisted Living and Memory Care,Solana Beach,San Diego,6200,1.0,6,Alara Health Services Inc
+Lily & Rose Senior Living Inc,Altadena,Los Angeles,5800,1.0,6,Lily & Rose Senior Living Inc
+Britannia Place,Redwood City,San Francisco,8200,1.0,6,"Williams, Delphine Ellen"
+Arlington Heights Assisted Living and Memory Care,Riverside,Orange,6000,1.0,6,Alara Health Services Inc
+Penny's Guest Home,San Ramon,Contra Costa,6800,1.0,6,"Penny's Guest Home, Llc"
+"Golden Hill Homes, Inc.",San Ramon,Contra Costa,6800,1.0,6,"Golden Hill Homes, Inc."
+Regency Palms Long Beach,Long Beach,Los Angeles,5800,1.0,91,"Global Regency Snr Care Svcs,llc"
+Bentley Suites,Santa Monica,Los Angeles,5800,0.9545454545454546,44,Specialized Community Healthcare Company
+Bella Vista,Hayward,Contra Costa,6800,0.9523809523809523,42,"Ark Angel Ii, Llc"
+"Cottages at Artesia Anaheim, the",Anaheim,Riverside,5200,0.868421052631579,38,"Cottages at Artesia Llc, the"
+Eaton Place,Alamo,Contra Costa,6800,0.8333333333333334,6,"Bl Homes, Inc."
+Damenik's Home,San Francisco,San Francisco,8200,0.8333333333333334,12,"Damenik's Home, Inc. Dba Damenik's Home"
+South Bay Memory Care,Torrance,Los Angeles,5800,0.8333333333333334,6,South Bay Memory Care Inc
+Lincoln Villa,Fremont,Contra Costa,6800,0.8157894736842105,76,"Lincoln Retirement Villa, Llc"
+Avenir Memory Care Westside,Los Angeles,Los Angeles,5800,0.8068181818181818,88,"Amcla Gp Inc. ; Avenir Senior Living, Llc"
+Princess Lodge,Campbell,Santa Clara,7500,0.8,30,"Morales,james & Judith"
+Tuscany Villa Senior Living,Livermore,Contra Costa,6800,0.7419354838709677,31,"Kenai River Holdings, Llc"
+Oak Cottage of Santa Barbara Memory Care,Santa Barbara,Santa Barbara,6300,0.72,50,Oak Cottage Operator Nt Hci Llc; Integral Sl Mgmt
+Brittany House,Long Beach,Los Angeles,5800,0.711764705882353,170,Brittany Healthcare Llc
+Lafayette Heights Res. Care,Lafayette,Contra Costa,6800,0.6666666666666666,6,"Mogadam, Joanne A."
+Bed of Roses Residential Care Home,Campbell,Santa Clara,7500,0.6666666666666666,6,"Williams, Maria Christina"
+Elegance Berkeley,Berkeley,Alameda,7200,0.65,120,"Berkely Ca Operator, Llc;elegance Living,llc"
+Newport Beach Memory Care,Newport Beach,Orange,6000,0.6428571428571429,42,"Corktree Holdings, Llc"
+Brookdale Danville,Danville,Contra Costa,6800,0.6428571428571429,42,Summerville at Barrington Court; Emeritus Corp
+Diana's Care Home,Hayward,Contra Costa,6800,0.6285714285714286,35,Scott Villas Corporation;diana's Care Home
+San Leandro Senior Living,San Leandro,Contra Costa,6800,0.6222222222222222,90,P San Leandro Lp; San Leandro Mgr Llc
+Pacifica Senior Living Union City,Union City,Contra Costa,6800,0.6181818181818182,110,Pacifica Union City Llc; Union City Mgr Llc
+Newport Mesa Senior Living,Costa Mesa,Orange,6000,0.6,40,Pacifica Newport Mesa Llc; Newport Mesa Mgr Llc
+"Gardens at Laguna Springs Memory Care, the",Elk Grove,Sacramento,5400,0.6,70,"Elk Grove Memory Care, Llc"
+Country Rose Estate Memory Care,San Marcos,San Diego,6200,0.6,15,"Paraiso, Catherine T"
+Beach Terrace Assisted Living and Memory Care,Stanton,Los Angeles,5800,0.5833333333333334,120,"Sal Asset Mgmt, Llc; Klmh Enterprises, Llc"
+Bonita Villa Senior Living,Chula Vista,San Diego,6200,0.5724137931034483,145,Pacfica Sl Ca Llc;pacifica Bonita Lp; Bonita Mgr
+"Bethany Home Senior Living, Llc",Livermore,Contra Costa,6800,0.5689655172413793,58,"Bethany Homes Senior Living, Llc"
+Astoria Park Senior Living,Pasadena,Los Angeles,5800,0.5454545454545454,220,Astoria Park Senior Living Llc
+Marymount Villa Retirement Center,San Leandro,Contra Costa,6800,0.5454545454545454,99,"Marymount Villa, Llc"
+Eskaton Gold River Lodge,Gold River,Sacramento,5400,0.5447761194029851,134,Eskaton
+Golden Pond Retirement Community,Sacramento,Sacramento,5400,0.5257142857142857,175,"Walgenbach, Brian & Gill, Doug"
+Whitten Heights Assisted Living and Memory Care,La Habra,Los Angeles,5800,0.5255102040816326,196,Whitten Llc
+Aegis Living Corte Madera,Corte Madera,Marin,7600,0.5066666666666667,150,Bmsh Ii Corte Madera Ca; Aegis Senior Communities
+Dimond Care,Oakland,Alameda,7200,0.5,30,"Dimond Care, Llc"
+Sunrise Care Home,San Lorenzo,Contra Costa,6800,0.5,6,"Tayag, Nancy"
+Desert Hills Memory Care Center,Hemet,Orange,6000,0.5,58,Cascade Lvg Grp Hemet; Kre Tiger Desert Hills Op
+A Silver Amore Senior Home,Eastvale,Riverside,5200,0.5,6,"Blind Moose, Llc"
+Valle Verde Care Home Iv,Pleasanton,Contra Costa,6800,0.5,6,"Jgv Group, Inc"
+Sakura Gardens at los Angeles,Los Angeles,Los Angeles,5800,0.4972677595628415,183,Pacifica Sl Boyle Llc; Northstar Senior Living Inc
+Silverado Senior Living - the Huntington,Alhambra,Los Angeles,5800,0.4838709677419355,62,Subtenant 1118 N Stoneman; Silverado Sr Lvg Mgt
+Ivy Park at Hayward,Hayward,Contra Costa,6800,0.4764705882352941,170,Hayward Sr. Hsng. I Opco Llc;oakmont Mgmt Grp Llc
+Avantgarde Senior Living of la Jolla,La Jolla,San Diego,6200,0.4666666666666667,45,Avantgarde Senior Living of la Jolla
+Pico de Loro,Perris,Orange,6000,0.4444444444444444,45,"Pico de Loro, Inc."
+Meadowbrook at Agoura Hills,Agoura Hills,Los Angeles,5800,0.43783783783783786,185,"Arhc Mbaghca01 Trs; Slh Agoura Hills Manager, Llc"
+Ivy Park at Laguna Creek,Elk Grove,Sacramento,5400,0.4351851851851852,108,"S-h Opco Laguna Creek, Llc; Oakmont Mgmt. Grp. Llc"
+Avantgarde Senior Living of Tarzana,Tarzana,Los Angeles,5800,0.43478260869565216,138,Avantgarde Senior Living
+"Terraces at Via Verde-a Memory Care Community, the",San Dimas,Los Angeles,5800,0.43333333333333335,60,"Adp of San Dimas, Llc; Agemark Management Llc"
+Hollywood Hills Senior Living,Los Angeles,Los Angeles,5800,0.425,120,Pacifica Hollywood Llc; Hollywood Mgr Llc
+"Watermark at San Ramon, the",San Ramon,Contra Costa,6800,0.4105263157894737,95,San Ramon Sr Hsg Llc;integral Sr Living Mgmt Llc
+Caleo Bay Alzheimer's Special Care Center,La Quinta,Riverside,5200,0.3939393939393939,66,"Westbrook Mgmt, Llc; Laquinta Investors Lp"
+Silverado Senior Living - Calabasas,Calabasas,Los Angeles,5800,0.39090909090909093,110,Subtenant 25100 Calabasas Rd; Silverado Sr Lvg Mgt
+Pacifica Senior Living South Coast,Costa Mesa,Orange,6000,0.3877551020408163,98,Pacifica Orange County Llc; Costa Mesa Operations
+Aegis Assisted Living of Carmichael,Carmichael,Sacramento,5400,0.37777777777777777,90,Aegis Senior Communities Llc
+Fremont Village,Fremont,Contra Costa,6800,0.375,120,Premier Senior Care Group Corporation
+"Havens at Antelope Valley Assisted Living, the",Lancaster,Kern,4500,0.34782608695652173,115,Welltower Pegasus Tenant Llc; Psl Associates Llc
+Aegis Assisted Living of Napa,Napa,Contra Costa,6800,0.3392857142857143,56,"Aegis Senior Communities, Llc"
+Westwind Memory Care,Santa Cruz,Santa Clara,7500,0.3389830508474576,59,Seasons Mgt; Sm Santa Cruz Memory; Amv Capital Grp
+"Oaks at Nipomo, the",Nipomo,San Luis Obispo,5900,0.3360655737704918,122,"Nipomo Oaks,gp of Nipomo Oaks Ops Lp;westmont Lvng"
+Roias Home for the Elderly,San Mateo,San Mateo,7800,0.3333333333333333,6,"Roias, Michelle"
+Memory Care of Contra Costa,Pleasant Hill,Contra Costa,6800,0.3333333333333333,75,"Carlton Senior Living, Llc"
+Brookdale Corona,Corona,Riverside,5200,0.3333333333333333,60,Emeritus Corporation
+Roseville Senior Living,Roseville,Sacramento,5400,0.3333333333333333,6,"Sungarden Villa, Inc."
+Mina's Elderly Carehome 2,Los Gatos,Santa Clara,7500,0.3333333333333333,6,"Mina's Elderly Carehome 3, Llc"
+Canyon Crest Assisted Living and Memory Care,Riverside,Orange,6000,0.3333333333333333,6,Alara Health Services Inc
+Autumn Glow,San Francisco,San Francisco,8200,0.3333333333333333,15,"Autumn Glow Alzheimer's Home, Inc."
+Willow View Gardens Memory Care & Assisted Living,Santa Ana,Orange,6000,0.33076923076923076,130,All Health Holdings Corp
+Cottages at Hemet,Hemet,Orange,6000,0.32727272727272727,110,Pacifica Sl Hemet Llc;hemet Mgr Llc
+Emerald Valley,Dublin,Contra Costa,6800,0.325,80,"Amador Valley 1, Llc;msl Community Mgmt Llc"
+Oakland Heights Senior Living,Oakland,Alameda,7200,0.3248730964467005,197,Pacifica Oakland Llc & Lp; Oakland Mgr Llc
+Sun City Gardens,Sun City,Orange,6000,0.3108108108108108,74,Bradley Road Holdings Llc;ca Sr. Lvng. Mgmt. Llc
+Carefield Pleasanton,Pleasanton,Contra Costa,6800,0.3048780487804878,82,"Sh 10 Pleasanton Opco, Llc ; Crfld Management, Llc"
+Bethany Homes Senior Living Ii,Livermore,Contra Costa,6800,0.3,20,Bethany Home 3234 Llc
+Kimochi Home,San Francisco,San Francisco,8200,0.3,20,"Kimochi, Inc."
+"Gardens at Park Balboa, the",Van Nuys,Los Angeles,5800,0.3,120,"Park Balboa, Lp, Garrett Loube, Managing Partner"
+"Pavilion at el Dorado Hills, the",El Dorado Hills,Sacramento,5400,0.296875,64,El Dorado Hills Memory Care; Mosaic Management Inc
+Brookdale Folsom,Folsom,Sacramento,5400,0.2923076923076923,130,Emeritus Corporation
+Creston Village Assisted Living and Memory Care,Paso Robles,San Luis Obispo,5900,0.2923076923076923,130,Welltower Pegasus Tenant Llc; Psl Associates Llc
+Silverado Senior Living-berkeley,Berkeley,Alameda,7200,0.28888888888888886,90,Silverado Berkeley Llc; Silverado Sr Lvng Mgmt Inc
+Bellamar Lancaster,Lancaster,Kern,4500,0.27941176470588236,68,"Lancaster Ventures, Llc; Integral Senior Liv Mgmt"
+Cogir of Folsom,Folsom,Sacramento,5400,0.2727272727272727,66,Well Ca Wa Tenant Llc; Cogir Management Usa Inc
+Almond Heights,Orangevale,Sacramento,5400,0.2620689655172414,145,Almond Heights Msl Llc;msl Community Mgmt Llc
+Sunrise Assisted Living of Carmichael,Carmichael,Sacramento,5400,0.25757575757575757,66,Ms Carmichael Sh Llc; Sunrise Senior Living Mgt
+Oakmont of Valencia,Valencia,Los Angeles,5800,0.2569444444444444,144,"Oakmont Sr. Lvng. of Valencia Opco, Llc: Oakmont"
+La Marea Senior Living,Carlsbad,San Diego,6200,0.256,125,Carlsbad Operating Llc; Integral Snr Lvg Mgmt Llc
+Carlton Plaza of San Leandro,San Leandro,Contra Costa,6800,0.25125628140703515,199,"Carlton Senior Living, Llc"
+Ivy Park at San Ramon,San Ramon,Contra Costa,6800,0.24691358024691357,162,Well Ivy 6 Tenant Llc;oakmont Management Group Llc
+Vista del Lago Memory Care,Escondido,San Diego,6200,0.23958333333333334,96,"Del Dios Care, Llc;bayshire, Llc"
+Sunrise Assisted Living of Danville,Danville,Contra Costa,6800,0.23595505617977527,89,Sunrise West Al Gp & Lp; Sunrise Senior Living Mgt
+Cogir of South Bay,Torrance,Los Angeles,5800,0.23529411764705882,34,Torrance Operations Llc; Cadence Sl Torrance Llc
+Sagebrook Senior Living at San Francisco,San Francisco,San Francisco,8200,0.23423423423423423,111,Eden Villa Prop Llc;integral Senior Liv Mgmt Llc
+Ivy Park at Otay Ranch,Chula Vista,San Diego,6200,0.23357664233576642,137,Otay Tenant Llc and Oakmont Management Group Llc
+Aegis Assisted Living of Fremont,Fremont,Contra Costa,6800,0.21818181818181817,110,"Aegis Senior Communities, Llc"
+Regency Place,Sacramento,Sacramento,5400,0.21311475409836064,61,"Regency Place Acquisitions Opco, Llc;northstar Sr"
+Aegis Assisted Living of Aptos,Aptos,Santa Clara,7500,0.21,100,Heather Terrace Aptos Llc;aegis Sr Communities Llc
+"Point at Rockridge, the",Oakland,Alameda,7200,0.20967741935483872,186,Ag-acp Rockridge Trs Llc;integral Snr Lvg Mgmt Llc
+Ivy Terrace at Fullerton,Fullerton,Riverside,5200,0.20833333333333334,72,Welltower Tenant Group Llc;oakmont Mgmt Group Llc
+Ivy Park at Cathedral Hill,San Francisco,San Francisco,8200,0.20476190476190476,210,Coventry Subtenant Lp;oakmont Management Group Llc
+Alta Vista Senior Living,Vista,San Diego,6200,0.20408163265306123,98,Pacifica Regency Palms Llc; Alta Vista Mgr Llc
+Merrill Gardens at Gilroy,Gilroy,Santa Clara,7500,0.20093457943925233,214,"Mg at Gilroy, Lp ; Shi-iv Merrill Gp, Llc ; Merril"
+Brookdale North Fremont,Fremont,Contra Costa,6800,0.2,40,Summerville at Atherton Court Llc
+Aegis Living Pleasant Hill,Pleasant Hill,Contra Costa,6800,0.2,90,Oak Park Blvd Pleasant Hill Llc; Aegis Senior Et a
+Brookdale Garden Grove,Garden Grove,Riverside,5200,0.2,140,Summerville at Cobbco Inc; Emeritus Corporation
+Summerfield of Encinitas,Encinitas,San Diego,6200,0.19642857142857142,56,"Snh Cal Tenant Llc; Northstar Senior Living, Inc."
+Ivy Park at Cerritos,Cerritos,Los Angeles,5800,0.19631901840490798,163,Cerritos Subtenant Lp;oakmont Mgmt. Group Llc
+Sunol Creek Memory Care,Pleasanton,Contra Costa,6800,0.1956521739130435,46,Pri Sunol Llc; Agemark Management Llc
+"Sea Bluffs, the",Dana Point,Orange,6000,0.19318181818181818,88,Well Oak Tenant Llc;oakmont Management Group Llc
+"Watermark at Rosewood Gardens, the",Livermore,Contra Costa,6800,0.19130434782608696,115,"Watermark Livermore Llc; Watermark Rtmt Comm, Llc"
+Cottages at Palm Springs,Palm Springs,Riverside,5200,0.18947368421052632,95,Pacifica Sl Palm Springs Llc;palm Springs Mgr Llc
+Fremont Hills,Fremont,Contra Costa,6800,0.18571428571428572,140,Fremont Hills Sr Housing; Atsc Ii Llc
+Belmont Village Sabre Springs,San Diego,San Diego,6200,0.18478260869565216,184,Belmont Village Sabre Spr Tnnt & Lp; Belmont Three
+Silverado Senior Living-sierra Vista,Azusa,Los Angeles,5800,0.1839080459770115,87,Silverado Sierra Vista Llc; Silverado Sr Lvng Mgmt
+Loma Clara Senior Living,Morgan Hill,Santa Clara,7500,0.1797752808988764,89,Steadfast Collin Morgan Hill Llc;integral Sr Lg Mg
+Vista Cove at Rancho Mirage,Rancho Mirage,Riverside,5200,0.17647058823529413,68,"Vista Cove at Rancho Mirage, Inc."
+Sunshine Villa Assisted Living and Memory Care,Santa Cruz,Santa Clara,7500,0.17424242424242425,132,Mg Santa Cruz Subtenant Llc; Merrill Gardens Llc
+"Montera, the",La Mesa,San Diego,6200,0.17333333333333334,225,Montera Msl Llc;msl Community Management Llc
+"Watermark at Westwood Village, the",Los Angeles,Los Angeles,5800,0.1729957805907173,237,Westwood Sr Hsg Llc; Atsc Ii Llc
+Las Villas del Norte,Escondido,San Diego,6200,0.1717171717171717,198,Escondido Sh Llc; Integral Senior Lvg Mgmt Llc
+Belmont Village Cardiff,Cardiff by the Sea,San Diego,6200,0.17142857142857143,175,Belmont Village Cardiff Tenant & Lp; Belmont Three
+Silverado Senior Living - Belmont Hills,Belmont,San Francisco,8200,0.16964285714285715,112,Subtenant 1301 Ralston Ave; Silverado Sr Lvg Mgt
+Elder Ashram,Oakland,Alameda,7200,0.16666666666666666,90,Elder Ashram Inc
+Bayshire Yorba Linda,Yorba Linda,Riverside,5200,0.16666666666666666,114,Yorba Linda Care Llc
+Oakmont of Fair Oaks,Fair Oaks,Sacramento,5400,0.1640625,128,Oakmont Sr. Lvng of Fair Oaks Opco; Oakmont Mgmt
+Kokoro Assisted Living,San Francisco,San Francisco,8200,0.16393442622950818,61,Kokoro Assited Living Inc; Ncp Senior Ventures Llc
+Bayshire Rancho Mirage,Rancho Mirage,Riverside,5200,0.16296296296296298,135,Mirage Care Llc
+Westmont at San Miguel Ranch,Chula Vista,San Diego,6200,0.1619047619047619,105,Westmont Manager Gp Llc; Westmont Living Inc
+Ivy Park at Burbank,Burbank,Los Angeles,5800,0.16153846153846155,130,"Burbank Subtenant Lp;oakmont Management Grp, Llc"
+Brookdale Sylvan Ranch,Citrus Heights,Sacramento,5400,0.16071428571428573,56,Brea Citrus Heights Llc; Emeritus Corporation
+Regency Park Oak Knoll,Pasadena,Los Angeles,5800,0.16019417475728157,206,"Regency Park, South Oak Knoll"
+Yorkshire Village,Hemet,Orange,6000,0.16,100,Dorten Enterprises
+"Groves of Tustin, the",Tustin,Orange,6000,0.16,100,Csh Tustin Lessee Llc/specialized Community Health
+Belmont Village Albany,Albany,Alameda,7200,0.16,225,Belmont Village Berkeley Llc; Belmont Three Llc
+Rancho Penasquitos Senior Living,San Diego,San Diego,6200,0.15833333333333333,120,Pacifica Ca Llc;penasquitos Lp;penasquitos Mgr Llc
+Sunny Hills Assisted Living (memory Care),Los Angeles,Los Angeles,5800,0.15833333333333333,120,"Spark Family Operation, Llc"
+Silverado Brea Llc,Brea,Riverside,5200,0.15714285714285714,70,Silverado Brea Llc; Silverado Senior Living Mgt
+Grossmont Gardens Memory Care,La Mesa,San Diego,6200,0.15625,64,"Vista la Mesa Senior Living, Inc."
+Harbor Heights Assisted Living and Memory Care,Anaheim,Riverside,5200,0.15577889447236182,199,Anaheim Palace Inc
+Belmont Village Hollywood,Los Angeles,Los Angeles,5800,0.15333333333333332,150,Belmont Village Hollywood Tenant; Belmont Three
+Belmont Village Calabasas,Calabasas,Los Angeles,5800,0.15151515151515152,165,Belmont Village Calabasas Llc; Belmont Three Llc
+Atria Park of Pacific Palisades,Pacific Palisades,Los Angeles,5800,0.15,60,Al Subfunding Llc; Atria Management Co Llc
+Oceanside Senior Living,Oceanside,San Diego,6200,0.14545454545454545,165,Hrse Pacficia Senior Living Oceanside Trs Llc
+Belmont Village Aliso Viejo,Aliso Viejo,Orange,6000,0.14444444444444443,180,Bmsh I Belmont Av Gp Llc; Belmont Three Llc
+Parkview Memory Care at Paradise Village,National City,San Diego,6200,0.14285714285714285,70,Pvhr2 Llc; Generations Ca Llc
+Sage Glendale Senior Living,Glendale,Los Angeles,5800,0.1415929203539823,113,Sage Glendale Ii Llc;agemark Management Llc
+Aegis Assisted Living of Moraga,Moraga,Contra Costa,6800,0.14,100,"Aegis Senior Communities, Llc"
+Ivy Park at Playa Vista,Playa Vista,Los Angeles,5800,0.13725490196078433,102,Welltower Opco Group; Oakmont Management Group Llc
+Westmont of Morgan Hill,Morgan Hill,Santa Clara,7500,0.13392857142857142,112,Morgan Hill Senior Lvg Lp; Westmont Living Inc
+"Palms at la Quinta, the",La Quinta,Riverside,5200,0.13333333333333333,120,Hawthorn Al Opco Gp Llc;integral Senior Living Llc
+"Parkview, the",Pleasanton,Contra Costa,6800,0.13008130081300814,123,Blp Parnership Inc; Eskaton Properties Inc
+Capistrano Senior Living,San Juan Capistrano,Orange,6000,0.128,125,Asrv Llc
+Activcare at Rolling Hills Ranch,Chula Vista,San Diego,6200,0.125,80,Rac Rlg Hls Lp/income Prty Grp Gp/activcare Lv Inc
+Clearwater at South Bay,Torrance,Los Angeles,5800,0.12408759124087591,137,Csb Llc; Hsre-clearwater Ii Trs; Csl Berkshire Llc
+Sunrise Assisted Living of Fair Oaks,Fair Oaks,Sacramento,5400,0.12162162162162163,74,Fair Oak Assisted Lvg; Sunrise Senior Living Mgt
+Hacienda Senior Living,Hemet,Orange,6000,0.12121212121212122,66,Chateau Battiste Leasing-hemet Llc; Hacienda Hemet
+Ivy Park at Culver City,Los Angeles,Los Angeles,5800,0.12,150,"Well Ivy 6tenant,llc;oakmont Management Group, Llc"
+Ivy Park at Santa Monica,Santa Monica,Los Angeles,5800,0.12,100,Al Santa Monica Sr Hsg; Oakmont Mgmt.group Llc
+Cogir of Brea,Brea,Riverside,5200,0.11818181818181818,110,Cadence at Brea Llc; Cadence Sl Brea Llc
+Wellquest of Elk Grove,Elk Grove,Sacramento,5400,0.11764705882352941,170,Wellquest Elk Grove Tenantco Llc; Wellquest Living
+Canyon Trails at Topanga Senior Living,Canoga Park,Los Angeles,5800,0.11666666666666667,120,Canoga Park Sh Llc; Integral Senior Living Mgt
+Serra Sol,San Juan Capistrano,Orange,6000,0.11428571428571428,70,San Juan Opco Llc ; Agemark Management Llc
+Vista del Mar Senior Living,Long Beach,Los Angeles,5800,0.11333333333333333,300,"3360 Magnolia Ave., Inc."
+Belmont Village Burbank,Burbank,Los Angeles,5800,0.1125,160,Belmont Village Burbank Tenant; Belmont Three Llc
+Ivy Terrace at Garden Grove,Garden Grove,Riverside,5200,0.1111111111111111,72,Welltower Tenant Group Llc; Oakmont Mgmt Group Llc
+Silverado Senior Living- Newport Mesa,Costa Mesa,Orange,6000,0.10975609756097561,82,Silverado Newport Mesa Llc;silverado Sr Lvng Mgmt
+Cadence Millbrae,Millbrae,San Francisco,8200,0.10909090909090909,165,1201 Broadway-operator Llc;cadence Sl Millbrae Llc
+"Commons at Elk Grove, the",Elk Grove,Sacramento,5400,0.10909090909090909,110,Elk Grove Msl Ll;msl Community Management Llc
+Cottages at Riverside,Riverside,Orange,6000,0.10909090909090909,110,Extended Care Portfolio Ca Tnnt;riverside Mgr Llc
+Silverado Senior Living-beach Cities,Redondo Beach,Los Angeles,5800,0.10833333333333334,120,Silverado Beach Cities Llc;silverado Sr Lvng Mgmt
+Kirkwood Orange,Orange,Riverside,5200,0.10606060606060606,66,Kirkwood Orange Msl Llc; Msl Community Mgmt Llc
+Ocean Hills Assisted Living & Memory Care,Oceanside,San Diego,6200,0.10569105691056911,123,"Triton Senior Lvg,llc; Northstar Senior Lvg,inc."
+Carmel Village Retirement Community,Fountain Valley,Orange,6000,0.10454545454545454,220,Wellquest 625 Fountain Valley Llc
+Brookdale Brookhurst,Westminster,Orange,6000,0.10365853658536585,164,Summerville 13 Llc; Emeritus Corporation
+Oakmont of Orange,Orange,Riverside,5200,0.1032258064516129,155,Welltower Orange Tenant Llc;oakmont Mgmt
+Cogir of Stock Ranch,Citrus Heights,Sacramento,5400,0.10101010101010101,99,Welltower Cogir Tenant Llc;cogir Mgt Usa Inc
+Ivy Park at Sabre Springs,San Diego,San Diego,6200,0.1,100,Transformer Opco Llc;oakmont Management Group Llc
+Atria Santa Clarita,Santa Clarita,Los Angeles,5800,0.1,160,Arhc Svsclsa01 Trs Llc; Atria Management Co Llc
+Sparr Heights Estates Senior Living,Montrose,Los Angeles,5800,0.09923664122137404,131,"Ec Opco Ca Partner Iv Llc; Sh1 Shoreline Mgmt, Llc"
+Gardens at Escondido,Escondido,San Diego,6200,0.09900990099009901,101,Pacifica el Norte Lp;escondido el Norte Mgr. Llc.
+Sunrise of San Mateo,San Mateo,San Mateo,7800,0.09411764705882353,85,Szr San Mateo Llc; Sunrise Senior Living Mgt
+Aaa Kindness Care Ii,Santa Maria,San Luis Obispo,5900,0.09375,32,Sm Senior Care Operations Llc
+Silverado Senior Living-san Juan Capistrano,San Juan Capistrano,Orange,6000,0.09375,96,"Silverado San Juan Capistrano, Llc; Silverado Sr."
+Citrus Place,Riverside,Orange,6000,0.09285714285714286,140,Riverside Msl Llc ; Msl Community Mnagement Llc
+Ivy Park at Palo Alto,Palo Alto,San Mateo,7800,0.09278350515463918,97,Hcri Sun Iii Tenant; Oakmont Mangement Group Llc
+Sunrise Assisted Living of Hermosa Beach,Hermosa Beach,Los Angeles,5800,0.09154929577464789,142,Welltower Opco Group; Sunrise Senior Living Mgt
+Westmont of la Mesa,La Mesa,San Diego,6200,0.09146341463414634,164,"Westmont Mgr Gp Llc,gp of Lm Ops Lp;westmont Lvng"
+San Clemente Villas by the Sea,San Clemente,Orange,6000,0.08947368421052632,190,"660 Villas I, Llc ; Msl Community Management Llc"
+Ivy Park at Claremont,Claremont,Los Angeles,5800,0.08641975308641975,81,Transformer Opco Llc;oakmont Mangement Group Llc
+Pasadena Highlands,Pasadena,Los Angeles,5800,0.08571428571428572,245,Wellquest 625 Pasadena Llc; Wellquest Living Llc
+Coral Oaks Care Living,Lynwood,Los Angeles,5800,0.08333333333333333,84,"Coral Oaks Care Living, Inc."
+Oakmont of Whittier,Whittier,Los Angeles,5800,0.08247422680412371,97,"Oakmont Sr. Lvng. of Whittier Opco, Llc; Oakmont"
+Bellara Senior Living,Hayward,Contra Costa,6800,0.08,175,Srmhayward Llc; Integral Senior Living Mgmt Llc
+Landmark Villa,Hayward,Contra Costa,6800,0.07857142857142857,140,"Hcrc, Inc"
+Clearwater Newport Beach,Newport Beach,Orange,6000,0.075,120,Clearwater at Newport Beach Opco Llc;csl Berkshire
+Wellquest of Menifee Lakes,Menifee,Orange,6000,0.0728476821192053,151,"Wellquest Menifee Tenantco Llc, ; Wellquest Living"
+Oakmont of Redwood City,Redwood City,San Francisco,8200,0.07086614173228346,127,Sunrise of Redwood Opco Llc; Oakmont Mgmt. Grp Llc
+Santianna Oakmont Signature Living,Carlsbad,San Diego,6200,0.06637168141592921,226,Oakmont of Carlsbad Llc; Oakmont Management Group
+Aegis Living Dana Point,Dana Point,Orange,6000,0.06578947368421052,76,Camino de Estrella Dana Point Llc & Aegis Senior
+Lynne & Roy M Frank Residences,San Francisco,San Francisco,8200,0.06363636363636363,220,Hebrew Home for Aged Disabled
+Escondido Senior Living,Escondido,San Diego,6200,0.06293706293706294,143,Pacifica North Cnty & Pac N Cnty; North County Mgr
+1440 by the Bay,Emeryville,Alameda,7200,0.06285714285714286,175,"Emeryville Sr. Hsng, Llc; Atsc Ii Llc"
+Ivy Park at Bonita,Chula Vista,San Diego,6200,0.0625,96,Transformer Opco Ll;oakmont Management Group Llc
+Silvergate San Marcos Retirement Residence,San Marcos,San Diego,6200,0.0625,160,"Americare Health & Retirement, Inc. a Calif. Corp."
+"Meadows Senior Living, the",Elk Grove,Sacramento,5400,0.0625,160,Vop the Meadows Lp; Milestone Retirement Communiti
+Activcare at Bressi Ranch,Carlsbad,San Diego,6200,0.0625,80,Rac Bressi Ranch/health Care Grp/income Prop. Grp
+Generations of los Angeles Assisted Lvng. Facility,Lynwood,Los Angeles,5800,0.06179775280898876,178,Generations of los Angeles Assisted Living Facilit
+Atria Newport Beach,Newport Beach,Orange,6000,0.06153846153846154,195,"Aslo Gp Llc,gp of Newport Beach Opco Lp;atria Mgmt"
+Westmont of Riverside,Riverside,Orange,6000,0.057777777777777775,225,"Westmont Mgr,gp of Riverside Ops Lp;westmont Lvng"
+Buena Vista Manor House,San Francisco,San Francisco,8200,0.05747126436781609,87,Buena Vista Associates(a Limited Partnership)
+Silverado Senior Living-encinitas,Encinitas,San Diego,6200,0.05737704918032787,122,Silverado Encinitas Llc;silverado Sr Lvng Mgmt Inc
+Regency Grand at West Covina,West Covina,Los Angeles,5800,0.05625,160,Kre-renew Tiger Cubs Regency Grand Operation Et Al
+Merrill Gardens at Campbell,Campbell,Santa Clara,7500,0.05421686746987952,166,"Shi-iii Mg Gp, Shi-iii Campbell; Merrill Gardens"
+Clearwater at Glendora,Glendora,Los Angeles,5800,0.05405405405405406,148,"Clearwater at Glendora Opco, Llc;csl Bershire Oper"
+Atria Carmichael Oaks,Carmichael,Sacramento,5400,0.05263157894736842,95,Wg Carmichael Oaks Lp; Atria Management Co Llc
+Activcare at Yorba Linda,Yorba Linda,Riverside,5200,0.05,80,"Rac Yorba Linda,income Prop Grp; Activcare Living"
+Aegis Living Granada Hills,Granada Hills,Los Angeles,5800,0.05,100,Lindley Ave Granada Hills Llc ; Aegis Senior Et Al
+Ivy Park at Escondido,Escondido,San Diego,6200,0.04878048780487805,123,"Arch Fvecoca01 Trs, Llc;oakmont Mgmt. Group, Llc."
+Huntington Terrace,Huntington Beach,Orange,6000,0.04864864864864865,185,S-h Huntington Terrace Opco; Msl Community Mgt Llc
+Silverado Senior Living-tustin Hacienda,Tustin,Orange,6000,0.047619047619047616,42,"Silverado Tustin, Llc;silverado Sr. Lvng. Mgmt Inc"
+Aegis Gardens,Fremont,Contra Costa,6800,0.047058823529411764,85,Fremont Blvd Fremont Llc ; Aegis Senior Communitie
+Belmont Village Rancho Palos Verdes,Rancho Palos Verdes,Los Angeles,5800,0.04666666666666667,150,Belmont Village Rpv Llc; Belmont Three Llc
+Rancho Vista Senior Living,Vista,San Diego,6200,0.046511627906976744,172,Pacifica East Lake Llc; Vista Mgr Llc
+Belmont Village la Jolla,La Jolla,San Diego,6200,0.045454545454545456,220,Hsre-bv Iv Trs Llc; Belmont Three Llc Et Al
+Oakmont of Folsom,Folsom,Sacramento,5400,0.045454545454545456,88,Hcri of Folsom Tenant; Oakmont Management Group
+Menifee Senior Living,Sun City,Orange,6000,0.045454545454545456,220,Hsre Pacifica Menifee Valley Opco Lp;menifee Mgr
+Atria Golden Creek,Irvine,Orange,6000,0.04516129032258064,155,Wg Golden Creek Sh Lp; Atria Management Co Llc
+Oakmont of Huntington Beach,Huntington Beach,Orange,6000,0.04504504504504504,111,Oakmont Sr Lvng of Huntington Beach; Oakmont Mgmt.
+"Gardens at Northridge, the",Northridge,Los Angeles,5800,0.044444444444444446,135,Pacifica Devonshire Llc' Devonshire Mgr Llc
+Estancia del Sol,Corona,Riverside,5200,0.044444444444444446,135,Estancia Msl Llc;msl Community Management Llc
+Carlton Senior Living Orangevale,Orangevale,Sacramento,5400,0.04411764705882353,136,Carlton Senior Living Llc;carlton Operations Et Al
+Westmont of Carmel Valley,San Diego,San Diego,6200,0.043478260869565216,138,Westmont Lving Inc. Wm Carmel Valley Mgr Gp Llc Ca
+Hollenbeck Palms,Los Angeles,Los Angeles,5800,0.043243243243243246,185,Hollenbeck Palms
+Crescendo Senior Living,Placentia,Riverside,5200,0.04285714285714286,210,Tharon Crescendo Llc
+Villa Toscana a Memory Care Community,Mountain View,San Francisco,8200,0.04285714285714286,70,"Mv Memory Care Llc;calson Management, Llc."
+Aegis Assisted Living at Shadowridge,Oceanside,San Diego,6200,0.042105263157894736,95,Aegis Senior Communities Llc
+Claremont Manor,Claremont,Los Angeles,5800,0.041666666666666664,360,Front Porch Communities and Services
+Atria del Sol,Mission Viejo,Orange,6000,0.041666666666666664,120,Wg del Sol Sh Lp; Atria Management Co Llc
+Oakmont of Santa Clarita,Santa Clarita,Los Angeles,5800,0.04132231404958678,121,"Oakmont Sr. Lvng. of Santa Clarita Opco, Llc; Et a"
+Ivy Park at San Marino,San Gabriel,Los Angeles,5800,0.04054054054054054,74,Transformer Opco Llc;oakmont Management Group Llc
+Manzanita Village at Rancho Belago,Moreno Valley,Orange,6000,0.04,125,"Moreno Valley Sl,i,lp; Mosaic Ca Llc"
+Ivy Park at Mission Viejo,Mission Viejo,Orange,6000,0.04,150,"Mission Viejo Subtenant;oakmont Mgmt. Group, Llc"
+Oakmont of Torrance,Torrance,Los Angeles,5800,0.03968253968253968,126,Oakmont Snr Lvg of Torrance Opco;oakmont Mgt Grp
+Ivy Park at la Jolla,San Diego,San Diego,6200,0.039473684210526314,76,Transformer Opco Llc;oakmont Management Group Llc
+Ivy Park at Pleasanton,Pleasanton,Contra Costa,6800,0.038834951456310676,103,Transformer Opco Llc; Oakmont Management Group Llc
+Atria Newport Plaza,Newport Beach,Orange,6000,0.0375,160,"Vsl Gp Ii Llc, Gp of Vaoc Newport Plaza Lp; Atria"
+Oakmont of Mariner Point,Alameda,Contra Costa,6800,0.0375,80,"Oakmont Senior Living of Mariner Opco, Llc and Oak"
+Atria at Foster Square,Foster City,San Mateo,7800,0.037037037037037035,216,"Aslo & Foster City Ptrs, Gps Fc Opco; Atria Mgt Co"
+Atria el Camino Gardens,Carmichael,Sacramento,5400,0.036923076923076927,325,Wg el Camino Gardens Sh Lp; Atria Management Co
+"Ivy at Berkeley, the",Berkeley,Alameda,7200,0.036231884057971016,138,Shp Iv Ms Berkeley Llc;oakmont Mangement Group Llc
+Granvida Senior Living and Memory Care,Carpinteria,Ventura,6100,0.03614457831325301,83,"Rbp Carpinteria Op Llc;mallard Senior Mgmt, Llc"
+Palo Alto Commons,Palo Alto,San Mateo,7800,0.036,250,"Wellquest Palo Alto Tenantco,llc ; Wellquest Et Al"
+Park View Place,Covina,Los Angeles,5800,0.035211267605633804,142,Oakmont of Covina Llc;wellquest Living Llc
+Capriana,Brea,Riverside,5200,0.035,200,Well Oak Ccrc Tenant Llc; Oakmont Management Group
+Coterie Cathedral Hill,San Francisco,San Francisco,8200,0.03461538461538462,260,Van Ness Opco Tenant Llc; Atria Management Company
+Brookdale Sunwest,Hemet,Orange,6000,0.03333333333333333,60,Summerville at Cobbco Inc; Emeritus Corporation
+Belmont Village Encino,Sherman Oaks,Los Angeles,5800,0.03333333333333333,150,Belmont Village Encino Tenant; Belmont Three Llc
+Folsom Countryhouse,Folsom,Sacramento,5400,0.03333333333333333,60,Avenida Partners Director Llc; Agemark Mgmt Llc
+Activcare at 4s Ranch,San Diego,San Diego,6200,0.03333333333333333,60,"Rac Dove Cnyn,income Property Grp;activcare Living"
+Activcare at Mission Bay,San Diego,San Diego,6200,0.03333333333333333,60,Rac Mission Bay/income Prop. Grp/activcare Lv Inc
+Elders Inn On Webster,Alameda,Contra Costa,6800,0.03333333333333333,60,"Zimmerman, C. Zimmrman, J. & Dugan, M."
+Solheim Senior Community,Los Angeles,Los Angeles,5800,0.031746031746031744,126,Solheim Lutheran Home
+Ivy Park at Woodland Hills,Woodland Hills,Los Angeles,5800,0.031496062992125984,127,Transformer Opco Llc;oakmont Management Group Llc
+Silverado Senior Living-beverly Place,Los Angeles,Los Angeles,5800,0.03125,256,Silverado Beverly Place Llc;silverado Sr Lvng Mgmt
+"Gardens of Riverside, the",Riverside,Orange,6000,0.030612244897959183,98,Tharon Riverside Llc
+Ciela,Pacific Palisades,Los Angeles,5800,0.03,100,"Ciela Llc; Millennium Advisors, Inc."
+Anaheim Villa,Anaheim,Riverside,5200,0.02857142857142857,210,Anaheim Villa Inc
+Belmont Village San Ramon,San Ramon,Contra Costa,6800,0.028409090909090908,176,Belmontvillage Sanramon Tenantllc;belmontvillagelp
+Crestavilla,Laguna Niguel,Orange,6000,0.028,250,"Crestavilla Trs, Llc: Ksl Crestavilla Manager ,llc"
+Woodbridge Terrace,Irvine,Orange,6000,0.027777777777777776,180,"Hsre-kisco I Trs, Llc; Ksl Woodbridge Mgr Llc"
+Regency Fallbrook,Fallbrook,San Diego,6200,0.02666666666666667,75,"Regency Fallbrook, Llc"
+Vineyard Place,Murrieta,Orange,6000,0.024390243902439025,82,"Anthem Murrieta Management, Llc"
+Sunrise of Westlake Village,Westlake Village,Los Angeles,5800,0.024193548387096774,124,Szr Westlake Village; Sunrise Senior Living Mgt
+Ivy Park at Bradford,Placentia,Riverside,5200,0.022058823529411766,136,Well Ivy 6 Tenant Llc; Oakmont Managmnt Group Llc
+Atria Park of Vintage Hills,Temecula,Orange,6000,0.02097902097902098,143,Ventas Aoc Operating Holdings; Atria Management Co
+Belmont Village Westwood,Los Angeles,Los Angeles,5800,0.020833333333333332,240,Belmont Village Westwood Tnnt; Belmont Village Lp
+Aegis Assisted Living of Laguna Niguel,Laguna Niguel,Orange,6000,0.020833333333333332,96,"Aegis Senior Communities, Llc"
+Ivy Park at Oakland Hills,Oakland,Alameda,7200,0.02,100,Transformer Opco Llc;oakmont Management Group Llc
+Oakmont of Carmichael,Carmichael,Sacramento,5400,0.019801980198019802,101,Welltower Carmichael Tenant Llc;oakmont Mgmt
+Oakmont of Agoura Hills,Agoura Hills,Los Angeles,5800,0.0196078431372549,102,Oakmont Sr. Lvng. of Agoura Hills Opco Llc:oakmont
+Silverado Senior Living-escondido,Escondido,San Diego,6200,0.019230769230769232,104,Silverado Escondido Llc;silverado Sr Lvng Mgt Inc
+"Ivy at Golden Gate, the",San Francisco,San Francisco,8200,0.017857142857142856,168,Well Oak Tenant Llc;oakmont Management Group Llc
+Ivy Park at Palos Verdes,Torrance,Los Angeles,5800,0.017391304347826087,115,Transformer Opco Llc;oakmont Management Group Llc
+Sunrise at la Costa,Carlsbad,San Diego,6200,0.016666666666666666,120,Al I/la Costa Senior Hsg; Sunrise Senior Lvg Mgt
+Watermark Laguna Niguel,Laguna Niguel,Orange,6000,0.014814814814814815,135,Us Alliance Holden of Forbes Tenant Llc; Watermark
+Sunrise of Oceanside,Oceanside,San Diego,6200,0.014705882352941176,136,Sunrise of Oceanside Ca Opco & Sunrise Senior Livi
+Ivy Park at Murrieta,Murrieta,Orange,6000,0.014598540145985401,137,"Riverside Care Group, Llc;oakmont Mgmt. Grp. Llc"
+Sunrise of Orange,Orange,Riverside,5200,0.014388489208633094,139,Sunrise of Orange Opco Llc; Sunrise Senior Et Al
+Atria Rancho Mirage,Rancho Mirage,Riverside,5200,0.014084507042253521,142,"Aoc Ca Opco Gp Ptr,gp of Aoc Rancho Mirage; Atria"
+Westmont of Culver City,Culver City,Los Angeles,5800,0.0125,160,Westmont Liv Inc;wm Culver City Mgr;gp Culver City
+Walnut Village,Anaheim,Riverside,5200,0.011976047904191617,334,Front Porch Communities and Services
+Everest at Oceanside,Oceanside,San Diego,6200,0.011428571428571429,175,"Everest Oceanside Blessing Star, Llc;everest Sr. L"
+Lantern Crest,Santee,San Diego,6200,0.011111111111111112,180,"Santee Snr Ret I Llc(owner)/lcm, Llc (mngt)"
+Brookdale Oceanside,Oceanside,San Diego,6200,0.010752688172043012,186,Emeritus Properties Xvi Inc; Emeritus Corporation
+Silvergate Rancho Bernardo,San Diego,San Diego,6200,0.010526315789473684,285,"Americare Health & Retirement, Inc."
+Westmont of Escondido,Escondido,San Diego,6200,0.01,200,Escondido Operations Lp; Westmont Living Inc
+Merrill Gardens at Santa Maria,Santa Maria,San Luis Obispo,5900,0.00909090909090909,330,"Mg at Santa Maria, Lp ; Shi-iv Merrill Gp, Llc ; M"
+Ivy Park of Wellington,Laguna Woods,Orange,6000,0.00909090909090909,220,Well Oak Tenant Llc;oakmont Management Group Llc
+Savant of Woodland Hills,Woodland Hills,Los Angeles,5800,0.006211180124223602,322,Woodland Hills Operations Llc
+Fredericka Manor,Chula Vista,San Diego,6200,0.0035714285714285713,560,Front Porch Communities and Services
+"Forum at Rancho San Antonio, the",Cupertino,Santa Clara,7500,0.0024479804161566705,817,"Rsarhc, Rsars Inc. & Life Care Services Llc"
+Vi at Palo Alto,Palo Alto,San Mateo,7800,0.00228310502283105,876,"Cc-palo Alto,inc. & Classic Res.mgmt. Ltd. Partner"
+Sunrise at Canyon Crest,Riverside,Orange,6000,0.0,88,Szr Riverside Assisted Lvg; Sunrise Senior Lvg Mgt
+Atria Park of Lafayette,Lafayette,Contra Costa,6800,0.0,130,Wg Countrywood Lp; Atria Management Co Llc
+Redwood Terrace,Escondido,San Diego,6200,0.0,210,Humangood; Humangood Socal
+Poway Gardens Senior Living - Mountain Vistas,Poway,San Diego,6200,0.0,32,"Sabra West Coast Operations I, Llc; Sh1 Red Alder"
+Merrill Gardens at West Covina,West Covina,Los Angeles,5800,0.0,150,"Shi-iii Mg Dev Gp, Llc; Merrill Gardens, Llc"
+Peninsula Reflections,Colma,San Francisco,8200,0.0,57,Claremont Retirement Management Services Inc
+Bayview Villa,San Carlos,San Francisco,8200,0.0,47,Loncar Enterprises Inc.
+Ivy Park at Tustin,Santa Ana,Orange,6000,0.0,70,Transformer Opco Llc;oakmont Management Group Llc
+Willow Creek Alzheimer's & Dementia Care Center,Castro Valley,Contra Costa,6800,0.0,49,"Altcare Willow Creek, Inc."
+Forever Young Memory Care,Santa Ana,Orange,6000,0.0,6,Forever Young Senior Living
+Family Connected Memory Care Boutique,Torrance,Los Angeles,5800,0.0,5,Family Connect Memory Care Boutique Llc
+Family Connect Memory Care Palos Verdes,Rancho Palos Verdes,Los Angeles,5800,0.0,6,Family Connect Memory Care Palos Verdes Inc
+Silverado Rolling Hills,Torrance,Los Angeles,5800,0.0,68,Silverado Senior Living Managt Inc;rolling Hills
+Morningstar Senior Living of Mission Viejo,Mission Viejo,Orange,6000,0.0,198,"Cd-tt Mission Viejo Llc; Morningstar Snr Mgmt, Llc"
+Sunrise at Sterling Canyon,Valencia,Los Angeles,5800,0.0,140,Szr Sterling Canyon Al; Sunrise Senior Living Mgt
+Activcare Laguna Hills,Laguna Hills,Orange,6000,0.0,72,Income Property Group Gp;activcare Living Inc
+Claremont Place,Claremont,Los Angeles,5800,0.0,93,Msla Claremont Operating Llc;meridian Senior Livin
+Sunrise at Yorba Linda,Yorba Linda,Riverside,5200,0.0,93,Szr Yorba Linda Llc; Sunrise Senior Living Mgt
+Ivy Park at Huntington Beach,Huntington Beach,Orange,6000,0.0,142,Transformer Opco Llc;oakmont Management Group Llc
+Assisted Lvg & Memory Care Home at Wildrose Ranch,Corona,Riverside,5200,0.0,6,"Devine Mercy Social Care Homes, Inc."
+Ivy Park at la Palma,La Palma,Los Angeles,5800,0.0,80,Transformer Opco Llc;oakmont Management Group Llc
+Cathy's Cottage - Assisted Living and Memory Care,Corona,Riverside,5200,0.0,6,"Cottage Care Homes, Llc"
+Ivy Park at West Hills,West Hills,Los Angeles,5800,0.0,90,Transformer Opco Llc;oakmont Management Group Llc
+Ivy Park of Belmont,Belmont,San Francisco,8200,0.0,117,Transformer Opco Llc;oakmont Management Group Llc
+Ivy Park at Seal Beach,Seal Beach,Los Angeles,5800,0.0,261,Transformer Opco Llc; Oakmont Management Group Llc
+Atria San Juan,San Juan Capistrano,Orange,6000,0.0,140,Wg Chateau San Juan Sh Lp; Atria Management Co Llc
+Sunrise of Mission Viejo,Mission Viejo,Orange,6000,0.0,110,Szr Mission Viejo Asst Lvg; Sunrise Senior Lvg Mgt
+Vista Gardens Memory Care,Vista,San Diego,6200,0.0,99,Devon Care Llc
+Ivy Park at Studio City,Studio City,Los Angeles,5800,0.0,121,Transformer Opco Llc;oakmont Management Group Llc
+Cedar Creek Alzheimer's & Dementia Care Center,Los Gatos,Santa Clara,7500,0.0,58,Altcare Cedar Creek Llc
+Brookdale Mirage Inn,Rancho Mirage,Riverside,5200,0.0,145,Blc Mirage Inn Lp
+Aegis Senior Residence,Antelope,Sacramento,5400,0.0,6,Aegis Ni Llc
+Ivy Park at Sacramento,Sacramento,Sacramento,5400,0.0,70,Welltower Opco Group; Oakmont Management Group Llc
+Murrieta Gardens,Murrieta,Orange,6000,0.0,126,Murrieta Gardens Assisted Living Llc
+Angel Touch Memory Care Llc,Cirtus Heights,Sacramento,5400,0.0,6,Angel Touch Memory Care Llc
+Family Connect Memory Care Solvang,Solvang,San Luis Obispo,5900,0.0,6,"Family Connect Memory Care, Solvang, Inc."
+Atria Hacienda,Palm Desert,Riverside,5200,0.0,266,Wg Hacienda Sh Lp; Atria Management Co Llc
+Nikkei Senior Gardens,Arleta,Los Angeles,5800,0.0,106,Nikkei Senior Gardens; Cadence Sl Nikkei Llc
+Rowntree Gardens,Stanton,Los Angeles,5800,0.0,280,"California Friends Homes, Inc."
+Saratoga Retirement Community,Saratoga,Santa Clara,7500,0.0,418,Odd Fellows Home of Ca; Grand Lodge; Prs Mgmt Inc
+Sycamore Canyon Assisted Living and Memory Care,Riverside,Orange,6000,0.0,6,Riverside Health Services Inc
+Vineyard Ranch at Temecula,Temecula,Orange,6000,0.0,98,"Triton Temecula, Llc; Northstar Senior Living"
+Sunrise of Beverly Hills,Beverly Hills,Los Angeles,5800,0.0,127,Sjv 1 Beverly Hills Opco Llc ; Sunrise Et Al
+Villa Monticello Assisted Living,Escondido,San Diego,6200,0.0,29,"Dy Castelar Investments, Llc"
+Activcare Orange,Orange,Riverside,5200,0.0,72,"R.a.c. Orange,lp;activcare Living, Inc."

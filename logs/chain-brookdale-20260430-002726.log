@@ -1,0 +1,20 @@
+Processing 1 chain(s)...
+
+=== Processing brookdale ===
+Running firecrawl agent for brookdale...
+  URL: https://www.brookdale.com/en/find-a-community.html?careType=memory-care&state=CA
+  Prompt: Extract every California Brookdale community shown on this Memory Care filter page. Return name, street, city, zip.
+Timeout running firecrawl agent for brookdale
+Failed to extract data for brookdale
+
+Chain-curated MC scraper audit report - 2026-04-30 00:32:29
+================================================================================
+
+brookdale           : scraped 0, matched 0, updated 0
+
+TOTAL: scraped 0, matched 0, updated 0
+
+AUDIT FINDINGS:
+----------------------------------------
+Note: Detailed unmatched analysis not yet implemented
+Consider adding extraction result storage for full audit
