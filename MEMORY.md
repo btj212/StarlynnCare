@@ -6,6 +6,25 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-06 — Hub content pipeline Phase 1 shipped (generator → review → publish → drift audit)
+
+**Context:** Implements the "City-first hub strategy + automated content pipeline" decision below. The load-bearing requirement: *no human checks the numbers.*
+
+**Decided:**
+- **`hub_content` table (migration 0047)** keyed `(state_code, region_slug)`, RLS: anon reads only `status='published' AND drift_detected=false`; writes are service-role only (matches `reviews`). 0047 and the table must be applied via the Supabase SQL editor — DDL can't go through PostgREST and the `exec` RPC was dropped in 0040.
+- **Accuracy spine = `<span data-stat="KEY">VALUE</span>` tokens.** A deterministic gate (no model, no DB) checks every token against the row's `stats_snapshot`. Python `verify_stats` (generator) and its TS twin `verifyHubStats` (`src/lib/content/hubGate.ts`) must stay in lockstep — same STAT_KEYS, same `[,%\s]` normalization.
+- **Approval gate = tokens == stored snapshot AND not drift-flagged.** It does NOT re-query the live DB at approval. Rationale: the snapshot *is* the DB value at generation time, and the post-ingest drift audit keeps it DB-honest, so "tokens == snapshot AND not drifted" transitively means "tokens == DB" with **zero duplicated aggregation SQL** between Python and TS. **Dependency:** the drift audit must cover draft/in_review rows too (it does), or this guard is hollow.
+- **Editor is HTML-source + live preview, not WYSIWYG.** (See ERRORS.md — TipTap silently drops the data-stat spans.) Numbers stay as literal text in the source, impossible to drop; `verifyHubStats` runs live in the editor and again server-side on save/publish.
+- **Drift audit (`scripts/validate/hub_content_drift_check.py`, Layer 5b)** recomputes via the generator's `compute_stats` (single source of truth), compares **exactly** (any change is a wrong number on a YMYL page — not thresholded), is **set-only** (clears only via regenerate + re-approve), and is wired as the post-ingest step of `cdss-weekly-ingest.yml`. Exits 0 even on drift (flagging is success).
+
+**Rejected:** TipTap/WYSIWYG (drops data-stat spans); a live-recompute RPC at approval (duplicates the drift audit's job + a second copy of the aggregation SQL); thresholded drift (would let a stale-but-close number render).
+
+**Status:** Checkpoints 1–3 on `main` (deployed; loader falls back to hand-authored intros until content exists). Checkpoints 4–5 on `claude/amazing-hopper-5HquU` (preview). **Open:** apply 0047 in SQL editor before the admin tool can write; the generator (`generate_hub_content.py`) imports `anthropic` at module top, so the drift audit transitively needs it installed (fine in CI/Cursor, which install `scrapers/requirements.txt`).
+
+**Source:** `supabase/migrations/0047_hub_content.sql`, `scrapers/generate_hub_content.py`, `src/lib/content/hubGate.ts`, `src/app/actions/hubContent.ts`, `src/app/admin/hub-content/`, `scripts/validate/hub_content_drift_check.py`.
+
+---
+
 ## 2026-06 — City-first hub strategy + automated content pipeline (overrides county-replication framing)
 
 **Context:** `post_audit_growth_plan.plan.md` and prior MEMORY framing centered CA fan-out on *county* hubs (Alameda → LA/OC/SD). Ahrefs keyword data shows effectively **zero search volume for county queries** — demand is city-level ("memory care <city>") and "near me." This overrides the county-replication emphasis.
