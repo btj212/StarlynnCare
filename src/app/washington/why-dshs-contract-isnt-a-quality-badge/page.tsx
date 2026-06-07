@@ -20,7 +20,7 @@ const ARTICLE_HEADLINE =
   "A DSHS Dementia Care contract is not a quality badge — and here's what the WA inspection record shows";
 const TITLE = "DSHS Dementia Care Contract: Not a Quality Signal (WA Data)";
 const DESC =
-  "Washington DSHS Dementia Care contracts mark Medicaid payment eligibility — not facility quality. Our analysis of 180 WA memory care facilities and 919 deficiencies shows contracted facilities have higher complaint rates, likely due to adverse selection from higher-acuity populations.";
+  "Washington DSHS Dementia Care contracts mark Medicaid eligibility — not quality. Analysis of 180 WA facilities shows contracted homes have higher complaint rates, likely from higher-acuity populations.";
 const DATE_PUBLISHED = "2026-05-23";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [

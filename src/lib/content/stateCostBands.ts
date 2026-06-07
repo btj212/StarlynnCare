@@ -62,6 +62,27 @@ const COST_BANDS: Record<string, StateCostBand> = {
     countyHigh: 9000,
     source: "Genworth 2024 + Minnesota DHS rate guidance",
   },
+  PA: {
+    cityLow: 4500,
+    cityHigh: 8000,
+    countyLow: 4000,
+    countyHigh: 8500,
+    source: "Genworth 2024 + PA DHS OLTL rate guidance",
+  },
+  IL: {
+    cityLow: 4500,
+    cityHigh: 8500,
+    countyLow: 4000,
+    countyHigh: 9000,
+    source: "Genworth 2024 + IDPH regional benchmarks",
+  },
+  UT: {
+    cityLow: 4000,
+    cityHigh: 7500,
+    countyLow: 3800,
+    countyHigh: 8000,
+    source: "Genworth 2024 + Utah DLBC rate guidance",
+  },
 };
 
 const FALLBACK: StateCostBand = {

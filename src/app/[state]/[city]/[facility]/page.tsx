@@ -28,6 +28,53 @@ import { FullHistoryWaitlist } from "@/components/facility/profile/FullHistoryWa
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 
+/** State-specific guide pages that exist today — omit links for states without a live article. */
+function facilityEditorialLinks(
+  stateCode: string,
+  stateName: string,
+): Array<{ href: string; label: string }> {
+  const licensingHref: Partial<Record<string, string>> = {
+    TX: "/texas/type-a-b-c-licensing",
+    OR: "/oregon/memory-care-licensing",
+    WA: "/washington/memory-care-licensing",
+    MN: "/minnesota/memory-care-licensing",
+    PA: "/pennsylvania/memory-care-licensing",
+  };
+  const vsNursingHref: Partial<Record<string, string>> = {
+    TX: "/texas/memory-care-vs-nursing-home",
+    OR: "/oregon/memory-care-vs-nursing-home",
+    WA: "/washington/memory-care-vs-nursing-home",
+    MN: "/minnesota/memory-care-vs-nursing-home",
+    PA: "/pennsylvania/memory-care-vs-nursing-home",
+  };
+
+  const links: Array<{ href: string; label: string }> = [];
+
+  if (stateCode === "CA") {
+    links.push({
+      href: "/library/type-a-vs-type-b-deficiencies-explained",
+      label: "Understanding citations: Type A vs. Type B deficiencies →",
+    });
+  } else {
+    const lic = licensingHref[stateCode];
+    if (lic) links.push({ href: lic, label: `Memory care licensing in ${stateName} →` });
+  }
+
+  links.push({ href: "/library/when-is-it-time-for-memory-care", label: "When is it time for memory care? →" });
+  links.push({ href: "/library/memory-care-vs-nursing-home", label: "Memory care vs. nursing home →" });
+
+  if (stateCode === "CA") {
+    links.push({ href: "/california/cost-guide", label: "What memory care costs in California →" });
+  } else {
+    const vs = vsNursingHref[stateCode];
+    if (vs) links.push({ href: vs, label: `Memory care vs. nursing home in ${stateName} →` });
+  }
+
+  links.push({ href: "/methodology", label: "Our inspection scoring methodology →" });
+
+  return links;
+}
+
 // Kept components
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { RelatedFacilities } from "@/components/facility/RelatedFacilities";
@@ -285,17 +332,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
           {/* Editorial resource links */}
           <div className="border-t border-paper-rule pt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6 text-[13.5px]">
-            {([
-              facility.state_code === "CA"
-                ? { href: "/library/type-a-vs-type-b-deficiencies-explained", label: "Understanding citations: Type A vs. Type B deficiencies →" }
-                : { href: `/${state.slug}/memory-care-licensing`, label: `Memory care licensing in ${state.name} →` },
-              { href: "/library/when-is-it-time-for-memory-care", label: "When is it time for memory care? →" },
-              { href: "/library/memory-care-vs-nursing-home", label: "Memory care vs. nursing home →" },
-              facility.state_code === "CA"
-                ? { href: "/california/cost-guide", label: "What memory care costs in California →" }
-                : { href: `/${state.slug}/memory-care-vs-nursing-home`, label: `Memory care costs in ${state.name} →` },
-              { href: "/methodology", label: "Our inspection scoring methodology →" },
-            ] as { href: string; label: string }[]).map(({ href, label }) => (
+            {facilityEditorialLinks(facility.state_code, state.name).map(({ href, label }) => (
               <a key={href} href={href} className="text-teal hover:underline underline-offset-4">
                 {label}
               </a>

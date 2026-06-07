@@ -207,7 +207,7 @@ export default function PrivacyPage() {
                       Data stored on Microsoft Azure servers.
                     </td>
                     <td className="py-3 align-top">
-                      <a href="https://learn.microsoft.com/en-us/clarity/setup-and-installation/opt-out" target="_blank" rel="noopener noreferrer" className="text-teal underline underline-offset-2">
+                      <a href="https://learn.microsoft.com/en-us/clarity/faq" target="_blank" rel="noopener noreferrer" className="text-teal underline underline-offset-2">
                         Clarity opt-out
                       </a>
                     </td>

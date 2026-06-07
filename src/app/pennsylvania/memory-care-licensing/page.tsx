@@ -20,7 +20,7 @@ const ARTICLE_HEADLINE =
 const TITLE =
   "Pennsylvania Memory Care Licensing: PCH vs. ALR & Special Care Designation — 2026";
 const DESC =
-  "Pennsylvania licenses memory care under DHS OLTL as Personal Care Homes (55 Pa Code Ch 2600) and Assisted Living Residences (Ch 2800). Learn the difference, how the Special Care and Secure Dementia Care Unit designations work, and how to read a PA facility profile on StarlynnCare.";
+  "Pennsylvania licenses memory care under DHS OLTL as PCHs (Ch 2600) and ALRs (Ch 2800). Learn the Special Care designation and how to read a PA facility profile.";
 const DATE_PUBLISHED = "2026-06-02";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [

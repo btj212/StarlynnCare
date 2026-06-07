@@ -61,6 +61,8 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/washington", priority: "0.88", changefreq: "weekly" },
     { path: "/minnesota", priority: "0.88", changefreq: "weekly" },
     { path: "/texas", priority: "0.88", changefreq: "weekly" },
+    { path: "/illinois", priority: "0.88", changefreq: "weekly" },
+    { path: "/utah", priority: "0.88", changefreq: "weekly" },
     { path: "/methodology", priority: "0.75", changefreq: "monthly" },
     { path: "/about", priority: "0.75", changefreq: "monthly" },
     { path: "/data", priority: "0.8", changefreq: "monthly" },
@@ -95,6 +97,14 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/oregon/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/washington/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/minnesota/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/illinois/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/utah/guides", priority: "0.80", changefreq: "monthly" },
+    // State facilities browse pages
+    ...COVERED_STATES.map((s) => ({
+      path: `/${s.slug}/facilities`,
+      priority: "0.84",
+      changefreq: "weekly" as const,
+    })),
     // Texas-specific articles (live)
     { path: "/texas/type-a-b-c-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/texas/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
@@ -104,6 +114,8 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     // Washington-specific articles (live)
     { path: "/washington/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/washington/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    { path: "/washington/why-dshs-contract-isnt-a-quality-badge", priority: "0.76", changefreq: "monthly" },
+    { path: "/washington/how-to-read-our-inspection-data", priority: "0.76", changefreq: "monthly" },
     // Minnesota-specific articles (live)
     { path: "/minnesota/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/minnesota/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },

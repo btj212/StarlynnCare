@@ -102,9 +102,60 @@ function getStateStrings(stateCode: string): StateStrings {
     };
   }
 
+  if (code === "PA") {
+    return {
+      costRange: (city, isCounty) =>
+        isCounty
+          ? `Memory care across ${city} typically runs ${formatCostRange("PA", "county")} for a licensed Personal Care Home or Assisted Living Residence with a DHS Special Care designation. Rates vary by room type, care level, and operator.`
+          : `Memory care in ${city} typically runs ${formatCostRange("PA", "city")} for a PA DHS OLTL-licensed PCH or ALR with Special Care programming, depending on room type and care level.`,
+      licenseQ: `What makes a facility "memory care" in Pennsylvania?`,
+      licenseA: `Pennsylvania licenses memory care through DHS OLTL as Personal Care Homes (55 Pa Code Ch 2600) or Assisted Living Residences (Ch 2800). Facilities indexed here hold a DHS-recognized <strong>Special Care</strong> or <strong>Secure Dementia Care Unit</strong> designation — or an Assisted Living — Special Care license type. These are government-recorded designations, not marketing claims. License type appears on every StarlynnCare profile.`,
+      facilityVsNursingQ: `What's the difference between memory care and a nursing home in Pennsylvania?`,
+      facilityVsNursingA: `PA DHS-licensed PCHs and ALRs provide residential personal care and dementia programming. Nursing homes (Skilled Nursing Facilities) are regulated by PA DOH and CMS, provide 24-hour licensed nursing, and operate under a separate inspection framework. If your family member needs continuous skilled nursing, wound care, or IV therapy, a nursing facility may be more appropriate.`,
+      deficiencyLabel: "severe finding (PA DHS severity ≥ 3) or Immediate Jeopardy",
+      medicaidQ: (city) => `Does Pennsylvania Medicaid cover memory care in ${city}?`,
+      medicaidA: (city) =>
+        `Pennsylvania Medicaid (Medical Assistance) does not pay room and board in a PCH or ALR. MA can fund personal care services through HealthChoices managed care organizations for eligible residents, but not the daily base rate. Nursing homes certified for Medicaid do accept MA for clinical care and room and board. Each StarlynnCare profile notes payment acceptance where documented. Contact your county Area Agency on Aging for options in ${city}.`,
+    };
+  }
+
+  if (code === "IL") {
+    return {
+      costRange: (city, isCounty) =>
+        isCounty
+          ? `Memory care across ${city} typically runs ${formatCostRange("IL", "county")} for an IDPH-licensed Assisted Living Establishment with a confirmed dementia or memory care focus. Rates vary by room type and care level.`
+          : `Memory care in ${city} typically runs ${formatCostRange("IL", "city")} for an IDPH-regulated ALE or Shared Housing Establishment with dementia-specific programming.`,
+      licenseQ: `What makes a facility "memory care" in Illinois?`,
+      licenseA: `Illinois regulates Assisted Living Establishments (ALEs) and Shared Housing Establishments (SHEs) under IDPH 77 Ill. Adm. Code Part 295. StarlynnCare indexes only facilities with a confirmed memory care or dementia focus — identified by name keywords or a portal-confirmed dementia special-care unit. License type and violation history appear on every StarlynnCare profile.`,
+      facilityVsNursingQ: `What's the difference between an ALE and a nursing home in Illinois?`,
+      facilityVsNursingA: `Illinois ALEs and SHEs provide residential personal care in a community setting. Skilled nursing facilities are regulated by IDPH and CMS under a separate framework, with 24-hour licensed nursing for residents needing medical-level care. If your family member requires complex wound care, IV therapy, or continuous medical monitoring, a nursing facility may be more appropriate.`,
+      deficiencyLabel: "Type 1, 2, or 3 violation",
+      medicaidQ: (city) => `Does Illinois Medicaid cover memory care in ${city}?`,
+      medicaidA: (city) =>
+        `Illinois Medicaid can cover certain supportive services in participating assisted living settings through waiver programs, but room and board in an ALE are typically the family's responsibility. Not all facilities accept Medicaid-funded residents. Each StarlynnCare profile notes payment acceptance where documented. Contact the Illinois Department of Healthcare and Family Services or your county AAA for current options in ${city}.`,
+    };
+  }
+
+  if (code === "UT") {
+    return {
+      costRange: (city, isCounty) =>
+        isCounty
+          ? `Memory care across ${city} typically runs ${formatCostRange("UT", "county")} for a Utah DLBC-licensed Type I or Type II Assisted Living Facility. Rates vary by metro, room type, and care level.`
+          : `Memory care in ${city} typically runs ${formatCostRange("UT", "city")} for a DLBC-licensed ALF under Utah Admin. Code R432-270, depending on room type and care level.`,
+      licenseQ: `What makes a facility "memory care" in Utah?`,
+      licenseA: `Utah licenses memory care communities as Type I or Type II Assisted Living Facilities regulated by the Division of Licensing and Background Checks (DLBC) under Utah Admin. Code R432-270. Type II ALFs serve residents who need physical assistance with transfers and a higher level of personal care — including many residents with moderate-to-advanced dementia. License type appears on every StarlynnCare profile.`,
+      facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Utah?`,
+      facilityVsNursingA: `Utah ALFs provide residential care — room, board, personal assistance, and medication management. Nursing facilities provide licensed nursing care 24/7 for residents needing IV therapy, wound care, or continuous medical management. CMS-regulated nursing facilities operate under a separate inspection record from DLBC-licensed ALFs.`,
+      deficiencyLabel: "DLBC inspection or complaint finding",
+      medicaidQ: (city) => `Does Utah Medicaid cover memory care in ${city}?`,
+      medicaidA: (city) =>
+        `Utah Medicaid can cover certain services in participating ALFs through Home and Community-Based Services waiver programs, but room and board are typically not covered. Not all facilities hold Medicaid contracts. Each StarlynnCare profile notes payment acceptance where documented. Contact the Utah Department of Health and Human Services for current options in ${city}.`,
+    };
+  }
+
   // California (default)
   const costGuideUrl = canonicalFor("/california/cost-guide");
-  const alwUrl = "https://www.cdss.ca.gov/assisted-living-waiver";
+  const alwUrl = "https://www.dhcs.ca.gov/individuals/Pages/ALW.aspx";
   return {
     costRange: (city, isCounty) =>
       isCounty

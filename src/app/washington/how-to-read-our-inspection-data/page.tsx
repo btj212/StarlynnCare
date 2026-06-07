@@ -18,7 +18,7 @@ const PAGE_PATH = "/washington/how-to-read-our-inspection-data";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "How to read our Washington inspection data — what state averages hide";
-const TITLE = "How to Read WA Memory Care Inspection Data | StarlynnCare";
+const TITLE = "How to Read WA Memory Care Inspection Data";
 const DESC =
   "63% of Washington ALF inspections in our dataset are complaint-driven. 10% of facilities absorbed 33% of all complaints. This guide explains how the WA inspection dataset is built, what it measures, what it doesn't, and why we deliberately don't show trend lines.";
 const DATE_PUBLISHED = "2026-05-23";
