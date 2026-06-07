@@ -8,6 +8,18 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-06 — Claude Code on the web rewrites package-lock.json on every npm install
+
+**What didn't work:** The web SessionStart hook (`.claude/hooks/session-start.sh`) runs `npm install` on each session start/resume. The cloud container's npm (10.9.7) annotates `package-lock.json` differently than whatever npm generated the committed lockfile — it adds `"dev": true` to `sharp`'s optional platform binaries and drops some `"libc"` arrays. ~40 lines of pure metadata churn, no version changes, on every session. The stop hook then nags about uncommitted changes every turn.
+
+**What didn't work either:** `npm install --no-package-lock` keeps the tree clean but re-resolves the whole dependency tree from the registry (~38s) instead of using the lockfile (~4s) — a startup regression. `npm ci` was rejected too: it wipes `node_modules` and reinstalls from scratch each resume (slow, and the setup-hook guidance is to prefer cache-friendly `npm install`).
+
+**What worked instead:** Keep the fast `npm install`, then `git checkout -- package-lock.json` immediately after. The committed lockfile stays byte-for-byte authoritative; the cloud sandbox never authors lockfile changes. **This means real dependency changes must be made in Cursor (or a deliberate task that commits the new lockfile) — the cloud hook will revert any uncommitted lockfile edit on the next resume.** Local Cursor is unaffected: the hook is guarded by `CLAUDE_CODE_REMOTE != "true"` and the lockfile content never changes.
+
+**Source:** `.claude/hooks/session-start.sh`.
+
+---
+
 ## 2026-05 — State directory feeds publish USPS mailing city, not physical city
 
 **What didn't work:** Trusting the source feed's `CITY` field from UGRC's Utah ArcGIS facility layer. USPS assigns every SLC-metro suburb (Taylorsville, Murray, West Jordan, Holladay, etc.) to "Salt Lake City" for mail routing. Six months of Utah pages had wrong city slugs in the URL, breadcrumb, JSON-LD, and page copy.
