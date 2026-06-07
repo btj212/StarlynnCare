@@ -401,8 +401,11 @@ def main() -> None:
         print("ANTHROPIC_API_KEY not set.", file=sys.stderr)
         sys.exit(1)
 
-    dsn = os.environ["DATABASE_URL"]
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", "placeholder"))
+    dsn = os.environ["DATABASE_URL"].strip()
+    # Strip the key: a stray trailing newline from a pasted secret becomes an
+    # illegal HTTP header value, which the SDK surfaces as a confusing
+    # "Connection error." rather than an auth failure.
+    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", "placeholder").strip())
 
     with psycopg.connect(dsn) as conn:
         regions = load_regions(
