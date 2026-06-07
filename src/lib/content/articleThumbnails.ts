@@ -98,19 +98,19 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
       "Illustrated grandparent and grandchild walking together — representing the choice Pennsylvania families face between DHS-licensed memory care and DOH/CMS-regulated skilled nursing facilities",
   },
   "/pennsylvania/insights/pa-rural-home-highest-immediate-jeopardy": {
-    src: "/illustrations/residential-care-home-exterior.png",
+    src: "/illustrations/pa-insights/rural-care-home-dusk-isolation.png",
     alt:
-      "Illustrated exterior of a residential care home — representing the PA DHS OLTL licensed facility at the center of this immediate-jeopardy analysis",
+      "Illustrated rural care facility at the end of a long road at dusk, alone in open countryside — representing remoteness and limited oversight",
   },
   "/pennsylvania/insights/philadelphia-suburbs-worst-records": {
-    src: "/illustrations/desk-family-reviewing-records.png",
+    src: "/illustrations/pa-insights/affluent-suburban-residence-empty.png",
     alt:
-      "Illustrated adult daughter and grandmother reviewing documents at a desk — representing families evaluating PA DHS inspection records for Philadelphia-area suburban memory care facilities",
+      "Illustrated grand brick suburban residence with manicured landscaping and dark, empty windows — representing affluent address and surface presentation that does not match the inspection record underneath",
   },
   "/pennsylvania/insights/bigger-not-safer": {
-    src: "/illustrations/person-reading-chair-window.png",
+    src: "/illustrations/pa-insights/large-facility-scale-lone-figure.png",
     alt:
-      "Illustrated person reading a report in an armchair by a sunny window — representing a family member researching PA inspection data before choosing between large and small memory care facilities",
+      "Illustrated vast institutional building with rows of identical windows and a single small figure in the courtyard — representing how facility scale dwarfs individual residents",
   },
 
   // ── Texas articles ──────────────────────────────────────────────────────────

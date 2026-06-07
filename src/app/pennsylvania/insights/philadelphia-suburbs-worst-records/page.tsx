@@ -115,8 +115,8 @@ export default async function StoryBPage() {
         lastReviewed={DATE_PUBLISHED}
         canonicalUrl={canonicalUrl}
         heroImage={{
-          src: "/illustrations/desk-family-reviewing-records.png",
-          alt: "Illustrated adult daughter and elderly grandmother reviewing documents together at a desk — representing families working through PA DHS inspection records when evaluating suburban memory care facilities",
+          src: "/illustrations/pa-insights/affluent-suburban-residence-empty.png",
+          alt: "Illustrated grand brick suburban residence with manicured landscaping and dark, empty windows — representing affluent address and surface presentation that does not match the inspection record underneath",
         }}
         breadcrumbs={[
           { label: "Home", href: "/" },

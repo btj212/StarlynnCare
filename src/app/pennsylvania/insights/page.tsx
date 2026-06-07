@@ -29,8 +29,8 @@ const STORIES = [
     desc: "Penn Highlands Jefferson Manor in rural Brookville, Jefferson County recorded 21 immediate-jeopardy findings — more than any other memory care facility in Pennsylvania.",
     eyebrow: "Immediate jeopardy · Story A",
     image: {
-      src: "/illustrations/residential-care-home-exterior.png",
-      alt: "Illustrated exterior of a residential care home with a garden and an elderly resident on the porch",
+      src: "/illustrations/pa-insights/rural-care-home-dusk-isolation.png",
+      alt: "Illustrated rural care facility at the end of a long road at dusk, alone in open countryside",
     },
   },
   {
@@ -39,8 +39,8 @@ const STORIES = [
     desc: "Chester and Montgomery counties, home to some of Pennsylvania's wealthiest ZIP codes, rank among the state's highest for deficiencies per facility — with collar-county IJ rates outpacing Pittsburgh metro.",
     eyebrow: "County comparison · Story B",
     image: {
-      src: "/illustrations/desk-family-reviewing-records.png",
-      alt: "Illustrated family reviewing documents at a desk — representing families working through inspection records",
+      src: "/illustrations/pa-insights/affluent-suburban-residence-empty.png",
+      alt: "Illustrated grand brick suburban residence with manicured landscaping and dark, empty windows",
     },
   },
   {
@@ -49,8 +49,8 @@ const STORIES = [
     desc: "Pennsylvania facilities with 100+ beds average 5.1 severe findings per facility — nearly four times the rate of homes with fewer than 20 beds. Scale does not predict safety.",
     eyebrow: "Facility size analysis · Story C",
     image: {
-      src: "/illustrations/person-reading-chair-window.png",
-      alt: "Illustrated person reading a report in an armchair by a window",
+      src: "/illustrations/pa-insights/large-facility-scale-lone-figure.png",
+      alt: "Illustrated vast institutional building with rows of identical windows and a single small figure in the courtyard",
     },
   },
 ];

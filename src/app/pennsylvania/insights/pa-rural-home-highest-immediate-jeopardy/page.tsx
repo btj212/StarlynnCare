@@ -103,8 +103,8 @@ export default async function StoryAPage() {
         lastReviewed={DATE_PUBLISHED}
         canonicalUrl={canonicalUrl}
         heroImage={{
-          src: "/illustrations/residential-care-home-exterior.png",
-          alt: "Illustrated exterior of a residential care home with a garden — representing the licensed PA DHS memory care facilities at the center of this analysis",
+          src: "/illustrations/pa-insights/rural-care-home-dusk-isolation.png",
+          alt: "Illustrated rural care facility at the end of a long road at dusk, alone in open countryside — representing remoteness and limited oversight",
         }}
         breadcrumbs={[
           { label: "Home", href: "/" },
