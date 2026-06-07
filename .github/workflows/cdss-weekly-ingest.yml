@@ -25,3 +25,12 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python scrapers/ccld_citations_ingest.py --publishable
+
+      # Layer 5b — re-audit published hub content against the freshly ingested
+      # data. Any city whose grounded numbers moved is flagged drift_detected,
+      # which hides it from the public site until it's regenerated + re-approved.
+      # Exits 0 even when drift is found (flagging is the success path).
+      - name: Layer 5b — hub content drift audit
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/validate/hub_content_drift_check.py --state CA
