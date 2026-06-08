@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify-schema": "tsx scripts/verify-schema.ts"
+    "verify-schema": "tsx scripts/verify-schema.ts",
+    "test": "vitest run --config tests/typescript/vitest.config.ts",
+    "test:pure": "vitest run --config tests/typescript/vitest.config.ts tests/typescript/pure",
+    "test:live": "vitest run --config tests/typescript/vitest.config.ts tests/typescript/live",
+    "test:watch": "vitest --config tests/typescript/vitest.config.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.7",
@@ -29,6 +33,8 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.1.8"
   }
 }
