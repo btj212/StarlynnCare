@@ -129,13 +129,13 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
               </div>
             </div>
             <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
-              <span dangerouslySetInnerHTML={{ __html: copy.replace(/(citation|citations|no citations on file)/gi, "<em>$1</em>") }} />
+              <span dangerouslySetInnerHTML={{ __html: copy.replace(/(no citations on file|citations|citation)/gi, "<em>$1</em>") }} />
             </div>
           </div>
         ) : (
           /* When 4+ photos: full-width copy below the grid */
           <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
-            <span dangerouslySetInnerHTML={{ __html: copy.replace(/(citation|citations|no citations on file)/gi, "<em>$1</em>") }} />
+            <span dangerouslySetInnerHTML={{ __html: copy.replace(/(no citations on file|citations|citation)/gi, "<em>$1</em>") }} />
           </div>
         )}
 
