@@ -1,0 +1,34 @@
+name: Bulk publish hub content (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      state:
+        description: "Two-letter state code"
+        required: true
+        default: "CA"
+      dry_run:
+        description: "Dry run (no DB writes)"
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Bulk publish drafts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python scrapers/bulk_publish_hub_content.py \
+            --state "${{ github.event.inputs.state }}" \
+            ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
