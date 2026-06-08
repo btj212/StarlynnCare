@@ -37,7 +37,7 @@ export function NationalHomeSections({ data }: Props) {
     },
     {
       n: totalSevereCitations > 0 ? totalSevereCitations.toLocaleString() : "0",
-      label: "Severe deficiencies on file in the last 24 months",
+      label: "Severe deficiencies on file in the last 6 months",
       src: "State regulators",
     },
     {
