@@ -59,9 +59,10 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
           <FacilitySubNavAnchors anchors={anchors} />
 
           {/* Mobile "jump to facts" chips — horizontally scrollable, one tap to
-              the peer rank / citation record a high-intent visitor came for. */}
+              the peer rank / citation record a high-intent visitor came for.
+              Right-edge fade signals scrollability instead of a hard text cut. */}
           <nav
-            className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto md:hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto md:hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,#000_90%,transparent)]"
             aria-label="On this page"
           >
             {mobileAnchors.map((a) => (
@@ -80,9 +81,12 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
             {phone && (
               <a
                 href={`tel:${facility.phone}`}
+                aria-label={`Call ${phone}`}
                 className="inline-flex items-center gap-1.5 bg-ink px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-paper hover:bg-ink-2 transition-colors"
               >
-                Call {phone} →
+                {/* Compact on mobile so the chips aren't crushed; full number at md+ */}
+                <span className="md:hidden">Call →</span>
+                <span className="hidden md:inline">Call {phone} →</span>
               </a>
             )}
           </div>
