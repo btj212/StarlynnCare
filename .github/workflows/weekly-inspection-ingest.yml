@@ -8,6 +8,12 @@ on:
   schedule:
     # Daily 23:00 UTC — matches Cursor automation cron
     - cron: "0 23 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/weekly_inspection_ingest.py"
+      - "scrapers/or_csv_export.py"
+      - ".github/workflows/weekly-inspection-ingest.yml"
   workflow_dispatch:
     inputs:
       state:
