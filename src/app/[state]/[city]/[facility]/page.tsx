@@ -216,13 +216,6 @@ export default async function FacilityPage({ params }: PageProps) {
         {/* § 00 · Hero */}
         <FacilityHero profile={profile} />
 
-        {/* Clinical byline — surfaces RN reviewer in DOM for E-E-A-T */}
-        <div className="border-b border-paper-rule bg-paper-2">
-          <div className="mx-auto max-w-[1280px] px-4 md:px-8 py-6">
-            <AuthorByline className="border-b-0 pb-0 mb-0" />
-          </div>
-        </div>
-
         {/*
           Mobile-first ordering. High-intent mobile visitors must reach the hard
           facts (peer rank + citation record) before the photo/map context.
@@ -304,6 +297,15 @@ export default async function FacilityPage({ params }: PageProps) {
             />
           </div>
         )}
+
+        {/* Methodology credibility cap — RN reviewer, placed after the verbatim
+            findings (the "View raw inspection records" target). Kept in DOM for
+            E-E-A-T; sits below the data as an editorial sign-off, not a top byline. */}
+        <div className="border-y border-paper-rule bg-paper-2">
+          <div className="mx-auto max-w-[1280px] px-4 md:px-8 py-8 md:py-9">
+            <AuthorByline bare />
+          </div>
+        </div>
 
         {/* § 08 · Nearby sibling facilities */}
         <FacilitySiblings profile={profile} />
