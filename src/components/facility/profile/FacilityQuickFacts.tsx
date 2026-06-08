@@ -16,7 +16,7 @@ function formatPhone(raw: string | null): string | null {
 
 function QfCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-r border-paper-rule px-5 py-5 last:border-r-0">
+    <div className="border-r border-paper-rule px-4 py-4 md:px-5 md:py-5 last:border-r-0">
       <div className="mb-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em] text-ink-3">
         {label}
       </div>

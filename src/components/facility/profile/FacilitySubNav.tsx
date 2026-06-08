@@ -29,6 +29,13 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
     { href: "#full-record", label: "Full record", show: true },
   ].filter((a) => a.show);
 
+  // Mobile chip order leads with the hard facts (peer rank, record) and pushes
+  // the photo/map Snapshot to the end — matching the mobile section reordering.
+  const mobileAnchors: Anchor[] = [
+    ...anchors.filter((a) => a.href !== "#snapshot"),
+    ...anchors.filter((a) => a.href === "#snapshot"),
+  ];
+
   return (
     <div className="fp-subnav sticky top-[52px] z-30 border-b border-paper-rule bg-paper/92 backdrop-blur-[20px]">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
@@ -50,6 +57,23 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
           </nav>
 
           <FacilitySubNavAnchors anchors={anchors} />
+
+          {/* Mobile "jump to facts" chips — horizontally scrollable, one tap to
+              the peer rank / citation record a high-intent visitor came for. */}
+          <nav
+            className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto md:hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            aria-label="On this page"
+          >
+            {mobileAnchors.map((a) => (
+              <a
+                key={a.href}
+                href={a.href}
+                className="shrink-0 whitespace-nowrap border border-paper-rule bg-paper px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.06em] text-ink-2 active:bg-ink active:text-paper transition-colors"
+              >
+                {a.label}
+              </a>
+            ))}
+          </nav>
 
           {/* Actions */}
           <div className="flex shrink-0 items-center gap-2">

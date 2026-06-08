@@ -6,6 +6,23 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-06 — Facility profile is mobile-reordered via CSS `order`, not DOM moves
+
+**Context:** Microsoft Clarity session replay showed a high-intent mobile visitor land on a facility page (organic, "Top 1% of Minnesota Memory Care"), spend 18s, scroll, and bounce with 0 clicks — never reaching the structured hard facts. Audit confirmed the mobile sequence buried the peer-rank percentiles and citation record beneath the Hero, the methodology byline, the quick-facts strip, and a ~2-screen Snapshot block dominated by a low-value exterior photo + static map.
+
+**Decided:**
+- **Reorder the lead sections on mobile only via responsive CSS `order`** (wrapper `<div className="order-N md:order-none">` around each section in `src/app/[state]/[city]/[facility]/page.tsx`). Mobile visual order is QuickFacts → Peer rank → Citation record → conversion CTAs → Snapshot; `md:` resets to the editorial source order. **DOM order is unchanged**, so SEO crawl order and the E-E-A-T byline placement (per the 2026-05 AuthorByline decision) are preserved — the visual change is mobile-only.
+- **Snapshot photo+map is compressed on mobile** (`FacilitySnapshot.tsx`): side-by-side `grid-cols-2` instead of stacked, height `230px` (was `360px`), section padding `py-10` (was `py-16`) — all gated `md:` back to the original. A ~2-screen block becomes ~0.7 screen and is deferred below the facts.
+- **Mobile "jump to facts" chips**: a horizontally-scrollable anchor nav in the sticky `FacilitySubNav` (mobile-only, `md:hidden`), chip order leads with peer rank / record and pushes Snapshot last. Desktop keeps `FacilitySubNavAnchors` (the proximity-hover nav). All anchored sections got `scroll-mt-28` so the sticky bar doesn't cover the target on tap.
+
+**Rejected:** Physically moving Snapshot below Record in the JSX for all viewports (would change desktop's deliberate §01 Snapshot → §02 Peer order and the crawl order). Duplicating a verdict component for mobile (the Hero snippet already carries the "top X%" line above the fold — confirmed in audit).
+
+**Verified:** Throwaway harness (`/zaudit/facility`, since removed) rendering the real section components with a mock `FacilityProfile`, screenshotted headless at 390px (mobile) and 1280px (desktop). Mobile: facts now sit immediately after quick facts; photo/map compact at the bottom. Desktop: unchanged. `tsc --noEmit` clean, `next build` green.
+
+**Source:** `src/app/[state]/[city]/[facility]/page.tsx`, `src/components/facility/profile/{FacilitySnapshot,FacilitySubNav,FacilityHero,FacilityQuickFacts}.tsx`, + `scroll-mt-28` on the `#peer/#record/#full-record/#rules/#tour` sections.
+
+---
+
 ## 2026-06 — Hub content pipeline Phase 1 shipped (generator → review → publish → drift audit)
 
 **Context:** Implements the "City-first hub strategy + automated content pipeline" decision below. The load-bearing requirement: *no human checks the numbers.*

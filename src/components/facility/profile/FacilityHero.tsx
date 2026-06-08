@@ -250,7 +250,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   });
 
   return (
-    <section className="fp-hero border-b-2 border-ink px-4 py-14 md:px-8">
+    <section className="fp-hero border-b-2 border-ink px-4 py-9 md:py-14 md:px-8">
       <div className="mx-auto max-w-[1280px]">
         {/* Eyebrow */}
         <div className="mb-3.5 flex items-center gap-3 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] text-rust">

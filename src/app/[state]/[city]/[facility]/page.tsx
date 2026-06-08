@@ -223,47 +223,66 @@ export default async function FacilityPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Quick facts strip */}
-        <FacilityQuickFacts profile={profile} />
+        {/*
+          Mobile-first ordering. High-intent mobile visitors must reach the hard
+          facts (peer rank + citation record) before the photo/map context.
+          Below md we reorder via CSS `order`; at md+ everything resets to the
+          editorial source order (QuickFacts → Snapshot → Peer → CTAs → Record).
+          DOM order is unchanged, so SEO/E-E-A-T crawl order is preserved.
+        */}
+        <div className="flex flex-col">
+          {/* Quick facts strip */}
+          <div className="order-1 md:order-none">
+            <FacilityQuickFacts profile={profile} />
+          </div>
 
-        {/* § 01 · Snapshot — gallery + map */}
-        <FacilitySnapshot profile={profile} />
+          {/* § 01 · Snapshot — gallery + map (deferred below the facts on mobile) */}
+          <div className="order-6 md:order-none">
+            <FacilitySnapshot profile={profile} />
+          </div>
 
-        {/* § 02 · Peer comparison — dark band */}
-        <FacilityPeerRank profile={profile} />
+          {/* § 02 · Peer comparison — dark band */}
+          <div className="order-2 md:order-none">
+            <FacilityPeerRank profile={profile} />
+          </div>
 
-        {/* § 02b · Facility Watch — inline strip (citation-aware copy) */}
-        <FacilityWatchSignup
-          facilityId={facility.id}
-          facilityName={facility.name}
-          citationCount={profile.totals.deficiencies}
-        />
-
-        {/* Shortlist save — shown alongside watch; both are conversion actions */}
-        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-          <div className="mx-auto max-w-[1280px] px-4 md:px-8 py-4 flex items-center gap-4">
-            <span className="text-sm text-ink-3">Save for comparison:</span>
-            <ShortlistButton
-              pill
-              item={{
-                id: facility.id,
-                name: facility.name,
-                slug: facility.slug,
-                city_slug: facility.city_slug,
-                state_slug: state.slug,
-                city: facility.city ?? null,
-                beds: facility.beds ?? null,
-                total_citations: profile.totals.deficiencies,
-                serious_citations: profile.totals.typeA,
-                inspections: profile.totals.inspections,
-                care_category: facility.care_category,
-              }}
+          {/* § 02b · Facility Watch — inline strip (citation-aware copy) */}
+          <div className="order-4 md:order-none">
+            <FacilityWatchSignup
+              facilityId={facility.id}
+              facilityName={facility.name}
+              citationCount={profile.totals.deficiencies}
             />
           </div>
-        </div>
 
-        {/* § 03 · Citation record — timeline + heatmap + inspection list */}
-        <FacilityRecord profile={profile} />
+          {/* Shortlist save — shown alongside watch; both are conversion actions */}
+          <div className="order-5 md:order-none border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+            <div className="mx-auto max-w-[1280px] px-4 md:px-8 py-4 flex items-center gap-4">
+              <span className="text-sm text-ink-3">Save for comparison:</span>
+              <ShortlistButton
+                pill
+                item={{
+                  id: facility.id,
+                  name: facility.name,
+                  slug: facility.slug,
+                  city_slug: facility.city_slug,
+                  state_slug: state.slug,
+                  city: facility.city ?? null,
+                  beds: facility.beds ?? null,
+                  total_citations: profile.totals.deficiencies,
+                  serious_citations: profile.totals.typeA,
+                  inspections: profile.totals.inspections,
+                  care_category: facility.care_category,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* § 03 · Citation record — timeline + heatmap + inspection list */}
+          <div className="order-3 md:order-none">
+            <FacilityRecord profile={profile} />
+          </div>
+        </div>
 
         {/* § 04 · Rulebook accordion (hidden when state has no rules configured) */}
         <FacilityRules rulesCards={profile.rulesCards.map(({ id, icon, question, regCite, plain, ask, citedDate }) => ({ id, icon, question, regCite, plain, ask, citedDate } satisfies SerializableRuleCard))} />
