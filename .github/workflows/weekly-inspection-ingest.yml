@@ -1,0 +1,50 @@
+# Nightly inspection check + ingest for all COVERED_STATES (CA–PA).
+# Complements cdss-weekly-ingest.yml (CA-only, Monday mornings).
+#
+# Requires secrets: DATABASE_URL, ANTHROPIC_API_KEY (for PDF parse steps).
+name: Weekly inspection ingest
+
+on:
+  schedule:
+    # Daily 23:00 UTC — matches Cursor automation cron
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+    inputs:
+      state:
+        description: "Single state code (optional, e.g. OR). Leave blank for all."
+        required: false
+        type: string
+      skip_ca:
+        description: "Skip CA ingest (use when cdss-weekly-ingest already ran today)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Run weekly inspection ingest
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          ARGS=()
+          if [ -n "${{ inputs.state }}" ]; then
+            ARGS+=(--state "${{ inputs.state }}")
+          fi
+          if [ "${{ inputs.skip_ca }}" = "true" ]; then
+            ARGS+=(--skip-ca)
+          fi
+          python3 scripts/weekly_inspection_ingest.py "${ARGS[@]}"
