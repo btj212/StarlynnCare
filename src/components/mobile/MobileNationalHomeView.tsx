@@ -34,7 +34,7 @@ export function MobileNationalHomeView({ data }: Props) {
   const statItems = [
     { n: totalFacilities > 0 ? totalFacilities.toLocaleString() : "0", label: `Licensed memory care facilities indexed across ${liveStates.length} states`, src: "Multi-state" },
     { n: totalInspections > 0 ? totalInspections.toLocaleString() : "0", label: "State inspection reports, parsed and dated", src: "Regulators", delta: "Updated regularly" },
-    { n: totalSevereCitations > 0 ? totalSevereCitations.toLocaleString() : "0", label: "Severe deficiencies on file in the last 24 months", src: "State regulators" },
+    { n: totalSevereCitations > 0 ? totalSevereCitations.toLocaleString() : "0", label: "Severe deficiencies on file in the last 6 months", src: "State regulators" },
     { n: "0", label: "Referral commissions, lead fees, or paid placements accepted from operators", src: "Policy", delta: "Since day one" },
   ];
 

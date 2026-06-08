@@ -1,3 +1,4 @@
+import { countSeriousDeficiencies } from "@/lib/data/seriousDeficiencyCount";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { COVERED_STATES, stateFromCode } from "@/lib/states";
 
@@ -61,17 +62,16 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return fallback;
 
-  // Global counts
-  const [facRes, inspRes, sevRes, refreshRes] = await Promise.all([
+  // Global counts — serious deficiencies via RPC (join + 6-month window in Postgres).
+  const [facRes, inspRes, totalSevereCitations, refreshRes] = await Promise.all([
     supabase.from("facilities").select("*", { count: "exact", head: true }).eq("publishable", true),
     supabase.from("inspections").select("*", { count: "exact", head: true }),
-    supabase.from("deficiencies").select("*", { count: "exact", head: true }).gte("severity", 3),
+    countSeriousDeficiencies(supabase),
     supabase.from("facilities").select("updated_at").eq("publishable", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const totalFacilities = facRes.count ?? 0;
   const totalInspections = inspRes.count ?? 0;
-  const totalSevereCitations = sevRes.count ?? 0;
   const lastUpdated = refreshRes.data?.updated_at as string | null;
   const lastRefreshed = lastUpdated ? new Date(lastUpdated).toISOString().split("T")[0] : null;
 
