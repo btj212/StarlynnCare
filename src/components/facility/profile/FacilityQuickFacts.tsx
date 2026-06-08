@@ -35,16 +35,9 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
   return (
     <div className="border-y border-paper-rule bg-paper">
       <div className="mx-auto max-w-[1280px]">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
           <QfCell label="Licensed beds">
             {facility.beds ?? "—"}
-          </QfCell>
-          <QfCell label="Memory care">
-            {facility.serves_memory_care ? (
-              <span className="text-grade-a text-[24px]">✓ Yes</span>
-            ) : (
-              <span className="text-ink-3 text-[24px]">—</span>
-            )}
           </QfCell>
           <QfCell label="Last inspection">
             <span className="text-[22px]">{fmt(lastInspDate ?? facility.last_inspection_date)}</span>
