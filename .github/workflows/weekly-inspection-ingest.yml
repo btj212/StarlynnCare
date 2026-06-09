@@ -29,7 +29,7 @@ on:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
@@ -52,7 +52,7 @@ jobs:
         run: |
           ARGS=(--state "${{ matrix.state }}")
           SKIP_CA="${{ inputs.skip_ca }}"
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
             SKIP_CA="true"
           fi
           if [ "$SKIP_CA" = "true" ] && [ "${{ matrix.state }}" = "CA" ]; then

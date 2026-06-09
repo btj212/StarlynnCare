@@ -212,7 +212,7 @@ def ingest_mn(conn) -> bool:
     return True
 
 
-def ingest_tx() -> bool:
+def ingest_tx(_conn: object) -> bool:
     capture_dirs = list((REPO_ROOT / ".firecrawl").glob("tulip*"))
     if not capture_dirs:
         print("\n[TX] No TULIP capture directory — manual browser capture required; skipping.")
@@ -221,13 +221,13 @@ def ingest_tx() -> bool:
     return False
 
 
-def ingest_ut() -> bool:
+def ingest_ut(_conn: object) -> bool:
     _python(str(SCRAPERS / "ut_ccl_inspections_scraper.py"), label="UT CCL inspections", allow_fail=True)
     _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "UT", label="UT recompute publishable")
     return True
 
 
-def ingest_il() -> bool:
+def ingest_il(_conn: object) -> bool:
     _python(str(SCRAPERS / "il_llcs_event_scrape.py"), label="IL LLCS event scrape", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_download.py"), label="IL PDF download", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_parse.py"), label="IL PDF parse", allow_fail=True)
@@ -236,7 +236,7 @@ def ingest_il() -> bool:
     return True
 
 
-def ingest_pa() -> bool:
+def ingest_pa(_conn: object) -> bool:
     _python(str(SCRAPERS / "pa_dhs_inspections_scraper.py"), label="PA DHS inspections scrape", allow_fail=True)
     _python(str(SCRAPERS / "pa_pdf_download.py"), label="PA PDF download", allow_fail=True)
     _python(str(SCRAPERS / "pa_pdf_parse.py"), label="PA PDF parse", allow_fail=True)
@@ -250,10 +250,10 @@ STATE_RUNNERS = {
     "OR": ingest_or,
     "WA": ingest_wa,
     "MN": ingest_mn,
-    "TX": lambda _conn: ingest_tx(),
-    "UT": lambda _conn: ingest_ut(),
+    "TX": ingest_tx,
+    "UT": ingest_ut,
     "IL": ingest_il,
-    "PA": lambda _conn: ingest_pa(),
+    "PA": ingest_pa,
 }
 
 
@@ -283,9 +283,9 @@ def main() -> int:
             print(f"\n{'=' * 60}\n  STATE: {st}\n{'=' * 60}")
             runner = STATE_RUNNERS[st]
             if st == "CA":
-                runner(conn, args.skip_ca)  # type: ignore[call-arg]
+                runner(conn, args.skip_ca)
             else:
-                runner(conn)  # type: ignore[call-arg]
+                runner(conn)
 
             with conn.cursor() as cur:
                 delta = _after_delta(cur, st, baselines[st])
