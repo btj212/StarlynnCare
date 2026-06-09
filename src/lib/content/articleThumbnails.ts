@@ -87,6 +87,21 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
   },
 
   // ── Pennsylvania articles ───────────────────────────────────────────────────
+  "/pennsylvania/what-is-a-personal-care-home": {
+    src: "/illustrations/hallway-family-staff-conversation.png",
+    alt:
+      "Illustrated family member and care staff in conversation in a sunlit facility hallway — representing the day-to-day personal care environment inside a Pennsylvania DHS-licensed PCH",
+  },
+  "/pennsylvania/personal-care-home-vs-assisted-living": {
+    src: "/illustrations/desk-family-reviewing-records.png",
+    alt:
+      "Illustrated adult daughter and elderly grandmother reviewing documents together at a desk under a lamp — representing a Pennsylvania family comparing PCH and ALR inspection records before choosing a facility",
+  },
+  "/pennsylvania/personal-care-home-cost": {
+    src: "/illustrations/family-financial-planning-table.png",
+    alt:
+      "Illustrated family and elderly grandfather sitting at a table with a calculator and financial documents — representing the cost planning conversations Pennsylvania families have when researching personal care home pricing",
+  },
   "/pennsylvania/memory-care-licensing": {
     src: "/illustrations/residential-care-home-exterior.png",
     alt:

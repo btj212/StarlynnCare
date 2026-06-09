@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { EditorialHero } from "@/components/editorial/EditorialHero";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
     description: DESC,
     url: canonicalUrl,
     type: "article",
-    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
+    images: [{ url: "/illustrations/family-financial-planning-table.png", width: 1200, height: 900, alt: "Illustrated family and elderly grandfather sitting at a table with a calculator and financial documents — representing Pennsylvania families planning personal care home costs" }],
   },
   twitter: { card: "summary_large_image", title: TITLE, description: DESC },
 };
@@ -130,6 +131,11 @@ export default function PersonalCareHomeCostPage() {
             <div className="mt-8">
               <AuthorByline className="border-b-0 pb-0 mb-0" />
             </div>
+            <EditorialHero
+              src="/illustrations/family-financial-planning-table.png"
+              alt="Illustrated family and elderly grandfather sitting at a table with a calculator and financial documents — representing the cost planning conversations Pennsylvania families have when researching personal care home pricing"
+              priority
+            />
           </div>
         </div>
 

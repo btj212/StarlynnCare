@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { EditorialHero } from "@/components/editorial/EditorialHero";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
     description: DESC,
     url: canonicalUrl,
     type: "article",
-    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
+    images: [{ url: "/illustrations/desk-family-reviewing-records.png", width: 1200, height: 900, alt: "Illustrated adult daughter and elderly grandmother reviewing documents together at a desk under a lamp — representing a Pennsylvania family comparing PCH and ALR inspection records" }],
   },
   twitter: { card: "summary_large_image", title: TITLE, description: DESC },
 };
@@ -140,6 +141,11 @@ export default function PchVsAssistedLivingPage() {
             <div className="mt-8">
               <AuthorByline className="border-b-0 pb-0 mb-0" />
             </div>
+            <EditorialHero
+              src="/illustrations/desk-family-reviewing-records.png"
+              alt="Illustrated adult daughter and elderly grandmother reviewing documents together at a desk under a lamp — representing a Pennsylvania family comparing PCH and ALR inspection records before choosing a facility"
+              priority
+            />
           </div>
         </div>
 

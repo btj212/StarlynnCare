@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { EditorialHero } from "@/components/editorial/EditorialHero";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
     description: DESC,
     url: canonicalUrl,
     type: "article",
-    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
+    images: [{ url: "/illustrations/hallway-family-staff-conversation.png", width: 1200, height: 900, alt: "Illustrated family member and care staff in conversation in a sunlit facility hallway — representing the day-to-day personal care environment inside a Pennsylvania DHS-licensed PCH" }],
   },
   twitter: { card: "summary_large_image", title: TITLE, description: DESC },
 };
@@ -130,6 +131,11 @@ export default function WhatIsAPersonalCareHomePage() {
             <div className="mt-8">
               <AuthorByline className="border-b-0 pb-0 mb-0" />
             </div>
+            <EditorialHero
+              src="/illustrations/hallway-family-staff-conversation.png"
+              alt="Illustrated family member and care staff in conversation in a sunlit facility hallway — representing the day-to-day personal care environment inside a Pennsylvania DHS-licensed PCH"
+              priority
+            />
           </div>
         </div>
 
