@@ -160,8 +160,7 @@ def ingest_or(conn) -> bool:
         print(f"  OR: source max {source_max} ≤ DB max {db_max} — running ingest anyway (idempotent)")
 
     _python(str(SCRAPERS / "or_inspections_ingest.py"), "--input", str(insp_csv), label="OR inspections ingest")
-    if viol_csv.is_file():
-        _python(str(SCRAPERS / "or_violations_ingest.py"), "--input", str(viol_csv), label="OR violations ingest", allow_fail=True)
+    # Violations CSV is 6MB+ and takes >1h — run monthly via or_overnight_run.sh, not weekly.
     _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "OR", label="OR recompute publishable")
     return True
 

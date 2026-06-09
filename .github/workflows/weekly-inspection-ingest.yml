@@ -1,6 +1,7 @@
 # Nightly inspection check + ingest for all COVERED_STATES (CA–PA).
 # Complements cdss-weekly-ingest.yml (CA-only, Monday mornings).
 #
+# Matrix: one job per state so a slow OR/PA PDF pass cannot block MN/UT.
 # Requires secrets: DATABASE_URL, ANTHROPIC_API_KEY (for PDF parse steps).
 name: Weekly inspection ingest
 
@@ -12,7 +13,6 @@ on:
     branches: [main]
     paths:
       - "scripts/weekly_inspection_ingest.py"
-      - "scrapers/or_csv_export.py"
       - ".github/workflows/weekly-inspection-ingest.yml"
   workflow_dispatch:
     inputs:
@@ -24,12 +24,16 @@ on:
         description: "Skip CA ingest (use when cdss-weekly-ingest already ran today)"
         required: false
         type: boolean
-        default: false
+        default: true
 
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        state: [CA, TX, OR, WA, MN, UT, IL, PA]
     steps:
       - uses: actions/checkout@v4
 
@@ -40,17 +44,53 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r scrapers/requirements.txt
 
-      - name: Run weekly inspection ingest
+      - name: Run weekly inspection ingest (${{ matrix.state }})
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
         run: |
-          ARGS=()
-          if [ -n "${{ inputs.state }}" ]; then
-            ARGS+=(--state "${{ inputs.state }}")
+          ARGS=(--state "${{ matrix.state }}")
+          SKIP_CA="${{ inputs.skip_ca }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            SKIP_CA="true"
           fi
-          if [ "${{ inputs.skip_ca }}" = "true" ]; then
+          if [ "$SKIP_CA" = "true" ] && [ "${{ matrix.state }}" = "CA" ]; then
             ARGS+=(--skip-ca)
           fi
-          python3 scripts/weekly_inspection_ingest.py "${ARGS[@]}"
+          if [ -n "${{ inputs.state }}" ] && [ "${{ inputs.state }}" != "${{ matrix.state }}" ]; then
+            echo "Skipping ${{ matrix.state }} (workflow_dispatch targeted ${{ inputs.state }})"
+            exit 0
+          fi
+          python3 scripts/weekly_inspection_ingest.py "${ARGS[@]}" --skip-validate
+
+      - name: Layer 5 post-ingest — ${{ matrix.state }}
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python3 scripts/validate/post_ingest_check.py --state ${{ matrix.state }} || true
+
+  validate:
+    needs: ingest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Layer 5b — hub content drift audit
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python3 scripts/validate/hub_content_drift_check.py
+
+      - name: Layer 3 — production smoke
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python3 scripts/validate/smoke_test.py --env production || true
