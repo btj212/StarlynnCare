@@ -1,0 +1,121 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Georgia, 'Times New Roman', serif" color="#1A2620" />
+      <mj-text font-size="16px" line-height="1.55" color="#2E3A33" padding="0" />
+      <mj-section padding="0" />
+      <mj-column padding="0" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .mono { font-family: 'Courier New', monospace; }
+      .preline { white-space: pre-line; }
+      .label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #5A6660; }
+      .label-teal { color: #1F5C5A; }
+      .label-dark-teal { color: #143F3D; }
+    </mj-style>
+  </mj-head>
+
+  <mj-body background-color="#F4EEE2" width="560px">
+    <!-- Header -->
+    <mj-section background-color="#1F5C5A" padding="20px 28px">
+      <mj-column>
+        <mj-text css-class="mono" font-size="10px" letter-spacing="0.18em" text-transform="uppercase" color="rgba(255,255,255,0.75)">
+          Facility Watch
+        </mj-text>
+        <mj-text font-size="26px" line-height="1.25" color="#FFFFFF" padding-top="8px">
+          You're watching<br /><em>{DATA_VARIABLE:facilityName}</em>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Body -->
+    <mj-wrapper background-color="#FFFFFF" border="1px solid #D9CFB8" padding="28px">
+      <mj-section padding="0">
+        <mj-column>
+          <mj-text padding-bottom="16px">
+            {DATA_VARIABLE:recordSummary}
+          </mj-text>
+          <mj-text css-class="mono" font-size="12px" color="#5A6660" padding-bottom="20px">
+            {DATA_VARIABLE:statsLine}
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <!-- Quiet period callout -->
+      <mj-section background-color="#EEE6D4" padding="14px 16px" border-left="3px solid #1F5C5A">
+        <mj-column>
+          <mj-text css-class="mono label label-teal" padding-bottom="8px">
+            On the record today
+          </mj-text>
+          <mj-text font-size="15px" color="#1A2620" padding-bottom="8px">
+            {DATA_VARIABLE:quietPeriodLine}
+          </mj-text>
+          <mj-text css-class="mono" font-size="12px" color="#5A6660">
+            Last visit: {DATA_VARIABLE:lastActivityDate} · {DATA_VARIABLE:lastActivityType}
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section padding="24px 0 0 0">
+        <mj-column>
+          <mj-text css-class="mono label" padding-bottom="8px">
+            Recent inspections
+          </mj-text>
+          <mj-text css-class="mono preline" font-size="13px" line-height="1.65" color="#1A2620" padding-bottom="20px">
+            {DATA_VARIABLE:recentEventsText}
+          </mj-text>
+
+          <mj-text css-class="mono label" padding-bottom="8px">
+            How it compares
+          </mj-text>
+          <mj-text font-size="15px" padding-bottom="24px">
+            {DATA_VARIABLE:severityRankLine}
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <!-- What we watch -->
+      <mj-section background-color="#D6E4DF" padding="16px 18px">
+        <mj-column>
+          <mj-text css-class="mono label label-dark-teal" padding-bottom="10px">
+            We'll email you when
+          </mj-text>
+          <mj-text css-class="preline" font-size="14px" line-height="1.6">
+            {DATA_VARIABLE:whatWeWatch}
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section padding="28px 0 0 0">
+        <mj-column>
+          <mj-button
+            background-color="#1F5C5A"
+            color="#FFFFFF"
+            font-family="'Courier New', monospace"
+            font-size="12px"
+            letter-spacing="0.1em"
+            text-transform="uppercase"
+            border-radius="2px"
+            inner-padding="14px 24px"
+            href="{DATA_VARIABLE:facilityUrl}"
+          >
+            View full record →
+          </mj-button>
+          <mj-text font-size="13px" color="#8A938C" padding-top="24px">
+            Sources: state licensing portals and verified public records. We do not email daily unless something changes.
+          </mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+
+    <!-- Footer -->
+    <mj-section background-color="#F4EEE2" padding="20px 28px" border-top="1px solid #D9CFB8">
+      <mj-column>
+        <mj-text css-class="mono" font-size="11px" color="#8A938C">
+          StarlynnCare · {DATA_VARIABLE:cityState}<br />
+          <a href="{DATA_VARIABLE:unsubscribeUrl}" style="color:#B8533A;text-decoration:underline;">Unsubscribe</a> from this facility
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

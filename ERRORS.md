@@ -8,6 +8,21 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-06 — Loops Facility Watch welcome: wrong editor + wrong variable syntax
+
+**What didn't work:**
+1. Pasting `watch-welcome.html` into Loops's **Styled/block** editor — HTML renders as escaped raw tags.
+2. Using `{{double braces}}` — Loops uses **single braces** `{facilityName}` in Plain/Styled/Subject, and `{DATA_VARIABLE:facilityName}` in MJML.
+3. Expecting a paste box in the **Code** tab — it wants an **MJML zip upload**, not inline HTML.
+4. Naming the MJML `watch-welcome.mjml` inside the zip — Loops requires the file to be named **`index.mjml`** exactly.
+5. HTML comments in MJML containing bare `{facilityName}` — Loops parses them as **contact properties** and rejects the upload ("Contact properties are not allowed in transactional emails"). Only `{DATA_VARIABLE:name}` may appear in MJML; setup notes belong in `LOOPS_WATCH_WELCOME_SETUP.md`, not in the uploaded file.
+
+**What worked instead:** Upload `src/lib/email/templates/watch-welcome-loops.zip` containing a single `index.mjml` (copy of `watch-welcome.mjml`) in the Code tab. Subject: `You're watching {facilityName}`. Publish → set `LOOPS_WATCH_WELCOME_ID`. See `LOOPS_WATCH_WELCOME_SETUP.md`.
+
+**Source:** [Loops transactional docs](https://loops.so/docs/transactional/guide), `src/lib/email/templates/`.
+
+---
+
 ## 2026-06 — TipTap silently drops the data-stat spans (hub content editor)
 
 **What didn't work:** Planning a TipTap/WYSIWYG editor for `/admin/hub-content`. TipTap parses input HTML through its own schema; a `<span data-stat="facility_count">93</span>` is not a node/mark it knows, so on load it **silently strips the span** (or its attribute), turning a verified number into unverifiable plain text. On a YMYL page that defeats the entire accuracy gate. Making it safe would require a custom mark/node extension that round-trips + locks the data-stat spans — high surface area that fails silently if subtly wrong.

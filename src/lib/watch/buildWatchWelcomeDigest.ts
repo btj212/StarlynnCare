@@ -180,8 +180,8 @@ export async function buildWatchWelcomeDigest(
   const beds = facility.beds ? `${facility.beds} licensed beds` : "licensed capacity on file";
 
   const recordSummary = last
-    ? `${facility.name} has ${totalDefs} citation${totalDefs === 1 ? "" : "s"} on record across recent inspections. ${beds}. License ${license}.`
-    : `${facility.name} is on your watch list. ${beds}. License ${license}.`;
+    ? `${facility.name} has ${totalDefs} citation${totalDefs === 1 ? "" : "s"} on record across recent inspections.`
+    : `${facility.name} is on your watch list.`;
 
   return {
     facilityName: facility.name,
@@ -193,13 +193,12 @@ export async function buildWatchWelcomeDigest(
     lastActivityType: last ? fmtInspectionLabel(last) : "—",
     quietPeriodLine: quietPeriodLine(last?.inspection_date ?? null),
     recentEventsText: recentEventsText(inspRows),
-    statsLine: `License ${license} · ${cityState} · ${beds}`,
+    statsLine: `${cityState} · ${beds}`,
     severityRankLine: severityRankLine(snapshot, facility.state_code),
     whatWeWatch: [
-      "• New Oregon DHS inspections or complaint investigations",
-      "• New violations or regulatory actions on the state portal",
-      "• License status or memory-care endorsement changes",
-      "• News or legal coverage we verify is about this facility",
+      "• New inspection records posted on the public regulator file",
+      "• New violations or regulatory actions for this facility",
+      "• License or memory-care endorsement status changes",
     ].join("\n"),
     unsubscribeUrl: canonicalFor(`/watch/unsubscribe/${unsubscribeToken}`),
   };

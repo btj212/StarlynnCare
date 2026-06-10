@@ -60,7 +60,7 @@ export async function sendWatchWelcome({
         statsLine: "",
         severityRankLine: "",
         whatWeWatch:
-          "• New state inspections or complaint investigations\n• New violations or regulatory actions\n• License or endorsement changes",
+          "• New inspection records posted on the public regulator file\n• New violations or regulatory actions for this facility\n• License or memory-care endorsement status changes",
         unsubscribeUrl,
       };
 
