@@ -1,0 +1,54 @@
+# DEFERRED — do not enable until 0049_facility_watch_monitoring.sql is applied
+# and facility_watch_probe.py validates signal quality.
+# Daily Facility Watch scan — all facilities with active watchers.
+# Re-downloads OR state CSVs, diffs fingerprints, re-ingests on change,
+# refreshes portal narratives, and emails ADMIN_ALERT_EMAIL + confirmed watchers.
+name: Facility Watch daily scan
+
+on:
+  # schedule:
+  #   - cron: "0 14 * * *"
+  workflow_dispatch:
+    inputs:
+      facility_id:
+        description: "Optional facility UUID (default: all watched)"
+        required: false
+        type: string
+      baseline_only:
+        description: "Seed snapshots only (no change alerts)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Run facility watch scan
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          LOOPS_WATCH_CHANGE_ID: ${{ secrets.LOOPS_WATCH_CHANGE_ID }}
+          LOOPS_ADMIN_ALERT_ID: ${{ secrets.LOOPS_ADMIN_ALERT_ID }}
+          ADMIN_ALERT_EMAIL: ${{ secrets.ADMIN_ALERT_EMAIL }}
+          NEXT_PUBLIC_SITE_URL: https://www.starlynncare.com
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.facility_id }}" ]; then
+            ARGS="$ARGS --facility-id ${{ inputs.facility_id }}"
+          fi
+          if [ "${{ inputs.baseline_only }}" = "true" ]; then
+            ARGS="$ARGS --baseline-only"
+          fi
+          python3 scrapers/facility_watch_scan.py $ARGS

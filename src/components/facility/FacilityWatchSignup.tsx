@@ -57,7 +57,7 @@ export function FacilityWatchSignup({
           <div className="flex items-center gap-3">
             <span className="text-white text-xl">✓</span>
             <p className="font-[family-name:var(--font-mono)] text-[13px] tracking-[0.06em] text-white">
-              Check your email to confirm.
+              You&apos;re on the list — we&apos;ll email you when anything changes.
             </p>
           </div>
         ) : (

@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-06 — Facility Watch: auto-confirm + probe-first pipeline
+
+**Decided:**
+- **No confirmation click.** `POST /api/watch` sets `confirmed_at` on upsert; welcome email via `sendWatchWelcome` (env: `LOOPS_WATCH_WELCOME_ID` or legacy `LOOPS_WATCH_CONFIRM_ID`).
+- **Migration numbering:** main already has `0047_hub_content.sql` + `0048_submission_events_event_types.sql`. Watch monitoring is **`0049_facility_watch_monitoring.sql`** — apply only after 0047+0048.
+- **Probe before pipeline.** `scrapers/facility_watch_probe.py` is read-only (no ingest, no snapshot tables). Use it to validate signal before enabling `facility_watch_scan.py` or CI workflows (currently `workflow_dispatch` only, cron commented out).
+- **OR sources under evaluation:** ltclicensing CSV (inspections/violations live; providers/regulatory 500 → `data/or_*.csv` fallback), portal detail pages, optional Firecrawl news. CMS NH N/A for OR ALF/RCF.
+
+**Rejected:** Auto-applying watch migrations from the scanner. Competing `0047_facility_watch_*` filename (collides with hub content).
+
+**Source:** `cursor/facility-watch-monitoring`; exemplar Footsteps at Carman Oaks (`3d1adb64-06f8-4d5f-aa87-c33f2ad038bc`).
+
+---
+
 ## 2026-06 — Pennsylvania frontend launch (overrides prior "skip new states" decision)
 
 **Context:** `MEMORY.md` 2026-04 and `.cursor/plans/post_audit_growth_plan.plan.md` both said "skip more US states until CA county replication or TX shows ranking lift." This launch **overrides that decision** per explicit user direction.

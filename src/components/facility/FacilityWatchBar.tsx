@@ -75,7 +75,7 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
       <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-4 py-3 md:px-8 md:py-0 md:h-16">
         {formState === "success" ? (
           <p className="flex-1 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.06em] text-white">
-            ✓ Check your email to confirm.
+            ✓ You&apos;re on the list — we&apos;ll email you when anything changes.
           </p>
         ) : (
           <>

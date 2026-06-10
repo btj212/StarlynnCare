@@ -1,0 +1,32 @@
+# DEFERRED — see facility-watch-daily.yml.
+# Weekly ODHS signal refresh for watched facilities (MCE + Enhanced Oversight).
+# Runs state-wide scrapers that are too heavy for the daily per-facility pass.
+name: Facility Watch weekly signals
+
+on:
+  # schedule:
+  #   - cron: "0 12 * * 0"
+  workflow_dispatch:
+
+jobs:
+  signals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Run facility watch with full ODHS signals
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          LOOPS_WATCH_CHANGE_ID: ${{ secrets.LOOPS_WATCH_CHANGE_ID }}
+          LOOPS_ADMIN_ALERT_ID: ${{ secrets.LOOPS_ADMIN_ALERT_ID }}
+          ADMIN_ALERT_EMAIL: ${{ secrets.ADMIN_ALERT_EMAIL }}
+          NEXT_PUBLIC_SITE_URL: https://www.starlynncare.com
+        run: python3 scrapers/facility_watch_scan.py --full-signals --skip-news

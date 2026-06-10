@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
-import { sendWatchConfirmation } from "@/lib/email/watch";
+import { sendWatchWelcome } from "@/lib/email/watch";
+import { buildWatchWelcomeDigest } from "@/lib/watch/buildWatchWelcomeDigest";
 import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
@@ -47,13 +48,20 @@ export async function POST(req: NextRequest) {
 
   const supabase = getServiceClient();
 
+  const confirmedAt = new Date().toISOString();
+
   const { data, error } = await supabase
     .from("facility_watchers")
     .upsert(
-      { email, facility_id: facilityId, source: source ?? "facility_hero" },
+      {
+        email,
+        facility_id: facilityId,
+        source: source ?? "facility_hero",
+        confirmed_at: confirmedAt,
+      },
       { onConflict: "email,facility_id", ignoreDuplicates: false },
     )
-    .select("confirmation_token, unsubscribe_token")
+    .select("unsubscribe_token")
     .single();
 
   if (error) {
@@ -62,11 +70,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendWatchConfirmation({
+    const digest = await buildWatchWelcomeDigest(facilityId, data.unsubscribe_token);
+    await sendWatchWelcome({
       to: email,
       facilityName,
-      confirmationToken: data.confirmation_token,
       unsubscribeToken: data.unsubscribe_token,
+      digest,
     });
   } catch (emailErr) {
     console.error("[watch] email error:", emailErr);

@@ -97,7 +97,7 @@ export function FacilityWatchModal({ facilityId, facilityName }: FacilityWatchMo
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <span className="text-3xl" style={{ color: "var(--color-teal)" }}>✓</span>
             <p className="font-[family-name:var(--font-display)] text-[22px]" style={{ color: "var(--color-ink)" }}>
-              Check your email to confirm.
+              You&apos;re on the list — we&apos;ll email you when anything changes.
             </p>
           </div>
         ) : (
