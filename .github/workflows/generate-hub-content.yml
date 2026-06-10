@@ -1,0 +1,47 @@
+# Manual hub-content draft generation.
+#
+# Runs scrapers/generate_hub_content.py in CI (where raw Postgres over
+# DATABASE_URL is reachable — unlike Claude Code on the web). Nothing is
+# published: it writes DRAFT rows to hub_content for review in
+# /admin/hub-content. Requires the DATABASE_URL and ANTHROPIC_API_KEY secrets.
+name: Generate hub content (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      state:
+        description: "State code (e.g. CA)"
+        default: "CA"
+        required: true
+      smoke:
+        description: "Smoke test — first eligible city only"
+        type: boolean
+        default: true
+      min_facilities:
+        description: "Min publishable facilities for a city to qualify"
+        default: "3"
+        required: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Generate hub content drafts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python scrapers/generate_hub_content.py \
+            --state "${{ inputs.state }}" \
+            --min-facilities "${{ inputs.min_facilities }}" \
+            ${{ inputs.smoke == true && '--smoke' || '' }}

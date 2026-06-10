@@ -10,13 +10,20 @@ interface AuthorBylineProps {
   /** ISO date string for "Last reviewed". Omit to hide the date line (e.g. on facility pages). */
   lastReviewed?: string;
   className?: string;
+  /**
+   * Drop the default bottom frame (`border-b pb-8 mb-8`). Prefer this over
+   * passing `className="border-b-0 pb-0 mb-0"` — those conflict with the
+   * defaults on the same properties, so the winner depends on CSS source
+   * order, which can leave ~64px of dead space below the byline.
+   */
+  bare?: boolean;
 }
 
 /**
  * Clinical byline for editorial guides — Star Lynn with circle-cropped photo,
  * credentials, and verifiable RN license number.
  */
-export function AuthorByline({ lastReviewed, className = "" }: AuthorBylineProps) {
+export function AuthorByline({ lastReviewed, className = "", bare = false }: AuthorBylineProps) {
   const formatted = lastReviewed
     ? new Date(lastReviewed).toLocaleDateString("en-US", {
         year: "numeric",
@@ -25,10 +32,12 @@ export function AuthorByline({ lastReviewed, className = "" }: AuthorBylineProps
       })
     : null;
 
+  const base = bare
+    ? "flex gap-4 items-start"
+    : "flex gap-4 items-start border-b border-paper-rule pb-8 mb-8";
+
   return (
-    <aside
-      className={`flex gap-4 items-start border-b border-paper-rule pb-8 mb-8 ${className ?? ""}`}
-    >
+    <aside className={`${base} ${className}`.trim()}>
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-paper-rule bg-paper-2">
         <Image
           src={STARLYNN_AUTHOR_IMAGE_PATH}

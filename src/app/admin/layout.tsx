@@ -26,6 +26,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Review moderation
             </Link>
             <Link
+              href="/admin/hub-content"
+              className="text-sm font-medium text-slate hover:text-ink"
+            >
+              Hub content
+            </Link>
+            <Link
               href="/admin/mc-review"
               className="text-sm font-medium text-slate hover:text-ink"
             >

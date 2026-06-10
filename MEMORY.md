@@ -20,6 +20,60 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-06 — Facility profile is mobile-reordered via CSS `order`, not DOM moves
+
+**Context:** Microsoft Clarity session replay showed a high-intent mobile visitor land on a facility page (organic, "Top 1% of Minnesota Memory Care"), spend 18s, scroll, and bounce with 0 clicks — never reaching the structured hard facts. Audit confirmed the mobile sequence buried the peer-rank percentiles and citation record beneath the Hero, the methodology byline, the quick-facts strip, and a ~2-screen Snapshot block dominated by a low-value exterior photo + static map.
+
+**Decided:**
+- **Reorder the lead sections on mobile only via responsive CSS `order`** (wrapper `<div className="order-N md:order-none">` around each section in `src/app/[state]/[city]/[facility]/page.tsx`). Mobile visual order is QuickFacts → Peer rank → Citation record → conversion CTAs → Snapshot; `md:` resets to the editorial source order. **DOM order is unchanged**, so SEO crawl order and the E-E-A-T byline placement (per the 2026-05 AuthorByline decision) are preserved — the visual change is mobile-only.
+- **Snapshot photo+map is compressed on mobile** (`FacilitySnapshot.tsx`): side-by-side `grid-cols-2` instead of stacked, height `230px` (was `360px`), section padding `py-10` (was `py-16`) — all gated `md:` back to the original. A ~2-screen block becomes ~0.7 screen and is deferred below the facts.
+- **Mobile "jump to facts" chips**: a horizontally-scrollable anchor nav in the sticky `FacilitySubNav` (mobile-only, `md:hidden`), chip order leads with peer rank / record and pushes Snapshot last. Desktop keeps `FacilitySubNavAnchors` (the proximity-hover nav). All anchored sections got `scroll-mt-28` so the sticky bar doesn't cover the target on tap.
+
+**Rejected:** Physically moving Snapshot below Record in the JSX for all viewports (would change desktop's deliberate §01 Snapshot → §02 Peer order and the crawl order). Duplicating a verdict component for mobile (the Hero snippet already carries the "top X%" line above the fold — confirmed in audit).
+
+**Verified:** Throwaway harness (`/zaudit/facility`, since removed) rendering the real section components with a mock `FacilityProfile`, screenshotted headless at 390px (mobile) and 1280px (desktop). Mobile: facts now sit immediately after quick facts; photo/map compact at the bottom. Desktop: unchanged. `tsc --noEmit` clean, `next build` green.
+
+**Source:** `src/app/[state]/[city]/[facility]/page.tsx`, `src/components/facility/profile/{FacilitySnapshot,FacilitySubNav,FacilityHero,FacilityQuickFacts}.tsx`, + `scroll-mt-28` on the `#peer/#record/#full-record/#rules/#tour` sections.
+
+---
+
+## 2026-06 — Hub content pipeline Phase 1 shipped (generator → review → publish → drift audit)
+
+**Context:** Implements the "City-first hub strategy + automated content pipeline" decision below. The load-bearing requirement: *no human checks the numbers.*
+
+**Decided:**
+- **`hub_content` table (migration 0047)** keyed `(state_code, region_slug)`, RLS: anon reads only `status='published' AND drift_detected=false`; writes are service-role only (matches `reviews`). 0047 and the table must be applied via the Supabase SQL editor — DDL can't go through PostgREST and the `exec` RPC was dropped in 0040.
+- **Accuracy spine = `<span data-stat="KEY">VALUE</span>` tokens.** A deterministic gate (no model, no DB) checks every token against the row's `stats_snapshot`. Python `verify_stats` (generator) and its TS twin `verifyHubStats` (`src/lib/content/hubGate.ts`) must stay in lockstep — same STAT_KEYS, same `[,%\s]` normalization.
+- **Approval gate = tokens == stored snapshot AND not drift-flagged.** It does NOT re-query the live DB at approval. Rationale: the snapshot *is* the DB value at generation time, and the post-ingest drift audit keeps it DB-honest, so "tokens == snapshot AND not drifted" transitively means "tokens == DB" with **zero duplicated aggregation SQL** between Python and TS. **Dependency:** the drift audit must cover draft/in_review rows too (it does), or this guard is hollow.
+- **Editor is HTML-source + live preview, not WYSIWYG.** (See ERRORS.md — TipTap silently drops the data-stat spans.) Numbers stay as literal text in the source, impossible to drop; `verifyHubStats` runs live in the editor and again server-side on save/publish.
+- **Drift audit (`scripts/validate/hub_content_drift_check.py`, Layer 5b)** recomputes via the generator's `compute_stats` (single source of truth), compares **exactly** (any change is a wrong number on a YMYL page — not thresholded), is **set-only** (clears only via regenerate + re-approve), and is wired as the post-ingest step of `cdss-weekly-ingest.yml`. Exits 0 even on drift (flagging is success).
+
+**Rejected:** TipTap/WYSIWYG (drops data-stat spans); a live-recompute RPC at approval (duplicates the drift audit's job + a second copy of the aggregation SQL); thresholded drift (would let a stale-but-close number render).
+
+**Status:** Checkpoints 1–3 on `main` (deployed; loader falls back to hand-authored intros until content exists). Checkpoints 4–5 on `claude/amazing-hopper-5HquU` (preview). **Open:** apply 0047 in SQL editor before the admin tool can write; the generator (`generate_hub_content.py`) imports `anthropic` at module top, so the drift audit transitively needs it installed (fine in CI/Cursor, which install `scrapers/requirements.txt`).
+
+**Source:** `supabase/migrations/0047_hub_content.sql`, `scrapers/generate_hub_content.py`, `src/lib/content/hubGate.ts`, `src/app/actions/hubContent.ts`, `src/app/admin/hub-content/`, `scripts/validate/hub_content_drift_check.py`.
+
+---
+
+## 2026-06 — City-first hub strategy + automated content pipeline (overrides county-replication framing)
+
+**Context:** `post_audit_growth_plan.plan.md` and prior MEMORY framing centered CA fan-out on *county* hubs (Alameda → LA/OC/SD). Ahrefs keyword data shows effectively **zero search volume for county queries** — demand is city-level ("memory care <city>") and "near me." This overrides the county-replication emphasis.
+
+**Decided:**
+- CA depth is built as **city hubs at scale** (the existing `/[state]/[city]` route + `cityIntros`), not county hubs. County hubs are de-emphasized, not removed. "Near me" intent is served by city hubs + facility-page geo/`LocalBusiness` schema.
+- **Content replication is automated through a generation → human review/edit → publish pipeline.** Generated city/hub content is LLM-drafted, grounded in Supabase stats with citations, and is **never auto-published** — a human edits it in a rich-text (bold/paragraph/etc.) review tool and approves before it goes live.
+- **Data accuracy is fully automated, not human-checked.** Per owner direction, no human reviews the underlying numbers. New ingest data automatically triggers a **content audit** of every published page whose numeric claims derive from that data; any drift sends the page back to "needs re-review." This extends the existing Layer-1/2 validation (the chain-scorecard-drift pattern) to all generated content.
+
+**Phase order (revised this session):**
+1. **Phase 1** — city-first content replication engine + rich-text review middleware + automated content-data drift audit.
+2. **Phase 3** — automated CA data-story / analysis pages from RPCs (PA-insights pattern). **Higher leverage than cost.**
+3. **Phase 2** — cost data plane + state-wide reporting. **Gated:** ship only if a *real* cost data source is found. Generic competitor-derived ranges = fluff = do not publish (YMYL).
+
+**Source:** This session. Supersedes the county-replication emphasis in `.cursor/plans/post_audit_growth_plan.plan.md`, which should be updated separately (not edited here, per the "don't edit `.cursor/plans/` plan files" rule).
+
+---
+
 ## 2026-06 — Pennsylvania frontend launch (overrides prior "skip new states" decision)
 
 **Context:** `MEMORY.md` 2026-04 and `.cursor/plans/post_audit_growth_plan.plan.md` both said "skip more US states until CA county replication or TX shows ranking lift." This launch **overrides that decision** per explicit user direction.

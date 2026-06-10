@@ -8,6 +8,38 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-06 — TipTap silently drops the data-stat spans (hub content editor)
+
+**What didn't work:** Planning a TipTap/WYSIWYG editor for `/admin/hub-content`. TipTap parses input HTML through its own schema; a `<span data-stat="facility_count">93</span>` is not a node/mark it knows, so on load it **silently strips the span** (or its attribute), turning a verified number into unverifiable plain text. On a YMYL page that defeats the entire accuracy gate. Making it safe would require a custom mark/node extension that round-trips + locks the data-stat spans — high surface area that fails silently if subtly wrong.
+
+**What worked instead:** An **HTML-source editor + live sanitized preview**. Numbers stay as literal text in the source (impossible to drop), and `verifyHubStats` runs live in the editor and again on save/publish. Zero new deps. If WYSIWYG is ever wanted, the numbers must be render-time tokens resolved from the snapshot (not literal in the editable body), not editable text.
+
+**Source:** `src/app/admin/hub-content/[id]/HubContentEditor.tsx`, `src/lib/content/hubGate.ts`.
+
+---
+
+## 2026-06 — Claude Code on the web can't reach the DB: HTTP-only proxy + disabled legacy keys
+
+**What didn't work:** Reaching Supabase/Postgres from a Claude Code web session. Two distinct blockers, often confused: (1) the sandbox proxies **HTTP/HTTPS only**, so raw Postgres (psycopg / `DATABASE_URL` / psql) over TCP 5432/6543 times out — it can't tunnel the Postgres wire protocol even with "Full" network access. (2) Even over HTTPS (REST/`@supabase/supabase-js`), the env's **legacy `service_role`/anon keys were disabled 2026-05-20** → `401 "Legacy API keys are disabled"`. A *fresh* session opens the HTTPS path (resumed sessions keep the old network policy), but the key must be re-enabled (Supabase dashboard) or replaced with new publishable/secret keys for any live read.
+
+**What worked instead:** Re-enable the keys (owner action), then read live over HTTPS via the supabase-js client. All psycopg scrapers / validators (incl. `hub_content_drift_check.py`) still run only in **GitHub Actions or Cursor**, never the web sandbox. Verify TS/render code here over HTTPS; verify Python by conformance + `py_compile` + unit-testing the pure logic.
+
+**Source:** this session; `docs/` Claude Code on the web notes.
+
+---
+
+## 2026-06 — Claude Code on the web rewrites package-lock.json on every npm install
+
+**What didn't work:** The web SessionStart hook (`.claude/hooks/session-start.sh`) runs `npm install` on each session start/resume. The cloud container's npm (10.9.7) annotates `package-lock.json` differently than whatever npm generated the committed lockfile — it adds `"dev": true` to `sharp`'s optional platform binaries and drops some `"libc"` arrays. ~40 lines of pure metadata churn, no version changes, on every session. The stop hook then nags about uncommitted changes every turn.
+
+**What didn't work either:** `npm install --no-package-lock` keeps the tree clean but re-resolves the whole dependency tree from the registry (~38s) instead of using the lockfile (~4s) — a startup regression. `npm ci` was rejected too: it wipes `node_modules` and reinstalls from scratch each resume (slow, and the setup-hook guidance is to prefer cache-friendly `npm install`).
+
+**What worked instead:** Keep the fast `npm install`, then `git checkout -- package-lock.json` immediately after. The committed lockfile stays byte-for-byte authoritative; the cloud sandbox never authors lockfile changes. **This means real dependency changes must be made in Cursor (or a deliberate task that commits the new lockfile) — the cloud hook will revert any uncommitted lockfile edit on the next resume.** Local Cursor is unaffected: the hook is guarded by `CLAUDE_CODE_REMOTE != "true"` and the lockfile content never changes.
+
+**Source:** `.claude/hooks/session-start.sh`.
+
+---
+
 ## 2026-05 — State directory feeds publish USPS mailing city, not physical city
 
 **What didn't work:** Trusting the source feed's `CITY` field from UGRC's Utah ArcGIS facility layer. USPS assigns every SLC-metro suburb (Taylorsville, Murray, West Jordan, Holladay, etc.) to "Salt Lake City" for mail routing. Six months of Utah pages had wrong city slugs in the URL, breadcrumb, JSON-LD, and page copy.

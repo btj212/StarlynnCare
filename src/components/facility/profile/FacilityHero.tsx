@@ -8,7 +8,6 @@ import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
-import { ordinalSuffix } from "@/lib/format/ordinalSuffix";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
@@ -43,25 +42,6 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   );
   const suggestHref = `mailto:hello@starlynncare.com?subject=${suggestSubject}&body=${suggestBody}`;
 
-  const compositePercentile = snapshot?.grade?.composite_percentile ?? null;
-  const severityPct = snapshot?.metrics.severity.percentile ?? null;
-  const frequencyPct = snapshot?.metrics.frequency.percentile ?? null;
-  const repeatsPct = snapshot?.metrics.repeats.percentile ?? null;
-
-  // For bottom-half: find worst sub-metric at least 10 pts below composite
-  const worstSubMetric = (() => {
-    if (compositePercentile === null || compositePercentile >= 50) return null;
-    const candidates = [
-      { pct: severityPct, label: "citation severity" },
-      { pct: frequencyPct, label: "citation frequency" },
-      { pct: repeatsPct, label: "repeat-citation rate" },
-    ].filter((c): c is { pct: number; label: string } =>
-      c.pct !== null && c.pct < 50 && compositePercentile - c.pct >= 10,
-    );
-    if (candidates.length === 0) return null;
-    return candidates.reduce((a, b) => (b.pct < a.pct ? b : a));
-  })();
-
   // Severity ratio callout: totalWeighted vs. representative peer median
   const totalWeighted = timeline.reduce((s, p) => s + p.facilityScore, 0);
   const peerMedianRep = [...timeline].reverse().find((p) => p.peerMedianScore > 0)?.peerMedianScore ?? null;
@@ -95,39 +75,16 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
     return null;
   })();
 
-  // Hero prose copy
-  const stateName = facility.state_code === "CA" ? "California" : "state";
   const copy: string = (() => {
     const beds = facility.beds ? `A ${facility.beds}-bed` : "A";
     const licType = SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility";
-
-    let line1: string;
-    if (totals.lastCitation) {
-      const d = new Date(totals.lastCitation + "T12:00:00");
-      const mo = d.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
-      const clean = totals.deficiencies === 1
-        ? `one citation on file (${mo})`
-        : `${totals.deficiencies} citation${totals.deficiencies === 1 ? "" : "s"} on file — most recent ${mo}`;
-      line1 = `${beds} ${licType} with ${clean}.`;
-    } else {
-      line1 = `${beds} ${licType} with no citations on file.`;
-    }
-
-    if (compositePercentile !== null) {
-      if (compositePercentile >= 50) {
-        const topPct = Math.max(1, 100 - Math.round(compositePercentile));
-        return `${line1} Ranks in the top ${topPct}% among ${stateName} peers.`;
-      }
-      if (worstSubMetric) {
-        return `${line1} Ranks in the bottom ${Math.max(1, Math.round(worstSubMetric.pct))}% on ${worstSubMetric.label} among ${stateName} peers.`;
-      }
-      const rounded = Math.round(compositePercentile);
-      const pctLabel =
-        compositePercentile <= 10 ? "bottom 10th percentile" :
-        `${rounded}${ordinalSuffix(rounded)} percentile`;
-      return `${line1} Ranks in the ${pctLabel} among ${stateName} peers.`;
-    }
-    return line1;
+    const citLabel =
+      totals.deficiencies === 0
+        ? "no citations on file"
+        : totals.deficiencies === 1
+          ? "one citation on file"
+          : `${totals.deficiencies} citations on file`;
+    return `${beds} ${licType} with ${citLabel}.`;
   })();
 
   const lastInsp = inspections[0] ?? null;
@@ -172,19 +129,19 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
               </div>
             </div>
             <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
-              <span dangerouslySetInnerHTML={{ __html: copy.replace(/(citation|citations|no citations on file)/gi, "<em>$1</em>") }} />
+              <span dangerouslySetInnerHTML={{ __html: copy.replace(/(no citations on file|citations|citation)/gi, "<em>$1</em>") }} />
             </div>
           </div>
         ) : (
           /* When 4+ photos: full-width copy below the grid */
           <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
-            <span dangerouslySetInnerHTML={{ __html: copy.replace(/(citation|citations|no citations on file)/gi, "<em>$1</em>") }} />
+            <span dangerouslySetInnerHTML={{ __html: copy.replace(/(no citations on file|citations|citation)/gi, "<em>$1</em>") }} />
           </div>
         )}
 
         {/* Severity ratio callout — only when facility is ≥ 3× peer median */}
         {showRatioCallout && (
-          <div className="mt-4 border-t border-white/15 pt-3.5">
+          <div className="hidden md:block mt-4 border-t border-white/15 pt-3.5">
             <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-gold/70 mb-0.5">
               Citation severity vs. peers
             </div>
@@ -198,7 +155,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
         )}
 
         {lastInspFormatted && (
-          <div className="mt-5 flex justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em]">
+          <div className="hidden md:flex mt-5 justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em]">
             {recentSevereFinding ? (
               <span className="text-rust">
                 Most recent severe finding ·{" "}
@@ -250,7 +207,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   });
 
   return (
-    <section className="fp-hero border-b-2 border-ink px-4 py-14 md:px-8">
+    <section className="fp-hero border-b-2 border-ink px-4 py-9 md:py-14 md:px-8">
       <div className="mx-auto max-w-[1280px]">
         {/* Eyebrow */}
         <div className="mb-3.5 flex items-center gap-3 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] text-rust">
@@ -275,7 +232,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {/* Editorial summary — same data points as the meta snippet so
                 Google has narrative prose above-the-fold to lift. */}
             {snippet && (
-              <p className="mt-5 max-w-[58ch] font-[family-name:var(--font-display)] text-[19px] italic leading-[1.45] text-ink-2">
+              <p className="hidden md:block mt-5 max-w-[58ch] font-[family-name:var(--font-display)] text-[19px] italic leading-[1.45] text-ink-2">
                 {snippet}
               </p>
             )}
@@ -287,7 +244,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               </span>
               {facility.beds && (
                 <span className="fp-tag bg-ink text-gold-soft px-3 py-[5px] font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.12em]">
-                  {facility.beds} licensed beds · {facility.capacity_tier ?? ""}
+                  {facility.beds} beds
                 </span>
               )}
               {isMc && (
@@ -297,9 +254,8 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               )}
             </div>
 
-            {/* Address */}
             {addr && (
-              <div className="mt-4 font-[family-name:var(--font-display)] text-[22px] italic text-ink-2">
+              <div className="hidden md:block mt-4 font-[family-name:var(--font-display)] text-[22px] italic text-ink-2">
                 {addr}
                 {facility.license_number && (() => {
                   const verifyUrl = regulatorLicensePageFor(

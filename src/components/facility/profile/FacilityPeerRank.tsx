@@ -105,7 +105,7 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
     : <><em>{peerNLabel} {state.name} facilities.</em></>;
 
   return (
-    <section id="peer" className="bg-ink py-16 text-paper">
+    <section id="peer" className="scroll-mt-28 bg-ink py-16 text-paper">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
           label="Peer Comparison"

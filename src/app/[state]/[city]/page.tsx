@@ -32,6 +32,7 @@ import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
 import { parentCountyForCity } from "@/lib/regions";
 import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
+import { loadPublishedHubContent, sanitizeHubHtml } from "@/lib/content/loadHubContent";
 import { formatCostRange, getStateCostBand } from "@/lib/content/stateCostBands";
 import { HubEligibility } from "@/components/hub/HubEligibility";
 
@@ -561,7 +562,15 @@ export default async function RegionPage({ params }: PageProps) {
           },
         ];
 
-  const cityIntro = !isCounty ? cityIntroForRegion(region.state.code, region.slug) : null;
+  // Live, human-approved editorial body (city hubs). Falls back to the
+  // hand-authored intro when no published/non-drifted row exists.
+  const dbCityHub = !isCounty
+    ? await loadPublishedHubContent(region.state.code, region.slug)
+    : null;
+  const cityIntro =
+    !isCounty && !dbCityHub
+      ? cityIntroForRegion(region.state.code, region.slug)
+      : null;
   const countyIntroParas = isCounty ? countyIntroParasForRegion(region.state.code, region.slug) : null;
 
   return (
@@ -616,11 +625,16 @@ export default async function RegionPage({ params }: PageProps) {
               )}
             </p>
             {findingsDate && <UpdatedStamp isoDate={findingsDate} />}
-            {cityIntro && (
+            {dbCityHub ? (
+              <div
+                className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch] [&_p]:mt-4 [&_p:first-child]:mt-0 [&_a]:text-teal [&_a]:underline"
+                dangerouslySetInnerHTML={{ __html: sanitizeHubHtml(dbCityHub.bodyHtml) }}
+              />
+            ) : cityIntro ? (
               <p className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch]">
                 {cityIntro}
               </p>
-            )}
+            ) : null}
           </div>
         </div>
 

@@ -17,7 +17,7 @@ function HeroPhoto({
   if (urls.length === 0) {
     return (
       <div
-        className="h-[360px] w-full overflow-hidden"
+        className="h-[230px] md:h-[360px] w-full overflow-hidden"
         style={{ background: "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 100%)" }}
       />
     );
@@ -25,7 +25,7 @@ function HeroPhoto({
 
   return (
     <div className="relative">
-      <div className="h-[360px] w-full overflow-hidden bg-ink-3">
+      <div className="h-[230px] md:h-[360px] w-full overflow-hidden bg-ink-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={urls[0]} alt={name} className="h-full w-full object-cover object-center" />
       </div>
@@ -51,7 +51,7 @@ function FacilityMap({ profile }: { profile: FacilityProfile }) {
         href={googleUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="group relative block h-[360px] overflow-hidden bg-paper-2"
+        className="group relative block h-[230px] md:h-[360px] overflow-hidden bg-paper-2"
         aria-label="View location in Google Maps"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -70,7 +70,7 @@ function FacilityMap({ profile }: { profile: FacilityProfile }) {
 
   // Fallback: SVG gridpaper sketch
   return (
-    <div className="relative h-[360px] overflow-hidden bg-paper-2">
+    <div className="relative h-[230px] md:h-[360px] overflow-hidden bg-paper-2">
       <svg
         viewBox="0 0 400 460"
         className="absolute inset-0 h-full w-full"
@@ -115,7 +115,7 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
   const intro = content?.intro ?? null;
 
   return (
-    <section id="snapshot" className="border-b border-paper-rule py-16">
+    <section id="snapshot" className="scroll-mt-28 border-b border-paper-rule py-10 md:py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
           label="Snapshot"
@@ -129,11 +129,11 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
           deck={intro ?? undefined}
         />
 
-        <div className="grid gap-7 md:grid-cols-[1.5fr_1fr]">
+        <div className="grid grid-cols-2 gap-2 sm:gap-7 md:grid-cols-[1.5fr_1fr]">
           {/* AFH residential privacy: omit exterior photo and street-level map */}
           {profile.isAfhResidential ? (
             <div
-              className="h-[360px] w-full overflow-hidden flex items-center justify-center"
+              className="h-[230px] md:h-[360px] w-full overflow-hidden flex items-center justify-center"
               style={{ background: "linear-gradient(135deg, #C9D8C8 0%, #8FA89A 100%)" }}
             >
               <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-white/70 text-center px-4">
@@ -144,7 +144,7 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
             <HeroPhoto urls={profile.photoUrls} name={facility.name} photoSources={profile.photoSources} />
           )}
           {profile.isAfhResidential ? (
-            <div className="h-[360px] w-full overflow-hidden flex items-center justify-center bg-paper-2">
+            <div className="h-[230px] md:h-[360px] w-full overflow-hidden flex items-center justify-center bg-paper-2">
               <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-ink/40 text-center px-4">
                 Street view omitted · residential privacy
               </span>
