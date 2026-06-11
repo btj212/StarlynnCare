@@ -65,6 +65,10 @@ function facilityEditorialLinks(
 
   if (stateCode === "CA") {
     links.push({ href: "/california/cost-guide", label: "What memory care costs in California →" });
+  } else if (stateCode === "PA") {
+    links.push({ href: "/pennsylvania/what-is-a-personal-care-home", label: "What is a personal care home in Pennsylvania? →" });
+    links.push({ href: "/pennsylvania/personal-care-home-vs-assisted-living", label: "Personal care home vs. assisted living →" });
+    links.push({ href: "/pennsylvania/personal-care-home-cost", label: "What does a PA personal care home cost? →" });
   } else {
     const vs = vsNursingHref[stateCode];
     if (vs) links.push({ href: vs, label: `Memory care vs. nursing home in ${stateName} →` });

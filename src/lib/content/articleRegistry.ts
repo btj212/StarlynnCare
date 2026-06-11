@@ -239,6 +239,32 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     live: true,
   },
 
+  // Pennsylvania — PCH explainer cluster
+  {
+    slug: "/pennsylvania/what-is-a-personal-care-home",
+    title: "What is a Personal Care Home in Pennsylvania?",
+    desc: "PCH definition, licensing (55 Pa Code Ch 2600), Special Care designation, and how DHS OLTL inspections work.",
+    states: ["PA"],
+    tags: ["licensing"],
+    live: true,
+  },
+  {
+    slug: "/pennsylvania/personal-care-home-vs-assisted-living",
+    title: "Personal care home vs. assisted living in Pennsylvania",
+    desc: "PCH (Ch 2600) vs. ALR (Ch 2800) — care level, staffing, Medicaid, and what each means for memory care in PA.",
+    states: ["PA"],
+    tags: ["decision", "licensing"],
+    live: true,
+  },
+  {
+    slug: "/pennsylvania/personal-care-home-cost",
+    title: "What does a personal care home cost in Pennsylvania?",
+    desc: "PA PCH and ALR memory care costs range $4,000–$8,500/month. What drives the price and what Medicaid covers.",
+    states: ["PA"],
+    tags: ["costs"],
+    live: true,
+  },
+
   // Pennsylvania insights — data analysis stories
   {
     slug: "/pennsylvania/insights/pa-rural-home-highest-immediate-jeopardy",
