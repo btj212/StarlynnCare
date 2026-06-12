@@ -11,6 +11,9 @@ Usage:
   python3 scripts/weekly_inspection_ingest.py --skip-ca   # CA handled by cdss-weekly-ingest
 
 Requires DATABASE_URL in .env.local or environment.
+
+See also scripts/probe_inspection_freshness.py for source-only reconnaissance
+when DATABASE_URL is unavailable (Cursor automation env).
 """
 
 from __future__ import annotations
