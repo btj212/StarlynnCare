@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
-import { buildBreadcrumbList, buildWebPageWithReviewer } from "@/lib/seo/schema";
+import { buildBreadcrumbList, buildFaqSchemaFromPairs, buildWebPageWithReviewer } from "@/lib/seo/schema";
 
 const METHODOLOGY_PATH = "/methodology";
 const methodologyCanonical = canonicalFor(METHODOLOGY_PATH);
@@ -112,6 +112,20 @@ function TierKey() {
 }
 
 export default function MethodologyPage() {
+  const methodologyFaqs = [
+    {
+      q: "How does StarlynnCare rate memory care facilities?",
+      a: "StarlynnCare rates facilities using only official state inspection records — no paid placements, referral fees, or user-submitted content. We compute four independent signals (compliance record, severity record, dementia-care specificity, and complaint pattern) and compare each against the facility's local peer set using 33rd and 66th percentile cutoffs.",
+    },
+    {
+      q: "Why doesn't StarlynnCare publish a composite score or star rating?",
+      a: "A composite score implies one universal weighting of four different signals — but the right weighting depends on each family's situation. A family focused on dementia-specific violations will weight §87705 citations differently than one focused on overall compliance frequency. Composites also obscure: a facility with one catastrophic Type A event looks the same as one with a steady pattern of minor violations. We show four signals separately so families can weigh them.",
+    },
+    {
+      q: "Where does the inspection data come from?",
+      a: "Data comes directly from official state licensing portals: CDSS Community Care Licensing (CA), Oregon DHS LTC Licensing (OR), DSHS ALTSA (WA), Minnesota MDH (MN), HHSC LTCR (TX), and PA DHS OLTL (PA). We ingest records on a regular automated schedule and publish only facilities with an active state license and at least one published inspection record.",
+    },
+  ];
   const methodologyJsonLd = [
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
@@ -122,6 +136,7 @@ export default function MethodologyPage() {
       url: methodologyCanonical,
       description: methodologyDesc,
     }),
+    buildFaqSchemaFromPairs(methodologyFaqs, methodologyCanonical),
   ];
 
   return (
@@ -145,6 +160,12 @@ export default function MethodologyPage() {
             inspection records. We do not invent data, accept paid placements,
             or produce a single letter grade. Instead, we show four independent
             signals and let families weigh them.
+          </p>
+          <p className="mt-3 text-sm text-muted">
+            Looking for a summary of how we rate facilities?{" "}
+            <Link href="/memory-care-facility-ratings" className="text-teal underline underline-offset-4">
+              Memory care facility ratings, explained →
+            </Link>
           </p>
           <p className="mt-3 text-[14px] font-[family-name:var(--font-mono)] text-muted">
             Last updated {EFFECTIVE}

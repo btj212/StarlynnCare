@@ -5,7 +5,7 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { buildBreadcrumbList, buildStateHubCollectionPage, buildWebPageWithReviewer } from "@/lib/seo/schema";
+import { buildBreadcrumbList, buildItemListSchema, buildStateHubCollectionPage, buildWebPageWithReviewer } from "@/lib/seo/schema";
 import { stateFromSlug } from "@/lib/states";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
@@ -176,6 +176,17 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
   const nonSmallCount = facilities.length - hiddenSmallCount;
 
   const pageCanonical = canonicalFor(`/${state.slug}/facilities`);
+  // ItemList capped at 50 entries — sufficient for Google's schema parser;
+  // a full 2000-entry blob for CA would be excessively large.
+  const itemListFacilities = facilities.slice(0, 50).map((f) => ({
+    name: f.name,
+    url: canonicalFor(`/${state.slug}/${f.city_slug}/${f.slug}`),
+    facilityId: f.id,
+    street: f.street,
+    city: f.city,
+    postalCode: f.zip,
+    addressRegion: state.name,
+  }));
   const jsonLd = [
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
@@ -192,6 +203,9 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
       url: pageCanonical,
       description: `Browse every licensed memory care facility in ${state.name}, searchable by name, city, and citation history.`,
     }),
+    ...(itemListFacilities.length > 0
+      ? [buildItemListSchema(`Memory care facilities in ${state.name}`, pageCanonical, itemListFacilities)]
+      : []),
   ];
 
   return (

@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
   // allowed origins; flip to Content-Security-Policy (no -Report-Only) once
   // reports come back clean for a few days.
   async headers() {
+    const isPreview = process.env.VERCEL_ENV !== "production";
     const securityHeaders = [
       {
         key: "Strict-Transport-Security",
@@ -57,7 +58,12 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/:path*",
-        headers: securityHeaders,
+        headers: [
+          ...securityHeaders,
+          // Prevent Vercel preview deployments from being indexed. VERCEL_ENV is
+          // "production" only on the production deployment; preview builds get "preview".
+          ...(isPreview ? [{ key: "X-Robots-Tag", value: "noindex" }] : []),
+        ],
       },
     ];
   },

@@ -97,7 +97,7 @@ export function StateHubSections({ data, config }: Props) {
 
       <StateHubFaq faqs={config.faqs} />
 
-      <StateHubCta facilityCount={stats.facilities} ctaHref={`/${stateSlug}`} />
+      <StateHubCta facilityCount={stats.facilities} ctaHref={`/${stateSlug}/facilities`} />
     </>
   );
 }

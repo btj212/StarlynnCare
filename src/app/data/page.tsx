@@ -10,14 +10,15 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 const DATA_PATH = "/data";
 const dataCanonical = canonicalFor(DATA_PATH);
 const dataDesc =
-  "Overview of the memory care inspection and quality dataset behind StarlynnCare — sourced from CDSS, HHSC, Oregon DHS, WA DSHS, and MN MDH across five states.";
+  "Overview of the memory care inspection and quality dataset behind StarlynnCare — sourced from CDSS, HHSC, Oregon DHS, WA DSHS, MDH, and PA DHS across 8 states.";
+const dataTitle = "Dataset — Memory Care Inspection Records (8 States) | StarlynnCare";
 
 export const metadata: Metadata = {
-  title: "Dataset — Memory Care Inspection Records (5 States) | StarlynnCare",
+  title: dataTitle,
   description: dataDesc,
   alternates: { canonical: dataCanonical },
   openGraph: {
-    title: "Dataset — Memory Care Inspection Records (5 States) | StarlynnCare",
+    title: dataTitle,
     description: dataDesc,
     url: dataCanonical,
     type: "website",
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dataset — California Memory Care Inspection Records | StarlynnCare",
+    title: dataTitle,
     description: dataDesc,
     images: ["/og-default.png"],
   },
@@ -55,7 +56,7 @@ export default async function DataPage() {
       { name: "Dataset", url: dataCanonical },
     ]),
     buildWebPageWithReviewer({
-      name: "California Memory Care Inspection & Quality Records",
+      name: dataTitle,
       url: dataCanonical,
       description: dataDesc,
     }),
@@ -75,7 +76,7 @@ export default async function DataPage() {
             · Dataset
           </p>
           <h1 className="mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
-            California Memory Care Inspection &amp; Quality Records
+            Memory Care Inspection &amp; Quality Records — 8 States
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-slate">
             StarlynnCare aggregates public regulatory data into facility-level
