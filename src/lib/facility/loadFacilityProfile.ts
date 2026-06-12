@@ -641,21 +641,40 @@ export async function loadFacilityProfile(params: {
   const tourQuestions = (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [];
 
   // Photos — use the gallery array (photo_urls) when populated; fall back to legacy photo_url.
+  // User-attributed Google Places photos ("© Google · {photographer}") are suppressed:
+  // they carry individual copyright risk. Street View (no photographer name) is retained.
+  // TODO Phase 3: replace with operator-submitted photos via "claim your profile".
   const facilityWithGallery = facility as unknown as {
     photo_urls?: string[];
     photo_sources?: Array<{ url: string; source: string; attribution: string }>;
   };
   const rawPhotoUrls = facilityWithGallery.photo_urls;
-  const photoUrls: string[] = Array.isArray(rawPhotoUrls) && rawPhotoUrls.length > 0
+  const rawPhotoSources = facilityWithGallery.photo_sources;
+
+  const isUserAttributedPlacesPhoto = (src: { source: string; attribution: string }) =>
+    // Google Places user-contributed: attribution has a photographer name after "© Google · "
+    (src.source === "Google Places" || src.attribution.includes(" · ")) &&
+    src.attribution !== "© Google" &&
+    src.attribution !== "© Google Street View";
+
+  const allUrls: string[] = Array.isArray(rawPhotoUrls) && rawPhotoUrls.length > 0
     ? rawPhotoUrls.filter(Boolean)
     : facility.photo_url
       ? [facility.photo_url]
       : [];
-  const photoSources = facilityWithGallery.photo_sources ?? photoUrls.map((url) => ({
+  const allSources = rawPhotoSources ?? allUrls.map((url) => ({
     url,
     source: "Google Street View",
     attribution: facility.photo_attribution ?? "© Google",
   }));
+
+  // Remove user-attributed Places photos; keep Street View and unattributed.
+  const filteredPairs = allUrls
+    .map((url, i) => ({ url, src: allSources[i] ?? { url, source: "Google Street View", attribution: "© Google" } }))
+    .filter(({ src }) => !isUserAttributedPlacesPhoto(src));
+
+  const photoUrls: string[] = filteredPairs.map((p) => p.url);
+  const photoSources = filteredPairs.map((p) => p.src);
 
   // Map
   const lat = facility.latitude ? parseFloat(facility.latitude) : null;

@@ -1399,6 +1399,14 @@ export const REGIONS: ReadonlyArray<Region> = [
       "yoncalla",
     ],
   },
+  // --- Oregon — additional city hubs (city slugs with facilities but no prior static entry) ---
+  {
+    slug: "sweet-home",
+    name: "Sweet Home",
+    kind: "city",
+    state: OREGON,
+    citySlugs: ["sweet-home"],
+  },
   // --- Washington — additional county hubs ---
   {
     slug: "king-county",

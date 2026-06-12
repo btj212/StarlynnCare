@@ -69,45 +69,34 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const facilityNoun = region.state.code === "TX" ? "ALFs" : "facilities";
   const isCounty = region.kind === "county";
 
-  // Title: lead with the citation-count hook when data is available — this is the
-  // unique differentiator vs A Place for Mom / Caring.com who can't show it.
-  // County/city both fall back to static patterns when totalCount is 0.
+  // Title: lead with the "Best X, ranked by inspection records" frame — this matches
+  // dominant search intent (comparison/selection) while keeping the watchdog differentiation
+  // in the subtitle and body. The citation hook becomes proof of rigor, not the headline.
   const stateAbbr = region.state.code;
   let metaTitle: string;
   if (isCounty) {
-    const candidates = withDeficiency > 0
-      ? [
-          `${withDeficiency} Facilities Cited · Memory Care in ${region.name}, ${stateAbbr}`,
-          `${withDeficiency} Cited · Memory Care in ${region.name}, ${stateAbbr}`,
-          `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
-          `Memory Care in ${region.name} - ${region.state.name} Inspections`,
-          `Memory Care in ${region.name}, ${region.state.name}`,
-        ]
-      : [
-          `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
-          `Memory Care in ${region.name} - ${region.state.name} Inspections`,
-          `Memory Care in ${region.name}, ${region.state.name}`,
-        ];
+    const candidates = [
+      `Best Memory Care in ${region.name}, ${stateAbbr} — Ranked by Inspections`,
+      `Best Memory Care in ${region.name}, ${stateAbbr}`,
+      `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
+      `Memory Care in ${region.name}, ${region.state.name}`,
+    ];
     metaTitle = candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
   } else {
-    const candidates = withDeficiency > 0
-      ? [
-          `${withDeficiency} Facilities Cited · Memory Care in ${region.name}, ${stateAbbr}`,
-          `${withDeficiency} Cited · Memory Care in ${region.name}, ${stateAbbr}`,
-          `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`,
-          `Memory Care in ${region.name}, ${region.state.name}`,
-        ]
-      : [
-          `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`,
-          `Memory Care in ${region.name}, ${region.state.name}`,
-        ];
+    const candidates = [
+      `Best Memory Care in ${region.name}, ${stateAbbr} — Ranked by Inspections`,
+      `Best Memory Care in ${region.name}, ${stateAbbr}`,
+      `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`,
+      `Memory Care in ${region.name}, ${region.state.name}`,
+    ];
     metaTitle = candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
   }
 
-  // Data-driven description: lead with facility count + cited count + agency + date.
+  // Data-driven description: lead with ranking promise — count + record basis — then
+  // cite the citation stat as proof of rigor rather than the headline of doom.
   const dataDriven =
     totalCount > 0
-      ? `${totalCount} licensed memory care ${facilityNoun} in ${region.name}. ${withDeficiency} with ${reg} citations on record${findingsDate ? `. Refreshed ${findingsDate}` : ""}.`
+      ? `${totalCount} memory care ${facilityNoun} in ${region.name}, ranked by ${reg} inspection records. ${withDeficiency > 0 ? `${withDeficiency} have citations on file.` : "Includes full citation history."}`
       : null;
 
   const fallbackByState: Record<string, string> = {
@@ -153,6 +142,7 @@ export default async function RegionPage({ params }: PageProps) {
   const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
   if (!region) notFound();
   const isCounty = region.kind === "county";
+  const reg = REGULATOR_ABBR[region.state.code] ?? "state";
   // For city pages: look up parent county so we can show a county breadcrumb link
   const parentCounty = !isCounty
     ? parentCountyForCity(region.state.code, region.slug)
@@ -388,16 +378,22 @@ export default async function RegionPage({ params }: PageProps) {
   const pageUrl = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const pageTitleCandidates = isCounty
     ? [
+        `Best Memory Care in ${region.name}, ${region.state.code} — Ranked by Inspections`,
+        `Best Memory Care in ${region.name}, ${region.state.code}`,
         `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
-        `Memory Care in ${region.name} - ${region.state.name} Inspections`,
         `Memory Care in ${region.name}, ${region.state.name}`,
       ]
-    : [`Memory Care in ${region.name}, ${region.state.name} - Inspection Records`, `Memory Care in ${region.name}, ${region.state.name}`];
+    : [
+        `Best Memory Care in ${region.name}, ${region.state.code} — Ranked by Inspections`,
+        `Best Memory Care in ${region.name}, ${region.state.code}`,
+        `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`,
+        `Memory Care in ${region.name}, ${region.state.name}`,
+      ];
   const pageTitle = pageTitleCandidates.find((c) => c.length <= 60) ?? pageTitleCandidates.at(-1)!;
   const pageDesc =
     region.state.code === "TX"
-      ? `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — public LTCR record where published.`
-      : `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`;
+      ? `${totalCount} Alzheimer-certified assisted living facilities in ${region.name}, ranked by HHSC inspection records — public LTCR data where published.`
+      : `${totalCount} licensed memory care facilities in ${region.name}, ranked by state inspection records. Full CDSS citation history for every facility.`;
   // For PA county pages, sort the ItemList JSON-LD by record rank (most severe first)
   // so ItemList positions reflect the displayed "By record" ordering.
   const sortedFacilitiesForItemList =
@@ -606,7 +602,7 @@ export default async function RegionPage({ params }: PageProps) {
               className="font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink mb-4"
               style={{ fontSize: "clamp(40px, 5vw, 64px)", lineHeight: 1 }}
             >
-              Memory care in {region.name}
+              Best memory care in {region.name}
             </h1>
             <p
               id="hub-lede"
@@ -614,13 +610,14 @@ export default async function RegionPage({ params }: PageProps) {
             >
               {region.state.code === "TX" ? (
                 <>
-                  HHSC public listings for Alzheimer-certified assisted living — inspection
-                  findings drawn from Long-Term Care Regulation (LTCR) where published.
+                  {totalCount} Alzheimer-certified facilities, ranked by HHSC inspection
+                  records — every finding drawn from Long-Term Care Regulation (LTCR).
                 </>
               ) : (
                 <>
-                  State inspection records and citation history for every licensed
-                  facility — built from primary CDSS data.
+                  {totalCount > 0 ? `${totalCount} licensed facilities, ` : ""}ranked by
+                  state inspection records — every citation from primary{" "}
+                  {reg} data, no referral fees.
                 </>
               )}
             </p>
@@ -761,7 +758,7 @@ export default async function RegionPage({ params }: PageProps) {
               stateSlug={region.state.slug}
               regionName={region.name}
               hiddenSmallCount={smallCount}
-              initialShowSmall={visibleCount === 0 && smallCount > 0}
+              initialShowSmall={smallCount > 0}
             />
           </div>
         )}

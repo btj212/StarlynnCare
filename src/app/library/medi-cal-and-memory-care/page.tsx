@@ -9,6 +9,7 @@ import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
+import { AlwEmailCapture } from "@/components/editorial/AlwEmailCapture";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -221,10 +222,46 @@ export default function MediCalMemoryCarePage() {
               <Link href="/california/alameda-county" className="text-teal underline underline-offset-4">Alameda</Link>
               , Contra Costa, Fresno, Kern, Los Angeles,
               Orange, Riverside, Sacramento, San Bernardino, San Diego, San Francisco, San Joaquin, San Mateo, Santa Clara,
-              and Sonoma. The state has periodically proposed expansion. The current participating-county list lives on the DHCS
+              and Sonoma.               The state has periodically proposed expansion. The current participating-county list lives on the DHCS
               ALW page and should always be checked there before relying on what any directory (including this one) says about
               a specific county.
             </p>
+            {/* ALW county router — links to facility hubs for key participating counties */}
+            <div className="mt-4 rounded-lg border border-paper-rule bg-paper-2 px-5 py-5">
+              <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-rust mb-3">
+                Browse facilities by ALW county
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { name: "Alameda County", href: "/california/alameda-county" },
+                  { name: "Contra Costa County", href: "/california/contra-costa-county" },
+                  { name: "Los Angeles County", href: "/california/los-angeles-county" },
+                  { name: "Orange County", href: "/california/orange-county" },
+                  { name: "Riverside County", href: "/california/riverside-county" },
+                  { name: "Sacramento County", href: "/california/sacramento-county" },
+                  { name: "San Bernardino County", href: "/california/san-bernardino-county" },
+                  { name: "San Diego County", href: "/california/san-diego-county" },
+                  { name: "San Francisco County", href: "/california/san-francisco-county" },
+                  { name: "San Mateo County", href: "/california/san-mateo-county" },
+                  { name: "Santa Clara County", href: "/california/santa-clara-county" },
+                  { name: "Fresno County", href: "/california/fresno-county" },
+                ].map(({ name, href }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="rounded-full border border-paper-rule bg-paper px-3 py-1.5 text-[13px] text-ink-2 hover:border-teal/40 hover:text-teal transition-colors"
+                  >
+                    {name} →
+                  </Link>
+                ))}
+                <Link
+                  href="/california/facilities"
+                  className="rounded-full border border-teal/40 bg-teal/5 px-3 py-1.5 text-[13px] text-teal hover:bg-teal/10 transition-colors"
+                >
+                  All California facilities →
+                </Link>
+              </div>
+            </div>
             <p>
               <strong className="font-medium text-ink">How a family gets in.</strong> A person must first qualify for
               full-scope Medi-Cal — the financial side. They must then meet the level-of-care criteria for nursing facility
@@ -387,6 +424,10 @@ export default function MediCalMemoryCarePage() {
                 </div>
               ))}
             </dl>
+          </div>
+
+          <div className="mt-10">
+            <AlwEmailCapture />
           </div>
 
           <LibraryCta stateSlug="california" stateName="California" />
