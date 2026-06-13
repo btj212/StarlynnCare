@@ -49,7 +49,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "TX": date(2023, 2, 16),
     "OR": date(2026, 6, 11),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 6, 2),  # MN ingest failed 2026-06-13 (pool exhaustion); source max 2026-06-13 pending
+    "MN": date(2026, 6, 3),  # +4 inspections ingested 2026-06-13 run 27481851594
     "UT": date(2026, 5, 11),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
