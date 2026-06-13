@@ -1,4 +1,4 @@
-import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
+import { GOVERNANCE_24_WORDS, BUY_SIDE_TAGLINE } from "@/lib/seo/governance";
 
 const SCOPE_LABELS: Record<string, string> = {
   CA: "EST 2025 IN CA",
@@ -33,16 +33,21 @@ export function GovernanceBar({ scope = "CA" }: GovernanceBarProps = {}) {
           Editorial Independence
         </div>
 
-        {/* Statement */}
-        <p className="flex-1 opacity-95 text-[12.5px] leading-snug md:text-[13.5px] md:leading-normal text-left">
-          {GOVERNANCE_24_WORDS
-            .split(/(no referral commissions, lead fees, or paid placement)/i)
-            .map((part, i) =>
-              /no referral commissions/i.test(part)
-                ? <strong key={i} className="text-white font-semibold">{part}</strong>
-                : <span key={i}>{part}</span>
-            )}
-        </p>
+        {/* Statement + tagline */}
+        <div className="flex-1 min-w-0">
+          <p className="opacity-95 text-[12.5px] leading-snug md:text-[13.5px] md:leading-normal text-left">
+            {GOVERNANCE_24_WORDS
+              .split(/(no referral commissions, lead fees, or paid placement)/i)
+              .map((part, i) =>
+                /no referral commissions/i.test(part)
+                  ? <strong key={i} className="text-white font-semibold">{part}</strong>
+                  : <span key={i}>{part}</span>
+              )}
+          </p>
+          <p className="hidden md:block mt-0.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.04em] opacity-60">
+            {BUY_SIDE_TAGLINE}
+          </p>
+        </div>
 
         {/* Right badge */}
         <div

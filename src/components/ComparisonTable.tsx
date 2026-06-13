@@ -1,3 +1,5 @@
+import { BUY_SIDE_TAGLINE } from "@/lib/seo/governance";
+
 type Cell = { text: string; type?: "check" | "cross" | "text" };
 
 const rows: { label: string; sc: Cell; apfm: Cell; medicare: Cell }[] = [
@@ -71,8 +73,7 @@ export default function ComparisonTable() {
             Built for families. Not for facilities.
           </h2>
           <p className="text-white/65 text-base max-w-[540px] mx-auto leading-[1.7]">
-            Every platform you&apos;ve found so far earns money when you choose a
-            facility. We don&apos;t. Here&apos;s what that means in practice.
+            {BUY_SIDE_TAGLINE}
           </p>
         </div>
 

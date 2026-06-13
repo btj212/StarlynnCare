@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     facilityId?: string;
     facilityName?: string;
     source?: string;
+    intent?: string;
     [HONEYPOT_FIELD]?: unknown;
     [HONEYPOT_TS_FIELD]?: unknown;
   };
@@ -36,7 +37,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const { email, facilityId, facilityName, source } = body;
+  const { email, facilityId, facilityName, source, intent } = body;
+
+  // Sanitize intent to the three known values; discard anything else.
+  const safeIntent =
+    intent === "research" || intent === "touring" || intent === "resident"
+      ? intent
+      : undefined;
 
   if (!email || !facilityId || !facilityName) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -58,6 +65,7 @@ export async function POST(req: NextRequest) {
         facility_id: facilityId,
         source: source ?? "facility_hero",
         confirmed_at: confirmedAt,
+        ...(safeIntent ? { intent: safeIntent } : {}),
       },
       { onConflict: "email,facility_id", ignoreDuplicates: false },
     )
@@ -89,6 +97,8 @@ export async function POST(req: NextRequest) {
     source: source ?? "facility_hero",
     facilityName,
     facilityId: facilityId,
+    journeyStage: safeIntent === "resident" ? "resident" : safeIntent === "touring" ? "decision" : "search",
+    ...(safeIntent ? { watchIntent: safeIntent } : {}),
   });
 
   // Admin alert + audit log — fire-and-forget, never blocks user response.
@@ -97,8 +107,8 @@ export async function POST(req: NextRequest) {
     email,
     source: source ?? "facility_hero",
     facilityId,
-    summary: `${facilityName} · ${source ?? "facility_hero"}`,
-    payload: { facilityName, facilityId },
+    summary: `${facilityName} · ${source ?? "facility_hero"}${safeIntent ? ` · ${safeIntent}` : ""}`,
+    payload: { facilityName, facilityId, ...(safeIntent ? { intent: safeIntent } : {}) },
   }).catch((err) => console.error("[watch] recordSubmission failed:", err));
 
   return NextResponse.json({ ok: true });

@@ -10,6 +10,13 @@ interface FacilityWatchSignupProps {
 }
 
 type FormState = "idle" | "submitting" | "success" | "error";
+type Intent = "research" | "touring" | "resident";
+
+const INTENT_OPTIONS: { value: Intent; label: string }[] = [
+  { value: "research", label: "Researching" },
+  { value: "touring", label: "Touring soon" },
+  { value: "resident", label: "They live here" },
+];
 
 export function FacilityWatchSignup({
   facilityId,
@@ -17,6 +24,7 @@ export function FacilityWatchSignup({
   citationCount = 0,
 }: FacilityWatchSignupProps) {
   const [email, setEmail] = useState("");
+  const [intent, setIntent] = useState<Intent | undefined>(undefined);
   const [state, setState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -32,6 +40,7 @@ export function FacilityWatchSignup({
       facilityId,
       facilityName,
       source: "inline_strip",
+      intent,
     });
 
     if (result.ok) {
@@ -65,7 +74,7 @@ export function FacilityWatchSignup({
             {/* Copy */}
             <div className="md:flex-1">
               <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>
-                FACILITY WATCH · BETA
+                FACILITY WATCH · FREE
               </p>
               <p className="font-[family-name:var(--font-display)] text-[26px] leading-snug text-white md:text-[30px]">
                 {headline}
@@ -76,7 +85,31 @@ export function FacilityWatchSignup({
             </div>
 
             {/* Form */}
-            <div className="md:flex-shrink-0">
+            <div className="md:flex-shrink-0 flex flex-col gap-4">
+              {/* Optional intent selector */}
+              <div>
+                <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em] mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>
+                  Where are you in the process? <span style={{ color: "rgba(255,255,255,0.4)" }}>(optional)</span>
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {INTENT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setIntent(intent === opt.value ? undefined : opt.value)}
+                      className="px-3 py-1.5 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] border transition-colors"
+                      style={{
+                        borderColor: intent === opt.value ? "white" : "rgba(255,255,255,0.35)",
+                        backgroundColor: intent === opt.value ? "white" : "transparent",
+                        color: intent === opt.value ? "var(--color-teal)" : "rgba(255,255,255,0.85)",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <form
                 onSubmit={handleSubmit}
                 className="flex flex-col gap-3 sm:flex-row sm:items-end"

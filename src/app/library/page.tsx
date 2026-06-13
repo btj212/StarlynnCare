@@ -43,6 +43,11 @@ type ArticleCard = { title: string; desc: string; href: string };
 
 const SECTION_DECISION: ArticleCard[] = [
   {
+    title: "The first 72 hours: a family crisis playbook",
+    desc: "Discharge rights, the five questions before signing anything, ombudsman contacts, and a conflict-free shortlist — for families navigating an emergency placement.",
+    href: "/library/the-first-72-hours",
+  },
+  {
     title: "Memory care vs. assisted living",
     desc: "Regulation, staffing, environment of care, and cost — when dementia-specific programming matters.",
     href: "/memory-care-vs-assisted-living",

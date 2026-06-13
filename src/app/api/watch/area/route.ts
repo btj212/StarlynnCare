@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     source: source ?? "city_modal",
     areaName,
     areaSlug,
+    journeyStage: "search",
   });
 
   // Admin alert + audit log — fire-and-forget, never blocks user response.
