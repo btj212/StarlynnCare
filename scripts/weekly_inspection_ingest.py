@@ -142,25 +142,44 @@ def ingest_ca(skip: bool) -> bool:
     return rc == 0
 
 
-def ingest_or(conn) -> bool:
+def _or_source_max() -> date | None:
     out_dir = REPO_ROOT / ".firecrawl" / "or-scrape"
     rc = _python(str(SCRAPERS / "or_csv_export.py"), label="OR CSV export", allow_fail=True)
     if rc != 0:
+        return None
+    insp_csv = out_dir / f"inspections-{date.today().isoformat()}.csv"
+    if not insp_csv.is_file():
+        print("  OR: inspections CSV missing after export", file=sys.stderr)
+        return None
+    return _max_date_in_or_csv(insp_csv)
+
+
+def _mn_source_max() -> date | None:
+    out_dir = REPO_ROOT / ".firecrawl" / "mn-scrape"
+    rc = _python(str(SCRAPERS / "mn_mdh_inspections_scrape.py"), label="MN MDH findings scrape", allow_fail=True)
+    if rc != 0:
+        return None
+    findings = out_dir / f"mn-findings-{date.today().isoformat()}.json"
+    if not findings.is_file():
+        print("  MN: findings JSON missing", file=sys.stderr)
+        return None
+    return _max_date_in_mn_findings(findings)
+
+
+def ingest_or(conn) -> bool:
+    out_dir = REPO_ROOT / ".firecrawl" / "or-scrape"
+    source_max = _or_source_max()
+    if source_max is None:
         return False
 
     today = date.today().isoformat()
     insp_csv = out_dir / f"inspections-{today}.csv"
-    viol_csv = out_dir / f"violations-{today}.csv"
-    if not insp_csv.is_file():
-        print("  OR: inspections CSV missing after export", file=sys.stderr)
-        return False
-
-    source_max = _max_date_in_or_csv(insp_csv)
     with conn.cursor() as cur:
         base = _baseline(cur, "OR")
     db_max = base["max_date"]
     if source_max and db_max and source_max <= db_max:
-        print(f"  OR: source max {source_max} ≤ DB max {db_max} — running ingest anyway (idempotent)")
+        print(f"  OR: source max {source_max} ≤ DB max {db_max} — no new data, skipping ingest")
+        return False
 
     _python(str(SCRAPERS / "or_inspections_ingest.py"), "--input", str(insp_csv), label="OR inspections ingest")
     # Violations CSV is 6MB+ and takes >1h — run monthly via or_overnight_run.sh, not weekly.
@@ -179,14 +198,17 @@ def ingest_wa(conn) -> bool:
 
 def ingest_mn(conn) -> bool:
     out_dir = REPO_ROOT / ".firecrawl" / "mn-scrape"
-    rc = _python(str(SCRAPERS / "mn_mdh_inspections_scrape.py"), label="MN MDH findings scrape", allow_fail=True)
-    if rc != 0:
+    source_max = _mn_source_max()
+    if source_max is None:
         return False
 
     today = date.today().isoformat()
     findings = out_dir / f"mn-findings-{today}.json"
-    if not findings.is_file():
-        print("  MN: findings JSON missing", file=sys.stderr)
+    with conn.cursor() as cur:
+        base = _baseline(cur, "MN")
+    db_max = base["max_date"]
+    if source_max and db_max and source_max <= db_max:
+        print(f"  MN: source max {source_max} ≤ DB max {db_max} — no new data, skipping ingest")
         return False
 
     alrc = _latest_glob(out_dir, "mn-alrc-facilities-*.json")
@@ -259,15 +281,72 @@ STATE_RUNNERS = {
     "PA": ingest_pa,
 }
 
+# Source-only freshness probes (no DATABASE_URL required).
+SOURCE_CHECKERS: dict[str, Any] = {
+    "OR": _or_source_max,
+    "MN": _mn_source_max,
+}
+
+
+def _check_sources(states: list[str], db_baselines: dict[str, dict[str, Any]] | None) -> list[str]:
+    """Return state codes whose regulator source has data newer than the DB max."""
+    pending: list[str] = []
+    label = "Source freshness check" if db_baselines else "Source-only freshness check (no DATABASE_URL)"
+    print(f"\n[{label}]")
+    for st in states:
+        checker = SOURCE_CHECKERS.get(st)
+        if checker is None:
+            print(f"  {st}: no source-only probe — run full ingest with DATABASE_URL")
+            continue
+        source_max = checker()
+        if db_baselines is None:
+            print(f"  {st}: source max={source_max} (DB baseline unavailable)")
+            continue
+        db_max = db_baselines[st]["max_date"]
+        newer = source_max is not None and (db_max is None or source_max > db_max)
+        flag = "NEW DATA" if newer else "no change"
+        print(f"  {st}: source max={source_max} db max={db_max} → {flag}")
+        if newer:
+            pending.append(st)
+    return pending
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Weekly inspection ingest for all covered states")
     ap.add_argument("--state", choices=COVERED_STATES, help="Run one state only")
     ap.add_argument("--skip-ca", action="store_true", help="Skip CA (already ran via cdss-weekly-ingest)")
     ap.add_argument("--skip-validate", action="store_true", help="Skip post-ingest validation")
+    ap.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Probe regulator sources only; exit 2 if new data is pending ingest",
+    )
     args = ap.parse_args()
 
     states = [args.state] if args.state else list(COVERED_STATES)
+
+    if args.check_only:
+        db_baselines: dict[str, dict[str, Any]] | None = None
+        if os.environ.get("DATABASE_URL"):
+            with get_conn() as conn:
+                with conn.cursor() as cur:
+                    db_baselines = {st: _baseline(cur, st) for st in states}
+                    for st, base in db_baselines.items():
+                        print(
+                            f"  {st} DB baseline: {base['inspection_count']} inspections, "
+                            f"max={base['max_date']}"
+                        )
+        else:
+            print("  DATABASE_URL not set — comparing OR/MN sources only (no DB baseline).")
+        pending = _check_sources(states, db_baselines)
+        print("\n" + "=" * 60)
+        print("CHECK-ONLY SUMMARY")
+        print("=" * 60)
+        if pending:
+            print(f"  States with new source data pending ingest: {', '.join(pending)}")
+            return 2
+        print("  No new source data detected in checked states.")
+        return 0
     print("=" * 60)
     print("StarlynnCare — Weekly inspection ingest")
     print(f"  States: {', '.join(states)}")
