@@ -29,15 +29,23 @@ export const ilStateConfig: StateHubConfig = {
     },
   ],
   guidesHref: "/illinois/guides",
-  stateArticles: [],
+  stateArticles: [
+    {
+      slug: "memory-care-licensing",
+      title: "Illinois ALE and SHE licensing explained",
+      desc: "What IDPH requires to operate an Assisted Living Establishment in Illinois, how Part 295 violations work, and how to read an Illinois facility profile.",
+      tags: ["licensing"],
+      live: true,
+    },
+  ],
   editorialCards: [
     {
       kind: "Illinois licensing guide",
       title: "Illinois ALE and SHE licensing explained",
       desc: "What IDPH requires to operate an Assisted Living Establishment in Illinois, how Part 295 violations work, and how to read an Illinois facility profile.",
-      meta: "Coming soon",
-      href: null,
-      live: false,
+      meta: "Live · Licensing guide",
+      href: "/illinois/memory-care-licensing",
+      live: true,
     },
     {
       kind: "Illinois decision guide",
