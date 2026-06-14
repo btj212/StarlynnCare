@@ -20,10 +20,11 @@ import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
 import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
 import { FacilityWatchSignup } from "@/components/facility/FacilityWatchSignup";
-import { FacilityWatchBar } from "@/components/facility/FacilityWatchBar";
+import { FacilityOfferBar } from "@/components/facility/FacilityOfferBar";
+import { FacilityOfferProvider } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityFullInspections } from "@/components/facility/profile/FacilityFullInspections";
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
-import { FullHistoryWaitlist } from "@/components/facility/profile/FullHistoryWaitlist";
+import { assignOffer } from "@/lib/facility/offers";
 
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
@@ -207,12 +208,18 @@ export default async function FacilityPage({ params }: PageProps) {
 
   const profile = result as import("@/lib/facility/loadFacilityProfile").FacilityProfile;
   const { facility, state, county, backHref, backLabel } = profile;
+  const offer = assignOffer(facility.id);
 
   return (
     <>
       <JsonLd objects={profile.jsonLd} />
       {/* DOM reorder: <main> (H1) is first in source; GovernanceBar+SiteNav use flex order:-1 to appear visually above it. */}
       <div className="flex flex-col">
+        <FacilityOfferProvider
+          offer={offer}
+          facilityId={facility.id}
+          facilityName={facility.name}
+        >
         <main className="bg-paper">
         {/* Sticky sub-nav */}
         <FacilitySubNav profile={profile} />
@@ -290,18 +297,6 @@ export default async function FacilityPage({ params }: PageProps) {
         {/* § 07 · Full verbatim inspection record */}
         <FacilityFullInspections profile={profile} />
 
-        {/* Archived inspection notice — waitlist framing, no "withholding safety data" tone */}
-        {profile.hiddenOlderCount > 0 && profile.oldestHiddenYear !== null && (
-          <div className="mx-auto max-w-[1280px] px-4 md:px-8 pb-2">
-            <FullHistoryWaitlist
-              facilityId={facility.id}
-              facilityName={facility.name}
-              hiddenCount={profile.hiddenOlderCount}
-              oldestYear={profile.oldestHiddenYear}
-            />
-          </div>
-        )}
-
         {/* Methodology credibility cap — RN reviewer, placed after the verbatim
             findings (the "View raw inspection records" target). Kept in DOM for
             E-E-A-T; sits below the data as an editorial sign-off, not a top byline. */}
@@ -315,7 +310,7 @@ export default async function FacilityPage({ params }: PageProps) {
         <FacilitySiblings profile={profile} />
 
         {/* Sticky Watch bar — fixed position, shown at 40% scroll or 20s */}
-        <FacilityWatchBar facilityId={facility.id} facilityName={facility.name} />
+        <FacilityOfferBar />
 
         {/* Reviews, discovery, and correction form */}
         <div className="mx-auto max-w-[1280px] space-y-14 px-4 pb-20 pt-14 md:px-8">
@@ -367,6 +362,7 @@ export default async function FacilityPage({ params }: PageProps) {
           <ReportListingForm facilityId={facility.id} facilityName={facility.name} />
         </div>
         </main>
+        </FacilityOfferProvider>
         <div className="-order-1">
           <GovernanceBar />
           <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} stateNavHref={`/${state.slug}`} />

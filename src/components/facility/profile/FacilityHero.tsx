@@ -9,6 +9,7 @@ import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
+import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -181,6 +182,9 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   const { facility, state } = profile;
   const isMc = MC_CATEGORIES.includes(facility.care_category) || facility.serves_memory_care;
   const addr = formatAddr(facility);
+  const phone = facility.phone
+    ? facility.phone.replace(/\D/g, "").replace(/^1?(\d{3})(\d{3})(\d{4})$/, "($1) $2-$3")
+    : null;
 
   // Split facility name into non-italic + last word italic
   const words = facility.name.trim().split(/\s+/);
@@ -257,6 +261,14 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {addr && (
               <div className="hidden md:block mt-4 font-[family-name:var(--font-display)] text-[22px] italic text-ink-2">
                 {addr}
+                {phone && (
+                  <a
+                    href={`tel:${facility.phone}`}
+                    className="ml-4 font-[family-name:var(--font-mono)] not-italic text-[12px] tracking-[0.06em] text-ink-3 hover:text-ink transition-colors"
+                  >
+                    {phone}
+                  </a>
+                )}
                 {facility.license_number && (() => {
                   const verifyUrl = regulatorLicensePageFor(
                     facility.state_code,
@@ -309,6 +321,11 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {profile.orMcSignals && (
               <OrMcSignalBadges signals={profile.orMcSignals} />
             )}
+
+            {/* Offer CTA — above the fold on all viewports */}
+            <div className="mt-5">
+              <OfferTriggerButton />
+            </div>
           </div>
 
           {/* Verdict card */}

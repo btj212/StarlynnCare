@@ -6,7 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { buildBreadcrumbList, buildFaqSchemaFromPairs } from "@/lib/seo/schema";
-import { ContractUploadForm } from "./ContractUploadForm";
+import { ContractEmailCapture } from "./ContractEmailCapture";
 
 const PAGE_PATH = "/tools/contract-review";
 const canonicalUrl = canonicalFor(PAGE_PATH);
@@ -17,7 +17,7 @@ const DESC =
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   {
     q: "What is the Contract Decoder?",
-    a: "You upload your memory care admission agreement (PDF or Word). A human reviewer maps every fee, rate-increase clause, and discharge trigger into a plain-language summary emailed back to you. We do not provide legal advice — we translate regulatory and contractual jargon into terms families can act on.",
+    a: "You send us your memory care admission agreement (PDF). A human reviewer maps every fee, rate-increase clause, and discharge trigger into a plain-language summary emailed back to you. We do not provide legal advice — we translate regulatory and contractual jargon into terms families can act on.",
   },
   {
     q: "Is this legal advice?",
@@ -25,11 +25,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "How long does the review take?",
-    a: "Typically 3–5 business days. We email you the plain-language breakdown at the address you provide.",
-  },
-  {
-    q: "Is my document stored securely?",
-    a: "Yes. Documents are stored in a private, encrypted bucket and are not shared with any facility, agency, or third party.",
+    a: "Typically 2 business days. We email you the plain-language breakdown at the address you provide.",
   },
   {
     q: "Is this service free?",
@@ -136,7 +132,6 @@ export default function ContractReviewPage() {
 
             {/* Left: What we review + FAQ */}
             <div className="space-y-14">
-              {/* What we review */}
               <div>
                 <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block mb-6">
                   § What we translate
@@ -144,7 +139,7 @@ export default function ContractReviewPage() {
                 <ul className="space-y-5">
                   {WHAT_WE_REVIEW.map(({ label, desc }) => (
                     <li key={label} className="flex gap-4">
-                      <span className="mt-1 w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "var(--color-teal)", marginTop: "8px" }} />
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-[8px]" style={{ backgroundColor: "var(--color-teal)" }} />
                       <div>
                         <p className="font-medium text-ink text-[15.5px] leading-snug">{label}</p>
                         <p className="text-[14px] text-ink-3 leading-relaxed mt-0.5">{desc}</p>
@@ -154,7 +149,6 @@ export default function ContractReviewPage() {
                 </ul>
               </div>
 
-              {/* FAQ */}
               <div>
                 <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block mb-6">
                   § Questions
@@ -169,8 +163,7 @@ export default function ContractReviewPage() {
                 </div>
               </div>
 
-              {/* Related link */}
-              <div className="rounded border border-paper-rule bg-paper-2 px-5 py-5">
+              <div className="rounded border border-paper-rule px-5 py-5" style={{ background: "var(--color-paper-2)" }}>
                 <p className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.12em] text-ink-4 mb-2">
                   Related guide
                 </p>
@@ -183,12 +176,17 @@ export default function ContractReviewPage() {
               </div>
             </div>
 
-            {/* Right: Upload form */}
+            {/* Right: Email capture */}
             <div>
               <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block mb-6">
-                § Upload your agreement
+                § Send us your agreement
               </p>
-              <ContractUploadForm />
+              <p className="text-[14px] text-ink-3 leading-relaxed mb-6">
+                Enter your email below. We&rsquo;ll send you a confirmation with instructions to
+                reply with your contract PDF attached — and we&rsquo;ll return a plain-language
+                breakdown within 2 business days.
+              </p>
+              <ContractEmailCapture />
             </div>
           </div>
         </div>
