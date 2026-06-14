@@ -20,10 +20,10 @@
     <mj-section background-color="#1F5C5A" padding="20px 28px">
       <mj-column>
         <mj-text css-class="mono" font-size="10px" letter-spacing="0.18em" text-transform="uppercase" color="rgba(255,255,255,0.75)">
-          Facility Watch
+          Full Inspection Record
         </mj-text>
         <mj-text font-size="26px" line-height="1.25" color="#FFFFFF" padding-top="8px">
-          You're watching<br /><em>{DATA_VARIABLE:facilityName}</em>
+          Your record for<br /><em>{DATA_VARIABLE:facilityName}</em>
         </mj-text>
       </mj-column>
     </mj-section>
@@ -32,6 +32,9 @@
     <mj-wrapper background-color="#FFFFFF" border="1px solid #D9CFB8" padding="28px">
       <mj-section padding="0">
         <mj-column>
+          <mj-text padding-bottom="16px">
+            Here's the complete inspection record you requested. We've translated every citation into plain language so you can read it without a regulatory background.
+          </mj-text>
           <mj-text padding-bottom="16px">
             {DATA_VARIABLE:recordSummary}
           </mj-text>
@@ -45,7 +48,7 @@
       <mj-section background-color="#EEE6D4" padding="14px 16px" border-left="3px solid #1F5C5A">
         <mj-column>
           <mj-text css-class="mono label label-teal" padding-bottom="8px">
-            On the record today
+            Record status
           </mj-text>
           <mj-text font-size="15px" color="#1A2620" padding-bottom="8px">
             {DATA_VARIABLE:quietPeriodLine}
@@ -59,7 +62,7 @@
       <mj-section padding="24px 0 0 0">
         <mj-column>
           <mj-text css-class="mono label" padding-bottom="8px">
-            Recent inspections
+            Inspection history
           </mj-text>
           <mj-text css-class="mono preline" font-size="13px" line-height="1.65" color="#1A2620" padding-bottom="20px">
             {DATA_VARIABLE:recentEventsText}
@@ -74,14 +77,14 @@
         </mj-column>
       </mj-section>
 
-      <!-- What we watch -->
+      <!-- What we continue to watch -->
       <mj-section background-color="#D6E4DF" padding="16px 18px">
         <mj-column>
           <mj-text css-class="mono label label-dark-teal" padding-bottom="10px">
-            We'll email you when
+            We'll also notify you when
           </mj-text>
-          <mj-text css-class="preline" font-size="14px" line-height="1.6">
-            {DATA_VARIABLE:whatWeWatch}
+          <mj-text font-size="14px" line-height="1.6">
+            New citations, complaint investigations, or license changes are posted to the public record. You're now on the watch list for this facility.
           </mj-text>
         </mj-column>
       </mj-section>
@@ -99,10 +102,10 @@
             inner-padding="14px 24px"
             href="{DATA_VARIABLE:facilityUrl}"
           >
-            View full record →
+            View full profile →
           </mj-button>
           <mj-text font-size="13px" color="#8A938C" padding-top="24px">
-            Sources: state licensing portals and verified public records. We do not email daily unless something changes.
+            Sources: state licensing portals and verified public records. StarlynnCare receives no referral commissions or paid placement from facilities.
           </mj-text>
         </mj-column>
       </mj-section>
@@ -113,7 +116,7 @@
       <mj-column>
         <mj-text css-class="mono" font-size="11px" color="#8A938C">
           StarlynnCare · {DATA_VARIABLE:cityState}<br />
-          <a href="{DATA_VARIABLE:unsubscribeUrl}" style="color:#B8533A;text-decoration:underline;">Unsubscribe</a> from this facility
+          <a href="{DATA_VARIABLE:unsubscribeUrl}" style="color:#B8533A;text-decoration:underline;">Unsubscribe</a>
         </mj-text>
       </mj-column>
     </mj-section>

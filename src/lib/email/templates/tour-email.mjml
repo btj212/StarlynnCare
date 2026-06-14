@@ -1,0 +1,100 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Georgia, 'Times New Roman', serif" color="#1A2620" />
+      <mj-text font-size="16px" line-height="1.55" color="#2E3A33" padding="0" />
+      <mj-section padding="0" />
+      <mj-column padding="0" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .mono { font-family: 'Courier New', monospace; }
+      .preline { white-space: pre-line; }
+      .label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #5A6660; }
+      .label-teal { color: #1F5C5A; }
+      .label-rust { color: #B8533A; }
+    </mj-style>
+  </mj-head>
+
+  <mj-body background-color="#F4EEE2" width="560px">
+    <!-- Header -->
+    <mj-section background-color="#1A2620" padding="20px 28px">
+      <mj-column>
+        <mj-text css-class="mono" font-size="10px" letter-spacing="0.18em" text-transform="uppercase" color="rgba(255,255,255,0.6)">
+          Tour Prep · Facility Checklist
+        </mj-text>
+        <mj-text font-size="26px" line-height="1.25" color="#F0E8D4" padding-top="8px">
+          Your checklist for<br /><em>{DATA_VARIABLE:facilityName}</em>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Intro -->
+    <mj-wrapper background-color="#FFFFFF" border="1px solid #D9CFB8" padding="28px">
+      <mj-section padding="0">
+        <mj-column>
+          <mj-text padding-bottom="12px">
+            Here's your tour prep checklist for {DATA_VARIABLE:facilityName}. These questions are tailored to this facility's record and the things families most commonly miss on first visits.
+          </mj-text>
+          <mj-text css-class="mono" font-size="12px" color="#5A6660" padding-bottom="20px">
+            {DATA_VARIABLE:topCitedSummary}
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <!-- Checklist -->
+      <mj-section background-color="#EEE6D4" padding="18px 20px" border-left="3px solid #B8533A">
+        <mj-column>
+          <mj-text css-class="mono label label-rust" padding-bottom="12px">
+            Questions to ask on your visit
+          </mj-text>
+          <mj-text css-class="preline" font-size="15px" line-height="1.75" color="#1A2620">
+            {DATA_VARIABLE:tourChecklistText}
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section padding="24px 0 0 0">
+        <mj-column>
+          <mj-text font-size="15px" padding-bottom="8px">
+            Take notes on each answer. The staff's responses — and how they respond when pressed — tell you as much as the words.
+          </mj-text>
+          <mj-text font-size="14px" color="#5A6660" padding-bottom="20px">
+            If you're touring multiple facilities, compare answers side by side. Inconsistencies on discharge policies and fee escalation are the most important to flag.
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <!-- View full profile CTA -->
+      <mj-section padding="0">
+        <mj-column>
+          <mj-button
+            background-color="#1F5C5A"
+            color="#FFFFFF"
+            font-family="'Courier New', monospace"
+            font-size="12px"
+            letter-spacing="0.1em"
+            text-transform="uppercase"
+            border-radius="2px"
+            inner-padding="14px 24px"
+            href="{DATA_VARIABLE:facilityUrl}"
+          >
+            View full citation record →
+          </mj-button>
+          <mj-text font-size="13px" color="#8A938C" padding-top="24px">
+            StarlynnCare receives no referral commissions or paid placement from facilities. This checklist is based on publicly available inspection records.
+          </mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+
+    <!-- Footer -->
+    <mj-section background-color="#F4EEE2" padding="20px 28px" border-top="1px solid #D9CFB8">
+      <mj-column>
+        <mj-text css-class="mono" font-size="11px" color="#8A938C">
+          StarlynnCare · {DATA_VARIABLE:cityState}<br />
+          <a href="{DATA_VARIABLE:unsubscribeUrl}" style="color:#B8533A;text-decoration:underline;">Unsubscribe</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

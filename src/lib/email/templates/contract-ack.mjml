@@ -1,0 +1,83 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Georgia, 'Times New Roman', serif" color="#1A2620" />
+      <mj-text font-size="16px" line-height="1.55" color="#2E3A33" padding="0" />
+      <mj-section padding="0" />
+      <mj-column padding="0" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .mono { font-family: 'Courier New', monospace; }
+      .preline { white-space: pre-line; }
+      .label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #5A6660; }
+      .label-teal { color: #1F5C5A; }
+    </mj-style>
+  </mj-head>
+
+  <mj-body background-color="#F4EEE2" width="560px">
+    <!-- Header -->
+    <mj-section background-color="#1F5C5A" padding="20px 28px">
+      <mj-column>
+        <mj-text css-class="mono" font-size="10px" letter-spacing="0.18em" text-transform="uppercase" color="rgba(255,255,255,0.75)">
+          Contract Decoder
+        </mj-text>
+        <mj-text font-size="26px" line-height="1.25" color="#FFFFFF" padding-top="8px">
+          We got your request.<br /><em>Here's how to send your contract.</em>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Body -->
+    <mj-wrapper background-color="#FFFFFF" border="1px solid #D9CFB8" padding="28px">
+
+      <!-- Primary action callout -->
+      <mj-section background-color="#EEE6D4" padding="18px 20px" border-left="3px solid #1F5C5A">
+        <mj-column>
+          <mj-text css-class="mono label label-teal" padding-bottom="10px">
+            Next step
+          </mj-text>
+          <mj-text font-size="17px" line-height="1.4" color="#1A2620">
+            Reply to this email with the admission agreement PDF attached.
+          </mj-text>
+          <mj-text font-size="14px" color="#5A6660" padding-top="8px">
+            We'll have your plain-language breakdown back to you within 2 business days.
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section padding="24px 0 0 0">
+        <mj-column>
+          <mj-text css-class="mono label" padding-bottom="10px">
+            What we look for
+          </mj-text>
+          <mj-text css-class="preline" font-size="14px" line-height="1.75" color="#2E3A33">
+• Fee escalation clauses — when rates can increase, by how much, and on what notice
+• Discharge triggers — grounds the facility can use to ask you to leave
+• Arbitration clauses — whether you're waiving your right to sue
+• Refund policies — what happens if a resident leaves in the first 30–90 days
+• Care plan change procedures — who decides when the level of care (and cost) increases
+• Ancillary fee schedules — extras not in the headline monthly rate
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section padding="24px 0 0 0">
+        <mj-column>
+          <mj-text font-size="14px" color="#5A6660" padding-bottom="20px">
+            We decode admission agreements to help families understand what they're committing to before they sign. There's no cost, no sales call, and no referral relationship with any facility.
+          </mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+
+    <!-- Footer -->
+    <mj-section background-color="#F4EEE2" padding="20px 28px" border-top="1px solid #D9CFB8">
+      <mj-column>
+        <mj-text css-class="mono" font-size="11px" color="#8A938C">
+          StarlynnCare · The memory care site on the family's side<br />
+          <a href="{DATA_VARIABLE:unsubscribeUrl}" style="color:#B8533A;text-decoration:underline;">Unsubscribe</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
