@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { FacilitySubNavAnchors } from "@/components/facility/profile/FacilitySubNavAnchors";
+import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 
 const PHONE_RE = /(\d{3})(\d{3})(\d{4})/;
 function formatPhone(raw: string | null): string | null {
@@ -78,17 +79,20 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
 
           {/* Actions */}
           <div className="flex shrink-0 items-center gap-2">
+            {/* Mobile: compact call chip (phone moved to hero) */}
             {phone && (
               <a
                 href={`tel:${facility.phone}`}
                 aria-label={`Call ${phone}`}
-                className="inline-flex items-center gap-1.5 bg-ink px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-paper hover:bg-ink-2 transition-colors"
+                className="md:hidden inline-flex items-center gap-1.5 border border-ink px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-ink hover:bg-ink hover:text-paper transition-colors"
               >
-                {/* Compact on mobile so the chips aren't crushed; full number at md+ */}
-                <span className="md:hidden">Call →</span>
-                <span className="hidden md:inline">Call {phone} →</span>
+                Call →
               </a>
             )}
+            {/* Desktop: offer CTA replaces phone */}
+            <div className="hidden md:block">
+              <OfferTriggerButton size="compact" />
+            </div>
           </div>
         </div>
       </div>
