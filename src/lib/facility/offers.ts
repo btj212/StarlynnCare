@@ -55,7 +55,7 @@ export const OFFERS: Offer[] = [
     headline: "Decode an admission agreement before you sign.",
     sub: "Send us the contract — we map every fee escalation, discharge trigger, and arbitration clause in plain language.",
     ctaLabel: "Decode the contract →",
-    ctaLabelCompact: "Contract →",
+    ctaLabelCompact: "Vet contract →",
     kind: "route",
     href: "/tools/contract-review?ref=offer_contract",
     journeyStage: "decision",
@@ -66,13 +66,11 @@ export const OFFERS: Offer[] = [
     headline: "Get a tour-prep pack for this facility.",
     sub: "A printable checklist of questions specific to this facility's citation history — so you ask about the right things on tour.",
     ctaLabel: "Get the tour-prep pack →",
-    ctaLabelCompact: "Tour prep →",
+    ctaLabelCompact: "Tour checklist →",
     kind: "email",
     journeyStage: "decision",
   },
 ];
-
-const OFFER_IDS = OFFERS.map((o) => o.id);
 
 /**
  * Deterministically assign an offer variant to a facility.
