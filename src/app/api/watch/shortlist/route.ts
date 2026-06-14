@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
     email,
     userGroup: "shortlist",
     source: source ?? "shortlist_page",
+    journeyStage: "decision",
     shortlistCount: String(validFacilities.length),
     shortlistFacilities: facilityNames.slice(0, 500),
   });

@@ -134,10 +134,10 @@ def _max_date_in_mn_findings(path: Path) -> date | None:
     return max_d
 
 
-def ingest_ca(skip: bool) -> bool:
+def ingest_ca(skip: bool) -> bool | None:
     if skip:
         print("\n[CA] Skipped (--skip-ca)")
-        return False
+        return None
     rc = _python(str(SCRAPERS / "ccld_citations_ingest.py"), "--publishable", label="CA citations ingest")
     return rc == 0
 
@@ -164,8 +164,8 @@ def ingest_or(conn) -> bool:
 
     _python(str(SCRAPERS / "or_inspections_ingest.py"), "--input", str(insp_csv), label="OR inspections ingest")
     # Violations CSV is 6MB+ and takes >1h — run monthly via or_overnight_run.sh, not weekly.
-    _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "OR", label="OR recompute publishable")
-    return True
+    rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "OR", label="OR recompute publishable")
+    return rc == 0
 
 
 def ingest_wa(conn) -> bool:
@@ -173,8 +173,8 @@ def ingest_wa(conn) -> bool:
     _python(str(SCRAPERS / "wa_pdf_download.py"), label="WA PDF download", allow_fail=True)
     _python(str(SCRAPERS / "wa_pdf_parse.py"), label="WA PDF parse", allow_fail=True)
     _python(str(SCRAPERS / "wa_pdf_backfill.py"), label="WA PDF backfill", allow_fail=True)
-    _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "WA", label="WA recompute publishable")
-    return True
+    rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "WA", label="WA recompute publishable")
+    return rc == 0
 
 
 def ingest_mn(conn) -> bool:
@@ -206,13 +206,15 @@ def ingest_mn(conn) -> bool:
         label="MN bundle build",
     )
     if bundle.is_file():
-        _python(
+        rc = _python(
             str(SCRAPERS / "mn_inspections_ingest.py"),
             "--import-json", str(bundle),
             label="MN inspections ingest",
         )
-    _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "MN", label="MN recompute publishable")
-    return True
+        if rc != 0:
+            return False
+    rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "MN", label="MN recompute publishable")
+    return rc == 0
 
 
 def ingest_tx(_conn: object) -> bool:
@@ -226,8 +228,8 @@ def ingest_tx(_conn: object) -> bool:
 
 def ingest_ut(_conn: object) -> bool:
     _python(str(SCRAPERS / "ut_ccl_inspections_scraper.py"), label="UT CCL inspections", allow_fail=True)
-    _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "UT", label="UT recompute publishable")
-    return True
+    rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "UT", label="UT recompute publishable")
+    return rc == 0
 
 
 def ingest_il(_conn: object) -> bool:
@@ -235,8 +237,8 @@ def ingest_il(_conn: object) -> bool:
     _python(str(SCRAPERS / "il_pdf_download.py"), label="IL PDF download", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_parse.py"), label="IL PDF parse", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_backfill.py"), label="IL PDF backfill", allow_fail=True)
-    _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "IL", label="IL recompute publishable")
-    return True
+    rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "IL", label="IL recompute publishable")
+    return rc == 0
 
 
 def ingest_pa(_conn: object) -> bool:
@@ -244,8 +246,8 @@ def ingest_pa(_conn: object) -> bool:
     _python(str(SCRAPERS / "pa_pdf_download.py"), label="PA PDF download", allow_fail=True)
     _python(str(SCRAPERS / "pa_pdf_parse.py"), label="PA PDF parse", allow_fail=True)
     _python(str(SCRAPERS / "pa_pdf_backfill.py"), label="PA PDF backfill", allow_fail=True)
-    _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "PA", label="PA recompute publishable")
-    return True
+    rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "PA", label="PA recompute publishable")
+    return rc == 0
 
 
 STATE_RUNNERS = {
@@ -282,13 +284,16 @@ def main() -> int:
                 print(f"  {st} baseline: {baselines[st]['inspection_count']} inspections, max={baselines[st]['max_date']}")
 
         changed_states: list[str] = []
+        failed_states: list[str] = []
         for st in states:
             print(f"\n{'=' * 60}\n  STATE: {st}\n{'=' * 60}")
             runner = STATE_RUNNERS[st]
             if st == "CA":
-                runner(conn, args.skip_ca)
+                ok = runner(conn, args.skip_ca)
             else:
-                runner(conn)
+                ok = runner(conn)
+            if ok is False:
+                failed_states.append(st)
 
             with conn.cursor() as cur:
                 delta = _after_delta(cur, st, baselines[st])
@@ -302,13 +307,15 @@ def main() -> int:
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
+    if failed_states:
+        print(f"  States with ingest failures: {', '.join(failed_states)}", file=sys.stderr)
     if changed_states:
         print(f"  States with new/changed inspection data: {', '.join(changed_states)}")
     else:
         print("  No new inspection data ingested in any state.")
 
     if args.skip_validate:
-        return 0
+        return 1 if failed_states else 0
 
     for st in changed_states or states:
         _python(
@@ -331,7 +338,7 @@ def main() -> int:
         allow_fail=True,
     )
 
-    return 0
+    return 1 if failed_states else 0
 
 
 if __name__ == "__main__":

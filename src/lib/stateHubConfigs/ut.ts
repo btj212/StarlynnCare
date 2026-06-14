@@ -29,15 +29,23 @@ export const utStateConfig: StateHubConfig = {
     },
   ],
   guidesHref: "/utah/guides",
-  stateArticles: [],
+  stateArticles: [
+    {
+      slug: "memory-care-licensing",
+      title: "Utah Type I & Type II ALF licensing explained",
+      desc: "What DLBC requires for assisted living licensure in Utah, how inspections work under R432-270, and how to read a Utah facility profile.",
+      tags: ["licensing"],
+      live: true,
+    },
+  ],
   editorialCards: [
     {
       kind: "Utah licensing guide",
       title: "Utah Type I & Type II ALF licensing explained",
       desc: "What DLBC requires for assisted living licensure in Utah, how inspections work under R432-270, and how to read a Utah facility profile.",
-      meta: "Coming soon",
-      href: null,
-      live: false,
+      meta: "Live · Licensing guide",
+      href: "/utah/memory-care-licensing",
+      live: true,
     },
     {
       kind: "Utah decision guide",

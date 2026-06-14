@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       {
         email,
         facility_id: facilityId,
-        source: source ?? "facility_hero",
+        source: offerSource,
         confirmed_at: confirmedAt,
         ...(safeIntent ? { intent: safeIntent } : {}),
       },
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     email,
     source: offerSource,
     facilityId,
-    summary: `${facilityName} · ${offerSource}`,
+    summary: `${facilityName} · ${offerSource}${safeIntent ? ` · ${safeIntent}` : ""}`,
     payload: { facilityName, facilityId, ...(safeIntent ? { intent: safeIntent } : {}) },
   }).catch((err) => console.error("[watch] recordSubmission failed:", err));
 

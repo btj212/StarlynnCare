@@ -29,8 +29,24 @@ export const caStateConfig: StateHubConfig = {
     },
   ],
   guidesHref: "/library",
-  stateArticles: [],
+  stateArticles: [
+    {
+      slug: "memory-care-licensing",
+      title: "California memory care licensing: RCFEs, CDSS & Type A/B deficiencies",
+      desc: "How California licenses memory care under the RCFE framework, what the Alzheimer's Special Care Disclosure means, and how to read a California facility's inspection record.",
+      tags: ["licensing"],
+      live: true,
+    },
+  ],
   editorialCards: [
+    {
+      kind: "California licensing guide",
+      title: "California memory care licensing: RCFEs, CDSS & Type A/B deficiencies",
+      desc: "How California licenses memory care under the RCFE framework, what the Alzheimer's Special Care Disclosure means, and how to read a California facility's inspection record.",
+      meta: "Live · Licensing guide",
+      href: "/california/memory-care-licensing",
+      live: true,
+    },
     {
       kind: "Annual Data Report · 2026",
       title: "The State of Memory Care in California",

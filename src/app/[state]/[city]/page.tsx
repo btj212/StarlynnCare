@@ -35,6 +35,7 @@ import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cit
 import { loadPublishedHubContent, sanitizeHubHtml } from "@/lib/content/loadHubContent";
 import { formatCostRange, getStateCostBand } from "@/lib/content/stateCostBands";
 import { HubEligibility } from "@/components/hub/HubEligibility";
+import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/HubDifferentiators";
 
 export const revalidate = 3600;
 
@@ -277,6 +278,19 @@ export default async function RegionPage({ params }: PageProps) {
         }));
       }
     }
+  }
+
+  // Hub differentiators RPC — runs in parallel with the date queries below.
+  // Returns a single row; result is null when Supabase is unavailable.
+  let hubStats: RegionHubStats | null = null;
+  if (supabase) {
+    const { data: hubStatsRows } = await supabase
+      .rpc("region_hub_stats", {
+        p_state_code: region.state.code,
+        p_city_slugs: region.citySlugs as unknown as string[],
+      })
+      .limit(1);
+    hubStats = (hubStatsRows as RegionHubStats[] | null)?.[0] ?? null;
   }
 
   const smallCount = facilities.filter((f) => f.capacity_tier === "small").length;
@@ -696,6 +710,16 @@ export default async function RegionPage({ params }: PageProps) {
             "ranked by inspection record" frame before the user hits the grid ── */}
         {!fetchError && totalCount > 0 && (
           <>
+            {/* Hub differentiation block — unique-per-city computed stats */}
+            {hubStats && (
+              <HubDifferentiators
+                stats={hubStats}
+                regionName={region.name}
+                stateSlug={region.state.slug}
+                stateName={region.state.name}
+              />
+            )}
+
             <TopGradedFacilities
               citySlugs={region.citySlugs}
               stateCode={region.state.code}

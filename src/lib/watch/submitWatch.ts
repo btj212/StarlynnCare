@@ -3,7 +3,7 @@ export async function submitWatch(params: {
   facilityId: string;
   facilityName: string;
   source: string;
-  /** Optional journey-stage intent: 'research' | 'touring' | 'resident' */
+  /** Optional journey-stage intent: 'research' | 'touring' | 'resident'. */
   intent?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {

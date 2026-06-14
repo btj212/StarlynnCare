@@ -9,12 +9,20 @@ interface FacilityWatchBarProps {
 }
 
 type FormState = "idle" | "submitting" | "success" | "error";
+type Intent = "research" | "touring" | "resident";
+
+const INTENT_OPTIONS: { value: Intent; label: string }[] = [
+  { value: "research", label: "Researching" },
+  { value: "touring", label: "Touring soon" },
+  { value: "resident", label: "They live here" },
+];
 
 export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarProps) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [email, setEmail] = useState("");
+  const [intent, setIntent] = useState<Intent | undefined>(undefined);
   const [formState, setFormState] = useState<FormState>("idle");
 
   useEffect(() => {
@@ -48,6 +56,7 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
       facilityId,
       facilityName,
       source: "sticky_bar",
+      intent,
     });
 
     if (result.ok) {
@@ -72,7 +81,7 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
         transform: visible ? "translateY(0)" : "translateY(100%)",
       }}
     >
-      <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-4 py-3 md:px-8 md:py-0 md:h-16">
+      <div className="mx-auto flex max-w-[1280px] flex-col md:flex-row md:items-center gap-2 md:gap-4 px-4 py-3 md:px-8 md:py-0 md:h-16">
         {formState === "success" ? (
           <p className="flex-1 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.06em] text-white">
             ✓ You&apos;re on the list — we&apos;ll email you when anything changes.
@@ -90,18 +99,77 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
                   <span className="hidden md:inline">This record can change. We&rsquo;ll tell you when it does →</span>
                 </button>
               ) : (
-                <form
-                  onSubmit={handleSubmit}
-                  className="flex items-center gap-2"
-                >
+                /* Mobile expanded: intent pills + form */
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {INTENT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setIntent(intent === opt.value ? undefined : opt.value)}
+                        className="px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.05em] border transition-colors"
+                        style={{
+                          borderColor: intent === opt.value ? "white" : "rgba(255,255,255,0.3)",
+                          backgroundColor: intent === opt.value ? "white" : "transparent",
+                          color: intent === opt.value ? "var(--color-ink)" : "rgba(255,255,255,0.75)",
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      required
+                      autoFocus
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="h-11 w-full max-w-[220px] border-0 bg-white/10 px-3 font-[family-name:var(--font-mono)] text-[12px] text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none"
+                      disabled={formState === "submitting"}
+                    />
+                    <button
+                      type="submit"
+                      disabled={formState === "submitting" || !email.trim()}
+                      className="h-11 px-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                      style={{ backgroundColor: "var(--color-teal)" }}
+                    >
+                      {formState === "submitting" ? "…" : "Watch →"}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop: intent pills + inline form (always visible on md+) */}
+            {!expanded && (
+              <div className="hidden md:flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  {INTENT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setIntent(intent === opt.value ? undefined : opt.value)}
+                      className="px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.05em] border transition-colors"
+                      style={{
+                        borderColor: intent === opt.value ? "white" : "rgba(255,255,255,0.3)",
+                        backgroundColor: intent === opt.value ? "white" : "transparent",
+                        color: intent === opt.value ? "var(--color-ink)" : "rgba(255,255,255,0.75)",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <form onSubmit={handleSubmit} className="flex items-center gap-2">
                   <input
                     type="email"
                     required
-                    autoFocus
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
-                    className="h-11 w-full max-w-[220px] border-0 bg-white/10 px-3 font-[family-name:var(--font-mono)] text-[12px] text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none"
+                    className="h-11 w-[220px] border-0 bg-white/10 px-3 font-[family-name:var(--font-mono)] text-[12px] text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none"
                     disabled={formState === "submitting"}
                   />
                   <button
@@ -110,36 +178,16 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
                     className="h-11 px-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                     style={{ backgroundColor: "var(--color-teal)" }}
                   >
-                    {formState === "submitting" ? "…" : "Watch →"}
+                    {formState === "submitting" ? "…" : "Watch Free →"}
                   </button>
                 </form>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Desktop inline form (always visible on md+) */}
-            {!expanded && (
-              <form
-                onSubmit={handleSubmit}
-                className="hidden md:flex items-center gap-2"
-              >
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="h-11 w-[220px] border-0 bg-white/10 px-3 font-[family-name:var(--font-mono)] text-[12px] text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none"
-                  disabled={formState === "submitting"}
-                />
-                <button
-                  type="submit"
-                  disabled={formState === "submitting" || !email.trim()}
-                  className="h-11 px-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                  style={{ backgroundColor: "var(--color-teal)" }}
-                >
-                  {formState === "submitting" ? "…" : "Watch Free →"}
-                </button>
-              </form>
+            {formState === "error" && (
+              <p className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.04em] text-white/70">
+                Something went wrong — try again.
+              </p>
             )}
           </>
         )}
@@ -148,7 +196,7 @@ export function FacilityWatchBar({ facilityId, facilityName }: FacilityWatchBarP
         <button
           onClick={handleDismiss}
           aria-label="Dismiss"
-          className="ml-2 flex h-11 w-11 flex-shrink-0 items-center justify-center font-[family-name:var(--font-mono)] text-[18px] leading-none transition-opacity hover:opacity-100"
+          className="ml-2 flex h-11 w-11 flex-shrink-0 self-start md:self-auto items-center justify-center font-[family-name:var(--font-mono)] text-[18px] leading-none transition-opacity hover:opacity-100"
           style={{ color: "rgba(255,255,255,0.5)" }}
         >
           ×

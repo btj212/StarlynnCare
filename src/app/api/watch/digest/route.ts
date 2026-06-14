@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     email?: string;
     source?: string;
     stateCode?: string;
+    journeyStage?: string;
     [HONEYPOT_FIELD]?: unknown;
     [HONEYPOT_TS_FIELD]?: unknown;
   };
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const { email, source, stateCode } = body;
+  const { email, source, stateCode, journeyStage } = body;
 
   if (!email) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     email,
     userGroup: "digest_subscriber",
     source: source ?? "mobile_digest_bar",
+    journeyStage: journeyStage ?? "orientation",
     ...(stateCode ? { stateCode } : {}),
   });
 
@@ -52,8 +54,8 @@ export async function POST(req: NextRequest) {
     type: "digest_subscriber",
     email,
     source: source ?? "mobile_digest_bar",
-    summary: stateCode ? `digest · ${stateCode}` : "digest · national",
-    payload: { stateCode: stateCode ?? null },
+    summary: stateCode ? `digest · ${stateCode}` : `digest · ${journeyStage ?? "orientation"}`,
+    payload: { stateCode: stateCode ?? null, journeyStage: journeyStage ?? "orientation" },
   }).catch((err) => console.error("[watch/digest] recordSubmission failed:", err));
 
   return NextResponse.json({ ok: true });
