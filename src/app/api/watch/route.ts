@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
-import { sendWatchWelcome } from "@/lib/email/watch";
+import { sendWatchWelcome, sendRecordsEmail, sendTourEmail } from "@/lib/email/watch";
 import { buildWatchWelcomeDigest } from "@/lib/watch/buildWatchWelcomeDigest";
+import { buildTourEmailDigest } from "@/lib/email/buildTourEmailDigest";
 import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
@@ -60,6 +61,17 @@ export async function POST(req: NextRequest) {
         ? "decision"
         : "search";
 
+  // Map offer sources to their Loops userGroup for clean segmentation
+  const offerSource = source ?? "facility_hero";
+  const userGroup: string =
+    offerSource === "offer_watch"
+      ? "offer_watch"
+      : offerSource === "offer_records"
+        ? "offer_records"
+        : offerSource === "offer_tour"
+          ? "offer_tour"
+          : "facility_watch";
+
   const supabase = getServiceClient();
 
   const confirmedAt = new Date().toISOString();
@@ -86,22 +98,49 @@ export async function POST(req: NextRequest) {
 
   try {
     const digest = await buildWatchWelcomeDigest(facilityId, data.unsubscribe_token);
-    await sendWatchWelcome({
-      to: email,
-      facilityName,
-      unsubscribeToken: data.unsubscribe_token,
-      digest,
-    });
+
+    if (offerSource === "offer_records") {
+      await sendRecordsEmail({
+        to: email,
+        digest,
+        unsubscribeToken: data.unsubscribe_token,
+      });
+    } else if (offerSource === "offer_tour") {
+      const tourDigest = await buildTourEmailDigest(facilityId, data.unsubscribe_token);
+      if (tourDigest) {
+        await sendTourEmail({
+          to: email,
+          digest: tourDigest,
+          unsubscribeToken: data.unsubscribe_token,
+        });
+      } else {
+        // Fallback to watch welcome if tour data unavailable
+        await sendWatchWelcome({
+          to: email,
+          facilityName,
+          unsubscribeToken: data.unsubscribe_token,
+          digest,
+        });
+      }
+    } else {
+      // offer_watch and all other sources (facility_hero, sticky_bar, etc.)
+      await sendWatchWelcome({
+        to: email,
+        facilityName,
+        unsubscribeToken: data.unsubscribe_token,
+        digest,
+      });
+    }
   } catch (emailErr) {
     console.error("[watch] email error:", emailErr);
     // Row is saved; email can be retried
   }
 
-  // Mirror to Loops audience so all sign-ups are visible in one place
+  // Mirror to Loops audience — offer variants get their own userGroup for automation targeting
   await addLoopsContact({
     email,
-    userGroup: "facility_watch",
-    source: source ?? "facility_hero",
+    userGroup,
+    source: offerSource,
     facilityName,
     facilityId: facilityId,
     journeyStage,
@@ -112,9 +151,9 @@ export async function POST(req: NextRequest) {
   recordSubmission({
     type: "facility_watch",
     email,
-    source: source ?? "facility_hero",
+    source: offerSource,
     facilityId,
-    summary: `${facilityName} · ${source ?? "facility_hero"}`,
+    summary: `${facilityName} · ${offerSource}`,
     payload: { facilityName, facilityId, ...(safeIntent ? { intent: safeIntent } : {}) },
   }).catch((err) => console.error("[watch] recordSubmission failed:", err));
 

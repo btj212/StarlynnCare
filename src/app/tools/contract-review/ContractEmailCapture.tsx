@@ -16,13 +16,12 @@ export function ContractEmailCapture() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("/api/watch/digest", {
+      const res = await fetch("/api/offer/contract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.trim(),
           source: "contract_review_page",
-          journeyStage: "decision",
         }),
       });
       if (res.ok) {
