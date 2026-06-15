@@ -1,6 +1,41 @@
 #!/usr/bin/env python3
 """
-Arizona ADHS Inspections Ingest — Phase 3 (AZ Care Check PDF pipeline)
+Arizona ADHS Inspections Ingest — Phase 3 (BLOCKED — see note below)
+
+INVESTIGATION OUTCOME (2026-06-15):
+  ADHS does NOT have a publicly accessible inspection report portal for
+  Assisted Living Homes (ALH) or Assisted Living Centers (ALC).
+
+  - azcarecheck.azdhs.gov: covers Health Care Facilities (hospitals, SNFs, etc.)
+    ONLY — ALH/ALC are NOT in the AZ Care Check database.
+    Dropdown: Behavioral Group Home, Child Care, Community Health Workers,
+    Funeral, Group Home DD, Health Care Facilities, Laser Tech, Marijuana,
+    Memory Care Training Programs, Sober Living — NO Assisted Living.
+  - hsapps.azdhs.gov/ls/sod/SearchProv.aspx?type=AL: decommissioned, redirects
+    to azdhs.gov/licensing/index.php#azcarecheck (same for LTC type).
+  - facility-licensing.azdhs.gov/s/: fully auth-walled (login required).
+  - data.azdhs.gov: no ALF inspection dataset available via Socrata.
+
+NEXT STEPS TO UNBLOCK:
+  Option A — Public Records Request (recommended):
+    Submit an Arizona public records request to ADHS BRL for all ALH/ALC
+    inspection reports (Statement of Deficiencies) in the past 36 months.
+    URL: https://app.azdhs.gov/ls/online_complaint/onlinecomplaint.aspx
+    Contact: (602) 542-1025
+
+  Option B — AHCCCS/ALTCS data:
+    AZ Medicaid (ALTCS) contracts with some ALFs. AHCCCS may have published
+    quality/inspection data for ALTCS-contracted facilities. Limited coverage.
+
+  Option C — Periodic recheck:
+    HB2764 (Memory Care subclass, eff. 2025-07-01) may trigger new public
+    reporting. Recheck azcarecheck.azdhs.gov in Q3 2026 for ALF category.
+
+Until inspection data is available, AZ facilities will remain publishable=False.
+This complies with the YMYL mandate: do not publish facility profiles without
+inspection data from the regulator.
+
+--- original docstring preserved below for reference ---
 
 AZ Care Check (azcarecheck.azdhs.gov) is a Salesforce Experience Cloud portal.
 The REST API requires auth, but individual facility pages are accessible to the public
@@ -22,13 +57,6 @@ This script has two modes:
     Reads downloaded PDFs (download_status='done', parse_status='pending'),
     extracts inspection date / deficiency counts / narrative using pdfplumber,
     and upserts into the inspections + deficiencies tables.
-
-Probe outcome (2026-06-15):
-  - AZ Care Check REST API: auth-walled (INVALID_SESSION_ID)
-  - sfc/servlet.shepherd/document/download/ endpoint: HTTP 200 (accessible)
-  - Individual facility pages: accessible via browser (requires JS execution)
-  - Aura POST: returns context but no data without auth
-  → PDF route required. Playwright needed for discovery mode only.
 
 Usage:
     pip install playwright psycopg python-dotenv pdfplumber
