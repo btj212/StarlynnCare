@@ -1,0 +1,9 @@
+# Test dependencies for StarlynnCare integration tests.
+# Install with: pip install -r tests/requirements.txt
+#
+# The test suite reuses scrapers/requirements.txt for core deps (psycopg, requests, etc.).
+# Install both:
+#   pip install -r scrapers/requirements.txt -r tests/requirements.txt
+
+pytest>=8.0.0
+pytest-timeout>=2.3.0

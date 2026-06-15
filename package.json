@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify-schema": "tsx scripts/verify-schema.ts"
+    "verify-schema": "tsx scripts/verify-schema.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ts": "vitest run tests/typescript",
+    "test:py": "python3 -m pytest tests/ -v --tb=short"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.7",
@@ -29,6 +33,7 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.6"
   }
 }

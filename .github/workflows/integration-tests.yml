@@ -1,0 +1,224 @@
+name: Integration Tests — Full Pipeline
+
+on:
+  # Run on every push to main and on PRs
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Allow manual trigger (e.g. after ingest to verify everything is healthy)
+  workflow_dispatch:
+  # Weekly full-run to catch drift between scheduled data ingests
+  schedule:
+    - cron: "0 8 * * 2"  # Tuesdays 08:00 UTC (day after Monday CDSS ingest)
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Layer 0 — External Government API Tests
+  # No DB required.  Tests run against real public government APIs.
+  # ─────────────────────────────────────────────────────────────────────────────
+  external-api-tests:
+    name: "Layer 0 — External API Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            scrapers/requirements.txt
+            tests/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r scrapers/requirements.txt -r tests/requirements.txt
+
+      - name: Run External API tests
+        run: |
+          python -m pytest tests/integration/test_external_apis.py -v --tb=short
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Layer 1 — Database Invariant Tests
+  # Requires DATABASE_URL.  Tests against the real Supabase Postgres DB.
+  # ─────────────────────────────────────────────────────────────────────────────
+  database-invariant-tests:
+    name: "Layer 1 — Database Invariants"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            scrapers/requirements.txt
+            tests/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r scrapers/requirements.txt -r tests/requirements.txt
+
+      - name: Run DB invariant tests
+        run: |
+          python -m pytest tests/integration/test_database.py -v --tb=short
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Layer 1b — Facility Profile Tests
+  # Requires DATABASE_URL.  Per-facility field completeness + snapshot RPC.
+  # ─────────────────────────────────────────────────────────────────────────────
+  facility-profile-tests:
+    name: "Layer 1b — Facility Profile Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            scrapers/requirements.txt
+            tests/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r scrapers/requirements.txt -r tests/requirements.txt
+
+      - name: Run facility profile tests
+        run: |
+          python -m pytest tests/integration/test_facility_profiles.py -v --tb=short
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Layer 2 — Publishable Logic Tests
+  # Requires DATABASE_URL.  Validates the gate logic outcomes.
+  # ─────────────────────────────────────────────────────────────────────────────
+  publishable-logic-tests:
+    name: "Layer 2 — Publishable Logic"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            scrapers/requirements.txt
+            tests/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r scrapers/requirements.txt -r tests/requirements.txt
+
+      - name: Run publishable logic tests
+        run: |
+          python -m pytest tests/integration/test_publishable_logic.py -v --tb=short
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Layer 3 — TypeScript / Supabase Query Tests
+  # Requires Supabase publishable key.  Tests exact same queries as loadFacilityProfile.
+  # ─────────────────────────────────────────────────────────────────────────────
+  typescript-supabase-tests:
+    name: "Layer 3 — TypeScript Supabase Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Run TypeScript Supabase tests
+        run: npm run test:ts
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Layer 4 — Production HTTP Smoke Tests
+  # Requires SITE_BASE_URL (defaults to production).  Tests live rendered pages.
+  # Only runs on push to main or manual dispatch (not PRs — previews need preview URL).
+  # ─────────────────────────────────────────────────────────────────────────────
+  production-smoke-tests:
+    name: "Layer 4 — Production HTTP Smoke Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name != 'pull_request'
+    env:
+      SITE_BASE_URL: ${{ secrets.SITE_BASE_URL || 'https://www.starlynncare.com' }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            scrapers/requirements.txt
+            tests/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r scrapers/requirements.txt -r tests/requirements.txt
+
+      - name: Run production page smoke tests
+        run: |
+          python -m pytest tests/integration/test_production_pages.py -v --tb=short
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Summary gate — fails if any required job fails
+  # ─────────────────────────────────────────────────────────────────────────────
+  all-tests-passed:
+    name: "All Integration Tests Passed"
+    needs:
+      - external-api-tests
+      - database-invariant-tests
+      - facility-profile-tests
+      - publishable-logic-tests
+      - typescript-supabase-tests
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.external-api-tests.result }}" != "success" ]]; then
+            echo "FAIL: external-api-tests"
+            exit 1
+          fi
+          if [[ "${{ needs.database-invariant-tests.result }}" != "success" ]]; then
+            echo "FAIL: database-invariant-tests"
+            exit 1
+          fi
+          if [[ "${{ needs.facility-profile-tests.result }}" != "success" ]]; then
+            echo "FAIL: facility-profile-tests"
+            exit 1
+          fi
+          if [[ "${{ needs.publishable-logic-tests.result }}" != "success" ]]; then
+            echo "FAIL: publishable-logic-tests"
+            exit 1
+          fi
+          if [[ "${{ needs.typescript-supabase-tests.result }}" != "success" ]]; then
+            echo "FAIL: typescript-supabase-tests"
+            exit 1
+          fi
+          echo "All integration tests passed."
