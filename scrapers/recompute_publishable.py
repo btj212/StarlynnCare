@@ -172,6 +172,11 @@ def recompute_serves_memory_care(
           -- belt-and-suspenders. See scrapers/pa-memory-care-data-methodology.md.
           OR (state_code = 'PA' AND mc_designation_type IS NOT NULL)
           OR (state_code = 'PA' AND license_type = 'ASSISTED LIVING - SPECIAL CARE')
+          -- AZ: Directed Care license level (A.A.C. § 10, Art. 8) is the Tier-1 MC signal.
+          -- az_license_level is parsed from LICENSE_SUBTYPE suffix at ingest time.
+          -- az_mc_subclass (HB2764, effective 2025-07-01) covers future endorsement records.
+          OR (state_code = 'AZ' AND az_license_level = 'Directed Care')
+          OR (state_code = 'AZ' AND COALESCE(az_mc_subclass, false))
         , false)
         WHERE state_code = %s
     """
@@ -199,10 +204,12 @@ _FRESHNESS_MONTHS: dict[str, int | None] = {
     # IL: FOIA window is Jan 2024 – May 2026; 36 months matches OR gate and keeps
     # the publishable set fresh. Facilities with no events in 36 months are stale.
     "IL": 36,
-    # PA: DHS DHS posts inspection PDFs on a rolling basis with no public
-    # date filter; 36 months matches OR/UT and aligns with the DHS practice
-    # of keeping the most recent 3 years of inspection summaries visible.
+    # PA: DHS HSD bulk export carries the memory-care designation directly.
     "PA": 36,
+    # AZ: ADHS re-licenses facilities annually; 36 months matches OR/UT freshness window.
+    # Facilities without inspections in 36 months are not yet indexed in AZ Care Check
+    # and should not be published until the PDF pipeline (Phase 3) populates their records.
+    "AZ": 36,
 }
 
 

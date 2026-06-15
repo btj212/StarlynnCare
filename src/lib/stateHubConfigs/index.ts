@@ -6,6 +6,7 @@ export { txStateConfig } from "./tx";
 export { utStateConfig } from "./ut";
 export { ilStateConfig } from "./il";
 export { paStateConfig } from "./pa";
+export { azStateConfig } from "./az";
 export type { StateHubConfig, EditorialCard, FaqItem } from "./types";
 export { buildStateStatItems, buildStateStatFootnotes } from "./types";
 
@@ -17,6 +18,7 @@ import { txStateConfig } from "./tx";
 import { utStateConfig } from "./ut";
 import { ilStateConfig } from "./il";
 import { paStateConfig } from "./pa";
+import { azStateConfig } from "./az";
 import type { StateHubConfig } from "./types";
 
 const CONFIGS: Record<string, StateHubConfig> = {
@@ -28,6 +30,7 @@ const CONFIGS: Record<string, StateHubConfig> = {
   utah: utStateConfig,
   illinois: ilStateConfig,
   pennsylvania: paStateConfig,
+  arizona: azStateConfig,
 };
 
 /** Returns the rich hub config for a state slug, or null if only the thin index should render. */

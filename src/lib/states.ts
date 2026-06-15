@@ -25,6 +25,8 @@ export const STATES: ReadonlyArray<StateInfo> = [
   { slug: "utah", code: "UT", name: "Utah" },
   { slug: "illinois", code: "IL", name: "Illinois" },
   { slug: "pennsylvania", code: "PA", name: "Pennsylvania" },
+  /** Scaffolded for ingest + routing — hubs ship when publishable AZ rows exist (post PDF pipeline). */
+  { slug: "arizona", code: "AZ", name: "Arizona" },
 ];
 
 /** States with at least one publishable facility — used by the home page + sitemap. */
