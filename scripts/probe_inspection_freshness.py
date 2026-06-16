@@ -42,12 +42,12 @@ STATE_SLUGS = {
 }
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
-# Last known DB max dates from GitHub Actions weekly-inspection-ingest run 27585609851
-# (2026-06-16T00:27 UTC). Used when DATABASE_URL is unavailable in automation env.
+# Last known DB max dates from GitHub Actions weekly-inspection-ingest run 27653894831
+# (2026-06-16T23:03 UTC evening push). Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 6, 11),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 6, 11),  # evening probe 2026-06-16 found source max 2026-06-15 (+4 rows)
+    "OR": date(2026, 6, 15),  # +6 inspections ingested 2026-06-16 run 27653894831
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 6, 10),  # use resolvedDate, not insertDate, for pending-new-data
     "UT": date(2026, 5, 21),
