@@ -299,31 +299,35 @@ def discover(dry_run: bool = False, limit: int | None = None) -> None:
 _INSP_UPSERT = """
 INSERT INTO inspections (
     facility_id,
-    external_id,
     inspection_date,
     inspection_type,
+    is_complaint,
+    complaint_id,
+    total_deficiency_count,
+    source_url,
     source_agency,
-    narrative_text,
-    deficiency_count,
-    metadata
+    narrative_summary,
+    raw_data
 )
 VALUES (
     %(facility_id)s,
-    %(external_id)s,
     %(inspection_date)s,
     %(inspection_type)s,
+    %(is_complaint)s,
+    %(complaint_id)s,
+    %(total_deficiency_count)s,
+    %(source_url)s,
     'AZ-ADHS',
-    %(narrative_text)s,
-    %(deficiency_count)s,
-    %(metadata)s::jsonb
+    %(narrative_summary)s,
+    %(raw_data)s::jsonb
 )
-ON CONFLICT (facility_id, external_id) DO UPDATE SET
-    inspection_date  = EXCLUDED.inspection_date,
-    inspection_type  = EXCLUDED.inspection_type,
-    narrative_text   = EXCLUDED.narrative_text,
-    deficiency_count = EXCLUDED.deficiency_count,
-    metadata         = EXCLUDED.metadata,
-    updated_at       = now()
+ON CONFLICT (facility_id, inspection_date, inspection_type, COALESCE(source_agency, '')) DO UPDATE SET
+    total_deficiency_count = EXCLUDED.total_deficiency_count,
+    narrative_summary      = EXCLUDED.narrative_summary,
+    raw_data               = EXCLUDED.raw_data,
+    is_complaint           = EXCLUDED.is_complaint,
+    complaint_id           = EXCLUDED.complaint_id,
+    source_url             = EXCLUDED.source_url
 RETURNING id
 """
 
@@ -365,8 +369,11 @@ def _count_deficiencies(narrative: str | None) -> int:
 def _parse_date(s: str | None) -> date | None:
     if not s:
         return None
-    # Handle ranges "M/D/YYYY - M/D/YYYY" → take start
-    s = s.split("-")[0].strip()
+    # Handle ranges like "M/D/YYYY - M/D/YYYY" → take the start portion.
+    # Split only on " - " (with surrounding spaces) so ISO dates like "2026-04-21"
+    # are not accidentally truncated to "2026".
+    if " - " in s:
+        s = s.split(" - ")[0].strip()
     for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
         try:
             return date.fromisoformat(s) if fmt == "%Y-%m-%d" else __import__("datetime").datetime.strptime(s, fmt).date()
@@ -378,7 +385,7 @@ def _parse_date(s: str | None) -> date | None:
 def inspect_mode(dry_run: bool = False, limit: int | None = None) -> None:
     """Fetch inspection history for all AZ facilities with az_sf_account_id."""
     import json
-    print("MODE: inspect (getFacilityOrLicenseInspections → inspections table)")
+    print("MODE: inspect (getFacilityOrLicenseInspections → inspections table)", flush=True)
 
     with psycopg.connect(DATABASE_URL) as conn:
         rows = conn.execute("""
@@ -392,15 +399,17 @@ def inspect_mode(dry_run: bool = False, limit: int | None = None) -> None:
     if limit:
         rows = rows[:limit]
 
-    print(f"Facilities with SF Account ID: {len(rows)}")
+    print(f"Facilities with SF Account ID: {len(rows)}", flush=True)
 
     ok = err = skip = 0
     insp_total = 0
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    # autocommit=True so each upsert is immediately visible and durable;
+    # idempotent ON CONFLICT means re-runs are safe.
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
         for i, (fac_id, name, sf_id) in enumerate(rows, 1):
             if i % 50 == 0:
-                print(f"  {i}/{len(rows)}  ok={ok} err={err} insp={insp_total}")
+                print(f"  {i}/{len(rows)}  ok={ok} err={err} skip={skip} insp={insp_total}", flush=True)
             try:
                 records = _aura_post(
                     "AZCCInspectionHistoryController",
@@ -424,17 +433,19 @@ def inspect_mode(dry_run: bool = False, limit: int | None = None) -> None:
                     insp_type_raw = rec.get("inspectionType") or ""
                     insp_type = _parse_insp_type(insp_type_raw)
                     deficiency_count = _count_deficiencies(narrative)
-                    external_id = rec.get("inspectionName") or rec.get("Id")
 
                     row_data = {
                         "facility_id": fac_id,
-                        "external_id": external_id,
                         "inspection_date": insp_date,
                         "inspection_type": insp_type,
-                        "narrative_text": narrative if narrative else None,
-                        "deficiency_count": deficiency_count,
-                        "metadata": json.dumps({
+                        "is_complaint": insp_type == "complaint",
+                        "complaint_id": rec.get("inspectionName") if insp_type == "complaint" else None,
+                        "total_deficiency_count": deficiency_count,
+                        "source_url": f"https://azcarecheck.azdhs.gov/s/facility-details?facilityId={sf_id}&activeTab=Inspections",
+                        "narrative_summary": narrative if narrative else None,
+                        "raw_data": json.dumps({
                             "sf_inspection_id": rec.get("Id"),
+                            "inspection_name": rec.get("inspectionName"),
                             "inspection_type_raw": insp_type_raw,
                             "certificate_number": rec.get("certificateNumber"),
                             "worksheet_type": rec.get("worksheetType"),
@@ -447,16 +458,17 @@ def inspect_mode(dry_run: bool = False, limit: int | None = None) -> None:
                         try:
                             conn.execute(_INSP_UPSERT, row_data)
                         except Exception as e:
-                            print(f"  Upsert error for {name} / {external_id}: {e}")
+                            insp_name = rec.get("inspectionName") or rec.get("Id")
+                            print(f"  Upsert error for {name} / {insp_name}: {e}", flush=True)
                     insp_total += 1
 
                 ok += 1
             except Exception as e:
-                print(f"  Error for {name} (sf={sf_id}): {e}")
+                print(f"  Error for {name} (sf={sf_id}): {e}", flush=True)
                 err += 1
                 time.sleep(2)
 
-    print(f"\nDone. facilities ok={ok} err={err} skip={skip}  inspections={insp_total}")
+    print(f"\nDone. facilities ok={ok} err={err} skip={skip}  inspections={insp_total}", flush=True)
     if dry_run:
         print("DRY RUN — no writes.")
 
