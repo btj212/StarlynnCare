@@ -42,15 +42,15 @@ STATE_SLUGS = {
 }
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
-# Last known DB max dates from GitHub Actions weekly-inspection-ingest run 27450555687
-# (2026-06-13T00:17 UTC). Used when DATABASE_URL is unavailable in automation env.
+# Last known DB max dates from GitHub Actions weekly-inspection-ingest run 27585609851
+# (2026-06-16T00:27 UTC). Used when DATABASE_URL is unavailable in automation env.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 6, 4),
+    "CA": date(2026, 6, 11),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 6, 11),
+    "OR": date(2026, 6, 11),  # evening probe 2026-06-16 found source max 2026-06-15 (+4 rows)
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 6, 3),  # +4 inspections ingested 2026-06-13 run 27481851594
-    "UT": date(2026, 5, 11),
+    "MN": date(2026, 6, 10),  # use resolvedDate, not insertDate, for pending-new-data
+    "UT": date(2026, 5, 21),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
 }
@@ -94,16 +94,15 @@ def _max_mn_json(path: Path) -> tuple[int, date | None]:
         for key in ("inspections", "complaints"):
             for insp in fac.get(key) or []:
                 count += 1
-                for field in ("resolvedDate", "insertDate"):
-                    raw = insp.get(field)
-                    if not raw:
-                        continue
-                    try:
-                        d = datetime.strptime(raw, "%m/%d/%Y").date()
-                        if max_d is None or d > max_d:
-                            max_d = d
-                    except ValueError:
-                        pass
+                raw = insp.get("resolvedDate")
+                if not raw:
+                    continue
+                try:
+                    d = datetime.strptime(raw, "%m/%d/%Y").date()
+                    if max_d is None or d > max_d:
+                        max_d = d
+                except ValueError:
+                    pass
     return count, max_d
 
 
