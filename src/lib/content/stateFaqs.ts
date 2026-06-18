@@ -223,7 +223,7 @@ export const AZ_FAQS: FaqItem[] = [
   },
   {
     q: "How often is Arizona data updated?",
-    a: "The ADHS ArcGIS directory is refreshed monthly. StarlynnCare re-ingests the directory on a 36-month freshness cycle. Inspection PDFs are collected from AZ Care Check as they become available. Each profile shows the inspection exit date and source link.",
+    a: "The ADHS ArcGIS directory is refreshed monthly. StarlynnCare re-ingests the directory on a 36-month freshness cycle. Inspection records are collected directly from the AZ Care Check platform via the underlying data API — structured inspection data including dates, inspector narratives, and deficiency counts. Each profile shows the inspection exit date and a direct link to the AZ Care Check source page for independent verification.",
   },
 ];
 

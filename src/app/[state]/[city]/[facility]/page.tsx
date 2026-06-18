@@ -40,6 +40,7 @@ function facilityEditorialLinks(
     WA: "/washington/memory-care-licensing",
     MN: "/minnesota/memory-care-licensing",
     PA: "/pennsylvania/memory-care-licensing",
+    AZ: "/arizona/memory-care-licensing",
   };
   const vsNursingHref: Partial<Record<string, string>> = {
     TX: "/texas/memory-care-vs-nursing-home",
@@ -47,6 +48,7 @@ function facilityEditorialLinks(
     WA: "/washington/memory-care-vs-nursing-home",
     MN: "/minnesota/memory-care-vs-nursing-home",
     PA: "/pennsylvania/memory-care-vs-nursing-home",
+    AZ: "/arizona/memory-care-vs-nursing-home",
   };
 
   const links: Array<{ href: string; label: string }> = [];

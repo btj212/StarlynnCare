@@ -15,17 +15,17 @@ export const azStateConfig: StateHubConfig = {
     {
       n: "Step 01",
       t: "Pull the public record",
-      p: "Facility licensing data is sourced directly from the ADHS Bureau of Residential Facilities Licensing (BRFL) via the ADHS ArcGIS Open Data Hub — the same dataset that powers AZ Care Check and official state reports.",
+      p: "Facility licensing data is sourced directly from the ADHS Bureau of Residential Facilities Licensing (BRFL) via the ADHS ArcGIS Open Data Hub and the ADHS Providers & Facility Databases (monthly Excel exports). Inspection records are fetched directly from the AZ Care Check platform (azcarecheck.azdhs.gov) — the same source that powers official ADHS consumer reporting.",
     },
     {
       n: "Step 02",
       t: "Directed Care license level only",
-      p: "StarlynnCare indexes only facilities with an active ADHS Directed Care license level — the highest tier authorized to serve residents with dementia, cognitive impairment, or behavioral symptoms requiring continuous supervision. Supervisory and Personal Care facilities are excluded.",
+      p: "StarlynnCare indexes only facilities with an active ADHS Directed Care license level — the highest tier authorized to serve residents with dementia, cognitive impairment, or behavioral symptoms requiring continuous supervision. Supervisory and Personal Care facilities are excluded. ADHS confirmed in a June 2026 public records response: \"Arizona assisted living homes and assisted living centers licensed for directed care services are automatically authorized for memory care services.\"",
     },
     {
       n: "Step 03",
       t: "Publish, with source links",
-      p: "Each profile links directly to the facility's ADHS source record and AZ Care Check page. Every inspection finding shows its exit date. No black box.",
+      p: "Each profile links directly to the facility's ADHS source record and AZ Care Check page. Every inspection finding shows its exit date and plain-language summary. No black box.",
     },
   ],
   guidesHref: "/arizona/guides",

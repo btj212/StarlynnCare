@@ -232,6 +232,26 @@ export default function MethodologyPage() {
                     <td className="py-2.5 pr-4 align-top">Texas HHSC — Assisted Living Facilities (Type A, B, C)</td>
                     <td className="py-2.5 align-top">HHSC public inspection reports</td>
                   </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">UT</td>
+                    <td className="py-2.5 pr-4 align-top">Utah DHHS Division of Licensing and Background Checks (DLBC) — Type I &amp; II Assisted Living Facilities</td>
+                    <td className="py-2.5 align-top">DLBC public facility roster; R432-270 inspection records</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">IL</td>
+                    <td className="py-2.5 pr-4 align-top">Illinois Dept. of Public Health (IDPH) — Assisted Living and Shared Housing Establishments</td>
+                    <td className="py-2.5 align-top">IDPH public inspection records</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">PA</td>
+                    <td className="py-2.5 pr-4 align-top">PA Dept. of Human Services (DHS) OLTL — Personal Care Homes (PCH) and Assisted Living Residences (ALR)</td>
+                    <td className="py-2.5 align-top">PA DHS inspection PDFs; OLTL provider directory</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">AZ</td>
+                    <td className="py-2.5 pr-4 align-top">ADHS Bureau of Residential Facilities Licensing (BRFL) — Assisted Living Homes (ALH) and Assisted Living Centers (ALC), Directed Care level</td>
+                    <td className="py-2.5 align-top">ADHS ArcGIS Open Data Hub (directory); AZ Care Check Aura API (inspection records). ADHS confirmed via public records response (Jun 2026): facilities with a Directed Care license are automatically authorized for memory care services.</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -248,15 +268,19 @@ export default function MethodologyPage() {
           <Section id="coverage-heading" title="Current coverage">
             <p>
               StarlynnCare currently publishes inspection data for{" "}
-              <strong>1,461 facilities across 5 states</strong>, with coverage
+              <strong>over 3,800 facilities across 9 states</strong>, with coverage
               expanding as we ingest new state licensing data.
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li><span className="font-medium text-ink">California</span> — licensed RCFEs across California, covering counties statewide including Los Angeles, the San Francisco Bay Area, San Diego, Sacramento, and the Central Valley.</li>
-              <li><span className="font-medium text-ink">Minnesota</span> — 552 licensed assisted living facilities (ALDC and AL).</li>
-              <li><span className="font-medium text-ink">Oregon</span> — 244 licensed residential care facilities and memory care communities.</li>
-              <li><span className="font-medium text-ink">Washington</span> — 180 licensed assisted living facilities and adult family homes.</li>
-              <li><span className="font-medium text-ink">Texas</span> — early coverage expanding; 1 facility published to date as ingest ramps up.</li>
+              <li><span className="font-medium text-ink">California</span> — licensed RCFEs across California, covering counties statewide.</li>
+              <li><span className="font-medium text-ink">Arizona</span> — 1,908 Directed Care ALHs and ALCs. ADHS confirmed Directed Care = memory care authorized (public records, Jun 2026).</li>
+              <li><span className="font-medium text-ink">Minnesota</span> — 552 licensed assisted living facilities with Dementia Care license (ALDC and AL).</li>
+              <li><span className="font-medium text-ink">Oregon</span> — 131 licensed residential care facilities with Memory Care Endorsement.</li>
+              <li><span className="font-medium text-ink">Washington</span> — 180 licensed assisted living facilities with Specialized Dementia Care contract.</li>
+              <li><span className="font-medium text-ink">Pennsylvania</span> — 355 PCH and ALR facilities with Special Care designation.</li>
+              <li><span className="font-medium text-ink">Utah</span> — 118 Type I &amp; II assisted living facilities.</li>
+              <li><span className="font-medium text-ink">Illinois</span> — early coverage; 30 facilities published to date.</li>
+              <li><span className="font-medium text-ink">Texas</span> — early coverage expanding; ingest in progress.</li>
             </ul>
             <p>
               Only facilities with an active state license and at least one
