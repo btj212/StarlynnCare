@@ -12,7 +12,7 @@
  * (RCFE, CDSS, Medi-Cal, CCL, HHSC, etc.) — see docs/NEW_STATE_PLAYBOOK.md.
  */
 
-export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "PA" | "all";
+export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "PA" | "AZ" | "all";
 
 export type ArticleTag =
   | "licensing"
@@ -288,6 +288,24 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     desc: "PA facilities with 100+ beds average 5.1 severe findings per facility — nearly four times the rate of homes with fewer than 20 beds.",
     states: ["PA"],
     tags: ["data", "inspection"],
+    live: true,
+  },
+
+  // ── Arizona ───────────────────────────────────────────────────────────────
+  {
+    slug: "/arizona/memory-care-licensing",
+    title: "Arizona memory care licensing — ALH, ALC & the ADHS Directed Care license level",
+    desc: "Arizona ADHS licenses memory care in Assisted Living Homes and Centers. The Directed Care license level authorizes dementia and cognitive-care services. HB2764 added a formal Memory Care subclass in 2025.",
+    states: ["AZ"],
+    tags: ["licensing", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/arizona/memory-care-vs-nursing-home",
+    title: "Memory care vs. nursing home in Arizona",
+    desc: "ADHS regulates ALH/ALC memory care; CMS and CMS-certified SNFs handle nursing home level care. Different records, different ALTCS Medicaid funding streams.",
+    states: ["AZ"],
+    tags: ["decision", "licensing"],
     live: true,
   },
 ];

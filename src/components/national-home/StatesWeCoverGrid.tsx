@@ -15,6 +15,9 @@ const STATE_REGULATORS: Record<string, string> = {
   MN: "MDH",
   TX: "HHSC",
   PA: "PA DHS",
+  AZ: "ADHS",
+  UT: "DLBC",
+  IL: "IDPH",
 };
 
 const STATE_DESCRIPTIONS: Record<string, string> = {
@@ -24,6 +27,9 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   MN: "ALF with Dementia Care license · MN Dept. of Health",
   TX: "Alzheimer-certified assisted living · HHSC LTCR records",
   PA: "PCH & ALR Special Care designations · PA DHS OLTL portal",
+  AZ: "Directed Care ALH & ALC · ADHS BRFL · AZ Care Check inspections",
+  UT: "Type I & II Assisted Living · DLBC · R432-270",
+  IL: "Public regulator data · IDPH",
 };
 
 // TX is temporarily hidden from the grid — only 1 facility live (pilot).

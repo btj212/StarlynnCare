@@ -199,5 +199,33 @@ export const PA_FAQS: FaqItem[] = [
   },
 ];
 
+/** Arizona ADHS BRFL framing — Directed Care, ALH/ALC, and A.A.C. Title 9. */
+export const AZ_FAQS: FaqItem[] = [
+  {
+    q: "Where does Arizona memory care inspection data come from?",
+    a: "StarlynnCare sources Arizona facility data from the ADHS Bureau of Residential Facilities Licensing (BRFL), which regulates Assisted Living Homes (ALH, up to 10 residents) and Assisted Living Centers (ALC, 11+ residents) under A.A.C. Title 9, Chapter 10. Inspection records are published on the AZ Care Check consumer portal (azcarecheck.azdhs.gov). StarlynnCare downloads and indexes the underlying inspection reports for each facility profile.",
+  },
+  {
+    q: "What is 'Directed Care' and why does it matter for memory care?",
+    a: "Arizona uses three license levels for assisted living facilities: Supervisory Care (least intensive), Personal Care, and Directed Care (most intensive). A Directed Care license authorizes the facility to serve residents who need continuous supervision, protective oversight, or assistance due to cognitive impairment — including dementia and Alzheimer's disease. StarlynnCare only indexes facilities with an active Directed Care license or the new HB2764 Memory Care subclass, because these are the state-verified signals that the facility is equipped for dementia care.",
+  },
+  {
+    q: "What is the new Arizona Memory Care subclass (HB2764)?",
+    a: "Arizona House Bill 2764, signed into law and effective July 1, 2025, created a formal Memory Care subclass for Assisted Living Homes and Centers. Facilities obtaining this subclass must meet enhanced staffing, training, physical environment, and programming requirements specifically designed for residents with Alzheimer's disease or other dementias. StarlynnCare will incorporate this subclass as the primary Tier-1 signal once ADHS begins publishing it in the facility directory.",
+  },
+  {
+    q: "How does ADHS inspect assisted living facilities?",
+    a: "ADHS BRFL conducts routine inspections (typically annual) and complaint investigations of licensed ALHs and ALCs. Inspectors cite violations by A.A.C. rule section (e.g. R9-10-814). Enforcement actions range from standard citations with a required plan of correction to civil money penalties, suspension, and license revocation for serious violations. AZ Care Check publishes inspection reports, but structured data requires downloading and parsing the underlying PDFs.",
+  },
+  {
+    q: "Do you accept payments from facilities or operators?",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Data is derived solely from ADHS inspection records and verified family reviews.",
+  },
+  {
+    q: "How often is Arizona data updated?",
+    a: "The ADHS ArcGIS directory is refreshed monthly. StarlynnCare re-ingests the directory on a 36-month freshness cycle. Inspection records are collected directly from the AZ Care Check platform via the underlying data API — structured inspection data including dates, inspector narratives, and deficiency counts. Each profile shows the inspection exit date and a direct link to the AZ Care Check source page for independent verification.",
+  },
+];
+
 /** Same as `CA_FAQS` — kept for `homeFaqs` re-exports and legacy `HOME_FAQS` imports. */
 export const HOME_FAQS = CA_FAQS;

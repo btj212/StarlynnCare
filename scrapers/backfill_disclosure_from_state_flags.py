@@ -15,6 +15,7 @@ Mappings (idempotent — only sets to true, never overwrites a different source)
   WA  wa_dementia_care_contract → 'WA DSHS Dementia Care Contract'
   MN  mn_dementia_care_licensed → 'MN ALRC ALDC'
   TX  tx_alzheimer_certified    → 'TX HHSC Alzheimer Certification'
+  AZ  az_memory_care_endorsed   → 'ADHS Directed Care License'
 
 Usage:
     python3 scrapers/backfill_disclosure_from_state_flags.py
@@ -42,6 +43,7 @@ STATE_MAPPINGS: Final[list[tuple[str, str, str]]] = [
     ("WA", "wa_dementia_care_contract", "WA DSHS Dementia Care Contract"),
     ("MN", "mn_dementia_care_licensed", "MN ALRC ALDC"),
     ("TX", "tx_alzheimer_certified", "TX HHSC Alzheimer Certification"),
+    ("AZ", "az_memory_care_endorsed", "ADHS Directed Care License"),
 ]
 
 

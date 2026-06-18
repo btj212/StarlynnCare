@@ -62,7 +62,8 @@ async function loadReviewData() {
     .select(SELECT_COLUMNS)
     .eq("mc_review_status", "needs_review")
     .order("state_code")
-    .order("name");
+    .order("name")
+    .limit(5000);
 
   if (yellowError) {
     console.error("Failed to load yellow queue:", yellowError);
@@ -72,7 +73,8 @@ async function loadReviewData() {
     .from("facilities")
     .select(SELECT_COLUMNS)
     .eq("mc_review_status", "reviewed_reject")
-    .order("mc_reviewed_at", { ascending: false });
+    .order("mc_reviewed_at", { ascending: false })
+    .limit(5000);
 
   if (redError) {
     console.error("Failed to load red bucket:", redError);
