@@ -256,6 +256,15 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                   Dementia-trained staff
                 </span>
               )}
+              {/* Phone — visible on mobile only; desktop shows in address line below */}
+              {phone && (
+                <a
+                  href={`tel:${facility.phone}`}
+                  className="md:hidden fp-tag bg-paper border border-paper-rule px-3 py-[5px] font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.08em] text-ink-3 hover:text-ink transition-colors"
+                >
+                  {phone}
+                </a>
+              )}
             </div>
 
             {addr && (

@@ -3,18 +3,8 @@ import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { FacilitySubNavAnchors } from "@/components/facility/profile/FacilitySubNavAnchors";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 
-const PHONE_RE = /(\d{3})(\d{3})(\d{4})/;
-function formatPhone(raw: string | null): string | null {
-  if (!raw) return null;
-  const digits = raw.replace(/\D/g, "");
-  const m = digits.match(/^1?(\d{3})(\d{3})(\d{4})$/);
-  if (!m) return raw;
-  return `(${m[1]}) ${m[2]}-${m[3]}`;
-}
-
 export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
-  const { facility, state, region, county, rulesCards, tourQuestions, snapshot } = profile;
-  const phone = formatPhone(facility.phone);
+  const { facility, state, region, county, rulesCards, tourQuestions } = profile;
 
   const backHref = region
     ? `/${state.slug}/${region.slug}`
@@ -77,22 +67,9 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
             ))}
           </nav>
 
-          {/* Actions */}
+          {/* Actions — offer CTA on all viewports (A/B test must be visible on mobile) */}
           <div className="flex shrink-0 items-center gap-2">
-            {/* Mobile: compact call chip (phone moved to hero) */}
-            {phone && (
-              <a
-                href={`tel:${facility.phone}`}
-                aria-label={`Call ${phone}`}
-                className="md:hidden inline-flex items-center gap-1.5 border border-ink px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-ink hover:bg-ink hover:text-paper transition-colors"
-              >
-                Call →
-              </a>
-            )}
-            {/* Desktop: offer CTA replaces phone */}
-            <div className="hidden md:block">
-              <OfferTriggerButton size="compact" />
-            </div>
+            <OfferTriggerButton size="compact" />
           </div>
         </div>
       </div>
