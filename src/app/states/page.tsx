@@ -15,7 +15,7 @@ export const revalidate = 3600;
 const PAGE_CANONICAL = canonicalFor("/states");
 const PAGE_TITLE = "Memory care by state | StarlynnCare";
 const PAGE_DESC =
-  "Inspection-backed memory care facility directories for California, Oregon, Washington, Minnesota, and more — sourced from each state's regulator.";
+  "Inspection-backed memory care facility directories for California, Arizona, Oregon, Washington, Minnesota, Pennsylvania, Utah, and Illinois — sourced directly from each state's regulator.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -38,6 +38,8 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   TX: "HHSC · Alzheimer-certified assisted living",
   UT: "DLBC · Type I & II Assisted Living · R432-270",
   PA: "PA DHS OLTL · PCH & ALR Special Care designations",
+  AZ: "ADHS BRFL · Directed Care ALH & ALC · AZ Care Check",
+  IL: "IDPH · Assisted Living & Shared Housing",
 };
 
 async function getStateCounts(): Promise<Record<string, number>> {
@@ -106,7 +108,7 @@ export default async function StatesPage() {
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
           <SectionHead
             label="Covered states"
-            title={<>Four states, <em>one editorial standard.</em></>}
+            title={<>Nine states, <em>one editorial standard.</em></>}
           />
           {/* TX hidden until full HHSC dataset is ingested — remove filter to restore */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

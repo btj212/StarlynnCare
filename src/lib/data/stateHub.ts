@@ -280,35 +280,62 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
   const idRows = idRes.data ?? [];
   const allIds = idRows.map((r: { id: string }) => r.id);
 
+  // Chunk helper — PostgREST .in() is URL-encoded; batching avoids length limits
+  // when a state has many facilities (e.g. AZ with 1,900+).
+  function chunk<T>(arr: T[], size: number): T[][] {
+    const out: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  }
+
   // Fetch inspection count scoped to this state's facilities
   let inspCount = 0;
   let sevCount = 0;
   if (allIds.length > 0) {
-    const { count: ic } = await supabase
-      .from("inspections")
-      .select("*", { count: "exact", head: true })
-      .in("facility_id", allIds);
-    inspCount = ic ?? 0;
+    const ID_BATCH = 200;
+    const idChunks = chunk(allIds, ID_BATCH);
 
-    // Count severe deficiencies in the last 24 months, scoped to this state's inspections.
-    // The UI label says "last 24 months" — the query must match.
+    const inspCounts = await Promise.all(
+      idChunks.map((ids) =>
+        supabase
+          .from("inspections")
+          .select("*", { count: "exact", head: true })
+          .in("facility_id", ids)
+          .then((r) => r.count ?? 0)
+      )
+    );
+    inspCount = inspCounts.reduce((s, n) => s + n, 0);
+
+    // Severe deficiencies in last 24 months, chunked the same way
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - 24);
     const cutoff = cutoffDate.toISOString().split("T")[0];
 
-    const { data: inspIdRows } = await supabase
-      .from("inspections")
-      .select("id")
-      .in("facility_id", allIds)
-      .gte("inspection_date", cutoff);
-    const inspIds = (inspIdRows ?? []).map((r: { id: string }) => r.id);
+    const inspIdArrays = await Promise.all(
+      idChunks.map((ids) =>
+        supabase
+          .from("inspections")
+          .select("id")
+          .in("facility_id", ids)
+          .gte("inspection_date", cutoff)
+          .then((r) => (r.data ?? []).map((row: { id: string }) => row.id))
+      )
+    );
+    const inspIds = inspIdArrays.flat();
+
     if (inspIds.length > 0) {
-      const { count: sc } = await supabase
-        .from("deficiencies")
-        .select("*", { count: "exact", head: true })
-        .in("inspection_id", inspIds)
-        .gte("severity", 3);
-      sevCount = sc ?? 0;
+      const inspIdChunks = chunk(inspIds, ID_BATCH);
+      const sevCounts = await Promise.all(
+        inspIdChunks.map((ids) =>
+          supabase
+            .from("deficiencies")
+            .select("*", { count: "exact", head: true })
+            .in("inspection_id", ids)
+            .gte("severity", 3)
+            .then((r) => r.count ?? 0)
+        )
+      );
+      sevCount = sevCounts.reduce((s, n) => s + n, 0);
     }
   }
 
