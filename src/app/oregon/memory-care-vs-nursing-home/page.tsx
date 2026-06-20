@@ -17,7 +17,7 @@ const PAGE_PATH = "/oregon/memory-care-vs-nursing-home";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "Memory care vs. nursing home in Oregon — two regulators, two inspection records";
-const TITLE = "Memory Care vs. Nursing Home in Oregon (Oregon DHS vs. CMS) — 2026";
+const TITLE = "Memory Care vs. Nursing Home in Oregon — 2026";
 const DESC =
   "Oregon ALF/RCF memory care is regulated by Oregon DHS; nursing homes (SNFs) are regulated by CMS and Oregon Health Authority. Different regulators, different inspection records, and different Medicaid funding streams — here is how to compare them.";
 const DATE_PUBLISHED = "2026-05-09";

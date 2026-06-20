@@ -19,7 +19,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "What is a Personal Care Home in Pennsylvania?";
 const TITLE =
-  "What Is a Personal Care Home in Pennsylvania? PCH Definition, Licensing & Inspections";
+  "What Is a Personal Care Home in Pennsylvania? PCH Licensing & Inspections";
 const DESC =
   "A Personal Care Home (PCH) is a Pennsylvania DHS-licensed residential care facility for adults who need help with daily living — not nursing-home-level care. Here is how PCHs are licensed, inspected, and what to look for.";
 const DATE_PUBLISHED = "2026-06-09";

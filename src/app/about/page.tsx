@@ -16,7 +16,7 @@ import {
 const ABOUT_PATH = "/about";
 const aboutCanonical = canonicalFor(ABOUT_PATH);
 const aboutDesc =
-  "StarlynnCare was built by a California RN and her husband to give families access to state inspection records that already exist — organized for people making care decisions under pressure.";
+  "StarlynnCare gives families access to state inspection records — organized for people making memory care decisions under pressure. Built by a California RN and her husband.";
 
 export const metadata: Metadata = {
   title: "About | StarlynnCare",

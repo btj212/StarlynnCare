@@ -12,7 +12,7 @@ import { buildArticleSchema, buildBreadcrumbList, buildFaqSchemaFromPairs } from
 const PAGE_PATH = "/washington/memory-care-vs-nursing-home";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE = "Memory care vs. nursing home in Washington — DSHS vs. CMS inspection records";
-const TITLE = "Memory Care vs. Nursing Home in Washington State (DSHS vs. CMS) — 2026";
+const TITLE = "Memory Care vs. Nursing Home in Washington State — 2026";
 const DESC =
   "Washington memory care ALFs are regulated by DSHS; nursing homes (SNFs) are regulated by CMS and Washington DOH. Different oversight, different inspections, and different Medicaid funding — here is how to compare them.";
 const DATE_PUBLISHED = "2026-05-09";

@@ -18,7 +18,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "Illinois memory care licensing explained — Assisted Living Establishments, SHEs, and IDPH regulation";
 const TITLE =
-  "Illinois Memory Care Licensing: ALEs, SHEs, IDPH Inspections & Dementia Care Units (2026)";
+  "Illinois Memory Care Licensing: ALEs, SHEs & IDPH Inspections";
 const DESC =
   "Illinois licenses residential memory care homes as Assisted Living Establishments (ALEs) or Shared Housing Establishments (SHEs) under 210 ILCS 9, regulated by the Illinois Department of Public Health (IDPH). Facilities with dedicated dementia units hold a Special Alzheimer's/Dementia Care designation. Learn how the licensing system works and what families should verify.";
 const DATE_PUBLISHED = "2026-06-12";

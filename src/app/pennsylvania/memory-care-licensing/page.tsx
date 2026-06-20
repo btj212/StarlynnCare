@@ -18,7 +18,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "Pennsylvania memory care licensing — Personal Care Home vs. Assisted Living Residence and the Special Care designation";
 const TITLE =
-  "Pennsylvania Memory Care Licensing: PCH vs. ALR & Special Care Designation — 2026";
+  "Pennsylvania Memory Care Licensing: PCH vs. ALR & Special Care";
 const DESC =
   "Pennsylvania licenses memory care under DHS OLTL as PCHs (Ch 2600) and ALRs (Ch 2800). Learn the Special Care designation and how to read a PA facility profile.";
 const DATE_PUBLISHED = "2026-06-02";

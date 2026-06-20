@@ -9,6 +9,7 @@ export const azStateConfig: StateHubConfig = {
   regulatorAbbr: "ADHS",
   inspectionSrc: "ADHS BRFL / AZ Care Check",
   showZipSearch: false,
+  hasSevereCitationData: false,
   comingCounties: [],
   faqs: AZ_FAQS,
   methodologySteps: [

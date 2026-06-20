@@ -19,7 +19,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "What Does a Personal Care Home Cost in Pennsylvania?";
 const TITLE =
-  "Personal Care Home Cost in Pennsylvania — 2024 Monthly Ranges, Fees & Medicaid";
+  "Personal Care Home Cost in Pennsylvania — Monthly Ranges & Medicaid";
 const DESC =
   "Pennsylvania personal care home (PCH) and memory care ALR costs range from $4,000–$8,500/month depending on location, care level, and Special Care designation. Here is what drives the price and what Medicaid does — and does not — cover.";
 const DATE_PUBLISHED = "2026-06-09";

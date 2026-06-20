@@ -56,6 +56,12 @@ export interface StateHubConfig {
   inspectionSrc: string;
   /** Whether the ZIP search form is shown on the hub's hero. */
   showZipSearch: boolean;
+  /**
+   * Set to false for states where the `deficiencies` table is not populated
+   * (e.g. AZ, IL — inspection-level totals only). When false, `buildStateStatItems`
+   * omits the "Severe deficiencies" stat rather than showing a misleading "0".
+   */
+  hasSevereCitationData?: boolean;
 }
 
 export interface FaqItem {
@@ -83,7 +89,7 @@ export function buildStateStatItems(
   stats: StateHubData["stats"],
   config: StateHubConfig,
 ): StatItem[] {
-  const { stateName, regulatorAbbr, inspectionSrc } = config;
+  const { stateName, regulatorAbbr, inspectionSrc, hasSevereCitationData = true } = config;
   return [
     {
       n: stats.facilities > 0 ? stats.facilities.toLocaleString() : "0",
@@ -96,11 +102,15 @@ export function buildStateStatItems(
       src: inspectionSrc,
       delta: "Updated regularly",
     },
-    {
-      n: stats.severeCitations > 0 ? stats.severeCitations.toLocaleString() : "0",
-      label: "Severe deficiencies on file in the last 24 months",
-      src: regulatorAbbr,
-    },
+    ...(hasSevereCitationData
+      ? [
+          {
+            n: stats.severeCitations > 0 ? stats.severeCitations.toLocaleString() : "0",
+            label: "Severe deficiencies on file in the last 24 months",
+            src: regulatorAbbr,
+          },
+        ]
+      : []),
     {
       n: "0",
       label: "Referral commissions, lead fees, or paid placements accepted from operators",

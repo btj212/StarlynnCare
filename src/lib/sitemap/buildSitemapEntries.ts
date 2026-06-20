@@ -63,6 +63,7 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/texas", priority: "0.88", changefreq: "weekly" },
     { path: "/illinois", priority: "0.88", changefreq: "weekly" },
     { path: "/utah", priority: "0.88", changefreq: "weekly" },
+    { path: "/arizona", priority: "0.88", changefreq: "weekly" },
     { path: "/methodology", priority: "0.75", changefreq: "monthly" },
     { path: "/about", priority: "0.75", changefreq: "monthly" },
     { path: "/data", priority: "0.8", changefreq: "monthly" },
@@ -119,6 +120,10 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     // Minnesota-specific articles (live)
     { path: "/minnesota/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/minnesota/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    // Arizona-specific articles (live)
+    { path: "/arizona/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/arizona/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    { path: "/arizona/guides", priority: "0.80", changefreq: "monthly" },
     // Pennsylvania hub + guides + articles (live)
     { path: "/pennsylvania", priority: "0.88", changefreq: "weekly" },
     { path: "/pennsylvania/guides", priority: "0.80", changefreq: "monthly" },
@@ -209,9 +214,12 @@ export async function collectFacilityEntriesForState(
   stateSlug: string,
   today: string,
 ): Promise<SitemapUrlRow[]> {
+  // Use an inner join on inspections so only facilities with at least one inspection
+  // are included. This prevents thin/noindex pages (publishable=true but 0 inspections)
+  // from appearing in the sitemap and causing "noindex page in sitemap" Ahrefs errors.
   const { data } = await supabase
     .from("facilities")
-    .select("city_slug, slug, updated_at")
+    .select("city_slug, slug, updated_at, inspections!facility_id!inner(id)")
     .eq("state_code", stateCode)
     .eq("publishable", true)
     .order("city_slug")
