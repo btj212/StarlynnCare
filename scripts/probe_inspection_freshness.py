@@ -52,7 +52,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "TX": date(2023, 2, 16),
     "OR": date(2026, 6, 18),  # +11 inspections ingested run 27852499463
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 6, 10),  # pending +9 complaints through 2026-06-16 (evening probe 2026-06-20)
+    "MN": date(2026, 6, 16),  # +12 complaints ingested run 27886777230
     "UT": date(2026, 5, 21),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
