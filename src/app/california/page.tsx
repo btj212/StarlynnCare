@@ -25,7 +25,7 @@ export const revalidate = 3600;
 const pageCanonical = canonicalFor("/california");
 const PAGE_TITLE = "Memory Care in California - State Inspection Data";
 const PAGE_DESC =
-  "Inspection records and peer rankings for licensed California memory care facilities — CDSS citations, county benchmarks, and family-ready profiles. Refreshed weekly.";
+  "State inspection records and peer rankings for California memory care facilities — CDSS citations, county benchmarks, and family-ready profiles. Refreshed weekly.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,

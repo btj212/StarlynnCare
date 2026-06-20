@@ -27,7 +27,7 @@ export const revalidate = 3600;
 const homeCanonical = canonicalFor("/");
 
 const _stateNameList = COVERED_STATES.map((s) => s.name).join(", ");
-const _homeDesc = `No paid ads. No sales calls. Public inspection data from ${COVERED_STATES.length} states — ${_stateNameList} — analyzed and ranked for families.`;
+const _homeDesc = `Memory care facilities ranked by state inspection records across ${COVERED_STATES.length} states — no commissions, no paid placement. Public regulator data, independent family resource.`;
 
 export const metadata: Metadata = {
   title: "Memory care facilities, ranked by state inspectors | StarlynnCare",

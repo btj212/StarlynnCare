@@ -18,7 +18,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "California memory care licensing explained — RCFEs, CDSS, and the Alzheimer's Special Care Disclosure";
 const TITLE =
-  "California Memory Care Licensing: RCFEs, CDSS & Type A/B Deficiencies (2026)";
+  "California Memory Care Licensing: RCFEs, CDSS & Type A/B Deficiencies";
 const DESC =
   "California licenses all memory care homes as RCFEs (Residential Care Facilities for the Elderly) under Title 22, regulated by CDSS Community Care Licensing. Facilities that market dementia care must file an Alzheimer's Special Care Disclosure under SB 1523. Learn what all of this means for families choosing a facility.";
 const DATE_PUBLISHED = "2026-06-12";

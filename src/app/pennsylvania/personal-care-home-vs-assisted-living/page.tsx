@@ -19,7 +19,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "Personal Care Home vs. Assisted Living in Pennsylvania";
 const TITLE =
-  "Personal Care Home vs. Assisted Living in Pennsylvania — PCH, ALR & Memory Care Compared";
+  "Personal Care Home vs. Assisted Living in Pennsylvania — PCH & ALR";
 const DESC =
   "Pennsylvania uses 'Personal Care Home' (PCH) and 'Assisted Living Residence' (ALR) where most states say 'assisted living.' Here is how they differ on care level, staffing, inspections, and Medicaid — and what each means for memory care.";
 const DATE_PUBLISHED = "2026-06-09";

@@ -17,7 +17,7 @@ const PAGE_PATH = "/washington/memory-care-licensing";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "Washington memory care licensing — ALFs and the DSHS Specialized Dementia Care contract";
-const TITLE = "Washington Memory Care Licensing: ALFs & Specialized Dementia Care (DSHS) — 2026";
+const TITLE = "Washington Memory Care Licensing: ALFs & Specialized Dementia Care";
 const DESC =
   "Washington licenses memory care in Assisted Living Facilities (ALFs) regulated by DSHS Residential Care Services. A separate Specialized Dementia Care contract governs dementia-specific programming. Learn what each means for families searching in Washington state.";
 const DATE_PUBLISHED = "2026-05-09";

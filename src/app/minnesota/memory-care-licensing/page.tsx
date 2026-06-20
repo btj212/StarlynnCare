@@ -12,7 +12,7 @@ import { buildArticleSchema, buildBreadcrumbList, buildFaqSchemaFromPairs } from
 const PAGE_PATH = "/minnesota/memory-care-licensing";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE = "Minnesota memory care licensing — Assisted Living Facility with Dementia Care (144G)";
-const TITLE = "Minnesota Memory Care Licensing: ALF with Dementia Care (Minn. Stat. 144G) — 2026";
+const TITLE = "Minnesota Memory Care Licensing: ALF with Dementia Care";
 const DESC =
   "Minnesota licenses memory care under Chapter 144G as Assisted Living Facility with Dementia Care, regulated by MDH. Learn what this license requires, how MDH inspects, and how to read a Minnesota facility profile on StarlynnCare.";
 const DATE_PUBLISHED = "2026-05-09";

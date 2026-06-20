@@ -407,7 +407,24 @@ export default async function RegionPage({ params }: PageProps) {
   const pageDesc =
     region.state.code === "TX"
       ? `${totalCount} Alzheimer-certified assisted living facilities in ${region.name}, ranked by HHSC inspection records — public LTCR data where published.`
-      : `${totalCount} licensed memory care facilities in ${region.name}, ranked by state inspection records. Full CDSS citation history for every facility.`;
+      : region.state.code === "AZ"
+        ? `${totalCount} licensed memory care facilities in ${region.name}, ranked by ADHS inspection records. AZ Care Check inspection history for every facility.`
+        : `${totalCount} licensed memory care facilities in ${region.name}, ranked by state inspection records. Full CDSS citation history for every facility.`;
+
+  // Data source label for stat blocks — state-specific regulator attribution.
+  const stateDataSrc =
+    region.state.code === "AZ" ? "ADHS / AZ Care Check"
+    : region.state.code === "WA" ? "DSHS"
+    : region.state.code === "MN" ? "MDH"
+    : region.state.code === "OR" ? "OHA"
+    : region.state.code === "UT" ? "DLBC"
+    : region.state.code === "IL" ? "IDPH"
+    : "CDSS";
+
+  // States where we have row-level deficiency data (deficiencies table populated).
+  // AZ, IL, UT currently store only inspection-level totals — hide the "§ Findings"
+  // section to avoid showing a misleading "0 (0%)" for those states.
+  const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA"]);
   // For PA county pages, sort the ItemList JSON-LD by record rank (most severe first)
   // so ItemList positions reflect the displayed "By record" ordering.
   const sortedFacilitiesForItemList =
@@ -556,18 +573,22 @@ export default async function RegionPage({ params }: PageProps) {
           {
             n: String(totalCount),
             label: `Licensed memory care facilities indexed in ${region.name}`,
-            src: "CDSS",
+            src: stateDataSrc,
           },
-          {
-            n: String(facilitiesWithSeriousDef),
-            label:
-              "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
-            src: "CDSS",
-            delta: totalCount > 0 ? `${severePct}% of indexed facilities` : undefined,
-          },
+          ...(HAS_DEFICIENCY_TABLE.has(region.state.code)
+            ? [
+                {
+                  n: String(facilitiesWithSeriousDef),
+                  label:
+                    "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
+                  src: stateDataSrc,
+                  delta: totalCount > 0 ? `${severePct}% of indexed facilities` : undefined,
+                },
+              ]
+            : []),
           {
             n: String(visibleCount),
-            label: "Facilities with full CDSS profile published on StarlynnCare",
+            label: `Facilities with full ${stateDataSrc} profile published on StarlynnCare`,
             src: "StarlynnCare",
           },
         ];
@@ -654,46 +675,50 @@ export default async function RegionPage({ params }: PageProps) {
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
             {totalCount > 0 ? (
               <>
-                <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
-                  § Findings
-                </div>
-                <p className="font-[family-name:var(--font-display)] text-[22px] leading-[1.3] text-ink mb-4">
-                  {region.state.code === "TX" ? (
-                    <>
-                      Of the{" "}
-                      <strong className="font-normal text-rust">{totalCount}</strong>{" "}
-                      Alzheimer-certified facilities indexed in {region.name},{" "}
-                      <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                      ({severePct}%) have at least one cited deficiency in the inspection data on
-                      file. Texas ALF license Type A/B/C is a <em>capacity</em> class on the
-                      license — not the same as California&rsquo;s Type-A/Type-B{" "}
-                      <em>deficiency</em> labels.
-                    </>
-                  ) : (
-                    <>
-                      Of the{" "}
-                      <strong className="font-normal text-rust">{totalCount}</strong>{" "}
-                      licensed memory care facilities indexed in {region.name},{" "}
-                      <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                      ({severePct}%) have a Type-A or Type-B deficiency in their state record
-                      from the past 24 months.
-                    </>
-                  )}
-                </p>
-                {findingsDate && (
-                  <DataFootnote
-                    source={
-                      region.state.code === "TX"
-                        ? "Texas HHSC Long-Term Care Regulation"
-                        : "CA CDSS Community Care Licensing"
-                    }
-                    refreshed={findingsDate}
-                    note={
-                      region.state.code === "TX"
-                        ? "Deficiency labels are shown as published by HHSC; see methodology for scope"
-                        : "Type-A = immediate health/safety risk; Type-B = lesser violation"
-                    }
-                  />
+                {HAS_DEFICIENCY_TABLE.has(region.state.code) && (
+                  <>
+                    <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+                      § Findings
+                    </div>
+                    <p className="font-[family-name:var(--font-display)] text-[22px] leading-[1.3] text-ink mb-4">
+                      {region.state.code === "TX" ? (
+                        <>
+                          Of the{" "}
+                          <strong className="font-normal text-rust">{totalCount}</strong>{" "}
+                          Alzheimer-certified facilities indexed in {region.name},{" "}
+                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
+                          ({severePct}%) have at least one cited deficiency in the inspection data on
+                          file. Texas ALF license Type A/B/C is a <em>capacity</em> class on the
+                          license — not the same as California&rsquo;s Type-A/Type-B{" "}
+                          <em>deficiency</em> labels.
+                        </>
+                      ) : (
+                        <>
+                          Of the{" "}
+                          <strong className="font-normal text-rust">{totalCount}</strong>{" "}
+                          licensed memory care facilities indexed in {region.name},{" "}
+                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
+                          ({severePct}%) have a Type-A or Type-B deficiency in their state record
+                          from the past 24 months.
+                        </>
+                      )}
+                    </p>
+                    {findingsDate && (
+                      <DataFootnote
+                        source={
+                          region.state.code === "TX"
+                            ? "Texas HHSC Long-Term Care Regulation"
+                            : "CA CDSS Community Care Licensing"
+                        }
+                        refreshed={findingsDate}
+                        note={
+                          region.state.code === "TX"
+                            ? "Deficiency labels are shown as published by HHSC; see methodology for scope"
+                            : "Type-A = immediate health/safety risk; Type-B = lesser violation"
+                        }
+                      />
+                    )}
+                  </>
                 )}
 
                 <div id="hub-stats" className="mt-10">

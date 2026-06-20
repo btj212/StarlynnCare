@@ -18,7 +18,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "Memory care vs. nursing home in Pennsylvania — DHS-licensed PCH/ALR vs. DOH-licensed SNF";
 const TITLE =
-  "Memory Care vs. Nursing Home in Pennsylvania: PCH, ALR, and SNF Compared — 2026";
+  "Memory Care vs. Nursing Home in Pennsylvania: PCH, ALR, SNF Compared";
 const DESC =
   "Pennsylvania licenses memory care through DHS OLTL (PCH/ALR) and nursing homes through DOH/CMS. Two different regulators, two different inspection records, and different Medicaid funding. Here is how to choose.";
 const DATE_PUBLISHED = "2026-06-02";

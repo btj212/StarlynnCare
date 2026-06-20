@@ -17,7 +17,7 @@ const PAGE_PATH = "/oregon/memory-care-licensing";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "Oregon memory care licensing explained — ALFs, RCFs, and the DHS Memory Care Endorsement";
-const TITLE = "Oregon Memory Care Licensing: ALFs, RCFs & Memory Care Endorsement (2026)";
+const TITLE = "Oregon Memory Care Licensing: ALFs, RCFs & Memory Care Endorsement";
 const DESC =
   "Oregon licenses memory care under two frameworks — Assisted Living (ALF) and Residential Care (RCF) — both regulated by Oregon DHS. A separate Memory Care Endorsement governs dementia-specific programming. Learn what each means for families.";
 const DATE_PUBLISHED = "2026-05-09";

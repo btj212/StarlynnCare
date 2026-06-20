@@ -18,10 +18,10 @@ const RESEARCH_PATH = "/research";
 const researchCanonical = canonicalFor(RESEARCH_PATH);
 const PAGE_TITLE = "StarlynnCare Research";
 const PAGE_DESC =
-  "Original analysis of state inspection records — chain operator scorecards, repeat citation patterns, cost vs quality, geographic equity, and seasonality across licensed memory care facilities.";
+  "Original analysis of state inspection records — chain operator scorecards, repeat citation patterns, cost vs. quality, and geographic equity across licensed memory care.";
 
 export const metadata: Metadata = {
-  title: `${PAGE_TITLE} | Original analysis of memory care inspection records`,
+  title: `Research | StarlynnCare`,
   description: PAGE_DESC,
   alternates: { canonical: researchCanonical },
   openGraph: {

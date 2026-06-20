@@ -12,7 +12,7 @@ import { buildArticleSchema, buildBreadcrumbList, buildFaqSchemaFromPairs } from
 const PAGE_PATH = "/minnesota/memory-care-vs-nursing-home";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE = "Memory care vs. nursing home in Minnesota — MDH vs. CMS inspection records";
-const TITLE = "Memory Care vs. Nursing Home in Minnesota (MDH vs. CMS) — 2026";
+const TITLE = "Memory Care vs. Nursing Home in Minnesota — 2026";
 const DESC =
   "Minnesota ALF memory care is regulated by MDH; nursing homes (SNFs) are regulated by CMS and MDH under a separate framework. Different oversight, different inspection records, and different Medicaid funding — here is how to compare them.";
 const DATE_PUBLISHED = "2026-05-09";

@@ -121,6 +121,11 @@ export function inspectionHasRealNarrative(
   // Path 2: real text in deficiency rows (OR violations CSV, structured exports)
   if (defs && defs.some(deficiencyHasRealText)) return true;
 
+  // Path 3: narrative_summary column (AZ Care Check REST API — stores prose there
+  // instead of raw_data.narrative; also future states that follow the same pattern).
+  const narrativeSummary = insp.narrative_summary?.trim();
+  if (narrativeSummary && narrativeSummary.length >= 100) return true;
+
   return false;
 }
 
