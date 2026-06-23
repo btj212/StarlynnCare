@@ -6,6 +6,22 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-06 — AZ deficiency ingest: Playwright DOM scrape, not Aura API
+
+**Decided:**
+- **Use Playwright (headless Chromium) to scrape the `inspection-details` DOM** for per-deficiency rows. Salesforce Experience Cloud blocks guest access to the Apex controller for deficiency details — all attempts to call the Aura API directly returned `clientOutOfSync` (guest access denied at the controller level).
+- **DOM structure:** The deficiency table at `/s/inspection-details?inspectionId=<sf_insp_id>&facilityId=<sf_fac_id>` uses `[role='grid']` rows. Rule code/text is in `<th>` within each data row; evidence and POC are in `[role='gridcell']` columns. The repeat-deficiency flag appears as text in the row HTML (`"Repeat Deficien"`).
+- **Severity mapping (AZ):** `severity=4` for: `immediate_jeopardy=true` (explicit "immediate jeopardy" in evidence/rule text), inspection status "Enforcement", or rule category containing abuse/neglect/exploitation/elopement. All other deficiencies: `severity=2`. No Type A/B system — AZ uses A.A.C. Title 9, Chapter 10 citations.
+- **Rule code parsing:** `r"^(R[\d]+-[\d]+-[\w.]+)\.\s*(.+?)(?:\n|$)"` on the first line of the rule text column. Captures code (`R9-10-810.B.1`) and category (`Resident Rights`) correctly.
+- **`--mode deficiencies` in `az_adhs_inspections_ingest.py`:** Uses `ThreadPoolExecutor` with 3 concurrent Playwright workers. Each worker has its own browser and DB connection (autocommit). Skips inspections whose narrative contains "no deficien" (fast path). Resumable via `NOT EXISTS` filter + `--offset`. Delete-replace strategy per inspection.
+- **`class` column is null for AZ** — `FacilityFullInspections` typeA counter stays 0 (no "severe (Type A)" box shown). Severity communicated via `azFormatSeverityTag` using the `severity` integer.
+
+**Rejected:** CDP/browser agent capture of Aura network calls (browser agent hung twice; Salesforce guest restriction makes it infeasible regardless). Regex-based deficiency counting from `initialComments` narrative (produced counts of 0/1, not per-rule accuracy).
+
+**Source:** `cursor/az-deficiency-parsing`; AZ backfill run 2026-06-22.
+
+---
+
 ## 2026-06 — Facility Watch: auto-confirm + probe-first pipeline
 
 **Decided:**
