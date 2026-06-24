@@ -43,20 +43,23 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Morning run 27854063804 (2026-06-20T00:06 UTC): all states +0 max-date change.
-# Evening probe 2026-06-20T23:00 UTC: MN source max 2026-06-16 (+9 complaint events
-# posted insertDate 2026-06-20, absent from morning scrape) — pending ingest.
+# Run 28065157976 (2026-06-23T23:53 UTC): CA max=2026-06-18, OR +6 (max unchanged),
+# PA +14 (max unchanged), MN/UT/IL/WA +0.
+# Evening probe 2026-06-24T23:00 UTC: OR source max 2026-06-23 (+1 AFH re-licensure),
+# MN insertDate max 2026-06-24 (+7 newly posted events) — pending ingest.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 6, 11),
+    "CA": date(2026, 6, 18),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 6, 18),  # +11 inspections ingested run 27852499463
+    "OR": date(2026, 6, 18),  # +6 inspections ingested run 28065157976
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 6, 16),  # +12 complaints ingested run 27886777230
     "UT": date(2026, 5, 21),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
 }
+# MN MDH posts events with insertDate later than resolvedDate; track separately.
+LAST_MN_INSERT_BASELINE = date(2026, 6, 20)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
@@ -87,26 +90,31 @@ def _max_or_csv(path: Path) -> tuple[int, date | None]:
     return count, max_d
 
 
-def _max_mn_json(path: Path) -> tuple[int, date | None]:
+def _max_mn_json(path: Path) -> tuple[int, date | None, date | None]:
     if not path.is_file():
-        return 0, None
+        return 0, None, None
     data = json.loads(path.read_text())
-    max_d: date | None = None
+    max_resolved: date | None = None
+    max_insert: date | None = None
     count = 0
     for fac in data:
         for key in ("inspections", "complaints"):
             for insp in fac.get(key) or []:
                 count += 1
-                raw = insp.get("resolvedDate")
-                if not raw:
-                    continue
-                try:
-                    d = datetime.strptime(raw, "%m/%d/%Y").date()
-                    if max_d is None or d > max_d:
-                        max_d = d
-                except ValueError:
-                    pass
-    return count, max_d
+                for field, target in (("resolvedDate", "resolved"), ("insertDate", "insert")):
+                    raw = insp.get(field)
+                    if not raw:
+                        continue
+                    try:
+                        d = datetime.strptime(raw, "%m/%d/%Y").date()
+                    except ValueError:
+                        continue
+                    if target == "resolved":
+                        if max_resolved is None or d > max_resolved:
+                            max_resolved = d
+                    elif max_insert is None or d > max_insert:
+                        max_insert = d
+    return count, max_resolved, max_insert
 
 
 def _production_max_date(state_code: str) -> date | None:
@@ -167,8 +175,14 @@ def probe_mn(skip_download: bool) -> dict[str, Any]:
         _run([sys.executable, str(SCRAPERS / "mn_mdh_inspections_scrape.py")], label="MN MDH findings")
     today = date.today().isoformat()
     findings = out_dir / f"mn-findings-{today}.json"
-    count, source_max = _max_mn_json(findings)
-    return {"state": "MN", "source_rows": count, "source_max": source_max, "source_file": str(findings)}
+    count, source_max, insert_max = _max_mn_json(findings)
+    return {
+        "state": "MN",
+        "source_rows": count,
+        "source_max": source_max,
+        "source_insert_max": insert_max,
+        "source_file": str(findings),
+    }
 
 
 def probe_static(state: str, note: str) -> dict[str, Any]:
@@ -217,7 +231,13 @@ def main() -> int:
         baseline = probe["db_max"] or last_ingest or probe["production_max"]
         source_max = probe.get("source_max")
         probe["last_ingest_max"] = last_ingest
-        if source_max and baseline and source_max > baseline:
+        insert_max = probe.get("source_insert_max")
+        mn_insert_pending = (
+            st == "MN"
+            and insert_max is not None
+            and insert_max > LAST_MN_INSERT_BASELINE
+        )
+        if (source_max and baseline and source_max > baseline) or mn_insert_pending:
             probe["pending_new_data"] = True
             pending.append(st)
         else:
@@ -226,6 +246,8 @@ def main() -> int:
         results.append(probe)
 
         print(f"  source_max:     {source_max}")
+        if probe.get("source_insert_max"):
+            print(f"  source_insert:  {probe['source_insert_max']}")
         print(f"  db_max:         {probe['db_max']}")
         print(f"  last_ingest:    {last_ingest}")
         print(f"  production_max: {prod_max}")
