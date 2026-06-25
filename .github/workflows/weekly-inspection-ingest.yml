@@ -33,8 +33,9 @@ jobs:
     timeout-minutes: 180
     strategy:
       fail-fast: false
-      # Supabase session pooler is pool_size=15; 8 parallel jobs exhaust it (MN ingest failed 2026-06-13).
-      max-parallel: 3
+      # Supabase session pooler is pool_size=15; even 3 parallel jobs exhaust it when
+      # each state opens multiple connections (MN/IL/PA/UT failed 2026-06-25 run 28137781944).
+      max-parallel: 1
       matrix:
         state: [CA, TX, OR, WA, MN, UT, IL, PA]
     steps:
