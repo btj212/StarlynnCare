@@ -51,7 +51,7 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 6, 18),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 6, 23),
+    "OR": date(2026, 6, 24),  # +4 inspections ingested run 28206040342
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 6, 16),
     "UT": date(2026, 5, 21),

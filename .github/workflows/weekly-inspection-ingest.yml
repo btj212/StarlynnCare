@@ -37,7 +37,7 @@ jobs:
       # each state opens multiple connections (MN/IL/PA/UT failed 2026-06-25 run 28137781944).
       max-parallel: 1
       matrix:
-        state: [CA, TX, OR, WA, MN, UT, IL, PA]
+        state: [MN, OR, IL, PA, UT, CA, TX, WA]
     steps:
       - uses: actions/checkout@v4
 
@@ -61,6 +61,11 @@ jobs:
           fi
           if [ "$SKIP_CA" = "true" ] && [ "${{ matrix.state }}" = "CA" ]; then
             ARGS+=(--skip-ca)
+          fi
+          # WA PDF pass takes ~2h and rarely changes; schedule handles it nightly.
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ matrix.state }}" = "WA" ]; then
+            echo "Skipping WA on push-triggered ingest (schedule run covers WA)"
+            exit 0
           fi
           if [ -n "${{ inputs.state }}" ] && [ "${{ inputs.state }}" != "${{ matrix.state }}" ]; then
             echo "Skipping ${{ matrix.state }} (workflow_dispatch targeted ${{ inputs.state }})"
