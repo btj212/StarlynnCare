@@ -51,6 +51,8 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
       ? Math.round(totalWeighted / peerMedianRep)
       : null;
   const showRatioCallout = severityRatio !== null && severityRatio >= 3;
+  // Cap display at 50× to avoid absurd-looking numbers for extreme outliers
+  const severityRatioDisplay = severityRatio !== null && severityRatio > 50 ? "50+" : String(severityRatio);
 
   // Detect the most recent severe finding (sev ≥ 3 or IJ) within the last 90 days
   const cutoffStr = (() => {
@@ -147,7 +149,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
               Citation severity vs. peers
             </div>
             <div className="font-[family-name:var(--font-display)] text-[26px] leading-tight tracking-[-0.01em] text-gold">
-              {severityRatio}× peer median
+              {severityRatioDisplay}× peer median
             </div>
             <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-white/40 mt-0.5">
               {Math.round(totalWeighted)} weighted score · peer median {peerMedianRep?.toFixed(0)} · {cfg.inspectionWindowMonths}-mo window
