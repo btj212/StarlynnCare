@@ -93,7 +93,7 @@ export function MobileStateHubView({ data, config }: Props) {
           href={`/${stateSlug}/facilities`}
           className="flex items-center justify-between w-full bg-teal text-paper px-5 py-4 font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.1em] no-underline"
         >
-          <span>Browse all {stats.totalPublishable.toLocaleString()} {stateName} facilities</span>
+          <span>Browse all {stats.facilities.toLocaleString()} {stateName} facilities</span>
           <span aria-hidden>→</span>
         </Link>
       </div>
