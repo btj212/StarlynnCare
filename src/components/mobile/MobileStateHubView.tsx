@@ -87,6 +87,17 @@ export function MobileStateHubView({ data, config }: Props) {
         ))}
       </div>
 
+      {/* Browse all CTA — prominent link directly below stats */}
+      <div className="px-[18px] mt-5">
+        <Link
+          href={`/${stateSlug}/facilities`}
+          className="flex items-center justify-between w-full bg-teal text-paper px-5 py-4 font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.1em] no-underline"
+        >
+          <span>Browse all {stats.totalPublishable.toLocaleString()} {stateName} facilities</span>
+          <span aria-hidden>→</span>
+        </Link>
+      </div>
+
       {showZipSearch && (
         <section className="m-section">
           <div className="label">§ 02 · How We Rank</div>

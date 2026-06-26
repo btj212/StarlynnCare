@@ -306,7 +306,7 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
   const { inspections, deficienciesByInspection, totals, cfg, hiddenOlderCount, oldestHiddenYear, hasRealInspectionText } = profile;
 
   return (
-    <section id="full-record" className="scroll-mt-28 border-b border-paper-rule py-16">
+    <section id="full-record" className="scroll-mt-36 md:scroll-mt-28 border-b border-paper-rule py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
           label="Full Inspection Record"

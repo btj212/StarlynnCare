@@ -657,6 +657,15 @@ export default async function RegionPage({ params }: PageProps) {
               )}
             </p>
             {findingsDate && <UpdatedStamp isoDate={findingsDate} />}
+
+            {/* Mobile-only Browse CTA — visible in the header without scrolling */}
+            <Link
+              href={`/${region.state.slug}/facilities`}
+              className="md:hidden mt-6 flex items-center justify-between w-full bg-teal text-paper px-5 py-4 font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.08em] no-underline"
+            >
+              <span>Browse {region.state.name} facilities</span>
+              <span aria-hidden>→</span>
+            </Link>
             {dbCityHub ? (
               <div
                 className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch] [&_p]:mt-4 [&_p:first-child]:mt-0 [&_a]:text-teal [&_a]:underline"

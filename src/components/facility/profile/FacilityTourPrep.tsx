@@ -10,7 +10,7 @@ export function FacilityTourPrep({ profile }: { profile: FacilityProfile }) {
   const cards = tourQuestions.slice(0, 3);
 
   return (
-    <section id="tour" className="scroll-mt-28 border-b border-paper-rule py-16">
+    <section id="tour" className="scroll-mt-36 md:scroll-mt-28 border-b border-paper-rule py-16">
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
           label="Tour Prep"

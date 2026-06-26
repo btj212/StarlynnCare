@@ -333,6 +333,29 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               <OrMcSignalBadges signals={profile.orMcSignals} />
             )}
 
+            {/* Mobile-only grade badge — letter grade + percentile visible without scrolling */}
+            {profile.snapshot?.grade && (
+              <div className="md:hidden mt-4 flex items-center gap-4 border-t border-paper-rule pt-4">
+                <span className="font-[family-name:var(--font-display)] text-[52px] leading-none tracking-[-0.025em] text-rust">
+                  {profile.snapshot.grade.letter}
+                </span>
+                <div>
+                  <div className="font-[family-name:var(--font-mono)] text-[9.5px] uppercase tracking-[0.14em] text-ink-4 mb-0.5">
+                    Inspection grade
+                  </div>
+                  <div className="font-[family-name:var(--font-mono)] text-[12px] text-ink-2">
+                    {profile.snapshot.grade.composite_percentile}th percentile
+                  </div>
+                  <a
+                    href="#peer"
+                    className="font-[family-name:var(--font-mono)] text-[11px] text-rust mt-1 block border-b border-rust/30 pb-px w-fit"
+                  >
+                    See full peer rank →
+                  </a>
+                </div>
+              </div>
+            )}
+
             {/* Offer CTA — above the fold on all viewports */}
             <div className="mt-5">
               <OfferTriggerButton />
