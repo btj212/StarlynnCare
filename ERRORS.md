@@ -8,6 +8,19 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-06 — AZ deficiency endpoint: Salesforce Aura guest access blocked
+
+**What didn't work:**
+1. Guessing Aura controller/method combinations for deficiency details (e.g. `getInspectionDeficiencies`, `getDeficiencies`, `getStatementOfDeficiencies`) — all returned `clientOutOfSync`, which is Salesforce's error for "this Apex action is not exposed to guest users." Not a `fwuid` mismatch.
+2. Two browser-agent CDP capture attempts — both hung/were interrupted because the Salesforce Experience Cloud page uses a complex multi-frame setup and the deficiency data is bootstrapped into the initial page render rather than fetched as a discrete subsequent XHR.
+3. Fetching `app.js` bundle to grep for Apex descriptors — dynamically loaded controllers aren't in the main bundle.
+
+**What worked instead:** Playwright (headless Chromium) rendering the full page at `/s/inspection-details?inspectionId=&facilityId=`, waiting for `[role='grid']`, and parsing the rendered DOM. The deficiency table is fully rendered in the DOM with `<th>` rule cells and `[role='gridcell']` evidence/POC cells. See `scrapers/az_adhs_inspections_ingest.py --mode deficiencies`.
+
+**Source:** `cursor/az-deficiency-parsing` 2026-06-22.
+
+---
+
 ## 2026-06 — Loops Facility Watch welcome: wrong editor + wrong variable syntax
 
 **What didn't work:**
