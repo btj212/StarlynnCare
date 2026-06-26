@@ -37,7 +37,7 @@ jobs:
       # each state opens multiple connections (MN/IL/PA/UT failed 2026-06-25 run 28137781944).
       max-parallel: 1
       matrix:
-        state: [MN, OR, IL, PA, UT, CA, TX, WA]
+        state: [MN, OR, IL, PA, UT, CA, TX, WA, AZ]
     steps:
       - uses: actions/checkout@v4
 

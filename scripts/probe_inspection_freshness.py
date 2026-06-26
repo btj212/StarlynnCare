@@ -29,7 +29,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRAPERS = REPO_ROOT / "scrapers"
-COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA")
+COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ")
 STATE_SLUGS = {
     "CA": "california",
     "TX": "texas",
@@ -39,27 +39,29 @@ STATE_SLUGS = {
     "UT": "utah",
     "IL": "illinois",
     "PA": "pennsylvania",
+    "AZ": "arizona",
 }
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Run 28206040342 (2026-06-25T23:04 UTC, push-triggered evening ingest):
-#   OR +4 max=2026-06-24, UT +1, PA +1, MN/IL/WA/CA +0; TX skip (no TULIP).
-# Evening probe 2026-06-25T23:02 UTC flagged OR +1 source / MN +2 insertDate;
-# MN insertDate events did not produce new inspection rows (+0).
+# Run 28208402778 (2026-06-26T00:06 UTC, scheduled nightly ingest):
+#   OR +0 max=2026-06-24, MN +0, CA/WA/IL/PA/UT +0; TX skip (no TULIP).
+# Evening probe 2026-06-26T23:02 UTC flagged OR +1 source (2026-06-25) and
+# MN +7 insertDate (2026-06-26) > baseline 2026-06-25.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 6, 18),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 6, 24),  # +4 inspections ingested run 28206040342
+    "OR": date(2026, 6, 24),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 6, 16),
     "UT": date(2026, 6, 3),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
+    "AZ": date(2026, 6, 15),  # AZ Care Check inspect backfill 2026-06-22
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 6, 25)
+LAST_MN_INSERT_BASELINE = date(2026, 6, 26)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
@@ -198,6 +200,7 @@ STATE_PROBERS = {
     "UT": lambda skip: probe_static("UT", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
     "IL": lambda skip: probe_static("IL", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
     "PA": lambda skip: probe_static("PA", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
+    "AZ": lambda skip: probe_static("AZ", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
 }
 
 

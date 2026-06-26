@@ -30,7 +30,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRAPERS = REPO_ROOT / "scrapers"
-COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA")
+COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ")
 
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 from validate._lib import get_conn  # noqa: E402
@@ -217,13 +217,13 @@ def ingest_mn(conn) -> bool:
     return rc == 0
 
 
-def ingest_tx(_conn: object) -> bool:
+def ingest_tx(_conn: object) -> bool | None:
     capture_dirs = list((REPO_ROOT / ".firecrawl").glob("tulip*"))
     if not capture_dirs:
         print("\n[TX] No TULIP capture directory — manual browser capture required; skipping.")
-        return False
+        return None
     print("\n[TX] TULIP ingest requires hand-captured Aura JSON — skipping automated weekly run.")
-    return False
+    return None
 
 
 def ingest_ut(_conn: object) -> bool:
@@ -250,6 +250,17 @@ def ingest_pa(_conn: object) -> bool:
     return rc == 0
 
 
+def ingest_az(_conn: object) -> bool:
+    _python(
+        str(SCRAPERS / "az_adhs_inspections_ingest.py"),
+        "--mode", "inspect",
+        label="AZ ADHS inspections",
+        allow_fail=True,
+    )
+    rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "AZ", label="AZ recompute publishable")
+    return rc == 0
+
+
 STATE_RUNNERS = {
     "CA": lambda conn, skip_ca: ingest_ca(skip_ca),
     "OR": ingest_or,
@@ -259,6 +270,7 @@ STATE_RUNNERS = {
     "UT": ingest_ut,
     "IL": ingest_il,
     "PA": ingest_pa,
+    "AZ": ingest_az,
 }
 
 

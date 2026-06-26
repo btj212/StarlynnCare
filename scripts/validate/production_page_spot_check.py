@@ -34,6 +34,7 @@ STATE_SLUGS = {
     "UT": "utah",
     "IL": "illinois",
     "PA": "pennsylvania",
+    "AZ": "arizona",
 }
 
 # City + county hubs with known publishable facilities
@@ -60,6 +61,9 @@ HUB_PAGES = [
     "/illinois/peoria",
     "/texas",
     "/texas/facilities",
+    "/arizona",
+    "/arizona/maricopa-county",
+    "/arizona/phoenix",
 ]
 
 FACILITY_FALLBACKS = [
