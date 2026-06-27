@@ -62,7 +62,7 @@ HUB_PAGES = [
     "/texas",
     "/texas/facilities",
     "/arizona",
-    "/arizona/maricopa-county",
+    "/arizona/maricopa",
     "/arizona/phoenix",
 ]
 
