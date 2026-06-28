@@ -60,6 +60,7 @@ export const REGULATOR_ABBR: Record<string, string> = {
   MN: "MDH",
   UT: "DLBC",
   PA: "PA DHS",
+  AZ: "ADHS",
 };
 
 /**
@@ -90,6 +91,14 @@ const STATE_ABBR: Record<string, string> = {
 
 const MAX_TITLE = 60;
 const hasMemoryCare = (s: string) => /\bmemory\s+care\b/i.test(s);
+
+/** Clip a title string to MAX_TITLE characters at a word boundary. */
+function clipTitle(s: string): string {
+  if (s.length <= MAX_TITLE) return s;
+  const cut = s.slice(0, MAX_TITLE);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > MAX_TITLE * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+}
 
 /**
  * Build a ≤60-character facility page title.
@@ -130,7 +139,7 @@ export function buildFacilityTitle(input: {
       `${name} · Top ${topPct}%`,
       name,
     ];
-    return candidates.find((c) => c.length <= MAX_TITLE) ?? candidates.at(-1)!;
+    return clipTitle(candidates.find((c) => c.length <= MAX_TITLE) ?? candidates.at(-1)!);
   }
 
   // Bottom-half or unrated — lead with Reviews + citation hook so the title
@@ -156,7 +165,7 @@ export function buildFacilityTitle(input: {
           `${name} · ${citeHook}`,
           name,
         ];
-    return citeVariants.find((c) => c.length <= MAX_TITLE) ?? citeVariants.at(-1)!;
+    return clipTitle(citeVariants.find((c) => c.length <= MAX_TITLE) ?? citeVariants.at(-1)!);
   }
 
   // No citation count — geographic anchor, Reviews prefix where it fits.
@@ -176,8 +185,11 @@ export function buildFacilityTitle(input: {
         `${name} · ${city}`,
         name,
       ];
-  return geoVariants.find((c) => c.length <= MAX_TITLE) ?? geoVariants.at(-1)!;
+  return clipTitle(geoVariants.find((c) => c.length <= MAX_TITLE) ?? geoVariants.at(-1)!);
 }
+
+/** Minimum length for meta descriptions to avoid Ahrefs/Google "too short" warnings. */
+const MIN_DESC = 110;
 
 /**
  * Build a data-driven meta description for a facility SERP result.
@@ -207,6 +219,7 @@ export function buildFacilityDescription(f: {
         ? `1 ${f.agency} citation on record`
         : `${f.citationCount} ${f.agency} citations on record`;
   const inspPart = f.lastInspected ? ` · last inspected ${f.lastInspected}` : "";
+  const ctaSuffix = `View the full inspection record on StarlynnCare — no referral fees.`;
 
   // Top-half — comparative claim.
   if (f.percentile != null && f.percentile >= 50) {
@@ -215,11 +228,18 @@ export function buildFacilityDescription(f: {
       topPct <= 10
         ? `View the full inspection record on StarlynnCare.`
         : `View inspection record — no referral commissions.`;
-    return `Top ${topPct}% of ${f.stateName} memory care · ${citations}${inspPart}. ${tail}`;
+    const base = `Top ${topPct}% of ${f.stateName} memory care · ${citations}${inspPart}.`;
+    const full = `${base} ${tail}`;
+    return full.length >= MIN_DESC ? full : `${base} Licensed memory care in ${f.city}, ${f.stateName}. ${tail}`;
   }
 
   // Bottom-half or unrated — facts only, no ranking language.
-  return `${f.name} in ${f.city}, ${f.stateName} · ${citations}${inspPart}. Read reviews & the full ${f.agency} inspection record on StarlynnCare.`;
+  const base = `${f.name} in ${f.city}, ${f.stateName} · ${citations}${inspPart}.`;
+  const cta = ` Read reviews & the full ${f.agency} inspection record on StarlynnCare.`;
+  const core = base + cta;
+  if (core.length >= MIN_DESC) return core;
+  // Pad to minimum with a useful phrase about memory care.
+  return `${base} Licensed memory care facility. ${ctaSuffix}`;
 }
 
 export type FacilitySnippetVariant = "meta" | "prose";

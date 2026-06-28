@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { facilityProfilePath } from "@/lib/seo/paths";
 
 export type RegionHubStats = {
   median_beds: number | null;
@@ -12,9 +13,11 @@ export type RegionHubStats = {
   state_cit_per_fac: number | null;
   top_improved_name: string | null;
   top_improved_slug: string | null;
+  top_improved_city_slug: string | null;
   top_improved_delta: number | null;
   top_deteriorated_name: string | null;
   top_deteriorated_slug: string | null;
+  top_deteriorated_city_slug: string | null;
   top_deteriorated_delta: number | null;
 };
 
@@ -80,9 +83,11 @@ export function HubDifferentiators({
     state_cit_per_fac,
     top_improved_name,
     top_improved_slug,
+    top_improved_city_slug,
     top_improved_delta,
     top_deteriorated_name,
     top_deteriorated_slug,
+    top_deteriorated_city_slug,
     top_deteriorated_delta,
   } = stats;
 
@@ -169,10 +174,10 @@ export function HubDifferentiators({
             </Row>
           )}
 
-          {top_improved_name && top_improved_slug && top_improved_delta != null && (
+          {top_improved_name && top_improved_slug && top_improved_city_slug && top_improved_delta != null && (
             <Row label="Most improved · yr-over-yr">
               <Link
-                href={`/${stateSlug}/${top_improved_slug}`}
+                href={facilityProfilePath(stateSlug, top_improved_city_slug, top_improved_slug)}
                 className="text-teal underline underline-offset-2 hover:opacity-80"
               >
                 {top_improved_name}
@@ -183,10 +188,10 @@ export function HubDifferentiators({
             </Row>
           )}
 
-          {top_deteriorated_name && top_deteriorated_slug && top_deteriorated_delta != null && (
+          {top_deteriorated_name && top_deteriorated_slug && top_deteriorated_city_slug && top_deteriorated_delta != null && (
             <Row label="Most citations added · yr-over-yr">
               <Link
-                href={`/${stateSlug}/${top_deteriorated_slug}`}
+                href={facilityProfilePath(stateSlug, top_deteriorated_city_slug, top_deteriorated_slug)}
                 className="text-rust underline underline-offset-2 hover:opacity-80"
               >
                 {top_deteriorated_name}
