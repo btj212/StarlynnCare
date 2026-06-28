@@ -44,17 +44,18 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Run 28304562662 (2026-06-27T23:05 UTC, push-triggered evening ingest):
-#   MN +3 inspections (5 late-posted insertDate surveys; 2 were dupes), max=2026-06-16;
-#   OR +0 max=2026-06-25; morning run 28272070250 already ingested OR +3, PA +1.
-# Evening probe 2026-06-27T23:02 UTC flagged MN insertDate max 2026-06-27 (+5 surveys).
+# Run 28305707627 (2026-06-27T23:58 UTC, scheduled nightly ingest): all states +0.
+# Run 28306165002 (2026-06-28T00:18 UTC, post-ingest baseline push): all states +0.
+# Cron probe 2026-06-28T23:02 UTC flagged:
+#   OR source max 2026-06-26 (+1 AFH RL012794 Maria Villa Tellez re-licensure) > baseline 2026-06-25
+#   MN insertDate max 2026-06-28 (+6 late-posted surveys) > baseline 2026-06-27
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 6, 18),
     "TX": date(2023, 2, 16),
     "OR": date(2026, 6, 25),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 6, 16),  # +3 inspections ingested run 28304562662
+    "MN": date(2026, 6, 16),
     "UT": date(2026, 6, 3),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
