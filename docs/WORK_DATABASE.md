@@ -4,11 +4,55 @@ Running log of shipped work, research, QA, deployments, and infrastructure. Upda
 
 **Status values:** `Shipped` · `In progress` · `Blocked` · `Research complete` · `QA passed` · `Deployed`
 
-**Last updated:** 2026-06-21
+**Last updated:** 2026-06-28
 
 ---
 
-## Week of 2026-06-15 → 2026-06-21
+## Week of 2026-06-22 → 2026-06-28
+
+| Date | Description | Category | Status |
+|------|-------------|----------|--------|
+| 2026-06-28 | Post-ingest baselines after run 28304562662 — MN +3 inspections, OR +0 (all 9 states green) | Infrastructure | Shipped |
+| 2026-06-27–28 | **First full 9-state ingest success** — run 28304562662: CA, TX, OR, WA, MN, UT, IL, PA, AZ all succeeded; chained validate job (L3 smoke + L5b drift) also green | Deployment | Shipped |
+| 2026-06-27 | Evening probe — MN +5 insertDate surveys pending; AZ baseline set to 2026-06-23 | Infrastructure | Shipped |
+| 2026-06-27 | Post-ingest baselines OR +3 (max 2026-06-25), MN +6; AZ county hub spot-check slug fix in `production_page_spot_check.py` | Infrastructure | Shipped |
+| 2026-06-26 | **AZ deficiency parsing merged** — Playwright DOM scrape for per-deficiency rows (`--mode deficiencies`); re-enables AZ deficiency evaluation after backfill; logged in `MEMORY.md` + `ERRORS.md` | Infrastructure | Shipped |
+| 2026-06-26 | Mobile hub UX — grade badge in hero, prominent Browse CTA on state/county hubs, `scroll-mt` clearance on anchored sections | Development | Deployed |
+| 2026-06-26 | Cap severity ratio display at 50× to prevent absurd outlier numbers on facility profiles | Development | Shipped |
+| 2026-06-26 | Type fix — `stats.facilities` instead of `stats.totalPublishable` on states page | Development | Shipped |
+| 2026-06-26 | Ingest pipeline hardening — add AZ to weekly matrix; fix TX skip exit code; skip WA on push; prioritize MN; reduce matrix to `max-parallel: 1` (pooler exhaustion) | Infrastructure | Shipped |
+| 2026-06-24–26 | OR/MN baselines advancing — OR through 2026-06-25 (+~10 inspections); MN insertDate surveys through 2026-06-24 (+~30 events); UT +1, PA +1 on Jun 26 run | Infrastructure | Shipped |
+| 2026-06-22 | CDSS weekly ingest — scheduled run succeeded | Deployment | Shipped |
+| 2026-06-22–28 | `validate.yml` on push — still failing (4th week): `db_invariants.py` allowed-state list missing IL, PA, AZ (2,293 facilities flagged); 34 null beds; 1 repeat-offender ranking contradiction | QA | Blocked |
+
+### Week patterns (2026-06-22 → 2026-06-28)
+
+**Dominant work types:** Infrastructure (~50%), Development (~30%), QA (~20%).
+
+**Themes:**
+1. **Ingest pipeline stabilization** — chronic TX failure and pooler exhaustion fixed; matrix now runs 9 states sequentially (`max-parallel: 1`). First all-green run Jun 27–28.
+2. **AZ data depth** — deficiency parsing via Playwright (Loop 10); Salesforce Aura guest access blocked, DOM scrape is the viable path. Frontend re-enabled for A.A.C. citations once backfill completes.
+3. **Mobile UX polish** — hub browse CTA, grade badge visibility, scroll anchor clearance (continuation of Clarity-driven mobile work from prior weeks).
+4. **Validation CI still blocked** — push-triggered `validate.yml` red for 4 weeks; root cause unchanged (`db_invariants.py` stale allowed-state list). Ingest workflow's chained validate job passed when run after full matrix success.
+5. **No new PRs merged** — work landed via direct merges (AZ deficiencies) and ingest automation commits.
+
+**Emerging loops:** Deficiency depth backfill (Loop 10) — launch with narrative-only → research endpoint → Playwright backfill → re-enable frontend stats. Validated on AZ Jun 22–26.
+
+**Resolved from prior week:**
+- TX weekly ingest job — fixed skip exit code; TX now succeeds (was chronic matrix failure).
+- MN baseline commits — merged to `main` (Jun 24–28).
+
+**Open / blocked:**
+- Migration `0047_hub_content.sql` still not applied in Supabase SQL editor.
+- Migrations `0049` + `0052` (Facility Watch monitoring) not applied.
+- `validate.yml` — update `db_invariants.py` allowed-state list to include IL, PA, AZ (one-line fix; 2,293 facilities currently flagged).
+- AZ deficiency backfill (`--mode deficiencies`) — in progress; frontend changes await completion.
+
+---
+
+## Prior weeks (month context)
+
+### Week of 2026-06-15 → 2026-06-21
 
 | Date | Description | Category | Status |
 |------|-------------|----------|--------|
@@ -44,10 +88,6 @@ Running log of shipped work, research, QA, deployments, and infrastructure. Upda
 - `validate.yml` — update `db_invariants.py` allowed-state list to include PA, IL, AZ (one-line fix).
 - TX weekly ingest job — investigate and either fix or exclude from matrix fail-fast.
 - MN baseline commits (Jun 20) on feature branch — merge to `main` when ready.
-
----
-
-## Prior weeks (month context)
 
 ### Week of 2026-06-08 → 2026-06-14
 
@@ -115,15 +155,15 @@ Running log of shipped work, research, QA, deployments, and infrastructure. Upda
 
 ---
 
-## Month-level progress and learning (May → mid-June 2026)
+## Month-level progress and learning (May → late June 2026)
 
-| Metric | Start (May 4) | End (Jun 21) |
+| Metric | Start (May 4) | End (Jun 28) |
 |--------|---------------|--------------|
 | States with frontend | CA + partial OR/WA/MN/TX | CA, OR, WA, MN, UT, IL, PA, **AZ** (TX hidden) |
-| Merged PRs | — | 33 total (#1–#37, gaps at #27–29, #32, #35–36) |
-| Publishable facilities | ~850 (CA-heavy) | ~3,800+ (AZ adds 1,908 Directed Care) |
-| Validation layers | 0 | 5 (L1–L2 in CI, L3 manual smoke, L5 post-ingest, L5b hub drift) |
-| Scheduled ingest workflows | 1 (CA-only) | 2 (CA weekly + 8-state daily inspection matrix) |
+| Merged PRs | — | 33 total (#1–#37, gaps at #27–29, #32, #35–36); no new PRs Jun 22–28 |
+| Publishable facilities | ~850 (CA-heavy) | ~3,865 (AZ adds 1,908 Directed Care) |
+| Validation layers | 0 | 5 (L1–L2 in CI, L3 smoke in ingest workflow, L5 post-ingest, L5b hub drift) |
+| Scheduled ingest workflows | 1 (CA-only) | 2 (CA weekly + **9-state** daily inspection matrix) |
 | Email provider | Resend | Loops (audience + transactional + Watch alerts) |
 
 **Key learnings logged (cumulative):**
@@ -131,15 +171,19 @@ Running log of shipped work, research, QA, deployments, and infrastructure. Upda
 - Physical city from Census Geocoder, not directory CSV city field.
 - TipTap drops `data-stat` spans — HTML-source editor only for hub content.
 - City-first hub strategy beats county replication (Ahrefs: zero county query volume).
-- Supabase session pooler caps parallel CI matrix jobs — `max-parallel: 3` required.
-- **New (Jun 17):** AZ Care Check REST API is viable for inspection ingest; ArcGIS Layer 12 is clean directory source (2,047 ALFs). Directed Care authorization = memory care gate.
-- **New (Jun 20):** States without row-level deficiency data must not show CA-specific "Type-A/B" stats — hide or relabel per-state. `inspectionHasRealNarrative` must check state-specific narrative fields (`narrative_summary` for AZ).
-- **New (Jun 21):** `validate.yml` red for 3 weeks — not always data bugs; invariant config drifts when new states ship (`db_invariants.py` allowed-state list must be updated with each launch).
+- Supabase session pooler caps parallel CI matrix jobs — `max-parallel: 1` required at 9 states (was 3 at 8).
+- **(Jun 17):** AZ Care Check REST API is viable for inspection ingest; ArcGIS Layer 12 is clean directory source (2,047 ALFs). Directed Care authorization = memory care gate.
+- **(Jun 20):** States without row-level deficiency data must not show CA-specific "Type-A/B" stats — hide or relabel per-state. `inspectionHasRealNarrative` must check state-specific narrative fields (`narrative_summary` for AZ).
+- **(Jun 21):** `validate.yml` red for weeks — not always data bugs; invariant config drifts when new states ship (`db_invariants.py` allowed-state list must be updated with each launch).
+- **New (Jun 22):** Salesforce Experience Cloud blocks guest Aura API access for AZ deficiency details — Playwright DOM scrape is the viable path (`--mode deficiencies`).
+- **New (Jun 26):** TX ingest failure was an exit-code bug in skip logic, not missing data — fix unblocked full 9-state matrix.
+- **New (Jun 28):** Chained validate job (L3 + L5b) passes when run after ingest workflow; push-triggered `validate.yml` still fails on stale L1/L2 invariants.
 
 **Week-over-week trajectory:**
 - **Jun 1–8:** Content automation (hub pipeline) + PA ship + mobile engagement.
 - **Jun 8–14:** Ingest automation at scale + hub differentiation + buy-side journey instrumentation.
 - **Jun 15–21:** Ninth state launch (AZ) + post-launch YMYL QA + ingest baselines advancing. Shift from "build pipelines" to "run pipelines + ship states fast."
+- **Jun 22–28:** Pipeline stabilization (9-state all-green) + AZ deficiency depth + mobile hub polish. Shift from "ship states" to "deepen state data + keep pipelines green."
 
 ---
 
@@ -179,7 +223,7 @@ cdss-weekly-ingest.yml (Mon 10:00 UTC) → ccld_citations_ingest → hub_content
 | Post-ingest validation (L5) | No | Partial | `post_ingest_check.py` not yet chained in CDSS workflow |
 | Hub content drift audit (L5b) | No | Yes | Flags `drift_detected`; hides stale content |
 
-**Last run:** Scheduled success Jun 15. **Automation opportunity:** chain `post_ingest_check.py` in CDSS workflow; alert on failure.
+**Last run:** Scheduled success Jun 22. **Automation opportunity:** chain `post_ingest_check.py` in CDSS workflow; alert on failure.
 
 ---
 
@@ -211,11 +255,11 @@ merge to main → Vercel production deploy → smoke_test.py → Ahrefs/Clarity 
 | Step | Manual? | Automated? | Notes |
 |------|---------|------------|-------|
 | Merge + deploy | Yes | Yes | `main` auto-deploys to production |
-| L1+L2 validation CI | No | Yes | `validate.yml` — failing 3 weeks (config drift, not deploy blocker) |
+| L1+L2 validation CI | No | Yes | `validate.yml` on push — failing 4 weeks (config drift); ingest workflow validate job passed Jun 28 |
 | L3 smoke tests | Yes | No | Requires live URL |
 | External audit (Ahrefs/Clarity) | Yes | No | Jun 20: 14 title/meta + sitemap fixes (PR #37) |
 
-**Last run:** PRs #34, #37 deployed Jun 18–20. **Automation opportunity:** post-deploy `smoke_test.py` in GitHub Actions; auto-update invariant allowed-state list on new state merge.
+**Last run:** AZ deficiency merge + mobile UX fixes deployed Jun 26. **Automation opportunity:** post-deploy `smoke_test.py` in GitHub Actions; auto-update invariant allowed-state list on new state merge.
 
 ---
 
@@ -249,7 +293,7 @@ hypothesis → pilot script → honest results doc → MEMORY.md decision → sh
 | Go/no-go decision | Yes | No | Pricing killed; news v2 at 96% |
 | Production integration | Yes | No | None shipped to prod yet |
 
-**Last run:** Firecrawl v2 May 23. AZ probe (`_az_probe.py`) Jun 16 — research-to-ship in same week.
+**Last run:** AZ deficiency endpoint research Jun 22 (Aura blocked → Playwright ship Jun 26). Firecrawl v2 May 23.
 
 ---
 
@@ -263,12 +307,12 @@ probe_inspection_freshness.py → weekly-inspection-ingest.yml (per-state matrix
 | Step | Manual? | Automated? | Notes |
 |------|---------|------------|-------|
 | Source freshness probe | No | Yes | Read-only; no DB writes |
-| Per-state ingest | No | Yes | Matrix: CA, TX, OR, WA, MN, UT, IL, PA; daily 23:00 UTC |
+| Per-state ingest | No | Yes | Matrix: CA, TX, OR, WA, MN, UT, IL, PA, **AZ**; daily 23:00 UTC |
 | Post-ingest validation (L5) | No | Partial | Chained per-state (`|| true`) |
-| Baseline commit | No | Partial | Auto-commit on delta; MN Jun 20 commits on feature branch |
-| Pooler-aware parallelism | No | Yes | `max-parallel: 3` |
+| Baseline commit | No | Partial | Auto-commit on delta |
+| Pooler-aware parallelism | No | Yes | `max-parallel: 1` (sequential; pooler exhaustion at 3+) |
 
-**Last run:** OR baselines advanced Jun 16–19 (+35 inspections total); MN advanced Jun 20 (+21 rows). Workflow marked failed all week due to TX job; 7/8 states succeed per run. **Automation opportunity:** `continue-on-error` or exclude TX until HHSC dataset ready; alert on per-state failure.
+**Last run:** Run 28304562662 Jun 27–28 — **first all-9-states-green**; OR through 2026-06-25, MN through 2026-06-24. TX skip exit fixed Jun 26. **Automation opportunity:** alert on per-state failure; auto-tune parallelism from pooler metrics.
 
 ---
 
@@ -306,7 +350,26 @@ new state deploy → spot-check facility + hub pages → Ahrefs/sitemap audit
 | Update `db_invariants.py` allowed states | Yes | No | **Missed on AZ launch — caused validate.yml red** |
 | PR + redeploy | Yes | Partial | PR #37 same week as launch |
 
-**Last run:** Arizona Jun 17 launch → Jun 20 PR #37 fixes. **Automation opportunity:** post-launch checklist script that diffs state config vs invariant allowed list; auto-run sitemap_diff after COVERED_STATES change.
+**Last run:** Arizona Jun 17 launch → Jun 20 PR #37 fixes; AZ county hub spot-check slug fix Jun 27. **Automation opportunity:** post-launch checklist script that diffs state config vs invariant allowed list; auto-run sitemap_diff after COVERED_STATES change.
+
+---
+
+### Loop 10 — State deficiency depth backfill *(validated Jun 22–26)*
+
+```
+launch with narrative-only → research API/DOM endpoint → Playwright or API backfill
+  → re-enable frontend deficiency stats → post-launch YMYL QA (Loop 9)
+```
+
+| Step | Manual? | Automated? | Notes |
+|------|---------|------------|-------|
+| Endpoint research (API vs DOM) | Yes | Partial | Browser agent, Aura probe, bundle grep |
+| Playwright scrape mode | Trigger | Yes | `--mode deficiencies`; ThreadPoolExecutor workers |
+| Per-inspection delete-replace | No | Yes | Resumable via `NOT EXISTS` + `--offset` |
+| Frontend re-enable | Yes | No | `HAS_DEFICIENCY_TABLE`, severity tags, copy |
+| Backfill run | Trigger | Partial | Long-running; 3 concurrent Playwright workers |
+
+**Last run:** Arizona Jun 22–26 — Aura guest access blocked; Playwright DOM scrape shipped. Backfill in progress. **Automation opportunity:** generic Playwright deficiency scaffold; auto-detect "no deficien" fast-path.
 
 ---
 
@@ -314,15 +377,16 @@ new state deploy → spot-check facility + hub pages → Ahrefs/sitemap audit
 
 | Priority | Loop | Gap | Effort |
 |----------|------|-----|--------|
-| P0 | Loop 4 | Fix `validate.yml` — add PA, IL, AZ to `db_invariants.py` allowed-state list | Trivial |
+| P0 | Loop 4 | Fix `validate.yml` — add IL, PA, AZ to `db_invariants.py` allowed-state list (2,293 facilities flagged) | Trivial |
 | P0 | Loop 3 | Apply migration 0047 in Supabase SQL editor | Owner action |
 | P0 | Loop 8 | Apply migrations 0049 + 0052; probe OR signal before enabling cron | Owner + Small |
-| P1 | Loop 7 | Fix or exclude TX from matrix (chronic failure marks whole workflow red) | Small |
+| P1 | Loop 10 | Complete AZ deficiency backfill (`--mode deficiencies`) | Medium (running) |
 | P1 | Loop 7 | Alert on per-state ingest job failure (Slack/email) | Small |
 | P1 | Loop 9 | Post-launch checklist: invariant list + sitemap_diff on COVERED_STATES change | Small |
 | P1 | Loop 2 | Chain `post_ingest_check.py` after CDSS ingest | Small |
 | P1 | Loop 4 | Post-deploy `smoke_test.py` in GitHub Actions | Medium |
 | P2 | Loop 1 | New-state scaffold generator from playbook | Medium |
+| P2 | Loop 10 | Generic Playwright deficiency scaffold for Salesforce Experience Cloud states | Medium |
 | P2 | Loop 3 | Auto-trigger hub draft generation for drifted cities post-ingest | Medium |
 | P3 | Loop 5 | Scheduled sitemap/meta diff script | Medium |
 
