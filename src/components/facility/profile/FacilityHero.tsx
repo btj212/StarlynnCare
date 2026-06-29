@@ -36,7 +36,7 @@ function formatAddr(facility: FacilityProfile["facility"]): string {
 }
 
 function VerdictCard({ profile }: { profile: FacilityProfile }) {
-  const { facility, totals, photoUrls, photoSources, snapshot, timeline, deficienciesByInspection, inspections, cfg } = profile;
+  const { facility, totals, photoUrls, photoSources, snapshot, deficienciesByInspection, inspections, cfg } = profile;
   const hasGrid = photoUrls.length >= 4;
   const suggestSubject = encodeURIComponent(`Photo submission: ${facility.name}`);
   const suggestBody = encodeURIComponent(
@@ -44,19 +44,55 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   );
   const suggestHref = `mailto:hello@starlynncare.com?subject=${suggestSubject}&body=${suggestBody}`;
 
-  // Severity ratio callout: facility window total vs. peer window total.
-  // Both sides sum over the same trajectory months so the ratio is
-  // apples-to-apples in time span (peer side = sum of monthly peer medians).
-  const totalWeighted = timeline.reduce((s, p) => s + p.facilityScore, 0);
-  const peerMedianTotal = timeline.reduce((s, p) => s + p.peerMedianScore, 0);
-  const windowMonths = timeline.length;
+  // Severity callout — sourced from the same snapshot metric the Peer
+  // Comparison section uses (severity.value = weighted citations PER BED,
+  // over the inspection window, vs. a size-matched peer group). This
+  // normalizes for facility size: a 120-bed and a 20-bed facility are
+  // compared per bed against peers in the same bed band, so the multiple is
+  // apples-to-apples rather than penalizing larger facilities for raw volume.
+  const sevMetric = snapshot?.metrics.severity ?? null;
+  const sevValue = sevMetric?.value ?? null;
+  const sevMedian = sevMetric?.peer_median ?? null;
+  const sevPct = sevMetric?.percentile ?? null;
   const severityRatio =
-    totalWeighted >= 5 && peerMedianTotal > 0
-      ? Math.round(totalWeighted / peerMedianTotal)
+    sevValue !== null && sevValue > 0 && sevMedian !== null && sevMedian > 0
+      ? sevValue / sevMedian
       : null;
-  const showRatioCallout = severityRatio !== null && severityRatio >= 3;
-  // Cap display at 50× to avoid absurd-looking numbers for extreme outliers
-  const severityRatioDisplay = severityRatio !== null && severityRatio > 50 ? "50+" : String(severityRatio);
+  // Cap display at 50× for extreme outliers; show a decimal for low multiples
+  // so "2.4×" doesn't round away to "2×".
+  const severityRatioDisplay =
+    severityRatio === null
+      ? null
+      : severityRatio > 50
+        ? "50+"
+        : severityRatio >= 10
+          ? String(Math.round(severityRatio))
+          : severityRatio.toFixed(1);
+  // Bidirectional signal: reward strong performers, flag weak ones. Tertiles
+  // match the peer-rank bar (higher percentile = fewer weighted citations/bed).
+  const sevTier: "good" | "mid" | "bad" | null =
+    sevPct === null ? null : sevPct >= 67 ? "good" : sevPct <= 33 ? "bad" : "mid";
+  const showSeverityCallout = !!snapshot?.has_inspections && sevTier !== null;
+  const sevTierColor =
+    sevTier === "good"
+      ? "var(--color-grade-b)"
+      : sevTier === "bad"
+        ? "var(--color-rust)"
+        : "var(--color-gold)";
+  const sevHeadline =
+    sevTier === "good"
+      ? `Top ${100 - (sevPct ?? 0)}%`
+      : sevTier === "bad"
+        ? severityRatioDisplay !== null
+          ? `${severityRatioDisplay}× peer median`
+          : "Worse than most"
+        : "Mid-pack";
+  const sevPlain =
+    sevTier === "good"
+      ? `Fewer weighted citations per bed than ${sevPct}% of similar-size peers.`
+      : sevTier === "bad"
+        ? `More weighted citations per bed than ${100 - (sevPct ?? 0)}% of similar-size peers.`
+        : "About average on weighted citations per bed for similar-size peers.";
 
   // Detect the most recent severe finding (sev ≥ 3 or IJ) within the last 90 days
   const cutoffStr = (() => {
@@ -146,17 +182,23 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
           </div>
         )}
 
-        {/* Severity ratio callout — only when facility is ≥ 3× peer median */}
-        {showRatioCallout && (
+        {/* Severity callout — per-bed weighted citations vs. size-matched peers */}
+        {showSeverityCallout && (
           <div className="hidden md:block mt-4 border-t border-white/15 pt-3.5">
             <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-gold/70 mb-0.5">
-              Citation severity vs. peers
+              Citation severity vs. similar-size peers
             </div>
-            <div className="font-[family-name:var(--font-display)] text-[26px] leading-tight tracking-[-0.01em] text-gold">
-              {severityRatioDisplay}× peer median
+            <div
+              className="font-[family-name:var(--font-display)] text-[26px] leading-tight tracking-[-0.01em]"
+              style={{ color: sevTierColor }}
+            >
+              {sevHeadline}
             </div>
-            <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-white/40 mt-0.5">
-              {Math.round(totalWeighted)} weighted score · peer median {Math.round(peerMedianTotal)} · {windowMonths}-mo window
+            <div className="font-[family-name:var(--font-display)] text-[14px] italic leading-snug text-white/70 mt-1 max-w-[34ch]">
+              {sevPlain}
+            </div>
+            <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-white/40 mt-1.5">
+              {sevValue?.toFixed(2)} wtd citations/bed · peer median {sevMedian?.toFixed(2)} · {cfg.inspectionWindowMonths}-mo window
             </div>
             <Link
               href="/methodology#metrics-heading"

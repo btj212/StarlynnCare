@@ -138,13 +138,20 @@ def _map_inspection_type(survey_category: str | None) -> tuple[str, bool]:
 
 
 def _map_severity(survey_category: str | None, description: str | None) -> tuple[int, bool]:
-    """Return (severity: int, immediate_jeopardy: bool)."""
+    """Return (severity: int, immediate_jeopardy: bool).
+
+    Severity 4 is reserved for genuine high-harm findings: true immediate
+    jeopardy or an abuse/neglect-class keyword match in the description. The
+    survey type ("Complaint Investigation") no longer drives severity on its
+    own — a routine paperwork finding discovered during a complaint visit is
+    not immediate-jeopardy-equivalent. Everything else defaults to severity 2.
+    See supabase/migrations/0058_mo_severity_remap.sql.
+    """
     desc = (description or "").lower()
-    is_complaint = "COMPLAINT INVESTIGATION" in (survey_category or "").upper()
     ij = bool(re.search(r"\bimmediate\s+jeopardy\b|\bIJ\b", description or "", re.IGNORECASE))
     if ij:
         return 4, True
-    if is_complaint or _SEV4_RE.search(desc):
+    if _SEV4_RE.search(desc):
         return 4, False
     return 2, False
 
