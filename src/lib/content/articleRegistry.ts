@@ -12,7 +12,7 @@
  * (RCFE, CDSS, Medi-Cal, CCL, HHSC, etc.) — see docs/NEW_STATE_PLAYBOOK.md.
  */
 
-export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "PA" | "AZ" | "all";
+export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "PA" | "AZ" | "MO" | "all";
 
 export type ArticleTag =
   | "licensing"
@@ -305,6 +305,24 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     title: "Memory care vs. nursing home in Arizona",
     desc: "ADHS regulates ALH/ALC memory care; CMS and CMS-certified SNFs handle nursing home level care. Different records, different ALTCS Medicaid funding streams.",
     states: ["AZ"],
+    tags: ["decision", "licensing"],
+    live: true,
+  },
+
+  // ── Missouri ──────────────────────────────────────────────────────────────
+  {
+    slug: "/missouri/memory-care-licensing",
+    title: "Missouri memory care licensing — ALF**, Alzheimer's SCU Disclosure & 19 CSR 30",
+    desc: "Missouri has no standalone memory care license. The Alzheimer's Special Care Services Disclosure (§198.510 RSMo) and ALF** license (§198.073.6) are the authoritative signals. How to read a Missouri profile on StarlynnCare.",
+    states: ["MO"],
+    tags: ["licensing", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/missouri/memory-care-vs-nursing-home",
+    title: "Memory care vs. nursing home in Missouri",
+    desc: "DHSS regulates ALF/RCF memory care; CMS + DHSS regulate SNF/ICF nursing homes. Different inspection records, different MO HealthNet Medicaid coverage.",
+    states: ["MO"],
     tags: ["decision", "licensing"],
     live: true,
   },

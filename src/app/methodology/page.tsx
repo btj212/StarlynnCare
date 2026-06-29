@@ -252,6 +252,11 @@ export default function MethodologyPage() {
                     <td className="py-2.5 pr-4 align-top">ADHS Bureau of Residential Facilities Licensing (BRFL) — Assisted Living Homes (ALH) and Assisted Living Centers (ALC), Directed Care level</td>
                     <td className="py-2.5 align-top">ADHS ArcGIS Open Data Hub (directory); AZ Care Check Aura API (inspection records). ADHS confirmed via public records response (Jun 2026): facilities with a Directed Care license are automatically authorized for memory care services.</td>
                   </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">MO</td>
+                    <td className="py-2.5 pr-4 align-top">Missouri DHSS Section for Long-Term Care Regulation — Assisted Living Facilities (ALF, ALF**) and Residential Care Facilities (RCF, RCF*) meeting the §198.510 Alzheimer&rsquo;s SCU Disclosure or ALF** non-self-evacuation authorization</td>
+                    <td className="py-2.5 align-top">data.mo.gov Socrata fenu-sipv LTC Directory (facility roster); DHSS FOIA records (inspection/deficiency data, 2018–2026)</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -268,7 +273,7 @@ export default function MethodologyPage() {
           <Section id="coverage-heading" title="Current coverage">
             <p>
               StarlynnCare currently publishes inspection data for{" "}
-              <strong>over 3,800 facilities across 9 states</strong>, with coverage
+              <strong>over 3,800 facilities across 10 states</strong>, with coverage
               expanding as we ingest new state licensing data.
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">

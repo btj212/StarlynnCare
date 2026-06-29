@@ -61,6 +61,7 @@ export const REGULATOR_ABBR: Record<string, string> = {
   UT: "DLBC",
   PA: "PA DHS",
   AZ: "ADHS",
+  MO: "DHSS",
 };
 
 /**
@@ -87,6 +88,8 @@ const STATE_ABBR: Record<string, string> = {
   Pennsylvania: "PA",
   Utah: "UT",
   Illinois: "IL",
+  Arizona: "AZ",
+  Missouri: "MO",
 };
 
 const MAX_TITLE = 60;

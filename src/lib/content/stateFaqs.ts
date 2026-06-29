@@ -229,3 +229,27 @@ export const AZ_FAQS: FaqItem[] = [
 
 /** Same as `CA_FAQS` — kept for `homeFaqs` re-exports and legacy `HOME_FAQS` imports. */
 export const HOME_FAQS = CA_FAQS;
+
+/** Missouri DHSS LTCR framing. */
+export const MO_FAQS: FaqItem[] = [
+  {
+    q: "Where does Missouri memory care data come from?",
+    a: "Primary sources: Missouri Department of Health and Senior Services (DHSS), Section for Long-Term Care Regulation. Facility licensing data comes from the DHSS LTC Directory (data.mo.gov Socrata dataset). Inspection and deficiency records were obtained via a FOIA public records request and cover 2018–2026 across all Assisted Living Facility (ALF) and Residential Care Facility (RCF) license types.",
+  },
+  {
+    q: "What is the memory care signal in Missouri?",
+    a: "Missouri has no standalone memory care license. StarlynnCare publishes facilities that meet either of two authoritative signals: (1) the facility has filed the Alzheimer's Special Care Services Disclosure (Form MO 580-2637, required by §198.510 RSMo) — the state's official dementia-care disclosure; or (2) the facility holds an ALF** license, which authorizes retention of residents who cannot self-evacuate (§198.073.6 RSMo), indicating a secure-environment capability. Name-keyword matching alone is not used.",
+  },
+  {
+    q: "Do you accept payments from facilities or operators?",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from DHSS inspection records and verified family reviews.",
+  },
+  {
+    q: "How often is Missouri data updated?",
+    a: "The DHSS LTC Directory is refreshed when DHSS publishes updates to the public dataset. Inspection records were obtained via FOIA and cover 2018–2026 as of the initial ingest. Each profile shows source dates for independent verification.",
+  },
+  {
+    q: "What is an ALF** license in Missouri?",
+    a: "ALF** ('ALF double-star') designates an Assisted Living Facility licensed under §198.073.6 RSMo to retain residents who cannot self-evacuate in an emergency — a common profile for residents with moderate to advanced dementia. This is one of the two Tier-1 memory-care signals used by StarlynnCare for Missouri. The standard ALF license does not carry this authorization.",
+  },
+];
