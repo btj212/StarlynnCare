@@ -247,6 +247,87 @@ def _harvest_insids(page: Any, city: str, facility_name: str, dates: list[str]) 
     return out
 
 
+def _crawl_one_city(page: Any, city: str, only_name: str | None,
+                    max_facilities: int | None, delay: float,
+                    done: set[tuple[str, str]]) -> int:
+    """Crawl every facility in one city; return the number of new PDFs saved.
+
+    Raises on fatal page/navigation errors (net::ERR_ABORTED on a portal hiccup,
+    or EPIPE when the browser process dies) so the caller can rebuild the browser
+    and retry/skip the city. Facilities already written to the manifest persist,
+    so a mid-city failure loses nothing on resume.
+    """
+    n_pdf = 0
+    if not _search_city(page, city):
+        print(f"  no results for {city}")
+        return 0
+    rows = _grid_rows(page)
+    if only_name:
+        rows = [r for r in rows if only_name.upper() in r["name"].upper()]
+    if max_facilities:
+        rows = rows[:max_facilities]
+    print(f"  facilities: {len(rows)}")
+
+    for r in rows:
+        # Re-run the search each facility: opening a detail page mutates
+        # the grid's ViewState, so we re-search to get a clean Select$N.
+        if not _search_city(page, city):
+            continue
+        grid = _grid_rows(page)
+        match = next((g for g in grid if g["name"] == r["name"]), None)
+        if not match:
+            continue
+        try:
+            _open_facility(page, match["idx"])
+        except Exception as e:
+            print(f"  [{r['name']}] open failed: {repr(e)[:80]}")
+            continue
+
+        insp = _inspection_rows(page)
+        poc_links = page.query_selector_all("#ContentPlaceHolder1_gvInspections a:has-text('POC')")
+        poc_rows = [row for row in insp if row["has_poc"]]
+        print(f"  {r['name']}: {len(insp)} inspections, {len(poc_links)} POC docs")
+
+        # Phase 1 — download every POC PDF (downloads don't navigate, so
+        # the element handles stay valid through the loop).
+        pending: list[dict[str, Any]] = []
+        for i, link in enumerate(poc_links):
+            date = poc_rows[i]["date"] if i < len(poc_rows) else f"row{i}"
+            if (r["name"], date) in done:
+                continue
+            fname = f"{_slug(r['name'])}_{_slug(date)}_{i}.pdf"
+            fpath = PDF_DIR / fname
+            try:
+                with page.expect_download(timeout=20_000) as di:
+                    link.click()
+                di.value.save_as(str(fpath))
+            except Exception as e:
+                print(f"    POC[{i}] {date} download failed: {repr(e)[:70]}")
+                continue
+            pending.append({
+                "facility_name": r["name"],
+                "city": r["city"] or city,
+                "level": r["level"],
+                "inspection_date": date,
+                "inspection_type": poc_rows[i]["type"] if i < len(poc_rows) else "",
+                "pdf": str(fpath.relative_to(REPO_ROOT)),
+            })
+            print(f"    saved {fname}")
+            time.sleep(delay)
+
+        # Phase 2 — harvest the deep-link insid for each downloaded
+        # inspection (navigations; done after downloads so handles above
+        # aren't invalidated mid-loop).
+        insid_map = _harvest_insids(page, city, r["name"],
+                                    [p["inspection_date"] for p in pending])
+        for p in pending:
+            p["insid"] = insid_map.get(p["inspection_date"])
+            _append_jsonl(MANIFEST, p)
+            done.add((r["name"], p["inspection_date"]))
+            n_pdf += 1
+    return n_pdf
+
+
 def crawl(cities: list[str], only_name: str | None, max_facilities: int | None,
           delay: float, headless: bool) -> None:
     from playwright.sync_api import sync_playwright
@@ -264,75 +345,31 @@ def crawl(cities: list[str], only_name: str | None, max_facilities: int | None,
 
         for city in cities:
             print(f"\n=== {city} ===", flush=True)
-            if not _search_city(page, city):
-                print(f"  no results for {city}")
-                continue
-            rows = _grid_rows(page)
-            if only_name:
-                rows = [r for r in rows if only_name.upper() in r["name"].upper()]
-            if max_facilities:
-                rows = rows[:max_facilities]
-            print(f"  facilities: {len(rows)}")
-
-            for r in rows:
-                # Re-run the search each facility: opening a detail page mutates
-                # the grid's ViewState, so we re-search to get a clean Select$N.
-                if not _search_city(page, city):
-                    continue
-                grid = _grid_rows(page)
-                match = next((g for g in grid if g["name"] == r["name"]), None)
-                if not match:
-                    continue
+            # Each city is isolated: a transient portal error (net::ERR_ABORTED) or
+            # a dead browser pipe (EPIPE) must not kill the whole multi-hour crawl.
+            # Retry the city once on a fresh browser, then move on. Completed
+            # facilities are already in the manifest, so resume covers any skips.
+            for attempt in (1, 2):
                 try:
-                    _open_facility(page, match["idx"])
+                    n_pdf += _crawl_one_city(page, city, only_name,
+                                             max_facilities, delay, done)
+                    break
                 except Exception as e:
-                    print(f"  [{r['name']}] open failed: {repr(e)[:80]}")
-                    continue
-
-                insp = _inspection_rows(page)
-                poc_links = page.query_selector_all("#ContentPlaceHolder1_gvInspections a:has-text('POC')")
-                poc_rows = [row for row in insp if row["has_poc"]]
-                print(f"  {r['name']}: {len(insp)} inspections, {len(poc_links)} POC docs")
-
-                # Phase 1 — download every POC PDF (downloads don't navigate, so
-                # the element handles stay valid through the loop).
-                pending: list[dict[str, Any]] = []
-                for i, link in enumerate(poc_links):
-                    date = poc_rows[i]["date"] if i < len(poc_rows) else f"row{i}"
-                    if (r["name"], date) in done:
-                        continue
-                    fname = f"{_slug(r['name'])}_{_slug(date)}_{i}.pdf"
-                    fpath = PDF_DIR / fname
+                    print(f"  [{city}] error (attempt {attempt}/2): {repr(e)[:140]}",
+                          flush=True)
                     try:
-                        with page.expect_download(timeout=20_000) as di:
-                            link.click()
-                        di.value.save_as(str(fpath))
-                    except Exception as e:
-                        print(f"    POC[{i}] {date} download failed: {repr(e)[:70]}")
-                        continue
-                    pending.append({
-                        "facility_name": r["name"],
-                        "city": r["city"] or city,
-                        "level": r["level"],
-                        "inspection_date": date,
-                        "inspection_type": poc_rows[i]["type"] if i < len(poc_rows) else "",
-                        "pdf": str(fpath.relative_to(REPO_ROOT)),
-                    })
-                    print(f"    saved {fname}")
-                    time.sleep(delay)
+                        browser.close()
+                    except Exception:
+                        pass
+                    browser = pw.chromium.launch(headless=headless)
+                    ctx = browser.new_context(accept_downloads=True)
+                    page = ctx.new_page()
+                    page.set_default_timeout(25_000)
 
-                # Phase 2 — harvest the deep-link insid for each downloaded
-                # inspection (navigations; done after downloads so handles above
-                # aren't invalidated mid-loop).
-                insid_map = _harvest_insids(page, city, r["name"],
-                                            [p["inspection_date"] for p in pending])
-                for p in pending:
-                    p["insid"] = insid_map.get(p["inspection_date"])
-                    _append_jsonl(MANIFEST, p)
-                    done.add((r["name"], p["inspection_date"]))
-                    n_pdf += 1
-
-        browser.close()
+        try:
+            browser.close()
+        except Exception:
+            pass
     print(f"\nCrawl done. New PDFs: {n_pdf}. Manifest: {MANIFEST}")
     print("Next: python3 scrapers/mo_sod_ingest.py ocr")
 
