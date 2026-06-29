@@ -6,7 +6,41 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
-## 2026-06 — AZ deficiency ingest: Playwright DOM scrape, not Aura API
+## 2026-06 — AZ perf: React.cache() + rail de-fan-out + snapshot cache
+
+**Decided (PR #41):**
+- **`React.cache()` on `loadFacilityProfile`**: wraps the whole function so `generateMetadata` and the page server component share one fetch per request. Without this, each AZ facility page fired the `facility_snapshot` RPC twice for the main profile alone.
+- **Strip `facility_snapshot` RPC from discovery rails** (`RelatedFacilities`, `SameOperatorFacilities`, `MetroNearbyFacilities`): rails were calling up to 14+20+24=58 live RPCs per page to rank results by `composite_percentile`. Rails now sort by `last_inspection_date DESC` at the DB level — zero extra RPCs. Grade ranking for rails can be restored when the snapshot cache columns are populated (see below).
+- **Snapshot cache columns** (`facilities.grade_letter`, `facilities.composite_percentile`, `grade_refreshed_at`) via migration 0055. `scrapers/refresh_snapshot_cache.py` populates nightly. This is the long-term backing for rail grade display and card sorting.
+- **`maxDuration = 60`** on the facility page route — raises the Vercel function timeout from 10s default for on-demand ISR.
+
+**Root cause of AZ regression:** The 2026-06-22 deficiency backfill made each `facility_snapshot` RPC scan a far larger AZ peer corpus. Combined with ~60 live RPC calls per page and cold on-demand ISR, pages hit the function budget.
+
+**Rejected:** Disabling the discovery rails entirely (removes navigation value); adding `Suspense` streaming (does not reduce RPC count, only delays the timeout).
+
+---
+
+## 2026-06 — Broken internal links: HubDifferentiators city_slug missing
+
+**Decided (PR #41):**
+- **Root cause:** `region_hub_stats` RPC returned only `top_improved_slug`/`top_deteriorated_slug` (facility slug), but `HubDifferentiators.tsx` built 2-segment hrefs `/{state}/{slug}` instead of the correct 3-segment `/{state}/{city_slug}/{slug}`.
+- **Fix:** Migration 0056 extends the RPC to also return `top_improved_city_slug` and `top_deteriorated_city_slug`. `HubDifferentiators.tsx` now uses `facilityProfilePath()` from `src/lib/seo/paths.ts`.
+- **`facilityProfilePath(stateSlug, citySlug, facilitySlug)`** is now the canonical helper for building 3-segment facility URLs. Use it everywhere to prevent a recurrence.
+
+---
+
+## 2026-06 — Missouri buildout: data signals + join key
+
+**Decided (PR #41):**
+- **Memory-care signals (MO Tier-1):** `alzheimer_s_scu=true` (§198.510 RSMo Alzheimer's SCU Disclosure, Form MO 580-2637) OR `level_of_care='ALF**'` (§198.073.6 RSMo non-self-evacuation authorization). No standalone memory care license exists in MO.
+- **Join key:** Excel `FACILITY_ID` (e.g. `27367N`) → strip letter suffix → Socrata `facility_number` (e.g. `27367`). Probe confirmed 587/587 (100%) match. One `facility_number` may have multiple license lines; create one facility row per `fcilicensenumber`.
+- **Severity mapping (MO):** Baseline `severity=2`. Elevate to 4 for: `SURVEY_CATEGORY` contains "COMPLAINT INVESTIGATION"; description matches `abuse|neglect|exploit|elopement|medication_error|evacuation|immediate_jeopardy` regex. Zero-deficiency sentinel tags: `000L, 00FM, 00IC, 00LC, 000I` (skip, do not insert deficiency row).
+- **Freshness gate:** 36 months (same as AZ/OR). Facilities without an inspection in 36 months are not published until fresh records arrive.
+- **License status:** `license_expiration` field in Socrata. Active = expiration date >= today.
+
+**Rejected:** Name-keyword matching alone as a standalone MC signal (too weak for YMYL). RCF facilities without `alzheimer_s_scu=true` or `ALF**` are excluded even if their name contains "memory care".
+
+
 
 **Decided:**
 - **Use Playwright (headless Chromium) to scrape the `inspection-details` DOM** for per-deficiency rows. Salesforce Experience Cloud blocks guest access to the Apex controller for deficiency details — all attempts to call the Aura API directly returned `clientOutOfSync` (guest access denied at the controller level).
