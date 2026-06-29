@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify-schema": "tsx scripts/verify-schema.ts"
+    "verify-schema": "tsx scripts/verify-schema.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.7",
@@ -29,6 +30,7 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }

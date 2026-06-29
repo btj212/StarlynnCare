@@ -1,0 +1,293 @@
+# Comprehensive E2E Test Suite — StarlynnCare
+#
+# Runs all test layers in sequence / parallel to prove the complete data pipeline
+# works end-to-end, from raw external API sources through the database to the
+# live production frontend:
+#
+#   Layer 0 — external-sources  : External state/CMS/CDSS API shape tests (no secrets)
+#   Layer 1 — db-pipeline       : Full DB integrity + RPC tests (needs DATABASE_URL)
+#   Layer 2 — content-checks    : Hub content drift audit (needs DATABASE_URL)
+#   Layer 3 — api-routes        : Live production API route tests (no secrets; hits prod)
+#   Layer 4 — e2e-correlation   : DB ↔ API ↔ HTML cross-layer checks (needs DATABASE_URL)
+#   Layer TS — ts-tests         : TypeScript Vitest suite (needs Supabase keys)
+#
+# Required secrets (GitHub Actions → Repository Settings → Secrets):
+#   DATABASE_URL                   : Supabase Postgres connection string (psycopg format)
+#   NEXT_PUBLIC_SUPABASE_URL       : Supabase project URL
+#   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY : Supabase publishable (anon) key
+#
+# Optional: NEXT_PUBLIC_SITE_URL defaults to https://www.starlynncare.com
+#
+# The external-sources and api-routes jobs require no secrets (all public).
+# Run them independently with: workflow_dispatch → job filter if needed.
+
+name: E2E Comprehensive Tests
+
+on:
+  schedule:
+    # Daily at 06:00 UTC — after the nightly ingest (23:00 UTC) + post-ingest checks
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      skip_external:
+        description: "Skip external source tests (use when target APIs are down)"
+        required: false
+        type: boolean
+        default: false
+      skip_html:
+        description: "Skip HTML layer in E2E correlation (use when prod deploy is pending)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  # ── Layer 0: External source API shape tests ─────────────────────────────────
+  external-sources:
+    name: "Layer 0 — External Source Shape Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ inputs.skip_external != true }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install requests
+
+      - name: CA CDSS source tests
+        run: python3 tests/integration/external/test_ca_cdss.py
+
+      - name: CMS API source tests
+        run: python3 tests/integration/external/test_cms_api.py
+
+      - name: Multi-state source tests (OR / WA / AZ / PA / MN / TX)
+        run: python3 tests/integration/external/test_state_sources.py
+
+  # ── Layer 1: DB pipeline integrity tests ─────────────────────────────────────
+  db-pipeline:
+    name: "Layer 1 — DB Pipeline Integrity"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: external-sources
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install psycopg python-dotenv requests
+
+      - name: Layer 1 — DB invariant checks (existing)
+        run: python3 scripts/validate/db_invariants.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Layer 1 (extended) — Full pipeline DB tests (new)
+        run: python3 tests/integration/db/test_full_pipeline.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # ── Layer 2: Content validation (existing, runs parallel to db-pipeline) ─────
+  content-checks:
+    name: "Layer 2 — Content Validation"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: external-sources
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install psycopg python-dotenv requests
+
+      - name: Layer 2 — Content checks
+        run: python3 scripts/validate/content_checks.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # ── Layer 3: Live API route integration tests ─────────────────────────────────
+  api-routes:
+    name: "Layer 3 — API Route Integration"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Can run in parallel with DB tests; does not need DATABASE_URL
+    needs: external-sources
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install requests
+
+      - name: Layer 3 (extended) — API route tests (all 10 states)
+        run: python3 tests/integration/api/test_api_routes.py
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL || 'https://www.starlynncare.com' }}
+
+  # ── TypeScript Vitest suite ───────────────────────────────────────────────────
+  ts-tests:
+    name: "Layer TS — TypeScript Integration Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: external-sources
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: TypeScript Vitest suite (supabase-live + api-routes)
+        run: npm test
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.PRODUCTION_URL || 'https://www.starlynncare.com' }}
+
+  # ── Layer 4: E2E cross-layer correlation tests ────────────────────────────────
+  e2e-correlation:
+    name: "Layer 4 — E2E Cross-Layer Correlation"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Wait for both DB and API tests before running correlation
+    needs: [db-pipeline, api-routes]
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install psycopg python-dotenv requests
+
+      - name: Layer 4 — E2E correlation (DB ↔ API ↔ HTML)
+        run: python3 tests/e2e/test_e2e_correlation.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL || 'https://www.starlynncare.com' }}
+
+  # ── Layer 5b: Hub content drift check (post-ingest) ──────────────────────────
+  hub-content-drift:
+    name: "Layer 5b — Hub Content Drift Audit"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: db-pipeline
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        # anthropic is needed at module top by hub_content_drift_check.py
+        run: pip install psycopg python-dotenv requests anthropic
+
+      - name: Layer 5b — Hub content drift check (all states)
+        run: python3 scripts/validate/hub_content_drift_check.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        # Exits 0 even when drift is detected — flagging is the success path
+        continue-on-error: false
+
+  # ── Layer 3: Smoke tests (existing, now automated) ────────────────────────────
+  smoke-tests:
+    name: "Layer 3 — Smoke Tests (Production)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: api-routes
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install psycopg python-dotenv requests
+
+      - name: Layer 3 — Production smoke tests (2 facilities per state)
+        run: python3 scripts/validate/smoke_test.py --env production
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # ── Summary ───────────────────────────────────────────────────────────────────
+  summary:
+    name: "E2E Test Summary"
+    runs-on: ubuntu-latest
+    needs:
+      - external-sources
+      - db-pipeline
+      - content-checks
+      - api-routes
+      - ts-tests
+      - e2e-correlation
+      - hub-content-drift
+      - smoke-tests
+    if: always()
+
+    steps:
+      - name: Check all job results
+        run: |
+          echo "=== E2E Comprehensive Test Suite Summary ==="
+          echo "external-sources : ${{ needs.external-sources.result }}"
+          echo "db-pipeline      : ${{ needs.db-pipeline.result }}"
+          echo "content-checks   : ${{ needs.content-checks.result }}"
+          echo "api-routes       : ${{ needs.api-routes.result }}"
+          echo "ts-tests         : ${{ needs.ts-tests.result }}"
+          echo "e2e-correlation  : ${{ needs.e2e-correlation.result }}"
+          echo "hub-content-drift: ${{ needs.hub-content-drift.result }}"
+          echo "smoke-tests      : ${{ needs.smoke-tests.result }}"
+          echo "============================================"
+
+          # Fail the summary job if any critical job failed
+          CRITICAL_JOBS="db-pipeline api-routes ts-tests e2e-correlation"
+          for job in $CRITICAL_JOBS; do
+            RESULT="${{ toJSON(needs) }}"
+            echo "Checking $job..."
+          done
+
+          # Exit non-zero if any non-skipped job failed
+          if [[ \
+            "${{ needs.db-pipeline.result }}" == "failure" || \
+            "${{ needs.api-routes.result }}" == "failure" || \
+            "${{ needs.ts-tests.result }}" == "failure" || \
+            "${{ needs.e2e-correlation.result }}" == "failure" || \
+            "${{ needs.smoke-tests.result }}" == "failure" \
+          ]]; then
+            echo "FAIL: one or more critical test jobs failed"
+            exit 1
+          fi
+
+          echo "PASS: all critical test layers passed"
