@@ -124,7 +124,7 @@ export default async function Home() {
     buildWebPageWithReviewer({
       name: "Memory care facilities, ranked by state inspectors | StarlynnCare",
       url: homeCanonical,
-      description: "No paid ads. No sales calls. Public inspection data from 5 states — California, Oregon, Washington, Minnesota, and Texas — analyzed and ranked for families.",
+      description: "No paid ads. No sales calls. Public inspection data from 10 states — California, Oregon, Washington, Minnesota, Arizona, Pennsylvania, Utah, Illinois, Missouri, and Texas — analyzed and ranked for families.",
       datePublished: "2025-01-01T00:00:00Z",
       dateModified: data.lastRefreshed,
     }),

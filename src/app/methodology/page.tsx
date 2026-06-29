@@ -123,7 +123,7 @@ export default function MethodologyPage() {
     },
     {
       q: "Where does the inspection data come from?",
-      a: "Data comes directly from official state licensing portals: CDSS Community Care Licensing (CA), Oregon DHS LTC Licensing (OR), DSHS ALTSA (WA), Minnesota MDH (MN), HHSC LTCR (TX), and PA DHS OLTL (PA). We ingest records on a regular automated schedule and publish only facilities with an active state license and at least one published inspection record.",
+      a: "Data comes directly from official state licensing portals: CDSS Community Care Licensing (CA), Oregon DHS LTC Licensing (OR), DSHS ALTSA (WA), Minnesota MDH (MN), HHSC LTCR (TX), PA DHS OLTL (PA), ADHS BRFL (AZ), DLBC (UT), IDPH (IL), and DHSS LTCR (MO). We ingest records on a regular automated schedule and publish only facilities with an active state license and at least one published inspection record.",
     },
   ];
   const methodologyJsonLd = [
@@ -273,7 +273,7 @@ export default function MethodologyPage() {
           <Section id="coverage-heading" title="Current coverage">
             <p>
               StarlynnCare currently publishes inspection data for{" "}
-              <strong>over 3,800 facilities across 10 states</strong>, with coverage
+              <strong>over 4,100 facilities across 10 states</strong>, with coverage
               expanding as we ingest new state licensing data.
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -285,6 +285,7 @@ export default function MethodologyPage() {
               <li><span className="font-medium text-ink">Pennsylvania</span> — 355 PCH and ALR facilities with Special Care designation.</li>
               <li><span className="font-medium text-ink">Utah</span> — 118 Type I &amp; II assisted living facilities.</li>
               <li><span className="font-medium text-ink">Illinois</span> — early coverage; 30 facilities published to date.</li>
+              <li><span className="font-medium text-ink">Missouri</span> — 267 ALF** and Alzheimer&rsquo;s SCU Disclosure facilities (§198.510 RSMo + ALF** license), obtained via FOIA from DHSS.</li>
               <li><span className="font-medium text-ink">Texas</span> — early coverage expanding; ingest in progress.</li>
             </ul>
             <p>
