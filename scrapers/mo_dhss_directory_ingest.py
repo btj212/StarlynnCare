@@ -109,12 +109,12 @@ def fetch_all_rows() -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 def _parse_license_status(expiration_str: str | None) -> str:
-    """Return 'active' if license expiration is in the future, else 'inactive'."""
+    """Return 'LICENSED' if license expiration is in the future, else 'CLOSED'."""
     if not expiration_str:
         return "unknown"
     try:
         exp = datetime.fromisoformat(expiration_str.replace("Z", "+00:00"))
-        return "active" if exp.date() >= date.today() else "inactive"
+        return "LICENSED" if exp.date() >= date.today() else "CLOSED"
     except (ValueError, TypeError):
         return "unknown"
 

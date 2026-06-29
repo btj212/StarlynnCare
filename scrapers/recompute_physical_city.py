@@ -131,7 +131,7 @@ def fetch_facilities(
     conn: psycopg.Connection,
     state_codes: list[str],
 ) -> list[dict]:
-    """Return all publishable facilities with lat/lon for the given states."""
+    """Return all facilities with lat/lon for the given states."""
     placeholders = ", ".join(["%s"] * len(state_codes))
     with conn.cursor() as cur:
         cur.execute(
@@ -139,7 +139,6 @@ def fetch_facilities(
             SELECT id::text, state_code, name, city, city_slug, latitude, longitude
               FROM facilities
              WHERE state_code IN ({placeholders})
-               AND publishable = TRUE
                AND latitude IS NOT NULL
                AND longitude IS NOT NULL
             """,
@@ -283,7 +282,7 @@ def main() -> None:
     parser.add_argument("--apply", action="store_true", help="Write changes to DB (default: dry-run)")
     args = parser.parse_args()
 
-    all_states = ["CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ"]
+    all_states = ["CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ", "MO"]
 
     if args.all:
         state_codes = all_states
