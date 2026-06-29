@@ -84,7 +84,9 @@ COMMENT ON COLUMN facilities.mo_scu_capacity IS
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. Unique partial index — join target for upserts by MO license number
 -- ─────────────────────────────────────────────────────────────────────────────
+-- NOTE: CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
+-- Run this as a separate statement in the Supabase dashboard after the above.
 
-CREATE UNIQUE INDEX IF NOT EXISTS facilities_mo_external_id_idx
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS facilities_mo_external_id_idx
   ON facilities (state_code, external_id)
   WHERE state_code = 'MO' AND external_id IS NOT NULL;
