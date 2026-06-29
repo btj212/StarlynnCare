@@ -87,6 +87,15 @@ export interface StateProfileConfig {
    * Surfaced as a "View on regulator portal" link in footnotes when present.
    */
   regulatorPortalUrl?: string;
+  /**
+   * True when `deficiency.description` holds the verbatim text of the cited
+   * regulation (the rule) rather than the inspector's specific finding.
+   * MO is the current case: the FOIA Excel only carried per-TAG standard text,
+   * not the Statement of Deficiencies narrative. When set, the UI labels the
+   * block "Regulation cited" and notes the specific finding is in the official
+   * report — unless a real `inspector_narrative` has since been ingested.
+   */
+  deficiencyTextIsRuleOnly?: boolean;
 }
 
 /**

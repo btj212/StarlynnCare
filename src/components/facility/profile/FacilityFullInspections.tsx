@@ -80,14 +80,26 @@ function DeficiencyBlock({
             </p>
           );
         }
+        // For states where `description` carries the cited regulation text
+        // rather than the inspector's finding (e.g. MO), relabel so we don't
+        // imply this paragraph is the specific finding — unless a real
+        // inspector_narrative has since been ingested.
+        const ruleOnly = !!cfg.deficiencyTextIsRuleOnly && !def.inspector_narrative;
         return (
           <>
             <div className="mb-2 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-rust">
-              Verbatim citation text{regCode ? ` · ${regCode}` : ""}
+              {ruleOnly ? "Regulation cited" : "Verbatim citation text"}{regCode ? ` · ${regCode}` : ""}
             </div>
             <p className="font-[family-name:var(--font-display)] text-[18px] italic leading-[1.4] text-ink">
               &ldquo;{narrative}&rdquo;
             </p>
+            {ruleOnly && (
+              <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-ink-3">
+                This is the rule that was cited, not the inspector&rsquo;s specific
+                finding. The detailed Statement of Deficiencies is in the official
+                report below.
+              </p>
+            )}
           </>
         );
       })()}
