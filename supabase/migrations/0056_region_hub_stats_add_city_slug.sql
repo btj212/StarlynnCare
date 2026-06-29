@@ -5,6 +5,10 @@
 -- (/{state}/{slug}) instead of the correct 3-segment
 -- (/{state}/{city_slug}/{slug}).  This migration adds the two city_slug columns
 -- so the component can build correct links.
+--
+-- Postgres cannot change a function's return type via CREATE OR REPLACE.
+-- DROP first so the new OUT columns are accepted.
+DROP FUNCTION IF EXISTS public.region_hub_stats(text, text[]);
 
 CREATE OR REPLACE FUNCTION public.region_hub_stats(
   p_state_code  text,
