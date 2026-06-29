@@ -85,8 +85,7 @@ DO UPDATE SET
     total_deficiency_count = EXCLUDED.total_deficiency_count,
     is_complaint           = EXCLUDED.is_complaint,
     source_url             = EXCLUDED.source_url,
-    raw_data               = EXCLUDED.raw_data,
-    updated_at             = now()
+    raw_data               = EXCLUDED.raw_data
 RETURNING id
 """
 

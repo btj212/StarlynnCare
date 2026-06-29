@@ -11,7 +11,7 @@ Memory care gate (Tier-1, YMYL-safe):
   - Name-keyword match is NOT used as a standalone signal (too weak for YMYL)
 
 Scope: ALF, ALF**, RCF, RCF* only (exclude SNF/ICF nursing lines)
-Primary key: (state_code='MO', external_id=fcilicensenumber)
+Primary key: (state_code='MO', external_id=facility_number)
 
 Usage:
     python3 scrapers/mo_dhss_directory_ingest.py
@@ -157,7 +157,7 @@ def transform(row: dict[str, Any]) -> dict[str, Any] | None:
     if level not in ALF_RCF_TYPES:
         return None
 
-    external_id = (row.get("fcilicensenumber") or "").strip()
+    external_id = (row.get("facility_number") or "").strip()
     if not external_id:
         return None
 
