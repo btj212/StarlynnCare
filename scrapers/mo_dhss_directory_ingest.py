@@ -57,14 +57,14 @@ DSN = os.environ.get("SUPABASE_DB_URL") or os.environ.get("DATABASE_URL")
 
 _UPSERT = """
 INSERT INTO facilities (
-    state_code, external_id, name, address, city, zip,
+    state_code, external_id, slug, name, street, city, city_slug, zip,
     county, phone, beds, operator_name, ownership_type,
     serves_memory_care, memory_care_disclosure_filed, memory_care_disclosure_source,
     mo_level_of_care, mo_alzheimer_scu, mo_scu_capacity,
     publishable, license_status
 )
 VALUES (
-    'MO', %(external_id)s, %(name)s, %(address)s, %(city)s, %(zip)s,
+    'MO', %(external_id)s, %(slug)s, %(name)s, %(street)s, %(city)s, %(city_slug)s, %(zip)s,
     %(county)s, %(phone)s, %(beds)s, %(operator_name)s, %(ownership_type)s,
     %(serves_memory_care)s, %(memory_care_disclosure_filed)s, %(disclosure_source)s,
     %(mo_level_of_care)s, %(mo_alzheimer_scu)s, %(mo_scu_capacity)s,
@@ -73,7 +73,7 @@ VALUES (
 ON CONFLICT (state_code, external_id) WHERE state_code = 'MO'
 DO UPDATE SET
     name                             = excluded.name,
-    address                          = excluded.address,
+    street                           = excluded.street,
     city                             = excluded.city,
     zip                              = excluded.zip,
     county                           = excluded.county,
@@ -143,9 +143,9 @@ def _ownership_from_definition(definition: str | None) -> str | None:
         return None
     dl = definition.lower()
     if "non-profit" in dl or "nonprofit" in dl or "not for profit" in dl:
-        return "nonprofit"
+        return "non-profit"
     if "for profit" in dl or "for-profit" in dl or "profit" in dl:
-        return "for_profit"
+        return "for-profit"
     if "government" in dl or "public" in dl:
         return "government"
     return None
@@ -186,11 +186,17 @@ def transform(row: dict[str, Any]) -> dict[str, Any] | None:
     phone_raw = (row.get("facility_phone_number") or "").strip()
     phone = phone_raw if phone_raw else None
 
+    city_raw = (row.get("city") or "").strip() or None
+    city_slug_tmp = re.sub(r"[^a-z0-9]+", "-", (city_raw or "").lower()).strip("-") or "unknown"
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") + "-mo" + external_id
+
     return {
         "external_id": external_id,
         "name": name,
-        "address": (row.get("address") or "").strip() or None,
-        "city": (row.get("city") or "").strip() or None,
+        "slug": slug,
+        "street": (row.get("address") or "").strip() or None,
+        "city": city_raw,
+        "city_slug": city_slug_tmp,
         "zip": (row.get("zip_code") or "").strip() or None,
         "county": (row.get("county") or "").strip() or None,
         "phone": phone,
