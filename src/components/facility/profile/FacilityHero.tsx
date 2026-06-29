@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { FacilityProfile, DeficiencyRow } from "@/lib/facility/loadFacilityProfile";
 import type { CareCategory, Deficiency } from "@/lib/types";
 import {
@@ -43,12 +44,15 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   );
   const suggestHref = `mailto:hello@starlynncare.com?subject=${suggestSubject}&body=${suggestBody}`;
 
-  // Severity ratio callout: totalWeighted vs. representative peer median
+  // Severity ratio callout: facility window total vs. peer window total.
+  // Both sides sum over the same trajectory months so the ratio is
+  // apples-to-apples in time span (peer side = sum of monthly peer medians).
   const totalWeighted = timeline.reduce((s, p) => s + p.facilityScore, 0);
-  const peerMedianRep = [...timeline].reverse().find((p) => p.peerMedianScore > 0)?.peerMedianScore ?? null;
+  const peerMedianTotal = timeline.reduce((s, p) => s + p.peerMedianScore, 0);
+  const windowMonths = timeline.length;
   const severityRatio =
-    totalWeighted >= 5 && peerMedianRep && peerMedianRep > 0
-      ? Math.round(totalWeighted / peerMedianRep)
+    totalWeighted >= 5 && peerMedianTotal > 0
+      ? Math.round(totalWeighted / peerMedianTotal)
       : null;
   const showRatioCallout = severityRatio !== null && severityRatio >= 3;
   // Cap display at 50× to avoid absurd-looking numbers for extreme outliers
@@ -152,8 +156,14 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
               {severityRatioDisplay}× peer median
             </div>
             <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-white/40 mt-0.5">
-              {Math.round(totalWeighted)} weighted score · peer median {peerMedianRep?.toFixed(0)} · {cfg.inspectionWindowMonths}-mo window
+              {Math.round(totalWeighted)} weighted score · peer median {Math.round(peerMedianTotal)} · {windowMonths}-mo window
             </div>
+            <Link
+              href="/methodology#metrics-heading"
+              className="mt-1.5 inline-block font-[family-name:var(--font-mono)] text-[9.5px] uppercase tracking-[0.12em] text-gold/60 underline underline-offset-4 decoration-gold/30 hover:text-gold hover:decoration-gold transition-colors"
+            >
+              How severity is scored →
+            </Link>
           </div>
         )}
 
@@ -333,18 +343,15 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               <OrMcSignalBadges signals={profile.orMcSignals} />
             )}
 
-            {/* Mobile-only grade badge — letter grade + percentile visible without scrolling */}
+            {/* Mobile-only percentile badge — rank summary visible without scrolling */}
             {profile.snapshot?.grade && (
               <div className="md:hidden mt-4 flex items-center gap-4 border-t border-paper-rule pt-4">
-                <span className="font-[family-name:var(--font-display)] text-[52px] leading-none tracking-[-0.025em] text-rust">
-                  {profile.snapshot.grade.letter}
-                </span>
                 <div>
                   <div className="font-[family-name:var(--font-mono)] text-[9.5px] uppercase tracking-[0.14em] text-ink-4 mb-0.5">
-                    Inspection grade
+                    Peer rank
                   </div>
-                  <div className="font-[family-name:var(--font-mono)] text-[12px] text-ink-2">
-                    {profile.snapshot.grade.composite_percentile}th percentile
+                  <div className="font-[family-name:var(--font-mono)] text-[15px] font-semibold text-ink-2">
+                    Top {Math.max(1, 100 - profile.snapshot.grade.composite_percentile)}% of {state.name} memory care
                   </div>
                   <a
                     href="#peer"
