@@ -44,16 +44,15 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Run 28305707627 (2026-06-27T23:58 UTC, scheduled nightly ingest): all states +0.
-# Run 28306165002 (2026-06-28T00:18 UTC, post-ingest baseline push): all states +0.
-# Cron probe 2026-06-28T23:02 UTC flagged:
-#   OR source max 2026-06-26 (+1 AFH RL012794 Maria Villa Tellez re-licensure) > baseline 2026-06-25
-#   MN insertDate max 2026-06-28 (+6 late-posted surveys) > baseline 2026-06-27
+# Run 28339097605 (2026-06-28T23:06 UTC, cron-triggered evening ingest):
+#   OR +5 inspections max=2026-06-26 (was 2026-06-25); MN +1 max=2026-06-16 (6 insertDate surveys, 5 dupes).
+#   IL/PA/UT/CA/TX/WA/AZ: queued after OR in same workflow (scheduled +0 earlier run 28305707627).
+# Cron probe 2026-06-28T23:02 UTC flagged OR source max 2026-06-26, MN insertDate max 2026-06-28.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 6, 18),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 6, 25),
+    "OR": date(2026, 6, 26),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 6, 16),
     "UT": date(2026, 6, 3),
@@ -62,7 +61,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "AZ": date(2026, 6, 23),
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 6, 27)
+LAST_MN_INSERT_BASELINE = date(2026, 6, 28)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
