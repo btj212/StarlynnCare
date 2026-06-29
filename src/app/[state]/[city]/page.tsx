@@ -419,6 +419,8 @@ export default async function RegionPage({ params }: PageProps) {
     : region.state.code === "OR" ? "OHA"
     : region.state.code === "UT" ? "DLBC"
     : region.state.code === "IL" ? "IDPH"
+    : region.state.code === "PA" ? "PA DHS"
+    : region.state.code === "MO" ? "DHSS"
     : "CDSS";
 
   // States where we have row-level deficiency data (deficiencies table populated).
