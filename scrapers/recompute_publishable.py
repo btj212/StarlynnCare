@@ -177,6 +177,11 @@ def recompute_serves_memory_care(
           -- az_mc_subclass (HB2764, effective 2025-07-01) covers future endorsement records.
           OR (state_code = 'AZ' AND az_license_level = 'Directed Care')
           OR (state_code = 'AZ' AND COALESCE(az_mc_subclass, false))
+          -- MO: §198.510 Alzheimer's SCU Disclosure (alzheimer_s_scu) or ALF** license.
+          -- Both are set by mo_dhss_directory_ingest.py into mo_alzheimer_scu and
+          -- memory_care_disclosure_filed. This is belt-and-suspenders.
+          OR (state_code = 'MO' AND COALESCE(mo_alzheimer_scu, false))
+          OR (state_code = 'MO' AND mo_level_of_care = 'ALF**')
         , false)
         WHERE state_code = %s
     """
@@ -210,6 +215,9 @@ _FRESHNESS_MONTHS: dict[str, int | None] = {
     # Facilities without inspections in 36 months are not yet indexed in AZ Care Check
     # and should not be published until the PDF pipeline (Phase 3) populates their records.
     "AZ": 36,
+    # MO: DHSS FOIA data covers 2018–2026; use 36 months to ensure active facilities
+    # have recent inspection data before publishing.
+    "MO": 36,
 }
 
 

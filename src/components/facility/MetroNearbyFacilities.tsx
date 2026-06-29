@@ -15,7 +15,6 @@ type Row = {
   city: string | null;
   slug: string;
   city_slug: string;
-  composite: number | null;
 };
 
 const MAX_NEARBY = 8;
@@ -42,38 +41,12 @@ export async function MetroNearbyFacilities({ facilityId, citySlug, stateSlug }:
     .eq("publishable", true)
     .in("city_slug", siblingSlugs)
     .neq("id", facilityId)
-    .order("name")
-    .limit(24);
+    .order("last_inspection_date", { ascending: false, nullsFirst: false })
+    .limit(MAX_NEARBY);
 
   if (!raw?.length) return null;
 
-  const typed = raw as Array<{
-    id: string;
-    name: string;
-    city: string | null;
-    slug: string;
-    city_slug: string;
-  }>;
-
-  const snapshots = await Promise.all(
-    typed.map((f) =>
-      supabase
-        .rpc("facility_snapshot", { p_facility_id: f.id })
-        .then(({ data }) => ({
-          id: f.id,
-          grade: (data as { grade?: { composite_percentile: number } | null } | null)?.grade ?? null,
-        })),
-    ),
-  );
-  const pct = new Map(snapshots.map((s) => [s.id, s.grade?.composite_percentile ?? null]));
-
-  const ranked: Row[] = typed
-    .map((f) => ({
-      ...f,
-      composite: pct.get(f.id) ?? null,
-    }))
-    .sort((a, b) => (b.composite ?? 0) - (a.composite ?? 0))
-    .slice(0, MAX_NEARBY);
+  const ranked = raw as Row[];
 
   return (
     <section className="border-t border-paper-rule pt-12 mt-12">

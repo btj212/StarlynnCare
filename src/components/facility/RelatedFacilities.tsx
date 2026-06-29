@@ -17,7 +17,6 @@ type RelatedRow = {
   city: string | null;
   slug: string;
   city_slug: string;
-  composite: number | null;
 };
 
 async function loadRelated(
@@ -31,7 +30,6 @@ async function loadRelated(
   const stateInfo = stateFromSlug(stateSlug);
   const stateCode = stateInfo?.code ?? "CA";
 
-  // Same city — fetch a pool, then rank by composite grade for top 8
   const { data: raw } = await supabase
     .from("facilities")
     .select("id, name, city, slug, city_slug")
@@ -39,37 +37,11 @@ async function loadRelated(
     .eq("city_slug", citySlug)
     .eq("publishable", true)
     .neq("id", facilityId)
-    .order("name")
-    .limit(14);
+    .order("last_inspection_date", { ascending: false, nullsFirst: false })
+    .limit(8);
 
   if (!raw || raw.length === 0) return [];
-
-  const typed = raw as Array<{ id: string; name: string; city: string | null; slug: string; city_slug: string }>;
-
-  // Fetch grades in parallel
-  const snapshots = await Promise.all(
-    typed.map((f) =>
-      supabase
-        .rpc("facility_snapshot", { p_facility_id: f.id })
-        .then(({ data }) => ({
-          id: f.id,
-          grade: (data as { grade?: { letter: string; composite_percentile: number } | null } | null)?.grade ?? null,
-        })),
-    ),
-  );
-
-  const snapMap = new Map(snapshots.map((s) => [s.id, s.grade]));
-
-  return typed
-    .map((f) => {
-      const snap = snapMap.get(f.id);
-      return {
-        ...f,
-        composite: snap?.composite_percentile ?? null,
-      };
-    })
-    .sort((a, b) => (b.composite ?? 0) - (a.composite ?? 0))
-    .slice(0, 8);
+  return raw as RelatedRow[];
 }
 
 /**

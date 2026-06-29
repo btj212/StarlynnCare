@@ -91,6 +91,7 @@ import { FacilityBrowseLinks } from "@/components/facility/FacilityBrowseLinks";
 import { ReportListingForm } from "@/components/facility/ReportListingForm";
 
 export const revalidate = 3600;
+export const maxDuration = 60;
 
 type PageProps = {
   params: Promise<{ state: string; city: string; facility: string }>;

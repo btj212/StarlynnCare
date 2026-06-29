@@ -16,6 +16,7 @@
  */
 
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { regionFromSlug } from "@/lib/regions";
 
@@ -482,7 +483,7 @@ export type FacilityRedirect = {
   canonicalCitySlug?: string;
 };
 
-export async function loadFacilityProfile(params: {
+export const loadFacilityProfile = cache(async function loadFacilityProfile(params: {
   stateSlug: string;
   regionSlug: string;
   facilitySlug: string;
@@ -812,4 +813,4 @@ export async function loadFacilityProfile(params: {
 
     isAfhResidential: facility.wa_afh_residential_flag === true,
   };
-}
+});

@@ -422,7 +422,7 @@ export default async function RegionPage({ params }: PageProps) {
     : "CDSS";
 
   // States where we have row-level deficiency data (deficiencies table populated).
-  const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA", "AZ"]);
+  const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA", "AZ", "MO"]);
   // For PA county pages, sort the ItemList JSON-LD by record rank (most severe first)
   // so ItemList positions reflect the displayed "By record" ordering.
   const sortedFacilitiesForItemList =
@@ -580,7 +580,9 @@ export default async function RegionPage({ params }: PageProps) {
                   label:
                     region.state.code === "AZ"
                       ? "Facilities with at least one A.A.C. R9-10 deficiency finding in the indexed inspection record (24 months where dated)"
-                      : "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
+                      : region.state.code === "MO"
+                        ? "Facilities with at least one DHSS deficiency finding in the indexed inspection record (24 months where dated)"
+                        : "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
                   src: stateDataSrc,
                   delta: totalCount > 0 ? `${severePct}% of indexed facilities` : undefined,
                 },
@@ -710,6 +712,15 @@ export default async function RegionPage({ params }: PageProps) {
                           ({severePct}%) have at least one A.A.C. R9-10 deficiency cited in their
                           ADHS inspection record from the past 24 months.
                         </>
+                      ) : region.state.code === "MO" ? (
+                        <>
+                          Of the{" "}
+                          <strong className="font-normal text-rust">{totalCount}</strong>{" "}
+                          DHSS-licensed memory care facilities indexed in {region.name},{" "}
+                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
+                          ({severePct}%) have at least one deficiency cited in their
+                          DHSS inspection record from the past 24 months.
+                        </>
                       ) : (
                         <>
                           Of the{" "}
@@ -728,7 +739,9 @@ export default async function RegionPage({ params }: PageProps) {
                             ? "Texas HHSC Long-Term Care Regulation"
                             : region.state.code === "AZ"
                               ? "ADHS BRFL / AZ Care Check"
-                              : "CA CDSS Community Care Licensing"
+                              : region.state.code === "MO"
+                                ? "Missouri DHSS Section for Long-Term Care Regulation"
+                                : "CA CDSS Community Care Licensing"
                         }
                         refreshed={findingsDate}
                         note={
@@ -736,7 +749,9 @@ export default async function RegionPage({ params }: PageProps) {
                             ? "Deficiency labels are shown as published by HHSC; see methodology for scope"
                             : region.state.code === "AZ"
                               ? "Deficiencies cited under A.A.C. Title 9, Chapter 10 (Health Care Institutions)"
-                              : "Type-A = immediate health/safety risk; Type-B = lesser violation"
+                              : region.state.code === "MO"
+                                ? "Deficiency tags cited under 19 CSR 30 (ALF/RCF); complaint investigations shown separately"
+                                : "Type-A = immediate health/safety risk; Type-B = lesser violation"
                         }
                       />
                     )}

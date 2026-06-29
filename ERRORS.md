@@ -8,6 +8,20 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-06 — AZ facility pages returning 500/timeout after deficiency backfill
+
+**What went wrong:** After the 2026-06-22 AZ deficiency backfill, AZ facility pages started returning 500 errors and timing out in Ahrefs (120 hard 500s + 1,100 timeouts). Root cause: each page render called `facility_snapshot` ~60 times (loader called twice with no dedup, plus discovery rails calling it per card for up to 58 facilities) and the backfill made each RPC scan a much larger AZ peer corpus.
+
+**What worked instead:**
+1. `React.cache()` on `loadFacilityProfile` to deduplicate the double call
+2. Strip RPC from discovery rails — sort by `last_inspection_date` at DB level
+3. `maxDuration = 60` on the facility route
+4. Migration 0055 snapshot cache columns for future rail grade display
+
+**Do not** call `facility_snapshot` per card in discovery rails. It is O(n) in the number of facilities shown and kills cold ISR performance.
+
+
+
 ## 2026-06 — AZ deficiency endpoint: Salesforce Aura guest access blocked
 
 **What didn't work:**

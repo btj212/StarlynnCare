@@ -318,7 +318,7 @@ def _check_coverage_nulls(cur) -> None:
         """
         SELECT
             COUNT(*) FILTER (WHERE beds IS NULL OR beds = 0) AS null_beds,
-            COUNT(*) FILTER (WHERE state_code NOT IN ('CA','OR','WA','MN','TX','UT')) AS bad_state,
+            COUNT(*) FILTER (WHERE state_code NOT IN ('CA','OR','WA','MN','TX','UT','AZ','PA','IL','MO')) AS bad_state,
             COUNT(*) AS total
         FROM facilities
         WHERE publishable = true
