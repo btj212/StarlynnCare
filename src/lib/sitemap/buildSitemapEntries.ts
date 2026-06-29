@@ -64,6 +64,7 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/illinois", priority: "0.88", changefreq: "weekly" },
     { path: "/utah", priority: "0.88", changefreq: "weekly" },
     { path: "/arizona", priority: "0.88", changefreq: "weekly" },
+    { path: "/missouri", priority: "0.88", changefreq: "weekly" },
     { path: "/methodology", priority: "0.75", changefreq: "monthly" },
     { path: "/about", priority: "0.75", changefreq: "monthly" },
     { path: "/data", priority: "0.8", changefreq: "monthly" },
@@ -124,6 +125,11 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/arizona/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/arizona/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     { path: "/arizona/guides", priority: "0.80", changefreq: "monthly" },
+    // Missouri hub + guides + articles (live)
+    { path: "/missouri", priority: "0.88", changefreq: "weekly" },
+    { path: "/missouri/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/missouri/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/missouri/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Pennsylvania hub + guides + articles (live)
     { path: "/pennsylvania", priority: "0.88", changefreq: "weekly" },
     { path: "/pennsylvania/guides", priority: "0.80", changefreq: "monthly" },
