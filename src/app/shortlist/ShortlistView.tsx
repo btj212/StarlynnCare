@@ -3,117 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useShortlist, type ShortlistItem } from "@/lib/shortlist/context";
-import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
+import { CompareCard } from "@/components/shortlist/CompareCard";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD } from "@/lib/security/honeypot";
-
-const CATEGORY_LABEL: Record<string, string> = {
-  rcfe_memory_care: "RCFE · Memory care",
-  rcfe_general: "RCFE",
-  alf_memory_care: "ALF · Memory care",
-  alf_general: "ALF",
-  snf_general: "Nursing home",
-  snf_dementia_scu: "Nursing home · Dementia SCU",
-  ccrc: "CCRC",
-};
 
 function emitClarityEvent(name: string) {
   try {
     const c = (window as unknown as { clarity?: (cmd: string, event: string) => void }).clarity;
     if (typeof c === "function") c("event", name);
   } catch {}
-}
-
-function TrustBadge({ item }: { item: ShortlistItem }) {
-  if (item.inspections === 0) {
-    return <span className="text-xs text-ink-4">No inspection data yet</span>;
-  }
-  if (item.serious_citations > 0) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-xs font-semibold text-red-700">
-        <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
-        {item.serious_citations} serious citation{item.serious_citations !== 1 ? "s" : ""} on file
-      </span>
-    );
-  }
-  if (item.total_citations > 0) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-        {item.total_citations} citation{item.total_citations !== 1 ? "s" : ""} on file
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4a7a50]">
-      <span className="h-1.5 w-1.5 rounded-full bg-[#6b8f71] shrink-0" />
-      No citations on file
-    </span>
-  );
-}
-
-function CompareCard({ item }: { item: ShortlistItem }) {
-  return (
-    <div className="flex flex-col rounded-xl border border-paper-rule bg-paper-2 overflow-hidden">
-      <div className="px-5 py-4 border-b border-paper-rule">
-        <div className="flex items-start justify-between gap-2">
-          <Link
-            href={`/${item.state_slug}/${item.city_slug}/${item.slug}`}
-            className="font-[family-name:var(--font-display)] text-[18px] leading-snug text-ink hover:text-teal transition-colors"
-          >
-            {item.name}
-          </Link>
-          <ShortlistButton item={item} size="sm" />
-        </div>
-        {item.city && (
-          <p className="mt-1 font-[family-name:var(--font-mono)] text-[11px] text-ink-4 uppercase tracking-[0.06em]">
-            {item.city}
-          </p>
-        )}
-      </div>
-
-      <div className="px-5 py-4 space-y-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-ink-3">Trust signal</span>
-          <TrustBadge item={item} />
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-ink-3">Total citations</span>
-          <span className="font-[family-name:var(--font-mono)] font-semibold text-ink tabular-nums">
-            {item.total_citations}
-          </span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-ink-3">Inspections on file</span>
-          <span className="font-[family-name:var(--font-mono)] font-semibold text-ink tabular-nums">
-            {item.inspections}
-          </span>
-        </div>
-        {item.beds != null && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-ink-3">Beds</span>
-            <span className="font-[family-name:var(--font-mono)] font-semibold text-ink tabular-nums">
-              {item.beds}
-            </span>
-          </div>
-        )}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-ink-3">License type</span>
-          <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3">
-            {CATEGORY_LABEL[item.care_category] ?? item.care_category}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-auto px-5 py-4 border-t border-paper-rule">
-        <Link
-          href={`/${item.state_slug}/${item.city_slug}/${item.slug}`}
-          className="block w-full rounded-lg border border-teal/30 bg-teal/5 px-3 py-2.5 text-center text-sm font-semibold text-teal-deep hover:bg-teal/10 transition-colors"
-        >
-          View full inspection record →
-        </Link>
-      </div>
-    </div>
-  );
 }
 
 function EmailCapture({ items }: { items: ShortlistItem[] }) {
@@ -200,6 +97,62 @@ function EmailCapture({ items }: { items: ShortlistItem[] }) {
   );
 }
 
+function SharePanel({ items }: { items: ShortlistItem[] }) {
+  const [copied, setCopied] = useState(false);
+
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/shortlist/shared?ids=${items.map((i) => i.id).join(",")}`
+      : "";
+
+  const mailtoHref = `mailto:?subject=${encodeURIComponent("Memory care shortlist")}&body=${encodeURIComponent(
+    `I've been researching these ${items.length} memory care ${items.length === 1 ? "facility" : "facilities"} — thought you'd want to review the inspection records too:\n\n${shareUrl}`,
+  )}`;
+
+  const handleCopy = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      emitClarityEvent("shortlist_share");
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Fallback: select the text (rare)
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-paper-rule bg-paper-2 px-6 py-6">
+      <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em] text-rust mb-2">
+        Send to your family
+      </div>
+      <p className="font-[family-name:var(--font-display)] text-[20px] text-ink leading-snug mb-1">
+        Share this shortlist with a sibling or co-decision-maker.
+      </p>
+      <p className="text-sm text-ink-3 mb-5">
+        Anyone with the link sees the same inspection records — no login required.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={handleCopy}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-ink/20 bg-paper px-5 py-2.5 text-sm font-semibold text-ink hover:bg-paper-2 transition-colors"
+        >
+          {copied ? "✓ Copied!" : "Copy link"}
+        </button>
+        <a
+          href={mailtoHref}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-ink/20 bg-paper px-5 py-2.5 text-sm font-semibold text-ink hover:bg-paper-2 transition-colors"
+        >
+          Share by email
+        </a>
+      </div>
+      <p className="mt-3 text-xs text-ink-4 font-[family-name:var(--font-mono)]">
+        Link shows live inspection data · No login needed
+      </p>
+    </div>
+  );
+}
+
 export function ShortlistView() {
   const { items, clear } = useShortlist();
   const [mounted, setMounted] = useState(false);
@@ -245,6 +198,9 @@ export function ShortlistView() {
           </div>
         ) : (
           <div className="space-y-10">
+            {/* Share panel — at the top so the primary buyer (coordinating siblings on mobile) sees it immediately */}
+            <SharePanel items={items} />
+
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((item) => (
                 <CompareCard key={item.id} item={item} />
