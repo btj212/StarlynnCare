@@ -29,7 +29,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRAPERS = REPO_ROOT / "scrapers"
-COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ")
+COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ", "MO")
 STATE_SLUGS = {
     "CA": "california",
     "TX": "texas",
@@ -40,28 +40,30 @@ STATE_SLUGS = {
     "IL": "illinois",
     "PA": "pennsylvania",
     "AZ": "arizona",
+    "MO": "missouri",
 }
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Run 28339097605 (2026-06-28T23:06 UTC, cron-triggered evening ingest):
-#   OR +5 inspections max=2026-06-26 (was 2026-06-25); MN +1 max=2026-06-16 (6 insertDate surveys, 5 dupes).
-#   IL/PA/UT/CA/TX/WA/AZ: queued after OR in same workflow (scheduled +0 earlier run 28305707627).
-# Cron probe 2026-06-28T23:02 UTC flagged OR source max 2026-06-26, MN insertDate max 2026-06-28.
+# Run 28483922249 (2026-07-01T00:02 UTC, scheduled nightly ingest):
+#   AZ +5 max=2026-06-29; PA +3 max=2026-08-28; OR +15 max=2026-06-26; others +0.
+# Cron probe 2026-07-01T23:02 UTC flagged OR source max 2026-06-30 (3 rows after baseline),
+#   MN resolvedDate max 2026-06-24 (+5 after baseline), insertDate max 2026-07-01 (+9 after baseline).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 6, 18),
+    "CA": date(2026, 6, 26),
     "TX": date(2023, 2, 16),
     "OR": date(2026, 6, 26),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 6, 16),
-    "UT": date(2026, 6, 3),
+    "UT": date(2026, 6, 8),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 6, 23),
+    "AZ": date(2026, 6, 29),
+    "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 6, 28)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 1)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
@@ -201,6 +203,7 @@ STATE_PROBERS = {
     "IL": lambda skip: probe_static("IL", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
     "PA": lambda skip: probe_static("PA", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
     "AZ": lambda skip: probe_static("AZ", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
+    "MO": lambda skip: probe_static("MO", "FOIA Excel (missourirecords.xlsx) — no live regulator feed; manual refresh"),
 }
 
 

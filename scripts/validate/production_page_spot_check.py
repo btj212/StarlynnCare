@@ -35,6 +35,7 @@ STATE_SLUGS = {
     "IL": "illinois",
     "PA": "pennsylvania",
     "AZ": "arizona",
+    "MO": "missouri",
 }
 
 # City + county hubs with known publishable facilities
@@ -64,6 +65,8 @@ HUB_PAGES = [
     "/arizona",
     "/arizona/maricopa",
     "/arizona/phoenix",
+    "/missouri",
+    "/missouri/st-louis",
 ]
 
 FACILITY_FALLBACKS = [
