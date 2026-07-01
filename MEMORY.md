@@ -122,7 +122,7 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 **Rejected:** TipTap/WYSIWYG (drops data-stat spans); a live-recompute RPC at approval (duplicates the drift audit's job + a second copy of the aggregation SQL); thresholded drift (would let a stale-but-close number render).
 
-**Status:** Checkpoints 1–3 on `main` (deployed; loader falls back to hand-authored intros until content exists). Checkpoints 4–5 on `claude/amazing-hopper-5HquU` (preview). **Open:** apply 0047 in SQL editor before the admin tool can write; the generator (`generate_hub_content.py`) imports `anthropic` at module top, so the drift audit transitively needs it installed (fine in CI/Cursor, which install `scrapers/requirements.txt`).
+**Status (updated 2026-07-01):** All checkpoints 1–5 merged to `main` (`claude/amazing-hopper-5HquU` fully merged; admin review tool + drift audit live). Migration 0047 applied in SQL editor — owner confirmed migrations through 0059 have run except `0057_mo_universe.sql`. Pipeline is unblocked; no hub content generated yet. Note: the generator (`generate_hub_content.py`) imports `anthropic` at module top, so the drift audit transitively needs it installed (fine in CI/Cursor, which install `scrapers/requirements.txt`).
 
 **Source:** `supabase/migrations/0047_hub_content.sql`, `scrapers/generate_hub_content.py`, `src/lib/content/hubGate.ts`, `src/app/actions/hubContent.ts`, `src/app/admin/hub-content/`, `scripts/validate/hub_content_drift_check.py`.
 
