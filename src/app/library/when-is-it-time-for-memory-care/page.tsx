@@ -9,6 +9,7 @@ import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
+import { LibraryOfferCta } from "@/components/library/LibraryOfferCta";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -137,6 +138,15 @@ export default function WhenMemoryCarePage() {
             supervision, or medication administration — the themes that predict whether a marketing tour matches operational
             reality. Read paired narratives on each facility page before you sign a lease-level contract.
           </p>
+
+          <LibraryOfferCta
+            slug="when-is-it-time"
+            eyebrow="Free · Facility Records"
+            headline="Know what you're walking into before the tour."
+            sub="Get California memory care facilities' public inspection records — citations, complaint outcomes, and findings — emailed to you in plain language."
+            ctaLabel="Get the checklist →"
+            kind="email"
+          />
 
           <H2 id="tours">3 · Tours after you shortlist</H2>
           <p>

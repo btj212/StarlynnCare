@@ -9,6 +9,7 @@ import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
+import { LibraryOfferCta } from "@/components/library/LibraryOfferCta";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -295,6 +296,16 @@ export default function MemoryCareVsNursingHomePage() {
               If memory care is on the horizon at all, the financial planning conversation should start before the discharge, not after.
             </p>
           </Prose>
+
+          <LibraryOfferCta
+            slug="memory-care-vs-nursing-home"
+            eyebrow="Free · Contract Decoder"
+            headline="Before you sign — decode the admission agreement in plain language."
+            sub="Whether it's an RCFE memory care contract or a skilled nursing agreement, we map every fee escalation, discharge trigger, and arbitration clause."
+            ctaLabel="Decode the contract →"
+            kind="route"
+            href="/tools/contract-review?ref=library_memory-care-vs-nursing-home"
+          />
 
           <H2 id="tours">What to look for on a tour, by setting</H2>
           <Prose>
