@@ -156,8 +156,13 @@ def _map_severity(survey_category: str | None, description: str | None) -> tuple
     return 2, False
 
 
-def _source_url(facility_number: str, event_id: Any) -> str:
-    return f"https://health.mo.gov/seniors/ltcregulation/inspection/{facility_number}/{event_id}"
+def _source_url(facility_number: str, event_id: Any) -> None:
+    # The FOIA Excel has no public deep-link key. The prior scheme
+    # (health.mo.gov/seniors/ltcregulation/inspection/<fac>/<event>) was
+    # fabricated and 404s, so we emit no per-inspection link here. The real,
+    # working deep link (ShowMeLTC inspection_detail.aspx?insid=<insid>) is
+    # discovered and written by scrapers/mo_sod_ingest.py during its crawl.
+    return None
 
 
 # ---------------------------------------------------------------------------

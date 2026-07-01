@@ -10,6 +10,7 @@ import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
 import { AlwEmailCapture } from "@/components/editorial/AlwEmailCapture";
+import { LibraryOfferCta } from "@/components/library/LibraryOfferCta";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -262,6 +263,17 @@ export default function MediCalMemoryCarePage() {
                 </Link>
               </div>
             </div>
+
+            <LibraryOfferCta
+              slug="medi-cal-and-memory-care"
+              eyebrow="Free · Contract Decoder"
+              headline="Before you sign an ALW facility's admission agreement, decode it."
+              sub="We map every fee escalation, discharge trigger, and arbitration clause — so you know what you're committing to before the pen touches paper."
+              ctaLabel="Decode the contract →"
+              kind="route"
+              href="/tools/contract-review?ref=library_medi-cal-and-memory-care"
+            />
+
             <p>
               <strong className="font-medium text-ink">How a family gets in.</strong> A person must first qualify for
               full-scope Medi-Cal — the financial side. They must then meet the level-of-care criteria for nursing facility

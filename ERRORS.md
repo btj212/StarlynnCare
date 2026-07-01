@@ -223,6 +223,22 @@ The deficiencies query in the same page already had the correct pattern (chunked
 
 **Rule:** Any `supabase.from("inspections").select(…).in("facility_id", ids)` call without a `.limit()` is a latent truncation bug. Every such query must be chunked + limited.
 
+## 2026-06 — MO ShowMeLTC crawl died repeatedly on a single transient error
+
+**What didn't work:** Running the statewide `mo_sod_ingest.py crawl --from-db` (hours-long Playwright crawl) three ways that each lost all progress:
+1. `nohup python … &` backgrounded from the agent shell — the job was **orphaned/killed** when the launching shell exited; it never got past the first city.
+2. Harness-managed background, but with a **second Playwright crawl running concurrently** (a bounded test). Tearing down the test crawl killed shared browser processes → `write EPIPE` in Playwright's `PipeTransport.send`, killing the live run.
+3. Single clean run, but the per-city loop had **no exception handling**: a transient `Page.goto: net::ERR_ABORTED` on the portal (a network hiccup ~18 cities / 318 PDFs in) threw uncaught and ended the whole crawl. Because the pipeline was a `crawl && ocr && load` chain, OCR/load never ran.
+
+**What worked instead:**
+- Launch long jobs via the **harness-managed background** (`block_until_ms: 0`), never `nohup … &` from the agent shell.
+- **Never run two Playwright crawls at once** — tearing one down can kill the other's browser (EPIPE).
+- Make the crawl **resilient per city**: extracted `_crawl_one_city()`, wrapped each city in a try/except that rebuilds the browser (handles both EPIPE browser-death and ERR_ABORTED) and retries once, then moves on. The crawl is **resumable** via the manifest (`(facility_name, inspection_date)` pairs), so completed facilities are skipped and any skipped city is recovered on a later pass.
+
+**Source:** `scrapers/mo_sod_ingest.py` (`_crawl_one_city`, `crawl`); MEMORY.md "Missouri inspector narratives".
+
+---
+
 <!-- New entries go above this line. Format:
 
 ## YYYY-MM — Short title

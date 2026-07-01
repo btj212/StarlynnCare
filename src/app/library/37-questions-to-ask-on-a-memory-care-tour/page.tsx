@@ -8,6 +8,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
+import { LibraryOfferCta } from "@/components/library/LibraryOfferCta";
 import { buildArticleSchema, buildBreadcrumbList } from "@/lib/seo/schema";
 
 const PAGE_PATH = "/library/37-questions-to-ask-on-a-memory-care-tour";
@@ -175,6 +176,16 @@ export default function ThirtySevenQuestionsUniversalPage() {
             source="State assisted-living and memory-care regulators (CDSS, HHSC, OR DHS, WA DSHS, MN MDH); supplemented by CDC dementia-care safety guidance and clinical RN review"
             refreshed={DATE_PUBLISHED}
             note="Questions are framed to translate across state regulatory frameworks; specific staffing, disclosure, and reporting requirements vary by state — confirm the rules that apply to the facility you tour"
+          />
+
+          <LibraryOfferCta
+            slug="37-questions"
+            eyebrow="Free · Contract Decoder"
+            headline="After the tour — before you sign."
+            sub="We map the admission agreement: every fee escalation, discharge trigger, and arbitration clause, in plain language — so you know exactly what you're committing to."
+            ctaLabel="Decode the contract →"
+            kind="route"
+            href="/tools/contract-review?ref=library_37-questions"
           />
 
           <LibraryCta stateSlug="california" stateName="California" />

@@ -27,6 +27,8 @@ export const moProfileConfig: StateProfileConfig = {
   timelineWindowMonths: 24,
   formatSeverityTag: moFormatSeverityTag,
   formNameForDeficiency: () => null,
-  regulatorPortalUrl: "https://health.mo.gov/seniors/ltcregulation/",
+  regulatorPortalUrl: "https://healthapps.dhss.mo.gov/showmeltc/",
   rulebook: [],
+  // FOIA Excel gave us only the per-TAG standard text, not the SOD finding.
+  deficiencyTextIsRuleOnly: true,
 };

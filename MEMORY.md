@@ -6,6 +6,28 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-06 — Missouri inspector narratives: ShowMeLTC SOD/POC OCR pipeline
+
+**Context:** The FOIA Excel (`missourirecords.xlsx`) behind `mo_inspections_ingest.py` is TAG-level only — per cited tag it carries the standard *regulation* text in its `DESCRIPTION` column, NOT the inspector's finding. So `deficiencies.description` held the verbatim rule and `inspector_narrative` was null, and the profile's "Verbatim citation text" block showed the rule (always ending in the class code "I/II"), never what the facility did. We had real inspection *events/citations*, not the prose finding.
+
+**Decided:**
+- **Real findings live in DHSS's Statement of Deficiencies & Plan of Correction** (CMS-2567-style form) on the Show Me Long Term Care portal (`https://healthapps.dhss.mo.gov/showmeltc/`), as **scanned image PDFs** (`ConvertedTiff.pdf`, 0 extractable text → OCR required). Coverage: deficiencies dated after Jan 1 2019.
+- **Portal is ASP.NET WebForms** (all postbacks to `./`, encrypted ViewState, JS-disabled submit). Raw `requests` POSTs are rejected → **drive it with Playwright** (same lesson as AZ). Flow: select `#ContentPlaceHolder1_ddlCity` → force-enable + click `btnShowMeResults` → `gvSearchResults` grid (`Select$N` postback per facility) → facility detail `gvInspections` grid (date link → `inspection_detail.aspx?insid=...`; **"STATE POC" link downloads the SOD/POC PDF**). Selecting the city can itself autopostback (destroys JS context) — guard every step and only click the button if `Select$` links aren't already present.
+- **Join strategy (no fragile tag-code mapping):** the SOD header yields provider id (= `facilities.external_id`, **5–6 digits** — `{5,6}` bound avoids capturing the 4-digit street number 1520 / year 2022) + survey date. Within an inspection, each SOD tag block opens with the same *requirement* text we already store in `deficiencies.description`, so **fuzzy-match (rapidfuzz `token_set_ratio`, threshold 70) the SOD requirement → the deficiency row** and attach its narrative. Inspection date match uses the portal's `gvInspections` date (manifest_date), not the OCR'd date. Facility falls back to name+city ILIKE when provider id doesn't OCR.
+- **Parsing anchors (OCR-tolerant):** evidence marker on the stable tail `"is not met as evidenced by"` (OCR mangles "This regulation"); narrative anchored on `"Based on "` (every SOD finding opens this way — skips the "Class X" token and interleaved POC text on older filled forms); class regex tolerant of `Il`/`ll`/`ii` → normalized; dedupe tag blocks by rule_cite keeping the longest narrative.
+- **No migration needed** — `deficiencies` already has `inspector_narrative`, `class`, `residents_affected`, `harm_description`, `plan_of_correction`. Load writes `inspector_narrative` (+ class/residents) per deficiency and sets `inspections.raw_data.narrative` to the full SOD text (so `summarize_inspections.py` can generate the plain-language summary).
+- **UI already prefers `inspector_narrative` over `description`**, so loaded findings light up automatically. Until then, the `moProfileConfig.deficiencyTextIsRuleOnly` flag relabels the rule-only block "Regulation cited" (added same change) so we never imply the rule is the finding. After load, rows with a narrative auto-revert to "Verbatim citation text"; rows still without one (pre-2019, unmatched) stay honestly labeled.
+
+**Pipeline:** `scrapers/mo_sod_ingest.py` with three modes — `crawl` (Playwright → download PDFs + `data/mo_sod/manifest.jsonl`), `ocr` (Tesseract `/opt/homebrew/bin/tesseract` + per-tag parse → `parsed.jsonl`), `load` (DB upsert). PDFs/manifests gitignored under `scrapers/data/mo_sod/`.
+
+**Verified:** End-to-end on Fremont Senior Living (`mo28782`, Springfield) — 7 SOD PDFs crawled, OCR'd, and parsed into real narratives across 2019–2025, incl. the two 12/17/2024 complaint findings (notification + medication system) that previously rendered only as rule text. Tesseract is clean on these typed forms. Load not yet run against prod DB (needs `DATABASE_URL`).
+
+**Rejected:** Raw `requests`/WebForms ViewState replay (server rejects). OCR'ing the narrow (X4) prefix-tag column to map tags (unreliable; fuzzy requirement match is robust). Vision-LLM OCR (Tesseract is accurate on these typed scans and free; reserve LLM for the plain-language summary).
+
+**Source:** `cursor/fix-mo-severity-mapping`; `scrapers/mo_sod_ingest.py`, `src/lib/states/MO/profileConfig.ts`, `src/components/facility/profile/FacilityFullInspections.tsx`.
+
+---
+
 ## 2026-06 — AZ perf: React.cache() + rail de-fan-out + snapshot cache
 
 **Decided (PR #41):**
@@ -100,7 +122,7 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 **Rejected:** TipTap/WYSIWYG (drops data-stat spans); a live-recompute RPC at approval (duplicates the drift audit's job + a second copy of the aggregation SQL); thresholded drift (would let a stale-but-close number render).
 
-**Status:** Checkpoints 1–3 on `main` (deployed; loader falls back to hand-authored intros until content exists). Checkpoints 4–5 on `claude/amazing-hopper-5HquU` (preview). **Open:** apply 0047 in SQL editor before the admin tool can write; the generator (`generate_hub_content.py`) imports `anthropic` at module top, so the drift audit transitively needs it installed (fine in CI/Cursor, which install `scrapers/requirements.txt`).
+**Status (updated 2026-07-01):** All checkpoints 1–5 merged to `main` (`claude/amazing-hopper-5HquU` fully merged; admin review tool + drift audit live). Migration 0047 applied in SQL editor — owner confirmed migrations through 0059 have run except `0057_mo_universe.sql`. Pipeline is unblocked; no hub content generated yet. Note: the generator (`generate_hub_content.py`) imports `anthropic` at module top, so the drift audit transitively needs it installed (fine in CI/Cursor, which install `scrapers/requirements.txt`).
 
 **Source:** `supabase/migrations/0047_hub_content.sql`, `scrapers/generate_hub_content.py`, `src/lib/content/hubGate.ts`, `src/app/actions/hubContent.ts`, `src/app/admin/hub-content/`, `scripts/validate/hub_content_drift_check.py`.
 

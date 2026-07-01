@@ -10,3 +10,8 @@ tx_facility_lookup.csv
 pa_hsd_full.xlsx
 pa_long_term_living.csv
 pa_memory_care_only.csv
+
+# MO ShowMeLTC SOD/POC scanned PDFs + crawl/OCR manifests, generated locally
+# by mo_sod_ingest.py (crawl/ocr modes). Scanned documents, not committed.
+mo_sod/
+
