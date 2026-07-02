@@ -45,9 +45,10 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Run 28553708571 (2026-07-01T23:08 UTC, push-triggered evening ingest after cron probe):
-#   OR +6 max=2026-06-30; MN +6 max=2026-06-24.
-# Cron probe 2026-07-01T23:02 UTC flagged these before ingest ran.
+# Run 28557411789 (2026-07-02T00:42 UTC, push-triggered after morning schedule):
+#   all matrix states +0; OR max=2026-06-30; MN max=2026-06-24.
+# Cron probe 2026-07-02T23:02 UTC flagged new source data since morning ingest:
+#   OR source max 2026-07-01 (+2 rows); MN insertDate max 2026-07-02 (+9 events).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 6, 26),
