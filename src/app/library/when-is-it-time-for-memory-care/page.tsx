@@ -141,11 +141,12 @@ export default function WhenMemoryCarePage() {
 
           <LibraryOfferCta
             slug="when-is-it-time"
-            eyebrow="Free · Facility Records"
-            headline="Know what you're walking into before the tour."
-            sub="Get California memory care facilities' public inspection records — citations, complaint outcomes, and findings — emailed to you in plain language."
-            ctaLabel="Get the checklist →"
+            eyebrow="Free · Readiness Guide"
+            headline="Not sure it's time? Get the family conversation guide."
+            sub="The 8 safety signs that shift the decision — plus a one-page script for the sibling conversation, so you can name what you're seeing without it becoming a fight."
+            ctaLabel="Send me the guide →"
             kind="email"
+            magnet="readiness_guide"
           />
 
           <H2 id="tours">3 · Tours after you shortlist</H2>

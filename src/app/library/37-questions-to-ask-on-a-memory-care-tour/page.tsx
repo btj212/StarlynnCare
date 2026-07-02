@@ -172,6 +172,16 @@ export default function ThirtySevenQuestionsUniversalPage() {
           <ChecklistSection title="During the tour" id="during" items={DURING} offset={BEFORE.length} />
           <ChecklistSection title="After you leave" id="after" items={AFTER} offset={BEFORE.length + DURING.length} />
 
+          <LibraryOfferCta
+            slug="37-questions-scoresheet"
+            eyebrow="Free · Printable Tour Scoresheet"
+            headline="Take the 37 questions into the building with you."
+            sub="Formatted as a one-page scoresheet — space to note the answers, flag evasive responses, and rate each building side-by-side when you tour more than one. Print it or pull it up on your phone."
+            ctaLabel="Send me the scoresheet →"
+            kind="email"
+            magnet="tour_scoresheet"
+          />
+
           <DataFootnote
             source="State assisted-living and memory-care regulators (CDSS, HHSC, OR DHS, WA DSHS, MN MDH); supplemented by CDC dementia-care safety guidance and clinical RN review"
             refreshed={DATE_PUBLISHED}

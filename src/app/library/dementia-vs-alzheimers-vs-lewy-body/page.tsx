@@ -9,6 +9,7 @@ import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
+import { LibraryOfferCta } from "@/components/library/LibraryOfferCta";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -147,6 +148,16 @@ export default function DementiaTypesPage() {
           </p>
 
           <DataFootnote source="General medicine education · consult neurologists for diagnosis" refreshed={DATE_PUBLISHED} />
+
+          <LibraryOfferCta
+            slug="dementia-vs-alzheimers"
+            eyebrow="Free · 90-Day Roadmap"
+            headline="Just got the diagnosis? The first 90 days, mapped."
+            sub="What to do in weeks 1–4 (safety, legal, clinical), weeks 5–8 (facility research), and weeks 9–12 (narrowing and touring) — so nothing critical falls through the cracks while everyone is still in shock."
+            ctaLabel="Send me the roadmap →"
+            kind="email"
+            magnet="diagnosis_roadmap"
+          />
 
           <div className="mt-16 border-t border-paper-rule pt-12 space-y-6">
             <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust">
