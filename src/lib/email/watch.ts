@@ -122,6 +122,42 @@ export async function sendRecordsEmail({
 }
 
 /**
+ * Library email magnets — sends a specific checklist/guide based on the
+ * magnet key. Template IDs live server-side in env vars; the client only
+ * passes the magnet key string, never a template ID.
+ *
+ * Falls back silently when the env var is not yet set so the code ships
+ * safely before Loops templates exist.
+ */
+export async function sendMagnetEmail({
+  to,
+  magnet,
+}: {
+  to: string;
+  magnet: string;
+}): Promise<void> {
+  const MAGNET_ENV: Record<string, string> = {
+    crisis_checklist: "LOOPS_MAGNET_CRISIS_ID",
+    readiness_guide: "LOOPS_MAGNET_READINESS_ID",
+    diagnosis_roadmap: "LOOPS_MAGNET_ROADMAP_ID",
+    redflags_cheatsheet: "LOOPS_MAGNET_REDFLAGS_ID",
+    tour_scoresheet: "LOOPS_MAGNET_SCORESHEET_ID",
+    alw_checklist: "LOOPS_MAGNET_ALW_ID",
+  };
+  const envKey = MAGNET_ENV[magnet];
+  if (!envKey) {
+    console.error(`[magnet-email] unknown magnet key "${magnet}" — skipping`);
+    return;
+  }
+  const transactionalId = process.env[envKey];
+  if (!transactionalId) {
+    // Template not yet created in Loops — fall back to Loops welcome automation
+    return;
+  }
+  await sendLoopsTransactional(to, transactionalId, {});
+}
+
+/**
  * Tour prep email — sends the facility-specific question checklist.
  * Sent when a visitor converts on the "Get a tour-prep pack" offer.
  */

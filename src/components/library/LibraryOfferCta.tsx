@@ -23,6 +23,12 @@ interface LibraryOfferCtaProps {
   kind: Kind;
   /** Required when kind === "route" */
   href?: string;
+  /**
+   * Server-side magnet key. When set, /api/watch/digest will fire a
+   * specific transactional email (e.g. "tour_scoresheet", "crisis_checklist").
+   * Only used when kind === "email".
+   */
+  magnet?: string;
 }
 
 type FormState = "idle" | "submitting" | "success" | "error";
@@ -35,6 +41,7 @@ export function LibraryOfferCta({
   ctaLabel,
   kind,
   href,
+  magnet,
 }: LibraryOfferCtaProps) {
   const variant = `library_${slug}`;
   const source = variant;
@@ -70,12 +77,13 @@ export function LibraryOfferCta({
     );
   }
 
-  return <LibraryEmailCapture variant={variant} source={source} eyebrow={eyebrow} headline={headline} sub={sub} ctaLabel={ctaLabel} />;
+  return <LibraryEmailCapture variant={variant} source={source} magnet={magnet} eyebrow={eyebrow} headline={headline} sub={sub} ctaLabel={ctaLabel} />;
 }
 
 function LibraryEmailCapture({
   variant,
   source,
+  magnet,
   eyebrow,
   headline,
   sub,
@@ -83,6 +91,7 @@ function LibraryEmailCapture({
 }: {
   variant: string;
   source: string;
+  magnet?: string;
   eyebrow: string;
   headline: string;
   sub: string;
@@ -101,7 +110,12 @@ function LibraryEmailCapture({
       const res = await fetch("/api/watch/digest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmed, source, journeyStage: "research" }),
+        body: JSON.stringify({
+          email: trimmed,
+          source,
+          journeyStage: "research",
+          ...(magnet ? { magnet } : {}),
+        }),
       });
       if (res.ok) {
         emitOfferConvert(variant);

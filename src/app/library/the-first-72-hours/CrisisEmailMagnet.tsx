@@ -22,6 +22,7 @@ export function CrisisEmailMagnet() {
           email: email.trim(),
           source: "crisis_playbook",
           journeyStage: "crisis",
+          magnet: "crisis_checklist",
           [HONEYPOT_FIELD]: "",
           [HONEYPOT_TS_FIELD]: String(Date.now()),
         }),
@@ -42,18 +43,18 @@ export function CrisisEmailMagnet() {
       style={{ backgroundColor: "var(--color-teal)" }}
     >
       <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>
-        Free weekly digest
+        Free · 72-hour placement checklist
       </p>
       <p className="font-[family-name:var(--font-display)] text-[24px] leading-snug text-white mb-2">
-        Navigating a placement? We&rsquo;ll send what&rsquo;s worth reading.
+        Overwhelmed right now? Get the checklist.
       </p>
       <p className="font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] mb-6" style={{ color: "rgba(255,255,255,0.7)" }}>
-        New inspection findings, rights updates, and guides — emailed free. No placement agents, ever.
+        72-hour placement checklist + discharge rights one-pager — the exact steps, in order, with the questions to ask at each stage. Emailed immediately, free.
       </p>
 
       {state === "done" ? (
         <p className="font-[family-name:var(--font-mono)] text-[13px] tracking-[0.06em] text-white">
-          ✓ You&apos;re on the list.
+          ✓ Check your inbox — the checklist is on its way.
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">

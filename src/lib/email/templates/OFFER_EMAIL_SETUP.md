@@ -72,6 +72,125 @@ Add all three to **Production** and **Preview** environments:
 
 ---
 
+## Library email magnets (Templates 4–9)
+
+These are sent when a visitor submits their email on a library article CTA.
+The `magnet` field in the POST body determines which template fires.
+All send via `POST /api/watch/digest` with `magnet: "<key>"`.
+
+No variables are sent from the API — all content is embedded in the template.
+Use `{unsubscribeUrl}` in your template for the unsubscribe link.
+
+---
+
+### Template 4: 72-hour crisis checklist (`LOOPS_MAGNET_CRISIS_ID`)
+
+**HTML file:** `magnet-crisis-checklist.html`
+
+**Subject:** `Your 72-hour placement checklist`
+
+**Preview text:** `The steps, in order — for when a hospital social worker says you have 72 hours.`
+
+**Steps:**
+1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-crisis-checklist.html`
+2. Subject: `Your 72-hour placement checklist`
+3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_CRISIS_ID`
+
+---
+
+### Template 5: Readiness guide + family conversation script (`LOOPS_MAGNET_READINESS_ID`)
+
+**HTML file:** `magnet-readiness-guide.html`
+
+**Subject:** `The readiness signs — and how to talk about them`
+
+**Preview text:** `8 safety signals + a script for the sibling conversation.`
+
+**Steps:**
+1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-readiness-guide.html`
+2. Subject: `The readiness signs — and how to talk about them`
+3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_READINESS_ID`
+
+---
+
+### Template 6: First 90 days diagnosis roadmap (`LOOPS_MAGNET_ROADMAP_ID`)
+
+**HTML file:** `magnet-diagnosis-roadmap.html`
+
+**Subject:** `The first 90 days after a dementia diagnosis — mapped`
+
+**Preview text:** `Weeks 1–4 safety & legal. Weeks 5–8 facility research. Weeks 9–12 narrow & decide.`
+
+**Steps:**
+1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-diagnosis-roadmap.html`
+2. Subject: `The first 90 days after a dementia diagnosis — mapped`
+3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_ROADMAP_ID`
+
+---
+
+### Template 7: Red flags cheat sheet (`LOOPS_MAGNET_REDFLAGS_ID`)
+
+**HTML file:** `magnet-redflags-cheatsheet.html`
+
+**Subject:** `10 red flags in inspection reports — the cheat sheet`
+
+**Preview text:** `What experienced families watch for — and what to say when they find it.`
+
+**Steps:**
+1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-redflags-cheatsheet.html`
+2. Subject: `10 red flags in inspection reports — the cheat sheet`
+3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_REDFLAGS_ID`
+
+---
+
+### Template 8: Tour scoresheet (`LOOPS_MAGNET_SCORESHEET_ID`)
+
+**HTML file:** `magnet-tour-scoresheet.html`
+
+**Subject:** `Your memory care tour scoresheet`
+
+**Preview text:** `Pull this up on your phone or print it. Take notes in the building.`
+
+**Steps:**
+1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-tour-scoresheet.html`
+2. Subject: `Your memory care tour scoresheet`
+3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_SCORESHEET_ID`
+
+---
+
+### Template 9: Medi-Cal / ALW checklist (`LOOPS_MAGNET_ALW_ID`)
+
+**HTML file:** `magnet-alw-checklist.html`
+
+**Subject:** `Your Medi-Cal / ALW memory care checklist`
+
+**Preview text:** `County participation, waitlist steps, SSI room-and-board rates, and the questions to ask.`
+
+**Steps:**
+1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-alw-checklist.html`
+2. Subject: `Your Medi-Cal / ALW memory care checklist`
+3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_ALW_ID`
+
+---
+
+## Vercel env vars checklist (full list)
+
+Add all to **Production** and **Preview** environments:
+
+- [ ] `LOOPS_RECORDS_EMAIL_ID`
+- [ ] `LOOPS_TOUR_EMAIL_ID`
+- [ ] `LOOPS_CONTRACT_EMAIL_ID`
+- [ ] `LOOPS_MAGNET_CRISIS_ID`
+- [ ] `LOOPS_MAGNET_READINESS_ID`
+- [ ] `LOOPS_MAGNET_ROADMAP_ID`
+- [ ] `LOOPS_MAGNET_REDFLAGS_ID`
+- [ ] `LOOPS_MAGNET_SCORESHEET_ID`
+- [ ] `LOOPS_MAGNET_ALW_ID`
+
+**Priority order:** Start with `LOOPS_MAGNET_CRISIS_ID` and `LOOPS_MAGNET_SCORESHEET_ID` — highest emotional intent. All templates fall back silently to the Loops welcome automation until env vars are set, so the code is safe to deploy before templates are created.
+
+---
+
 ## Loops automations (configure after templates are live)
 
 | Automation | Trigger condition | Wait | Subject |
