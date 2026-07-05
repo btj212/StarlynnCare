@@ -1,0 +1,90 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all padding="0" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#F4EEE2">
+    <mj-raw>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F4EEE2;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="border-bottom:2px solid #1A2620;padding-bottom:12px;">
+              <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#B8533A;">StarlynnCare · Free Resource · California</p>
+              <h1 style="margin:12px 0 0;font-family:Georgia,serif;font-size:28px;font-weight:normal;line-height:1.2;color:#1A2620;">Medi-Cal / ALW memory care checklist</h1>
+              <p style="margin:8px 0 0;font-family:'Courier New',Courier,monospace;font-size:11px;color:#4a5568;line-height:1.6;">County participation, waitlist steps, SSI room-and-board rates, and the facility questions to ask — in one printable reference.</p>
+            </td>
+          </tr>
+
+          <!-- Key facts box -->
+          <tr>
+            <td style="padding-top:28px;">
+              <div style="background-color:#1F5C5A;padding:20px 24px;margin-bottom:28px;">
+                <p style="margin:0 0 10px;font-family:'Courier New',Courier,monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.6);">What is the ALW program?</p>
+                <p style="margin:0;font-family:Georgia,serif;font-size:15px;color:#fff;line-height:1.6;">The Assisted Living Waiver (ALW) is a California Medi-Cal program that pays for residential care in an RCFE for people who would otherwise qualify for nursing home care. Spots are limited by county and facility — not all counties participate, and not all participating facilities have open slots. The program pays a daily rate directly to the facility; the resident's SSI covers the room-and-board portion.</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Checklist Part 1 -->
+          <tr>
+            <td>
+              <h2 style="margin:0 0 12px;font-family:Georgia,serif;font-size:18px;font-weight:normal;color:#1A2620;border-left:3px solid #B8533A;padding-left:12px;">Step 1 · Confirm county participation</h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Look up your county on the DHCS ALW county list (dhcs.ca.gov) — not all counties participate</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Call the county's Medi-Cal managed care plan to ask if there are open ALW spots in your area</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Confirm the person is currently enrolled in or eligible for full-scope Medi-Cal (not just QMB or partial)</td></tr>
+              </table>
+
+              <h2 style="margin:0 0 12px;font-family:Georgia,serif;font-size:18px;font-weight:normal;color:#1A2620;border-left:3px solid #B8533A;padding-left:12px;">Step 2 · Level of care assessment</h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Request a Medi-Cal level of care (LOC) assessment — the person must meet nursing facility level of care to qualify</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Get a copy of the assessment in writing — you'll need it when applying to facilities</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Ask: is the assessment current? (LOC assessments typically expire after 12 months)</td></tr>
+              </table>
+
+              <h2 style="margin:0 0 12px;font-family:Georgia,serif;font-size:18px;font-weight:normal;color:#1A2620;border-left:3px solid #B8533A;padding-left:12px;">Step 3 · Finding and qualifying a facility</h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Ask every facility you contact: "Do you have an ALW contract with Medi-Cal?"</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Ask: "Do you currently have an open ALW bed?" (contracts don't guarantee availability)</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Confirm the room-and-board rate vs. the resident's SSI income — any shortfall is the resident's responsibility</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Ask: what does the ALW rate cover vs. what costs extra? (transportation, personal care supplies, activities)</td></tr>
+              </table>
+
+              <h2 style="margin:0 0 12px;font-family:Georgia,serif;font-size:18px;font-weight:normal;color:#1A2620;border-left:3px solid #B8533A;padding-left:12px;">Step 4 · Contract and admission agreement</h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Request the admission agreement before signing anything — read it, don't skim it</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Flag any fee escalation clauses — these sometimes appear in ALW agreements despite the fixed Medi-Cal rate</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Look for the discharge policy — what happens if Medi-Cal eligibility lapses or the program is discontinued?</td></tr>
+                <tr><td style="padding:6px 0 6px 20px;font-family:Georgia,serif;font-size:15px;color:#2d3748;line-height:1.6;">☐ Ask whether there is a mandatory arbitration clause — you can sometimes negotiate to remove it</td></tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td style="padding-top:28px;padding-bottom:36px;border-top:1px solid #d4c9b5;">
+              <p style="margin:0 0 12px;font-family:'Courier New',Courier,monospace;font-size:11px;color:#4a5568;">Look up facilities' inspection records in California:</p>
+              <a href="https://starlynncare.com/california/facilities" style="display:inline-block;font-family:'Courier New',Courier,monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#fff;background-color:#1F5C5A;padding:12px 20px;text-decoration:none;">Browse California facilities by inspection record →</a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="border-top:1px solid #d4c9b5;padding-top:20px;">
+              <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:10px;color:#7a8a7a;line-height:1.7;">StarlynnCare · Free · No referral commissions · Data sourced from state regulator inspection records<br>
+              No spam · <a href="{unsubscribeUrl}" style="color:#7a8a7a;">Unsubscribe</a></p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+    </mj-raw>
+  </mj-body>
+</mjml>

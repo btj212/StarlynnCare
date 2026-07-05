@@ -1,14 +1,26 @@
 # Offer email templates — Loops setup
 
-Same upload process as `LOOPS_WATCH_WELCOME_SETUP.md`. One zip per template.
+## How to upload a template to Loops
+
+The **Code tab** in Loops expects **MJML format**, not plain HTML. Use the `.mjml` files (not the `.html` files) for Code tab uploads:
+
+1. Loops → Transactional → Create → give it a name
+2. Click the **Code** tab
+3. Create a zip containing **one file** named `index.mjml` (use the `.mjml` file from this folder)
+4. Click "Select file" and upload the zip
+5. Set the subject line, Publish → copy the template ID → add to Vercel env vars
+
+> **If you paste the `.html` file into the Code tab, Loops shows "Body is missing"** — this is because Code tab expects MJML, not HTML. The `.mjml` files in this folder are the correct upload format.
 
 ## Variable syntax (same rule for all templates)
 
-| Editor mode | Syntax |
-|-------------|--------|
-| Plain / Styled | `{variableName}` |
-| Code / MJML | `{DATA_VARIABLE:variableName}` |
-| Subject line | `{variableName}` |
+
+| Editor mode    | Syntax                         |
+| -------------- | ------------------------------ |
+| Plain / Styled | `{variableName}`               |
+| Code / MJML    | `{DATA_VARIABLE:variableName}` |
+| Subject line   | `{variableName}`               |
+
 
 ---
 
@@ -24,6 +36,7 @@ Same upload process as `LOOPS_WATCH_WELCOME_SETUP.md`. One zip per template.
 `statsLine`, `severityRankLine`, `unsubscribeUrl`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → upload `records-email-loops.zip`
 2. Subject: `Your inspection record for {facilityName}`
 3. Publish → copy ID → Vercel env var `LOOPS_RECORDS_EMAIL_ID`
@@ -40,6 +53,7 @@ Same upload process as `LOOPS_WATCH_WELCOME_SETUP.md`. One zip per template.
 `facilityName`, `facilityUrl`, `cityState`, `tourChecklistText`, `topCitedSummary`, `unsubscribeUrl`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → upload `tour-email-loops.zip`
 2. Subject: `Your tour checklist for {facilityName}`
 3. Publish → copy ID → Vercel env var `LOOPS_TOUR_EMAIL_ID`
@@ -56,6 +70,7 @@ Same upload process as `LOOPS_WATCH_WELCOME_SETUP.md`. One zip per template.
 `unsubscribeUrl`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → upload `contract-ack-loops.zip`
 2. Subject: `We got your request — here's how to send your contract`
 3. Publish → copy ID → Vercel env var `LOOPS_CONTRACT_EMAIL_ID`
@@ -92,6 +107,7 @@ Use `{unsubscribeUrl}` in your template for the unsubscribe link.
 **Preview text:** `The steps, in order — for when a hospital social worker says you have 72 hours.`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-crisis-checklist.html`
 2. Subject: `Your 72-hour placement checklist`
 3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_CRISIS_ID`
@@ -107,6 +123,7 @@ Use `{unsubscribeUrl}` in your template for the unsubscribe link.
 **Preview text:** `8 safety signals + a script for the sibling conversation.`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-readiness-guide.html`
 2. Subject: `The readiness signs — and how to talk about them`
 3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_READINESS_ID`
@@ -122,6 +139,7 @@ Use `{unsubscribeUrl}` in your template for the unsubscribe link.
 **Preview text:** `Weeks 1–4 safety & legal. Weeks 5–8 facility research. Weeks 9–12 narrow & decide.`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-diagnosis-roadmap.html`
 2. Subject: `The first 90 days after a dementia diagnosis — mapped`
 3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_ROADMAP_ID`
@@ -137,6 +155,7 @@ Use `{unsubscribeUrl}` in your template for the unsubscribe link.
 **Preview text:** `What experienced families watch for — and what to say when they find it.`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-redflags-cheatsheet.html`
 2. Subject: `10 red flags in inspection reports — the cheat sheet`
 3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_REDFLAGS_ID`
@@ -152,6 +171,7 @@ Use `{unsubscribeUrl}` in your template for the unsubscribe link.
 **Preview text:** `Pull this up on your phone or print it. Take notes in the building.`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-tour-scoresheet.html`
 2. Subject: `Your memory care tour scoresheet`
 3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_SCORESHEET_ID`
@@ -167,6 +187,7 @@ Use `{unsubscribeUrl}` in your template for the unsubscribe link.
 **Preview text:** `County participation, waitlist steps, SSI room-and-board rates, and the questions to ask.`
 
 **Steps:**
+
 1. Loops → Transactional → Create → Code tab → paste HTML from `magnet-alw-checklist.html`
 2. Subject: `Your Medi-Cal / ALW memory care checklist`
 3. Publish → copy ID → Vercel env var `LOOPS_MAGNET_ALW_ID`
@@ -193,12 +214,14 @@ Add all to **Production** and **Preview** environments:
 
 ## Loops automations (configure after templates are live)
 
-| Automation | Trigger condition | Wait | Subject |
-|---|---|---|---|
-| Watch follow-up | `userGroup = offer_watch` | +7 days | "Your watched facility — a quick update" |
-| Records follow-up | `userGroup = offer_records` | +7 days | "Did the record answer your questions?" |
-| Tour follow-up | `userGroup = offer_tour` | +3 days | "How did the tour go?" |
-| Contract reminder | `userGroup = offer_contract` | +48 hours | "Still waiting on your contract PDF" |
+
+| Automation        | Trigger condition            | Wait      | Subject                                  |
+| ----------------- | ---------------------------- | --------- | ---------------------------------------- |
+| Watch follow-up   | `userGroup = offer_watch`    | +7 days   | "Your watched facility — a quick update" |
+| Records follow-up | `userGroup = offer_records`  | +7 days   | "Did the record answer your questions?"  |
+| Tour follow-up    | `userGroup = offer_tour`     | +3 days   | "How did the tour go?"                   |
+| Contract reminder | `userGroup = offer_contract` | +48 hours | "Still waiting on your contract PDF"     |
+
 
 All four trigger on: **Contact created or updated** → filter by `userGroup` property.
 
@@ -209,3 +232,4 @@ All four trigger on: **Contact created or updated** → filter by `userGroup` pr
 - Paste raw HTML into the Styled block editor (renders as escaped tags)
 - Use `{{facilityName}}` — Loops requires single braces
 - Reuse the watch welcome transactional ID for any of these
+
