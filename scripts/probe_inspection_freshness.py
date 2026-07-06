@@ -45,25 +45,25 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Run 28483922249 (2026-07-01T00:02 UTC, scheduled nightly ingest):
-#   AZ +5 max=2026-06-29; PA +3 max=2026-08-28; OR +15 max=2026-06-26; others +0.
-# Cron probe 2026-07-01T23:02 UTC flagged OR source max 2026-06-30 (3 rows after baseline),
-#   MN resolvedDate max 2026-06-24 (+5 after baseline), insertDate max 2026-07-01 (+9 after baseline).
+# Run 28722515007 (2026-07-04T23:04 UTC, push-triggered after cron probe 2026-07-04T23:01):
+#   MN +4 max=2026-06-24; AZ +3 max=2026-07-01; OR/IL/PA/UT/CA/TX +0; WA skipped on push.
+# Cron probe 2026-07-04T23:01 UTC flagged MN insertDate max 2026-07-04 (+6 events vs baseline 2026-07-03).
+# AZ delta found during ingest (probe requires DATABASE_URL for AZ).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 6, 26),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 6, 26),
+    "OR": date(2026, 7, 1),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 6, 16),
-    "UT": date(2026, 6, 8),
+    "MN": date(2026, 6, 24),
+    "UT": date(2026, 6, 9),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 6, 29),
+    "AZ": date(2026, 7, 1),
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 1)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 4)
 
 
 def _run(cmd: list[str], *, label: str) -> int:

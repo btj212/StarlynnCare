@@ -66,7 +66,6 @@ HUB_PAGES = [
     "/arizona/maricopa",
     "/arizona/phoenix",
     "/missouri",
-    "/missouri/st-louis",
 ]
 
 FACILITY_FALLBACKS = [
