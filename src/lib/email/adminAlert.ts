@@ -1,11 +1,14 @@
 import { canonicalFor } from "@/lib/seo/canonical";
 
 const TYPE_LABEL: Record<string, string> = {
-  facility_watch:  "Facility Watch",
-  area_watch:      "Area Watch",
-  listing_report:  "Listing Report",
-  review:          "Review",
-  waitlist:        "Waitlist",
+  facility_watch:    "Facility Watch",
+  area_watch:        "Area Watch",
+  digest_subscriber: "Library Magnet / Digest",
+  shortlist_watch:   "Shortlist",
+  contract_review:   "Contract Review",
+  listing_report:    "Listing Report",
+  review:            "Review",
+  waitlist:          "Waitlist",
 };
 
 export async function sendAdminAlert({
