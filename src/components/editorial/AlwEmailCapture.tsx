@@ -21,7 +21,7 @@ export function AlwEmailCapture() {
       const res = await fetch("/api/watch/digest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmed, source: "alw_article", stateCode: "CA" }),
+        body: JSON.stringify({ email: trimmed, source: "alw_article", stateCode: "CA", magnet: "alw_checklist" }),
       });
       setState(res.ok ? "success" : "error");
     } catch {

@@ -13,6 +13,7 @@ import {
 } from "@/lib/seo/schema";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
+import { LibraryOfferCta } from "@/components/library/LibraryOfferCta";
 
 const PAGE_PATH = "/library/type-a-vs-type-b-deficiencies-explained";
 const canonicalUrl = canonicalFor(PAGE_PATH);
@@ -276,6 +277,16 @@ export default function TypeATypeBPage() {
           </ul>
 
           <H2 id="on-starlynn">How StarlynnCare uses deficiency data</H2>
+
+          <LibraryOfferCta
+            slug="type-a-type-b"
+            eyebrow="Free · Red Flags Cheat Sheet"
+            headline="10 red flags in inspection reports — the cheat sheet."
+            sub="The specific citation patterns that experienced families watch for: repeat violations in the same area, Type A findings from the last 24 months, overnight supervision gaps, and what to say when you bring them up on a tour."
+            ctaLabel="Send me the cheat sheet →"
+            kind="email"
+            magnet="redflags_cheatsheet"
+          />
           <Prose>
             <p>
               Each facility profile on StarlynnCare displays the count and type of deficiencies
