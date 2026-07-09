@@ -45,26 +45,25 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Run 28907001897 (2026-07-07T23:54 UTC, scheduled nightly ingest):
-#   MN +5 max=2026-06-30; AZ +13 max=2026-07-06; PA +11; OR/IL/UT/CA/TX/WA +0.
-# Cron probe 2026-07-08T23:01 UTC flagged OR source max 2026-07-06 (+5 days vs DB 2026-07-01)
-#   and MN insertDate max 2026-07-08 (+4 events vs baseline 2026-07-04).
-# CA/TX/WA/UT/IL/PA/AZ/MO: no new source data via probe (DB-backed states need workflow ingest).
+# Run 28981794558 (2026-07-08T23:04 UTC, push-triggered after cron probe 2026-07-08T23:01):
+#   OR +13 max=2026-07-06; MN +5 max=2026-06-30; PA +4; UT +1 max=2026-06-16; AZ +6 max=2026-07-07;
+#   CA/IL/TX +0; WA skipped on push (schedule covers WA).
+# Cron probe 2026-07-08T23:01 UTC flagged OR source max 2026-07-06 and MN insertDate max 2026-07-08.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 6, 26),
+    "CA": date(2026, 7, 2),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 1),
+    "OR": date(2026, 7, 6),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 6, 24),
-    "UT": date(2026, 6, 9),
+    "MN": date(2026, 6, 30),
+    "UT": date(2026, 6, 16),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 7, 1),
+    "AZ": date(2026, 7, 7),
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 4)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 8)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
