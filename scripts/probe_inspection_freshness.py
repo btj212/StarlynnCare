@@ -45,12 +45,13 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
-# Run 28985701456 (2026-07-09T00:38 UTC, push after schedule 28984356265):
-#   Schedule 28984356265: all states +0 (MN baseline max=2026-06-30 unchanged).
+# Run 29056324608 (2026-07-09T23:03 UTC, push after cron probe 2026-07-09T23:00):
+#   MN +3 inspections (Charter House, Gardens at St Gertrudes, Our Caring Hands ALRC:1186);
+#   max=2026-06-30 unchanged; Delight Healthcare (non-ALRC) skipped.
+# Run 28985701456 (2026-07-09T00:38 UTC): schedule all states +0.
 # Run 28981794558 (2026-07-08T23:04 UTC): OR +13 max=2026-07-06; MN +5; PA +4; UT +1; AZ +6.
 # Cron probe 2026-07-09T23:00 UTC: OR source max=2026-07-06 (no change); MN insertDate max=2026-07-09
-#   (+4 survey findings posted today: Delight Healthcare, Our Caring Hands, Gardens at St Gertrudes, Charter House).
-#   CA/TX/WA/UT/IL/PA/AZ/MO: no new source data (DB probe or manual feed required).
+#   (+4 survey findings posted today; 3 ingested, 1 non-ALRC skipped).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
