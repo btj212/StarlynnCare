@@ -6,6 +6,24 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-07 — Hub content drift audit is now self-healing (supersedes "set-only" clause of the 2026-06 pipeline entry)
+
+**Context:** Weekly CA ingest kept adding facilities, so every regenerate → approve cycle was invalidated within days: 20 published city hubs were drift-suppressed twice in one month (the "drift treadmill"). Owner approved changing the logged **set-only** drift design.
+
+**Decided:**
+- **The audit (`scripts/validate/hub_content_drift_check.py`) repairs rows in place** when only the numbers moved: it rewrites each `<span data-stat>` with the live value (deterministic string surgery, `%`/comma style preserved), re-verifies the patched body with the generator's own `verify_stats` against the live snapshot, refreshes `stats_snapshot`, and clears the flag. Status + approval provenance untouched — approved prose stays live. Public pages pick the patch up via ISR (`revalidate = 3600`).
+- **Repair happens at audit time (Python), not render time.** Numbers only change on ingest, and the audit already runs post-ingest in both weekly workflows — so audit-time patching keeps pages exact with zero render cost, no TS mirror of the aggregation SQL, and the RLS suppress-guarantee unchanged.
+- **A materiality guard falls back to the old flag-and-suppress behavior** when the change could invalidate prose *around* the number: any metric crossing zero, `pct_with_serious` crossing the 50% line or moving > 25 points, any count more than doubling/halving, missing snapshot keys, nested markup in a span, or a patched body failing the gate. Blocked reasons are written into `drift_details.repair_blocked`. Those rows still require regenerate + re-approve.
+- `mark_audited` still never clears a flag on a clean diff — a caught-up snapshot doesn't mean the body was repaired.
+
+**Rejected:** Render-time substitution in `loadPublishedHubContent` (duplicates the aggregation SQL in TS, weakens the RLS guarantee, per-request cost); flipping `drift_detected` manually (republishes stale numbers with no review — never do this); keeping set-only and re-approving 20 cities per ingest (the treadmill).
+
+**Verified:** 25-check unit test of guard/format/patch logic, `--dry-run` review, then live run: 59 audited, 16 repaired in place, 5 guard-blocked (all `pct_with_serious` crossing 50) regenerated as drafts for re-approval. Production page (`/california/oakland`) confirmed serving patched values.
+
+**Source:** `scripts/validate/hub_content_drift_check.py`; consumers unchanged (`scrapers/generate_hub_content.py`, `src/lib/content/hubGate.ts`, `src/app/actions/hubContent.ts`).
+
+---
+
 ## 2026-06 — Missouri inspector narratives: ShowMeLTC SOD/POC OCR pipeline
 
 **Context:** The FOIA Excel (`missourirecords.xlsx`) behind `mo_inspections_ingest.py` is TAG-level only — per cited tag it carries the standard *regulation* text in its `DESCRIPTION` column, NOT the inspector's finding. So `deficiencies.description` held the verbatim rule and `inspector_narrative` was null, and the profile's "Verbatim citation text" block showed the rule (always ending in the class code "I/II"), never what the facility did. We had real inspection *events/citations*, not the prose finding.
