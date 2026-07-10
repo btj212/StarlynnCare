@@ -45,13 +45,14 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
+# Run 29058877935 (2026-07-10T00:00 UTC schedule): all states +0; AZ max=2026-07-08.
 # Run 29056324608 (2026-07-09T23:03 UTC, push after cron probe 2026-07-09T23:00):
 #   MN +3 inspections (Charter House, Gardens at St Gertrudes, Our Caring Hands ALRC:1186);
 #   max=2026-06-30 unchanged; Delight Healthcare (non-ALRC) skipped.
 # Run 28985701456 (2026-07-09T00:38 UTC): schedule all states +0.
 # Run 28981794558 (2026-07-08T23:04 UTC): OR +13 max=2026-07-06; MN +5; PA +4; UT +1; AZ +6.
-# Cron probe 2026-07-09T23:00 UTC: OR source max=2026-07-06 (no change); MN insertDate max=2026-07-09
-#   (+4 survey findings posted today; 3 ingested, 1 non-ALRC skipped).
+# Cron probe 2026-07-10T23:00 UTC: OR source max=2026-07-09 (+1 AFH: Emily Mcmanama RL013009);
+#   MN insertDate max=2026-07-09 (no change vs baseline); all other states no new source data.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
@@ -62,7 +63,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "UT": date(2026, 6, 16),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 7, 7),
+    "AZ": date(2026, 7, 8),
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
