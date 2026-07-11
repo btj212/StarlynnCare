@@ -45,6 +45,8 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
+# Run 29129361408 (2026-07-10T23:02 UTC, push after cron probe 2026-07-10T23:00):
+#   OR +25 inspections, max=2026-07-09 (was 2026-07-06).
 # Run 29058877935 (2026-07-10T00:00 UTC schedule): all states +0; AZ max=2026-07-08.
 # Run 29056324608 (2026-07-09T23:03 UTC, push after cron probe 2026-07-09T23:00):
 #   MN +3 inspections (Charter House, Gardens at St Gertrudes, Our Caring Hands ALRC:1186);
@@ -57,7 +59,7 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 6),
+    "OR": date(2026, 7, 9),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 6, 30),
     "UT": date(2026, 6, 16),
