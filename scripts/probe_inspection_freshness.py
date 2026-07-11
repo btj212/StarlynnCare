@@ -53,6 +53,10 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   max=2026-06-30 unchanged; Delight Healthcare (non-ALRC) skipped.
 # Run 28985701456 (2026-07-09T00:38 UTC): schedule all states +0.
 # Run 28981794558 (2026-07-08T23:04 UTC): OR +13 max=2026-07-06; MN +5; PA +4; UT +1; AZ +6.
+# Cron probe 2026-07-11T23:00 UTC: OR source max=2026-07-10 (+3: Unique Adult Care Home AFH,
+#   The Dalles Health And Rehabilitation NF, Clarita Cordizar AFH); MN insertDate max=2026-07-11
+#   (+9 survey findings incl. Delight Healthcare, Noble Residence, Chestnut Grove); all other
+#   states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual).
 # Cron probe 2026-07-10T23:00 UTC: OR source max=2026-07-09 (+1 AFH: Emily Mcmanama RL013009);
 #   MN insertDate max=2026-07-09 (no change vs baseline); all other states no new source data.
 # Used when DATABASE_URL is unavailable.
