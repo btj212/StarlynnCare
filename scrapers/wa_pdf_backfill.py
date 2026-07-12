@@ -101,6 +101,7 @@ def get_pending_backfill(
     conn: psycopg.Connection,
     facility_id: str | None,
     limit: int | None,
+    created_after: str | None = None,
 ) -> list[dict[str, Any]]:
     sql = """
         SELECT i.id, i.sha256, i.local_path, i.facility_id
@@ -108,15 +109,26 @@ def get_pending_backfill(
         WHERE i.parse_status = 'done'
           AND i.backfill_status = 'pending'
           {fac_filter}
+          {created_after_filter}
         ORDER BY i.created_at
         {limit_clause}
     """
     fac_filter = "AND i.facility_id = %s::uuid" if facility_id else ""
+    created_after_filter = "AND i.created_at >= %s::timestamptz" if created_after else ""
     limit_clause = f"LIMIT {limit}" if limit else ""
     params: list[Any] = [facility_id] if facility_id else []
+    if created_after:
+        params.append(created_after)
 
     with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
-        cur.execute(sql.format(fac_filter=fac_filter, limit_clause=limit_clause), params)
+        cur.execute(
+            sql.format(
+                fac_filter=fac_filter,
+                created_after_filter=created_after_filter,
+                limit_clause=limit_clause,
+            ),
+            params,
+        )
         return cur.fetchall()
 
 
@@ -357,7 +369,12 @@ def main(argv: list[str] | None = None) -> None:
     print("=== WA PDF Backfill ===")
     conn = get_conn()
 
-    pending = get_pending_backfill(conn, args.facility_id, args.limit)
+    pending = get_pending_backfill(
+        conn,
+        args.facility_id,
+        args.limit,
+        os.environ.get("STATE_SCAN_STARTED_AT"),
+    )
     print(f"  {len(pending)} inventory rows to backfill")
 
     done = 0

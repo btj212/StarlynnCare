@@ -1,11 +1,9 @@
-# Weekly CDSS citation + inspection ingest (California publishable facilities).
+# Manual CDSS citation + inspection ingest (scheduled CA scan lives in
+# weekly-inspection-ingest.yml so alerts share the state-scan ledger).
 # Requires DATABASE_URL secret (Supabase Postgres connection string with write access).
 name: CDSS weekly ingest
 
 on:
-  schedule:
-    # Mondays 10:00 UTC (~2am Pacific during standard time)
-    - cron: "0 10 * * 1"
   workflow_dispatch:
 
 jobs:

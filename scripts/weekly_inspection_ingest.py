@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Weekly inspection check + ingest for all COVERED_STATES.
+Weekly source scan + ingest for all live states.
 
 Queries the DB for baseline max inspection dates, runs each state's source
-scraper/ingest pipeline, reports deltas, then runs post-ingest validation.
+scraper/ingest pipeline, records source outcomes and material facility deltas,
+then runs post-ingest validation.
 
 Usage:
   python3 scripts/weekly_inspection_ingest.py
@@ -30,16 +31,27 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRAPERS = REPO_ROOT / "scrapers"
-COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ")
+COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ", "MO")
 
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 from validate._lib import get_conn  # noqa: E402
+from state_watch_ledger import (  # noqa: E402
+    begin_scan,
+    capture_facility_state,
+    complete_scan,
+    fail_scan,
+    record_source,
+    require_tables,
+    state_counts,
+)
 
+_SOURCE_RESULTS: list[tuple[str, int]] = []
 
 def _run(cmd: list[str], *, label: str, allow_fail: bool = False) -> int:
     print(f"\n── {label} ──")
     print(f"  $ {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=REPO_ROOT)
+    _SOURCE_RESULTS.append((label, result.returncode))
     if result.returncode != 0 and not allow_fail:
         print(f"  ERROR: exit {result.returncode}", file=sys.stderr)
     return result.returncode
@@ -169,12 +181,70 @@ def ingest_or(conn) -> bool:
 
 
 def ingest_wa(conn) -> bool:
-    _python(str(SCRAPERS / "wa_afh_inspections_scrape.py"), label="WA AFH inspection scrape", allow_fail=True)
-    _python(str(SCRAPERS / "wa_pdf_download.py"), label="WA PDF download", allow_fail=True)
-    _python(str(SCRAPERS / "wa_pdf_parse.py"), label="WA PDF parse", allow_fail=True)
-    _python(str(SCRAPERS / "wa_pdf_backfill.py"), label="WA PDF backfill", allow_fail=True)
-    rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "WA", label="WA recompute publishable")
-    return rc == 0
+    steps = [
+        _python(str(SCRAPERS / "wa_geo_directory_ingest.py"), label="WA Geo universe", allow_fail=True),
+        _python(
+            str(SCRAPERS / "recompute_physical_city.py"),
+            "--state", "WA", "--apply",
+            label="WA physical-city recompute",
+            allow_fail=True,
+        ),
+        _python(
+            str(SCRAPERS / "cms_nh_directory_ingest.py"),
+            "--state", "WA",
+            label="WA CMS nursing-home directory",
+            allow_fail=True,
+        ),
+        _python(
+            str(SCRAPERS / "cms_nh_deficiencies_ingest.py"),
+            "--state", "WA",
+            label="WA CMS nursing-home deficiencies",
+            allow_fail=True,
+        ),
+        _python(str(SCRAPERS / "wa_signal_sdcp.py"), label="WA SDCP signal", allow_fail=True),
+        _python(
+            str(SCRAPERS / "wa_signal_dementia_specialty.py"),
+            label="WA dementia-specialty signal",
+            allow_fail=True,
+        ),
+        _python(
+            str(SCRAPERS / "wa_afh_directory_ingest.py"),
+            "--skip-geo",
+            label="WA AFH directory",
+            allow_fail=True,
+        ),
+        _python(
+            str(SCRAPERS / "wa_afh_inspections_scrape.py"),
+            label="WA AFH inspection discovery",
+            allow_fail=True,
+        ),
+        _python(
+            str(SCRAPERS / "wa_bh_inspections_scrape.py"),
+            label="WA ALF/ESF inspection discovery",
+            allow_fail=True,
+        ),
+        _python(
+            str(SCRAPERS / "wa_esf_ingest.py"),
+            "--skip-geo",
+            label="WA ESF directory",
+            allow_fail=True,
+        ),
+        _python(str(SCRAPERS / "wa_pdf_download.py"), label="WA PDF download", allow_fail=True),
+        _python(str(SCRAPERS / "wa_pdf_parse.py"), label="WA PDF parse", allow_fail=True),
+        _python(
+            str(SCRAPERS / "wa_pdf_backfill.py"),
+            "--rescore",
+            label="WA PDF backfill",
+            allow_fail=True,
+        ),
+        _python(
+            str(SCRAPERS / "recompute_publishable.py"),
+            "--state", "WA",
+            label="WA recompute publishable",
+            allow_fail=True,
+        ),
+    ]
+    return all(rc == 0 for rc in steps)
 
 
 def ingest_mn(conn) -> bool:
@@ -217,13 +287,14 @@ def ingest_mn(conn) -> bool:
     return rc == 0
 
 
-def ingest_tx(_conn: object) -> bool | None:
+def ingest_tx(_conn: object) -> bool:
     capture_dirs = list((REPO_ROOT / ".firecrawl").glob("tulip*"))
     if not capture_dirs:
-        print("\n[TX] No TULIP capture directory — manual browser capture required; skipping.")
-        return None
-    print("\n[TX] TULIP ingest requires hand-captured Aura JSON — skipping automated weekly run.")
-    return None
+        print("\n[TX] No TULIP capture directory — manual browser capture required.")
+    else:
+        print("\n[TX] TULIP ingest requires hand-captured Aura JSON.")
+    _SOURCE_RESULTS.append(("TX TULIP inspection source requires manual capture", 2))
+    return False
 
 
 def ingest_ut(_conn: object) -> bool:
@@ -261,6 +332,23 @@ def ingest_az(_conn: object) -> bool:
     return rc == 0
 
 
+def ingest_mo(_conn: object) -> bool:
+    directory_rc = _python(
+        str(SCRAPERS / "mo_dhss_directory_ingest.py"),
+        label="MO DHSS directory",
+        allow_fail=True,
+    )
+    _SOURCE_RESULTS.append(("MO inspection records (manual FOIA source)", 0))
+    print("  MO inspections: manual FOIA source unchanged; directory refresh only")
+    publish_rc = _python(
+        str(SCRAPERS / "recompute_publishable.py"),
+        "--state", "MO",
+        label="MO recompute publishable",
+        allow_fail=True,
+    )
+    return directory_rc == 0 and publish_rc == 0
+
+
 STATE_RUNNERS = {
     "CA": lambda conn, skip_ca: ingest_ca(skip_ca),
     "OR": ingest_or,
@@ -271,14 +359,20 @@ STATE_RUNNERS = {
     "IL": ingest_il,
     "PA": ingest_pa,
     "AZ": ingest_az,
+    "MO": ingest_mo,
 }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Weekly inspection ingest for all covered states")
     ap.add_argument("--state", choices=COVERED_STATES, help="Run one state only")
-    ap.add_argument("--skip-ca", action="store_true", help="Skip CA (already ran via cdss-weekly-ingest)")
+    ap.add_argument("--skip-ca", action="store_true", help="Skip California")
     ap.add_argument("--skip-validate", action="store_true", help="Skip post-ingest validation")
+    ap.add_argument(
+        "--scan-run-output",
+        type=Path,
+        help="Write the latest state_scan_runs UUID for downstream alert dispatch",
+    )
     args = ap.parse_args()
 
     states = [args.state] if args.state else list(COVERED_STATES)
@@ -289,6 +383,7 @@ def main() -> int:
     print("=" * 60)
 
     with get_conn() as conn:
+        require_tables(conn)
         baselines: dict[str, dict[str, Any]] = {}
         with conn.cursor() as cur:
             for st in states:
@@ -299,13 +394,71 @@ def main() -> int:
         failed_states: list[str] = []
         for st in states:
             print(f"\n{'=' * 60}\n  STATE: {st}\n{'=' * 60}")
-            runner = STATE_RUNNERS[st]
-            if st == "CA":
-                ok = runner(conn, args.skip_ca)
-            else:
-                ok = runner(conn)
-            if ok is False:
+            before_snapshot = capture_facility_state(conn, st)
+            before_counts = state_counts(conn, st)
+            scan_run_id = begin_scan(
+                conn,
+                st,
+                before_counts,
+                {"orchestrator": "weekly_inspection_ingest.py"},
+            )
+            if args.scan_run_output:
+                args.scan_run_output.write_text(scan_run_id)
+            _SOURCE_RESULTS.clear()
+            try:
+                runner = STATE_RUNNERS[st]
+                os.environ["STATE_SCAN_STARTED_AT"] = datetime.now().astimezone().isoformat()
+                try:
+                    if st == "CA":
+                        ok = runner(conn, args.skip_ca)
+                    else:
+                        ok = runner(conn)
+                finally:
+                    os.environ.pop("STATE_SCAN_STARTED_AT", None)
+
+                if ok is False:
+                    failed_states.append(st)
+
+                after_snapshot = capture_facility_state(conn, st)
+                after_counts = state_counts(conn, st)
+                composite_watermark = (
+                    f"facilities={after_counts.facilities};"
+                    f"inspections={after_counts.inspections};"
+                    f"deficiencies={after_counts.deficiencies}"
+                )
+                source_failures: list[str] = []
+                for label, return_code in _SOURCE_RESULTS:
+                    status = "completed" if return_code == 0 else "failed"
+                    record_source(
+                        conn,
+                        scan_run_id,
+                        label,
+                        status=status,
+                        records_before=before_counts.inspections,
+                        records_after=after_counts.inspections,
+                        watermark=composite_watermark,
+                        error=f"exit {return_code}" if return_code else None,
+                    )
+                    if return_code:
+                        source_failures.append(f"{label}: exit {return_code}")
+
+                material_changes = complete_scan(
+                    conn,
+                    scan_run_id,
+                    before_snapshot,
+                    after_snapshot,
+                    after_counts,
+                    source_failures=source_failures,
+                )
+                print(
+                    f"  {st} watch ledger: run={scan_run_id}, "
+                    f"material facility changes={material_changes}"
+                )
+            except Exception as exc:
+                fail_scan(conn, scan_run_id, str(exc))
                 failed_states.append(st)
+                print(f"  {st} scan failed: {exc}", file=sys.stderr)
+                continue
 
             with conn.cursor() as cur:
                 delta = _after_delta(cur, st, baselines[st])

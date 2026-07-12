@@ -1,0 +1,40 @@
+<mjml>
+  <mj-head>
+    <mj-title>{DATA_VARIABLE:areaName} public-record update</mj-title>
+    <mj-preview>{DATA_VARIABLE:summary}</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Georgia, Times New Roman, serif" color="#1a2620" />
+      <mj-text font-size="16px" line-height="1.6" />
+      <mj-button background-color="#276f68" color="#ffffff" border-radius="0" font-family="Arial, sans-serif" font-size="12px" letter-spacing="1px" text-transform="uppercase" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f4f0e8">
+    <mj-section padding="36px 20px 16px">
+      <mj-column>
+        <mj-text font-family="Arial, sans-serif" font-size="11px" letter-spacing="2px" text-transform="uppercase" color="#5e6b64">
+          StarlynnCare · Area Watch
+        </mj-text>
+        <mj-text font-size="30px" line-height="1.15" padding-top="8px">
+          An update for {DATA_VARIABLE:areaName}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="24px 20px">
+      <mj-column>
+        <mj-text font-size="18px">{DATA_VARIABLE:summary}</mj-text>
+        <mj-text white-space="pre-line">{DATA_VARIABLE:details}</mj-text>
+        <mj-button href="{DATA_VARIABLE:areaUrl}" align="left" padding-top="16px">
+          Review the public records
+        </mj-button>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="18px 20px 36px">
+      <mj-column>
+        <mj-text font-family="Arial, sans-serif" font-size="11px" color="#69756f">
+          We send an update only after a configured regulator scan completes successfully.
+          <a href="{DATA_VARIABLE:unsubscribeUrl}" style="color:#276f68">Stop watching this area</a>.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

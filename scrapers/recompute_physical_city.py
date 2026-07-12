@@ -69,6 +69,7 @@ _PLACE_SUFFIX_RE = re.compile(
 
 RATE_LIMIT_RPS = 8   # conservative; Census has no published hard limit
 CACHE_PATH = Path(__file__).parent.parent / "data" / ".cache" / "census_geo.json"
+NO_PLACE = "__NO_PLACE__"
 
 
 def _load_cache() -> dict[str, str | None]:
@@ -76,7 +77,10 @@ def _load_cache() -> dict[str, str | None]:
     if CACHE_PATH.exists():
         try:
             with CACHE_PATH.open() as f:
-                return json.load(f)
+                loaded = json.load(f)
+                # Older runs cached request timeouts as null. Drop those entries
+                # so a transient Census outage never becomes permanent data.
+                return {key: value for key, value in loaded.items() if value is not None}
         except Exception:
             pass
     return {}
@@ -92,15 +96,25 @@ def _cache_key(lat: float, lon: float) -> str:
     return f"{round(lat, 5)},{round(lon, 5)}"
 
 
-def _fetch_census_place(lat: float, lon: float) -> str | None:
-    """Return the Census physical place name for coordinates, or None."""
+def _fetch_census_place(lat: float, lon: float) -> str:
+    """Return a Census place or NO_PLACE; raise after transient failures."""
     url = CENSUS_URL.format(lat=round(lat, 6), lon=round(lon, 6))
-    try:
-        with urllib.request.urlopen(url, timeout=10) as resp:
-            data = json.loads(resp.read())
-    except Exception as exc:
-        print(f"  Census request failed ({lat},{lon}): {exc}", flush=True)
-        return None
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        try:
+            with urllib.request.urlopen(url, timeout=15) as resp:
+                data = json.loads(resp.read())
+            break
+        except Exception as exc:
+            last_error = exc
+            print(
+                f"  Census request failed ({lat},{lon}), attempt {attempt}/3: {exc}",
+                flush=True,
+            )
+            if attempt < 3:
+                time.sleep(attempt)
+    else:
+        raise RuntimeError(f"Census request failed after retries: {last_error}")
 
     geographies = data.get("result", {}).get("geographies", {})
 
@@ -114,9 +128,9 @@ def _fetch_census_place(lat: float, lon: float) -> str | None:
                 raw_name = raw_name.split(",")[0].strip()
             # Strip type suffixes
             name = _PLACE_SUFFIX_RE.sub("", raw_name).strip()
-            return name if name else None
+            return name if name else NO_PLACE
 
-    return None
+    return NO_PLACE
 
 
 def slugify(text: str) -> str:
@@ -190,7 +204,7 @@ def apply_city_update(
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def run(state_codes: list[str], apply: bool) -> None:
+def run(state_codes: list[str], apply: bool) -> int:
     if not DATABASE_URL:
         print("ERROR: DATABASE_URL not set in .env.local", flush=True)
         sys.exit(1)
@@ -228,7 +242,11 @@ def run(state_codes: list[str], apply: bool) -> None:
                 gap = 1.0 / RATE_LIMIT_RPS
                 if elapsed < gap:
                     time.sleep(gap - elapsed)
-                place_name = _fetch_census_place(lat, lon)
+                try:
+                    place_name = _fetch_census_place(lat, lon)
+                except RuntimeError:
+                    errors += 1
+                    continue
                 last_req_time = time.monotonic()
                 cache[key] = place_name
 
@@ -236,7 +254,7 @@ def run(state_codes: list[str], apply: bool) -> None:
                 if (i + 1) % 100 == 0:
                     _save_cache(cache)
 
-            if place_name is None:
+            if place_name == NO_PLACE:
                 skipped_no_place += 1
                 continue
 
@@ -272,9 +290,10 @@ def run(state_codes: list[str], apply: bool) -> None:
             "or state codes are wrong. Run geocode_facilities.py first.",
             flush=True,
         )
+    return 1 if errors else 0
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--state", metavar="XX", help="Two-letter state code(s), comma-separated (e.g. UT or CA,OR)")
@@ -293,8 +312,8 @@ def main() -> None:
             print(f"ERROR: unknown state code(s): {', '.join(invalid)}", flush=True)
             sys.exit(1)
 
-    run(state_codes, apply=args.apply)
+    return run(state_codes, apply=args.apply)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

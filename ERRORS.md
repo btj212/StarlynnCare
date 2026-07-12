@@ -8,6 +8,24 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-07 — Local ESLint hangs under Node 24 without producing output
+
+**What went wrong:** Both `npx eslint ...` and direct `node node_modules/eslint/bin/eslint.js ...` remained asleep for more than five minutes with no file handles or diagnostics. Even `eslint --version` hung. This is local-tooling behavior under Node `v24.14.1`, not a reported lint violation.
+
+**What worked instead:** `node node_modules/typescript/lib/tsc.js --noEmit --pretty false` completed successfully (slowly, after ~17 minutes). Python syntax/tests, workflow YAML parsing, and `git diff --check` were run independently. Use the repository CI/runtime Node version for ESLint until the local Node/ESLint hang is resolved.
+
+---
+
+## 2026-07 — WA full refresh overwrote physical city before Census recompute
+
+**What went wrong:** `wa_geo_directory_ingest.py` updated `facilities.city` from the ArcGIS directory for existing rows but did not update `city_slug` or run the required Census physical-city step. The first State Watch catch-up attempt was stopped after the Geo pass began. The repair script then failed because production was unexpectedly missing migration 0045 (`historical_city_slugs`).
+
+**What worked instead:** Existing WA rows no longer accept `city` from the directory upsert. The weekly WA pipeline runs `recompute_physical_city.py --state WA --apply` immediately after Geo, before publication. Migration 0045 was safely applied before retrying the Census recompute. The recompute now retries transport failures and never caches a timeout as “no Census place”; legacy null cache entries are discarded. Any interrupted state scan is marked failed, so it cannot notify subscribers.
+
+**Source:** `scrapers/wa_geo_directory_ingest.py`, `scrapers/recompute_physical_city.py`, `scripts/weekly_inspection_ingest.py`.
+
+---
+
 ## 2026-06 — AZ facility pages returning 500/timeout after deficiency backfill
 
 **What went wrong:** After the 2026-06-22 AZ deficiency backfill, AZ facility pages started returning 500 errors and timing out in Ahrefs (120 hard 500s + 1,100 timeouts). Root cause: each page render called `facility_snapshot` ~60 times (loader called twice with no dedup, plus discovery rails calling it per card for up to 58 facilities) and the backfill made each RPC scan a much larger AZ peer corpus.

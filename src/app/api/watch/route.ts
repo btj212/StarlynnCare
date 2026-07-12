@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       : safeIntent === "touring"
         ? "decision"
         : "search";
+  const normalizedEmail = email.trim().toLowerCase();
 
   // Map offer sources to their Loops userGroup for clean segmentation
   const offerSource = source ?? "facility_hero";
@@ -80,10 +81,12 @@ export async function POST(req: NextRequest) {
     .from("facility_watchers")
     .upsert(
       {
-        email,
+        email: normalizedEmail,
         facility_id: facilityId,
         source: offerSource,
         confirmed_at: confirmedAt,
+        baseline_at: confirmedAt,
+        last_successful_scan_at: null,
         ...(safeIntent ? { intent: safeIntent } : {}),
       },
       { onConflict: "email,facility_id", ignoreDuplicates: false },
@@ -101,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     if (offerSource === "offer_records") {
       await sendRecordsEmail({
-        to: email,
+        to: normalizedEmail,
         digest,
         unsubscribeToken: data.unsubscribe_token,
       });
@@ -109,14 +112,14 @@ export async function POST(req: NextRequest) {
       const tourDigest = await buildTourEmailDigest(facilityId, data.unsubscribe_token);
       if (tourDigest) {
         await sendTourEmail({
-          to: email,
+          to: normalizedEmail,
           digest: tourDigest,
           unsubscribeToken: data.unsubscribe_token,
         });
       } else {
         // Fallback to watch welcome if tour data unavailable
         await sendWatchWelcome({
-          to: email,
+          to: normalizedEmail,
           facilityName,
           unsubscribeToken: data.unsubscribe_token,
           digest,
@@ -125,7 +128,7 @@ export async function POST(req: NextRequest) {
     } else {
       // offer_watch and all other sources (facility_hero, sticky_bar, etc.)
       await sendWatchWelcome({
-        to: email,
+        to: normalizedEmail,
         facilityName,
         unsubscribeToken: data.unsubscribe_token,
         digest,
@@ -138,7 +141,7 @@ export async function POST(req: NextRequest) {
 
   // Mirror to Loops audience — offer variants get their own userGroup for automation targeting
   await addLoopsContact({
-    email,
+    email: normalizedEmail,
     userGroup,
     source: offerSource,
     facilityName,
@@ -150,7 +153,7 @@ export async function POST(req: NextRequest) {
   // Admin alert + audit log — fire-and-forget, never blocks user response.
   recordSubmission({
     type: "facility_watch",
-    email,
+    email: normalizedEmail,
     source: offerSource,
     facilityId,
     summary: `${facilityName} · ${offerSource}${safeIntent ? ` · ${safeIntent}` : ""}`,
