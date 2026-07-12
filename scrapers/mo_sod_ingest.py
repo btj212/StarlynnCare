@@ -408,6 +408,18 @@ _PROVIDER_DATE_RES = [
 ]
 _DATE_FALLBACK_RE = re.compile(r"\b(\d{1,2}/\d{1,2}/\d{4})\b")
 
+# Mirrors _SEV4_RE / _map_severity in mo_inspections_ingest.py. That script only
+# ever sees deficiencies.description (boilerplate rule text) at ingest time; this
+# one sees the real narrative, which is far more likely to actually name a
+# high-harm concept, so severity is re-derived here whenever a narrative lands.
+# See supabase/migrations/0058_mo_severity_remap.sql and 0061 (narrative-aware
+# follow-up) for the one-time backfill this mirrors going forward.
+_SEV4_RE = re.compile(
+    r"\b(abuse|neglect|exploit|elopement|medication\s+error|evacuation"
+    r"|immediate\s+jeopardy|ij\b|assault|mistreat)\b",
+    re.IGNORECASE,
+)
+
 # Each tag block opens with a "19 CSR <section>" citation + a short title.
 _TAG_HEADER_RE = re.compile(r"(19\s*CSR\s*\d+[-.]\d+[\d.\-]*(?:\([0-9A-Za-z]+\))*)\s*([^\n]*)")
 # OCR mangles "This regulation is not met as evidenced by" (e.g. "me aes is
@@ -638,8 +650,8 @@ def load(dry_run: bool, min_score: int) -> None:
 
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, code, description, inspector_narrative FROM deficiencies "
-                    "WHERE inspection_id=%s",
+                    "SELECT id, code, description, inspector_narrative, immediate_jeopardy "
+                    "FROM deficiencies WHERE inspection_id=%s",
                     (insp_id,),
                 )
                 defs = cur.fetchall()
@@ -667,11 +679,21 @@ def load(dry_run: bool, min_score: int) -> None:
                           f"{tag['rule_cite']} -> def {best['code']}: "
                           f"{tag['narrative'][:70]}...")
                     continue
+                narrative = tag["narrative"]
+                # OR with the existing flag/severity — a narrative that doesn't
+                # happen to repeat "immediate jeopardy" must never downgrade a
+                # row the original ingest already correctly flagged as IJ.
+                ij = bool(best["immediate_jeopardy"]) or bool(
+                    re.search(r"\bimmediate\s+jeopardy\b|\bij\b", narrative, re.IGNORECASE)
+                )
+                severity = 4 if (ij or _SEV4_RE.search(narrative)) else 2
                 with conn.cursor() as cur:
                     cur.execute(
                         "UPDATE deficiencies SET inspector_narrative=%s, class=COALESCE(%s, class), "
-                        "residents_affected=COALESCE(%s, residents_affected) WHERE id=%s",
-                        (tag["narrative"], tag.get("class"), tag.get("residents_affected"), best["id"]),
+                        "residents_affected=COALESCE(%s, residents_affected), "
+                        "severity=%s, immediate_jeopardy=%s WHERE id=%s",
+                        (narrative, tag.get("class"), tag.get("residents_affected"),
+                         severity, ij, best["id"]),
                     )
                 updated += 1
 
