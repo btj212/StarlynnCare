@@ -28,6 +28,62 @@ async function sendLoopsTransactional(
   }
 }
 
+export async function sendAreaWatchUpdate({
+  to,
+  areaName,
+  summary,
+  details,
+  areaUrl,
+  unsubscribeUrl,
+}: {
+  to: string;
+  areaName: string;
+  summary: string;
+  details: string;
+  areaUrl: string;
+  unsubscribeUrl: string;
+}): Promise<void> {
+  const transactionalId = process.env.LOOPS_AREA_WATCH_CHANGE_ID;
+  if (!transactionalId) {
+    throw new Error("[area-watch] LOOPS_AREA_WATCH_CHANGE_ID not set");
+  }
+  await sendLoopsTransactional(to, transactionalId, {
+    areaName,
+    summary,
+    details,
+    areaUrl,
+    unsubscribeUrl,
+  });
+}
+
+export async function sendFacilityWatchChange({
+  to,
+  facilityName,
+  summary,
+  details,
+  facilityUrl,
+  unsubscribeUrl,
+}: {
+  to: string;
+  facilityName: string;
+  summary: string;
+  details: string;
+  facilityUrl: string;
+  unsubscribeUrl: string;
+}): Promise<void> {
+  const transactionalId = process.env.LOOPS_WATCH_CHANGE_ID;
+  if (!transactionalId) {
+    throw new Error("[facility-watch] LOOPS_WATCH_CHANGE_ID not set");
+  }
+  await sendLoopsTransactional(to, transactionalId, {
+    facilityName,
+    summary,
+    details,
+    facilityUrl,
+    unsubscribeUrl,
+  });
+}
+
 /** @deprecated Confirm flow removed — watchers are active on signup. */
 export async function sendWatchConfirmation({
   to,

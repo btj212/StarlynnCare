@@ -225,7 +225,6 @@ def upsert_facility_from_geo(
                 UPDATE facilities SET
                     name = %s,
                     street = %s,
-                    city = %s,
                     zip = %s,
                     wa_county = %s,
                     phone = COALESCE(%s, phone),
@@ -238,13 +237,12 @@ def upsert_facility_from_geo(
                 WHERE state_code = 'WA' AND license_number = %s
                 """,
                 (
-                    name, address, city, zip_code, county,
+                    name, address, zip_code, county,
                     phone, lat, lng,
                     beds, wa_facility_type, geo_archived_at,
                     license_num,
                 ),
             )
-            conn.commit()
             return "updated"
         else:
             cur.execute(
@@ -283,7 +281,6 @@ def upsert_facility_from_geo(
                     slug,
                 ),
             )
-            conn.commit()
             return "inserted"
 
 
@@ -322,6 +319,8 @@ def main(argv: list[str] | None = None) -> None:
         else:
             skipped += 1
 
+    if not args.dry_run:
+        conn.commit()
     print(f"\nInserted: {inserted}  Updated: {updated}  Skipped: {skipped}")
     conn.close()
 

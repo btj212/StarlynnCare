@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 interface AreaWatchModalProps {
   areaName: string;
   areaSlug: string;
+  stateCode: string;
   source: "city_modal" | "state_modal";
   /** Milliseconds before the modal appears. Default: 15000 */
   delayMs?: number;
@@ -28,6 +29,7 @@ const COPY = {
 export function AreaWatchModal({
   areaName,
   areaSlug,
+  stateCode,
   source,
   delayMs = 15000,
 }: AreaWatchModalProps) {
@@ -64,7 +66,13 @@ export function AreaWatchModal({
       const res = await fetch("/api/watch/area", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), areaName, areaSlug, source }),
+        body: JSON.stringify({
+          email: email.trim(),
+          areaName,
+          areaSlug,
+          stateCode,
+          source,
+        }),
       });
 
       if (res.ok) {
@@ -122,7 +130,7 @@ export function AreaWatchModal({
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <span className="text-3xl" style={{ color: "var(--color-teal)" }}>✓</span>
             <p className="font-[family-name:var(--font-display)] text-[22px]" style={{ color: "var(--color-ink)" }}>
-              Check your email to confirm.
+              You&rsquo;re watching {areaName}.
             </p>
           </div>
         ) : (
