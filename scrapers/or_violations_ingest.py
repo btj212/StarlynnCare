@@ -128,7 +128,7 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
 
     # Pre-load facility external_id → uuid map for OR to avoid per-row SELECT
     conn = get_conn()
-    ok = skip_fac = skip_insp = err = 0
+    ok = skip_fac = skip_insp = err = dupe = 0
 
     with conn:
         with conn.cursor() as cur:
@@ -160,16 +160,34 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
                 skip_insp += 1
                 continue
 
+            desc = allegation[:1000] if allegation else None
+
             try:
                 with conn.cursor() as cur:
                     cur.execute("SAVEPOINT sp_viol")
                     try:
+                        # code is always NULL for CSV-sourced rows (no OAR citation
+                        # column) — this script has no per-date filter on the CSV
+                        # export, so re-running it against an overlapping export
+                        # re-inserts every already-loaded violation again unless
+                        # guarded. Dedup on (inspection_id, description) instead of
+                        # (inspection_id, code) since code isn't available here.
+                        cur.execute(
+                            "SELECT 1 FROM deficiencies WHERE inspection_id = %s "
+                            "AND code IS NULL AND description = %s LIMIT 1",
+                            (inspection_id, desc),
+                        )
+                        if cur.fetchone():
+                            cur.execute("RELEASE SAVEPOINT sp_viol")
+                            dupe += 1
+                            continue
+
                         cur.execute(
                             DEF_INSERT_SQL,
                             {
                                 "inspection_id": inspection_id,
                                 "code": None,                          # no OAR citation in CSV
-                                "description": allegation[:1000] if allegation else None,
+                                "description": desc,
                                 "severity": None,                      # set by or_pdf_backfill.py
                                 "immediate_jeopardy": False,
                                 "state_severity_raw": viol_type,
@@ -188,7 +206,10 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
 
         conn.commit()
 
-    print(f"  Deficiencies: {ok} inserted, {skip_fac} no-facility, {skip_insp} no-inspection, {err} errors")
+    print(
+        f"  Deficiencies: {ok} inserted, {dupe} already loaded, {skip_fac} no-facility, "
+        f"{skip_insp} no-inspection, {err} errors"
+    )
 
 
 def main() -> None:
