@@ -193,17 +193,21 @@ def download_pending(
     dry_run: bool = False,
 ) -> tuple[int, int]:
     """Download all pending inventory rows. Returns (done, error) counts."""
+    created_after = os.environ.get("STATE_SCAN_STARTED_AT")
     sql = """
         SELECT id, source_url, facility_id, license_number
         FROM wa_pdf_inventory
         WHERE download_status = 'pending'
+          {created_after_filter}
         ORDER BY created_at
     """
+    created_after_filter = "AND created_at >= %s::timestamptz" if created_after else ""
+    params: list[Any] = [created_after] if created_after else []
     if limit:
         sql += f" LIMIT {limit}"
 
     with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
-        cur.execute(sql)
+        cur.execute(sql.format(created_after_filter=created_after_filter), params)
         pending = cur.fetchall()
 
     print(f"  {len(pending)} pending PDFs to download")

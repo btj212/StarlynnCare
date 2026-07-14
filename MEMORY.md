@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-07 — State Watch alerts are scan-ledger driven
+
+**Decided:**
+- Area and facility subscriptions receive a `baseline_at` at signup. Historical regulator records are never presented as a newly detected change.
+- Every scheduled state ingest writes a `state_scan_runs` ledger, per-source outcomes, and stable facility/public-record fingerprints. Subscriber delivery runs only when the scan status is `completed`; partial or failed scans send no family-facing message.
+- `watch_alert_deliveries` deduplicates by watcher + change fingerprint. Area alerts summarize affected facilities in the watched state/city; facility alerts go only to watchers of an affected facility.
+- The consolidated state-source workflow runs weekly and owns California too; the former CDSS workflow is manual-only to avoid duplicate CA scans.
+- Washington weekly coverage includes Geo universe, CMS NH data, SDCP/specialty signals, AFH forms, and ALF/ESF BHForms discovery. The prior AFH-only incremental pass was not full-state coverage.
+- Texas remains an explicit failed/manual source until TULIP capture becomes non-interactive. Missouri refreshes its live directory weekly, while FOIA inspection and SOD narrative refreshes remain manual/monthly constraints.
+
+**Source:** migration `0060_state_watch_automation.sql`; `scripts/{weekly_inspection_ingest,state_watch_ledger,dispatch_watch_alerts}.py`; `.github/workflows/weekly-inspection-ingest.yml`.
+
+---
+
 ## 2026-07 — Hub content drift audit is now self-healing (supersedes "set-only" clause of the 2026-06 pipeline entry)
 
 **Context:** Weekly CA ingest kept adding facilities, so every regenerate → approve cycle was invalidated within days: 20 published city hubs were drift-suppressed twice in one month (the "drift treadmill"). Owner approved changing the logged **set-only** drift design.

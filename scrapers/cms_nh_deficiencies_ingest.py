@@ -229,7 +229,6 @@ def ensure_inspection(
             ),
         )
         row = cur.fetchone()
-    conn.commit()
     return str(row[0])
 
 
@@ -284,7 +283,6 @@ def upsert_deficiency(
             ),
         )
         inserted = cur.rowcount > 0
-    conn.commit()
     return inserted
 
 
@@ -362,8 +360,7 @@ def ingest_state(
                     """,
                     (psycopg.types.json.Jsonb(narrative), inspection_id),
                 )
-            conn.commit()
-
+    conn.commit()
     return counts
 
 

@@ -1023,7 +1023,7 @@ export default async function RegionPage({ params }: PageProps) {
         <div className="-order-1">
           <GovernanceBar />
           <SiteNav countStateCode={region.state.code} badge={region.state.name} ctaHref={`/${region.state.slug}/facilities`} ctaLabel={`Browse ${region.state.name} facilities`} stateNavHref={`/${region.state.slug}`} />
-          <AreaWatchModal areaName={region.name} areaSlug={region.slug} source="city_modal" />
+          <AreaWatchModal areaName={region.name} areaSlug={region.slug} stateCode={region.state.code} source="city_modal" />
         </div>
       </div>
       <SiteFooter />

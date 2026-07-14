@@ -1,0 +1,98 @@
+# One-shot Orange County RCFE roster + citation refresh, with optional scoped alert dispatch.
+#
+# Manual-only — no schedule.  Gate: dry-run first, confirm output, then re-run with send=true.
+# Requires secrets: DATABASE_URL, LOOPS_API_KEY, LOOPS_AREA_WATCH_CHANGE_ID, LOOPS_WATCH_CHANGE_ID.
+name: Orange County watch catch-up
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipient_email:
+        description: "Alert recipient (leave blank for all area watchers in the county)"
+        required: false
+        type: string
+        default: "wendyw@johnlscott.com"
+      dry_run:
+        description: "Dry-run only — print alert payload, do NOT send emails"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  orange-county-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Run Orange County ingest (roster + citations)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python3 scripts/weekly_inspection_ingest.py \
+            --state CA \
+            --ca-county ORANGE \
+            --skip-validate \
+            --scan-run-output /tmp/oc-scan-run-id
+
+      - name: Layer 5 post-ingest — CA
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python3 scripts/validate/post_ingest_check.py --state CA
+
+      - name: Export Orange County scan report
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -s /tmp/oc-scan-run-id ]; then
+            python3 scripts/export_state_scan_report.py \
+              --scan-run-id "$(tr -d '\n' < /tmp/oc-scan-run-id)" \
+              --output "state-scan-OC.json" \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload Orange County scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: state-scan-OC-${{ github.run_id }}
+          path: state-scan-OC.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Dispatch alerts (recipient-scoped, dry-run or live)
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          LOOPS_AREA_WATCH_CHANGE_ID: ${{ secrets.LOOPS_AREA_WATCH_CHANGE_ID }}
+          LOOPS_WATCH_CHANGE_ID: ${{ secrets.LOOPS_WATCH_CHANGE_ID }}
+          NEXT_PUBLIC_SITE_URL: https://www.starlynncare.com
+        run: |
+          SCAN_ID="$(tr -d '\n' < /tmp/oc-scan-run-id)"
+          ARGS=(--scan-run-id "$SCAN_ID")
+
+          RECIPIENT="${{ inputs.recipient_email }}"
+          if [ -n "$RECIPIENT" ]; then
+            ARGS+=(--recipient-only "$RECIPIENT")
+          fi
+
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS+=(--dry-run)
+            echo "DRY-RUN mode — no emails will be sent."
+          else
+            echo "LIVE mode — emails WILL be sent to: ${RECIPIENT:-all area watchers}"
+          fi
+
+          python3 scripts/dispatch_watch_alerts.py "${ARGS[@]}"

@@ -282,16 +282,27 @@ def main(argv: list[str] | None = None) -> None:
         WHERE download_status = 'done'
           AND parse_status IN ('pending', 'ocr_needed')
           {sha_filter}
+          {created_after_filter}
         ORDER BY created_at
     """
     sha_filter = "AND sha256 LIKE %s" if args.sha256 else ""
+    created_after = os.environ.get("STATE_SCAN_STARTED_AT")
+    created_after_filter = "AND created_at >= %s::timestamptz" if created_after else ""
     params: list[Any] = []
     if args.sha256:
         params.append(args.sha256 + "%")
+    if created_after:
+        params.append(created_after)
     if args.limit:
-        sql_with_limit = sql.format(sha_filter=sha_filter) + f" LIMIT {args.limit}"
+        sql_with_limit = sql.format(
+            sha_filter=sha_filter,
+            created_after_filter=created_after_filter,
+        ) + f" LIMIT {args.limit}"
     else:
-        sql_with_limit = sql.format(sha_filter=sha_filter)
+        sql_with_limit = sql.format(
+            sha_filter=sha_filter,
+            created_after_filter=created_after_filter,
+        )
 
     with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
         cur.execute(sql_with_limit, params)

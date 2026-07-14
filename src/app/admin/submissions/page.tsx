@@ -16,6 +16,16 @@ type SubmissionRow = {
   facility_id: string | null;
 };
 
+type ScanRunRow = {
+  id: string;
+  state_code: string;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  changes_detected: number;
+  error: string | null;
+};
+
 const EVENT_TYPES = [
   { key: "all",            label: "All" },
   { key: "facility_watch", label: "Facility Watch" },
@@ -30,6 +40,9 @@ const ALERT_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   failed:  "bg-red-100 text-red-700",
   skipped: "bg-gray-100 text-gray-500",
+  completed: "bg-green-100 text-green-700",
+  partial: "bg-yellow-100 text-yellow-700",
+  running: "bg-blue-100 text-blue-700",
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -72,6 +85,20 @@ async function loadSubmissions(eventType: string): Promise<SubmissionRow[]> {
   return (data ?? []) as SubmissionRow[];
 }
 
+async function loadRecentScanRuns(): Promise<ScanRunRow[]> {
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("state_scan_runs")
+    .select("id, state_code, status, started_at, completed_at, changes_detected, error")
+    .order("started_at", { ascending: false })
+    .limit(10);
+  if (error) {
+    console.error("[admin/submissions] scan run load error:", error.message);
+    return [];
+  }
+  return (data ?? []) as ScanRunRow[];
+}
+
 type PageProps = {
   searchParams: Promise<{ type?: string }>;
 };
@@ -79,7 +106,10 @@ type PageProps = {
 export default async function AdminSubmissionsPage({ searchParams }: PageProps) {
   const { type: rawType } = await searchParams;
   const activeType = EVENT_TYPES.some((t) => t.key === rawType) ? (rawType ?? "all") : "all";
-  const rows = await loadSubmissions(activeType);
+  const [rows, scanRuns] = await Promise.all([
+    loadSubmissions(activeType),
+    loadRecentScanRuns(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -89,6 +119,30 @@ export default async function AdminSubmissionsPage({ searchParams }: PageProps) 
           All email captures across every form — most recent 200 shown.
         </p>
       </div>
+
+      <section>
+        <h2 className="text-sm font-semibold text-navy">Latest state source scans</h2>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {scanRuns.map((run) => (
+            <div key={run.id} className="rounded-lg border border-gray-200 bg-white p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs font-semibold text-ink">{run.state_code}</span>
+                <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${ALERT_COLORS[run.status] ?? ALERT_COLORS.failed}`}>
+                  {run.status}
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] text-gray-500">
+                {formatDate(run.started_at)} · {run.changes_detected} change{run.changes_detected === 1 ? "" : "s"}
+              </p>
+              {run.error && (
+                <p className="mt-1 line-clamp-2 text-[10px] text-red-700" title={run.error}>
+                  {run.error}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Filter pills */}
       <div className="flex flex-wrap gap-2">

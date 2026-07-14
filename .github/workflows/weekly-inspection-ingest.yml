@@ -1,20 +1,13 @@
-# Nightly inspection check + ingest for all COVERED_STATES (CA–PA).
-# Complements cdss-weekly-ingest.yml (CA-only, Monday mornings).
+# Weekly full-source inspection check for every live state.
 #
 # Matrix: one job per state so a slow OR/PA PDF pass cannot block MN/UT.
 # Requires secrets: DATABASE_URL, ANTHROPIC_API_KEY (for PDF parse steps).
-name: Weekly inspection ingest
+name: Weekly state source scan
 
 on:
   schedule:
-    # Daily 23:00 UTC — matches Cursor automation cron
-    - cron: "0 23 * * *"
-  push:
-    branches: [main]
-    paths:
-      - "scripts/weekly_inspection_ingest.py"
-      - "scripts/probe_inspection_freshness.py"
-      - ".github/workflows/weekly-inspection-ingest.yml"
+    # Sundays 08:00 UTC (midnight Pacific during standard time)
+    - cron: "0 8 * * 0"
   workflow_dispatch:
     inputs:
       state:
@@ -22,22 +15,22 @@ on:
         required: false
         type: string
       skip_ca:
-        description: "Skip CA ingest (use when cdss-weekly-ingest already ran today)"
+        description: "Skip CA ingest"
         required: false
         type: boolean
-        default: true
+        default: false
 
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       # Supabase session pooler is pool_size=15; even 3 parallel jobs exhaust it when
       # each state opens multiple connections (MN/IL/PA/UT failed 2026-06-25 run 28137781944).
       max-parallel: 1
       matrix:
-        state: [MN, OR, IL, PA, UT, CA, TX, WA, AZ]
+        state: [MN, OR, IL, PA, UT, CA, TX, WA, AZ, MO]
     steps:
       - uses: actions/checkout@v4
 
@@ -56,28 +49,65 @@ jobs:
         run: |
           ARGS=(--state "${{ matrix.state }}")
           SKIP_CA="${{ inputs.skip_ca }}"
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
-            SKIP_CA="true"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            SKIP_CA="false"
           fi
           if [ "$SKIP_CA" = "true" ] && [ "${{ matrix.state }}" = "CA" ]; then
             ARGS+=(--skip-ca)
-          fi
-          # WA PDF pass takes ~2h and rarely changes; schedule handles it nightly.
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ matrix.state }}" = "WA" ]; then
-            echo "Skipping WA on push-triggered ingest (schedule run covers WA)"
-            exit 0
           fi
           if [ -n "${{ inputs.state }}" ] && [ "${{ inputs.state }}" != "${{ matrix.state }}" ]; then
             echo "Skipping ${{ matrix.state }} (workflow_dispatch targeted ${{ inputs.state }})"
             exit 0
           fi
-          python3 scripts/weekly_inspection_ingest.py "${ARGS[@]}" --skip-validate
+          python3 scripts/weekly_inspection_ingest.py "${ARGS[@]}" --skip-validate --scan-run-output /tmp/state-watch-run-id
 
       - name: Layer 5 post-ingest — ${{ matrix.state }}
         if: success()
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python3 scripts/validate/post_ingest_check.py --state ${{ matrix.state }} || true
+        run: python3 scripts/validate/post_ingest_check.py --state ${{ matrix.state }}
+
+      - name: Export State Watch scan report — ${{ matrix.state }}
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -s /tmp/state-watch-run-id ]; then
+            python3 scripts/export_state_scan_report.py \
+              --scan-run-id "$(tr -d '\n' < /tmp/state-watch-run-id)" \
+              --output "state-scan-${{ matrix.state }}.json" \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload State Watch scan report — ${{ matrix.state }}
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: state-scan-${{ matrix.state }}-${{ github.run_id }}
+          path: state-scan-${{ matrix.state }}.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Dispatch area and facility watch alerts — ${{ matrix.state }}
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          LOOPS_AREA_WATCH_CHANGE_ID: ${{ secrets.LOOPS_AREA_WATCH_CHANGE_ID }}
+          LOOPS_WATCH_CHANGE_ID: ${{ secrets.LOOPS_WATCH_CHANGE_ID }}
+          NEXT_PUBLIC_SITE_URL: https://www.starlynncare.com
+        run: python3 scripts/dispatch_watch_alerts.py --scan-run-id "$(tr -d '\n' < /tmp/state-watch-run-id)"
+
+      - name: Notify admin of failed scan — ${{ matrix.state }}
+        if: failure()
+        env:
+          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          LOOPS_ADMIN_ALERT_ID: ${{ secrets.LOOPS_ADMIN_ALERT_ID }}
+          ADMIN_ALERT_EMAIL: ${{ secrets.ADMIN_ALERT_EMAIL }}
+        run: >-
+          python3 scripts/notify_scan_failure.py
+          --state ${{ matrix.state }}
+          --workflow-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   validate:
     needs: ingest
