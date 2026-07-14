@@ -408,6 +408,18 @@ _PROVIDER_DATE_RES = [
 ]
 _DATE_FALLBACK_RE = re.compile(r"\b(\d{1,2}/\d{1,2}/\d{4})\b")
 
+# Mirrors _SEV4_RE / _map_severity in mo_inspections_ingest.py. That script only
+# ever sees deficiencies.description (boilerplate rule text) at ingest time; this
+# one sees the real narrative, which is far more likely to actually name a
+# high-harm concept, so severity is re-derived here whenever a narrative lands.
+# See supabase/migrations/0058_mo_severity_remap.sql and 0061 (narrative-aware
+# follow-up) for the one-time backfill this mirrors going forward.
+_SEV4_RE = re.compile(
+    r"\b(abuse|neglect|exploit|elopement|medication\s+error|evacuation"
+    r"|immediate\s+jeopardy|ij\b|assault|mistreat)\b",
+    re.IGNORECASE,
+)
+
 # Each tag block opens with a "19 CSR <section>" citation + a short title.
 _TAG_HEADER_RE = re.compile(r"(19\s*CSR\s*\d+[-.]\d+[\d.\-]*(?:\([0-9A-Za-z]+\))*)\s*([^\n]*)")
 # OCR mangles "This regulation is not met as evidenced by" (e.g. "me aes is
@@ -520,38 +532,33 @@ def _parse_tags(full_text: str) -> list[dict[str, Any]]:
     return list(best.values())
 
 
-def ocr(limit: int | None) -> None:
-    rows = _read_jsonl(MANIFEST)
-    if limit:
-        rows = rows[:limit]
-    already = {r["pdf"] for r in _read_jsonl(PARSED)}
-    print(f"Manifest PDFs: {len(rows)} | already parsed: {len(already)}")
+def _ocr_one(r: dict[str, Any]) -> dict[str, Any]:
+    """Worker: OCR + parse one manifest row. Pure and picklable so it can run in a
+    process pool. Returns a status dict; the parent process is the sole writer to
+    parsed.jsonl (keeps the append single-writer and the run resumable)."""
+    pdf_path = REPO_ROOT / r["pdf"]
+    if not pdf_path.exists():
+        return {"pdf": r["pdf"], "status": "missing", "name": pdf_path.name}
+    text = _ocr_pdf(pdf_path)
+    if len(text.strip()) < 80:
+        return {"pdf": r["pdf"], "status": "empty", "name": pdf_path.name}
 
-    ok = empty = 0
-    for idx, r in enumerate(rows, 1):
-        if r["pdf"] in already:
-            continue
-        pdf_path = REPO_ROOT / r["pdf"]
-        if not pdf_path.exists():
-            print(f"[{idx}] missing {r['pdf']}")
-            continue
-        print(f"[{idx}/{len(rows)}] {pdf_path.name}", flush=True)
-        text = _ocr_pdf(pdf_path)
-        if len(text.strip()) < 80:
-            print("    < 80 chars OCR — skip")
-            empty += 1
-            continue
-
-        pdm = next((mm for rx in _PROVIDER_DATE_RES if (mm := rx.search(text))), None)
-        provider_id = pdm.group(1) if pdm else None
-        survey_date = pdm.group(2) if pdm else (
-            _DATE_FALLBACK_RE.search(text).group(1) if _DATE_FALLBACK_RE.search(text) else r["inspection_date"]
-        )
-        tags = _parse_tags(text)
-        with_narr = sum(1 for t in tags if len(t["narrative"]) > 60)
-        print(f"    provider={provider_id} date={survey_date} tags={len(tags)} w/narrative={with_narr}")
-
-        _append_jsonl(PARSED, {
+    pdm = next((mm for rx in _PROVIDER_DATE_RES if (mm := rx.search(text))), None)
+    provider_id = pdm.group(1) if pdm else None
+    survey_date = pdm.group(2) if pdm else (
+        _DATE_FALLBACK_RE.search(text).group(1) if _DATE_FALLBACK_RE.search(text) else r["inspection_date"]
+    )
+    tags = _parse_tags(text)
+    with_narr = sum(1 for t in tags if len(t["narrative"]) > 60)
+    return {
+        "pdf": r["pdf"],
+        "status": "ok",
+        "name": pdf_path.name,
+        "provider_id": provider_id,
+        "survey_date": survey_date,
+        "n_tags": len(tags),
+        "with_narr": with_narr,
+        "record": {
             "pdf": r["pdf"],
             "facility_name": r["facility_name"],
             "city": r["city"],
@@ -562,9 +569,56 @@ def ocr(limit: int | None) -> None:
             "insid": r.get("insid"),
             "tags": tags,
             "full_text": text,
-        })
-        ok += 1
-    print(f"\nOCR done. parsed={ok} empty={empty}. Output: {PARSED}")
+        },
+    }
+
+
+def ocr(limit: int | None, workers: int) -> None:
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
+    rows = _read_jsonl(MANIFEST)
+    if limit:
+        rows = rows[:limit]
+    already = {r["pdf"] for r in _read_jsonl(PARSED)}
+    todo = [r for r in rows if r["pdf"] not in already]
+    workers = max(1, workers)
+    print(f"Manifest PDFs: {len(rows)} | already parsed: {len(already)} | "
+          f"to OCR: {len(todo)} | workers: {workers}", flush=True)
+
+    # Keep each tesseract single-threaded so N worker processes don't oversubscribe
+    # the CPU — parallelism is at the process level (roughly one PDF per core).
+    os.environ.setdefault("OMP_THREAD_LIMIT", "1")
+
+    ok = empty = missing = done = 0
+    total = len(todo)
+
+    def _handle(res: dict[str, Any]) -> None:
+        nonlocal ok, empty, missing, done
+        done += 1
+        if res["status"] == "missing":
+            missing += 1
+            print(f"[{done}/{total}] missing {res['name']}", flush=True)
+        elif res["status"] == "empty":
+            empty += 1
+            print(f"[{done}/{total}] {res['name']} — < 80 chars OCR, skip", flush=True)
+        else:
+            # Parent is the only writer → append stays atomic and resumable.
+            _append_jsonl(PARSED, res["record"])
+            ok += 1
+            print(f"[{done}/{total}] {res['name']} provider={res['provider_id']} "
+                  f"date={res['survey_date']} tags={res['n_tags']} "
+                  f"w/narrative={res['with_narr']}", flush=True)
+
+    if workers == 1:
+        for r in todo:
+            _handle(_ocr_one(r))
+    else:
+        with ProcessPoolExecutor(max_workers=workers) as ex:
+            futs = [ex.submit(_ocr_one, r) for r in todo]
+            for fut in as_completed(futs):
+                _handle(fut.result())
+
+    print(f"\nOCR done. parsed={ok} empty={empty} missing={missing}. Output: {PARSED}")
     print("Next: python3 scrapers/mo_sod_ingest.py load --dry-run")
 
 
@@ -638,8 +692,8 @@ def load(dry_run: bool, min_score: int) -> None:
 
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, code, description, inspector_narrative FROM deficiencies "
-                    "WHERE inspection_id=%s",
+                    "SELECT id, code, description, inspector_narrative, immediate_jeopardy "
+                    "FROM deficiencies WHERE inspection_id=%s",
                     (insp_id,),
                 )
                 defs = cur.fetchall()
@@ -667,11 +721,21 @@ def load(dry_run: bool, min_score: int) -> None:
                           f"{tag['rule_cite']} -> def {best['code']}: "
                           f"{tag['narrative'][:70]}...")
                     continue
+                narrative = tag["narrative"]
+                # OR with the existing flag/severity — a narrative that doesn't
+                # happen to repeat "immediate jeopardy" must never downgrade a
+                # row the original ingest already correctly flagged as IJ.
+                ij = bool(best["immediate_jeopardy"]) or bool(
+                    re.search(r"\bimmediate\s+jeopardy\b|\bij\b", narrative, re.IGNORECASE)
+                )
+                severity = 4 if (ij or _SEV4_RE.search(narrative)) else 2
                 with conn.cursor() as cur:
                     cur.execute(
                         "UPDATE deficiencies SET inspector_narrative=%s, class=COALESCE(%s, class), "
-                        "residents_affected=COALESCE(%s, residents_affected) WHERE id=%s",
-                        (tag["narrative"], tag.get("class"), tag.get("residents_affected"), best["id"]),
+                        "residents_affected=COALESCE(%s, residents_affected), "
+                        "severity=%s, immediate_jeopardy=%s WHERE id=%s",
+                        (narrative, tag.get("class"), tag.get("residents_affected"),
+                         severity, ij, best["id"]),
                     )
                 updated += 1
 
@@ -719,6 +783,8 @@ def main() -> None:
 
     po = sub.add_parser("ocr", help="OCR + parse downloaded PDFs")
     po.add_argument("--limit", type=int, default=None)
+    po.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2),
+                    help="parallel OCR worker processes (default: CPU cores - 2)")
 
     pl = sub.add_parser("load", help="write narratives into the DB")
     pl.add_argument("--dry-run", action="store_true")
@@ -735,7 +801,7 @@ def main() -> None:
             sys.exit("crawl needs --cities or --from-db")
         crawl(cities, args.only_name, args.max_facilities, args.delay, not args.no_headless)
     elif args.mode == "ocr":
-        ocr(args.limit)
+        ocr(args.limit, args.workers)
     elif args.mode == "load":
         load(args.dry_run, args.min_score)
 

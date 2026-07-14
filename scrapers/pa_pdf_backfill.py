@@ -173,15 +173,26 @@ def backfill_one(
         # Try to extract CMP amount for itemized penalty
         cmp_amount = _parse_dollar_amount(desc) if sev_raw and "penalty" in sev_raw.lower() else None
 
-        # Skip exact duplicate (inspection_id, code) — same approach as UT
-        if code:
-            with conn.cursor() as cur:
+        # Skip exact duplicate (inspection_id, code). Some sidecar rows have no
+        # `code` (regulation section wasn't parsed) — for those, fall back to
+        # matching on inspection_id + description so a re-run (e.g. inventory
+        # row reset to backfill_status='pending') can't re-insert the same
+        # citation twice. See ERRORS.md — this previously let ~700+ PA
+        # duplicate rows accumulate.
+        with conn.cursor() as cur:
+            if code:
                 cur.execute(
                     "SELECT 1 FROM deficiencies WHERE inspection_id = %s AND code = %s LIMIT 1",
                     (inspection_id, code),
                 )
-                if cur.fetchone():
-                    continue
+            else:
+                cur.execute(
+                    "SELECT 1 FROM deficiencies WHERE inspection_id = %s AND code IS NULL "
+                    "AND description = %s LIMIT 1",
+                    (inspection_id, desc[:1000] if desc else None),
+                )
+            if cur.fetchone():
+                continue
 
         with conn.cursor() as cur:
             cur.execute(
