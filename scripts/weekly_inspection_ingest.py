@@ -146,10 +146,31 @@ def _max_date_in_mn_findings(path: Path) -> date | None:
     return max_d
 
 
-def ingest_ca(skip: bool) -> bool | None:
+def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
     if skip:
         print("\n[CA] Skipped (--skip-ca)")
         return None
+    if county:
+        # Roster refresh for one county
+        roster_rc = _python(
+            str(SCRAPERS / "ccld_rcfe_ingest.py"),
+            "--county", county,
+            label=f"CA {county.title()} County RCFE roster",
+            allow_fail=True,
+        )
+        recompute_rc = _python(
+            str(SCRAPERS / "recompute_publishable.py"),
+            "--state", "CA",
+            label="CA recompute publishable",
+            allow_fail=True,
+        )
+        citations_rc = _python(
+            str(SCRAPERS / "ccld_citations_ingest.py"),
+            "--publishable", "--county", county,
+            label=f"CA {county.title()} County citations ingest",
+            allow_fail=True,
+        )
+        return roster_rc == 0 and recompute_rc == 0 and citations_rc == 0
     rc = _python(str(SCRAPERS / "ccld_citations_ingest.py"), "--publishable", label="CA citations ingest")
     return rc == 0
 
@@ -367,6 +388,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Weekly inspection ingest for all covered states")
     ap.add_argument("--state", choices=COVERED_STATES, help="Run one state only")
     ap.add_argument("--skip-ca", action="store_true", help="Skip California")
+    ap.add_argument(
+        "--ca-county",
+        metavar="COUNTY",
+        help="Scope CA ingest to one county (e.g. ORANGE). Refreshes roster + citations for that county only.",
+    )
     ap.add_argument("--skip-validate", action="store_true", help="Skip post-ingest validation")
     ap.add_argument(
         "--scan-run-output",
@@ -396,11 +422,14 @@ def main() -> int:
             print(f"\n{'=' * 60}\n  STATE: {st}\n{'=' * 60}")
             before_snapshot = capture_facility_state(conn, st)
             before_counts = state_counts(conn, st)
+            scan_metadata: dict[str, Any] = {"orchestrator": "weekly_inspection_ingest.py"}
+            if st == "CA" and args.ca_county:
+                scan_metadata["ca_county"] = args.ca_county
             scan_run_id = begin_scan(
                 conn,
                 st,
                 before_counts,
-                {"orchestrator": "weekly_inspection_ingest.py"},
+                scan_metadata,
             )
             if args.scan_run_output:
                 args.scan_run_output.write_text(scan_run_id)
@@ -410,7 +439,7 @@ def main() -> int:
                 os.environ["STATE_SCAN_STARTED_AT"] = datetime.now().astimezone().isoformat()
                 try:
                     if st == "CA":
-                        ok = runner(conn, args.skip_ca)
+                        ok = runner(args.skip_ca, county=args.ca_county)
                     else:
                         ok = runner(conn)
                 finally:

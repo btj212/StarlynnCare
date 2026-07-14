@@ -180,6 +180,7 @@ def _send_area_alerts(
     *,
     no_change_email: str | None,
     dry_run: bool,
+    recipient_only: str | None = None,
 ) -> tuple[int, int]:
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
@@ -198,6 +199,8 @@ def _send_area_alerts(
     sent = 0
     failed = 0
     for watcher in watchers:
+        if recipient_only and watcher["email"].lower() != recipient_only.lower():
+            continue
         relevant = deltas
         if watcher.get("source") != "state_modal":
             relevant = [
@@ -277,6 +280,7 @@ def _send_facility_alerts(
     deltas: list[dict[str, Any]],
     *,
     dry_run: bool,
+    recipient_only: str | None = None,
 ) -> tuple[int, int]:
     sent = 0
     failed = 0
@@ -297,6 +301,8 @@ def _send_facility_alerts(
             watchers = [dict(row) for row in cur.fetchall()]
 
         for watcher in watchers:
+            if recipient_only and watcher["email"].lower() != recipient_only.lower():
+                continue
             delivery_fp = _delivery_fingerprint(
                 f"facility:{watcher['id']}",
                 [delta["fingerprint"]],
@@ -354,7 +360,14 @@ def main() -> int:
     selector.add_argument("--state", choices=sorted(STATE_SLUGS))
     parser.add_argument("--send-no-change-to")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--recipient-only",
+        metavar="EMAIL",
+        help="Only dispatch alerts to this one email address; all other watchers are skipped.",
+    )
     args = parser.parse_args()
+
+    recipient_only: str | None = args.recipient_only.strip().lower() if args.recipient_only else None
 
     load_env()
     conn = get_conn()
@@ -366,6 +379,9 @@ def main() -> int:
         )
         return 0
 
+    if recipient_only:
+        print(f"[recipient-only] alerts scoped to: {recipient_only}")
+
     deltas = _load_deltas(conn, run["id"])
     area_sent, area_failed = _send_area_alerts(
         conn,
@@ -373,12 +389,14 @@ def main() -> int:
         deltas,
         no_change_email=args.send_no_change_to,
         dry_run=args.dry_run,
+        recipient_only=recipient_only,
     )
     facility_sent, facility_failed = _send_facility_alerts(
         conn,
         run,
         deltas,
         dry_run=args.dry_run,
+        recipient_only=recipient_only,
     )
 
     if not args.dry_run:
