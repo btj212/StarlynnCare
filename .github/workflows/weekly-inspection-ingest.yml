@@ -8,6 +8,12 @@ on:
   schedule:
     # Sundays 08:00 UTC (midnight Pacific during standard time)
     - cron: "0 8 * * 0"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/weekly_inspection_ingest.py"
+      - "scripts/probe_inspection_freshness.py"
+      - ".github/workflows/weekly-inspection-ingest.yml"
   workflow_dispatch:
     inputs:
       state:
