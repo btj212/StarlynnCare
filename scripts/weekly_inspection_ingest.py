@@ -439,7 +439,7 @@ def main() -> int:
                 os.environ["STATE_SCAN_STARTED_AT"] = datetime.now().astimezone().isoformat()
                 try:
                     if st == "CA":
-                        ok = runner(args.skip_ca, county=args.ca_county)
+                        ok = ingest_ca(args.skip_ca, county=args.ca_county)
                     else:
                         ok = runner(conn)
                 finally:
