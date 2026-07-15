@@ -45,6 +45,9 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
+# Run 29457543361 (2026-07-15T23:06 UTC, push after cron probe 2026-07-15T23:02):
+#   OR +13 inspections, max=2026-07-14 (was 2026-07-12); CA/TX/WA/UT/IL/PA/AZ/MO +0
+#   (MN failed post_ingest Layer 5 denorm; other matrix jobs still queued at baseline update).
 # Run 29375112408 (2026-07-14T23:06 UTC, push after cron probe 2026-07-14T23:02):
 #   OR +4 inspections, max=2026-07-12 (was 2026-07-10); MN +14 max=2026-07-08 (was 2026-06-30);
 #   CA/TX/WA/UT/IL/PA/AZ/MO +0 (other matrix jobs still queued at time of baseline update).
@@ -78,7 +81,7 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 12),
+    "OR": date(2026, 7, 14),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 7, 8),
     "UT": date(2026, 6, 16),
