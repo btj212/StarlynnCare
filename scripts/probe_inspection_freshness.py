@@ -70,6 +70,10 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events incl. Brooklyn Park AL, Core Health Care, Creekside Villas, Ecumen North Branch);
 #   UT CCL public API sample max=2026-03-11 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Cron probe 2026-07-15T23:02 UTC: OR source max=2026-07-14 (+2: Viorica Barbu AFH RL013107
+#   provider 517133, 4 deficiencies; Windsor Health And Rehabilitation NF 25C89E provider 385224,
+#   23 deficiencies); MN insertDate max=2026-07-14 (unchanged vs baseline); UT CCL sample max
+#   2026-03-11 (unchanged vs baseline 2026-06-16); all other states no new source data.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
