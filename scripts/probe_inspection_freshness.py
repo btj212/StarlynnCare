@@ -82,6 +82,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   provider 517133, 4 deficiencies; Windsor Health And Rehabilitation NF 25C89E provider 385224,
 #   23 deficiencies); MN insertDate max=2026-07-14 (unchanged vs baseline); UT CCL sample max
 #   2026-03-11 (unchanged vs baseline 2026-06-16); all other states no new source data.
+# Cron probe 2026-07-18T23:01 UTC: OR source max=2026-07-17 (+1 AFH: Linda Mabelle Moffo Epse
+#   Bello RL013163 provider 3331833868, 4 deficiencies); MN insertDate max=2026-07-18 (+5 survey
+#   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
+#   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
+#   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
 # Cron probe 2026-07-17T23:01 UTC: OR source max=2026-07-16 (+6: South Hills Rehab NF 25CF74,
 #   Royale Gardens NF 25D98D, Shelley Murphy AFH RL012882, David Schill AFH MON013132, Paradise
 #   Adult Care AFH RL013103, Rosemarie Tagalogon AFH MON013121); MN insertDate max=2026-07-17
