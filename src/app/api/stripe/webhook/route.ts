@@ -175,7 +175,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 }
 
 export async function POST(req: NextRequest) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
   if (!secret) {
     console.error("[stripe-webhook] STRIPE_WEBHOOK_SECRET not set");
     return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
