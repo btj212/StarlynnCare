@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { stateFromSlug } from "@/lib/states";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 type Props = {
   facilityId: string;
@@ -55,7 +56,7 @@ export async function SameOperatorFacilities({ facilityId, operatorName, stateSl
         Other facilities <em>under this operator</em>
       </h2>
       <p className="text-[14px] text-ink-3 max-w-[72ch] leading-relaxed mb-2">
-        <span className="text-ink font-medium">{trimmed}</span>
+        <span className="text-ink font-medium">{formatFacilityName(trimmed)}</span>
         <span className="text-ink-3">
           {" "}
           — as recorded on state license extracts. Each facility still has its own inspection history.
@@ -71,7 +72,7 @@ export async function SameOperatorFacilities({ facilityId, operatorName, stateSl
           >
             <div>
               <p className="font-[family-name:var(--font-sans)] font-semibold text-[18px] leading-[1.15] tracking-[-0.005em] m-0">
-                {f.name}
+                {formatFacilityName(f.name)}
               </p>
               {f.city && (
                 <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em] mt-1">

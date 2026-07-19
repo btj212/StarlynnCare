@@ -27,6 +27,7 @@ import { stateFromSlug } from "@/lib/states";
 import { getStateProfileConfig } from "@/lib/states/profileConfig";
 import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import { canonicalFor } from "@/lib/seo/canonical";
+import { formatFacilityName } from "@/lib/facility/displayName";
 import {
   buildBreadcrumbList,
   buildFacilityFaqSchema,
@@ -493,14 +494,20 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const state = stateFromSlug(stateSlug);
   if (!state) return "not_found";
 
-  const { facility, error, configured } = await fetchFacility(
-    state.code,
-    regionSlug,
-    facilitySlug,
-  );
+  const {
+    facility: rawFacility,
+    error,
+    configured,
+  } = await fetchFacility(state.code, regionSlug, facilitySlug);
 
   if (!configured) return "unconfigured";
   if (error) throw new Error(error);
+
+  // Display-time name formatting (comma-inverted articles, all-caps rows).
+  // Do not mutate facilities.name in the DB — slugs are derived from the stored name.
+  const facility = rawFacility
+    ? { ...rawFacility, name: formatFacilityName(rawFacility.name) }
+    : null;
 
   // If no exact match, check whether this is a "clean" slug that corresponds to
   // a canonical slug with a state-disambiguation suffix (e.g. ecumen-north-branch

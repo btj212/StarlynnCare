@@ -1,5 +1,6 @@
 import { canonicalFor } from "@/lib/seo/canonical";
 import { getServiceClient } from "@/lib/supabase/server";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 const STATE_SLUG: Record<string, string> = {
   CA: "california",
@@ -72,7 +73,7 @@ export async function buildTourEmailDigest(
   const topCitedSummary = `${beds ? `A ${beds} memory care facility` : "This facility"} in ${cityState}. Use these questions to compare answers across every facility you tour.`.trim();
 
   return {
-    facilityName: facility.name,
+    facilityName: formatFacilityName(facility.name),
     facilityUrl,
     cityState,
     tourChecklistText,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 interface TopGradedFacilitiesProps {
   citySlugs: ReadonlyArray<string>;
@@ -108,7 +109,7 @@ export async function TopGradedFacilities({
             >
               <div className="flex-1 min-w-0">
                 <p className="font-[family-name:var(--font-sans)] font-semibold text-[15px] leading-[1.2] tracking-[-0.005em] m-0 text-ink line-clamp-2">
-                  {f.name}
+                  {formatFacilityName(f.name)}
                 </p>
                 {f.city && (
                   <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.06em] mt-1">

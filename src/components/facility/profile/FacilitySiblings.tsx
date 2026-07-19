@@ -2,6 +2,7 @@ import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 type SiblingRow = {
   id: string;
@@ -129,7 +130,7 @@ export async function FacilitySiblings({ profile }: { profile: FacilityProfile }
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={s.photo_url}
-                      alt={s.name}
+                      alt={formatFacilityName(s.name)}
                       className="absolute inset-0 h-full w-full object-cover"
                       loading="lazy"
                     />
@@ -144,7 +145,7 @@ export async function FacilitySiblings({ profile }: { profile: FacilityProfile }
                 {/* Body */}
                 <div className="flex flex-1 flex-col gap-1.5 px-4 py-3.5">
                   <div className="font-[family-name:var(--font-display)] text-[19px] leading-[1.15] tracking-[-0.005em]">
-                    {s.name}
+                    {formatFacilityName(s.name)}
                   </div>
                   <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-ink-3">
                     {s.city ?? ""}{s.beds ? ` · ${s.beds} beds · RCFE` : ""}

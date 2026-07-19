@@ -17,6 +17,7 @@ import {
 } from "@/lib/seo/editor";
 import { SITE_ORIGIN, canonicalFor } from "@/lib/seo/canonical";
 import { buildFacilitySnippet } from "@/lib/seo/meta";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 /**
  * Optional snapshot-derived extras the LocalBusiness/MedicalOrganization JSON-LD
@@ -229,7 +230,7 @@ export function buildLocalBusinessForFacility(
       ? {
           parentOrganization: {
             "@type": "Organization",
-            name: facility.operator_name!.trim(),
+            name: formatFacilityName(facility.operator_name!.trim()),
           },
         }
       : {};

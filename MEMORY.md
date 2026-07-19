@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-07 — Facility/operator names formatted at display, never renamed in DB
+
+**Decided:** Regulator rows often store leading articles inverted (`Lakes, the`, `OAKS, THE`) and all-caps names. Display via `formatFacilityName()` in `src/lib/facility/displayName.ts` (un-invert trailing the/a/an, title-case all-caps, fix LLC/II/III suffixes). Apply on `facility.name` once in `loadFacilityProfile`, and at operator/list/email/Stripe display sites. **Do not** rewrite `facilities.name` / `operator_name` in Postgres on re-ingest.
+
+**Rejected:** Mutating stored names to “fix” display — slugs are derived from the stored name at ingest (`facility_slug`), so renames would generate new slugs / duplicate rows / broken URLs.
+
+**Source:** `cursor/name-display-premium-panel`; Lakes profile QA.
+
+---
+
 ## 2026-07 — Premium replaces free per-facility Facility Watch signup
 
 **Decided:**

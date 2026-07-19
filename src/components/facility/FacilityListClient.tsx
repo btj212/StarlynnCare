@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { CareCategory } from "@/lib/types";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -121,8 +122,9 @@ function TrustBadge({ signal }: { signal: TrustSignal }) {
 
 function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) {
   const href = `/${stateSlug}/${f.city_slug}/${f.slug}`;
+  const displayName = formatFacilityName(f.name);
   const signal = trustSignal(f);
-  const [g1, g2] = gradientFor(f.name);
+  const [g1, g2] = gradientFor(displayName);
   const typeLabel = CATEGORY_SHORT[f.care_category] ?? "Care facility";
   const isMc =
     f.memory_care_disclosure_filed ||
@@ -131,7 +133,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
 
   const shortlistItem = {
     id: f.id,
-    name: f.name,
+    name: displayName,
     slug: f.slug,
     city_slug: f.city_slug,
     state_slug: stateSlug,
@@ -154,7 +156,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={f.photo_url}
-            alt={`Exterior of ${f.name}`}
+            alt={`Exterior of ${displayName}`}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             loading="lazy"
           />
@@ -183,7 +185,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
       <Link href={href} className="flex flex-1 flex-col gap-2 p-4 no-underline">
         {/* Tier 1: name */}
         <p className="font-semibold text-ink leading-snug group-hover:text-teal transition-colors line-clamp-2">
-          {f.name}
+          {displayName}
         </p>
         {f.limitedHistory && (
           <span className="font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.1em] text-amber-600">
@@ -272,7 +274,13 @@ export function FacilityListClient({
     const q = query.toLowerCase().trim();
     const base = facilities.filter((f) => {
       // Search
-      if (q && !f.name.toLowerCase().includes(q) && !f.city?.toLowerCase().includes(q)) {
+      const displayName = formatFacilityName(f.name).toLowerCase();
+      if (
+        q &&
+        !f.name.toLowerCase().includes(q) &&
+        !displayName.includes(q) &&
+        !f.city?.toLowerCase().includes(q)
+      ) {
         return false;
       }
       // Small homes gate
@@ -295,7 +303,7 @@ export function FacilityListClient({
         if (aNoData !== bNoData) return aNoData ? 1 : -1;
         if (a.total_citations !== b.total_citations) return a.total_citations - b.total_citations;
         if (b.inspections !== a.inspections) return b.inspections - a.inspections;
-        return a.name.localeCompare(b.name);
+        return formatFacilityName(a.name).localeCompare(formatFacilityName(b.name));
       });
     }
     return base;

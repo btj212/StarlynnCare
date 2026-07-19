@@ -2,6 +2,7 @@ import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { stateFromSlug } from "@/lib/states";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 type Props = {
   facilityId: string;
@@ -68,7 +69,7 @@ export async function MetroNearbyFacilities({ facilityId, citySlug, stateSlug }:
             className="flex flex-col gap-1 px-5 py-4 border-r border-b border-paper-rule last:border-r-0 no-underline text-ink hover:bg-paper-2 transition-colors min-h-[5rem]"
           >
             <span className="font-[family-name:var(--font-sans)] font-semibold text-[17px] leading-[1.15] tracking-[-0.005em]">
-              {f.name}
+              {formatFacilityName(f.name)}
             </span>
             {f.city && (
               <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em]">
