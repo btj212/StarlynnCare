@@ -19,12 +19,13 @@ import { FacilityPeerRank } from "@/components/facility/profile/FacilityPeerRank
 import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
 import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
-import { FacilityWatchSignup } from "@/components/facility/FacilityWatchSignup";
+import { FacilityWatchPaid } from "@/components/facility/FacilityWatchPaid";
 import { FacilityOfferBar } from "@/components/facility/FacilityOfferBar";
 import { FacilityOfferProvider } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityFullInspections } from "@/components/facility/profile/FacilityFullInspections";
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
 import { assignOffer } from "@/lib/facility/offers";
+import { shouldShowPaidFacilityWatch } from "@/lib/facility-watch/paidConfig";
 
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
@@ -211,7 +212,8 @@ export default async function FacilityPage({ params }: PageProps) {
 
   const profile = result as import("@/lib/facility/loadFacilityProfile").FacilityProfile;
   const { facility, state, county, backHref, backLabel } = profile;
-  const offer = assignOffer(facility.id);
+  const offer = assignOffer(facility.id, facility.state_code);
+  const showPaidWatch = shouldShowPaidFacilityWatch(facility.state_code);
 
   return (
     <>
@@ -253,14 +255,15 @@ export default async function FacilityPage({ params }: PageProps) {
             <FacilityPeerRank profile={profile} />
           </div>
 
-          {/* § 02b · Facility Watch — inline strip (citation-aware copy) */}
-          <div className="order-4 md:order-none">
-            <FacilityWatchSignup
-              facilityId={facility.id}
-              facilityName={facility.name}
-              citationCount={profile.totals.deficiencies}
-            />
-          </div>
+          {/* § 02b · Facility Watch Premium — replaces free enrollment */}
+          {showPaidWatch && (
+            <div className="order-4 md:order-none">
+              <FacilityWatchPaid
+                facilityId={facility.id}
+                facilityName={facility.name}
+              />
+            </div>
+          )}
 
           {/* Shortlist save — shown alongside watch; both are conversion actions */}
           <div className="order-5 md:order-none border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>

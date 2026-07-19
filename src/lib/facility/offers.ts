@@ -7,7 +7,16 @@
  * Reading the test results:
  *   Click rate  → Clarity dashboard, filter sessions by `offerVariant` tag.
  *   Conversions → /admin/submissions filtered by source = "offer_<variant>".
+ *
+ * The "watch" variant is Facility Watch Premium (paid). It is only assigned
+ * when paid Facility Watch is enabled for the state.
  */
+
+import {
+  PAID_WATCH_ANCHOR,
+  PAID_WATCH_MONTHLY_USD,
+  shouldShowPaidFacilityWatch,
+} from "@/lib/facility-watch/paidConfig";
 
 export type OfferId = "watch" | "records" | "contract" | "tour";
 
@@ -20,28 +29,29 @@ export type Offer = {
   ctaLabel: string;
   /** compact label for the sticky/bottom bar */
   ctaLabelCompact: string;
-  /** "email" = opens modal with email capture; "route" = navigates to href */
-  kind: "email" | "route";
-  /** Only set when kind === "route" */
+  /** "email" = modal capture; "route" = navigate; "anchor" = scroll to on-page Premium */
+  kind: "email" | "route" | "anchor";
+  /** Set when kind is "route" or "anchor" */
   href?: string;
-  /** journeyStage sent to /api/watch */
+  /** journeyStage sent to /api/watch for email offers */
   journeyStage: string;
 };
 
 export const OFFERS: Offer[] = [
   {
     id: "watch",
-    eyebrow: "Free · Facility Watch",
-    headline: "Get notified when this record changes.",
-    sub: "New citations, complaint investigations, or status changes — emailed to you free.",
-    ctaLabel: "Watch this facility free →",
+    eyebrow: "Facility Watch · Premium",
+    headline: "Does your loved one live here already?",
+    sub: `We monitor official inspection records plus news and public review mentions we can find across the web — $${PAID_WATCH_MONTHLY_USD}/month.`,
+    ctaLabel: "Start Facility Watch →",
     ctaLabelCompact: "Watch →",
-    kind: "email",
-    journeyStage: "search",
+    kind: "anchor",
+    href: `#${PAID_WATCH_ANCHOR}`,
+    journeyStage: "resident",
   },
   {
     id: "records",
-    eyebrow: "Free · Full Inspection Record",
+    eyebrow: "Full Inspection Record",
     headline: "Get this facility's complete inspection record, in plain language.",
     sub: "Every inspection since 2021 — citations, complaint outcomes, and findings — translated and emailed to you.",
     ctaLabel: "Get the full record →",
@@ -51,7 +61,7 @@ export const OFFERS: Offer[] = [
   },
   {
     id: "contract",
-    eyebrow: "Free · Contract Decoder",
+    eyebrow: "Contract Decoder",
     headline: "Decode an admission agreement before you sign.",
     sub: "Send us the contract — we map every fee escalation, discharge trigger, and arbitration clause in plain language.",
     ctaLabel: "Decode the contract →",
@@ -62,7 +72,7 @@ export const OFFERS: Offer[] = [
   },
   {
     id: "tour",
-    eyebrow: "Free · Tour Prep",
+    eyebrow: "Tour Prep",
     headline: "Get a tour-prep pack for this facility.",
     sub: "A printable checklist of questions specific to this facility's citation history — so you ask about the right things on tour.",
     ctaLabel: "Get the tour-prep pack →",
@@ -76,16 +86,25 @@ export const OFFERS: Offer[] = [
  * Deterministically assign an offer variant to a facility.
  * Uses a simple char-sum hash of the UUID so every facility always
  * gets the same offer and pages remain ISR-cache-safe.
+ *
+ * Paid Facility Watch is excluded from the pool when the launch flag is off
+ * or the state is not eligible (TX/MO).
  */
-export function assignOffer(facilityId: string): Offer {
+export function assignOffer(
+  facilityId: string,
+  stateCode?: string | null,
+): Offer {
+  const pool = shouldShowPaidFacilityWatch(stateCode)
+    ? OFFERS
+    : OFFERS.filter((o) => o.id !== "watch");
   let sum = 0;
   for (let i = 0; i < facilityId.length; i++) {
     sum += facilityId.charCodeAt(i);
   }
-  const idx = sum % OFFERS.length;
-  return OFFERS[idx];
+  const idx = sum % pool.length;
+  return pool[idx] ?? OFFERS[1];
 }
 
 export function getOfferById(id: OfferId): Offer {
-  return OFFERS.find((o) => o.id === id) ?? OFFERS[0];
+  return OFFERS.find((o) => o.id === id) ?? OFFERS[1];
 }

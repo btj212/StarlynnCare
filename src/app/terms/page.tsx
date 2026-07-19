@@ -12,7 +12,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const TITLE = "Terms of Use & Legal Disclaimer";
 const DESC =
   "Terms governing StarlynnCare: disclaimer of warranties, liability limits, public-records basis, and notice that site content is not medical or legal advice.";
-const EFFECTIVE = "May 2026";
+const EFFECTIVE = "July 2026";
 
 export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,
@@ -301,7 +301,41 @@ export default function TermsPage() {
             </p>
           </Section>
 
-          <Section id="governing-law" title="12. Governing law and dispute resolution">
+          <Section id="paid-facility-watch" title="12. Paid Facility Watch subscriptions">
+            <p>
+              Facility Watch Premium is an optional paid monitoring service. By purchasing a
+              subscription you agree that:
+            </p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>
+                Billing is processed by Stripe. Prices shown at checkout ($9/month or $59/year
+                unless otherwise stated) are charged on a recurring basis until you cancel.
+              </li>
+              <li>
+                You may cancel anytime through the billing management link in your welcome email
+                or the Stripe Customer Portal. Cancellation stops future charges; we do not
+                prorate partial periods unless required by law.
+              </li>
+              <li>
+                Monitoring of web mentions is best-effort. We search for material news, public
+                review and complaint mentions, and related coverage we can find online; we do not
+                guarantee capture of every review on every platform, nor that every alert arrives
+                within a fixed number of hours.
+              </li>
+              <li>
+                Alerts include third-party reports and official-record changes. Third-party
+                content is labeled as such and is not incorporated into facility grades or
+                official inspection history on this site.
+              </li>
+              <li>
+                Legacy official-record alerts, if any, are separate from paid Facility Watch.
+                Canceling a paid subscription does not automatically remove a legacy alert, and
+                unsubscribing from a legacy alert does not cancel a paid subscription.
+              </li>
+            </ul>
+          </Section>
+
+          <Section id="governing-law" title="13. Governing law and dispute resolution">
             <p>
               These Terms are governed by the laws of the State of California, without regard to
               its conflict-of-law provisions. Any dispute arising under these Terms shall be
@@ -314,7 +348,7 @@ export default function TermsPage() {
             </p>
           </Section>
 
-          <Section id="contact" title="13. Contact">
+          <Section id="contact" title="14. Contact">
             <p>
               Questions about these Terms may be directed to:
             </p>

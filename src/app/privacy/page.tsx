@@ -12,7 +12,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const TITLE = "Privacy Policy";
 const DESC =
   "How StarlynnCare collects, uses, and protects information — including analytics data, voluntary submissions, and California residents' rights under CCPA.";
-const EFFECTIVE = "May 15, 2026";
+const EFFECTIVE = "July 18, 2026";
 
 export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,
@@ -149,7 +149,11 @@ export default function PrivacyPage() {
               We do not collect, and have no interest in collecting:
             </p>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Social Security numbers, financial account numbers, or payment information;</li>
+              <li>
+                Social Security numbers or bank account numbers. If you purchase a paid
+                subscription (such as Facility Watch), payment card details are collected and
+                processed by Stripe — we do not store full card numbers on our servers;
+              </li>
               <li>Health or medical information about site visitors;</li>
               <li>Information about children under 13 (this site is not directed at minors); or</li>
               <li>Information through advertising networks, retargeting pixels, or social media
@@ -171,6 +175,11 @@ export default function PrivacyPage() {
                   editorial policy
                 </Link>
                 .
+              </li>
+              <li>
+                <strong>Paid subscriptions:</strong> delivering Facility Watch and related
+                paid alert services you purchase, managing billing with our payment processor,
+                and sending service and billing notices.
               </li>
               <li>
                 <strong>Legal compliance:</strong> retaining records where required by law or
@@ -231,6 +240,24 @@ export default function PrivacyPage() {
                     <td className="py-3 pr-4 align-top">Web hosting and CDN; server-side rendering</td>
                     <td className="py-3 align-top">N/A (infrastructure only)</td>
                   </tr>
+                  <tr>
+                    <td className="py-3 pr-4 align-top font-medium">Stripe</td>
+                    <td className="py-3 pr-4 align-top">
+                      Payment processing for paid Facility Watch subscriptions. Stripe
+                      receives payment card details, billing email, and subscription metadata
+                      needed to charge and manage the plan. Subject to{" "}
+                      <a
+                        href="https://stripe.com/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal underline underline-offset-2"
+                      >
+                        Stripe&rsquo;s Privacy Policy
+                      </a>
+                      .
+                    </td>
+                    <td className="py-3 align-top">Manage via your billing link or Stripe Customer Portal</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -276,9 +303,10 @@ export default function PrivacyPage() {
             <p>
               We take commercially reasonable steps to protect data, including HTTPS, encrypted
               database connections, and access controls. No method of internet transmission is
-              100% secure. We do not store payment information, Social Security numbers, or
-              health records, so the blast radius of any breach is limited to contact submissions
-              and analytics identifiers.
+              100% secure. We do not store full payment card numbers or Social Security numbers
+              on our servers — card data is handled by Stripe. Subscription records we retain
+              include email, facility watched, Stripe customer/subscription IDs, and billing
+              status. We do not store health records.
             </p>
           </Section>
 

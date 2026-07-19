@@ -366,5 +366,5 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
     return `${rankFrag}${tail ? ` · ${tail}` : ""}.`;
   }
   // No grade — lead with citations and inspection date.
-  return `${citeFrag}${inspFrag ? ` · ${inspFrag}` : ""}. Free public-record review on StarlynnCare.`;
+  return `${citeFrag}${inspFrag ? ` · ${inspFrag}` : ""}. Independent public-record review on StarlynnCare.`;
 }
