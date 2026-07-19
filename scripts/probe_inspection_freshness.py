@@ -92,6 +92,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
 #   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Cron probe 2026-07-19T23:02 UTC: OR source max=2026-07-17 (unchanged vs baseline); MN insertDate
+#   max=2026-07-19 (+7 survey events: Antique Gardens Senior Care, Arden Glades Assisted Living,
+#   Shepherds Way Home, Spirit Care Homes, 3MB Health Services, Absolute Homes Inc, SMC Ashton Inc;
+#   +5 insertDate 07/18 still pending from prior probe); UT CCL sample max=2026-05-07 (unchanged vs
+#   baseline 2026-06-16); all other states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
 # Cron probe 2026-07-17T23:01 UTC: OR source max=2026-07-16 (+6: South Hills Rehab NF 25CF74,
 #   Royale Gardens NF 25D98D, Shelley Murphy AFH RL012882, David Schill AFH MON013132, Paradise
 #   Adult Care AFH RL013103, Rosemarie Tagalogon AFH MON013121); MN insertDate max=2026-07-17
