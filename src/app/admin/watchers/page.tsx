@@ -1,6 +1,17 @@
 import { getServiceClient } from "@/lib/supabase/server";
+import { stateFromCode } from "@/lib/states";
 
 export const dynamic = "force-dynamic";
+
+function facilityHref(f: {
+  slug: string;
+  city_slug: string;
+  state_code: string;
+}): string {
+  const stateSlug =
+    stateFromCode(f.state_code)?.slug ?? f.state_code.toLowerCase();
+  return `/${stateSlug}/${f.city_slug}/${f.slug}`;
+}
 
 type WatcherRow = {
   id: string;
@@ -11,7 +22,6 @@ type WatcherRow = {
     name: string;
     slug: string;
     city_slug: string;
-    state_slug: string;
     state_code: string;
   } | null;
 };
@@ -28,7 +38,6 @@ type PaidRow = {
     name: string;
     slug: string;
     city_slug: string;
-    state_slug: string;
     state_code: string;
   } | null;
 };
@@ -39,7 +48,7 @@ async function loadWatcherStats() {
   const { data, error } = await supabase
     .from("facility_watchers")
     .select(
-      "id, confirmed_at, alerts_eligible, source, facilities(name, slug, city_slug, state_slug, state_code)",
+      "id, confirmed_at, alerts_eligible, source, facilities(name, slug, city_slug, state_code)",
     )
     .order("confirmed_at", { ascending: false, nullsFirst: false });
 
@@ -75,9 +84,7 @@ async function loadWatcherStats() {
     string,
     {
       facility_name: string;
-      state_slug: string;
-      city_slug: string;
-      facility_slug: string;
+      href: string;
       count: number;
     }
   >();
@@ -92,9 +99,7 @@ async function loadWatcherStats() {
     } else {
       facMap.set(key, {
         facility_name: f.name,
-        state_slug: f.state_slug,
-        city_slug: f.city_slug,
-        facility_slug: f.slug,
+        href: facilityHref(f),
         count: 1,
       });
     }
@@ -111,7 +116,7 @@ async function loadPaidSubscriptions() {
   const { data, error } = await supabase
     .from("facility_watch_subscriptions")
     .select(
-      "id, email, status, billing_interval, fulfillment_status, firecrawl_monitor_id, created_at, facilities(name, slug, city_slug, state_slug, state_code)",
+      "id, email, status, billing_interval, fulfillment_status, firecrawl_monitor_id, created_at, facilities(name, slug, city_slug, state_code)",
     )
     .order("created_at", { ascending: false })
     .limit(100);
@@ -225,7 +230,7 @@ export default async function AdminWatchersPage() {
                     <td className="px-4 py-3">
                       {row.facilities ? (
                         <a
-                          href={`/${row.facilities.state_slug}/${row.facilities.city_slug}/${row.facilities.slug}`}
+                          href={facilityHref(row.facilities)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="font-medium text-teal hover:underline"
@@ -297,7 +302,7 @@ export default async function AdminWatchersPage() {
                   <tr key={i}>
                     <td className="px-5 py-3">
                       <a
-                        href={`/${row.state_slug}/${row.city_slug}/${row.facility_slug}`}
+                        href={row.href}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-teal hover:underline"
