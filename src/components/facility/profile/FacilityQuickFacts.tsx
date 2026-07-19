@@ -1,4 +1,5 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 function fmt(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -47,7 +48,9 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
           </QfCell>
           <QfCell label="Operated by">
             <span className="font-[family-name:var(--font-sans)] text-[15px] font-medium leading-snug">
-              {facility.operator_name ?? "—"}
+              {facility.operator_name
+                ? formatFacilityName(facility.operator_name)
+                : "—"}
             </span>
           </QfCell>
           <QfCell label="Phone">

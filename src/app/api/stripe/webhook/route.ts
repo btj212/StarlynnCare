@@ -13,6 +13,7 @@ import {
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { stateFromCode } from "@/lib/states";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 export const runtime = "nodejs";
 
@@ -41,7 +42,7 @@ async function loadFacilityLabel(facilityId: string): Promise<{
   const stateSlug =
     stateFromCode(data.state_code)?.slug ?? data.state_code.toLowerCase();
   return {
-    name: data.name,
+    name: formatFacilityName(data.name),
     path: `/${stateSlug}/${data.city_slug}/${data.slug}`,
   };
 }

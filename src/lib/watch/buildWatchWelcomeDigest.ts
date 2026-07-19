@@ -1,5 +1,6 @@
 import { canonicalFor } from "@/lib/seo/canonical";
 import { getServiceClient } from "@/lib/supabase/server";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 const STATE_SLUG: Record<string, string> = {
   CA: "california",
@@ -179,12 +180,13 @@ export async function buildWatchWelcomeDigest(
   const cityState = `${facility.city}, ${facility.state_code}`;
   const beds = facility.beds ? `${facility.beds} licensed beds` : "licensed capacity on file";
 
+  const displayName = formatFacilityName(facility.name);
   const recordSummary = last
-    ? `${facility.name} has ${totalDefs} citation${totalDefs === 1 ? "" : "s"} on record across recent inspections.`
-    : `${facility.name} is on your watch list.`;
+    ? `${displayName} has ${totalDefs} citation${totalDefs === 1 ? "" : "s"} on record across recent inspections.`
+    : `${displayName} is on your watch list.`;
 
   return {
-    facilityName: facility.name,
+    facilityName: displayName,
     facilityUrl,
     cityState,
     licenseNumber: license,

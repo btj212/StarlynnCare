@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { stateFromSlug } from "@/lib/states";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 interface RelatedFacilitiesProps {
   /** The current facility's ID — excluded from results */
@@ -76,7 +77,7 @@ export async function RelatedFacilities({
           >
             <div>
               <p className="font-[family-name:var(--font-sans)] font-semibold text-[18px] leading-[1.15] tracking-[-0.005em] m-0">
-                {f.name}
+                {formatFacilityName(f.name)}
               </p>
               {f.city && (
                 <p className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em] mt-1">

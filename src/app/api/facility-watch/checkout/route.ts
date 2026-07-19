@@ -12,6 +12,7 @@ import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
 import { stateFromCode } from "@/lib/states";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 export async function POST(req: NextRequest) {
   if (!isPaidFacilityWatchEnabled() || !isStripeConfigured()) {
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
 
   const stateSlug =
     stateFromCode(facility.state_code)?.slug ?? facility.state_code.toLowerCase();
+  const displayName = formatFacilityName(facility.name);
 
   const { data: existing } = await supabase
     .from("facility_watch_subscriptions")
@@ -131,7 +133,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         email,
         facility_id: facilityId,
-        facility_name: facility.name,
+        facility_name: displayName,
         billing_interval: interval,
         product: "facility_watch_paid",
       },
@@ -139,7 +141,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           email,
           facility_id: facilityId,
-          facility_name: facility.name,
+          facility_name: displayName,
           billing_interval: interval,
           product: "facility_watch_paid",
         },
