@@ -16,6 +16,17 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-07 — Vercel Stripe Price IDs had trailing newlines
+
+**What went wrong:** `STRIPE_PRICE_FACILITY_WATCH_MONTHLY` was stored as `price_…\n` (likely `printf`/`vercel env add`). Stripe rejected Checkout with `No such price: 'price_…\n'`.
+
+**What worked:** Re-add env values with `printf '%s'` (no newline), and trim all Stripe env reads in `src/lib/stripe/server.ts` via `envTrim()`.
+
+**Source:** Facility Watch launch QA after checkout 500s.
+
+---
+
+
 ## 2026-07 — facilities has no state_slug column
 
 **What went wrong:** Paid Facility Watch checkout/webhook/billing queried `facilities.state_slug`. PostgREST returned column does not exist → checkout 404 "Facility not found" with the CTA live.
