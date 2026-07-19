@@ -20,6 +20,22 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-07 — Facility Watch launch status (Premium live; controlled purchase pending)
+
+**Decided / verified:**
+- Premium replaces free per-facility signup; Area Watch remains a weekly area digest.
+- Migrations `0063` + `0064` applied in production; legacy watchers `alerts_eligible=true`.
+- Launch flag `FACILITY_WATCH_PAID_ENABLED=1` is on Production after checkout was verified to return a live Stripe URL.
+- Hotfixes during launch: derive facility URL from `stateFromCode` (no `facilities.state_slug`); trim Stripe env values / rewrite Price IDs that had trailing newlines.
+- Rollback: remove `FACILITY_WATCH_PAID_ENABLED` and redeploy.
+
+**Still operator-owned:** one controlled live $9 purchase → webhook entitlement → welcome email → portal cancel/refund check; first Firecrawl concierge fulfillment.
+
+**Source:** PRs #60, #62, #64; plan `facility_watch_launch_qa_f24cdfc9`.
+
+---
+
+
 ## 2026-07 — Paid Facility Watch launches as concierge MVP (not full automation)
 
 **Decided:**
