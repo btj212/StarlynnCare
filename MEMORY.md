@@ -6,6 +6,35 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-07 — Premium replaces free per-facility Facility Watch signup
+
+**Decided:**
+- **New free per-facility watch enrollment is closed.** Profile strip/modal/sticky/`offer_watch` sources return 410 from `/api/watch`. Premium (`FacilityWatchPaid`) is the only acquisition path for ongoing facility alerts when `FACILITY_WATCH_PAID_ENABLED=1`.
+- **Legacy watchers kept.** Migration `0064` adds `facility_watchers.alerts_eligible` (default `true`). Existing confirmed rows keep official-record dispatch. Paid checkout upserts an eligible row. One-time records/tour leads may still write a row with `alerts_eligible=false` and are excluded from `dispatch_watch_alerts` / deferred scanner.
+- **Area Watch stays** as a weekly official-record area digest on city/state hubs — not marketed as a free substitute for monitoring one facility.
+- Overbroad “free forever / free for families” StarlynnCare pricing claims were scrubbed; public records remain openly readable. TX/MO: no paid CTA and no free facility-watch fallback until official sources meet the paid reliability standard.
+
+**Rejected:** Keeping a public free facility-watch funnel beside Premium; treating Area Watch as the free per-facility alternative; cutting off existing free subscribers.
+
+**Source:** `cursor/paid-facility-watch-mvp`; plan `facility_watch_launch_qa_f24cdfc9`.
+
+---
+
+## 2026-07 — Paid Facility Watch launches as concierge MVP (not full automation)
+
+**Decided:**
+- Paid entitlement lives in `facility_watch_subscriptions` (migration `0063`), synced from Stripe webhooks. Official-record alert delivery for watchers is gated by `alerts_eligible` (migration `0064`) — see newer entry above for Premium-replaces-free.
+- Pricing: **$9/month** or **$59/year**. CTA is inline on facility profiles (“Does your loved one live here already?”) — never a second popup/interstitial. Gated by `FACILITY_WATCH_PAID_ENABLED=1`. Excluded for TX/MO until official weekly scans are dependable.
+- Phase 1 fulfillment is **manual**: operator creates Firecrawl monitors and forwards curated hits (see `docs/FACILITY_WATCH_CONCIERGE.md`). Promise copy: “usually within a day,” not “hours.”
+- Phase 2 (deferred until ~5–10 paying subscribers): automated Firecrawl provision/reconcile, signed Firecrawl webhooks, check/event/delivery ledgers, automated subscriber alerts.
+- SEO/AEO: nothing indexed is walled off; paid product is a service beside the public record.
+
+**Rejected:** Full Stripe + Firecrawl automation before proving willingness-to-pay; walling free regulator data behind paywall; charging TX/MO while official alert delivery is incomplete.
+
+**Source:** `cursor/paid-facility-watch-mvp`; plan `paid-facility-watch_d0a6f4f2`.
+
+---
+
 ## 2026-07 — State Watch alerts are scan-ledger driven
 
 **Decided:**

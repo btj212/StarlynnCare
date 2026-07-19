@@ -1,0 +1,45 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Georgia, 'Times New Roman', serif" color="#1A2620" />
+      <mj-text font-size="16px" line-height="1.55" color="#2E3A33" padding="0" />
+      <mj-section padding="0" />
+      <mj-column padding="0" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .mono { font-family: 'Courier New', monospace; }
+    </mj-style>
+  </mj-head>
+
+  <mj-body background-color="#F4EEE2" width="560px">
+    <mj-section background-color="#1A2620" padding="20px 28px">
+      <mj-column>
+        <mj-text css-class="mono" font-size="10px" letter-spacing="0.18em" text-transform="uppercase" color="rgba(255,255,255,0.75)">
+          Facility Watch · Premium
+        </mj-text>
+        <mj-text font-size="26px" line-height="1.25" color="#FFFFFF" padding-top="8px">
+          You're watching<br /><em>{DATA_VARIABLE:facilityName}</em>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-wrapper background-color="#FFFFFF" border="1px solid #D9CFB8" padding="28px">
+      <mj-section>
+        <mj-column>
+          <mj-text padding-bottom="16px">
+            Thanks for subscribing ({DATA_VARIABLE:planLabel}). We're setting up broader monitoring for this facility now — usually active within one business day.
+          </mj-text>
+          <mj-text padding-bottom="16px">
+            You'll get alerts for official inspection-record changes, plus material news and public review or complaint mentions we can find across the web. Every alert links to its source. Third-party reports are labeled and never mixed into official grades.
+          </mj-text>
+          <mj-button background-color="#1F5C5A" color="#FFFFFF" href="{DATA_VARIABLE:facilityUrl}" font-family="Courier New, monospace" font-size="12px" letter-spacing="0.08em" text-transform="uppercase">
+            Open facility profile
+          </mj-button>
+          <mj-text css-class="mono" font-size="12px" color="#5A6660" padding-top="24px">
+            Manage billing or cancel anytime: {DATA_VARIABLE:manageUrl}
+          </mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+  </mj-body>
+</mjml>

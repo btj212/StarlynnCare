@@ -229,7 +229,7 @@ export function MobileNationalHomeView({ data }: Props) {
           Find the right facility, <em>without the sales funnel.</em>
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-white/85 max-w-[40ch]">
-          Search by ZIP, compare peer rankings, read every dated citation. Free, forever, with no operator behind the recommendation.
+          Search by ZIP, compare peer rankings, read every dated citation — with no operator behind the recommendation.
         </p>
         <Link
           href="/states"

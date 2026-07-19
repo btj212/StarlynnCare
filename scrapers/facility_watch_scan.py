@@ -471,7 +471,14 @@ def load_watched_facilities(conn: psycopg.Connection, facility_id: str | None) -
         where += " AND f.id = %s"
         params.append(facility_id)
     else:
-        where += " AND EXISTS (SELECT 1 FROM facility_watchers w WHERE w.facility_id = f.id)"
+        where += (
+            " AND EXISTS ("
+            "SELECT 1 FROM facility_watchers w "
+            "WHERE w.facility_id = f.id "
+            "AND w.confirmed_at IS NOT NULL "
+            "AND COALESCE(w.alerts_eligible, TRUE)"
+            ")"
+        )
 
     sql = f"""
         SELECT DISTINCT f.id::text, f.name, f.slug, f.city, f.state_code, f.external_id,
@@ -541,7 +548,13 @@ def send_pending_alerts(conn: psycopg.Connection, dry_run: bool) -> int:
 
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT DISTINCT email FROM facility_watchers WHERE facility_id = %s",
+                """
+                SELECT DISTINCT email
+                FROM facility_watchers
+                WHERE facility_id = %s
+                  AND confirmed_at IS NOT NULL
+                  AND COALESCE(alerts_eligible, TRUE)
+                """,
                 (fac_id,),
             )
             recipients.extend(r[0] for r in cur.fetchall())

@@ -6,10 +6,7 @@ import { useOffer } from "@/components/facility/offer/FacilityOfferProvider";
 /**
  * Mobile fixed bottom bar — surfaces the assigned offer CTA once the visitor
  * has scrolled 60% of the page. On click it delegates to the shared
- * FacilityOfferProvider trigger (opens modal or routes).
- *
- * For the "watch" variant the bar matches the old FacilityWatchBar UX.
- * For all other variants it shows the offer label and opens the modal.
+ * FacilityOfferProvider trigger (scrolls to Premium, opens modal, or routes).
  */
 export function FacilityOfferBar() {
   const { offer, facilityId, triggerOffer } = useOffer();

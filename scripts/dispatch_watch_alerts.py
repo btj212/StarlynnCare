@@ -294,6 +294,7 @@ def _send_facility_alerts(
                 FROM facility_watchers
                 WHERE facility_id = %s
                   AND confirmed_at IS NOT NULL
+                  AND COALESCE(alerts_eligible, TRUE)
                   AND baseline_at <= %s
                 """,
                 (delta["facility_id"], run["started_at"]),

@@ -9,6 +9,28 @@ import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
 
+/**
+ * Retired free Facility Watch enrollment sources. New visitors cannot open an
+ * ongoing official-alert watch this way — use paid Facility Watch instead.
+ * Existing facility_watchers rows remain eligible for dispatch.
+ */
+const RETIRED_FREE_WATCH_SOURCES = new Set([
+  "inline_strip",
+  "sticky_bar",
+  "modal",
+  "offer_watch",
+  "facility_hero",
+  "facility_watch",
+]);
+
+/** One-time email products that may still write a facility_watchers row. */
+const ONE_TIME_EMAIL_SOURCES = new Set([
+  "offer_records",
+  "offer_tour",
+  "records_pull_interest",
+  "report_waitlist",
+]);
+
 export async function POST(req: NextRequest) {
   const limit = await rateLimit(`watch:${clientIp(req)}`, 5, 10 * 60);
   if (!limit.allowed) {
@@ -48,6 +70,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid email" }, { status: 400 });
   }
 
+  const offerSource = source ?? "facility_hero";
+
+  if (RETIRED_FREE_WATCH_SOURCES.has(offerSource) || !ONE_TIME_EMAIL_SOURCES.has(offerSource)) {
+    return NextResponse.json(
+      {
+        error:
+          "Free Facility Watch signup is no longer available. Use Facility Watch Premium on the facility page.",
+      },
+      { status: 410 },
+    );
+  }
+
   // Sanitise intent to the three known values
   const safeIntent =
     intent === "research" || intent === "touring" || intent === "resident"
@@ -62,21 +96,17 @@ export async function POST(req: NextRequest) {
         : "search";
   const normalizedEmail = email.trim().toLowerCase();
 
-  // Map offer sources to their Loops userGroup for clean segmentation
-  const offerSource = source ?? "facility_hero";
   const userGroup: string =
-    offerSource === "offer_watch"
-      ? "offer_watch"
-      : offerSource === "offer_records"
-        ? "offer_records"
-        : offerSource === "offer_tour"
-          ? "offer_tour"
-          : "facility_watch";
+    offerSource === "offer_records"
+      ? "offer_records"
+      : offerSource === "offer_tour"
+        ? "offer_tour"
+        : "facility_watch";
 
   const supabase = getServiceClient();
-
   const confirmedAt = new Date().toISOString();
 
+  // One-time leads are not eligible for ongoing official-record alert dispatch.
   const { data, error } = await supabase
     .from("facility_watchers")
     .upsert(
@@ -87,6 +117,7 @@ export async function POST(req: NextRequest) {
         confirmed_at: confirmedAt,
         baseline_at: confirmedAt,
         last_successful_scan_at: null,
+        alerts_eligible: false,
         ...(safeIntent ? { intent: safeIntent } : {}),
       },
       { onConflict: "email,facility_id", ignoreDuplicates: false },
@@ -102,7 +133,7 @@ export async function POST(req: NextRequest) {
   try {
     const digest = await buildWatchWelcomeDigest(facilityId, data.unsubscribe_token);
 
-    if (offerSource === "offer_records") {
+    if (offerSource === "offer_records" || offerSource === "records_pull_interest") {
       await sendRecordsEmail({
         to: normalizedEmail,
         digest,
@@ -117,7 +148,6 @@ export async function POST(req: NextRequest) {
           unsubscribeToken: data.unsubscribe_token,
         });
       } else {
-        // Fallback to watch welcome if tour data unavailable
         await sendWatchWelcome({
           to: normalizedEmail,
           facilityName,
@@ -126,7 +156,7 @@ export async function POST(req: NextRequest) {
         });
       }
     } else {
-      // offer_watch and all other sources (facility_hero, sticky_bar, etc.)
+      // report_waitlist and similar one-time captures
       await sendWatchWelcome({
         to: normalizedEmail,
         facilityName,
@@ -136,10 +166,8 @@ export async function POST(req: NextRequest) {
     }
   } catch (emailErr) {
     console.error("[watch] email error:", emailErr);
-    // Row is saved; email can be retried
   }
 
-  // Mirror to Loops audience — offer variants get their own userGroup for automation targeting
   await addLoopsContact({
     email: normalizedEmail,
     userGroup,
@@ -150,14 +178,18 @@ export async function POST(req: NextRequest) {
     ...(safeIntent ? { watchIntent: safeIntent } : {}),
   });
 
-  // Admin alert + audit log — fire-and-forget, never blocks user response.
   recordSubmission({
     type: "facility_watch",
     email: normalizedEmail,
     source: offerSource,
     facilityId,
     summary: `${facilityName} · ${offerSource}${safeIntent ? ` · ${safeIntent}` : ""}`,
-    payload: { facilityName, facilityId, ...(safeIntent ? { intent: safeIntent } : {}) },
+    payload: {
+      facilityName,
+      facilityId,
+      alertsEligible: false,
+      ...(safeIntent ? { intent: safeIntent } : {}),
+    },
   }).catch((err) => console.error("[watch] recordSubmission failed:", err));
 
   return NextResponse.json({ ok: true });

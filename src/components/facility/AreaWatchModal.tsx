@@ -16,13 +16,13 @@ type FormState = "idle" | "submitting" | "success" | "error";
 const COPY = {
   city_modal: {
     headline: (areaName: string) => `Searching for memory care in ${areaName}?`,
-    sub: "We track every facility in this area. Get a free ranked report when you're ready to compare.",
-    button: "Get the ranked list →",
+    sub: "Get a weekly digest when official inspection records change for facilities in this area — so you can compare before you pick one.",
+    button: "Get the area digest →",
   },
   state_modal: {
     headline: (areaName: string) => `Researching memory care in ${areaName}?`,
-    sub: "We score every licensed facility against state inspection records. Get alerts when records change.",
-    button: "Get the ranked list →",
+    sub: "Get a weekly digest when official inspection records change across the state — useful while you are still narrowing cities.",
+    button: "Get the area digest →",
   },
 };
 
@@ -152,7 +152,7 @@ export function AreaWatchModal({
               className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] mb-4"
               style={{ color: "var(--color-ink-3)" }}
             >
-              FREE · NO ACCOUNT NEEDED
+              WEEKLY AREA DIGEST · NO ACCOUNT NEEDED
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">

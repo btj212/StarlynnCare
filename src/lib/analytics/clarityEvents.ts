@@ -52,3 +52,23 @@ export function emitOfferClick(variant: string) {
 export function emitOfferConvert(variant: string) {
   c("event", "offer_convert", { variant });
 }
+
+/** Paid Facility Watch — impression when the inline paid CTA mounts. */
+export function emitPaidWatchImpression() {
+  c("event", "paid_watch_impression");
+}
+
+/** Paid Facility Watch — user selected monthly or annual plan. */
+export function emitPaidWatchPlanSelect(interval: "month" | "year") {
+  c("event", "paid_watch_plan_select", { interval });
+}
+
+/** Paid Facility Watch — redirected to Stripe Checkout. */
+export function emitPaidWatchCheckoutStart(interval: "month" | "year") {
+  c("event", "paid_watch_checkout_start", { interval });
+}
+
+/** Paid Facility Watch — success page loaded after checkout. */
+export function emitPaidWatchActivated() {
+  c("event", "paid_watch_activated");
+}

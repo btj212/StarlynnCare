@@ -142,7 +142,7 @@ StarlynnCare is an independent memory care directory that publishes verified sta
 
 **Clinical reviewer:** ${STARLYNN_AUTHOR_DISPLAY_NAME}, ${STARLYNN_AUTHOR_CREDENTIALS}. California Board of Registered Nursing license #${STARLYNN_AUTHOR_LICENSE}, verifiable at https://search.dca.ca.gov/. Rebecca reviews methodology, facility profile copy, and the clinical accuracy of inspection record interpretations published on the site.
 
-**Business model:** No referral commissions, lead fees, or paid placement from operators. The product is free for families. Revenue comes from reader memberships and the sale of the annual data report to public-interest organizations.
+**Business model:** No referral commissions, lead fees, or paid placement from operators. Public inspection records remain openly readable. Optional paid services such as Facility Watch fund monitoring. Revenue may also come from reader memberships and the sale of the annual data report to public-interest organizations.
 
 **About page:** ${aboutUrl}
 

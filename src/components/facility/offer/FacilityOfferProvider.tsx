@@ -17,6 +17,7 @@ import {
   emitOfferConvert,
 } from "@/lib/analytics/clarityEvents";
 import { submitWatch } from "@/lib/watch/submitWatch";
+import { PAID_WATCH_ANCHOR } from "@/lib/facility-watch/paidConfig";
 
 /* ── Context ─────────────────────────────────────────────────── */
 
@@ -61,6 +62,13 @@ function OfferModal({
     setFormState("submitting");
     setErrorMsg("");
 
+    // Paid Facility Watch never uses this modal — only records/tour email offers.
+    if (offer.id === "watch") {
+      setErrorMsg("Facility Watch is available on the page below.");
+      setFormState("error");
+      return;
+    }
+
     const result = await submitWatch({
       email: email.trim(),
       facilityId,
@@ -79,7 +87,6 @@ function OfferModal({
   };
 
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center px-4 pb-4 sm:pb-0"
       style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
@@ -91,7 +98,6 @@ function OfferModal({
         className="relative w-full max-w-[420px] border-2 border-ink p-7"
         style={{ backgroundColor: "var(--color-paper)" }}
       >
-        {/* Close */}
         <button
           onClick={onClose}
           aria-label="Close"
@@ -114,12 +120,10 @@ function OfferModal({
           </div>
         ) : (
           <>
-            {/* Eyebrow */}
             <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] text-rust mb-2">
               {offer.eyebrow}
             </div>
 
-            {/* Headline */}
             <h2 className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.01em] text-ink mb-2">
               {offer.headline}
             </h2>
@@ -154,7 +158,7 @@ function OfferModal({
             </form>
 
             <p className="mt-3 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.04em] text-ink-4">
-              Free · no spam · unsubscribe any time
+              No spam · unsubscribe any time
             </p>
           </>
         )}
@@ -179,27 +183,39 @@ export function FacilityOfferProvider({
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Fire Clarity impression once on mount
   useEffect(() => {
     setOfferVariant(offer.id);
     emitOfferImpression(offer.id);
   }, [offer.id]);
 
-  const openModal = useCallback(() => setModalOpen(true), []);
+  const openModal = useCallback(() => {
+    if (offer.id === "watch" || offer.kind === "anchor") return;
+    setModalOpen(true);
+  }, [offer.id, offer.kind]);
 
   const triggerOffer = useCallback(() => {
     emitOfferClick(offer.id);
+    if (offer.kind === "anchor") {
+      const el = document.getElementById(PAID_WATCH_ANCHOR);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.history.replaceState(null, "", `#${PAID_WATCH_ANCHOR}`);
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      }
+      return;
+    }
     if (offer.kind === "route" && offer.href) {
       router.push(offer.href);
-    } else {
-      setModalOpen(true);
+      return;
     }
+    if (offer.id === "watch") return;
+    setModalOpen(true);
   }, [offer, router]);
 
   return (
     <Ctx.Provider value={{ offer, facilityId, facilityName, openModal, triggerOffer }}>
       {children}
-      {modalOpen && offer.kind !== "route" && (
+      {modalOpen && offer.kind === "email" && offer.id !== "watch" && (
         <OfferModal
           offer={offer}
           facilityId={facilityId}
