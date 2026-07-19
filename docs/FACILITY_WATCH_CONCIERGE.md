@@ -36,6 +36,14 @@ Verified 2026-07-18 before public CTA exposure:
 | Loops ZIPs | Each contains exactly `index.mjml` |
 | Webhook events (code) | Handles the five events listed above |
 
+
+### Hotfix note (2026-07-18 evening)
+
+Checkout briefly selected non-existent `facilities.state_slug` and returned 404.
+`FACILITY_WATCH_PAID_ENABLED` was removed immediately; fix derives slugs via
+`stateFromCode()`. Re-enable the flag only after verifying checkout returns a
+Stripe URL.
+
 **Rollback:** remove `FACILITY_WATCH_PAID_ENABLED` (or set to `0`) and redeploy. Existing paid subscriptions remain manageable via billing portal links; new CTAs disappear.
 
 ## One-time launch setup

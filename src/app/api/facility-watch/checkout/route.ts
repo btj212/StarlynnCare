@@ -11,6 +11,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
+import { stateFromCode } from "@/lib/states";
 
 export async function POST(req: NextRequest) {
   if (!isPaidFacilityWatchEnabled() || !isStripeConfigured()) {
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
   const supabase = getServiceClient();
   const { data: facility, error: facilityError } = await supabase
     .from("facilities")
-    .select("id, name, slug, city_slug, state_slug, state_code")
+    .select("id, name, slug, city_slug, state_code")
     .eq("id", facilityId)
     .maybeSingle();
 
@@ -77,6 +78,9 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+
+  const stateSlug =
+    stateFromCode(facility.state_code)?.slug ?? facility.state_code.toLowerCase();
 
   const { data: existing } = await supabase
     .from("facility_watch_subscriptions")
@@ -95,7 +99,7 @@ export async function POST(req: NextRequest) {
 
   const priceId = priceIdForInterval(interval);
   const stripe = getStripe();
-  const facilityPath = `/${facility.state_slug}/${facility.city_slug}/${facility.slug}`;
+  const facilityPath = `/${stateSlug}/${facility.city_slug}/${facility.slug}`;
   const successUrl = canonicalFor(
     `/watch/paid/success?session_id={CHECKOUT_SESSION_ID}`,
   );

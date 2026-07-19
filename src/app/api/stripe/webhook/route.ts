@@ -12,6 +12,7 @@ import {
 } from "@/lib/email/paidWatch";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { canonicalFor } from "@/lib/seo/canonical";
+import { stateFromCode } from "@/lib/states";
 
 export const runtime = "nodejs";
 
@@ -31,15 +32,17 @@ async function loadFacilityLabel(facilityId: string): Promise<{
   const supabase = getServiceClient();
   const { data } = await supabase
     .from("facilities")
-    .select("name, slug, city_slug, state_slug")
+    .select("name, slug, city_slug, state_code")
     .eq("id", facilityId)
     .maybeSingle();
   if (!data) {
     return { name: "your facility", path: "/" };
   }
+  const stateSlug =
+    stateFromCode(data.state_code)?.slug ?? data.state_code.toLowerCase();
   return {
     name: data.name,
-    path: `/${data.state_slug}/${data.city_slug}/${data.slug}`,
+    path: `/${stateSlug}/${data.city_slug}/${data.slug}`,
   };
 }
 
