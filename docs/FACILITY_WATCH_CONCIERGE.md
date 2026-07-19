@@ -35,6 +35,9 @@ Verified 2026-07-18 before public CTA exposure:
 | Migration `0064` | Applied; `facility_watchers.alerts_eligible` default true; 8 existing rows eligible |
 | Loops ZIPs | Each contains exactly `index.mjml` |
 | Webhook events (code) | Handles the five events listed above |
+| Production deploy (PR #60) | Merged; build READY on `www.starlynncare.com` |
+| Flag-off QA | CA/TX profiles 200; no Premium CTA; free signup `/api/watch` → 410; unsigned webhook → 400 Missing signature |
+| Flag-on redeploy | `FACILITY_WATCH_PAID_ENABLED=1` set; Premium module present on CA (`#facility-watch-premium`); absent on TX |
 
 **Rollback:** remove `FACILITY_WATCH_PAID_ENABLED` (or set to `0`) and redeploy. Existing paid subscriptions remain manageable via billing portal links; new CTAs disappear.
 

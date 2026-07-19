@@ -16,6 +16,17 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-07 — facilities has no state_slug column
+
+**What went wrong:** Paid Facility Watch checkout/webhook/billing queried `facilities.state_slug`. PostgREST returned column does not exist → checkout 404 "Facility not found" with the CTA live.
+
+**What worked:** Derive the URL slug with `stateFromCode(state_code)` from `src/lib/states.ts` (same pattern as watch welcome digests). Do not select `state_slug` from `facilities`.
+
+**Source:** Facility Watch launch QA after PR #60.
+
+---
+
+
 ## 2026-07 — WA full refresh overwrote physical city before Census recompute
 
 **What went wrong:** `wa_geo_directory_ingest.py` updated `facilities.city` from the ArcGIS directory for existing rows but did not update `city_slug` or run the required Census physical-city step. The first State Watch catch-up attempt was stopped after the Geo pass began. The repair script then failed because production was unexpectedly missing migration 0045 (`historical_city_slugs`).

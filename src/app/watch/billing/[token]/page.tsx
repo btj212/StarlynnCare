@@ -8,6 +8,7 @@ import { getSubscriptionByBillingToken } from "@/lib/facility-watch/subscription
 import { getServiceClient } from "@/lib/supabase/server";
 import { BillingPortalButton } from "./BillingPortalButton";
 import { canonicalFor } from "@/lib/seo/canonical";
+import { stateFromCode } from "@/lib/states";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +30,13 @@ export default async function WatchBillingPage({ params }: PageProps) {
   const supabase = getServiceClient();
   const { data: facility } = await supabase
     .from("facilities")
-    .select("name, slug, city_slug, state_slug")
+    .select("name, slug, city_slug, state_code")
     .eq("id", sub.facility_id)
     .maybeSingle();
 
   const facilityName = facility?.name ?? "Facility";
   const facilityHref = facility
-    ? `/${facility.state_slug}/${facility.city_slug}/${facility.slug}`
+    ? `/${stateFromCode(facility.state_code)?.slug ?? facility.state_code.toLowerCase()}/${facility.city_slug}/${facility.slug}`
     : "/";
 
   const statusLabel =
