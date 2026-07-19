@@ -45,6 +45,10 @@ STATE_SLUGS = {
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
 # Last known DB max dates from GitHub Actions weekly-inspection-ingest runs.
+# Run 29707350026 (2026-07-19T23:10 UTC, push after cron probe 2026-07-19T23:02):
+#   MN +3 inspections, max=2026-07-08 unchanged; 1 material facility change (Spirit Care Homes);
+#   4 of 7 insertDate events skipped (license not in ALRC target list or already ingested)
+#   CA/TX/WA/UT/IL/PA/AZ/MO pending at baseline update time (matrix still queued).
 # Run 29664571407 (2026-07-18T23:04 UTC, push after cron probe 2026-07-18T23:01):
 #   OR +4 inspections, max=2026-07-17 (was 2026-07-16); 0 material facility changes
 #   MN +4 inspections, max=2026-07-08 unchanged; 0 material facility changes (1 of 5
@@ -117,7 +121,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 18)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 19)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
