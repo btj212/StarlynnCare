@@ -124,21 +124,19 @@ export function FacilityWatchPaid({
                 Facility Watch · Premium
               </p>
 
-              <p className="mb-4 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-paper/55">
-                Monitoring available · {facilityName}
-              </p>
-
               <h2 className="max-w-[22ch] font-[family-name:var(--font-display)] text-[28px] leading-[1.15] tracking-[-0.01em] text-paper md:text-[34px]">
-                Someone should be{" "}
-                <em className="not-italic text-gold-soft">watching.</em>
+                Monitor this facility.
               </h2>
 
+              <p className="mt-3 max-w-[40ch] text-[16px] leading-snug text-paper/80 md:text-[17px]">
+                We&apos;ll notify you if anything changes.
+              </p>
+
               <p className="mt-4 max-w-[48ch] text-[15px] leading-relaxed text-paper/75">
-                We monitor news, public reviews, and complaint mentions we can
-                find across the web — plus official inspection and license-record
-                changes for {facilityName} — and flag anything material to you,
-                usually within a day of it appearing online. Nothing is swept
-                under the rug.
+                Official inspection and license-record changes for{" "}
+                {facilityName}, plus news, public reviews, and complaint
+                mentions across the web — usually within a day of appearing
+                online. Nothing is swept under the rug.
               </p>
 
               <ul className="mt-6 space-y-2 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-paper/70">
@@ -158,10 +156,7 @@ export function FacilityWatchPaid({
                   <span className="text-gold" aria-hidden>
                     ·
                   </span>
-                  <span>
-                    Best-effort public review and complaint mentions we can find
-                    online
-                  </span>
+                  <span>Public review and complaint mentions online</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-gold" aria-hidden>
@@ -274,7 +269,9 @@ export function FacilityWatchPaid({
 
               <p className="mt-4 font-[family-name:var(--font-mono)] text-[10px] leading-relaxed text-paper/40">
                 Payment is processed by Stripe. Monitoring is activated within
-                one business day. Cancel anytime from your billing link.
+                one business day. Web and review mentions are best-effort from
+                what we can find publicly. Cancel anytime from your billing
+                link.
               </p>
             </form>
           </div>
