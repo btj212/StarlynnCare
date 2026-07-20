@@ -1,7 +1,10 @@
 # Data Validation CI — StarlynnCare
 #
-# Runs Layers 1 and 2 of the validation stack on every PR and every push to main.
+# Runs Layers 0, 1, and 2 of the validation stack on every PR and every push to main.
 #
+# Layer 0 (source_contract_checks.py): re-fetches live CMS + Census Geocoder data and
+#   diffs it against stored rows — catches upstream schema drift and stale/wrong data
+#   at the source, not just DB-internal inconsistency.
 # Layer 1 (db_invariants.py): peer-rank distribution, cross-metric contradictions,
 #   positive-label audits, coverage nulls, scraper freshness.
 # Layer 2 (content_checks.py): report CSV vs DB reconciliation, chain scorecard
@@ -36,6 +39,11 @@ jobs:
 
       - name: Install Python dependencies
         run: pip install psycopg python-dotenv requests
+
+      - name: Layer 0 — Source API contract checks
+        run: python3 scripts/validate/source_contract_checks.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Layer 1 — DB invariant checks
         run: python3 scripts/validate/db_invariants.py

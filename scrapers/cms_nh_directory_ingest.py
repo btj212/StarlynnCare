@@ -54,21 +54,25 @@ CMS_DKAN_META = "https://data.cms.gov/provider-data/api/1/metastore/schemas/data
 PROVIDER_INFO_UUID = "4pq5-n9py"
 PAGE_SIZE = 2000
 
-# CMS fields we care about
+# CMS fields we care about. Verified against the live CSV header 2026-07-20
+# (scripts/validate/source_contract_checks.py checks this list stays in sync
+# with the live feed going forward — 5 names here were already stale before
+# that check existed: Provider City/State/Zip Code and Phone Number were
+# renamed to City/Town, State, ZIP Code, Telephone Number; RN Staffing Rating
+# no longer exists as a distinct rating column).
 _CMS_FIELDS = [
     "CMS Certification Number (CCN)",
     "Provider Name",
     "Provider Address",
-    "Provider City",
-    "Provider State",
-    "Provider Zip Code",
+    "City/Town",
+    "State",
+    "ZIP Code",
     "County/Parish",
-    "Phone Number",
+    "Telephone Number",
     "Overall Rating",
     "Health Inspection Rating",
     "QM Rating",
     "Staffing Rating",
-    "RN Staffing Rating",
     "Number of Certified Beds",
     "Average Number of Residents per Day",
     "Special Focus Status",

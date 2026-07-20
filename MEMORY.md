@@ -6,6 +6,25 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-07 — Layer 0 source-contract validation added; "test everything with real API calls" descoped to stable public APIs only
+
+**Context:** Requested comprehensive, no-mock, soup-to-nuts test coverage of the entire pipeline — raw data from every upstream API service, for every field, across many real test cases. Two hard constraints made the literal request infeasible as a single automated task, and this codebase's own rules (CLAUDE.md Rule 2/6: simplicity first, 4k/task–30k/session token budgets) argue against attempting it anyway:
+
+1. This session's sandbox cannot reach Postgres over TCP at all (`aws-1-us-east-1.pooler.supabase.com:5432` times out — same limitation already logged 2026-06 under "Claude Code on the web can't reach the DB"). Only HTTPS sources are testable live from here; DB-touching checks only execute for real in CI/Cursor.
+2. Several state ingest sources are Playwright/OCR scrapers against government portals not built for automated traffic (AZ Salesforce, MO ShowMeLTC, WA BHForms, IL LLCS, TX TULIP). Running those repeatedly and unattended in a test suite risks rate-limiting or blocking a real regulator's site — several are already logged as manual/semi-manual by design (see "State Watch alerts are scan-ledger driven" below).
+
+**Decided:** Added **Layer 0 — Source API Contract Checks** (`scripts/validate/source_contract_checks.py`, wired into `.github/workflows/validate.yml` alongside existing Layers 1/2). It makes real, unmocked HTTPS calls to the two ingest sources that are stable public APIs safe to hit repeatedly — the CMS NH Provider Directory CSV and the Census Geocoder — samples real facilities per state from the DB, and diffs live values against stored ones field-by-field (not just presence). This is additive to, not a replacement for, the existing Layers 1/2/3/5 (`docs/VALIDATION.md`), which already cover DB-internal invariants and DB-vs-rendered-content consistency with real data — this layer fills the one gap they didn't cover: the DB can be internally consistent and still be wrong versus the live source.
+
+Building it immediately found a real (if minor) latent bug: `_CMS_FIELDS` in `scrapers/cms_nh_directory_ingest.py` had 5 stale field names (`Provider City`/`State`/`Zip Code`, `Phone Number`, `RN Staffing Rating`) that no longer match the live CMS CSV header — the ingest code itself was unaffected (it already had correct fallback field names), but the list was dead/wrong documentation. Fixed alongside the new check so the schema-drift guard starts green and only fails on a real future upstream change.
+
+**Rejected:** Attempting literal 1:1 automated coverage of every state's ingest path with real API calls. Building a from-scratch npm test runner (Jest/Vitest/Playwright Test) — none exists in `package.json` today, and this codebase's own no-mock validation convention is already Python scripts under `scripts/validate/` reading `DATABASE_URL` directly; a second parallel test framework would fork that pattern rather than extend it (CLAUDE.md Rule 7).
+
+**Still open / explicitly out of scope for automation:** state portal scrapers (see list above) stay verified by a manual run + Layer 5 `post_ingest_check.py`, per existing convention — not folded into a scheduled/CI test suite.
+
+**Source:** `scripts/validate/source_contract_checks.py`; `docs/VALIDATION.md`; this session, 2026-07-20.
+
+---
+
 ## 2026-07 — Facility/operator names formatted at display, never renamed in DB
 
 **Decided:** Regulator rows often store leading articles inverted (`Lakes, the`, `OAKS, THE`) and all-caps names. Display via `formatFacilityName()` in `src/lib/facility/displayName.ts` (un-invert trailing the/a/an, title-case all-caps, fix LLC/II/III suffixes). Apply on `facility.name` once in `loadFacilityProfile`, and at operator/list/email/Stripe display sites. **Do not** rewrite `facilities.name` / `operator_name` in Postgres on re-ingest.

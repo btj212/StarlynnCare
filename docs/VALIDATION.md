@@ -8,10 +8,11 @@ Automated multi-layer validation to catch data accuracy bugs before they reach p
 
 | Layer | Script | When |
 |-------|--------|------|
+| 0 — Source contract checks | `scripts/validate/source_contract_checks.py` | After every DB migration, after every scraper ingest, on every PR |
 | 1 — DB invariants | `scripts/validate/db_invariants.py` | After every DB migration, after every scraper ingest |
 | 2 — Content checks | `scripts/validate/content_checks.py` | Before every production deploy |
 | 3 — Smoke tests | `scripts/validate/smoke_test.py` | After every production or preview deploy (manual) |
-| 4 — CI integration | `.github/workflows/validate.yml` | Automatic — runs L1+L2 on every PR and push to `main` |
+| 4 — CI integration | `.github/workflows/validate.yml` | Automatic — runs L0+L1+L2 on every PR and push to `main` |
 | 5 — Post-ingest hook | `scripts/validate/post_ingest_check.py` | Chained after any scraper run |
 
 ---
@@ -19,6 +20,23 @@ Automated multi-layer validation to catch data accuracy bugs before they reach p
 ## How to Run Manually
 
 **Prerequisites:** `DATABASE_URL` must be set — either in `.env.local` (for local runs) or as an environment variable.
+
+### Layer 0 — Source API Contract Checks
+
+```bash
+python3 scripts/validate/source_contract_checks.py
+python3 scripts/validate/source_contract_checks.py --sample 10   # more facilities per state
+python3 scripts/validate/source_contract_checks.py --skip-census # CMS only
+```
+
+Every other layer checks things *downstream* of ingest — DB-internal consistency, or DB vs. rendered/reported content. This is the only layer that re-fetches the **original upstream source live** and diffs it against what's stored, with zero mocks and zero cached fixtures:
+
+- **CMS NH Provider Directory** (`data.cms.gov`): downloads the live provider CSV, asserts every field name the ingest script (`scrapers/cms_nh_directory_ingest.py`) depends on still exists in the live header (schema-drift guard — this already found 5 stale names against the current feed on 2026-07-20), then samples real `cms_ccn`-linked facilities per state and asserts `beds`, `cms_overall_rating`, and `latitude` in the DB still match the live source exactly.
+- **Census Geocoder** (`geocoding.geo.census.gov`): samples real geocoded facilities per state and asserts the stored `city` still matches what the live Census Geocoder returns for that exact lat/lon — this is the direct regression check for the class of bug logged in `MEMORY.md` under "State directory feeds publish USPS mailing city, not physical city."
+
+**Scope note — what this layer intentionally does NOT cover:** state portal scrapers driven by Playwright/OCR against government sites not built for automated traffic (AZ Salesforce Experience Cloud, MO ShowMeLTC OCR pipeline, WA BHForms, IL LLCS, TX TULIP). Running those on a recurring automated schedule risks rate-limiting or blocking a real regulator's site, and several are already logged in `MEMORY.md` as manual/semi-manual by design ("State Watch alerts are scan-ledger driven," "Texas remains an explicit failed/manual source"). A single **manual** run of the affected scraper followed by Layer 5's `post_ingest_check.py` is the intended verification for those sources — do not add them to a script that runs unattended in CI.
+
+A mismatch here can mean two different things — read the failure detail before treating it as a bug: (a) our stored value is stale and a scraper needs to re-run, or (b) the upstream source itself changed shape and the ingest script needs an update. The CMS/Census checks print which one it looks like.
 
 ### Layer 1 — DB Invariant Checks
 
@@ -116,6 +134,8 @@ Layer 3 (smoke tests) is **not** run in CI because there is no live URL during C
    ```
 
    `check()` prints `PASS` or `FAIL`, accumulates failures, and returns the bool result.
+
+   **Layer 0 only:** if the check re-fetches an upstream source, make the call directly against the real API — no `unittest.mock`, no recorded/cassette fixtures, no hardcoded "expected" payloads copied from a past response. The entire point of this layer is that it fails when the live source actually disagrees with the DB; a mocked response can never do that.
 
 3. Add your function to the appropriate script's `main()` call sequence.
 
