@@ -92,6 +92,10 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
 #   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Cron probe 2026-07-20T23:02 UTC: OR source max=2026-07-17 (unchanged vs baseline); MN insertDate
+#   max=2026-07-19 (unchanged vs yesterday — same 7 survey events already ingested run 29707350026
+#   on 2026-07-19: +3 inspections, 4 skipped non-ALRC); UT CCL sample max=2026-05-07 (unchanged vs
+#   baseline 2026-06-16); all other states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
 # Cron probe 2026-07-19T23:02 UTC: OR source max=2026-07-17 (unchanged vs baseline); MN insertDate
 #   max=2026-07-19 (+7 survey events: Antique Gardens Senior Care, Arden Glades Assisted Living,
 #   Shepherds Way Home, Spirit Care Homes, 3MB Health Services, Absolute Homes Inc, SMC Ashton Inc;
@@ -117,7 +121,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 18)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 19)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
