@@ -92,6 +92,9 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
 #   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Run 29876029989 (2026-07-22T00:31 UTC, push after cron probe 2026-07-21T23:02):
+#   OR +7 inspections, max=2026-07-20 (was 2026-07-17); 2 material facility changes
+#   (Brookdale Redmond Clare Bridge, Footsteps at Lake Oswego); MN +0 max=2026-07-08 unchanged
 # Cron probe 2026-07-21T23:02 UTC: OR source max=2026-07-20 (+2 AFH: Zaida Santillan 013179
 #   Offsite 1 deficiency; Elkhan Babayev RL013155 Re-Licensure 5 deficiencies); MN insertDate max
 #   2026-07-19 (unchanged vs baseline — 7 events already ingested run 29707350026); UT CCL sample
@@ -115,7 +118,7 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 17),
+    "OR": date(2026, 7, 20),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 7, 8),
     "UT": date(2026, 6, 16),
