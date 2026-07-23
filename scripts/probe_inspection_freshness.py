@@ -92,6 +92,10 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
 #   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Run 30052034085 (2026-07-23T23:04 UTC, push after cron probe 2026-07-23T23:01):
+#   MN +99 inspections (4720→4819), max=2026-07-08 unchanged; 53 material facility changes
+#   (incl. Scandi Haven of Cura, Southern Oaks Place, Vitacare Living); Layer 5 post-ingest failed
+#   as expected; other matrix states still queued at time of summary
 # Cron probe 2026-07-23T23:01 UTC: OR source max=2026-07-20 (unchanged vs baseline — ingested
 #   run 29876029989); MN insertDate max=2026-07-23 (+7 survey events: Supportive Living LLC,
 #   Grove Living Company, Jabez Customized Living Servic, Scandi Haven of Cura, Tamarack Court of
@@ -142,7 +146,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 22)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 23)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
