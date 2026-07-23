@@ -92,6 +92,15 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
 #   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Cron probe 2026-07-23T23:01 UTC: OR source max=2026-07-20 (unchanged vs baseline — ingested
+#   run 29876029989); MN insertDate max=2026-07-23 (+7 survey events: Supportive Living LLC,
+#   Grove Living Company, Jabez Customized Living Servic, Scandi Haven of Cura, Tamarack Court of
+#   Bemidji, Southern Oaks Place, Decker's Family Care Inc); UT CCL sample max unavailable
+#   (production API external_id join returned no dates — unchanged vs baseline 2026-06-16); all other
+#   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Run 29964962053 (2026-07-22T23:04 UTC, push after cron probe 2026-07-22T23:00):
+#   MN +5 inspections (4715→4720), max=2026-07-08 unchanged; 2 material facility changes
+#   (Vitacare Living, Scandi Haven of Cura); 5 of 7 insertDate events ingested; 2 skipped
 # Cron probe 2026-07-22T23:00 UTC: OR source max=2026-07-20 (unchanged vs baseline — ingested
 #   run 29876029989); MN insertDate max=2026-07-22 (+7 survey/complaint events: 1 On 1 Comprehensive
 #   Healthcar, Hope Residential Care, Care Partners Homecare, Open Arms Housing, SMC Ashton Inc,
