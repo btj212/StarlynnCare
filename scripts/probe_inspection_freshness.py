@@ -92,6 +92,14 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
 #   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Cron probe 2026-07-24T23:01 UTC: OR source max=2026-07-23 (+4: Highland House NF 385149
+#   Complaint/Re-Licensure 0 deficiencies; Abdi Emana AFH MON013285 Monitoring 1 deficiency;
+#   Debra Carey AFH MON013240 Monitoring 5 deficiencies; The Pearl at Kruse Way NF 38L502
+#   Complaint/Re-Licensure 1 deficiency); MN insertDate max=2026-07-24 (+5 survey events:
+#   CURE HOME HEALTH INC, SERENDIPITOUS LIVING, NEW LIFE CARE LLC, PRAIRIE RESIDENCE CARE LLC,
+#   EDGEWOOD EGF SENIOR LIVING); UT CCL sample max unavailable (production API external_id join
+#   returned no dates — unchanged vs baseline 2026-06-16); all other states no new source data
+#   (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
 # Run 30052034085 (2026-07-23T23:04 UTC, push after cron probe 2026-07-23T23:01):
 #   MN +99 inspections (4720→4819), max=2026-07-08 unchanged; 53 material facility changes
 #   (incl. Scandi Haven of Cura, Southern Oaks Place, Vitacare Living); Layer 5 post-ingest failed
