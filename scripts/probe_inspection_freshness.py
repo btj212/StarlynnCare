@@ -92,6 +92,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
 #   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Run 30132786050 (2026-07-24T23:04 UTC, push after cron probe 2026-07-24T23:01):
+#   OR +7 inspections (13560→13567), max=2026-07-23 (was 2026-07-20); 0 material facility changes
+#   MN +2 inspections (4819→4821), max=2026-07-08 unchanged; 0 material facility changes
+#   (3 of 5 insertDate events skipped — non-ALRC or already present); Layer 5 post-ingest failed
+#   as expected; other matrix states still queued at time of summary
 # Cron probe 2026-07-24T23:01 UTC: OR source max=2026-07-23 (+4: Highland House NF 385149
 #   Complaint/Re-Licensure 0 deficiencies; Abdi Emana AFH MON013285 Monitoring 1 deficiency;
 #   Debra Carey AFH MON013240 Monitoring 5 deficiencies; The Pearl at Kruse Way NF 38L502
@@ -144,7 +149,7 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 20),
+    "OR": date(2026, 7, 23),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 7, 8),
     "UT": date(2026, 6, 16),
@@ -154,7 +159,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 23)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 24)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
