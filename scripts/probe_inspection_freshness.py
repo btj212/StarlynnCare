@@ -92,6 +92,14 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
 #   Homes, Maranatha); UT CCL sample max=2026-05-07 (unchanged vs baseline 2026-06-16); all other
 #   states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Run 30197122203 (2026-07-26T09:48 UTC schedule): OR +0 max=2026-07-24; MN +0 max=2026-07-14
+#   (4823 inspections); 9 insertDate 07/26 events already in DB by resolvedDate; 2 non-ALRC
+#   home-health skipped; all other matrix states +0 or connection-timeout failures.
+# Cron probe 2026-07-26T23:02 UTC: OR source max=2026-07-24 (unchanged vs baseline); MN insertDate
+#   max=2026-07-26 (+9 survey events: Lifecare Assisted Living, Harmony Homes, Riverfront Manor,
+#   Valley View Assisted Living, Home Front First, Good Samaritan Society Luverne, Key Living Village,
+#   +2 home-health non-ALRC); resolved dates already ingested — GHA run 30197122203 confirmed +0;
+#   all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual).
 # Run 30178750043 (2026-07-25T23:04 UTC, push after cron probe 2026-07-25T23:00):
 #   OR +10 inspections (13567→13577), max=2026-07-24 (was 2026-07-23); 1 material facility change
 #   MN +2 inspections (4821→4823), max=2026-07-14 unchanged; 0 material facility changes (4 of 6
@@ -171,7 +179,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 25)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 26)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
