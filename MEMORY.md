@@ -6,6 +6,22 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-07 — Live source-contract test coverage is scoped, not total
+
+**Context:** A scheduled task asked for "totally complete... end to end testing coverage without ANY mocks or fake data... for EVERYTHING... the WHOLE thing, soup to nuts" across the entire ingest pipeline. The pipeline has 133 scraper scripts across ~13 states hitting a mix of: stable key-free federal REST APIs (CMS, Census Geocoder), Socrata/ArcGIS endpoints, Salesforce Experience Cloud portals that block guest API access and require Playwright DOM scraping (AZ), ASP.NET WebForms portals also requiring Playwright (MO ShowMeLTC), and manual FOIA-delivered static Excel/PDF drops with no live API at all (IL, MO directory, TX TULIP). There is no existing test framework in this repo (no pytest/jest/vitest) — only bespoke `scripts/validate/*.py` layer scripts run manually/in CI against the DB and live pages.
+
+**Decided:** Building unmocked, live-hitting, field-complete tests for *all* of those sources in one pass would mean repeatedly driving Playwright against production government portals (real risk of IP blocks / ToS friction on sources we depend on long-term) and would blow past this project's own CLAUDE.md token budgets (4,000/task, 30,000/session) and simplicity rules by orders of magnitude — a real version of this is weeks of engineering, not one task. Per CLAUDE.md Rule 7 ("surface conflicts, do not average them"), that conflict is logged here rather than silently either skipped or overrun.
+
+**What was actually shipped:** `scripts/validate/source_contract_checks.py` ("Layer 0" in `docs/VALIDATION.md`) — a real, no-mock integration check against the two sources that are safe to hit on demand: CMS Provider Information (`data.cms.gov`, feeds `cms_nh_directory_ingest.py`) and the US Census Geocoder (`geocoding.geo.census.gov`, feeds `recompute_physical_city.py`). It validates the full column contract our ingest code reads (not 1–2 fields) plus row-level shape (CCN format, 1–5 rating bounds, lat/lon bounding box, non-negative beds), and two live geocoder fixtures with real, verified expected place names. Confirmed live: 32/32 checks passing against the real APIs, no fixtures/mocks. This also surfaced that CMS's live CSV already uses `City/Town`/`ZIP Code` (not the `Provider City`/`Provider Zip Code` names in the ingest script's `_CMS_FIELDS` docstring) — the ingest code's fallback already handles it, so no bug, but it's a live example of exactly the drift this layer exists to catch.
+
+**Rejected:** Attempting Playwright-driven contract tests against AZ (Salesforce guest-blocked), MO ShowMeLTC (ASP.NET WebForms + OCR), or FOIA-drop states (IL, TX) in this pass — fragile, ToS-risky to run repeatedly, and/or have no live API to test in the first place. Silently doing nothing in the face of the "no mocks, everything" ask. Silently building the full unbounded suite without flagging the budget/risk conflict.
+
+**Follow-up if the owner wants broader coverage:** decide per-source whether a live contract check is safe to run on a schedule at all (Socrata-based states — OR, MN, WA — are the next reasonable candidates, same key-free REST shape as CMS); for Playwright-only sources, the honest equivalent is a recorded-fixture regression test (a saved real HTML/DOM snapshot, re-parsed on a cadence) rather than a live hit every run — that is not what "no mocks" was asking for, so it needs explicit sign-off before building.
+
+**Source:** `scripts/validate/source_contract_checks.py`, `docs/VALIDATION.md` "Layer 0" section.
+
+---
+
 ## 2026-07 — Facility/operator names formatted at display, never renamed in DB
 
 **Decided:** Regulator rows often store leading articles inverted (`Lakes, the`, `OAKS, THE`) and all-caps names. Display via `formatFacilityName()` in `src/lib/facility/displayName.ts` (un-invert trailing the/a/an, title-case all-caps, fix LLC/II/III suffixes). Apply on `facility.name` once in `loadFacilityProfile`, and at operator/list/email/Stripe display sites. **Do not** rewrite `facilities.name` / `operator_name` in Postgres on re-ingest.

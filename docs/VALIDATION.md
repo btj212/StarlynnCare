@@ -8,6 +8,7 @@ Automated multi-layer validation to catch data accuracy bugs before they reach p
 
 | Layer | Script | When |
 |-------|--------|------|
+| 0 — Source contract checks | `scripts/validate/source_contract_checks.py` | Before trusting a new ingest run, or after a long gap since the last one (manual) |
 | 1 — DB invariants | `scripts/validate/db_invariants.py` | After every DB migration, after every scraper ingest |
 | 2 — Content checks | `scripts/validate/content_checks.py` | Before every production deploy |
 | 3 — Smoke tests | `scripts/validate/smoke_test.py` | After every production or preview deploy (manual) |
@@ -18,7 +19,46 @@ Automated multi-layer validation to catch data accuracy bugs before they reach p
 
 ## How to Run Manually
 
-**Prerequisites:** `DATABASE_URL` must be set — either in `.env.local` (for local runs) or as an environment variable.
+**Prerequisites:** `DATABASE_URL` must be set — either in `.env.local` (for local runs) or as an environment variable. Layer 0 is the exception — it makes live network calls only and needs no DB.
+
+### Layer 0 — Source Contract Checks
+
+```bash
+python3 scripts/validate/source_contract_checks.py
+python3 scripts/validate/source_contract_checks.py --cms-state WY   # any small state
+```
+
+Every other layer validates data already sitting in our DB or rendered on our
+pages. Layer 0 is the only one that asks whether the live upstream source is
+still shaped the way our ingest code assumes — **no mocks, no cached
+fixtures, real requests** against the two public, key-free federal APIs the
+pipeline depends on:
+
+- **CMS Provider Information** (`data.cms.gov`, feeds `cms_nh_directory_ingest.py`) —
+  resolves the live DKAN metadata endpoint, downloads the current CSV, and
+  checks every column the ingest code reads (CCN, name, address, city, state,
+  ZIP, county, phone, all four star ratings, certified beds, lat/lon),
+  allowing either of CMS's historical column-name variants. Then validates
+  field-level shape on a sample of real rows: CCN is a 6-digit code, ratings
+  are 1–5, lat/lon fall inside a US bounding box, beds is a non-negative
+  integer.
+- **US Census Geocoder** (`geocoding.geo.census.gov`, feeds
+  `recompute_physical_city.py`) — hits the live coordinates endpoint for two
+  fixed, real-world fixtures (Oakland City Hall → `Incorporated Places`,
+  Castro Valley → `Census Designated Places`) and asserts the returned
+  `BASENAME` still matches — catching both an API/shape break and a place
+  reclassification.
+
+**Deliberately out of scope** — see MEMORY.md "Live source-contract test
+coverage is scoped, not total" for why: the Playwright-driven state portals
+(AZ ADHS/Salesforce, MO ShowMeLTC, TX TULIP), FOIA-delivered static exports
+(IL, MO directory), and any source requiring a paid API key. A live-hit
+contract test against those either risks blocking/ToS issues on a real
+production scraping target, or (for FOIA drops) has no "live API" to test
+in the first place.
+
+**Not run in CI** — same reasoning as Layer 3: an external-source outage
+would fail every PR for a reason unrelated to the code change. Run manually.
 
 ### Layer 1 — DB Invariant Checks
 
@@ -93,11 +133,14 @@ Layers 1 and 2 run automatically via `.github/workflows/validate.yml` on every P
 
 Layer 3 (smoke tests) is **not** run in CI because there is no live URL during CI execution. Run it manually post-deploy.
 
+Layer 0 (source contract checks) is **not** run in CI either — it depends on two external federal APIs being up, and a CI job shouldn't go red for a reason unrelated to the PR's diff. Run it manually before trusting a new ingest run.
+
 ---
 
 ## How to Add a New Check
 
 1. Choose the right layer based on what the check targets:
+   - **Layer 0** — Live upstream source contract (does the real external API still return what our ingest code expects)
    - **Layer 1** — DB data integrity (schema, distributions, nulls)
    - **Layer 2** — Static content files vs DB
    - **Layer 3** — Live rendered pages
