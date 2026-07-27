@@ -151,6 +151,15 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   Shepherds Way Home, Spirit Care Homes, 3MB Health Services, Absolute Homes Inc, SMC Ashton Inc;
 #   +5 insertDate 07/18 still pending from prior probe); UT CCL sample max=2026-05-07 (unchanged vs
 #   baseline 2026-06-16); all other states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual).
+# Cron probe 2026-07-27T23:01 UTC: OR source max=2026-07-24 (unchanged vs baseline). MN insertDate
+#   max=2026-07-26 (+9 survey events: OASIS HOME HEALTH CARE, KEY LIVING VILLAGE, LIFECARE
+#   ASSISTED LIVING, HARMONY HOMES, CARING HEARTS HOME CARE, VALLEY VIEW ASSISTED LIVING,
+#   RIVERFRONT MANOR, HOME FRONT FIRST, GOOD SAMARITAN SOCIETY LUVERNE — all skipped at ingest:
+#   home-health/non-ALRC or already in DB; GHA run 30197122203 confirmed MN +0). All other states
+#   no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual).
+# Run 30197122203 (2026-07-26T09:48 UTC weekly schedule): all matrix states +0 inspections except
+#   CA ingest cancelled mid-run (baseline max=2026-07-17 captured) and IL connection timeout before
+#   ingest; OR/MN/WA/UT/PA/AZ/MO/TX ingest steps completed with +0.
 # Cron probe 2026-07-17T23:01 UTC: OR source max=2026-07-16 (+6: South Hills Rehab NF 25CF74,
 #   Royale Gardens NF 25D98D, Shelley Murphy AFH RL012882, David Schill AFH MON013132, Paradise
 #   Adult Care AFH RL013103, Rosemarie Tagalogon AFH MON013121); MN insertDate max=2026-07-17
@@ -159,11 +168,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   or manual).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 7, 2),
+    "CA": date(2026, 7, 17),
     "TX": date(2023, 2, 16),
     "OR": date(2026, 7, 24),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 7, 8),
+    "MN": date(2026, 7, 14),
     "UT": date(2026, 6, 16),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
@@ -171,7 +180,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 25)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 26)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
