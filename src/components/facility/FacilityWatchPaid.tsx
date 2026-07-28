@@ -21,11 +21,14 @@ type FormState = "idle" | "submitting" | "error";
 interface FacilityWatchPaidProps {
   facilityId: string;
   facilityName: string;
+  /** Tighter chrome when nested under an inspection summary. */
+  embedded?: boolean;
 }
 
 export function FacilityWatchPaid({
   facilityId,
   facilityName,
+  embedded = false,
 }: FacilityWatchPaidProps) {
   const [email, setEmail] = useState("");
   const [interval, setInterval] = useState<Interval>("month");
@@ -111,12 +114,20 @@ export function FacilityWatchPaid({
   return (
     <section
       id={PAID_WATCH_ANCHOR}
-      className="w-full scroll-mt-24 border-b border-clearing-rule px-4 py-10 sm:px-6 md:px-[60px]"
-      style={{ backgroundColor: "var(--color-clearing-tint)" }}
+      className={
+        embedded
+          ? "w-full scroll-mt-24 px-0 py-2"
+          : "w-full scroll-mt-24 border-b border-clearing-rule px-4 py-10 sm:px-6 md:px-[60px]"
+      }
+      style={embedded ? undefined : { backgroundColor: "var(--color-clearing-tint)" }}
     >
       <FadeUp>
         <div
-          className="mx-auto max-w-[1280px] overflow-hidden rounded-[22px] bg-ink text-paper shadow-[var(--shadow-feature)]"
+          className={
+            embedded
+              ? "overflow-hidden rounded-[18px] bg-ink text-paper shadow-[var(--shadow-feature)]"
+              : "mx-auto max-w-[1280px] overflow-hidden rounded-[22px] bg-ink text-paper shadow-[var(--shadow-feature)]"
+          }
         >
           <div className="grid gap-0 md:grid-cols-[1.15fr_0.85fr]">
             {/* Left: pitch */}

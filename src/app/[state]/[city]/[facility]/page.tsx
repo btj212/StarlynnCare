@@ -19,7 +19,6 @@ import { FacilityPeerRank } from "@/components/facility/profile/FacilityPeerRank
 import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
 import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
-import { FacilityWatchPaid } from "@/components/facility/FacilityWatchPaid";
 import { FacilityWatchPremiumAnchor } from "@/components/facility/FacilityWatchPremiumAnchor";
 import { FacilityOfferBar } from "@/components/facility/FacilityOfferBar";
 import { FacilityOfferProvider } from "@/components/facility/offer/FacilityOfferProvider";
@@ -257,15 +256,9 @@ export default async function FacilityPage({ params }: PageProps) {
             <FacilityPeerRank profile={profile} />
           </div>
 
-          {/* § 02b · Facility Watch Premium — replaces free enrollment */}
-          {showPaidWatch && (
-            <div className="order-4 md:order-none">
-              <FacilityWatchPaid
-                facilityId={facility.id}
-                facilityName={facility.name}
-              />
-            </div>
-          )}
+          {/* Facility Watch Premium checkout lives under the first inspection
+              summary in FacilityFullInspections (less mid-page CTA fatigue).
+              Early PremiumAnchor above still scrolls to that block. */}
 
           {/* Shortlist save — shown alongside watch; both are conversion actions */}
           <div className="order-5 md:order-none border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
@@ -302,8 +295,8 @@ export default async function FacilityPage({ params }: PageProps) {
         {/* § 05 · Tour prep cards (hidden when < 3 tour questions) */}
         <FacilityTourPrep profile={profile} />
 
-        {/* § 07 · Full verbatim inspection record */}
-        <FacilityFullInspections profile={profile} />
+        {/* § 07 · Full inspection record (summary-first; Premium under first summary) */}
+        <FacilityFullInspections profile={profile} showPaidWatch={showPaidWatch} />
 
         {/* Methodology credibility cap — RN reviewer, placed after the verbatim
             findings (the "View raw inspection records" target). Kept in DOM for
