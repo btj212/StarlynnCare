@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-07 — Facility Watch Premium sits under the first inspection summary
+
+**Decided:** On facility profiles, the Premium checkout block (`FacilityWatchPaid`) renders directly under the first plain-language inspection summary inside `FacilityFullInspections`, not as a mid-page band between Peer Rank and the citation record. Early `FacilityWatchPremiumAnchor` still scrolls to `#facility-watch-premium`. Inspection rows that have a summary show that summary open; full citation / verbatim text is behind “Read full citation text”.
+
+**Rejected:** Keeping a second full Premium module mid-page (CTA fatigue); showing verbatim citation blocks above the summary by default.
+
+**Source:** Preview QA on Watermark (OR); Clearing redesign PR #77.
+
+---
+
 ## 2026-07 — Clearing visual redesign is presentation-only
 
 **Decided:** Adopt the "Clearing" look (softer paper stack, white cards, rounded geometry, teal chrome, wider gutters) on home + state hub + city/county listing + facility profile + library. **Copy, section inventory, offers/magnets/Premium, GovernanceBar, JSON-LD/canonical, facility photos, and illustrations stay.** Paper tokens remap to Clearing surfaces in `globals.css` (`--color-paper` → `#FBF9F4`, etc.) plus explicit `--color-clearing-*` tokens. Do not ship Clearing prototype headlines ("A calmer way…"), thinner home IA, "Free, no account" trust line, or free per-facility Watch CTAs from the handoff.
