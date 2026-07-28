@@ -10,8 +10,8 @@ export function FacilityTourPrep({ profile }: { profile: FacilityProfile }) {
   const cards = tourQuestions.slice(0, 3);
 
   return (
-    <section id="tour" className="scroll-mt-36 md:scroll-mt-28 border-b border-paper-rule py-16">
-      <div className="mx-auto max-w-[1280px] px-4 md:px-8">
+    <section id="tour" className="scroll-mt-36 border-b border-clearing-rule py-16 md:scroll-mt-28">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px]">
         <SectionHead
           label="Tour Prep"
           title={
@@ -22,13 +22,16 @@ export function FacilityTourPrep({ profile }: { profile: FacilityProfile }) {
           deck={`A short pre-tour checklist tailored to ${facility.name}'s record and state requirements.`}
         />
 
-        <div className="grid gap-1 bg-paper-rule md:grid-cols-3">
+        <div className="grid gap-3.5 md:grid-cols-3">
           {cards.map((q, i) => (
-            <div key={i} className="bg-paper-2 px-6 py-7">
-              <div className="mb-3 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.18em] text-rust">
+            <div
+              key={i}
+              className="rounded-[18px] border border-clearing-rule-2 bg-clearing-card px-6 py-7 shadow-[var(--shadow-card)]"
+            >
+              <div className="mb-3 font-[family-name:var(--font-sans)] text-[12px] font-semibold tracking-[0.12em] text-teal">
                 {String(i + 1).padStart(2, "0")} /
               </div>
-              <h4 className="font-[family-name:var(--font-display)] text-[22px] font-normal leading-[1.2] tracking-[-0.005em] m-0 mb-2.5">
+              <h4 className="m-0 mb-2.5 font-[family-name:var(--font-display)] text-[22px] font-normal leading-[1.2] tracking-[-0.005em]">
                 {q}
               </h4>
               <p className="text-[13.5px] leading-[1.5] text-ink-2">

@@ -34,6 +34,7 @@ interface ArticleLayoutProps {
  * Shared layout wrapper for PA insights story pages.
  * Matches the existing article template from memory-care-licensing/page.tsx,
  * adding a ShareBar and sources footer slot.
+ * Clearing visual: soft masthead; copy and offer placement unchanged.
  */
 export function ArticleLayout({
   eyebrow,
@@ -53,18 +54,24 @@ export function ArticleLayout({
     <>
       <GovernanceBar />
       <SiteNav />
-      <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
+      <main className="min-h-[60vh]" style={{ background: "var(--color-clearing-bg)" }}>
         {/* Hero header */}
-        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-          <div className="mx-auto max-w-[860px] px-4 sm:px-6 md:px-10 py-14">
+        <div
+          className="border-b border-clearing-rule"
+          style={{
+            background:
+              "linear-gradient(180deg, var(--color-clearing-tint) 0%, var(--color-clearing-bg) 100%)",
+          }}
+        >
+          <div className="mx-auto max-w-[860px] px-4 py-14 sm:px-6 md:px-[60px]">
             {/* Breadcrumb */}
             <nav
-              className="flex flex-wrap items-center gap-1.5 mb-6 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-ink-4"
+              className="mb-6 flex flex-wrap items-center gap-1.5 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-4"
               aria-label="Breadcrumb"
             >
               {allButLast.map((crumb) => (
                 <span key={crumb.href} className="flex items-center gap-1.5">
-                  <Link href={crumb.href} className="hover:text-teal transition-colors">
+                  <Link href={crumb.href} className="transition-colors hover:text-teal">
                     {crumb.label}
                   </Link>
                   <span aria-hidden>›</span>
@@ -74,17 +81,17 @@ export function ArticleLayout({
             </nav>
 
             {/* Eyebrow */}
-            <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
-              {eyebrow}
+            <div className="mb-3">
+              <span className="clearing-chip">{eyebrow}</span>
             </div>
 
             {/* Headline */}
-            <h1 className="font-[family-name:var(--font-display)] font-normal text-[clamp(28px,4.5vw,48px)] leading-[1.08] tracking-[-0.02em] text-ink mt-3 mb-5">
+            <h1 className="mt-3 mb-5 font-[family-name:var(--font-display)] text-[clamp(28px,4.5vw,44px)] font-normal leading-[1.08] tracking-[-0.02em] text-ink">
               {headline}
             </h1>
 
             {/* Dek */}
-            <p className="text-[18px] leading-[1.6] text-ink-3 max-w-[62ch]">{dek}</p>
+            <p className="max-w-[62ch] text-[18px] leading-[1.6] text-ink-3">{dek}</p>
 
             {/* Author + share */}
             <div className="mt-8">
@@ -96,7 +103,10 @@ export function ArticleLayout({
 
         {/* Hero image */}
         {heroImage && (
-          <div className="relative w-full overflow-hidden border-b border-paper-rule" style={{ aspectRatio: "16/7" }}>
+          <div
+            className="relative w-full overflow-hidden border-b border-clearing-rule"
+            style={{ aspectRatio: "16/7" }}
+          >
             <Image
               src={heroImage.src}
               alt={heroImage.alt}
@@ -109,15 +119,15 @@ export function ArticleLayout({
         )}
 
         {/* Article body */}
-        <div className="mx-auto max-w-[860px] px-4 sm:px-6 md:px-10 py-14">
+        <div className="mx-auto max-w-[860px] px-4 py-14 sm:px-6 md:px-[60px]">
           {children}
 
           {sources && (
-            <div className="mt-16 pt-8 border-t border-paper-rule">
-              <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-ink-4 mb-4">
+            <div className="mt-16 rounded-[18px] border border-clearing-rule-2 bg-clearing-card px-5 py-6 pt-8 shadow-[var(--shadow-card)] sm:px-6">
+              <p className="mb-4 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-4">
                 Sources
               </p>
-              <div className="font-[family-name:var(--font-mono)] text-[12px] text-ink-4 space-y-2 leading-[1.6]">
+              <div className="space-y-2 font-[family-name:var(--font-sans)] text-[13px] leading-[1.6] text-ink-4">
                 {sources}
               </div>
             </div>

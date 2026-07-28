@@ -25,17 +25,20 @@ export async function SiteFooter() {
   const lastRefreshed = await getLastRefreshed();
   const year = new Date().getFullYear();
 
+  const linkCls = "py-1 text-[#9DB6AF] no-underline transition-colors hover:text-white";
+  const headingCls =
+    "mb-3.5 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.12em] text-[#C6DAD3]";
+
   return (
-    <footer className="bg-paper border-t-2 border-ink pt-12 pb-8">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10">
+    <footer className="bg-clearing-footer pt-12 pb-8 text-[#9DB6AF]">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px]">
 
-        {/* 5-column grid */}
-        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] mb-10">
+        {/* 5-column grid — link inventory unchanged */}
+        <div className="mb-10 grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
 
-          {/* Brand block */}
           <div>
-            <div className="flex items-center gap-2.5 mb-4">
-              <svg viewBox="-50 -50 100 100" className="w-[22px] h-[22px] shrink-0" aria-hidden fill="currentColor" style={{ color: "var(--color-ink)" }}>
+            <div className="mb-4 flex items-center gap-2.5">
+              <svg viewBox="-50 -50 100 100" className="h-[22px] w-[22px] shrink-0" aria-hidden fill="currentColor" style={{ color: "#C6DAD3" }}>
                 <g transform="rotate(0)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
                 <g transform="rotate(60)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
                 <g transform="rotate(120)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
@@ -44,91 +47,78 @@ export async function SiteFooter() {
                 <g transform="rotate(300)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
                 <circle r="3.2"/>
               </svg>
-              <span className="font-[family-name:var(--font-display)] text-[24px] text-ink">
-                Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
+              <span className="font-[family-name:var(--font-sans)] text-[21px] font-semibold tracking-[-0.02em] text-white">
+                Starlynn<span style={{ color: "#C6DAD3" }}>Care</span>
               </span>
             </div>
-            <p className="text-[13.5px] text-ink-3 leading-relaxed max-w-[36ch] mb-3">
+            <p className="mb-3 max-w-[36ch] text-[13.5px] leading-relaxed text-[#9DB6AF]">
               An independent civic-data publisher. We index every licensed memory care facility in{" "}
               {COVERED_STATES.map((s) => s.name).join(", ")} against each state&rsquo;s own public inspection record.
             </p>
             <p
               id="no-paid-placement"
-              className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-rust leading-relaxed max-w-[36ch]"
+              className="max-w-[36ch] font-[family-name:var(--font-mono)] text-[11px] leading-relaxed tracking-[0.06em] text-[#C6DAD3]"
             >
               {GOVERNANCE_24_WORDS}
             </p>
           </div>
 
-          {/* The Data */}
           <div>
-            <h5 className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust font-semibold mb-3.5">
-              The Data
-            </h5>
+            <h5 className={headingCls}>The Data</h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Data links">
               {COVERED_STATES.map((s) => (
-                <Link key={s.slug} href={`/${s.slug}`} className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">
+                <Link key={s.slug} href={`/${s.slug}`} className={linkCls}>
                   {s.name} facilities
                 </Link>
               ))}
-              <Link href="/data" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Dataset overview</Link>
-              <Link href="/research" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Research &amp; analyses</Link>
-              <Link href="/llms.txt" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors flex items-center gap-1">
-                llms.txt <span className="text-rust text-[10px]">↗</span>
+              <Link href="/data" className={linkCls}>Dataset overview</Link>
+              <Link href="/research" className={linkCls}>Research &amp; analyses</Link>
+              <Link href="/llms.txt" className={`${linkCls} flex items-center gap-1`}>
+                llms.txt <span className="text-[10px]">↗</span>
               </Link>
             </nav>
           </div>
 
-          {/* Editorial library */}
           <div>
-            <h5 className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust font-semibold mb-3.5">
-              Library
-            </h5>
+            <h5 className={headingCls}>Library</h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Editorial library links">
-              <Link href="/library" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">All articles</Link>
-              <Link href="/california/cost-by-city" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Cost by city</Link>
-              <Link href="/library/memory-care-vs-nursing-home" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">vs. nursing home</Link>
-              <Link href="/library/medi-cal-and-memory-care" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Medi-Cal guide</Link>
-              <Link href="/library/when-is-it-time-for-memory-care" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">When to move</Link>
-              <Link href="/library/dementia-vs-alzheimers-vs-lewy-body" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Dementia types</Link>
+              <Link href="/library" className={linkCls}>All articles</Link>
+              <Link href="/california/cost-by-city" className={linkCls}>Cost by city</Link>
+              <Link href="/library/memory-care-vs-nursing-home" className={linkCls}>vs. nursing home</Link>
+              <Link href="/library/medi-cal-and-memory-care" className={linkCls}>Medi-Cal guide</Link>
+              <Link href="/library/when-is-it-time-for-memory-care" className={linkCls}>When to move</Link>
+              <Link href="/library/dementia-vs-alzheimers-vs-lewy-body" className={linkCls}>Dementia types</Link>
             </nav>
           </div>
 
-          {/* Methodology */}
           <div>
-            <h5 className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust font-semibold mb-3.5">
-              Methodology
-            </h5>
+            <h5 className={headingCls}>Methodology</h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="Methodology links">
-              <Link href="/methodology" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Our methodology</Link>
-              <Link href="/methodology#cdss" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Source records</Link>
-              <Link href="/editorial-policy" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Editorial policy</Link>
-              <Link href="/california/glossary" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">California glossary</Link>
-              <Link href="/methodology#no-paid-placement" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Editorial standards</Link>
-              <Link href="/methodology#corrections" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Corrections policy</Link>
+              <Link href="/methodology" className={linkCls}>Our methodology</Link>
+              <Link href="/methodology#cdss" className={linkCls}>Source records</Link>
+              <Link href="/editorial-policy" className={linkCls}>Editorial policy</Link>
+              <Link href="/california/glossary" className={linkCls}>California glossary</Link>
+              <Link href="/methodology#no-paid-placement" className={linkCls}>Editorial standards</Link>
+              <Link href="/methodology#corrections" className={linkCls}>Corrections policy</Link>
             </nav>
           </div>
 
-          {/* About */}
           <div>
-            <h5 className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust font-semibold mb-3.5">
-              About
-            </h5>
+            <h5 className={headingCls}>About</h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="About links">
-              <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Our editorial desk</Link>
-              <Link href="/california/37-questions-to-ask-on-a-tour" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Tour checklist (37 questions)</Link>
-              <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">For discharge planners</Link>
-              <Link href="/about" className="py-1 text-ink-2 no-underline hover:text-teal transition-colors">Press &amp; citations</Link>
+              <Link href="/about" className={linkCls}>Our editorial desk</Link>
+              <Link href="/california/37-questions-to-ask-on-a-tour" className={linkCls}>Tour checklist (37 questions)</Link>
+              <Link href="/about" className={linkCls}>For discharge planners</Link>
+              <Link href="/about" className={linkCls}>Press &amp; citations</Link>
             </nav>
           </div>
         </div>
 
-        {/* Foot meta */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center pt-6 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-ink-4 sm:flex-wrap sm:gap-3">
+        <div className="flex flex-col gap-2 border-t border-white/10 pt-6 text-[13.5px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
           <span>© {year} StarlynnCare, PBC · A California Public Benefit Corporation</span>
           <span className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link href="/terms" className="hover:text-teal transition-colors">Terms of Use</Link>
-            <Link href="/privacy" className="hover:text-teal transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="transition-colors hover:text-white">Terms of Use</Link>
+            <Link href="/privacy" className="transition-colors hover:text-white">Privacy Policy</Link>
             <span>{lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · OR DHS · WA DSHS · HHSC · MDH · DLBC · IDPH · CMS</span>
           </span>
         </div>

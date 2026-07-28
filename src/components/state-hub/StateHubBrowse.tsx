@@ -29,50 +29,46 @@ export function StateHubBrowse({
   viewAllLabel,
 }: Props) {
   return (
-    <section
-      id="browse"
-      className="border-b border-paper-rule"
-      style={{ background: "var(--color-paper-2)" }}
-    >
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
+    <section id="browse" className="border-b border-clearing-rule bg-clearing-tint">
+      <div className="mx-auto max-w-[1280px] px-4 py-16 sm:px-6 md:px-[60px] md:py-20">
         <SectionHead label={sectionLabel} title={sectionTitle} />
 
-        <div className="grid gap-12 items-start md:grid-cols-[1.2fr_2fr]">
+        <div className="grid items-start gap-12 md:grid-cols-[1.2fr_2fr]">
           <div>
             <p className="smallcaps mb-3.5">{browseSectionTitle}</p>
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-2">
               {counties.map((c, i) => (
                 <Link
                   key={c.slug}
                   href={`/${stateSlug}/${c.slug}`}
-                  className="flex flex-col gap-2 py-4 px-1 border-b border-paper-rule no-underline text-ink hover:bg-paper transition-colors min-w-0 sm:grid sm:grid-cols-[32px_1fr_auto_auto] sm:items-center sm:gap-3.5"
+                  className="card-lift flex min-w-0 flex-col gap-2 rounded-[18px] border border-clearing-rule-2 bg-clearing-card px-4 py-4 text-ink no-underline shadow-[var(--shadow-card)] transition-colors hover:text-teal sm:grid sm:grid-cols-[32px_1fr_auto_auto] sm:items-center sm:gap-3.5"
                 >
-                  <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.04em]">
+                  <span className="font-[family-name:var(--font-sans)] text-[12px] font-medium tracking-[0.04em] text-ink-4">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="font-[family-name:var(--font-display)] text-[20px] sm:text-[22px] leading-tight tracking-[-0.005em] min-w-0">
+                  <span className="min-w-0 font-[family-name:var(--font-display)] text-[20px] leading-tight tracking-[-0.005em] sm:text-[22px]">
                     {c.name}
                   </span>
-                  <span className="font-[family-name:var(--font-mono)] text-[11px] sm:text-[12px] text-ink-3 tracking-[0.04em] sm:self-center">
+                  <span className="font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-3 sm:self-center sm:text-[13px]">
                     {c.count} fac · {c.cities} cities
                   </span>
-                  <span className="font-[family-name:var(--font-mono)] text-rust sm:self-center sm:justify-self-end">→</span>
+                  <span className="font-semibold text-teal sm:justify-self-end sm:self-center">→</span>
                 </Link>
               ))}
               {comingCounties.map((name) => (
                 <div
                   key={name}
-                  className="flex flex-col gap-2 py-4 px-1 border-b border-paper-rule opacity-40 min-w-0 sm:grid sm:grid-cols-[32px_1fr_auto] sm:items-center sm:gap-3.5"
+                  className="flex min-w-0 flex-col gap-2 rounded-[18px] border border-clearing-rule-3 bg-clearing-card/60 px-4 py-4 opacity-50 sm:grid sm:grid-cols-[32px_1fr_auto] sm:items-center sm:gap-3.5"
                 >
-                  <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 tracking-[0.04em]">—</span>
-                  <span className="font-[family-name:var(--font-display)] text-[20px] sm:text-[22px] leading-tight tracking-[-0.005em] min-w-0">{name}</span>
-                  <span className="font-[family-name:var(--font-mono)] text-[10.5px] text-ink-4 tracking-[0.04em] sm:self-center">Q2 2026</span>
+                  <span className="font-[family-name:var(--font-sans)] text-[12px] font-medium tracking-[0.04em] text-ink-4">—</span>
+                  <span className="min-w-0 font-[family-name:var(--font-display)] text-[20px] leading-tight tracking-[-0.005em] sm:text-[22px]">{name}</span>
+                  <span className="font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-4 sm:self-center">Q2 2026</span>
                 </div>
               ))}
             </div>
             <Link
               href={viewAllHref}
-              className="inline-block mt-4 font-[family-name:var(--font-mono)] text-[12px] uppercase tracking-[0.1em] text-rust underline underline-offset-4"
+              className="mt-4 inline-block font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4 hover:text-rust"
             >
               {viewAllLabel}
             </Link>
@@ -80,15 +76,15 @@ export function StateHubBrowse({
 
           <div>
             <p className="smallcaps mb-3.5">{popularCitiesTitle}</p>
-            <div className="columns-1 sm:columns-2 lg:columns-3 [column-gap:2rem]">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {topCities.map((c) => (
                 <Link
                   key={c.slug}
                   href={`/${stateSlug}/${c.slug}`}
-                  className="flex justify-between py-[7px] border-b border-dotted border-paper-rule no-underline text-[14px] text-ink-2 hover:text-teal break-inside-avoid transition-colors"
+                  className="card-lift flex items-center justify-between rounded-2xl border border-clearing-rule-2 bg-clearing-card px-5 py-4 text-[15px] text-ink-2 no-underline transition-colors hover:text-teal"
                 >
-                  <span>{c.name}</span>
-                  <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-4">{c.count}</span>
+                  <span className="font-semibold text-ink">{c.name}</span>
+                  <span className="text-[14px] text-ink-4">{c.count}</span>
                 </Link>
               ))}
             </div>

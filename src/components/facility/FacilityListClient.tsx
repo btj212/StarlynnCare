@@ -147,7 +147,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
 
   return (
     <div
-      className="group relative flex flex-col overflow-hidden rounded-xl border border-sc-border bg-white shadow-card transition-shadow hover:shadow-card-hover"
+      className="group relative flex flex-col overflow-hidden rounded-[18px] border border-clearing-rule-2 bg-clearing-card shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)]"
       style={signal.type === "serious" ? { borderColor: "#f5c6c6" } : undefined}
     >
       {/* Photo / gradient */}
@@ -188,7 +188,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
           {displayName}
         </p>
         {f.limitedHistory && (
-          <span className="font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.1em] text-amber-600">
+          <span className="font-[family-name:var(--font-sans)] text-[10px] font-medium uppercase tracking-[0.08em] text-amber-600">
             · limited history
           </span>
         )}
@@ -197,7 +197,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
         <TrustBadge signal={signal} />
 
         {/* Tier 3: metadata */}
-        <p className="mt-auto pt-1 text-[11px] text-muted leading-relaxed">
+        <p className="mt-auto pt-1 text-[11px] leading-relaxed text-muted">
           {[
             f.city,
             f.beds != null ? `${f.beds} beds` : null,
@@ -218,11 +218,11 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
 
 function SectionHead({ title, count }: { title: string; count: number }) {
   return (
-    <div className="flex items-baseline gap-2 border-b border-sc-border pb-3">
-      <h2 className="font-[family-name:var(--font-serif)] text-xl font-semibold text-navy">
+    <div className="flex items-baseline gap-2 border-b border-clearing-rule pb-3">
+      <h2 className="font-[family-name:var(--font-display)] text-xl font-normal text-ink">
         {title}
       </h2>
-      <span className="text-sm tabular-nums text-muted font-normal">({count})</span>
+      <span className="text-sm font-normal tabular-nums text-muted">({count})</span>
     </div>
   );
 }
@@ -355,7 +355,7 @@ export function FacilityListClient({
             value={query}
             onChange={(e) => { setQuery(e.target.value); setChip("all"); }}
             placeholder={`Search facilities in ${regionName}…`}
-            className="w-full rounded-lg border border-sc-border bg-white pl-9 pr-4 py-2.5 text-sm text-ink placeholder:text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal transition"
+            className="w-full rounded-[14px] border border-clearing-rule-2 bg-clearing-card py-2.5 pr-4 pl-9 text-sm text-ink shadow-[var(--shadow-card)] transition placeholder:text-muted focus:border-teal focus:ring-2 focus:ring-teal/30 focus:outline-none"
           />
         </div>
 
@@ -367,8 +367,8 @@ export function FacilityListClient({
               onClick={() => { setChip(c.id); setQuery(""); }}
               className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
                 chip === c.id && !query
-                  ? "bg-navy text-white"
-                  : "bg-white border border-sc-border text-slate hover:border-navy/30 hover:text-ink"
+                  ? "bg-teal text-white"
+                  : "border border-clearing-rule-2 bg-clearing-card text-ink-3 hover:border-teal/30 hover:text-ink"
               }`}
             >
               {c.label}
@@ -379,8 +379,8 @@ export function FacilityListClient({
               onClick={() => { setShowSmall((v) => !v); setChip("all"); setQuery(""); }}
               className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
                 showSmall
-                  ? "bg-navy text-white"
-                  : "bg-white border border-sc-border text-slate hover:border-navy/30 hover:text-ink"
+                  ? "bg-teal text-white"
+                  : "border border-clearing-rule-2 bg-clearing-card text-ink-3 hover:border-teal/30 hover:text-ink"
               }`}
             >
               {showSmall ? "Hide" : "Show"} ≤6-bed homes ({hiddenSmallCount})
@@ -391,9 +391,9 @@ export function FacilityListClient({
             <span className="hidden sm:inline">Sort:</span>
             <button
               onClick={() => setSortBy("name")}
-              className={`px-2.5 py-1 rounded transition-colors font-semibold ${
+              className={`rounded-full px-2.5 py-1 font-semibold transition-colors ${
                 sortBy === "name"
-                  ? "bg-ink text-paper"
+                  ? "bg-teal text-white"
                   : "bg-transparent text-ink-3 hover:text-ink"
               }`}
             >
@@ -401,9 +401,9 @@ export function FacilityListClient({
             </button>
             <button
               onClick={() => setSortBy("record")}
-              className={`px-2.5 py-1 rounded transition-colors font-semibold ${
+              className={`rounded-full px-2.5 py-1 font-semibold transition-colors ${
                 sortBy === "record"
-                  ? "bg-ink text-paper"
+                  ? "bg-teal text-white"
                   : "bg-transparent text-ink-3 hover:text-ink"
               }`}
               title="Fewest citations first — facilities with the cleanest inspection records at the top"

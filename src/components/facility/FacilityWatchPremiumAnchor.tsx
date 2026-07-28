@@ -11,14 +11,14 @@ import { emitPaidWatchAnchorClick } from "@/lib/analytics/clarityEvents";
 export function FacilityWatchPremiumAnchor() {
   return (
     <div
-      className="border-b border-paper-rule px-4 py-3 md:px-8"
-      style={{ backgroundColor: "var(--color-paper-2)" }}
+      className="border-b border-clearing-rule px-4 py-3 sm:px-6 md:px-[60px]"
+      style={{ backgroundColor: "var(--color-clearing-tint)" }}
     >
       <div className="mx-auto max-w-[1280px]">
         <a
           href={`#${PAID_WATCH_ANCHOR}`}
           onClick={() => emitPaidWatchAnchorClick()}
-          className="font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-teal hover:underline underline-offset-4"
+          className="font-[family-name:var(--font-sans)] text-[13px] font-medium tracking-[0.02em] text-teal underline-offset-4 hover:underline"
         >
           Get alerts if this facility&apos;s record changes →
         </a>

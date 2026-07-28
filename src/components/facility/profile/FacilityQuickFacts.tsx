@@ -17,8 +17,8 @@ function formatPhone(raw: string | null): string | null {
 
 function QfCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-r border-paper-rule px-4 py-4 md:px-5 md:py-5 last:border-r-0">
-      <div className="mb-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em] text-ink-3">
+    <div className="rounded-[16px] border border-clearing-rule-2 bg-clearing-card px-4 py-4 shadow-[var(--shadow-card)] md:px-5 md:py-5">
+      <div className="mb-1.5 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3">
         {label}
       </div>
       <div className="font-[family-name:var(--font-display)] text-[28px] leading-[1.05] tracking-[-0.005em] text-ink">
@@ -34,9 +34,9 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
   const phone = formatPhone(facility.phone);
 
   return (
-    <div className="border-y border-paper-rule bg-paper">
-      <div className="mx-auto max-w-[1280px]">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
+    <div className="border-y border-clearing-rule bg-clearing-tint">
+      <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 md:px-[60px]">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
           <QfCell label="Licensed beds">
             {facility.beds ?? "—"}
           </QfCell>
@@ -57,7 +57,7 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
             {phone ? (
               <a
                 href={`tel:${facility.phone}`}
-                className="font-[family-name:var(--font-sans)] text-[15px] font-medium leading-snug text-teal hover:underline underline-offset-2"
+                className="font-[family-name:var(--font-sans)] text-[15px] font-medium leading-snug text-teal underline-offset-2 hover:underline"
               >
                 {phone}
               </a>

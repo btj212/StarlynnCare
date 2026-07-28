@@ -30,32 +30,37 @@ export function StateHubHero({
   facilityCount,
 }: Props) {
   return (
-    <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14 md:py-16">
+    <section
+      className="border-b border-clearing-rule"
+      style={{
+        background:
+          "linear-gradient(180deg, var(--color-clearing-tint) 0%, var(--color-clearing-bg) 100%)",
+      }}
+    >
+      <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 md:px-[60px] md:py-16 md:pt-[72px]">
         {eyebrow && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6 sm:mb-7 font-[family-name:var(--font-mono)] text-[10.5px] sm:text-[11.5px] uppercase tracking-[0.18em] text-rust">
-            <span className="h-px w-6 sm:w-9 shrink-0 bg-rust opacity-60" aria-hidden />
-            <span className="min-w-0 flex-1 basis-[min(100%,14rem)] sm:flex-none sm:basis-auto">
+          <div className="mb-6 flex flex-wrap items-center gap-3 sm:mb-7">
+            <span className="clearing-chip">
+              <span className="live-dot" aria-hidden />
               {eyebrow}
             </span>
-            <span className="h-px min-w-[2rem] flex-1 basis-0 bg-rust opacity-60 max-sm:hidden" aria-hidden />
           </div>
         )}
 
-        <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1.15fr_1fr]">
+        <div className="grid items-start gap-10 md:grid-cols-[1.05fr_0.95fr] md:gap-16">
           <div>
             <h1
-              className="font-[family-name:var(--font-display)] font-normal leading-[0.98] tracking-[-0.02em] text-ink mb-5 sm:mb-6 max-w-none md:max-w-[16ch]"
-              style={{ fontSize: "clamp(32px, 5vw + 0.5rem, 84px)" }}
+              className="mb-5 max-w-none font-[family-name:var(--font-display)] font-normal leading-[0.98] tracking-[-0.02em] text-ink sm:mb-6 md:max-w-[16ch]"
+              style={{ fontSize: "clamp(32px, 5vw + 0.5rem, 68px)" }}
             >
               {title}
             </h1>
 
-            <p className="font-[family-name:var(--font-display)] italic text-[18px] sm:text-[22px] leading-[1.45] text-ink-3 mb-6 sm:mb-8 max-w-[40ch]">
+            <p className="mb-6 max-w-[44ch] font-[family-name:var(--font-sans)] text-[18px] leading-[1.55] text-[#4A564F] sm:mb-8 sm:text-[19px]">
               {subtitle}
             </p>
 
-            <div className="w-full max-w-[460px] min-w-0">
+            <div className="w-full min-w-0 max-w-[460px]">
               <ZipSearch variant="editorial" />
             </div>
 
@@ -65,7 +70,7 @@ export function StateHubHero({
               facilityCount={facilityCount}
             />
 
-            <div className="mt-4 flex flex-wrap items-center gap-3 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.08em] text-ink-3">
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] text-ink-3">
               <span className="flex items-center gap-1.5 text-grade-a">
                 <span className="live-dot" aria-hidden />
                 {liveLabel}
@@ -76,8 +81,8 @@ export function StateHubHero({
 
           <div className="hidden md:block">
             <div
-              className="relative w-full border border-paper-rule overflow-hidden"
-              style={{ aspectRatio: "1/1", background: "var(--color-paper-2)" }}
+              className="relative w-full overflow-hidden rounded-3xl border border-clearing-rule-2 shadow-[var(--shadow-hero-image)]"
+              style={{ aspectRatio: "1/1", background: "var(--color-clearing-tint)" }}
             >
               <Image
                 src={illustrationSrc}

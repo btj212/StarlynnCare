@@ -16,6 +16,7 @@ type Props = {
 };
 
 const MIN_LIVE_THRESHOLD = 100;
+const gutter = "mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px]";
 
 export function NationalHomeSections({ data }: Props) {
   const { totalFacilities, totalInspections, totalSevereCitations, states, topCities, sampleReviews } = data;
@@ -50,49 +51,49 @@ export function NationalHomeSections({ data }: Props) {
 
   return (
     <>
-      {/* § 00 · Hero */}
-      <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14 md:py-16">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6 sm:mb-7 font-[family-name:var(--font-mono)] text-[10.5px] sm:text-[11.5px] uppercase tracking-[0.18em] text-rust">
-            <span className="h-px w-6 sm:w-9 shrink-0 bg-rust opacity-60" aria-hidden />
-            <span className="min-w-0 flex-1 basis-[min(100%,14rem)] sm:flex-none sm:basis-auto">
-              {liveStates.length + pilotStates.length} States · Vol. 01 · 2026
+      {/* § 00 · Hero — production copy kept; Clearing surfaces */}
+      <section
+        className="border-b border-clearing-rule"
+        style={{ background: "linear-gradient(180deg, var(--color-clearing-tint) 0%, var(--color-clearing-bg) 100%)" }}
+      >
+        <div className={`${gutter} py-14 md:py-16 md:pt-[72px] md:pb-16`}>
+          <div className="mb-6 flex flex-wrap items-center gap-3 sm:mb-7">
+            <span className="clearing-chip">
+              <span className="live-dot" aria-hidden />
+              {totalFacilities > 0
+                ? `${totalFacilities.toLocaleString()} facilities · ${liveStates.length + pilotStates.length} states`
+                : `${liveStates.length + pilotStates.length} States · Vol. 01 · 2026`}
             </span>
-            <span className="h-px min-w-[2rem] flex-1 basis-0 bg-rust opacity-60 max-sm:hidden" aria-hidden />
           </div>
 
-          <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1.15fr_1fr]">
+          <div className="grid items-start gap-10 md:grid-cols-[1.05fr_0.95fr] md:gap-16">
             <div>
               <h1
-                className="font-[family-name:var(--font-display)] font-normal leading-[0.98] tracking-[-0.02em] text-ink mb-5 sm:mb-6 max-w-none md:max-w-[16ch]"
-                style={{ fontSize: "clamp(32px, 5vw + 0.5rem, 84px)" }}
+                className="mb-5 max-w-none font-[family-name:var(--font-display)] font-normal leading-[0.98] tracking-[-0.02em] text-ink sm:mb-6 md:max-w-[16ch]"
+                style={{ fontSize: "clamp(32px, 5vw + 0.5rem, 68px)" }}
               >
                 Find memory care you can{" "}
-                <em className="italic text-rust">trust,</em>{" "}
+                <em className="italic text-teal">trust,</em>{" "}
                 ranked with regulator data.
               </h1>
 
-              <p className="font-[family-name:var(--font-display)] italic text-[18px] sm:text-[22px] leading-[1.45] text-ink-3 mb-6 sm:mb-8 max-w-[40ch]">
+              <p className="mb-6 max-w-[44ch] font-[family-name:var(--font-sans)] text-[18px] leading-[1.55] text-[#4A564F] sm:mb-8 sm:text-[19px]">
                 Public inspection data. No paid ads. No sales calls. Every claim sourced to a state record.
               </p>
 
-              <div className="w-full max-w-[460px] min-w-0">
+              <div className="w-full min-w-0 max-w-[460px]">
                 <ZipSearch variant="editorial" />
               </div>
 
-              <div className="mt-3.5 flex flex-wrap items-center gap-3 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.08em] text-ink-3">
-                <span className="flex items-center gap-1.5 text-grade-a">
-                  <span className="live-dot" aria-hidden />
-                  {totalFacilities > 0 ? `${totalFacilities.toLocaleString()} facilities live` : `Live across ${liveStates.length} states`}
-                </span>
+              <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] text-ink-3">
+                <span>✓ No sales calls</span>
+                <span>✓ No paid placement</span>
                 {liveStates.length > 0 && (
                   <span className="text-ink-4">
-                    · {liveStates.map((s) => s.stateCode).join(" · ")}
-                  </span>
-                )}
-                {pilotStates.length > 0 && (
-                  <span className="text-ink-4 text-[10px]">
-                    · Pilot: {pilotStates.map((s) => `${s.stateCode} (${s.facilityCount})`).join(" · ")}
+                    {liveStates.map((s) => s.stateCode).join(" · ")}
+                    {pilotStates.length > 0 && (
+                      <> · Pilot: {pilotStates.map((s) => `${s.stateCode} (${s.facilityCount})`).join(" · ")}</>
+                    )}
                   </span>
                 )}
               </div>
@@ -100,12 +101,12 @@ export function NationalHomeSections({ data }: Props) {
 
             <div className="hidden md:block">
               <div
-                className="relative w-full border border-paper-rule overflow-hidden"
-                style={{ aspectRatio: "1/1", background: "var(--color-paper-2)" }}
+                className="relative w-full overflow-hidden rounded-3xl border border-clearing-rule-2 shadow-[var(--shadow-hero-image)]"
+                style={{ aspectRatio: "4/3", background: "var(--color-clearing-tint)" }}
               >
                 <Image
-                  src="/illustrations/hallway-family-staff-conversation.png"
-                  alt="Illustrated family member speaking with a facility staff member in a hallway, holding documents — representing the conversations families have when researching memory care options"
+                  src="/illustrations/couch-grandmother-grandkids-reading.png"
+                  alt="Illustrated grandmother reading a book to two young grandchildren on a couch — representing the relationships dementia care planning aims to preserve"
                   fill
                   sizes="(max-width: 768px) 0px, 40vw"
                   className="object-cover"
@@ -118,12 +119,8 @@ export function NationalHomeSections({ data }: Props) {
       </section>
 
       {/* § 01 · The Public Record */}
-      <section
-        id="data"
-        className="border-b border-paper-rule"
-        style={{ background: "var(--color-paper-2)" }}
-      >
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
+      <section id="data" className="border-b border-clearing-rule bg-clearing-tint">
+        <div className={`${gutter} py-16 md:py-20`}>
           <SectionHead
             title={<>National facility data, <em>curated from state regulators.</em></>}
           />
@@ -132,12 +129,8 @@ export function NationalHomeSections({ data }: Props) {
       </section>
 
       {/* § 02 · States we cover */}
-      <section
-        id="states"
-        className="border-b border-paper-rule"
-        style={{ background: "var(--color-paper)" }}
-      >
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
+      <section id="states" className="border-b border-clearing-rule bg-clearing-bg">
+        <div className={`${gutter} py-16 md:py-20`}>
           <SectionHead
             title={<>Choose your state, <em>or start with a city below.</em></>}
           />
@@ -145,7 +138,7 @@ export function NationalHomeSections({ data }: Props) {
           <div className="mt-6">
             <Link
               href="/states"
-              className="font-[family-name:var(--font-mono)] text-[12px] uppercase tracking-[0.1em] text-rust underline underline-offset-4"
+              className="font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4 hover:text-rust"
             >
               All covered states →
             </Link>
@@ -153,30 +146,26 @@ export function NationalHomeSections({ data }: Props) {
         </div>
       </section>
 
-      {/* § 03 · Popular cities (state-aware) */}
-      <section
-        id="browse"
-        className="border-b border-paper-rule"
-        style={{ background: "var(--color-paper-2)" }}
-      >
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
+      {/* § 03 · Popular cities */}
+      <section id="browse" className="border-b border-clearing-rule bg-clearing-tint">
+        <div className={`${gutter} py-16 md:py-20`}>
           <SectionHead
             title={<>Top cities by facility count, <em>across all states.</em></>}
           />
-          <div className="columns-1 sm:columns-2 lg:columns-3 [column-gap:2rem]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {topCities.map((c) => (
               <Link
                 key={`${c.stateCode}-${c.slug}`}
                 href={`/${c.stateSlug}/${c.slug}`}
-                className="flex justify-between py-[7px] border-b border-dotted border-paper-rule no-underline text-[14px] text-ink-2 hover:text-teal break-inside-avoid transition-colors"
+                className="card-lift flex items-center justify-between rounded-2xl border border-clearing-rule-2 bg-clearing-card px-5 py-4 text-[15px] text-ink-2 no-underline transition-colors hover:text-teal"
               >
-                <span>
+                <span className="font-semibold text-ink">
                   {c.name}
-                  <span className="ml-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.1em] text-ink-4">
+                  <span className="ml-1.5 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-4">
                     {c.stateCode}
                   </span>
                 </span>
-                <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-4">{c.count}</span>
+                <span className="text-[14px] text-ink-4">{c.count}</span>
               </Link>
             ))}
           </div>
@@ -184,40 +173,46 @@ export function NationalHomeSections({ data }: Props) {
       </section>
 
       {/* § 04 · How we grade */}
-      <section
-        id="methodology"
-        className="border-b border-paper-rule"
-        style={{ background: "var(--color-paper)" }}
-      >
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
+      <section id="methodology" className="border-b border-clearing-rule bg-clearing-bg">
+        <div className={`${gutter} py-16 md:py-20`}>
           <SectionHead
             title={<>Three data signals. <em>Compared to peers.</em></>}
           />
-          <div className="relative mb-12 border border-paper-rule overflow-hidden" style={{ aspectRatio: "21/9", background: "var(--color-paper-2)" }}>
+          <div className="relative mb-12 overflow-hidden rounded-[22px] border border-clearing-rule-2 shadow-[var(--shadow-feature)]" style={{ aspectRatio: "21/9", background: "var(--color-clearing-tint)" }}>
             <Image
-              src="/illustrations/couch-grandmother-grandkids-reading.png"
-              alt="Illustrated grandmother reading a book to two young grandchildren on a couch — representing the relationships dementia care planning aims to preserve"
+              src="/illustrations/hallway-family-staff-conversation.png"
+              alt="Illustrated family member speaking with a facility staff member in a hallway, holding documents — representing the conversations families have when researching memory care options"
               fill
               sizes="1280px"
               className="object-cover"
             />
           </div>
-          <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1fr_1.05fr]">
+          <div className="grid items-start gap-10 md:grid-cols-[1fr_1.05fr] md:gap-16">
             <div>
-              <h3 className="font-[family-name:var(--font-display)] text-[26px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.01em] m-0 mb-4">
+              <h3 className="m-0 mb-4 font-[family-name:var(--font-display)] text-[26px] font-normal leading-[1.1] tracking-[-0.01em] sm:text-[32px]">
                 Data you can trace to a citation number.
               </h3>
-              <div className="text-ink-2 mb-4 leading-relaxed">
+              <div className="mb-4 leading-relaxed text-ink-2">
                 <p className="mb-4">
                   Each facility shows its full inspection record from the state regulator — every citation, severity level, and repeat violation. We compare each facility against similar facilities in the same state so you can see what&rsquo;s normal and what stands out.
                 </p>
               </div>
-              <p className="text-ink-2 mb-6 leading-relaxed">
+              <p className="mb-6 leading-relaxed text-ink-2">
                 The methodology is published and version-controlled. We change it in public.{" "}
-                <Link href="/methodology" className="text-teal underline underline-offset-4">
+                <Link href="/methodology" className="text-teal underline underline-offset-4 hover:text-rust">
                   Read the full methodology →
                 </Link>
               </p>
+              <div className="flex flex-wrap gap-2">
+                {["Severity", "Repeat violations", "Inspection frequency"].map((pill) => (
+                  <span
+                    key={pill}
+                    className="rounded-full border border-[#E7EBE4] bg-[#F5F7F3] px-3 py-1.5 text-[13px] font-medium text-[#3C4A43]"
+                  >
+                    {pill}
+                  </span>
+                ))}
+              </div>
             </div>
             <SyncedHomeSampleCardDesktop />
           </div>

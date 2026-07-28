@@ -111,12 +111,12 @@ export function FacilityWatchPaid({
   return (
     <section
       id={PAID_WATCH_ANCHOR}
-      className="w-full border-b border-paper-rule py-10 px-4 md:px-8 scroll-mt-24"
-      style={{ backgroundColor: "var(--color-paper-2)" }}
+      className="w-full scroll-mt-24 border-b border-clearing-rule px-4 py-10 sm:px-6 md:px-[60px]"
+      style={{ backgroundColor: "var(--color-clearing-tint)" }}
     >
       <FadeUp>
         <div
-          className="mx-auto max-w-[1280px] overflow-hidden rounded-sm bg-ink text-paper"
+          className="mx-auto max-w-[1280px] overflow-hidden rounded-[22px] bg-ink text-paper shadow-[var(--shadow-feature)]"
         >
           <div className="grid gap-0 md:grid-cols-[1.15fr_0.85fr]">
             {/* Left: pitch */}

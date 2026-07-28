@@ -28,19 +28,19 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
   ];
 
   return (
-    <div className="fp-subnav sticky top-[52px] z-30 border-b border-paper-rule bg-paper/92 backdrop-blur-[20px]">
-      <div className="mx-auto max-w-[1280px] px-4 md:px-8">
+    <div className="fp-subnav sticky top-[52px] z-30 border-b border-clearing-rule bg-clearing-bg/92 backdrop-blur-[20px]">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px]">
         <div className="flex items-center justify-between gap-4 py-3">
           {/* Breadcrumb */}
           <nav
-            className="hidden items-center gap-1.5 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] md:flex"
+            className="hidden items-center gap-1.5 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] md:flex"
             aria-label="Page location"
           >
-            <Link href={`/${state.slug}`} className="border-b border-rust pb-px text-ink hover:text-rust">
+            <Link href={`/${state.slug}`} className="border-b border-teal/40 pb-px text-ink hover:text-teal">
               {state.name}
             </Link>
             <span className="text-ink-4">/</span>
-            <Link href={backHref} className="border-b border-rust pb-px text-ink hover:text-rust">
+            <Link href={backHref} className="border-b border-teal/40 pb-px text-ink hover:text-teal">
               {region?.name ?? county?.name ?? facility.city ?? state.name}
             </Link>
             <span className="text-ink-4">/</span>
@@ -60,7 +60,7 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
               <a
                 key={a.href}
                 href={a.href}
-                className="shrink-0 whitespace-nowrap border border-paper-rule bg-paper px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.06em] text-ink-2 active:bg-ink active:text-paper transition-colors"
+                className="shrink-0 whitespace-nowrap rounded-full border border-clearing-rule-2 bg-clearing-card px-2.5 py-1 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-2 transition-colors active:bg-teal active:text-white"
               >
                 {a.label}
               </a>

@@ -22,8 +22,8 @@ interface StatBlockProps {
 }
 
 /**
- * Broadsheet 4-up stat grid with thin-rule dividers and footnote citations.
- * Used on homepage, county hub, and city hub pages.
+ * Stat grid for homepage / hub pages.
+ * Clearing visual: soft white cards; same StatItem API and sources.
  */
 export function StatBlock({ stats, footnotes, compact = false }: StatBlockProps) {
   const wide =
@@ -37,41 +37,37 @@ export function StatBlock({ stats, footnotes, compact = false }: StatBlockProps)
 
   return (
     <div>
-      <div className={`grid grid-cols-1 gap-px bg-paper-rule border-t-2 border-b-2 border-ink ${wide}`}>
+      <div className={`grid grid-cols-1 gap-3.5 ${wide}`}>
         {stats.map((s, i) => (
           <div
             key={i}
-            className={`relative bg-paper-2 px-4 py-7 sm:px-6 sm:py-8 md:px-7 md:py-9${
+            className={`relative rounded-[18px] border border-clearing-rule-2 bg-clearing-card px-4 py-7 shadow-[var(--shadow-card)] sm:px-6 sm:py-8 md:px-7 md:py-9${
               stats.length === 3 && i === stats.length - 1 ? " sm:col-span-2 lg:col-span-1" : ""
             }`}
           >
-            {/* Source citation — top-right */}
-            <span className="absolute top-3.5 right-4 font-[family-name:var(--font-mono)] text-[10px] text-ink-4 tracking-[0.08em] uppercase">
+            <span className="absolute top-3.5 right-4 font-[family-name:var(--font-sans)] text-[11px] font-medium uppercase tracking-[0.08em] text-ink-4">
               [{String(i + 1).padStart(2, "0")}] {s.src}
             </span>
 
-            {/* Big number */}
             <div
-              className={`font-[family-name:var(--font-display)] leading-[1.0] tracking-[-0.02em] text-ink${
+              className={`font-[family-name:var(--font-display)] tracking-[-0.02em] text-ink${
                 compact
-                  ? " text-[clamp(28px,3.5vw,44px)] break-words"
-                  : " text-[clamp(48px,5.5vw,78px)] leading-[0.95]"
+                  ? " break-words text-[clamp(28px,3.5vw,44px)] leading-[1.0]"
+                  : " text-[clamp(40px,5vw,52px)] leading-[0.95]"
               }`}
             >
               {s.n}
               {s.unit && (
-                <span className="text-[0.55em] text-ink-3 ml-1.5">{s.unit}</span>
+                <span className="ml-1.5 text-[0.55em] text-ink-3">{s.unit}</span>
               )}
             </div>
 
-            {/* Label */}
-            <p className="mt-3.5 text-[14px] sm:text-[14.5px] leading-[1.4] text-ink-2 max-w-none sm:max-w-[26ch]">
+            <p className="mt-3.5 max-w-none text-[14px] leading-[1.4] text-ink-2 sm:max-w-[26ch] sm:text-[14.5px]">
               {s.label}
             </p>
 
-            {/* Delta */}
             {s.delta && (
-              <span className="inline-block mt-3 font-[family-name:var(--font-mono)] text-[11px] text-rust tracking-[0.06em]">
+              <span className="mt-3 inline-block font-[family-name:var(--font-sans)] text-[12px] font-medium tracking-[0.04em] text-teal">
                 ↑ {s.delta}
               </span>
             )}
@@ -79,11 +75,10 @@ export function StatBlock({ stats, footnotes, compact = false }: StatBlockProps)
         ))}
       </div>
 
-      {/* Footnote row */}
       {footnotes && footnotes.length > 0 && (
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-7 sm:gap-y-2 font-[family-name:var(--font-mono)] text-[11px] sm:text-[11.5px] text-ink-3 tracking-[0.04em]">
+        <div className="mt-5 flex flex-col gap-2 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-3 sm:flex-row sm:flex-wrap sm:gap-x-7 sm:gap-y-2 sm:text-[13px]">
           {footnotes.map((f, i) => (
-            <span key={i} className="before:content-['▸_'] before:text-rust">
+            <span key={i} className="before:mr-1 before:text-teal before:content-['▸']">
               {f}
             </span>
           ))}

@@ -52,25 +52,25 @@ export function LibraryOfferCta({
 
   if (kind === "route") {
     return (
-      <div className="my-10 border border-ink/15 border-l-4 border-l-rust bg-paper-2 px-6 py-6">
-        <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] text-rust mb-2">
+      <div className="my-10 rounded-[18px] border border-clearing-rule-2 bg-clearing-card px-6 py-6 shadow-[var(--shadow-card)]">
+        <div className="mb-2 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.12em] text-teal">
           {eyebrow}
         </div>
-        <p className="font-[family-name:var(--font-display)] text-[19px] leading-[1.25] tracking-[-0.01em] text-ink mb-2">
+        <p className="mb-2 font-[family-name:var(--font-display)] text-[19px] leading-[1.25] tracking-[-0.01em] text-ink">
           {headline}
         </p>
-        <p className="font-[family-name:var(--font-mono)] text-[11.5px] tracking-[0.02em] text-ink-2 leading-relaxed mb-5">
+        <p className="mb-5 font-[family-name:var(--font-sans)] text-[13.5px] leading-relaxed tracking-[0.01em] text-ink-2">
           {sub}
         </p>
         <Link
           href={href ?? "#"}
           onClick={() => emitOfferClick(variant)}
-          className="inline-flex items-center font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-paper px-5 py-3 hover:opacity-90 transition-opacity"
+          className="inline-flex items-center rounded-xl px-5 py-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold text-paper transition-opacity hover:opacity-90"
           style={{ backgroundColor: "var(--color-teal)" }}
         >
           {ctaLabel}
         </Link>
-        <p className="mt-3 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.04em] text-ink-4">
+        <p className="mt-3 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-4">
           Free · no spam · unsubscribe any time
         </p>
       </div>
@@ -130,14 +130,14 @@ function LibraryEmailCapture({
 
   if (formState === "success") {
     return (
-      <div className="my-10 border border-teal/30 bg-teal/5 px-6 py-5">
-        <div className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] text-teal mb-2">
+      <div className="my-10 rounded-[18px] border border-teal/25 bg-teal/5 px-6 py-5">
+        <div className="mb-2 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.12em] text-teal">
           ✓ On its way
         </div>
-        <p className="font-[family-name:var(--font-display)] text-[18px] text-ink leading-snug">
+        <p className="font-[family-name:var(--font-display)] text-[18px] leading-snug text-ink">
           Check your inbox in the next few minutes.
         </p>
-        <p className="mt-1 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-3">
+        <p className="mt-1 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-3">
           No spam · Unsubscribe any time
         </p>
       </div>
@@ -145,17 +145,17 @@ function LibraryEmailCapture({
   }
 
   return (
-    <div className="my-10 border border-ink/15 border-l-4 border-l-rust bg-paper-2 px-6 py-6">
-      <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] text-rust mb-2">
+    <div className="my-10 rounded-[18px] border border-clearing-rule-2 bg-clearing-card px-6 py-6 shadow-[var(--shadow-card)]">
+      <div className="mb-2 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.12em] text-teal">
         {eyebrow}
       </div>
-      <p className="font-[family-name:var(--font-display)] text-[19px] leading-[1.25] tracking-[-0.01em] text-ink mb-2">
+      <p className="mb-2 font-[family-name:var(--font-display)] text-[19px] leading-[1.25] tracking-[-0.01em] text-ink">
         {headline}
       </p>
-      <p className="font-[family-name:var(--font-mono)] text-[11.5px] tracking-[0.02em] text-ink-2 leading-relaxed mb-5">
+      <p className="mb-5 font-[family-name:var(--font-sans)] text-[13.5px] leading-relaxed tracking-[0.01em] text-ink-2">
         {sub}
       </p>
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2.5 max-w-md">
+      <form onSubmit={handleSubmit} className="flex max-w-md flex-col gap-2.5 sm:flex-row">
         <input
           type="email"
           required
@@ -163,23 +163,23 @@ function LibraryEmailCapture({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
           disabled={formState === "submitting"}
-          className="flex-1 border border-paper-rule bg-paper px-4 py-2.5 font-[family-name:var(--font-mono)] text-[13px] text-ink placeholder:text-ink-4 focus:outline-none focus:border-teal transition disabled:opacity-60"
+          className="flex-1 rounded-[12px] border border-clearing-rule-2 bg-clearing-bg px-4 py-2.5 font-[family-name:var(--font-sans)] text-[14px] text-ink transition placeholder:text-ink-4 focus:border-teal focus:outline-none disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={formState === "submitting" || !email.trim()}
-          className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-paper px-5 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap"
+          className="whitespace-nowrap rounded-xl px-5 py-2.5 font-[family-name:var(--font-sans)] text-[13px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ backgroundColor: "var(--color-teal)" }}
         >
           {formState === "submitting" ? "Sending…" : ctaLabel}
         </button>
       </form>
       {formState === "error" && (
-        <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] text-rust">
+        <p className="mt-2 font-[family-name:var(--font-sans)] text-[12px] text-rust">
           Something went wrong — please try again.
         </p>
       )}
-      <p className="mt-3 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.04em] text-ink-4">
+      <p className="mt-3 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-4">
         Free · no spam · unsubscribe any time
       </p>
     </div>

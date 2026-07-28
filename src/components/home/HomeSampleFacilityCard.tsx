@@ -15,11 +15,11 @@ export function GradeBar({ label, pct }: { label: string; pct: number | null }) 
         </span>
       </div>
       <span
-        className="h-1.5 relative min-w-0 sm:order-2"
-        style={{ background: "var(--color-paper-2)", borderRadius: 0 }}
+        className="relative h-2 min-w-0 overflow-hidden rounded-full sm:order-2"
+        style={{ background: "#EEF1EC" }}
       >
         <span
-          className="absolute left-0 top-0 bottom-0"
+          className="absolute top-0 bottom-0 left-0 rounded-full"
           style={{ width: `${w}%`, background: fillColor }}
         />
       </span>
@@ -35,18 +35,18 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
   const composite = facility.composite != null ? Math.round(facility.composite) : null;
 
   return (
-    <div className="border border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[1fr_auto] sm:p-[22px] items-start border-b border-paper-rule">
+    <div className="overflow-hidden rounded-[22px] border border-clearing-rule-2 bg-clearing-card shadow-[var(--shadow-feature)]">
+      <div className="grid grid-cols-1 items-start gap-4 border-b border-clearing-rule-3 p-4 sm:grid-cols-[1fr_auto] sm:p-[26px]">
         <div>
-          <h3 className="font-[family-name:var(--font-display)] text-[22px] sm:text-[26px] leading-[1.05] tracking-[-0.005em] m-0 mb-1">
+          <h3 className="m-0 mb-1 font-[family-name:var(--font-display)] text-[22px] leading-[1.05] tracking-[-0.005em] sm:text-[26px]">
             {facility.name}
           </h3>
           <div className="text-[13.5px] text-ink-3">
             {facility.city}, {facility.state_code}
           </div>
-          <div className="flex flex-wrap gap-3 mt-2 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
+          <div className="mt-2 flex flex-wrap gap-3 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-3">
             {facility.license_number && (
-              <span className="text-rust">LIC# {facility.license_number}</span>
+              <span className="font-medium text-teal">LIC# {facility.license_number}</span>
             )}
             {facility.beds && <span>Capacity {facility.beds}</span>}
             <span className="uppercase">{facility.care_category.replace(/_/g, " ")}</span>
@@ -54,17 +54,17 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
         </div>
         {composite != null && (
           <div
-            className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] px-2.5 py-1 justify-self-start sm:justify-self-end"
-            style={{ background: "var(--color-teal-soft)", color: "var(--color-teal-deep)" }}
+            className="justify-self-start rounded-full px-2.5 py-1 font-[family-name:var(--font-sans)] text-[12px] font-semibold sm:justify-self-end"
+            style={{ background: "var(--color-clearing-chip)", color: "var(--color-teal)" }}
           >
             Top {Math.max(1, 100 - composite)}%
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 p-4 sm:p-6" style={{ background: "var(--color-paper)" }}>
-        <div className="pb-1 border-b border-paper-rule mb-1">
-          <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em] text-rust m-0">
+      <div className="flex flex-col gap-3 bg-clearing-bg p-4 sm:p-6">
+        <div className="mb-1 border-b border-clearing-rule-3 pb-1">
+          <p className="m-0 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.12em] text-teal">
             Peer-relative percentiles · higher is better
           </p>
           <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 font-[family-name:var(--font-mono)] text-[10px] text-ink-4 list-none p-0 m-0">
@@ -91,10 +91,7 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
         </p>
       </div>
 
-      <div
-        className="flex flex-col gap-2 items-start sm:flex-row sm:justify-between sm:items-center px-4 sm:px-[22px] py-3.5 border-t border-paper-rule font-[family-name:var(--font-mono)] text-[11px] sm:text-[11.5px] tracking-[0.06em] text-ink-3"
-        style={{ background: "var(--color-paper-2)" }}
-      >
+      <div className="flex flex-col items-start gap-2 border-t border-clearing-rule-3 bg-clearing-tint px-4 py-3.5 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-[22px] sm:text-[13px]">
         <span className="text-balance">Source: {stateName} state agency · public inspection data</span>
         <Link href={profileUrl} className="text-teal no-underline font-medium hover:text-teal-deep shrink-0">
           View full profile →

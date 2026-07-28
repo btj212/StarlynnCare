@@ -45,16 +45,16 @@ export function FacilityOfferBar() {
         transform: visible ? "translateY(0)" : "translateY(100%)",
       }}
     >
-      <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-4 py-3">
-        {/* Eyebrow + action */}
-        <div className="flex-1 min-w-0">
-          <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-gold/70 leading-none mb-1">
+      <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-4 py-3 sm:px-6 md:px-[60px]">
+        {/* Eyebrow + action — offer wiring unchanged */}
+        <div className="min-w-0 flex-1">
+          <p className="mb-1 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.12em] leading-none text-gold/70">
             {offer.eyebrow}
           </p>
           <button
             type="button"
             onClick={triggerOffer}
-            className="text-left font-[family-name:var(--font-mono)] text-[12.5px] tracking-[0.04em] text-white hover:text-gold transition-colors"
+            className="rounded-xl bg-teal px-3.5 py-2 text-left font-[family-name:var(--font-sans)] text-[13px] font-semibold tracking-[0.01em] text-white transition-colors hover:bg-teal-deep"
           >
             {offer.ctaLabel}
           </button>

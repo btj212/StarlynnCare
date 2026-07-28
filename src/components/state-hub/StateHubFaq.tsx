@@ -8,12 +8,8 @@ type Props = {
 
 export function StateHubFaq({ faqs }: Props) {
   return (
-    <section
-      id="faq"
-      className="border-b border-paper-rule"
-      style={{ background: "var(--color-paper)" }}
-    >
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
+    <section id="faq" className="border-b border-clearing-rule bg-clearing-bg">
+      <div className="mx-auto max-w-[1280px] px-4 py-16 sm:px-6 md:px-[60px] md:py-20">
         <SectionHead
           title={<>What families and clinicians <em>ask us first.</em></>}
         />
