@@ -58,7 +58,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let metaFirstPublishedAt: string | null = null;
   if (supabase) {
     const summary = await loadRegionHubSummary(supabase, region);
-    if (summary.totalCount === 0) notFound();
+    // Only 404 on a confirmed empty hub. A transient Supabase error used to
+    // return totalCount: 0 and get cached as not-found for up to revalidate.
+    if (!summary.fetchError && summary.totalCount === 0) notFound();
     totalCount = summary.totalCount;
     withDeficiency = summary.withDeficiency;
     findingsDate = summary.findingsDate;

@@ -13,6 +13,7 @@ import {
   emitPaidWatchImpression,
   emitPaidWatchPlanSelect,
 } from "@/lib/analytics/clarityEvents";
+import { emitAhrefsPaidWatchCheckoutStart } from "@/lib/analytics/ahrefsEvents";
 
 type Interval = "month" | "year";
 type FormState = "idle" | "submitting" | "error";
@@ -61,6 +62,7 @@ export function FacilityWatchPaid({
     setState("submitting");
     setErrorMsg("");
     emitPaidWatchCheckoutStart(interval);
+    emitAhrefsPaidWatchCheckoutStart(interval);
 
     try {
       const res = await fetch("/api/facility-watch/checkout", {

@@ -98,6 +98,28 @@ const nextConfig: NextConfig = {
         destination: "/utah",
         permanent: true,
       },
+      // Two-letter state abbreviations → full slugs (analytics saw /mo/belton 404s).
+      // Keep in sync with STATES in src/lib/states.ts.
+      { source: "/ca", destination: "/california", permanent: true },
+      { source: "/ca/:path*", destination: "/california/:path*", permanent: true },
+      { source: "/tx", destination: "/texas", permanent: true },
+      { source: "/tx/:path*", destination: "/texas/:path*", permanent: true },
+      { source: "/or", destination: "/oregon", permanent: true },
+      { source: "/or/:path*", destination: "/oregon/:path*", permanent: true },
+      { source: "/mn", destination: "/minnesota", permanent: true },
+      { source: "/mn/:path*", destination: "/minnesota/:path*", permanent: true },
+      { source: "/wa", destination: "/washington", permanent: true },
+      { source: "/wa/:path*", destination: "/washington/:path*", permanent: true },
+      { source: "/ut", destination: "/utah", permanent: true },
+      { source: "/ut/:path*", destination: "/utah/:path*", permanent: true },
+      { source: "/il", destination: "/illinois", permanent: true },
+      { source: "/il/:path*", destination: "/illinois/:path*", permanent: true },
+      { source: "/pa", destination: "/pennsylvania", permanent: true },
+      { source: "/pa/:path*", destination: "/pennsylvania/:path*", permanent: true },
+      { source: "/az", destination: "/arizona", permanent: true },
+      { source: "/az/:path*", destination: "/arizona/:path*", permanent: true },
+      { source: "/mo", destination: "/missouri", permanent: true },
+      { source: "/mo/:path*", destination: "/missouri/:path*", permanent: true },
     ];
   },
 };

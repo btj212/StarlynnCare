@@ -20,6 +20,7 @@ import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
 import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
 import { FacilityWatchPaid } from "@/components/facility/FacilityWatchPaid";
+import { FacilityWatchPremiumAnchor } from "@/components/facility/FacilityWatchPremiumAnchor";
 import { FacilityOfferBar } from "@/components/facility/FacilityOfferBar";
 import { FacilityOfferProvider } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityFullInspections } from "@/components/facility/profile/FacilityFullInspections";
@@ -240,9 +241,10 @@ export default async function FacilityPage({ params }: PageProps) {
           DOM order is unchanged, so SEO/E-E-A-T crawl order is preserved.
         */}
         <div className="flex flex-col">
-          {/* Quick facts strip */}
+          {/* Quick facts strip + early Premium anchor (mobile-reachable) */}
           <div className="order-1 md:order-none">
             <FacilityQuickFacts profile={profile} />
+            {showPaidWatch && <FacilityWatchPremiumAnchor />}
           </div>
 
           {/* § 01 · Snapshot — gallery + map (deferred below the facts on mobile) */}

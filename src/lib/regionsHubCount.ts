@@ -40,6 +40,8 @@ export async function loadRegionHubSummary(
   withDeficiency: number;
   findingsDate: string | null;
   firstPublishedAt: string | null;
+  /** Set when the facilities query failed — callers must not treat this as an empty hub. */
+  fetchError: string | null;
 }> {
   const { data: facRows, error: facErr } = await supabase
     .from("facilities")
@@ -50,7 +52,13 @@ export async function loadRegionHubSummary(
 
   if (facErr) {
     console.error("[loadRegionHubSummary] facilities:", facErr.message);
-    return { totalCount: 0, withDeficiency: 0, findingsDate: null, firstPublishedAt: null };
+    return {
+      totalCount: 0,
+      withDeficiency: 0,
+      findingsDate: null,
+      firstPublishedAt: null,
+      fetchError: facErr.message,
+    };
   }
 
   const facilityIds = (facRows ?? []).map((r: { id: string }) => r.id);
@@ -76,7 +84,13 @@ export async function loadRegionHubSummary(
     earliest < Infinity ? new Date(earliest).toISOString() : null;
 
   if (totalCount === 0) {
-    return { totalCount: 0, withDeficiency: 0, findingsDate, firstPublishedAt };
+    return {
+      totalCount: 0,
+      withDeficiency: 0,
+      findingsDate,
+      firstPublishedAt,
+      fetchError: null,
+    };
   }
 
   // Chunk to avoid URL-length limits and PostgREST's 1000-row default cap.
@@ -123,5 +137,6 @@ export async function loadRegionHubSummary(
     withDeficiency: facilitiesWithAnyDef.size,
     findingsDate,
     firstPublishedAt,
+    fetchError: null,
   };
 }
