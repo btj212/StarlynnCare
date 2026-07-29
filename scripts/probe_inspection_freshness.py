@@ -87,6 +87,19 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   provider 517133, 4 deficiencies; Windsor Health And Rehabilitation NF 25C89E provider 385224,
 #   23 deficiencies); MN insertDate max=2026-07-14 (unchanged vs baseline); UT CCL sample max
 #   2026-03-11 (unchanged vs baseline 2026-06-16); all other states no new source data.
+# Cron probe 2026-07-29T23:00 UTC: OR source max=2026-07-28 (+2: Florica Botocan AFH CPLT013169
+#   provider 515595 Complaint 4 deficiencies; Stanley Post Acute NF 38E150 provider 2AA9BD
+#   Complaint/Re-Licensure 0 deficiencies); MN insertDate max=2026-07-29 (+26 survey/complaint
+#   events since 2026-07-25 incl. Spes Residential Care LLC DT8011, Jaytee Residential Care LLC
+#   5Y0411, Sterling Pointe Senior Living HL308023143M SUBSTANTIATED, Kubra Home Care
+#   HL331231562C SUBSTANTIATED — many home-health/non-ALRC events expected skipped at ingest);
+#   GHA run 30197122203 (2026-07-26) all matrix states +0 (predates today's events); all other
+#   states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual).
+# Cron probe 2026-07-28T23:00 UTC: OR source max=2026-07-24 (unchanged vs baseline); MN insertDate
+#   max=2026-07-28 (+1 survey event: Spes Residential Care LLC ALRC:2502 DT8011 resolved 2026-06-24,
+#   license_status New — ALRC-matchable, pending GHA ingest); GHA run 30197122203 (2026-07-26) confirmed
+#   all matrix states +0 inspections; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need
+#   DB or manual).
 # Cron probe 2026-07-18T23:01 UTC: OR source max=2026-07-17 (+1 AFH: Linda Mabelle Moffo Epse
 #   Bello RL013163 provider 3331833868, 4 deficiencies); MN insertDate max=2026-07-18 (+5 survey
 #   events: Unity Health Care Services, Homefelt Assisted Living, Watchful Caregivers, Golden Bay
@@ -161,7 +174,7 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 24),
+    "OR": date(2026, 7, 28),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 7, 8),
     "UT": date(2026, 6, 16),
@@ -171,7 +184,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 25)
+LAST_MN_INSERT_BASELINE = date(2026, 7, 29)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
