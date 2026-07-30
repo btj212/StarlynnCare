@@ -95,8 +95,7 @@ function OfferModal({
       }}
     >
       <div
-        className="relative w-full max-w-[420px] border-2 border-ink p-7"
-        style={{ backgroundColor: "var(--color-paper)" }}
+        className="relative w-full max-w-[420px] rounded-[22px] border border-clearing-rule-2 bg-clearing-card p-7 shadow-[var(--shadow-feature)]"
       >
         <button
           onClick={onClose}
@@ -140,12 +139,12 @@ function OfferModal({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 disabled={formState === "submitting"}
-                className="h-12 w-full border border-paper-rule bg-paper px-3 font-[family-name:var(--font-mono)] text-[13px] text-ink placeholder:text-ink-4 focus:border-ink focus:outline-none transition-colors"
+                className="h-12 w-full rounded-xl border border-clearing-rule-2 bg-clearing-bg px-3 font-[family-name:var(--font-sans)] text-[14px] text-ink placeholder:text-ink-4 transition-colors focus:border-teal focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={formState === "submitting" || !email.trim()}
-                className="h-12 w-full font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.14em] text-paper transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="h-12 w-full rounded-xl font-[family-name:var(--font-sans)] text-[14px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-50"
                 style={{ backgroundColor: "var(--color-teal)" }}
               >
                 {formState === "submitting" ? "Sending…" : offer.ctaLabel}

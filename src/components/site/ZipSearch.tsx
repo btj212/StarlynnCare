@@ -212,8 +212,8 @@ export function ZipSearch({
       <div className="space-y-2">
         <form
           onSubmit={handleSubmit}
-          className="flex w-full max-w-[460px] min-w-0 flex-col border-[1.5px] border-ink sm:flex-row sm:items-stretch"
-          style={{ borderRadius: 0, fontSize: 16 }}
+          className="flex w-full max-w-[460px] min-w-0 flex-col gap-0 rounded-[18px] border border-clearing-rule-2 bg-clearing-card p-2.5 shadow-[var(--shadow-hero-search)] sm:flex-row sm:items-stretch"
+          style={{ fontSize: 16 }}
         >
           <input
             type="text"
@@ -225,22 +225,20 @@ export function ZipSearch({
               setStatus("idle");
             }}
             placeholder="Enter a city or ZIP code"
-            className="w-full min-w-0 flex-1 border-0 bg-transparent px-4 py-3.5 sm:px-[18px] sm:py-4 font-[family-name:var(--font-sans)] text-ink placeholder:text-ink-4 outline-none"
+            className="w-full min-w-0 flex-1 rounded-[10px] border-0 bg-transparent px-4 py-3.5 font-[family-name:var(--font-sans)] text-ink outline-none placeholder:text-ink-4 sm:px-[18px] sm:py-3.5"
             aria-label="City or ZIP code"
-            style={{ background: "var(--color-paper)" }}
           />
           <button
             type="submit"
-            className="border-0 px-5 py-3.5 sm:px-[22px] sm:py-0 font-medium text-[14px] sm:text-[15px] flex w-full shrink-0 items-center justify-center gap-2 sm:w-auto"
-            style={{ background: "var(--color-ink)", color: "var(--color-paper)" }}
+            className="flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border-0 bg-teal px-6 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-teal-deep sm:w-auto sm:px-6 sm:text-[15px]"
           >
             Find facilities <span aria-hidden>→</span>
           </button>
         </form>
         {status === "not-covered" && (
-          <p className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3 tracking-[0.04em]">
+          <p className="font-[family-name:var(--font-sans)] text-[13px] tracking-[0.02em] text-ink-3">
             City or ZIP not covered yet —{" "}
-            <Link href="/california" className="text-rust underline underline-offset-2">
+            <Link href="/california" className="text-teal underline underline-offset-2 hover:text-rust">
               browse California
             </Link>
             .

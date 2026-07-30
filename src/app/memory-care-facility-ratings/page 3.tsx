@@ -217,7 +217,7 @@ export default function MemoryCareFacilityRatingsPage() {
           {/* ── What "rated by inspection records" means ── */}
           <div className="border-b border-paper-rule">
             <div className="mx-auto max-w-[900px] px-4 sm:px-6 md:px-10 py-14">
-              <div className="mb-2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+              <div className="mb-2 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
                 § What this means
               </div>
               <h2
@@ -258,7 +258,7 @@ export default function MemoryCareFacilityRatingsPage() {
           {/* ── Four signals ── */}
           <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
             <div className="mx-auto max-w-[900px] px-4 sm:px-6 md:px-10 py-14">
-              <div className="mb-2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+              <div className="mb-2 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
                 § How we score
               </div>
               <h2
@@ -322,7 +322,7 @@ export default function MemoryCareFacilityRatingsPage() {
           {/* ── Per-state sections ── */}
           <div className="border-b border-paper-rule">
             <div className="mx-auto max-w-[900px] px-4 sm:px-6 md:px-10 py-14">
-              <div className="mb-2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+              <div className="mb-2 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
                 § By state
               </div>
               <h2
@@ -382,7 +382,7 @@ export default function MemoryCareFacilityRatingsPage() {
           {/* ── FAQ ── */}
           <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
             <div className="mx-auto max-w-[900px] px-4 sm:px-6 md:px-10 py-14">
-              <div className="mb-2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+              <div className="mb-2 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
                 § FAQ
               </div>
               <h2

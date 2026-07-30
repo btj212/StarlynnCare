@@ -88,7 +88,7 @@ export async function TopGradedFacilities({
   return (
     <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
-        <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+        <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
           § {isCity ? "Top-ranked in" : "Top performers in"} {countyName}
         </div>
         <h2
@@ -100,12 +100,12 @@ export async function TopGradedFacilities({
           }
         </h2>
 
-        <div className="grid gap-0 border-t border-ink md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           {facilities.map((f) => (
             <Link
               key={f.id}
               href={`/${stateSlug}/${f.city_slug}/${f.slug}`}
-              className="flex items-start justify-between gap-3 px-5 py-5 border-r border-b border-paper-rule last:border-r-0 no-underline text-ink hover:bg-paper-2 transition-colors"
+              className="card-lift flex items-start justify-between gap-3 rounded-2xl border border-clearing-rule-2 bg-clearing-card px-5 py-5 text-ink no-underline shadow-[var(--shadow-card)] transition-colors hover:border-teal/25"
             >
               <div className="flex-1 min-w-0">
                 <p className="font-[family-name:var(--font-sans)] font-semibold text-[15px] leading-[1.2] tracking-[-0.005em] m-0 text-ink line-clamp-2">

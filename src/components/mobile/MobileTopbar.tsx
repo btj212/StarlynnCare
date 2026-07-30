@@ -15,7 +15,7 @@ export function MobileTopbar({ stateCode }: Props = {}) {
     <div className="m-topbar">
       <div className="m-topbar-row">
         <Link href="/" className="m-brand no-underline text-ink" aria-label="StarlynnCare home">
-          <svg viewBox="-50 -50 100 100" className="mark" aria-hidden fill="currentColor" style={{ color: "var(--color-ink)" }}>
+          <svg viewBox="-50 -50 100 100" className="mark" aria-hidden fill="currentColor" style={{ color: "var(--color-teal)" }}>
             <g transform="rotate(0)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
             <g transform="rotate(60)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
             <g transform="rotate(120)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
@@ -24,8 +24,8 @@ export function MobileTopbar({ stateCode }: Props = {}) {
             <g transform="rotate(300)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
             <circle r="3.2"/>
           </svg>
-          <span>
-            Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
+          <span className="font-[family-name:var(--font-sans)] font-semibold tracking-[-0.02em]">
+            Starlynn<span style={{ color: "var(--color-teal)" }}>Care</span>
           </span>
           {stateCode && <span className="ca">{stateCode}</span>}
         </Link>
@@ -39,7 +39,7 @@ export function MobileTopbar({ stateCode }: Props = {}) {
             </svg>
           </summary>
           <nav
-            className="absolute right-0 top-full z-50 mt-2 w-52 border border-paper-rule bg-paper py-2 text-[14px] shadow-none"
+            className="absolute right-0 top-full z-50 mt-2 w-52 rounded-2xl border border-clearing-rule-2 bg-clearing-card py-2 text-[14px] shadow-[var(--shadow-card)]"
             aria-label="Mobile menu"
           >
             <Link href="/california" className="block px-4 py-3 text-ink-2 no-underline hover:bg-paper-2">

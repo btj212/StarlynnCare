@@ -275,16 +275,16 @@ export function MobileHomeView({
         <span className="text-ink-4"> · Texas Q2 · Florida Q2</span>
       </div>
 
-      <section className="m-section border-t-2 border-ink bg-rust text-paper px-[18px] py-10 -mx-0">
+      <section className="m-section bg-teal px-[18px] py-10 text-paper -mx-0">
         <h2 className="m-0 font-[family-name:var(--font-display)] text-[clamp(1.5rem,5vw,2rem)] font-normal leading-tight tracking-[-0.015em] text-white">
           Find the right facility, <em>without the sales funnel.</em>
         </h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-white/85">
+        <p className="mt-2 text-[15px] leading-relaxed text-[#C6DAD3]">
           Search by ZIP, compare peer rankings, read every dated citation. No operator is paying for placement here.
         </p>
         <Link
           href="/california"
-          className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-sm border border-white/30 bg-ink px-5 py-2.5 text-[14px] font-medium text-paper no-underline"
+          className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[14px] font-semibold text-teal no-underline"
         >
           Browse California facilities →
         </Link>

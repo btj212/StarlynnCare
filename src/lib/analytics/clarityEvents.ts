@@ -68,6 +68,11 @@ export function emitPaidWatchCheckoutStart(interval: "month" | "year") {
   c("event", "paid_watch_checkout_start", { interval });
 }
 
+/** Paid Facility Watch — early-page anchor link clicked (scrolls to Premium). */
+export function emitPaidWatchAnchorClick() {
+  c("event", "paid_watch_anchor_click");
+}
+
 /** Paid Facility Watch — success page loaded after checkout. */
 export function emitPaidWatchActivated() {
   c("event", "paid_watch_activated");

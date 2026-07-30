@@ -2,6 +2,7 @@ import type { FacilityProfile, InspectionRow, DeficiencyRow } from "@/lib/facili
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import type { Deficiency } from "@/lib/types";
+import { FacilityWatchPaid } from "@/components/facility/FacilityWatchPaid";
 import { FullHistoryWaitlist } from "./FullHistoryWaitlist";
 
 // Mirrors inspectionHasRealNarrative from loadFacilityProfile — duplicated here
@@ -111,10 +112,17 @@ function ExpandedRow({
   insp,
   defs,
   cfg,
+  showPremiumAfterSummary,
+  facilityId,
+  facilityName,
 }: {
   insp: InspectionRow;
   defs: DeficiencyRow[];
   cfg: FacilityProfile["cfg"];
+  /** Embed Facility Watch Premium once, under the first inspection summary. */
+  showPremiumAfterSummary?: boolean;
+  facilityId?: string;
+  facilityName?: string;
 }) {
   const isSubGap =
     insp.is_complaint &&
@@ -131,54 +139,113 @@ function ExpandedRow({
     ? `${Math.round((insp.raw_data.duration_minutes / 60) * 10) / 10} hrs on-site`
     : null;
 
+  const hasSummary =
+    !!insp.narrative_summary && !narrativeIsPlaceholder(insp.raw_data?.narrative);
+  const hasFullCitationBody = defs.length > 0 || isSubGap || !!rawNarrative;
+  const findingCount = defs.length + (isSubGap ? 1 : 0);
+
   return (
-    <div className="border-t border-paper-rule/60 bg-paper/60 px-4 pb-5 pt-4 md:px-6">
+    <div className="border-t border-clearing-rule-3 bg-clearing-bg/80 px-4 pb-5 pt-4 md:px-6">
       {/* Inspector meta row */}
       {(inspector || duration) && (
-        <div className="mb-4 flex flex-wrap gap-4 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em] text-ink-3">
+        <div className="mb-4 flex flex-wrap gap-4 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-3">
           {inspector && <span>Inspector · {inspector}</span>}
           {duration && <span>{duration}</span>}
         </div>
       )}
 
-      {/* 1. AI plain-language summary — suppressed when raw narrative is a placeholder */}
-      {insp.narrative_summary && !narrativeIsPlaceholder(insp.raw_data?.narrative) && (
-        <div className="mb-4 rounded-sm border border-teal/25 bg-teal-soft/40 px-4 py-3.5">
-          <p className="mb-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wide text-teal">
+      {/* 1. Plain-language summary — primary reading surface */}
+      {hasSummary && (
+        <div className="mb-4 rounded-[14px] border border-teal/25 bg-teal-soft/40 px-4 py-3.5">
+          <p className="mb-1.5 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.12em] text-teal">
             Plain-language summary
           </p>
-          <p className="text-[14px] leading-relaxed text-ink-2">{insp.narrative_summary}</p>
+          <p className="text-[15px] leading-relaxed text-ink-2">{insp.narrative_summary}</p>
         </div>
       )}
 
-      {/* 2. Citation blocks */}
-      {defs.map((def) => (
-        <DeficiencyBlock key={def.id} def={def} cfg={cfg} />
-      ))}
-
-      {/* 3. Substantiated complaint gap */}
-      {isSubGap && (
-        <div className="mt-3 rounded-sm border-l-[3px] border-rust bg-[#FBE5DC] px-5 py-3">
-          <p className="font-sans text-[13.5px] font-semibold text-amber-700">
-            Substantiated — the state found a violation and issued a citation. Full citation details are on file with the state.
-          </p>
+      {/* Facility Watch — directly under the first summary so it isn't mid-page fatigue */}
+      {showPremiumAfterSummary && facilityId && facilityName && (
+        <div className="mb-5">
+          <FacilityWatchPaid
+            facilityId={facilityId}
+            facilityName={facilityName}
+            embedded
+          />
         </div>
       )}
 
-      {/* 4. Full inspector notes — expandable text disclosure */}
-      {rawNarrative && (
-        <details className="mt-5 group/notes">
-          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-rust hover:text-rust/70 transition-colors [&::-webkit-details-marker]:hidden">
-            <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 shrink-0 transition-transform duration-200 group-open/notes:rotate-90" aria-hidden>
+      {/* 2–4. Full citation text — collapsed when a summary exists; otherwise inline */}
+      {hasFullCitationBody && hasSummary && (
+        <details className="group/full mt-1">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-full border border-clearing-rule-2 bg-clearing-card px-3.5 py-2 font-[family-name:var(--font-sans)] text-[13px] font-semibold text-teal transition-colors hover:border-teal/30 [&::-webkit-details-marker]:hidden">
+            <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 shrink-0 transition-transform duration-200 group-open/full:rotate-90" aria-hidden>
               <path d="M6 4l6 4-6 4V4z" />
             </svg>
-            <span className="group-open/notes:hidden">Read raw inspector notes</span>
-            <span className="hidden group-open/notes:inline">Close inspector notes</span>
+            <span className="group-open/full:hidden">
+              Read full citation text{findingCount > 0 ? ` (${findingCount})` : ""}
+            </span>
+            <span className="hidden group-open/full:inline">Hide full citation text</span>
           </summary>
-          <p className="mt-3 border-l-2 border-rust/30 pl-4 text-[13px] leading-relaxed text-ink-2 whitespace-pre-line">
-            {rawNarrative}
-          </p>
+
+          <div className="mt-3">
+            {defs.map((def) => (
+              <DeficiencyBlock key={def.id} def={def} cfg={cfg} />
+            ))}
+
+            {isSubGap && (
+              <div className="mt-3 rounded-[14px] border-l-[3px] border-rust bg-[#FBE5DC] px-5 py-3">
+                <p className="font-sans text-[13.5px] font-semibold text-amber-700">
+                  Substantiated — the state found a violation and issued a citation. Full citation details are on file with the state.
+                </p>
+              </div>
+            )}
+
+            {rawNarrative && (
+              <details className="mt-5 group/notes">
+                <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 font-[family-name:var(--font-sans)] text-[12px] font-medium tracking-[0.02em] text-rust transition-colors hover:text-rust/70 [&::-webkit-details-marker]:hidden">
+                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 shrink-0 transition-transform duration-200 group-open/notes:rotate-90" aria-hidden>
+                    <path d="M6 4l6 4-6 4V4z" />
+                  </svg>
+                  <span className="group-open/notes:hidden">Read raw inspector notes</span>
+                  <span className="hidden group-open/notes:inline">Close inspector notes</span>
+                </summary>
+                <p className="mt-3 whitespace-pre-line border-l-2 border-rust/30 pl-4 text-[13px] leading-relaxed text-ink-2">
+                  {rawNarrative}
+                </p>
+              </details>
+            )}
+          </div>
         </details>
+      )}
+
+      {hasFullCitationBody && !hasSummary && (
+        <>
+          {defs.map((def) => (
+            <DeficiencyBlock key={def.id} def={def} cfg={cfg} />
+          ))}
+          {isSubGap && (
+            <div className="mt-3 rounded-[14px] border-l-[3px] border-rust bg-[#FBE5DC] px-5 py-3">
+              <p className="font-sans text-[13.5px] font-semibold text-amber-700">
+                Substantiated — the state found a violation and issued a citation. Full citation details are on file with the state.
+              </p>
+            </div>
+          )}
+          {rawNarrative && (
+            <details className="mt-5 group/notes">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 font-[family-name:var(--font-sans)] text-[12px] font-medium tracking-[0.02em] text-rust transition-colors hover:text-rust/70 [&::-webkit-details-marker]:hidden">
+                <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 shrink-0 transition-transform duration-200 group-open/notes:rotate-90" aria-hidden>
+                  <path d="M6 4l6 4-6 4V4z" />
+                </svg>
+                <span className="group-open/notes:hidden">Read raw inspector notes</span>
+                <span className="hidden group-open/notes:inline">Close inspector notes</span>
+              </summary>
+              <p className="mt-3 whitespace-pre-line border-l-2 border-rust/30 pl-4 text-[13px] leading-relaxed text-ink-2">
+                {rawNarrative}
+              </p>
+            </details>
+          )}
+        </>
       )}
 
       {/* 5. Official report link — demoted, grey */}
@@ -188,7 +255,7 @@ function ExpandedRow({
             href={insp.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.06em] text-ink-3 hover:text-ink-2 transition-colors"
+            className="inline-flex items-center gap-1.5 font-[family-name:var(--font-sans)] text-[12px] font-medium tracking-[0.02em] text-ink-3 transition-colors hover:text-ink-2"
           >
             View official {agencyLabelForInspection(insp, cfg).short} report
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-3 w-3 shrink-0" aria-hidden>
@@ -205,10 +272,16 @@ function InspectionItem({
   insp,
   defs,
   cfg,
+  showPremiumAfterSummary,
+  facilityId,
+  facilityName,
 }: {
   insp: InspectionRow;
   defs: DeficiencyRow[];
   cfg: FacilityProfile["cfg"];
+  showPremiumAfterSummary?: boolean;
+  facilityId?: string;
+  facilityName?: string;
 }) {
   const isSubGap =
     insp.is_complaint &&
@@ -307,19 +380,45 @@ function InspectionItem({
 
       {/* ── Expanded content ── */}
       {hasContent && (
-        <ExpandedRow insp={insp} defs={defs} cfg={cfg} />
+        <ExpandedRow
+          insp={insp}
+          defs={defs}
+          cfg={cfg}
+          showPremiumAfterSummary={showPremiumAfterSummary}
+          facilityId={facilityId}
+          facilityName={facilityName}
+        />
       )}
     </details>
   );
 }
 
+type FacilityFullInspectionsProps = {
+  profile: FacilityProfile;
+  /** When true, render Premium checkout under the first inspection summary. */
+  showPaidWatch?: boolean;
+};
 
-export function FacilityFullInspections({ profile }: { profile: FacilityProfile }) {
+export function FacilityFullInspections({
+  profile,
+  showPaidWatch = false,
+}: FacilityFullInspectionsProps) {
   const { inspections, deficienciesByInspection, totals, cfg, hiddenOlderCount, oldestHiddenYear, hasRealInspectionText } = profile;
 
+  // Prefer the first inspection that has a usable plain-language summary; else first row.
+  const premiumInspectionId = (() => {
+    if (!showPaidWatch || inspections.length === 0) return null;
+    const withSummary = inspections.find(
+      (insp) =>
+        !!insp.narrative_summary &&
+        !narrativeIsPlaceholder(insp.raw_data?.narrative),
+    );
+    return (withSummary ?? inspections[0]).id;
+  })();
+
   return (
-    <section id="full-record" className="scroll-mt-36 md:scroll-mt-28 border-b border-paper-rule py-16">
-      <div className="mx-auto max-w-[1280px] px-4 md:px-8">
+    <section id="full-record" className="scroll-mt-36 border-b border-clearing-rule py-16 md:scroll-mt-28">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px]">
         <SectionHead
           label="Full Inspection Record"
           title={
@@ -330,7 +429,7 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
           deck={
             inspections.length === 0
               ? "No inspection records yet indexed for this facility."
-              : `${inspections.length} inspection${inspections.length === 1 ? "" : "s"} in the public record, most recent first. Click any row to expand — cited rows open automatically.`
+              : `${inspections.length} inspection${inspections.length === 1 ? "" : "s"} in the public record, most recent first. Plain-language summaries open first — click into any row for the full citation text.`
           }
         />
 
@@ -389,13 +488,16 @@ export function FacilityFullInspections({ profile }: { profile: FacilityProfile 
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden border border-paper-rule bg-paper-2">
+          <div className="overflow-hidden rounded-[18px] border border-clearing-rule-2 bg-clearing-card shadow-[var(--shadow-card)]">
             {inspections.map((insp) => (
               <InspectionItem
                 key={insp.id}
                 insp={insp}
                 defs={deficienciesByInspection.get(insp.id) ?? []}
                 cfg={cfg}
+                showPremiumAfterSummary={insp.id === premiumInspectionId}
+                facilityId={profile.facility.id}
+                facilityName={profile.facility.name}
               />
             ))}
           </div>

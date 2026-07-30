@@ -42,7 +42,7 @@ export function StatesWeCoverGrid({ states }: Props) {
   const visibleStates = states.filter((s) => !HIDDEN_STATE_CODES.includes(s.stateCode));
   return (
     <ProximityGroup
-      className="grid grid-cols-1 gap-px bg-paper-rule sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-paper-rule"
+      className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
       radius={180}
       intensity={0.035}
     >
@@ -51,42 +51,31 @@ export function StatesWeCoverGrid({ states }: Props) {
           key={s.stateCode}
           href={`/${s.stateSlug}`}
           {...proximityItemProps(
-            "group flex flex-col gap-3 bg-paper p-6 no-underline text-ink hover:bg-paper-2 transition-colors",
+            "card-lift group flex flex-col gap-3 rounded-2xl border border-clearing-rule-2 bg-clearing-card px-5 py-[18px] text-ink no-underline shadow-[var(--shadow-card)] transition-colors hover:border-teal/25",
           )}
         >
           <div className="flex items-start justify-between gap-2">
-            <span
-              className="font-[family-name:var(--font-display)] text-[clamp(1.4rem,3vw,2rem)] leading-none tracking-[-0.015em]"
-            >
+            <span className="font-[family-name:var(--font-sans)] text-[17px] font-semibold leading-none tracking-[-0.01em]">
               {s.stateName}
             </span>
-            <span
-              className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.14em] text-rust border border-rust px-[5px] py-[2px] rounded-[2px] shrink-0 relative top-[3px]"
-            >
+            <span className="relative top-[1px] shrink-0 rounded-full border border-[#C6D6D0] px-2 py-[2px] font-[family-name:var(--font-sans)] text-[11px] font-semibold text-teal">
               {STATE_REGULATORS[s.stateCode] ?? s.stateCode}
             </span>
           </div>
 
-          <div className="flex gap-4 font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3 tracking-[0.04em]">
-            <span>
-              <strong className="text-ink text-[15px] font-semibold">
-                {s.facilityCount > 0 ? s.facilityCount.toLocaleString() : "—"}
-              </strong>{" "}
-              facilities
-            </span>
-            <span>
-              <strong className="text-ink text-[15px] font-semibold">
-                {s.cityCount > 0 ? s.cityCount.toLocaleString() : "—"}
-              </strong>{" "}
-              cities
-            </span>
+          <div className="text-[14px] text-ink-3">
+            <strong className="font-semibold text-ink">
+              {s.facilityCount > 0 ? s.facilityCount.toLocaleString() : "—"}
+            </strong>{" "}
+            facilities
+            {s.facilityCount > 0 && s.facilityCount < 100 ? " · pilot" : ""}
           </div>
 
-          <p className="text-[12px] leading-snug text-ink-4 font-[family-name:var(--font-mono)] tracking-[0.02em]">
+          <p className="text-[12.5px] leading-snug text-ink-4">
             {STATE_DESCRIPTIONS[s.stateCode] ?? "Public regulator data"}
           </p>
 
-          <span className="mt-auto font-[family-name:var(--font-mono)] text-[12px] uppercase tracking-[0.1em] text-rust group-hover:underline">
+          <span className="mt-auto text-[13px] font-semibold text-teal group-hover:underline">
             Browse →
           </span>
         </Link>

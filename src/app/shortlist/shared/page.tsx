@@ -117,7 +117,7 @@ export default async function SharedShortlistPage({
       <main className="min-h-[70vh]" style={{ background: "var(--color-paper)" }}>
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
           <div className="mb-10">
-            <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+            <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
               § Shared shortlist
             </div>
             <h1

@@ -24,25 +24,23 @@ export function HeroFacilitySearch({ stateSlug, stateName, facilityCount }: Prop
   }
 
   return (
-    <div className="w-full max-w-[460px] min-w-0">
-      {/* Divider */}
-      <div className="flex items-center gap-3 my-4">
-        <span className="flex-1 h-px bg-ink opacity-10" aria-hidden />
-        <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] text-ink-4 select-none">
+    <div className="w-full min-w-0 max-w-[460px]">
+      <div className="my-4 flex items-center gap-3">
+        <span className="h-px flex-1 bg-clearing-rule-2" aria-hidden />
+        <span className="select-none font-[family-name:var(--font-sans)] text-[12px] font-medium uppercase tracking-[0.1em] text-ink-4">
           or search by name
         </span>
-        <span className="flex-1 h-px bg-ink opacity-10" aria-hidden />
+        <span className="h-px flex-1 bg-clearing-rule-2" aria-hidden />
       </div>
 
-      {/* Facility name search */}
       <form
         onSubmit={handleSubmit}
-        className="flex w-full flex-col border border-ink/25 sm:flex-row sm:items-stretch hover:border-ink/50 focus-within:border-ink transition-colors"
-        style={{ borderRadius: 0, fontSize: 16 }}
+        className="flex w-full flex-col gap-0 rounded-[18px] border border-clearing-rule-2 bg-clearing-card p-2.5 shadow-[var(--shadow-hero-search)] sm:flex-row sm:items-stretch"
+        style={{ fontSize: 16 }}
       >
-        <div className="relative flex flex-1 min-w-0 items-center" style={{ background: "var(--color-paper)" }}>
+        <div className="relative flex min-w-0 flex-1 items-center">
           <svg
-            className="absolute left-3.5 text-ink-4 shrink-0"
+            className="absolute left-3.5 shrink-0 text-ink-4"
             width="15"
             height="15"
             viewBox="0 0 15 15"
@@ -61,27 +59,25 @@ export function HeroFacilitySearch({ stateSlug, stateName, facilityCount }: Prop
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search facilities in ${stateName}…`}
-            className="w-full min-w-0 border-0 bg-transparent pl-9 pr-3 py-3.5 sm:py-4 font-[family-name:var(--font-sans)] text-[15px] text-ink placeholder:text-ink-4 outline-none"
+            className="w-full min-w-0 border-0 bg-transparent py-3.5 pr-3 pl-9 font-[family-name:var(--font-sans)] text-[15px] text-ink outline-none placeholder:text-ink-4 sm:py-3.5"
             aria-label={`Search facilities in ${stateName}`}
           />
         </div>
         <button
           type="submit"
-          className="border-0 px-5 py-3 sm:py-0 font-medium text-[14px] font-[family-name:var(--font-sans)] flex w-full shrink-0 items-center justify-center gap-1.5 sm:w-auto whitespace-nowrap"
-          style={{ background: "var(--color-ink)", color: "var(--color-paper)" }}
+          className="flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border-0 bg-teal px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-teal-deep sm:w-auto sm:py-0"
         >
           Search <span aria-hidden>→</span>
         </button>
       </form>
 
-      {/* Browse all link */}
       <div className="mt-3">
         <Link
           href={`/${stateSlug}/facilities`}
-          className="inline-flex items-center gap-1.5 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.08em] text-ink-3 hover:text-ink transition-colors"
+          className="inline-flex items-center gap-1.5 font-[family-name:var(--font-sans)] text-[13px] font-medium text-ink-3 transition-colors hover:text-teal"
         >
           <span
-            className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+            className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
             style={{ background: "var(--color-teal)" }}
             aria-hidden
           />

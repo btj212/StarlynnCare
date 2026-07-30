@@ -102,7 +102,7 @@ export default function ContractReviewPage() {
               <span aria-hidden>›</span>
               <span className="text-ink-3">Contract Decoder</span>
             </nav>
-            <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+            <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
               § Free tool · manual review, not AI
             </div>
             <h1 className="font-[family-name:var(--font-display)] font-normal text-[clamp(32px,5vw,52px)] leading-[1.05] tracking-[-0.02em] text-ink mt-3 mb-5 max-w-[18ch]">
@@ -133,7 +133,7 @@ export default function ContractReviewPage() {
             {/* Left: What we review + FAQ */}
             <div className="space-y-14">
               <div>
-                <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block mb-6">
+                <p className="font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block mb-6">
                   § What we translate
                 </p>
                 <ul className="space-y-5">
@@ -150,7 +150,7 @@ export default function ContractReviewPage() {
               </div>
 
               <div>
-                <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block mb-6">
+                <p className="font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block mb-6">
                   § Questions
                 </p>
                 <div className="space-y-5">
@@ -178,7 +178,7 @@ export default function ContractReviewPage() {
 
             {/* Right: Email capture */}
             <div>
-              <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block mb-6">
+              <p className="font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block mb-6">
                 § Send us your agreement
               </p>
               <p className="text-[14px] text-ink-3 leading-relaxed mb-6">

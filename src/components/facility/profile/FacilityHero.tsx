@@ -137,7 +137,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   const lastInspCited = (lastInsp?.total_deficiency_count ?? 0) > 0;
 
   return (
-    <div className="fp-verdict bg-ink text-paper relative overflow-hidden">
+    <div className="fp-verdict relative overflow-hidden rounded-[22px] bg-ink text-paper shadow-[var(--shadow-feature)]">
       {/* ── Photo grid (full-width when 4+, otherwise compact) ── */}
       {hasGrid ? (
         <FacilityPhotoGrid
@@ -148,7 +148,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
       ) : null}
 
       <div className={hasGrid ? "p-7" : "p-7"}>
-        <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] text-gold mb-3.5 flex items-center gap-2">
+        <div className="mb-3.5 flex items-center gap-2 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.14em] text-gold">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
           Facility · {facility.city ?? profile.state.name}
         </div>
@@ -265,48 +265,49 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   });
 
   return (
-    <section className="fp-hero border-b-2 border-ink px-4 py-9 md:py-14 md:px-8">
+    <section className="fp-hero border-b border-clearing-rule px-4 py-9 sm:px-6 md:px-[60px] md:py-14">
       <div className="mx-auto max-w-[1280px]">
         {/* Eyebrow */}
-        <div className="mb-3.5 flex items-center gap-3 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] text-rust">
-          <span className="h-px w-8 bg-rust opacity-60" />
-          {state.name} · {facility.city ?? ""}
+        <div className="mb-3.5">
+          <span className="clearing-chip">
+            {state.name} · {facility.city ?? ""}
+          </span>
         </div>
 
         {/* Hero grid */}
-        <div className="grid items-end gap-8 md:gap-16 md:grid-cols-[1.5fr_1fr]">
+        <div className="grid items-end gap-8 md:grid-cols-[1.5fr_1fr] md:gap-16">
           {/* Left */}
           <div>
-            <h1 className="font-[family-name:var(--font-display)] text-[clamp(44px,7vw,96px)] font-normal leading-[0.95] tracking-[-0.025em] text-ink m-0">
+            <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(40px,6vw,84px)] font-normal leading-[0.95] tracking-[-0.025em] text-ink">
               {lastWord ? (
                 <>
-                  {mainPart} <em className="not-italic text-rust">{lastWord}.</em>
+                  {mainPart} <em className="not-italic text-teal">{lastWord}.</em>
                 </>
               ) : (
-                <em className="not-italic text-rust">{facility.name}.</em>
+                <em className="not-italic text-teal">{facility.name}.</em>
               )}
             </h1>
 
             {/* Editorial summary — same data points as the meta snippet so
                 Google has narrative prose above-the-fold to lift. */}
             {snippet && (
-              <p className="hidden md:block mt-5 max-w-[58ch] font-[family-name:var(--font-display)] text-[19px] italic leading-[1.45] text-ink-2">
+              <p className="mt-5 hidden max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 md:block sm:text-[18px]">
                 {snippet}
               </p>
             )}
 
             {/* Tags */}
             <div className="mt-4 flex flex-wrap gap-2">
-              <span className="fp-tag bg-teal-soft text-teal-deep px-3 py-[5px] font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.12em]">
+              <span className="fp-tag rounded-full bg-clearing-chip px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
                 {SHORT_CATEGORY_LABEL[facility.care_category]}
               </span>
               {facility.beds && (
-                <span className="fp-tag bg-ink text-gold-soft px-3 py-[5px] font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.12em]">
+                <span className="fp-tag rounded-full bg-ink px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-gold-soft">
                   {facility.beds} beds
                 </span>
               )}
               {isMc && (
-                <span className="fp-tag bg-teal-soft text-teal-deep px-3 py-[5px] font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.12em]">
+                <span className="fp-tag rounded-full bg-clearing-chip px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
                   Dementia-trained staff
                 </span>
               )}
@@ -314,7 +315,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               {phone && (
                 <a
                   href={`tel:${facility.phone}`}
-                  className="md:hidden fp-tag bg-paper border border-paper-rule px-3 py-[5px] font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.08em] text-ink-3 hover:text-ink transition-colors"
+                  className="fp-tag rounded-full border border-clearing-rule-2 bg-clearing-card px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-medium text-ink-3 transition-colors hover:text-ink md:hidden"
                 >
                   {phone}
                 </a>
@@ -322,12 +323,12 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             </div>
 
             {addr && (
-              <div className="hidden md:block mt-4 font-[family-name:var(--font-display)] text-[22px] italic text-ink-2">
+              <div className="mt-4 hidden font-[family-name:var(--font-display)] text-[20px] italic text-ink-2 md:block">
                 {addr}
                 {phone && (
                   <a
                     href={`tel:${facility.phone}`}
-                    className="ml-4 font-[family-name:var(--font-mono)] not-italic text-[12px] tracking-[0.06em] text-ink-3 hover:text-ink transition-colors"
+                    className="ml-4 font-[family-name:var(--font-sans)] text-[13px] not-italic tracking-[0.02em] text-ink-3 transition-colors hover:text-ink"
                   >
                     {phone}
                   </a>
@@ -344,12 +345,12 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       title={verifyLabel}
-                      className="ml-3 font-[family-name:var(--font-mono)] not-italic text-[11px] tracking-[0.06em] text-rust underline underline-offset-4 decoration-rust/30 hover:decoration-rust transition-colors"
+                      className="ml-3 font-[family-name:var(--font-sans)] text-[12px] font-medium not-italic tracking-[0.02em] text-teal underline decoration-teal/30 underline-offset-4 transition-colors hover:decoration-teal"
                     >
                       LIC# {facility.license_number} ↗
                     </a>
                   ) : (
-                    <span className="ml-3 font-[family-name:var(--font-mono)] not-italic text-[11px] tracking-[0.06em] text-rust">
+                    <span className="ml-3 font-[family-name:var(--font-sans)] text-[12px] font-medium not-italic tracking-[0.02em] text-teal">
                       LIC# {facility.license_number}
                     </span>
                   );
@@ -360,7 +361,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {/* Limited inspection history badge */}
             {profile.limitedHistory && (
               <div className="mt-3">
-                <span className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-amber-700 border border-amber-400 px-[5px] py-[2px] rounded-[2px]">
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 font-[family-name:var(--font-sans)] text-[11px] font-medium uppercase tracking-[0.08em] text-amber-700">
                   Limited Inspection History · fewer than 4 records in 3 years
                 </span>
               </div>
@@ -369,7 +370,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {/* PDF-links-only badge — shown when no inspection narrative has been parsed */}
             {!profile.hasRealInspectionText && (
               <div className="mt-3">
-                <span className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-amber-700 border border-amber-400 px-[5px] py-[2px] rounded-[2px]">
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 font-[family-name:var(--font-sans)] text-[11px] font-medium uppercase tracking-[0.08em] text-amber-700">
                   Inspection text not parsed · PDF links only
                 </span>
               </div>
@@ -387,17 +388,17 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
 
             {/* Mobile-only percentile badge — rank summary visible without scrolling */}
             {profile.snapshot?.grade && (
-              <div className="md:hidden mt-4 flex items-center gap-4 border-t border-paper-rule pt-4">
+              <div className="mt-4 flex items-center gap-4 border-t border-clearing-rule pt-4 md:hidden">
                 <div>
-                  <div className="font-[family-name:var(--font-mono)] text-[9.5px] uppercase tracking-[0.14em] text-ink-4 mb-0.5">
+                  <div className="mb-0.5 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-4">
                     Peer rank
                   </div>
-                  <div className="font-[family-name:var(--font-mono)] text-[15px] font-semibold text-ink-2">
+                  <div className="font-[family-name:var(--font-sans)] text-[15px] font-semibold text-ink-2">
                     Top {Math.max(1, 100 - profile.snapshot.grade.composite_percentile)}% of {state.name} memory care
                   </div>
                   <a
                     href="#peer"
-                    className="font-[family-name:var(--font-mono)] text-[11px] text-rust mt-1 block border-b border-rust/30 pb-px w-fit"
+                    className="mt-1 block w-fit border-b border-teal/30 pb-px font-[family-name:var(--font-sans)] text-[12px] font-medium text-teal"
                   >
                     See full peer rank →
                   </a>

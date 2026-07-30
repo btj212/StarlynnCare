@@ -531,12 +531,16 @@ h3.m-fc-name { margin-top: 0; }
 .m-foot {
   margin-top: 36px;
   padding: 24px 18px 32px;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--color-clearing-footer);
+  color: #9DB6AF;
 }
 .m-foot .brand-line {
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 22px; margin-bottom: 4px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: 21px;
+  margin-bottom: 4px;
+  color: #fff;
 }
 .m-foot .stmt {
   font-size: 13px; line-height: 1.45;

@@ -49,7 +49,7 @@ export async function SameOperatorFacilities({ facilityId, operatorName, stateSl
 
   return (
     <section className="border-t border-paper-rule pt-12 mt-12">
-      <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+      <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
         Same operator group
       </div>
       <h2 className="font-[family-name:var(--font-sans)] font-semibold text-[28px] leading-[1.1] tracking-[-0.01em] text-ink mb-3">
@@ -63,12 +63,12 @@ export async function SameOperatorFacilities({ facilityId, operatorName, stateSl
         </span>
       </p>
 
-      <div className="grid gap-0 border-t border-ink md:grid-cols-3 mt-8">
+      <div className="grid gap-3 md:grid-cols-3 mt-8">
         {ranked.map((f) => (
           <Link
             key={f.id}
             href={`/${stateSlug}/${f.city_slug}/${f.slug}`}
-            className="flex items-start gap-4 px-5 py-5 border-r border-b border-paper-rule last:border-r-0 no-underline text-ink hover:bg-paper-2 transition-colors"
+            className="card-lift flex items-start gap-4 rounded-2xl border border-clearing-rule-2 bg-clearing-card px-5 py-5 text-ink no-underline shadow-[var(--shadow-card)] transition-colors hover:border-teal/25"
           >
             <div>
               <p className="font-[family-name:var(--font-sans)] font-semibold text-[18px] leading-[1.15] tracking-[-0.005em] m-0">

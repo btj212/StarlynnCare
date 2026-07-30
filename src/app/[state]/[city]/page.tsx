@@ -58,7 +58,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let metaFirstPublishedAt: string | null = null;
   if (supabase) {
     const summary = await loadRegionHubSummary(supabase, region);
-    if (summary.totalCount === 0) notFound();
+    // Only 404 on a confirmed empty hub. A transient Supabase error used to
+    // return totalCount: 0 and get cached as not-found for up to revalidate.
+    if (!summary.fetchError && summary.totalCount === 0) notFound();
     totalCount = summary.totalCount;
     withDeficiency = summary.withDeficiency;
     findingsDate = summary.findingsDate;
@@ -616,19 +618,25 @@ export default async function RegionPage({ params }: PageProps) {
         <main className="min-h-[60vh]" style={{ background: "var(--color-paper)" }}>
 
         {/* ── Header ── */}
-        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-12">
+        <div
+          className="border-b border-clearing-rule"
+          style={{
+            background:
+              "linear-gradient(180deg, var(--color-clearing-tint) 0%, var(--color-clearing-bg) 100%)",
+          }}
+        >
+          <div className="mx-auto max-w-[1280px] px-4 py-12 sm:px-6 md:px-[60px]">
             {/* Breadcrumb */}
-            <nav className="flex items-center gap-1.5 mb-5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-ink-4" aria-label="Breadcrumb">
-              <Link href="/" className="hover:text-teal transition-colors">Home</Link>
+            <nav className="mb-5 flex items-center gap-1.5 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-4" aria-label="Breadcrumb">
+              <Link href="/" className="transition-colors hover:text-teal">Home</Link>
               <span aria-hidden>›</span>
-              <Link href={`/${region.state.slug}`} className="hover:text-teal transition-colors">
+              <Link href={`/${region.state.slug}`} className="transition-colors hover:text-teal">
                 {region.state.name}
               </Link>
               {parentCounty && (
                 <>
                   <span aria-hidden>›</span>
-                  <Link href={`/${region.state.slug}/${parentCounty.slug}`} className="hover:text-teal transition-colors">
+                  <Link href={`/${region.state.slug}/${parentCounty.slug}`} className="transition-colors hover:text-teal">
                     {parentCounty.name}
                   </Link>
                 </>
@@ -638,14 +646,14 @@ export default async function RegionPage({ params }: PageProps) {
             </nav>
 
             <h1
-              className="font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink mb-4"
-              style={{ fontSize: "clamp(40px, 5vw, 64px)", lineHeight: 1 }}
+              className="mb-4 font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink"
+              style={{ fontSize: "clamp(36px, 5vw, 56px)", lineHeight: 1.05 }}
             >
               Best memory care in {region.name}
             </h1>
             <p
               id="hub-lede"
-              className="font-[family-name:var(--font-display)] italic text-[20px] leading-[1.4] text-ink-3 max-w-[50ch]"
+              className="max-w-[50ch] font-[family-name:var(--font-sans)] text-[18px] leading-[1.5] text-ink-3 sm:text-[19px]"
             >
               {region.state.code === "TX" ? (
                 <>
@@ -665,7 +673,7 @@ export default async function RegionPage({ params }: PageProps) {
             {/* Mobile-only Browse CTA — visible in the header without scrolling */}
             <Link
               href={`/${region.state.slug}/facilities`}
-              className="md:hidden mt-6 flex items-center justify-between w-full bg-teal text-paper px-5 py-4 font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.08em] no-underline"
+              className="mt-6 flex w-full items-center justify-between rounded-xl bg-teal px-5 py-4 font-[family-name:var(--font-sans)] text-[14px] font-semibold tracking-[0.02em] text-paper no-underline md:hidden"
             >
               <span>Browse {region.state.name} facilities</span>
               <span aria-hidden>→</span>
@@ -684,13 +692,13 @@ export default async function RegionPage({ params }: PageProps) {
         </div>
 
         {/* ── Stats / Findings ── */}
-        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
+        <div className="border-b border-clearing-rule" style={{ background: "var(--color-paper-2)" }}>
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-14">
             {totalCount > 0 ? (
               <>
                 {HAS_DEFICIENCY_TABLE.has(region.state.code) && (
                   <>
-                    <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+                    <div className="mb-3 inline-block font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal">
                       § Findings
                     </div>
                     <p className="font-[family-name:var(--font-display)] text-[22px] leading-[1.3] text-ink mb-4">
@@ -794,23 +802,23 @@ export default async function RegionPage({ params }: PageProps) {
 
             {/* PA county: most-cited on record (the other direction) */}
             {region.state.code === "PA" && isCounty && paMostCited.length > 0 && (
-              <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 mt-10 pb-10">
-                <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-ink-4 mb-4">
+              <div className="mx-auto mt-10 max-w-[1280px] px-4 pb-10 sm:px-6 md:px-[60px]">
+                <p className="mb-4 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.1em] text-ink-4">
                   Most-cited on record · {region.name} County · PA DHS OLTL
                 </p>
                 <ol className="space-y-2">
                   {paMostCited.map((f, i) => (
-                    <li key={f.id} className="flex items-center gap-3 text-[14px]">
-                      <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4 w-4 text-right shrink-0">
+                    <li key={f.id} className="flex items-center gap-3 rounded-[14px] border border-clearing-rule-2 bg-clearing-card px-3 py-2.5 text-[14px] shadow-[var(--shadow-card)]">
+                      <span className="w-4 shrink-0 text-right font-[family-name:var(--font-sans)] text-[12px] text-ink-4">
                         {i + 1}.
                       </span>
                       <Link
                         href={`/${region.state.slug}/${f.city_slug}/${f.slug}`}
-                        className="text-ink hover:text-teal underline underline-offset-2 truncate"
+                        className="truncate text-ink underline underline-offset-2 hover:text-teal"
                       >
                         {f.name}
                       </Link>
-                      <span className="font-[family-name:var(--font-mono)] text-[11px] text-rust shrink-0">
+                      <span className="shrink-0 font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
                         {f.serious_citations} severe
                       </span>
                     </li>
@@ -823,7 +831,7 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── Facility list ── */}
         {!fetchError && totalCount > 0 && (
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-14">
             <SectionHead
               label={isCounty ? `§ ${region.name} — All Facilities` : "§ All Facilities"}
               title={
@@ -832,7 +840,7 @@ export default async function RegionPage({ params }: PageProps) {
                   : <>All memory care in {region.name}, <em>ranked by inspection record.</em></>
               }
             />
-            <aside className="mb-6 text-[13px] font-[family-name:var(--font-mono)] text-ink-3">
+            <aside className="mb-6 font-[family-name:var(--font-sans)] text-[13px] text-ink-3">
               Use <strong className="font-semibold text-ink-2">By record</strong> to sort fewest citations first.
               Tier badges reflect inspection severity, repeat citations, and citation frequency relative to
               peers in {region.name}.{" "}
@@ -853,9 +861,9 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── County editorial intro — below grid for UX; preserved for AEO/GEO ── */}
         {isCounty && countyIntroParas && countyIntroParas.length > 0 && (
-          <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-10">
-              <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust mb-5 border-t-2 border-ink pt-2.5 inline-block">
+          <div className="border-b border-clearing-rule" style={{ background: "var(--color-paper-2)" }}>
+            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-10">
+              <p className="mb-5 inline-block font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal">
                 About {region.name}
               </p>
               <div className="space-y-4 max-w-[72ch]">
@@ -880,8 +888,8 @@ export default async function RegionPage({ params }: PageProps) {
         )}
 
         {/* ── Regulator primer (all city + county pages, all states) ── */}
-        <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
+        <div className="border-b border-clearing-rule" style={{ background: "var(--color-paper)" }}>
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-14">
             <SectionHead
               label="How memory care is regulated here"
               title={<>The public record behind <em>every profile.</em></>}
@@ -895,8 +903,8 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── Cost band placeholder (city pages only) ── */}
         {!isCounty && (
-          <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
-            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
+          <div className="border-b border-clearing-rule" style={{ background: "var(--color-paper-2)" }}>
+            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-14">
               <SectionHead
                 label="Cost"
                 title={<>What memory care costs <em>in this city.</em></>}
@@ -944,8 +952,8 @@ export default async function RegionPage({ params }: PageProps) {
 
         {/* ── Error state ── */}
         {fetchError && (
-          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-8">
-            <div className="border border-gold/30 bg-gold-soft px-5 py-4 text-sm">
+          <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-8">
+            <div className="rounded-[16px] border border-gold/30 bg-gold-soft px-5 py-4 text-sm shadow-[var(--shadow-card)]">
               <p className="font-semibold text-gold">Configuration error</p>
               <p className="mt-2 text-ink-2">{fetchError}</p>
             </div>
@@ -957,9 +965,9 @@ export default async function RegionPage({ params }: PageProps) {
           !fetchError &&
           countyTrendRows.length > 0 &&
           region.state.code === "CA" && (
-            <section className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
-              <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
-                <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+            <section className="border-b border-clearing-rule" style={{ background: "var(--color-paper)" }}>
+              <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-14">
+                <div className="mb-3 inline-block font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal">
                   § Recent findings
                 </div>
                 <h2 className="font-[family-name:var(--font-display)] text-[26px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.01em] text-ink m-0 mb-3">
@@ -990,12 +998,12 @@ export default async function RegionPage({ params }: PageProps) {
                     <li key={row.id}>
                       <Link
                         href={`/${region.state.slug}/${row.city_slug}/${row.slug}`}
-                        className="flex flex-col gap-1 rounded-lg border border-paper-rule bg-paper-2 px-4 py-3 no-underline hover:border-rust/40 transition-colors min-w-0"
+                        className="flex min-w-0 flex-col gap-1 rounded-[16px] border border-clearing-rule-2 bg-clearing-card px-4 py-3 no-underline shadow-[var(--shadow-card)] transition-colors hover:border-teal/40"
                       >
-                        <span className="font-[family-name:var(--font-display)] text-[17px] text-ink leading-snug">
+                        <span className="font-[family-name:var(--font-display)] text-[17px] leading-snug text-ink">
                           {row.name}
                         </span>
-                        <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3 uppercase tracking-[0.06em]">
+                        <span className="font-[family-name:var(--font-sans)] text-[12px] font-medium uppercase tracking-[0.06em] text-ink-3">
                           {row.typeACount} Type-A finding{row.typeACount !== 1 ? "s" : ""} (indexed window)
                         </span>
                       </Link>

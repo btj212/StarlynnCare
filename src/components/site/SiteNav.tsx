@@ -31,7 +31,8 @@ type SiteNavProps = {
 };
 
 /**
- * Sticky editorial header with brand mark, nav links, and a live facility-count CTA pill.
+ * Sticky header with brand mark, nav links, and a live facility-count CTA.
+ * Clearing visual treatment — labels and routes unchanged.
  */
 export async function SiteNav({
   countStateCode,
@@ -46,13 +47,12 @@ export async function SiteNav({
   const countLabel = facilityCount > 0 ? facilityCount.toLocaleString() : "1,000+";
 
   return (
-    <header className="sticky top-0 z-40 bg-paper border-b border-paper-rule">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-3.5 md:py-[22px] flex flex-nowrap items-center justify-between gap-3 sm:gap-6 min-w-0">
+    <header className="sticky top-0 z-40 border-b border-clearing-rule bg-clearing-bg/90 backdrop-blur-md">
+      <div className="mx-auto flex max-w-[1280px] min-w-0 flex-nowrap items-center justify-between gap-3 px-4 py-3.5 sm:gap-6 sm:px-6 md:px-[60px] md:py-[22px]">
 
         {/* Brand mark */}
-        <Link href="/" className="flex items-center gap-2 sm:gap-2.5 no-underline min-w-0 shrink" aria-label="StarlynnCare home">
-          {/* Six-arm asterisk mark */}
-          <svg viewBox="-50 -50 100 100" className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px] shrink-0" aria-hidden fill="currentColor" style={{ color: "var(--color-ink)" }}>
+        <Link href="/" className="flex min-w-0 shrink items-center gap-2 no-underline sm:gap-2.5" aria-label="StarlynnCare home">
+          <svg viewBox="-50 -50 100 100" className="h-[22px] w-[22px] shrink-0 sm:h-6 sm:w-6" aria-hidden fill="currentColor" style={{ color: "var(--color-teal)" }}>
             <g transform="rotate(0)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
             <g transform="rotate(60)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
             <g transform="rotate(120)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
@@ -61,48 +61,43 @@ export async function SiteNav({
             <g transform="rotate(300)"><path d="M0,-44 C 5.4,-30 5.4,-14 1.6,-2 C 0.8,-0.6 -0.8,-0.6 -1.6,-2 C -5.4,-14 -5.4,-30 0,-44 Z"/></g>
             <circle r="3.2"/>
           </svg>
-          <span
-            className="font-[family-name:var(--font-display)] text-[22px] sm:text-[26px] md:text-[28px] tracking-[-0.01em] text-ink"
-          >
-            Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
+          <span className="font-[family-name:var(--font-sans)] text-[18px] font-semibold tracking-[-0.02em] text-ink sm:text-[21px]">
+            Starlynn<span style={{ color: "var(--color-teal)" }}>Care</span>
           </span>
           {badge && (
-            <span
-              className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.18em] border border-rust text-rust px-[7px] py-[3px] rounded-[3px] relative top-[-2px] hidden sm:inline-block"
-            >
+            <span className="relative top-[-1px] hidden rounded-full border border-[#C6D6D0] px-2.5 py-[3px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal sm:inline-block">
               {badge}
             </span>
           )}
         </Link>
 
-        {/* Nav */}
-        <nav className="flex items-center gap-2 sm:gap-5 md:gap-7 text-[14px] md:text-[14.5px] shrink-0" aria-label="Site navigation">
+        {/* Nav — labels unchanged */}
+        <nav className="flex shrink-0 items-center gap-2 text-[14px] sm:gap-5 md:gap-7 md:text-[15px]" aria-label="Site navigation">
           {national ? (
-            <Link href="/states" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+            <Link href="/states" className="hidden text-[#3C4A43] no-underline transition-colors hover:text-teal md:inline">
               States
             </Link>
           ) : !hideStateLink && (
-            <Link href={stateNavHref} className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+            <Link href={stateNavHref} className="hidden text-[#3C4A43] no-underline transition-colors hover:text-teal md:inline">
               {badge}
             </Link>
           )}
-          <Link href="/data" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+          <Link href="/data" className="hidden text-[#3C4A43] no-underline transition-colors hover:text-teal md:inline">
             The Data
           </Link>
-          <Link href="/library" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+          <Link href="/library" className="hidden text-[#3C4A43] no-underline transition-colors hover:text-teal md:inline">
             Library
           </Link>
-          <Link href="/methodology" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+          <Link href="/methodology" className="hidden text-[#3C4A43] no-underline transition-colors hover:text-teal md:inline">
             Methodology
           </Link>
-          <Link href="/about" className="hidden md:inline text-ink-2 no-underline hover:text-teal transition-colors">
+          <Link href="/about" className="hidden text-[#3C4A43] no-underline transition-colors hover:text-teal md:inline">
             About
           </Link>
 
-          {/* Primary CTA */}
           <Link
             href={ctaHref}
-            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-teal text-white px-3 py-2 sm:px-[18px] sm:py-[10px] rounded-full text-[12px] sm:text-[14px] font-medium hover:bg-teal-deep transition-colors no-underline whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-teal px-3 py-2 text-[12px] font-semibold text-white no-underline transition-colors hover:bg-teal-deep sm:gap-2 sm:px-5 sm:py-2.5 sm:text-[14.5px]"
             aria-label={`Browse ${countLabel} ${ctaLabel}`}
           >
             <span className="sm:hidden">Browse all</span>

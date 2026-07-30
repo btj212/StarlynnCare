@@ -120,7 +120,7 @@ export default function TypeATypeBPage() {
               <span className="text-ink-3">Deficiency types</span>
             </nav>
 
-            <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+            <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
               § Regulatory primer
             </div>
             <h1

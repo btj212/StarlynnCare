@@ -240,7 +240,7 @@ export default async function StateGuidesPage({ params }: PageProps) {
               <span aria-hidden>›</span>
               <span className="text-ink-3">Guides &amp; explainers</span>
             </nav>
-            <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block mb-4">
+            <p className="font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block mb-4">
               § StarlynnCare {config.stateName} · Guides &amp; explainers
             </p>
             <h1 className="font-[family-name:var(--font-display)] font-normal text-[clamp(32px,5vw,52px)] leading-[1.05] tracking-[-0.02em] text-ink m-0 max-w-[22ch]">

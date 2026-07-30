@@ -2,21 +2,31 @@
 @import "../styles/mobile-shell.css";
 
 @theme {
-  /* ── Editorial palette (mobile brief §2 + desktop) ─────────────────────── */
-  --color-paper:       #F4EEE2;   /* primary background */
-  --color-paper-2:     #EEE6D4;   /* card / inset */
-  --color-paper-rule:  #D9CFB8;   /* thin rule lines */
-  --color-ink:         #1A2620;   /* deep editorial ink */
+  /* ── Clearing palette (visual refresh; copy/IA unchanged) ─────────────── */
+  --color-paper:       #FBF9F4;   /* clearing page background */
+  --color-paper-2:     #F1F4EF;   /* clearing tint / alternating bands */
+  --color-paper-rule:  #E4DED0;   /* clearing rule-2 */
+  --color-ink:         #1A2620;
   --color-ink-2:       #2E3A33;
   --color-ink-3:       #5A6660;
   --color-ink-4:       #8A938C;
-  --color-teal:        #1F5C5A;   /* anchor teal (brief) */
+  --color-teal:        #1F5C5A;
   --color-teal-deep:   #143F3D;
   --color-teal-soft:   #D6E4DF;
-  --color-rust:        #B8533A;   /* editorial rust (brief) */
+  --color-rust:        #B8533A;
   --color-rust-soft:   #EFD6CB;
   --color-gold:        #C4923B;
   --color-gold-soft:   #EBDDB8;
+
+  /* Clearing surfaces (explicit names for new markup) */
+  --color-clearing-bg:     #FBF9F4;
+  --color-clearing-tint:   #F1F4EF;
+  --color-clearing-card:   #FFFFFF;
+  --color-clearing-rule:   #EDE7DA;
+  --color-clearing-rule-2: #E4DED0;
+  --color-clearing-rule-3: #F1EDE3;
+  --color-clearing-chip:   #E3EDE8;
+  --color-clearing-footer: #153F3E;
 
   /* Grade tier tokens */
   --color-grade-a:     #2F6B3A;
@@ -27,13 +37,13 @@
 
   /* ── Legacy aliases (keep so existing class names still resolve) ──────── */
   --color-navy:        #1A2620;   /* → ink */
-  --color-warm-white:  #F4EEE2;   /* → paper */
+  --color-warm-white:  #FBF9F4;   /* → paper */
   --color-slate:       #5A6660;   /* → ink-3 */
   --color-muted:       #8A938C;   /* → ink-4 */
-  --color-sc-border:   #D9CFB8;   /* → paper-rule */
+  --color-sc-border:   #E4DED0;   /* → paper-rule */
   --color-teal-light:  #D6E4DF;   /* → teal-soft */
   --color-teal-mid:    #1F5C5A;   /* → teal */
-  --color-footer-bg:   #1A2620;   /* → ink */
+  --color-footer-bg:   #153F3E;   /* → clearing-footer */
   --color-amber:       #C4923B;   /* → gold */
   --color-amber-light: #EBDDB8;   /* → gold-soft */
   --color-red-light:   #EFD6CB;   /* → rust-soft */
@@ -54,9 +64,13 @@
   /* Legacy alias kept for components that reference --font-serif */
   --font-serif:   "Instrument Serif", "Newsreader", Georgia, serif;
 
-  /* ── Shadows ─────────────────────────────────────────────────────────── */
-  --shadow-card:       0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
-  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1), 0 16px 40px rgba(0, 0, 0, 0.08);
+  /* ── Shadows (Clearing) ──────────────────────────────────────────────── */
+  --shadow-card:       0 6px 20px rgba(26, 38, 32, 0.05);
+  --shadow-card-hover: 0 10px 30px rgba(26, 38, 32, 0.09);
+  --shadow-card-raised: 0 10px 30px rgba(26, 38, 32, 0.06);
+  --shadow-hero-search: 0 8px 28px rgba(26, 38, 32, 0.07);
+  --shadow-feature:    0 14px 44px rgba(26, 38, 32, 0.08);
+  --shadow-hero-image: 0 20px 50px rgba(26, 38, 32, 0.10);
 }
 
 html {
@@ -155,4 +169,34 @@ body {
 .card-lift:hover {
   box-shadow: var(--shadow-card-hover);
   transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-lift:hover {
+    transform: none;
+  }
+  .live-dot {
+    animation: none;
+  }
+}
+
+/* ── Clearing surface helpers ───────────────────────────────────────────── */
+.clearing-card {
+  background: var(--color-clearing-card);
+  border: 1px solid var(--color-clearing-rule-2);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.clearing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--color-clearing-chip);
+  color: var(--color-teal);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 999px;
+  padding: 6px 12px;
 }

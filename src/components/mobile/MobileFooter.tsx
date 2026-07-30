@@ -8,7 +8,7 @@ export function MobileFooter({ lastRefreshed }: { lastRefreshed: string | null }
   return (
     <div className="m-foot">
       <div className="brand-line">
-        Starlynn<em className="not-italic" style={{ color: "#EBDDB8" }}>Care</em>
+        Starlynn<span style={{ color: "#C6DAD3" }}>Care</span>
       </div>
       <p className="stmt">
         Independent care facility publisher. We rank every licensed memory care facility against the

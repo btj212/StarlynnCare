@@ -23,23 +23,19 @@ export function StateHubMethodology({
   steps,
 }: Props) {
   return (
-    <section
-      id="methodology"
-      className="border-b border-paper-rule"
-      style={{ background: "var(--color-paper)" }}
-    >
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-20">
+    <section id="methodology" className="border-b border-clearing-rule bg-clearing-bg">
+      <div className="mx-auto max-w-[1280px] px-4 py-16 sm:px-6 md:px-[60px] md:py-20">
         <SectionHead label={sectionLabel} title={sectionTitle} />
 
-        <div className="grid gap-10 md:gap-16 items-start md:grid-cols-[1fr_1.05fr]">
+        <div className="grid items-start gap-10 md:grid-cols-[1fr_1.05fr] md:gap-16">
           <div>
-            <h3 className="font-[family-name:var(--font-display)] text-[26px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.01em] m-0 mb-4">
+            <h3 className="m-0 mb-4 font-[family-name:var(--font-display)] text-[26px] font-normal leading-[1.1] tracking-[-0.01em] sm:text-[32px]">
               {explainerTitle}
             </h3>
-            <div className="text-ink-2 mb-4 leading-relaxed">{explainerBody}</div>
-            <p className="text-ink-2 mb-6 leading-relaxed">
+            <div className="mb-4 leading-relaxed text-ink-2">{explainerBody}</div>
+            <p className="mb-6 leading-relaxed text-ink-2">
               The methodology is published and version-controlled. We change it in public.{" "}
-              <Link href={methodologyHref} className="text-teal underline underline-offset-4">
+              <Link href={methodologyHref} className="text-teal underline underline-offset-4 hover:text-rust">
                 Read the full methodology →
               </Link>
             </p>
@@ -48,15 +44,15 @@ export function StateHubMethodology({
           <SyncedHomeSampleCardDesktop />
         </div>
 
-        <div className="mt-16 grid grid-cols-1 border-t border-paper-rule md:grid-cols-3">
+        <div className="mt-16 grid grid-cols-1 gap-3.5 md:grid-cols-3">
           {steps.map((s, i) => (
             <div
               key={i}
-              className="p-6 sm:p-8 border-b border-paper-rule last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
+              className="rounded-[18px] border border-clearing-rule-2 bg-clearing-card p-6 shadow-[var(--shadow-card)] sm:p-8"
             >
-              <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.16em] text-rust mb-3">{s.n}</div>
-              <h4 className="font-[family-name:var(--font-display)] text-[26px] font-normal leading-[1.1] tracking-[-0.005em] m-0 mb-2.5">{s.t}</h4>
-              <p className="text-[15px] text-ink-2 m-0 leading-relaxed">{s.p}</p>
+              <div className="mb-3 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">{s.n}</div>
+              <h4 className="m-0 mb-2.5 font-[family-name:var(--font-display)] text-[26px] font-normal leading-[1.1] tracking-[-0.005em]">{s.t}</h4>
+              <p className="m-0 text-[15px] leading-relaxed text-ink-2">{s.p}</p>
             </div>
           ))}
         </div>
