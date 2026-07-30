@@ -286,7 +286,7 @@ export default async function BibliofangirlPage() {
         {/* Header */}
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
           <div className="mx-auto max-w-[860px] px-4 sm:px-6 md:px-10 py-12">
-            <div className="mb-3 font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+            <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
               Personal report · Pittsburgh, PA
             </div>
             <h1 className="font-[family-name:var(--font-display)] font-normal text-[clamp(26px,4vw,42px)] leading-[1.1] tracking-[-0.02em] text-ink mt-3 mb-4">

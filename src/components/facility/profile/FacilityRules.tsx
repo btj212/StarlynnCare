@@ -85,7 +85,7 @@ export function FacilityRules({ rulesCards }: Props) {
           deck="State requirements with the exact regulation citation, plain-language explanation, and a question to ask on tour. Rules this facility has been cited for appear first."
         />
 
-        <div className="border-t-2 border-ink">
+        <div className="overflow-hidden rounded-[18px] border border-clearing-rule-2 bg-clearing-card shadow-[var(--shadow-card)]">
           {rulesCards.map((rule) => {
             const isOpen = openId === rule.id;
             return (

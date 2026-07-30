@@ -119,7 +119,7 @@ export async function FacilitySiblings({ profile }: { profile: FacilityProfile }
               <Link
                 key={s.id}
                 href={`/${state.slug}/${s.city_slug}/${s.slug}`}
-                className="flex flex-col border border-paper-rule bg-paper-2 text-ink no-underline hover:shadow-card-hover transition-shadow"
+                className="card-lift flex flex-col overflow-hidden rounded-2xl border border-clearing-rule-2 bg-clearing-card text-ink no-underline shadow-[var(--shadow-card)] transition-shadow"
               >
                 {/* Photo band */}
                 <div

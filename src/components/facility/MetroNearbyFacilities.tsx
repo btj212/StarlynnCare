@@ -51,7 +51,7 @@ export async function MetroNearbyFacilities({ facilityId, citySlug, stateSlug }:
 
   return (
     <section className="border-t border-paper-rule pt-12 mt-12">
-      <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+      <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
         Nearby cities · same county
       </div>
       <h2 className="font-[family-name:var(--font-sans)] font-semibold text-[28px] leading-[1.1] tracking-[-0.01em] text-ink mb-3">
@@ -61,12 +61,12 @@ export async function MetroNearbyFacilities({ facilityId, citySlug, stateSlug }:
         Licensed memory care in other cities within this county region — useful when your search radius crosses city limits.
       </p>
 
-      <div className="grid gap-0 border-t border-ink md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {ranked.map((f) => (
           <Link
             key={f.id}
             href={`/${stateSlug}/${f.city_slug}/${f.slug}`}
-            className="flex flex-col gap-1 px-5 py-4 border-r border-b border-paper-rule last:border-r-0 no-underline text-ink hover:bg-paper-2 transition-colors min-h-[5rem]"
+            className="card-lift flex min-h-[5rem] flex-col gap-1 rounded-2xl border border-clearing-rule-2 bg-clearing-card px-5 py-4 text-ink no-underline shadow-[var(--shadow-card)] transition-colors hover:border-teal/25"
           >
             <span className="font-[family-name:var(--font-sans)] font-semibold text-[17px] leading-[1.15] tracking-[-0.005em]">
               {formatFacilityName(f.name)}

@@ -128,7 +128,7 @@ export function HubDifferentiators({
       style={{ background: "var(--color-paper-2)" }}
     >
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-10">
-        <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+        <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
           § What the numbers show
         </div>
         <h2 className="font-[family-name:var(--font-display)] text-[22px] sm:text-[26px] font-normal leading-[1.1] tracking-[-0.01em] text-ink mb-1">

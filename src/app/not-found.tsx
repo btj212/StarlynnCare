@@ -100,7 +100,7 @@ export default function NotFound() {
             <Link href="/" className="m-brand no-underline text-ink" aria-label="StarlynnCare home">
               <span className="mark" aria-hidden />
               <span>
-                Starlynn<em className="not-italic" style={{ color: "var(--color-rust)" }}>Care</em>
+                Starlynn<span style={{ color: "var(--color-teal)" }}>Care</span>
               </span>
             </Link>
           </div>

@@ -158,7 +158,7 @@ export default function MoVsNursingHomePage() {
               <span className="text-ink-3">Memory care vs. nursing home</span>
             </nav>
 
-            <div className="mb-3 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust border-t-2 border-ink pt-2.5 inline-block">
+            <div className="mb-3 font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal inline-block">
               Missouri decision guide · DHSS vs. CMS regulation
             </div>
             <h1 className="font-[family-name:var(--font-display)] font-normal text-[clamp(28px,4.5vw,48px)] leading-[1.08] tracking-[-0.02em] text-ink mt-3 mb-5">
