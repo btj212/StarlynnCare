@@ -157,11 +157,18 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   (+27 survey/complaint events across 12+ facilities); UT CCL sample max=2026-03-11 (unchanged
 #   vs baseline 2026-06-16); all other states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB
 #   or manual).
+# Cron probe 2026-08-01T23:01 UTC: OR source max=2026-07-31 (+5 on 07-31: Independence Health And
+#   Rehabilitation NF, Anca Romonti AFH, Regency Gresham NF, Terefe Demisse And Fana Mulugeta AFH,
+#   Linah Rukwaro AFH; +13 since 2026-07-24 baseline still pending ingest); MN insertDate max
+#   2026-08-01 (+7 survey events: AMAX CARE LLC, ALTACARE SERVICES LLC, ASSURANT CARE HOMES LLC,
+#   SMC ASHTON INC, HEALING RESIDENCES INC, HELIOPOLIS HOME HEALTHCARE LLC, CHATEAU WATERS; +48
+#   insertDate events since 2026-07-25 baseline still pending ingest); all other states no new
+#   source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 2),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 24),
+    "OR": date(2026, 7, 31),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 7, 8),
     "UT": date(2026, 6, 16),
@@ -171,7 +178,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 25)
+LAST_MN_INSERT_BASELINE = date(2026, 8, 1)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
