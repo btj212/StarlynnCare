@@ -157,21 +157,31 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   (+27 survey/complaint events across 12+ facilities); UT CCL sample max=2026-03-11 (unchanged
 #   vs baseline 2026-06-16); all other states no new source data (CA/TX/WA/IL/PA/AZ/MO need DB
 #   or manual).
+# Run 30742425936 (2026-08-02T09:46 UTC schedule): OR +37 max=2026-07-31 (was 2026-07-24), 1
+#   material change; MN +24 max=2026-07-21 (was 2026-07-14), 2 material changes; AZ +42
+#   max=2026-07-31 (was 2026-07-23), 40 material changes; WA +61 max=2026-12-01 unchanged, 1
+#   material change; UT +3 max=2026-07-06 (was 2026-06-24), 9 material changes; PA +28
+#   max=2026-08-28 unchanged, 21 material changes; CA/IL/TX/MO +0. Layer 5 post-ingest failed
+#   on all states as expected; ingest steps succeeded.
+# Cron probe 2026-08-02T23:01 UTC (after morning ingest): OR source max=2026-07-31 (unchanged —
+#   ingested run 30742425936); MN insertDate max=2026-08-02 (+4 survey PDFs: Timber Creek,
+#   Island Living, Estherra Care, New Perspective Rosedale — non-ALRC, expected skipped); all
+#   other states no new source data since morning ingest. Production page spot-check 153/153 pass.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 7, 2),
+    "CA": date(2026, 7, 17),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 24),
+    "OR": date(2026, 7, 31),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 7, 8),
-    "UT": date(2026, 6, 16),
+    "MN": date(2026, 7, 21),
+    "UT": date(2026, 7, 6),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 7, 23),
-    "MO": date(2026, 6, 1),  # FOIA Excel; no live regulator feed
+    "AZ": date(2026, 7, 31),
+    "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 7, 25)
+LAST_MN_INSERT_BASELINE = date(2026, 8, 2)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
