@@ -168,11 +168,16 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   Monitoring 1 deficiency 8/04); MN insertDate max=2026-08-05 (+20 survey/complaint events with
 #   resolved dates 7/16–7/28); MN resolved max=2026-07-28 (unchanged vs Sunday ingest max=2026-07-21
 #   for ingested rows); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual).
+# Run 31055201575 (2026-08-05T23:06 UTC, push after cron probe): OR +7 inspections (13614→13621),
+#   max=2026-08-04; 0 material facility changes; Layer 5 post-ingest failed as expected.
+#   MN +15 inspections (4847→4862), max unchanged; 8 material facility changes (Cornerstone Residence
+#   of Fosst, Maple Hill Senior Living, Meadow Ridge, The Lodge, Lino Lakes AL, Global Pointe, Golden
+#   Horizons, Norbella Senior Living Savage); Layer 5 post-ingest failed as expected.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 7, 17),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 7, 31),
+    "OR": date(2026, 8, 4),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 7, 21),
     "UT": date(2026, 7, 6),
@@ -182,7 +187,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 8, 4)
+LAST_MN_INSERT_BASELINE = date(2026, 8, 5)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
