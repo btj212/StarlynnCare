@@ -6,6 +6,8 @@ Queries the DB for baseline max inspection dates, runs each state's source
 scraper/ingest pipeline, records source outcomes and material facility deltas,
 then runs post-ingest validation.
 
+Triggered by nightly cron probe when new OR/MN source data is detected.
+
 Usage:
   python3 scripts/weekly_inspection_ingest.py
   python3 scripts/weekly_inspection_ingest.py --state CA
