@@ -163,6 +163,12 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Cron probe 2026-08-04T23:01 UTC: OR source max=2026-07-31 (unchanged vs Sunday ingest); MN insertDate
 #   max=2026-08-04 (+1 non-ALRC survey PDF for Holistic Home Care LLC — expected skipped); all other
 #   states no new source data.
+# Cron probe 2026-08-06T23:01 UTC: OR source max=2026-08-05 (+2: Columbia Basin Care Facility NF
+#   385049 Complaint/Re-Licensure 0 deficiencies 8/05; Cecile Mukandekwe AFH RL013581 Re-Licensure
+#   5 deficiencies 8/05); MN insertDate max=2026-08-06 (+3 survey events: SUNRISE ASSISTING LIVING
+#   LLC provider 41846 resolved 7/07; OPTIMAL LOVING CARE provider 41173 resolved 7/02; HOPE HOMES LLC
+#   provider 38736 resolved 2/11); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB
+#   or manual).
 # Cron probe 2026-08-05T23:02 UTC: OR source max=2026-08-04 (+2 since Sunday ingest: Corvallis Manor
 #   NF 385072 Complaint/Re-Licensure 0 deficiencies 8/03; Highland Adult Care Home LLC AFH MON013533
 #   Monitoring 1 deficiency 8/04); MN insertDate max=2026-08-05 (+20 survey/complaint events with
