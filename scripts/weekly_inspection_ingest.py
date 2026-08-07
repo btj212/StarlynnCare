@@ -7,6 +7,7 @@ scraper/ingest pipeline, records source outcomes and material facility deltas,
 then runs post-ingest validation.
 
 Triggered by nightly cron probe when new OR/MN source data is detected.
+Cron probe 2026-08-07: MN insertDate +7 (resolved dates through 7/22).
 
 Usage:
   python3 scripts/weekly_inspection_ingest.py

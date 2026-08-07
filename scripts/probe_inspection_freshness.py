@@ -160,6 +160,12 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Run 30742425936 (2026-08-02T09:46 UTC, Sunday schedule): OR +37 max=2026-07-31; MN +24 max=2026-07-21;
 #   AZ +42 max=2026-07-31; WA +61 max unchanged; UT +3 max=2026-07-06; PA +28 max unchanged;
 #   CA +0 max=2026-07-17; IL/TX/MO +0.
+# Cron probe 2026-08-07T23:02 UTC: OR source max=2026-08-05 (unchanged vs baseline); MN insertDate
+#   max=2026-08-07 (+7 survey events: Nordic Wood Assisted Living resolved 6/10; Benedetta Home Care
+#   Services resolved 7/09; The Hummingbird resolved 11/24/2025; Villa Court LLC resolved 4/24;
+#   Elmhurst Commons Apartments resolved 7/22; Assumption Court resolved 7/15; Ostrander Assisted
+#   Living resolved 5/12); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB
+#   or manual).
 # Cron probe 2026-08-04T23:01 UTC: OR source max=2026-07-31 (unchanged vs Sunday ingest); MN insertDate
 #   max=2026-08-04 (+1 non-ALRC survey PDF for Holistic Home Care LLC — expected skipped); all other
 #   states no new source data.
