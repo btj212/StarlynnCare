@@ -160,6 +160,9 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Run 30742425936 (2026-08-02T09:46 UTC, Sunday schedule): OR +37 max=2026-07-31; MN +24 max=2026-07-21;
 #   AZ +42 max=2026-07-31; WA +61 max unchanged; UT +3 max=2026-07-06; PA +28 max unchanged;
 #   CA +0 max=2026-07-17; IL/TX/MO +0.
+# Run 31226001136 (2026-08-07T23:05 UTC, push after cron probe 2026-08-07T23:02):
+#   MN +3 inspections (4862→4865), max=2026-07-28 unchanged; 0 material facility changes
+#   (4 of 7 insertDate 08/07 events skipped — non-ALRC or already in DB); Layer 5 failed (denorm)
 # Cron probe 2026-08-07T23:02 UTC: OR source max=2026-08-05 (unchanged vs baseline); MN insertDate
 #   max=2026-08-07 (+7 survey events: Nordic Wood Assisted Living resolved 6/10; Benedetta Home Care
 #   Services resolved 7/09; The Hummingbird resolved 11/24/2025; Villa Court LLC resolved 4/24;
@@ -204,7 +207,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 8, 6)
+LAST_MN_INSERT_BASELINE = date(2026, 8, 7)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
