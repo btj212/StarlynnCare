@@ -163,6 +163,12 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Run 31226001136 (2026-08-07T23:05 UTC, push after cron probe 2026-08-07T23:02):
 #   MN +3 inspections (4862→4865), max=2026-07-28 unchanged; 0 material facility changes
 #   (4 of 7 insertDate 08/07 events skipped — non-ALRC or already in DB); Layer 5 failed (denorm)
+# Cron probe 2026-08-08T23:00 UTC: OR source max=2026-08-05 (unchanged vs baseline); MN insertDate
+#   max=2026-08-08 (+5 survey events: SOMCARE LLC provider 40753 resolved 7/14; RISEN HOME CARE LLC
+#   provider 36999 resolved 7/22; MILL CITY HOME HEALTH CARE INC provider 36730 resolved 4/01;
+#   NERVANAS CARING HANDS INC provider 30664 resolved 6/24; ADITH MILLER MANOR provider 20147
+#   resolved 7/24/2025); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB
+#   or manual).
 # Cron probe 2026-08-07T23:02 UTC: OR source max=2026-08-05 (unchanged vs baseline); MN insertDate
 #   max=2026-08-07 (+7 survey events: Nordic Wood Assisted Living resolved 6/10; Benedetta Home Care
 #   Services resolved 7/09; The Hummingbird resolved 11/24/2025; Villa Court LLC resolved 4/24;
