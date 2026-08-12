@@ -192,6 +192,15 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LLC provider 41846 resolved 7/07; OPTIMAL LOVING CARE provider 41173 resolved 7/02; HOPE HOMES LLC
 #   provider 38736 resolved 2/11); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB
 #   or manual).
+# Cron probe 2026-08-12T23:06 UTC: OR source max=2026-08-11 (+7 rows vs baseline 2026-08-05:
+#   Tigard Rehab NF 38L600 8/07; Ashland Post Acute NF 385197 8/07; Belmont Care NF 38E196 8/07;
+#   Evergreen Post Acute NF 38E142 8/07; Shalo Sado AFH 2679378118 8/10; French Prairie Nursing NF
+#   385117 8/10; Lucian Roman And Mihaela Roman AFH 518744 8/11); MN insertDate max=2026-08-12
+#   (+12 events vs LAST_MN_INSERT_BASELINE 2026-08-08: 4 complaint PDFs 8/11 incl. Diversity Home Care,
+#   Cornerstone Residence of Fosst, Brooke Manor, Abilit Holdings Meadow Lakes; 8 survey PDFs 8/12 incl.
+#   Alliance Wellness Homes, Hillcrest Terrace, Healing Home Services, Joy Care Homes, Careview Idaho,
+#   Orchard Path, Campus A/L, Chosen Valley Assisted Living); all other states no new source data
+#   (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual; Sunday GHA 31303537270 2026-08-09 all +0).
 # Cron probe 2026-08-05T23:02 UTC: OR source max=2026-08-04 (+2 since Sunday ingest: Corvallis Manor
 #   NF 385072 Complaint/Re-Licensure 0 deficiencies 8/03; Highland Adult Care Home LLC AFH MON013533
 #   Monitoring 1 deficiency 8/04); MN insertDate max=2026-08-05 (+20 survey/complaint events with
