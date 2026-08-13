@@ -166,6 +166,17 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Run 31283132604 (2026-08-08T23:04 UTC, push after cron probe 2026-08-08T23:00):
 #   MN +2 inspections (4865→4867), max=2026-07-28 unchanged; 0 material facility changes
 #   (3 of 5 insertDate 08/08 events skipped — non-ALRC or already in DB); Layer 5 failed (denorm)
+# Cron probe 2026-08-11T23:02 UTC: OR source max=2026-08-10 (+6 since baseline 2026-08-05:
+#   French Prairie Nursing NF 385117 8/10 Complaint/Re-Licensure/Recert 25 defs;
+#   Shalo Sado AFH 2679378118 8/10 Re-Licensure 4 defs;
+#   Belmont Care NF 38E196 8/07 8 defs; Evergreen Post Acute NF 38E142 8/07 15 defs;
+#   Tigard Rehab NF 38L600 8/07 0 defs; Ashland Post Acute NF 385197 8/07 16 defs);
+#   MN insertDate max=2026-08-11 (+4 complaint events: DIVERSITY HOME CARE HL392343426M
+#   resolved 7/30 INCONCLUSIVE; CORNERSTONE RESIDENCE OF FOSST HL303602781M resolved 7/30
+#   UNSUBSTANTIATED; BROOKE MANOR INC HL302352580M resolved 7/27 UNSUBSTANTIATED;
+#   ABILIT HOLDINGS MEADOW LAKES L HL211293722M resolved 8/28/2025 SUBSTANTIATED);
+#   UT CCL smoke max=2026-03-11 (unchanged vs baseline 2026-07-06); all other states no new
+#   source data (CA/TX/WA/IL/PA/AZ/MO need DB or manual; Sunday GHA 31303537270 08-09 +0).
 # Cron probe 2026-08-08T23:00 UTC: OR source max=2026-08-05 (unchanged vs baseline); MN insertDate
 #   max=2026-08-08 (+5 survey events: SOMCARE LLC provider 40753 resolved 7/14; RISEN HOME CARE LLC
 #   provider 36999 resolved 7/22; MILL CITY HOME HEALTH CARE INC provider 36730 resolved 4/01;
