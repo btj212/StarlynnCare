@@ -221,21 +221,29 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   MN +15 inspections (4847→4862), max unchanged; 8 material facility changes (Cornerstone Residence
 #   of Fosst, Maple Hill Senior Living, Meadow Ridge, The Lodge, Lino Lakes AL, Global Pointe, Golden
 #   Horizons, Norbella Senior Living Savage); Layer 5 post-ingest failed as expected.
+# Run 31935924974 (2026-08-16T08:13 UTC, Sunday schedule): OR +11 max=2026-08-14 (was 2026-08-12),
+#   2 material facility changes; MN +16 max=2026-08-13 (was 2026-07-30), 7 material changes;
+#   AZ +16 max=2026-08-14; PA +10 max=2026-08-28 unchanged; CA/UT/IL/MO +0; TX manual fail;
+#   WA ingest failed but +0 inspections. Layer 5 post-ingest failed on OR/MN/AZ/PA (denorm expected).
+# Cron probe 2026-08-17T23:01 UTC: OR source max=2026-08-14 (unchanged vs Sunday GHA 31935924974);
+#   MN insertDate max=2026-08-16 (+17 events vs LAST_MN_INSERT_BASELINE 2026-08-12) but all are
+#   posting delays — resolved dates ≤ 2026-08-13 already ingested Sunday; 0 truly new resolved rows;
+#   all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO covered by Sunday GHA).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 7, 17),
+    "CA": date(2026, 8, 10),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 8, 11),
+    "OR": date(2026, 8, 14),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 7, 30),
+    "MN": date(2026, 8, 13),
     "UT": date(2026, 7, 21),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 8, 11),
+    "AZ": date(2026, 8, 14),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 8, 12)
+LAST_MN_INSERT_BASELINE = date(2026, 8, 16)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
