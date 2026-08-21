@@ -192,6 +192,34 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LLC provider 41846 resolved 7/07; OPTIMAL LOVING CARE provider 41173 resolved 7/02; HOPE HOMES LLC
 #   provider 38736 resolved 2/11); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB
 #   or manual).
+# Cron probe 2026-08-21T23:01 UTC: OR source max=2026-08-20 (+9 vs ingested max 2026-08-14: Maria O.
+#   Rodriguez AFH Monitoring 3 def 8/17; Elizabeth Wangui Njeru-Gibbons AFH Re-Licensure 3 def 8/17;
+#   Meko A Tolola AFH Re-Licensure 3 def 8/18; Anthony Kungu AFH Re-Licensure 2 def 8/18; Tempie
+#   Bartell AFH Complaint 1 def 8/18; Willow Creek Post Acute NF Complaint/Re-Licensure 0 def 8/18;
+#   Life Care Center of Coos Bay NF Complaint/Re-Licensure 0 def 8/19; Barite Berhanu AFH Re-Licensure
+#   5 def 8/20; Shari Kroh AFH Monitoring 2 def 8/20); MN insertDate max=2026-08-21 (+1 survey event
+#   vs LAST_MN_INSERT_BASELINE 2026-08-20) but posting delay — resolved max 2026-08-13 unchanged; 0
+#   truly new resolved rows; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or
+#   manual; Sunday GHA 31935924974 2026-08-16 scanned all 10 states).
+# Cron probe 2026-08-20T23:00 UTC: OR source max=2026-08-18 (unchanged vs 2026-08-19 probe — 3 AFH
+#   Re-Licensure rows still pending ingest: Elizabeth Wangui Njeru-Gibbons RL013778 8/17; Meko A Tolola
+#   RL013790 8/18; Anthony Kungu RL013794 8/18); MN insertDate max=2026-08-20 (+5 survey events vs
+#   LAST_MN_INSERT_BASELINE 2026-08-19) but all posting delays — resolved dates ≤ 2026-08-13 already
+#   ingested Sunday GHA 31935924974; 0 truly new resolved rows; all other states no new source data
+#   (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual; Sunday GHA 31935924974 2026-08-16 scanned all 10 states).
+# Cron probe 2026-08-19T23:00 UTC: OR source max=2026-08-18 (+3 vs ingested max 2026-08-14:
+#   Elizabeth Wangui Njeru-Gibbons AFH RL013778 Re-Licensure 3 deficiencies 8/17; Meko A Tolola AFH
+#   RL013790 Re-Licensure 3 deficiencies 8/18; Anthony Kungu AFH RL013794 Re-Licensure 2 deficiencies
+#   8/18); MN insertDate max=2026-08-19 (+7 survey events vs LAST_MN_INSERT_BASELINE 2026-08-16) but
+#   all posting delays — resolved dates ≤ 2026-08-13 already ingested Sunday GHA 31935924974; 0
+#   truly new resolved rows; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or
+#   manual; Sunday GHA 31935924974 2026-08-16 scanned all 10 states).
+# Run 31935924974 (2026-08-16T08:13 UTC Sunday schedule): OR +11 max=2026-08-14; MN +16 max=2026-08-13;
+#   AZ +16 max=2026-08-14; PA +10; CA/UT/IL/MO +0; TX manual fail; WA +0 (ingest failed, no new rows).
+#   Layer 5 denorm failed as expected — ingest steps succeeded.
+# Cron probe 2026-08-17T23:01 UTC: OR source max=2026-08-14 (unchanged vs Sunday GHA); MN insertDate
+#   max=2026-08-16 (+17 events vs prior baseline 2026-08-12) but all posting delays — resolved dates
+#   ≤ 2026-08-13 already ingested Sunday; 0 truly new resolved rows; all other states no new source data.
 # Run 31649927067 (2026-08-12T23:11 UTC push after cron probe 2026-08-12): OR +14 max=2026-08-11
 #   (was 2026-08-05); MN +10 max=2026-07-30 (was 2026-07-28), 3 material facility changes;
 #   UT +2 max=2026-07-21; AZ +24 max=2026-08-11; PA +3 max unchanged; CA/WA/IL/MO +0; TX manual fail.
@@ -223,19 +251,19 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   Horizons, Norbella Senior Living Savage); Layer 5 post-ingest failed as expected.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 7, 17),
+    "CA": date(2026, 8, 10),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 8, 11),
+    "OR": date(2026, 8, 14),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 7, 30),
+    "MN": date(2026, 8, 13),
     "UT": date(2026, 7, 21),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 8, 11),
+    "AZ": date(2026, 8, 14),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 8, 12)
+LAST_MN_INSERT_BASELINE = date(2026, 8, 21)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
