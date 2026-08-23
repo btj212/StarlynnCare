@@ -192,6 +192,16 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LLC provider 41846 resolved 7/07; OPTIMAL LOVING CARE provider 41173 resolved 7/02; HOPE HOMES LLC
 #   provider 38736 resolved 2/11); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB
 #   or manual).
+# Cron probe 2026-08-23T23:02 UTC: OR source max=2026-08-21 (unchanged vs Sunday GHA 32627736751
+#   ingested +28, max 2026-08-21); MN insertDate max=2026-08-23 (+1 posting delay: H AND S RESIDENCE
+#   LLC provider 36081 resolved 7/22); MN resolved max=2026-08-13 unchanged; all other states no new
+#   source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual; Sunday GHA 32627736751 completed today).
+# Run 32627736751 (2026-08-23T08:14 UTC Sunday schedule): OR +28 max=2026-08-21 (was 2026-08-14);
+#   MN +7 max=2026-08-13 unchanged; CA +81 max=2026-08-10 unchanged; AZ +46 max=2026-08-18;
+#   PA +21 max=2026-08-28 unchanged; UT +4 max=2026-07-21 unchanged; WA/IL/MO/TX +0.
+#   Layer 5 post-ingest failed on all states (denorm) — ingest steps succeeded.
+# Cron probe 2026-08-22T23:02 UTC: OR source max=2026-08-21 (+13 rows vs ingested max 2026-08-14);
+#   MN insertDate max=2026-08-22 (+5 posting delays); all other states no new source data.
 # Run 31649927067 (2026-08-12T23:11 UTC push after cron probe 2026-08-12): OR +14 max=2026-08-11
 #   (was 2026-08-05); MN +10 max=2026-07-30 (was 2026-07-28), 3 material facility changes;
 #   UT +2 max=2026-07-21; AZ +24 max=2026-08-11; PA +3 max unchanged; CA/WA/IL/MO +0; TX manual fail.
@@ -223,19 +233,19 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   Horizons, Norbella Senior Living Savage); Layer 5 post-ingest failed as expected.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 7, 17),
+    "CA": date(2026, 8, 10),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 8, 11),
+    "OR": date(2026, 8, 21),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 7, 30),
+    "MN": date(2026, 8, 13),
     "UT": date(2026, 7, 21),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 8, 11),
+    "AZ": date(2026, 8, 18),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 8, 12)
+LAST_MN_INSERT_BASELINE = date(2026, 8, 23)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
