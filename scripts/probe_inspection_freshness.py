@@ -196,6 +196,15 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   (was 2026-08-05); MN +10 max=2026-07-30 (was 2026-07-28), 3 material facility changes;
 #   UT +2 max=2026-07-21; AZ +24 max=2026-08-11; PA +3 max unchanged; CA/WA/IL/MO +0; TX manual fail.
 #   Layer 5 post-ingest failed on OR/MN/UT/AZ/PA/IL/CA (denorm) — ingest steps succeeded.
+# Cron probe 2026-08-25T23:06 UTC: OR source max=2026-08-24 (+2 vs ingested max 2026-08-21:
+#   Avamere Transitional Care at Sunnyside NF 385189 Complaint/Re-Licensure 2 deficiencies;
+#   Yolanda Roman Espinoza And Veronica Martinez AFH RL013877 Re-Licensure 3 deficiencies);
+#   MN insertDate max=2026-08-23 (unchanged); MN resolved max=2026-08-13 (unchanged);
+#   all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual;
+#   Sunday GHA 32627736751 2026-08-23 already ingested through 8/21 OR / 8/18 AZ / 8/10 CA).
+# Cron probe 2026-08-24T23:02 UTC: OR source max=2026-08-21 (unchanged vs Sunday GHA);
+#   MN insertDate max=2026-08-23 (unchanged); MN resolved max=2026-08-13 (unchanged);
+#   all other states no new source data.
 # Cron probe 2026-08-13T23:22 UTC: OR source max=2026-08-12 (+2 vs ingested max 2026-08-11:
 #   Fanaye Tesguri AFH RL013493 Re-Licensure 8 deficiencies; Avamere Rehabilitation of Lebanon NF
 #   385168 Complaint/Re-Licensure 0 deficiencies); MN insertDate max=2026-08-13 (+5 survey events vs
