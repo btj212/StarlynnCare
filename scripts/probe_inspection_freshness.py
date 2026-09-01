@@ -231,21 +231,34 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   Brooklyn Park Assisted Living, A Daughter's Love Inc, Milestone Senior Living Fariba (×2), Villa
 #   St Vincent, Woodbury Villa); MN resolved max=2026-08-19 unchanged; all other states no new source
 #   data (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual; Sunday GHA 32627736751 ingested 2026-08-23).
+# Run 33313974682 (2026-08-30 Sunday schedule): CA +31 max=2026-08-22; AZ +26 max=2026-08-27;
+#   MN +13 max=2026-08-19; PA +7 max=2026-08-28; OR +3 max=2026-08-25; UT +1 max=2026-08-05;
+#   IL/MO/TX/WA +0.
+# Cron probe 2026-09-01T23:02 UTC: OR source max=2026-08-31 (+9 vs ingested max 2026-08-25:
+#   Sharon Covaciu AFH 327 Re-Licensure 1 deficiency 8/31; Nathalie Angulo Aburto AFH 518286 Offsite 1
+#   deficiency 8/31; Anchor Care LLC AFH 534 Initial 13 deficiencies 8/28; Norma Calderon AFH 18
+#   Re-Licensure 2 deficiencies 8/28; Mt. Tabor Health and Rehabilitation NF 385141 Complaint/Re-Licensure
+#   0 deficiencies 8/27; Damaris Nyanjui AFH 374 Re-Licensure 7 deficiencies 8/26; Oliyad Gamechu AFH 429
+#   Monitoring 3 deficiencies 8/26; Simona Dan AFH 524019 Re-Licensure 2 deficiencies 8/26; Wondwossen Tekle
+#   AFH 9362976505 Re-Licensure 5 deficiencies 8/26); MN insertDate max=2026-09-01 (+3 posting-delay events
+#   vs LAST_MN_INSERT_BASELINE 2026-08-30: 2 complaints resolved 8/24–8/25, 1 survey resolved 7/28); MN
+#   resolved max=2026-08-25 (+2 complaints vs ingested max 2026-08-19); all other states no new source data
+#   (CA/TX/WA/UT/IL/PA/AZ/MO already current per Sunday GHA 33313974682 2026-08-30).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 8, 10),
+    "CA": date(2026, 8, 22),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 8, 21),
+    "OR": date(2026, 8, 25),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 8, 13),
-    "UT": date(2026, 7, 21),
+    "MN": date(2026, 8, 19),
+    "UT": date(2026, 8, 5),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 8, 18),
+    "AZ": date(2026, 8, 27),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 8, 23)
+LAST_MN_INSERT_BASELINE = date(2026, 8, 30)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
