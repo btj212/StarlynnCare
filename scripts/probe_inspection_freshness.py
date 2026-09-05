@@ -244,13 +244,29 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   vs LAST_MN_INSERT_BASELINE 2026-08-30: 2 complaints resolved 8/24–8/25, 1 survey resolved 7/28); MN
 #   resolved max=2026-08-25 (+2 complaints vs ingested max 2026-08-19); all other states no new source data
 #   (CA/TX/WA/UT/IL/PA/AZ/MO already current per Sunday GHA 33313974682 2026-08-30).
+# Run 33569498104 (2026-09-01T23:06 UTC push after cron probe 2026-09-01): OR +16 max=2026-08-31
+#   (was 2026-08-25); MN +2 max=2026-08-25 (was 2026-08-19); CA/PA/AZ also changed; IL/MO/TX/WA/UT +0.
+# Cron probe 2026-09-04T23:00 UTC: OR source max=2026-09-03 (+4 vs ingested max 2026-08-31: Elfinesh Sima
+#   AFH MON014099 Monitoring 6 deficiencies 9/03; Nathalie Angulo Aburto AFH MON014056 Monitoring 9/01;
+#   Remelita C Loftin AFH RL013956 Re-Licensure 9/01; Matthew Knee And Katrina Knee AFH CPLT014039 Complaint
+#   9/01); MN insertDate max=2026-09-04 (+2 posting-delay survey PDFs: Harmony Homes LLC provider 36862
+#   resolved 6/26; Healthpoint HWS @ Morgan provider 35694 resolved 3/19); MN resolved max=2026-08-25
+#   unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 33569498104).
+# Cron probe 2026-09-05T23:25 UTC: OR source max=2026-09-03 (+8 vs ingested max 2026-08-31: 3 new AFH on
+#   9/03 — Paulina Kareko RL014109 Re-Licensure 1 deficiency; Seblewongel Asmare Gebre RL014129 Re-Licensure
+#   12 deficiencies; plus 9/02 Angela Ghitea RL014060 Re-Licensure 1 deficiency; plus 4 events from 9/01 probe);
+#   MN insertDate max=2026-09-05 (+8 posting-delay survey PDFs: Caring Group Home Co 41800 resolved 7/31;
+#   Mother of Mercy 30461 resolved 8/07; Fair Meadow Assisted Living 29652 resolved 8/05; Sister Support LLC
+#   34786 resolved 8/04; Brookridge 30799 resolved 7/21; Empire Systems Home Care 34526 resolved 4/30;
+#   Amana Home Care LLC 36341 resolved 5/08; Souriyathay Enterprises LLC 35294 resolved 2/05); MN resolved
+#   max=2026-08-25 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 8, 22),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 8, 25),
+    "OR": date(2026, 9, 3),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 8, 19),
+    "MN": date(2026, 8, 25),
     "UT": date(2026, 8, 5),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
@@ -258,7 +274,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 8, 30)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 5)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
