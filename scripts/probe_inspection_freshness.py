@@ -244,21 +244,31 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   vs LAST_MN_INSERT_BASELINE 2026-08-30: 2 complaints resolved 8/24–8/25, 1 survey resolved 7/28); MN
 #   resolved max=2026-08-25 (+2 complaints vs ingested max 2026-08-19); all other states no new source data
 #   (CA/TX/WA/UT/IL/PA/AZ/MO already current per Sunday GHA 33313974682 2026-08-30).
+# Run 34031195270 (2026-09-06 Sunday schedule): OR +24 max=2026-09-03 (was 2026-08-31);
+#   MN +8 max=2026-08-25 unchanged; AZ +25 max=2026-09-04; UT +2 max=2026-08-13; PA +5 max unchanged;
+#   CA +0 max=2026-08-28; IL/MO/TX/WA +0.
+# Cron probe 2026-09-06T23:02 UTC: OR source max=2026-09-05 (+1 vs ingested max 2026-09-03:
+#   Nathalie Angulo Aburto AFH 518286 Condition Monitoring 3 deficiencies 9/05); MN insertDate max
+#   2026-09-05 (+8 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-04: Caring Group Home Co resolved
+#   7/31; Amana Home Care LLC 5/08; Souriyathay Enterprises LLC 2/05; Sister Support LLC 8/04; Empire
+#   Systems Home Care 4/30; Brookridge 7/21; Mother of Mercy 8/07; Fair Meadow Assisted Living 8/05);
+#   MN resolved max=2026-08-25 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO
+#   current per Sunday GHA 34031195270 2026-09-06).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 8, 22),
+    "CA": date(2026, 8, 28),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 8, 25),
+    "OR": date(2026, 9, 3),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 8, 19),
-    "UT": date(2026, 8, 5),
+    "MN": date(2026, 8, 25),
+    "UT": date(2026, 8, 13),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 8, 27),
+    "AZ": date(2026, 9, 4),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 8, 30)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 4)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
