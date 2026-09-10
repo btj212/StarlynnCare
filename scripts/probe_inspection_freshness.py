@@ -266,21 +266,30 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   FORTHRIGHT HOME CARE LLC, HOMEFELT ASSISTED LIVING ×2, ACE HOMES INC, CHASE COURAGEOUS
 #   HEALTH SERVIC); MN resolved max=2026-09-03 unchanged; all other states no new source data
 #   (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 34031195270 and run 34168824191).
+# Run 34415388839 (2026-09-09T23:06 UTC, push after cron probe 2026-09-09T23:02):
+#   OR +9 inspections (13749→13758), max=2026-09-08 (was 2026-09-05); 1 material facility change
+#   MN +3 inspections (4933→4936), max=2026-09-03 (was 2026-08-25); 0 material facility changes
+#   AZ +20 max=2026-09-08; UT +1; PA +1; CA/TX/WA/IL/MO +0; Layer 5 post-ingest failed (denorm).
+# Cron probe 2026-09-10T23:01 UTC: OR source max=2026-09-09 (+2 vs ingested max 2026-09-08:
+#   Tammy Bryant AFH 513946 RL014180 Re-Licensure 3 deficiencies 9/09; Dennis Joseph Martija AFH
+#   5630339556 RL014198 Re-Licensure 1 deficiency 9/09); MN insertDate max=2026-09-09 (unchanged —
+#   same 5 complaint PDFs; 3 ingested run 34415388839, 2 may still be pending/skipped); MN
+#   resolved max=2026-09-03 (ingested run 34415388839); all other states no new source data.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 8, 28),
+    "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 5),
+    "OR": date(2026, 9, 8),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 8, 25),
+    "MN": date(2026, 9, 3),
     "UT": date(2026, 8, 13),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 9, 4),
+    "AZ": date(2026, 9, 8),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 5)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 9)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
