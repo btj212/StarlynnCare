@@ -275,17 +275,26 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   5630339556 RL014198 Re-Licensure 1 deficiency 9/09); MN insertDate max=2026-09-09 (unchanged —
 #   same 5 complaint PDFs; 3 ingested run 34415388839, 2 may still be pending/skipped); MN
 #   resolved max=2026-09-03 (ingested run 34415388839); all other states no new source data.
+# Run 34540485733 (2026-09-10T23:04 UTC, push after cron probe 2026-09-10T23:01):
+#   OR +5 inspections (13758→13763), max=2026-09-09 (was 2026-09-08); MN +0 max=2026-09-03 unchanged
+#   (insertDate events skipped — non-ALRC or already in DB); UT +4 max=2026-08-17; AZ +18 max=2026-09-09;
+#   PA +9 max unchanged; CA/WA/IL/MO +0; TX manual fail. Layer 5 post-ingest failed (denorm).
+# Cron probe 2026-09-11T23:02 UTC: OR source max=2026-09-10 (+1 vs ingested max 2026-09-09:
+#   Daniel Mack And Alaura Mack AFH 4504631617 RL014032 Re-Licensure 7 deficiencies 9/10); MN insertDate
+#   max=2026-09-11 (+20 survey PDFs with resolved dates 5/06–8/12 — posting-delay batch); MN resolved
+#   max=2026-09-03 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current
+#   per GHA 34540485733).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 8),
+    "OR": date(2026, 9, 9),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 9, 3),
-    "UT": date(2026, 8, 13),
+    "UT": date(2026, 8, 17),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
-    "AZ": date(2026, 9, 8),
+    "AZ": date(2026, 9, 9),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
