@@ -284,11 +284,26 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   max=2026-09-11 (+20 survey PDFs with resolved dates 5/06–8/12 — posting-delay batch); MN resolved
 #   max=2026-09-03 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current
 #   per GHA 34540485733).
+# Run 34758293379 (2026-09-13T08:52 UTC Sunday schedule): OR +7 max=2026-09-10 (was 2026-09-10);
+#   MN +9 max=2026-09-03 unchanged; AZ +7 max=2026-09-09; CA/UT/PA +0; IL/MO +0; TX manual fail;
+#   WA pipeline partial fail +0; Layer 5 post-ingest failed (denorm) on all states with ingest steps.
+# Cron probe 2026-09-13T23:00 UTC: OR source max=2026-09-10 (unchanged vs GHA 34758293379 — 0 rows
+#   after 9/10 in OHA export); MN insertDate max=2026-09-13 (+16 survey PDFs with resolved dates
+#   3/05–8/14 — posting-delay batch; incl. Golden Pond Maple Grove, The Elms, Joy Care Homes LLC);
+#   MN resolved max=2026-09-03 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO
+#   current per GHA 34758293379).
+# Cron probe 2026-09-14T23:01 UTC: OR source max=2026-09-10 (unchanged — 0 rows after 9/10); MN
+#   insertDate max=2026-09-13 (unchanged vs 9/13 probe — same 16 posting-delay events; GHA 34758293379
+#   already ingested +9 with 4560 skipped non-ALRC/already-in-DB); MN resolved max=2026-09-03 unchanged;
+#   no 9/14 MDH postings; all other states no new source data (full matrix ingested 2026-09-13).
+# Cron probe 2026-09-15T23:12 UTC: OR source max=2026-09-10 (unchanged — 0 rows after 9/10 in OHA
+#   export); MN insertDate max=2026-09-13 (unchanged — 0 events after 9/13); MN resolved max=2026-09-03
+#   unchanged; CA/TX/WA/UT/IL/PA/AZ/MO unchanged vs Sunday GHA 34758293379 (DB/manual probe only).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 9),
+    "OR": date(2026, 9, 10),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 9, 3),
     "UT": date(2026, 8, 17),
@@ -298,7 +313,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 9)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 13)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
