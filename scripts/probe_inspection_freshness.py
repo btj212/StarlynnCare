@@ -284,11 +284,20 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   max=2026-09-11 (+20 survey PDFs with resolved dates 5/06–8/12 — posting-delay batch); MN resolved
 #   max=2026-09-03 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current
 #   per GHA 34540485733).
+# Run 34758293379 (2026-09-13T12:52 UTC, Sunday schedule): OR +7 max=2026-09-10 (was 2026-09-10);
+#   MN +9 max=2026-09-03 unchanged; AZ/UT/PA/CA/WA/IL/MO per matrix; TX manual fail. Layer 5 failed (denorm).
+# Cron probe 2026-09-17T23:02 UTC: OR source max=2026-09-16 (+6 vs ingested max 2026-09-10:
+#   Girley Serdar AFH 4554689178 Monitoring 9/11; Sefika Alijaj AFH 509758 Complaint 9/11; Tede Esayas AFH
+#   9/14 Re-Licensure 11; Leyenda Lloyd AFH 2647328602 Re-Licensure 9/15; Mekdes Taye AFH 7089315192
+#   Re-Licensure 9/15; Fabiola Munoz AFH 9/16 Re-Licensure 5); MN insertDate max=2026-09-17 (+52 vs
+#   LAST_MN_INSERT_BASELINE 2026-09-09 — posting-delay batch incl. VISTA PRAIRIE AT EAGLE POINT,
+#   OAKLAND ASSISTED LIVING LLC, NORTH OAKS MEMORY CARE); MN resolved max=2026-09-03 unchanged; all other
+#   states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 34758293379).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 9),
+    "OR": date(2026, 9, 10),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 9, 3),
     "UT": date(2026, 8, 17),
