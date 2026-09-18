@@ -293,6 +293,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LAST_MN_INSERT_BASELINE 2026-09-09 — posting-delay batch incl. VISTA PRAIRIE AT EAGLE POINT,
 #   OAKLAND ASSISTED LIVING LLC, NORTH OAKS MEMORY CARE); MN resolved max=2026-09-03 unchanged; all other
 #   states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 34758293379).
+# Cron probe 2026-09-18T23:14 UTC: OR source max=2026-09-17 (+3 vs probe 2026-09-16 / +7 rows vs ingested
+#   max 2026-09-10: Jennifer Belovitch AFH 525580 Re-Licensure 3; Creston Health NF 385121 Complaint/Re-Licensure
+#   0; Abiyot Amajo AFH Re-Licensure 7); MN insertDate max=2026-09-18 (+57 vs LAST_MN_INSERT_BASELINE 2026-09-09,
+#   +5 new insertDate 9/18 on top of 9/17 batch); MN resolved max=2026-09-03 unchanged; all other states no new
+#   source data (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 34758293379).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
