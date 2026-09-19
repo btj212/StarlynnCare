@@ -298,11 +298,20 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   0; Abiyot Amajo AFH Re-Licensure 7); MN insertDate max=2026-09-18 (+57 vs LAST_MN_INSERT_BASELINE 2026-09-09,
 #   +5 new insertDate 9/18 on top of 9/17 batch); MN resolved max=2026-09-03 unchanged; all other states no new
 #   source data (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 34758293379).
+# Run 35405269569 (2026-09-18T23:20 UTC, push after cron probe 2026-09-18): OR +25 inspections (13776→13801),
+#   max=2026-09-17 (was 2026-09-10); MN +9 (4955→4964), max=2026-09-03 unchanged; 1 material facility change
+#   (Cannon Falls Assisted Living). Layer 5 post-ingest failed (denorm); ingest steps succeeded.
+# Cron probe 2026-09-19T23:12 UTC: OR source max=2026-09-18 (+3 vs ingested max 2026-09-17: Abenet Gebre AFH
+#   439 Offsite 1 deficiency; Mihaela G Lacatusu AFH 522957 Re-Licensure 2; Wamucii Kareko And Rosemary Wanjiku
+#   AFH RL014375 Re-Licensure 8); MN insertDate max=2026-09-19 (+6 survey PDFs vs LAST_MN_INSERT_BASELINE
+#   2026-09-18: JOURNEYS, OPTIMUM HEALTHCARE SERVICES LLC, INFINITY CARE CORP, TOTAL HOME HEALTH SERVICES LLC,
+#   GRACE HOMES, HASTINGS SENIOR HEALTH AND LIV); MN resolved max=2026-09-03 unchanged; all other states no new
+#   source data (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 34758293379 and run 35405269569).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 10),
+    "OR": date(2026, 9, 17),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 9, 3),
     "UT": date(2026, 8, 17),
@@ -312,7 +321,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 9)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 18)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
