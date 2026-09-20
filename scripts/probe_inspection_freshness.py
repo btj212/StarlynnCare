@@ -307,11 +307,16 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   2026-09-18: JOURNEYS, OPTIMUM HEALTHCARE SERVICES LLC, INFINITY CARE CORP, TOTAL HOME HEALTH SERVICES LLC,
 #   GRACE HOMES, HASTINGS SENIOR HEALTH AND LIV); MN resolved max=2026-09-03 unchanged; all other states no new
 #   source data (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 34758293379 and run 35405269569).
+# Run 35475557882 (2026-09-19 push after cron probe 2026-09-19): OR +10 inspections (13801→13811), max=2026-09-18;
+#   MN +5 (4964→4969), max=2026-09-03 unchanged; 2 material OR facility changes. Layer 5 failed (denorm); ingest OK.
+# Cron probe 2026-09-20T23:00 UTC: OR source max=2026-09-18 (0 rows after 9/18 — current vs ingested max 9/18);
+#   MN insertDate max=2026-09-20 (+14 events vs LAST_MN_INSERT_BASELINE 2026-09-18: 6 on 9/19 posting-delay batch,
+#   8 on 9/20); MN resolved max=2026-09-03 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 17),
+    "OR": date(2026, 9, 18),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 9, 3),
     "UT": date(2026, 8, 17),
