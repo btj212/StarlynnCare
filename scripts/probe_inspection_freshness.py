@@ -312,6 +312,13 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Cron probe 2026-09-20T23:00 UTC: OR source max=2026-09-18 (0 rows after 9/18 — current vs ingested max 9/18);
 #   MN insertDate max=2026-09-20 (+14 events vs LAST_MN_INSERT_BASELINE 2026-09-18: 6 on 9/19 posting-delay batch,
 #   8 on 9/20); MN resolved max=2026-09-03 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO).
+# Cron probe 2026-09-21T23:11 UTC: OR source max=2026-09-18 (unchanged); MN insertDate max=2026-09-20 (unchanged vs
+#   GHA 35543543400 +0); all other states no new source data.
+# Cron probe 2026-09-22T23:11 UTC: OR source max=2026-09-21 (+1 vs ingested max 2026-09-18: Daniela And Jacob Babalai
+#   AFH RL014404 Re-Licensure 3 deficiencies 9/21); MN insertDate max=2026-09-22 (+11 complaint PDFs vs
+#   LAST_MN_INSERT_BASELINE 2026-09-20: posting-delay batch with resolved dates through 9/16); MN resolved max=2026-09-16
+#   (+13 vs ingested max 2026-09-03); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday
+#   GHA 35511299137 and run 35543543400).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
@@ -326,7 +333,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 18)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 20)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
