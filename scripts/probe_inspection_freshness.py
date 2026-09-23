@@ -322,6 +322,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Run 35796501505 (2026-09-22T23:15 UTC, push after cron probe 2026-09-22): OR +6 inspections (13811→13817),
 #   max=2026-09-21 (was 2026-09-18); 0 material facility changes. MN +12 (4975→4987), max=2026-09-16 (was 2026-09-03);
 #   5 material facility changes. Layer 5 post-ingest failed (denorm) on OR/MN; ingest steps succeeded.
+# Cron probe 2026-09-23T23:06 UTC: OR source max=2026-09-21 (unchanged vs ingested max 2026-09-21); MN insertDate
+#   max=2026-09-23 (+3 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-22: SKYBLU RESIDENTIAL SERVICES provider 39509
+#   resolved 5/21; REST CARE HOME SERVICES LLC provider 37035 resolved 5/28; PROVIDENCE VILLA provider 34011 resolved
+#   8/27); MN resolved max=2026-09-16 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current
+#   per Sunday GHA 35511299137 and run 35796501505).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
