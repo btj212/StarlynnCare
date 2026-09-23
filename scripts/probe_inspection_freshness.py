@@ -319,13 +319,16 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LAST_MN_INSERT_BASELINE 2026-09-20: posting-delay batch with resolved dates through 9/16); MN resolved max=2026-09-16
 #   (+13 vs ingested max 2026-09-03); all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday
 #   GHA 35511299137 and run 35543543400).
+# Run 35796501505 (2026-09-22T23:15 UTC, push after cron probe 2026-09-22): OR +6 inspections (13811→13817),
+#   max=2026-09-21 (was 2026-09-18); 0 material facility changes. MN +12 (4975→4987), max=2026-09-16 (was 2026-09-03);
+#   5 material facility changes. Layer 5 post-ingest failed (denorm) on OR/MN; ingest steps succeeded.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 18),
+    "OR": date(2026, 9, 21),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 9, 3),
+    "MN": date(2026, 9, 16),
     "UT": date(2026, 8, 17),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
@@ -333,7 +336,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 20)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 22)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
