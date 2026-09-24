@@ -337,11 +337,16 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   DIS-GENERATION GROUP INC provider 33047 resolved 8/20; ASSURED CARE provider 32366 resolved 8/20; ARBOR GARDEN
 #   PLACE provider 30217 resolved 8/20); MN resolved max=2026-09-16 unchanged; all other states no new source data
 #   (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 35511299137 and run 35932265892).
+# Run 36071048626 (2026-09-24T23:06 UTC, push after cron probe 2026-09-24): MN +3 inspections (4988→4991),
+#   max=2026-09-16 unchanged; 1 material facility change (Arbor Garden Place). OR +12 (13817→13829),
+#   max=2026-09-23 (was 2026-09-21); 1 material facility change (Faye Wright Senior Living). IL +0 (147→147).
+#   Layer 5 post-ingest failed (denorm) on MN/OR/IL; ingest steps succeeded. Remaining matrix states queued at
+#   baseline update time (CA/TX/WA/UT/PA/AZ/MO expected +0 from probe).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 21),
+    "OR": date(2026, 9, 23),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 9, 16),
     "UT": date(2026, 8, 17),
@@ -351,7 +356,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 23)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 24)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
