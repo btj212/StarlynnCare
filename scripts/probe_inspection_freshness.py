@@ -330,6 +330,13 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Run 35932265892 (2026-09-23T23:10 UTC, push after cron probe 2026-09-23): MN +1 inspection (4987→4988),
 #   max=2026-09-16 unchanged; 0 material facility changes (2 of 3 insertDate events skipped — non-ALRC). OR +0.
 #   Layer 5 post-ingest failed (denorm) on MN/OR; ingest steps succeeded. Matrix still running for other states.
+# Cron probe 2026-09-24T23:02 UTC: OR source max=2026-09-23 (+2 vs ingested max 2026-09-21: Natalya Balanetskaya AFH
+#   RL014449 Re-Licensure 1 deficiency 9/23; Teshite Usha AFH RL014453 Re-Licensure 1 deficiency 9/23; plus 3 rows
+#   on 9/22 pending ingest: Portland Health And Rehabilitation NF 385228, Phoebe Ochieng And Irene Mwangi AFH INI014434,
+#   Olepa Polataivao AFH RL014438); MN insertDate max=2026-09-24 (+3 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-23:
+#   DIS-GENERATION GROUP INC provider 33047 resolved 8/20; ASSURED CARE provider 32366 resolved 8/20; ARBOR GARDEN
+#   PLACE provider 30217 resolved 8/20); MN resolved max=2026-09-16 unchanged; all other states no new source data
+#   (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 35511299137 and run 35932265892).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
