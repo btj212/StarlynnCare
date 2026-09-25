@@ -350,6 +350,10 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   resolved 5/14; JAYNE HEALTHCARE LLC 40998 resolved 4/03; SHEPHERD SENIOR HOUSING LLC 25829 resolved 3/31;
 #   SISTER SUPPORT LLC 37126 resolved 6/11; THE FRIENDSHIP HOME COMMUNITY 30530 resolved 8/19); MN resolved max
 #   2026-09-16 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current per run 36071048626).
+# Run 36200310340 (2026-09-25T23:16 UTC, push after cron probe 2026-09-25): MN +4 inspections (4991→4995),
+#   max=2026-09-16 unchanged; 0 material facility changes (7 of 11 insertDate events skipped — non-ALRC or
+#   already in DB). OR +0 expected at probe layer. Layer 5 post-ingest failed (denorm) on MN; ingest succeeded.
+#   Remaining matrix states queued at baseline update time (CA/TX/WA/UT/IL/PA/AZ/MO expected +0 from probe).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
@@ -364,7 +368,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 24)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 25)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
