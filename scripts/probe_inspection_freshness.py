@@ -342,6 +342,14 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   max=2026-09-23 (was 2026-09-21); 1 material facility change (Faye Wright Senior Living). IL +0 (147→147).
 #   Layer 5 post-ingest failed (denorm) on MN/OR/IL; ingest steps succeeded. Remaining matrix states queued at
 #   baseline update time (CA/TX/WA/UT/PA/AZ/MO expected +0 from probe).
+# Cron probe 2026-09-25T23:12 UTC: OR source max=2026-09-23 (unchanged vs ingested max 2026-09-23; 0 rows after
+#   9/23 in inspections export); MN insertDate max=2026-09-25 (+11 survey PDFs vs LAST_MN_INSERT_BASELINE
+#   2026-09-24: A FUTURE GOALS provider 39744 resolved 8/25; ANGEL'S HEALTH & HOME CARE SER 36870 resolved 1/16;
+#   ANGELS HEALTH AND HOME CARE SE 39329 resolved 9/25/2025; ASPEN HOME HEALTH CARE INC 35930 resolved 8/19;
+#   CARING NURSES LLC 33551 resolved 2/27; COMFORT CARE HOMES 34809 resolved 8/11; DIVINE CARE SPACES 39779
+#   resolved 5/14; JAYNE HEALTHCARE LLC 40998 resolved 4/03; SHEPHERD SENIOR HOUSING LLC 25829 resolved 3/31;
+#   SISTER SUPPORT LLC 37126 resolved 6/11; THE FRIENDSHIP HOME COMMUNITY 30530 resolved 8/19); MN resolved max
+#   2026-09-16 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current per run 36071048626).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
