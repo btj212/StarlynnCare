@@ -354,6 +354,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   max=2026-09-16 unchanged; 0 material facility changes (7 of 11 insertDate events skipped — non-ALRC or
 #   already in DB). OR +0 expected at probe layer. Layer 5 post-ingest failed (denorm) on MN; ingest succeeded.
 #   Remaining matrix states queued at baseline update time (CA/TX/WA/UT/IL/PA/AZ/MO expected +0 from probe).
+# Run 36279338857 (2026-09-26T23:24 UTC, push after cron probe 2026-09-26): OR +7 inspections (13833→13840),
+#   max=2026-09-25 (was 2026-09-23); 1 material facility change (Palatial Springs Adult Foster Home Corporation).
+#   MN +2 inspections (4995→4997), max=2026-09-16 unchanged; 0 material facility changes (7 of 9 insertDate events
+#   skipped — non-ALRC or already in DB). Layer 5 post-ingest failed (denorm) on OR/MN; ingest succeeded. Remaining
+#   matrix states queued at baseline update time (CA/TX/WA/UT/IL/PA/AZ/MO expected +0 from probe).
 # Cron probe 2026-09-26T23:15 UTC: OR source max=2026-09-25 (+1 vs ingested max 2026-09-23: Palatial Springs
 #   Adult Foster Home Corporation AFH RL014533 Re-Licensure 2 deficiencies 9/25); MN insertDate max=2026-09-26
 #   (+9 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-25: ADVOCATE CARE LLC resolved 8/25; WALNUT GROVE HOME
@@ -365,7 +370,7 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 23),
+    "OR": date(2026, 9, 25),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 9, 16),
     "UT": date(2026, 8, 17),
@@ -375,7 +380,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 25)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 26)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
