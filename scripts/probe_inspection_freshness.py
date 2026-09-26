@@ -354,6 +354,13 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   max=2026-09-16 unchanged; 0 material facility changes (7 of 11 insertDate events skipped — non-ALRC or
 #   already in DB). OR +0 expected at probe layer. Layer 5 post-ingest failed (denorm) on MN; ingest succeeded.
 #   Remaining matrix states queued at baseline update time (CA/TX/WA/UT/IL/PA/AZ/MO expected +0 from probe).
+# Cron probe 2026-09-26T23:15 UTC: OR source max=2026-09-25 (+1 vs ingested max 2026-09-23: Palatial Springs
+#   Adult Foster Home Corporation AFH RL014533 Re-Licensure 2 deficiencies 9/25); MN insertDate max=2026-09-26
+#   (+9 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-25: ADVOCATE CARE LLC resolved 8/25; WALNUT GROVE HOME
+#   resolved 2/26; MIDWEST RESIDENTIAL INC resolved 8/26; BRIGHT PATH HOMES LLC resolved 5/13; EAGLE GROUP HOME LLC
+#   resolved 6/10 and 9/02; OUR CARING HANDS LLP resolved 6/04; CHARTER HOUSE resolved 6/18; NATURE'S POINT
+#   ASSISTED LIVING resolved 8/28); MN resolved max=2026-09-16 unchanged; all other states no new source data
+#   (CA/TX/WA/UT/IL/PA/AZ/MO current per run 36200310340).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
