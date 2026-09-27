@@ -18,6 +18,7 @@ import {
 } from "@/lib/analytics/clarityEvents";
 import { submitWatch } from "@/lib/watch/submitWatch";
 import { PAID_WATCH_ANCHOR } from "@/lib/facility-watch/paidConfig";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 /* ── Context ─────────────────────────────────────────────────── */
 
@@ -95,7 +96,7 @@ function OfferModal({
       }}
     >
       <div
-        className="relative w-full max-w-[420px] rounded-[22px] border border-clearing-rule-2 bg-clearing-card p-7 shadow-[var(--shadow-feature)]"
+        className="relative w-full max-w-[420px] max-h-[90vh] overflow-y-auto rounded-[22px] border border-clearing-rule-2 bg-clearing-card p-7 shadow-[var(--shadow-feature)]"
       >
         <button
           onClick={onClose}
@@ -116,6 +117,7 @@ function OfferModal({
             <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-3">
               No spam. Unsubscribe any time.
             </p>
+            <SupportAsk source={`offer_${offer.id}`} variant="modal" />
           </div>
         ) : (
           <>
