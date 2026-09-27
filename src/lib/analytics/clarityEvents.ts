@@ -77,3 +77,11 @@ export function emitPaidWatchAnchorClick() {
 export function emitPaidWatchActivated() {
   c("event", "paid_watch_activated");
 }
+
+/**
+ * Fire when the user clicks a Venmo amount (or "Other") on the post-email
+ * support ask. `amount` is "5" | "10" | "25" | "other".
+ */
+export function emitSupportClick(source: string, amount: string) {
+  c("event", "support_click", { source, amount });
+}
