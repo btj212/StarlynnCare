@@ -366,6 +366,15 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   resolved 6/10 and 9/02; OUR CARING HANDS LLP resolved 6/04; CHARTER HOUSE resolved 6/18; NATURE'S POINT
 #   ASSISTED LIVING resolved 8/28); MN resolved max=2026-09-16 unchanged; all other states no new source data
 #   (CA/TX/WA/UT/IL/PA/AZ/MO current per run 36200310340).
+# Run 36322101751 (2026-09-27T13:21 UTC, Sunday weekly schedule): full matrix all states; MN +7 inspections
+#   (4997→5004), max=2026-09-16 unchanged; 0 material facility changes; OR +0 max=2026-09-25; CA/TX/WA/UT/IL/PA/AZ/MO
+#   +0 inspection deltas. Layer 5 post-ingest failed (denorm) on several states — ingest steps succeeded.
+# Cron probe 2026-09-27T23:00 UTC: OR source max=2026-09-25 (unchanged vs ingested max; 0 rows after 9/25 in export);
+#   MN insertDate max=2026-09-27 (+8 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-26: MAPLEWOOD MEADOW ASSISTED
+#   LVG, QUALITY LIVING CARE LLC, SISTER SUPPORT LLC, PEACE HOMECARE SERVICES LLC, FORTUNATE HOMES LLC, VIKING MANOR
+#   NURSING HOME/NOR, THE CARING SISTERS HOME CARE, ST ELIZABETH HOSPITAL — mostly non-ALRC/posting-delay; Sunday run
+#   36322101751 already ingested +7 from bundle-2026-09-27.json); MN resolved max=2026-09-16 unchanged; all other
+#   states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 36322101751).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
@@ -380,7 +389,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 26)
+LAST_MN_INSERT_BASELINE = date(2026, 9, 27)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
