@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { submitDigest } from "@/lib/watch/submitDigest";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 const SCROLL_REVEAL_PX = 400;
 
@@ -30,11 +31,14 @@ export function MobileDigestBar() {
   }
 
   return (
-    <div className={`m-cta-bar md:hidden ${show ? "show" : ""}`}>
+    <div className={`m-cta-bar md:hidden ${show ? "show" : ""} ${status === "done" ? "max-h-[90vh] overflow-y-auto" : ""}`}>
       {status === "done" ? (
-        <p className="font-[family-name:var(--font-mono)] text-[12px] text-grade-a py-1">
-          Subscribed — we&rsquo;ll notify you when severe citations are filed in covered states.
-        </p>
+        <>
+          <p className="font-[family-name:var(--font-mono)] text-[12px] text-grade-a py-1">
+            Subscribed — we&rsquo;ll notify you when severe citations are filed in covered states.
+          </p>
+          <SupportAsk source="mobile_digest_bar" variant="inline" />
+        </>
       ) : (
         <>
           <p className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.12em] text-ink-3">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD } from "@/lib/security/honeypot";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 type State = "idle" | "submitting" | "done" | "error";
 
@@ -53,9 +54,14 @@ export function CrisisEmailMagnet() {
       </p>
 
       {state === "done" ? (
-        <p className="font-[family-name:var(--font-mono)] text-[13px] tracking-[0.06em] text-white">
-          ✓ Check your inbox — the checklist is on its way.
-        </p>
+        <>
+          <p className="font-[family-name:var(--font-mono)] text-[13px] tracking-[0.06em] text-white">
+            ✓ Check your inbox — the checklist is on its way.
+          </p>
+          <div className="mt-5 rounded bg-paper px-5 py-4">
+            <SupportAsk source="crisis_playbook" variant="inline" />
+          </div>
+        </>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex flex-col gap-1">

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useShortlist, type ShortlistItem } from "@/lib/shortlist/context";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD } from "@/lib/security/honeypot";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 function emitClarityEvent(name: string) {
   try {
@@ -53,6 +54,7 @@ function EmailCapture({ items }: { items: ShortlistItem[] }) {
           We&apos;ll send updates on these {items.length} shortlisted{" "}
           {items.length === 1 ? "facility" : "facilities"} when inspection records change.
         </p>
+        <SupportAsk source="shortlist_shared" variant="inline" />
       </div>
     );
   }

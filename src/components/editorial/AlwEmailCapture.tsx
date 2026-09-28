@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
@@ -31,8 +32,11 @@ export function AlwEmailCapture() {
 
   if (state === "success") {
     return (
-      <div className="rounded-lg border border-teal/30 bg-teal/5 px-5 py-4 text-[15px] text-teal">
-        You&rsquo;re on the list — we&rsquo;ll send the Medi-Cal/ALW checklist to your inbox.
+      <div className="rounded-lg border border-teal/30 bg-teal/5 px-5 py-4">
+        <p className="text-[15px] text-teal">
+          You&rsquo;re on the list — we&rsquo;ll send the Medi-Cal/ALW checklist to your inbox.
+        </p>
+        <SupportAsk source="alw_article" variant="inline" />
       </div>
     );
   }

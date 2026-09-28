@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { submitWatch } from "@/lib/watch/submitWatch";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
@@ -24,9 +25,12 @@ export function ReportWatchCapture() {
 
   if (formState === "success") {
     return (
-      <p className="text-[15px] text-teal font-[family-name:var(--font-mono)] tracking-[0.02em]">
-        ✓ You&rsquo;re on the list — we&rsquo;ll notify you when the full report publishes.
-      </p>
+      <div>
+        <p className="text-[15px] text-teal font-[family-name:var(--font-mono)] tracking-[0.02em]">
+          ✓ You&rsquo;re on the list — we&rsquo;ll notify you when the full report publishes.
+        </p>
+        <SupportAsk source="report_waitlist" variant="inline" />
+      </div>
     );
   }
 

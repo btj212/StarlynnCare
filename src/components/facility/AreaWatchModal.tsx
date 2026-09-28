@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 interface AreaWatchModalProps {
   areaName: string;
@@ -77,7 +78,6 @@ export function AreaWatchModal({
 
       if (res.ok) {
         setFormState("success");
-        setTimeout(() => setOpen(false), 3000);
       } else {
         const json = await res.json().catch(() => ({}));
         setErrorMsg((json as { error?: string }).error ?? "Something went wrong. Try again.");
@@ -111,7 +111,7 @@ export function AreaWatchModal({
       `}</style>
 
       <div
-        className="relative w-full max-w-[480px] p-8"
+        className="relative max-h-[90vh] w-full max-w-[480px] overflow-y-auto p-8"
         style={{
           backgroundColor: "var(--color-paper)",
           animation: "slideUp 250ms ease forwards",
@@ -132,6 +132,7 @@ export function AreaWatchModal({
             <p className="font-[family-name:var(--font-display)] text-[22px]" style={{ color: "var(--color-ink)" }}>
               You&rsquo;re watching {areaName}.
             </p>
+            <SupportAsk source={source} variant="modal" />
           </div>
         ) : (
           <>

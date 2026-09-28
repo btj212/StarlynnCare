@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useShortlist, type ShortlistItem } from "@/lib/shortlist/context";
 import { CompareCard } from "@/components/shortlist/CompareCard";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD } from "@/lib/security/honeypot";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 function emitClarityEvent(name: string) {
   try {
@@ -56,6 +57,7 @@ function EmailCapture({ items }: { items: ShortlistItem[] }) {
           We&apos;ll send updates on your {items.length} shortlisted{" "}
           {items.length === 1 ? "facility" : "facilities"} when inspection records change.
         </p>
+        <SupportAsk source="shortlist_page" variant="inline" />
       </div>
     );
   }

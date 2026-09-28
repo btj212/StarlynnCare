@@ -7,6 +7,7 @@ import {
   emitOfferClick,
   emitOfferConvert,
 } from "@/lib/analytics/clarityEvents";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 type Kind = "route" | "email";
 
@@ -140,6 +141,7 @@ function LibraryEmailCapture({
         <p className="mt-1 font-[family-name:var(--font-sans)] text-[12px] tracking-[0.02em] text-ink-3">
           No spam · Unsubscribe any time
         </p>
+        <SupportAsk source={source} variant="inline" />
       </div>
     );
   }

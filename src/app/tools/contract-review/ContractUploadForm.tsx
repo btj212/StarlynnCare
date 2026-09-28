@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 type State = "idle" | "uploading" | "done" | "error";
 
@@ -59,6 +60,7 @@ export function ContractUploadForm() {
         <p className="mt-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-ink-4">
           Education, not legal advice · all documents handled confidentially
         </p>
+        <SupportAsk source="contract_review_upload" variant="inline" />
       </div>
     );
   }

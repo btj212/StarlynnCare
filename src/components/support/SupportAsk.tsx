@@ -95,7 +95,7 @@ export function SupportAsk({
             care facilities; Blake builds the data behind this site. We just had
             our first baby, and we run StarlynnCare on nights and weekends.
             It&apos;s free for families to use, but not free for us to run. If
-            this record helped, any support means a lot.
+            this helped, any support means a lot.
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SupportAsk } from "@/components/support/SupportAsk";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
@@ -46,6 +47,7 @@ export function ContractEmailCapture() {
         <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.02em] text-ink-3">
           While you wait, reply to our email with the contract PDF attached.
         </p>
+        <SupportAsk source="contract_review_page" variant="inline" />
       </div>
     );
   }
