@@ -369,6 +369,10 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Run 36322101751 (2026-09-27T13:21 UTC, Sunday weekly schedule): full matrix all states; MN +7 inspections
 #   (4997→5004), max=2026-09-16 unchanged; 0 material facility changes; OR +0 max=2026-09-25; CA/TX/WA/UT/IL/PA/AZ/MO
 #   +0 inspection deltas. Layer 5 post-ingest failed (denorm) on several states — ingest steps succeeded.
+# Cron probe 2026-09-28T23:02 UTC: OR source max=2026-09-25 (unchanged vs ingested max; 0 rows after 9/25 in export);
+#   MN insertDate max=2026-09-27 (unchanged vs LAST_MN_INSERT_BASELINE 2026-09-27; 0 events with insertDate >= 9/28);
+#   MN resolved max=2026-09-16 unchanged; all other states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO
+#   current per Sunday GHA 36322101751 and push run 36357479190 2026-09-27). No ingest triggered (DATABASE_URL unset here).
 # Cron probe 2026-09-27T23:00 UTC: OR source max=2026-09-25 (unchanged vs ingested max; 0 rows after 9/25 in export);
 #   MN insertDate max=2026-09-27 (+8 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-26: MAPLEWOOD MEADOW ASSISTED
 #   LVG, QUALITY LIVING CARE LLC, SISTER SUPPORT LLC, PEACE HOMECARE SERVICES LLC, FORTUNATE HOMES LLC, VIKING MANOR
