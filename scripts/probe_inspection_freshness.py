@@ -375,6 +375,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   NURSING HOME/NOR, THE CARING SISTERS HOME CARE, ST ELIZABETH HOSPITAL — mostly non-ALRC/posting-delay; Sunday run
 #   36322101751 already ingested +7 from bundle-2026-09-27.json); MN resolved max=2026-09-16 unchanged; all other
 #   states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 36322101751).
+# Cron probe 2026-09-29T23:01 UTC: OR source max=2026-09-28 (+1 vs ingested max 2026-09-25: Madina Kibe AFH
+#   RL014555 Re-Licensure 6 deficiencies 9/28); MN insertDate max=2026-09-29 (+5 complaint PDFs vs
+#   LAST_MN_INSERT_BASELINE 2026-09-27: ANCHOR CARE SERVICES LLC; FRIENDSHIP VILLAGE OF BLOOMING; GOLDEN TOUCH
+#   HEALTH CARE LLC x2; RIDGEVIEW SENIOR LIVING); MN resolved max=2026-09-22 unchanged; all other states no new
+#   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 36357479190 + Sunday 36322101751).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
