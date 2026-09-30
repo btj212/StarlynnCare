@@ -380,13 +380,23 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LAST_MN_INSERT_BASELINE 2026-09-27: ANCHOR CARE SERVICES LLC; FRIENDSHIP VILLAGE OF BLOOMING; GOLDEN TOUCH
 #   HEALTH CARE LLC x2; RIDGEVIEW SENIOR LIVING); MN resolved max=2026-09-22 unchanged; all other states no new
 #   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 36357479190 + Sunday 36322101751).
+# Run 36643299129 (2026-09-29T23:05 UTC, push after cron probe 2026-09-29): OR +4 inspections (13840→13844),
+#   max=2026-09-28 (was 2026-09-25); MN +3 (5004→5007), max=2026-09-22 (was 2026-09-16); 0 material facility
+#   changes on MN; Layer 5 post-ingest failed (denorm) on OR/MN — ingest steps succeeded.
+# Cron probe 2026-09-30T23:00 UTC: OR source max=2026-09-29 (+2 vs ingested max 2026-09-28: Rahel Haile AFH
+#   Re-Licensure 7 deficiencies 9/29; Susan Mbugua AFH Re-Licensure 1 deficiency 9/29); MN insertDate max
+#   2026-09-30 (+10 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-27, +5 complaint PDFs still on 9/29 posting
+#   delay: SOLUTION HOME CARE LLC complaint 9/18; A HELPING HAND SENIOR CARE, BRANDON'S ASSISTED LIVING, CARING
+#   HOME HEALTH, COLFAX CAREVIEW, LAKEWOOD MANOR, OAK RIDGE PLACE, THE BARDO, TIMBER PINES, TREE OF LIFE); MN
+#   resolved max=2026-09-22 unchanged; all other states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO
+#   current per GHA 36643299129).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 25),
+    "OR": date(2026, 9, 28),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 9, 16),
+    "MN": date(2026, 9, 22),
     "UT": date(2026, 8, 17),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
