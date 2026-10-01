@@ -380,6 +380,12 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LAST_MN_INSERT_BASELINE 2026-09-27: ANCHOR CARE SERVICES LLC; FRIENDSHIP VILLAGE OF BLOOMING; GOLDEN TOUCH
 #   HEALTH CARE LLC x2; RIDGEVIEW SENIOR LIVING); MN resolved max=2026-09-22 unchanged; all other states no new
 #   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 36357479190 + Sunday 36322101751).
+# Cron probe 2026-10-01T23:02 UTC: OR source max=2026-09-29 (+7 rows vs ingested max 2026-09-25: Madina Kibe +
+#   Aaron Cain AFH 9/28; Susan Mbugua, Rahel Haile, Monica Hada, Bilal Hilowle Re-Licensure+Complaint 9/29);
+#   MN insertDate max=2026-10-01 (+19 vs LAST_MN_INSERT_BASELINE 2026-09-27: 9/29 complaint batch ×5, 9/30
+#   posting-delay surveys ×11 incl. Brandon's Assisted Living and Solution Home Care complaint, 10/01 ×4 incl.
+#   Alliance Residences and Assurant Care Homes); MN resolved max=2026-09-22 unchanged; all other states no new
+#   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 36643299129 + Sunday 36322101751).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
