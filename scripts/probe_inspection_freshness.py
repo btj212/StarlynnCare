@@ -380,13 +380,20 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LAST_MN_INSERT_BASELINE 2026-09-27: ANCHOR CARE SERVICES LLC; FRIENDSHIP VILLAGE OF BLOOMING; GOLDEN TOUCH
 #   HEALTH CARE LLC x2; RIDGEVIEW SENIOR LIVING); MN resolved max=2026-09-22 unchanged; all other states no new
 #   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 36357479190 + Sunday 36322101751).
+# Run 36643299129 (2026-09-29T23:05 UTC, PR #148): OR +4 inspections, max=2026-09-28 (was 2026-09-25);
+#   MN +3 inspections, max=2026-09-22 (was 2026-09-16); Layer 5 post-ingest failed (denorm); ingest OK.
+# Cron probe 2026-10-02T23:08 UTC: OR source max=2026-09-29 (+5 rows vs ingested max 2026-09-28: Monica Hada,
+#   Rahel Haile, Susan Mbugua, Bilal Hilowle Complaint+Re-Licensure); 9/28 Madina Kibe + Aaron Cain ingested in
+#   run 36643299129. MN insertDate max=2026-10-02 (+30 events vs LAST_MN_INSERT_BASELINE 2026-09-27: 5 on 9/29,
+#   10 on 9/30, 4 on 10/01, 11 on 10/02 posting-delay surveys/complaints); MN resolved max=2026-09-22 unchanged;
+#   all other states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO need DB or manual per Sunday GHA).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 25),
+    "OR": date(2026, 9, 28),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 9, 16),
+    "MN": date(2026, 9, 22),
     "UT": date(2026, 8, 17),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
