@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — CCLD ingest treats the report `inx` as 1-based; the API is 0-based (found by the live E2E harness)
+
+**What went wrong:** `scrapers/ccld_citations_ingest.py` loops `inx in range(1, count+1)` and pairs each fetched HTML with `report_array[inx-1]`. The Transparency API's `inx` is the **0-based** position into `REPORTARRAY` (live proof: `inx=0` returns `REPORTARRAY[0]`'s report, `inx=COUNT` returns `400 "Index out of range of report list"`). Effects on production CA rows, verified against live raw HTML: (1) the report at `REPORTARRAY[0]` is never ingested; (2) every ingested row carries the *previous* entry's `REPORTTYPE` / `CONTROLNUMBER`, so `inspection_type`, `is_complaint` and `complaint_id` are mislabeled; (3) `inx=COUNT` always 400s (docs/phase-b-ccld-recon.md noted "in practice COUNT-1" and misread it as an inaccessible report). Separately, `source_url` dedup keys on position, and `REPORTARRAY` order shifts when CDSS adds reports, so a stored `inx=N` can point at a different report than live `inx=N` (S4 shows `inspection_date` drift on re-fetch).
+
+**What worked instead / next step:** Not yet fixed — owner decision needed (changes production data). Proposed: iterate `range(count)`, pair `report_array[inx]`, and key dedup on `CONTROLNUMBER` + report date (not position); then re-ingest with `--refetch` on a branch and re-run `scripts/validate/e2e_live_pipeline.py --stage S3 S4` until clean. Do not hand-edit rows.
+
+**Source:** `scripts/validate/e2e_live_pipeline.py` S3/S4 (seed 20261005 and the full run).
+
+---
+
 ## 2026-07 — Local ESLint hangs under Node 24 without producing output
 
 **What went wrong:** Both `npx eslint ...` and direct `node node_modules/eslint/bin/eslint.js ...` remained asleep for more than five minutes with no file handles or diagnostics. Even `eslint --version` hung. This is local-tooling behavior under Node `v24.14.1`, not a reported lint violation.
