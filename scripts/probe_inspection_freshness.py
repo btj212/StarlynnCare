@@ -380,6 +380,21 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LAST_MN_INSERT_BASELINE 2026-09-27: ANCHOR CARE SERVICES LLC; FRIENDSHIP VILLAGE OF BLOOMING; GOLDEN TOUCH
 #   HEALTH CARE LLC x2; RIDGEVIEW SENIOR LIVING); MN resolved max=2026-09-22 unchanged; all other states no new
 #   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 36357479190 + Sunday 36322101751).
+# Cron probe 2026-10-07T23:02 UTC: OR source max=2026-10-02 (+5 vs ingested max 2026-09-29 per Sunday GHA
+#   37205875738): Marquis Centennial Post Acute Rehab NF 385183, Louise Morison And Alichelen Kjosness AFH
+#   500002, Jenna Miner AFH 525268 on 9/30; Chehalem Post Acute NF 385199, Grace Njeru And Elizabeth
+#   Njeru-Gibbons AFH 518794 on 10/02; MN insertDate max=2026-10-07 (+4 vs LAST_MN_INSERT_BASELINE
+#   2026-09-27: Trinity Terrace 20413 complaint 10/06; providers 25729, 34026, 42941 complaints posted
+#   10/07); MN resolved max=2026-09-29 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO
+#   current per Sunday GHA 37205875738 2026-10-04). Pending ingest via PR #157 (draft).
+# Cron probe 2026-10-08T23:00 UTC: OR source max=2026-10-07 (+2 vs probe 2026-10-07 / +7 rows vs ingested max
+#   2026-09-29: Corazon Flitton AFH MON014704 Monitoring 4 deficiencies 10/05; Vincent Mikaye AFH RL014774
+#   Re-Licensure 16 deficiencies 10/07; plus 5 rows 9/30–10/02 still pending from prior probe); MN insertDate
+#   max=2026-10-08 (+9 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-27: CAREPRO HEALTH SERVICES 42304,
+#   RHYTHM ASSISTED LIVING 40482, AYAN CARE 39895, VAIMAR SUITES 36789, THE GUARDIAN HOME CARE 36296, MERRCY
+#   CARE HOME 36116, WATCHFUL CAREGIVERS 35021, WEST VIEW ASSISTED LIVING APT 30815, THE KENWOOD 30594); MN
+#   resolved max=2026-09-29 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current per
+#   Sunday GHA 37205875738; draft PR #157 not merged).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),
