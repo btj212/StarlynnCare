@@ -380,17 +380,34 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LAST_MN_INSERT_BASELINE 2026-09-27: ANCHOR CARE SERVICES LLC; FRIENDSHIP VILLAGE OF BLOOMING; GOLDEN TOUCH
 #   HEALTH CARE LLC x2; RIDGEVIEW SENIOR LIVING); MN resolved max=2026-09-22 unchanged; all other states no new
 #   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 36357479190 + Sunday 36322101751).
+# Cron probe 2026-10-10T23:01 UTC: OR source max=2026-10-08 (+12 rows vs ingested max 2026-09-29:
+#   9/30 Marquis Centennial (385183), Louise Morison And Alichelen Kjosness (500002), Jenna Miner (525268);
+#   10/02 Chehalem Post Acute (385199), Grace Njeru And Elizabeth Njeru-Gibbons (518794); 10/05 Corazon Flitton
+#   AFH (0000000117); 10/06 providers 523770, 515656, 4423412088; 10/07 Vincent Mikaye AFH (6718517009);
+#   10/08 providers 525104, 9273391699); MN insertDate max=2026-10-10 (+4 survey PDFs vs 2026-10-09 probe:
+#   THE CROSSINGS OF WILLMAR SRLVG 42398, JABEZ CUSTOMIZED LIVING SERVIC 35705, NELSON GABLES 30327,
+#   CENTRAL MINNESOTA SENIOR CARE 20333; +65 total vs LAST_MN_INSERT_BASELINE 2026-09-27 still pending ingest);
+#   MN resolved max=2026-09-29 unchanged; all other states no new source data (CA/TX/WA/UT/IL/PA/AZ/MO current
+#   per Sunday GHA 37205875738 2026-10-04).
+# Run 38147163196 (2026-10-11T14:26 UTC, Sunday weekly schedule): OR +25 max=2026-10-08 (was 2026-09-29);
+#   MN +12 max=2026-09-29 (was 2026-09-22); CA +63 max=2026-10-02; WA +45 max unchanged; UT +1 max=2026-09-14;
+#   PA +22 max=2026-09-08; AZ +57 max=2026-10-08; IL/MO/TX +0. Layer 5 post-ingest failed (denorm) on several
+#   matrix jobs — ingest steps succeeded.
+# Cron probe 2026-10-11T23:02 UTC: OR source max=2026-10-08 (unchanged vs 2026-10-10 probe — ingested run
+#   38147163196); MN insertDate max=2026-10-10 (unchanged, 0 events on 10/11; +65 vs LAST_MN_INSERT_BASELINE
+#   2026-09-27 still pending/skipped at ingest); MN resolved max=2026-09-29 (ingested run 38147163196); all other
+#   states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 38147163196).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 9, 4),
+    "CA": date(2026, 10, 2),
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 25),
+    "OR": date(2026, 10, 8),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 9, 16),
-    "UT": date(2026, 8, 17),
+    "MN": date(2026, 9, 29),
+    "UT": date(2026, 9, 14),
     "IL": date(2026, 5, 6),
-    "PA": date(2026, 8, 28),
-    "AZ": date(2026, 9, 9),
+    "PA": date(2026, 9, 8),
+    "AZ": date(2026, 10, 8),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
