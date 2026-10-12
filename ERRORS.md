@@ -8,6 +8,19 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — Live E2E suite (`tests/e2e/`) found CA pipeline faults
+
+**What went wrong (all reproduced against live sources; see `docs/E2E_TESTING.md`):**
+1. `data.ca.gov` switched the RCFE datastore off (`datastore_active=false`), so `ccld_rcfe_ingest.fetch_county_rcfe_roster` gets 404 on `datastore_search`. The published CSV (`resource_show` -> `url`) still has identical columns and 12,522 rows. Roster refresh is silently dead; 4 licensed Alameda homes (e.g. 019200734) are already missing from production.
+2. Stored CDSS report URLs use a positional `inx=N`. CDSS re-orders its index, so in a 133-row sample 72 stored rows now open a different report and 5 are 404. Incremental ingest dedupes on that URL, so it can also skip new reports.
+3. `ccld_citations_ingest.parse_report` misses citations on some current reports (Silverado Rolling Hills inx=3, several Oakmont of East Sacramento) and emits legacy-format citations with `section=None`.
+4. `facility_slug()` (last 6 license digits) collides for re-licensed homes, e.g. 486804107/496804107; the upsert overwrites one with the other (one is PENDING, one LICENSED).
+5. Census physical place differs from stored `city_slug` for 2/25 sampled non-CA facilities (AZ Casas Adobes vs tucson, PA Mount Lebanon vs pittsburgh).
+
+**What worked instead / next:** none fixed yet — tests are left failing on purpose. Suggested order: (1) read the CSV in the ingest, (2) key reports by CONTROLNUMBER/date, not `inx`, (3) parser fixes, (4) include county or full license in slug on collision.
+
+---
+
 ## 2026-07 — Local ESLint hangs under Node 24 without producing output
 
 **What went wrong:** Both `npx eslint ...` and direct `node node_modules/eslint/bin/eslint.js ...` remained asleep for more than five minutes with no file handles or diagnostics. Even `eslint --version` hung. This is local-tooling behavior under Node `v24.14.1`, not a reported lint violation.
