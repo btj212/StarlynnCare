@@ -380,13 +380,20 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   LAST_MN_INSERT_BASELINE 2026-09-27: ANCHOR CARE SERVICES LLC; FRIENDSHIP VILLAGE OF BLOOMING; GOLDEN TOUCH
 #   HEALTH CARE LLC x2; RIDGEVIEW SENIOR LIVING); MN resolved max=2026-09-22 unchanged; all other states no new
 #   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 36357479190 + Sunday 36322101751).
+# Sunday GHA 38147163196 (2026-10-11T14:26 UTC): OR +25 max=2026-10-08; MN +12 max=2026-09-29; CA +63;
+#   AZ +57; WA +45; UT +1; PA +22; IL/MO/TX +0. Layer 5 denorm failed on several jobs; ingest OK.
+# Cron probe 2026-10-14T23:00 UTC: OR source max=2026-10-13 (+2 vs ingested max 2026-10-08: Peter Komo AFH
+#   RL014743 Re-Licensure 1 deficiency 10/09; Amanuel Sima AFH RL014914 Re-Licensure 9 deficiencies 10/13);
+#   MN insertDate max=2026-10-14 (+70 vs LAST_MN_INSERT_BASELINE 2026-09-27 — posting-delay batch incl. 5 on
+#   10/14 with resolved dates through 9/23); MN resolved max=2026-09-29 unchanged; all other states no new
+#   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 38147163196).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 9, 4),
+    "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 9, 25),
+    "OR": date(2026, 10, 8),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 9, 16),
+    "MN": date(2026, 9, 29),
     "UT": date(2026, 8, 17),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 8, 28),
