@@ -387,17 +387,26 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   MN insertDate max=2026-10-14 (+70 vs LAST_MN_INSERT_BASELINE 2026-09-27 — posting-delay batch incl. 5 on
 #   10/14 with resolved dates through 9/23); MN resolved max=2026-09-29 unchanged; all other states no new
 #   source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current per Sunday GHA 38147163196).
+# Run 38652120861 (2026-10-15T12:52 UTC, push after cron probe 2026-10-14): OR +19 max=2026-10-13;
+#   MN +3 max=2026-09-29 unchanged; UT +2 max=2026-09-15; PA +6 max unchanged; AZ +20 max=2026-10-08;
+#   WA/IL/MO/TX +0; Layer 5 denorm failed on several jobs — ingest steps succeeded.
+# Cron probe 2026-10-15T23:00 UTC: OR source max=2026-10-13 (unchanged vs ingested max; 0 rows after 10/13);
+#   MN insertDate max=2026-10-15 (+5 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-09-27: HIGH DRIVE
+#   CUSTOMIZED/ASSISTE resolved 9/25; MAS HOME HEALTH CARE LLC complaint resolved 9/23; GOLDEN POND WBL resolved
+#   1/22; GOLDEN OAKS LIVING CORPORATION resolved 1/01; SCENIC HILLS ALTERNATIVE CARE resolved 9/16); MN
+#   resolved max=2026-09-29 unchanged; all other states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO
+#   current per GHA 38652120861 + Sunday 38147163196).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 10, 8),
+    "OR": date(2026, 10, 13),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 9, 29),
-    "UT": date(2026, 8, 17),
+    "UT": date(2026, 9, 15),
     "IL": date(2026, 5, 6),
-    "PA": date(2026, 8, 28),
-    "AZ": date(2026, 9, 9),
+    "PA": date(2026, 9, 8),
+    "AZ": date(2026, 10, 8),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
