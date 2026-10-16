@@ -396,6 +396,15 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   1/22; GOLDEN OAKS LIVING CORPORATION resolved 1/01; SCENIC HILLS ALTERNATIVE CARE resolved 9/16); MN
 #   resolved max=2026-09-29 unchanged; all other states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO
 #   current per GHA 38652120861 + Sunday 38147163196).
+# Run 38821496513 (2026-10-15T23:06 UTC, push after cron probe 2026-10-15): MN +4 inspections (5046→5050),
+#   max=2026-09-29 unchanged; OR +8 inspections (13902→13910), max=2026-10-13 unchanged; Layer 5 denorm failed
+#   on MN/OR — ingest steps succeeded.
+# Cron probe 2026-10-16T23:00 UTC: OR source max=2026-10-14 (+1 vs ingested max 2026-10-13: Tigist Hirpa AFH
+#   RL014929 Re-Licensure 1 deficiency 10/14); MN insertDate max=2026-10-16 (+4 survey PDFs vs
+#   LAST_MN_INSERT_BASELINE 2026-09-27: SILVER MEADOWS ASSISTED LIVING resolved 9/11; 3MB HEALTH SERVICES LLC
+#   resolved 6/17; NEW LIFE HOME resolved 9/10; NEW HORIZON ASSISTED LIVING resolved 9/16); MN resolved max
+#   2026-09-29 unchanged; all other states no new source data at probe layer (CA/TX/WA/UT/IL/PA/AZ/MO current
+#   per GHA 38821496513 + Sunday 38147163196).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
