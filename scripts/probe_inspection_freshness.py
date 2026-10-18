@@ -418,6 +418,12 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Run 39077680657 (2026-10-17T23:05 UTC, push after cron probe 2026-10-17): MN +6 inspections (5052→5058),
 #   max=2026-09-29 unchanged (3 of 9 insertDate events skipped — non-ALRC or already in DB); Layer 5 denorm
 #   failed on MN — ingest steps succeeded. OR matrix job still running at baseline update time.
+# Cron probe 2026-10-18T23:01 UTC: OR source max=2026-10-14 (unchanged vs ingested max 2026-10-14); MN insertDate
+#   max=2026-10-18 (+6 complaint events vs LAST_MN_INSERT_BASELINE 2026-09-27: CARETTA SENIOR LIVING MAPLEWOO
+#   resolved 10/12; WELLSTEAD SENIOR LIVING PLACE resolved 10/12; OPTIONS RESIDENTIAL INC resolved 10/13;
+#   RIVER OAKS COLUMBIA HEIGHTS resolved 10/12; WOODBURY ESTATES resolved 10/14 and 10/13); MN resolved source
+#   max=2026-10-14 (new vs ingested max 2026-09-29); all other states no new source data at probe layer
+#   (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39077680657 + Sunday 39126360904).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
