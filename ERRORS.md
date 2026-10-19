@@ -8,6 +8,17 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+
+## 2026-10 — CA RCFE roster source (CKAN datastore) no longer serves datastore_search
+
+**What went wrong:** `scrapers/ccld_rcfe_ingest.py` pulls the RCFE roster via `data.ca.gov/api/3/action/datastore_search` with resource `6b2f5818-…`. The live resource now reports `datastore_active=False`; the API answers 404 "Resource not found", so `fetch_county_rcfe_roster()` exhausts its retries and fails. `weekly_inspection_ingest.py` calls this script with `allow_fail=True`, so the CA roster refresh can fail without stopping the run. Found by `scripts/e2e/live_pipeline_e2e.py` (live, no mocks).
+
+**Not yet fixed.** Candidate: switch to the resource's CSV download URL (`resource_show` → `url`, redirects to a signed S3 file) and filter `county_name` locally. Needs owner sign-off (changes a logged data source).
+
+**Source:** live E2E run 2026-10-19.
+
+---
+
 ## 2026-07 — Local ESLint hangs under Node 24 without producing output
 
 **What went wrong:** Both `npx eslint ...` and direct `node node_modules/eslint/bin/eslint.js ...` remained asleep for more than five minutes with no file handles or diagnostics. Even `eslint --version` hung. This is local-tooling behavior under Node `v24.14.1`, not a reported lint violation.
