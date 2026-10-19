@@ -424,21 +424,31 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   RIVER OAKS COLUMBIA HEIGHTS resolved 10/12; WOODBURY ESTATES resolved 10/14 and 10/13); MN resolved source
 #   max=2026-10-14 (new vs ingested max 2026-09-29); all other states no new source data at probe layer
 #   (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39077680657 + Sunday 39126360904).
+# Run 39126360904 (2026-10-18T12:12 UTC, Sunday schedule): MN +5 inspections (5058→5063),
+#   max=2026-10-14 (was 2026-09-29); AZ +2 max=2026-10-14 unchanged; OR/UT/IL/PA/MO/TX/WA +0;
+#   Layer 5 denorm failed on several states — ingest steps succeeded.
+# Run 39175007010 (2026-10-18T23:05 UTC, push after cron probe 2026-10-18): MN +0 inspections
+#   (5063 unchanged), max=2026-10-14 unchanged — 6 insertDate 10/18 complaint postings already
+#   represented in DB; Layer 5 denorm failed on MN — ingest steps succeeded.
+# Cron probe 2026-10-19T23:00 UTC: OR source max=2026-10-14 (unchanged vs ingested max 2026-10-14);
+#   MN insertDate max=2026-10-18 (unchanged vs GHA 39175007010 — +0 ingest); MN resolved source
+#   max=2026-10-14 (matches ingested max); all other states no new source data at probe layer
+#   (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39126360904 + 39175007010).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
+    "CA": date(2026, 10, 8),  # Sunday GHA 39126360904; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
     "OR": date(2026, 10, 14),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 9, 29),
+    "MN": date(2026, 10, 14),
     "UT": date(2026, 9, 15),
     "IL": date(2026, 5, 6),
-    "PA": date(2026, 9, 8),
-    "AZ": date(2026, 10, 8),
+    "PA": date(2026, 9, 22),
+    "AZ": date(2026, 10, 14),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 27)
+LAST_MN_INSERT_BASELINE = date(2026, 10, 18)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
