@@ -424,21 +424,28 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   RIVER OAKS COLUMBIA HEIGHTS resolved 10/12; WOODBURY ESTATES resolved 10/14 and 10/13); MN resolved source
 #   max=2026-10-14 (new vs ingested max 2026-09-29); all other states no new source data at probe layer
 #   (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39077680657 + Sunday 39126360904).
+# Run 39175007010 (2026-10-18T23:05 UTC, push after cron probe 2026-10-18): MN +0 inspections,
+#   max=2026-10-14 unchanged (6 insertDate 10/18 complaint PDFs already covered by Sunday ingest +5).
+# Cron probe 2026-10-20T23:00 UTC: OR source max=2026-10-14 (unchanged); MN insertDate max=2026-10-18
+#   (unchanged vs 10/18 probe — 6 complaints resolved ≤10/14, 0 resolvedDate >10/14 in source); MN resolved
+#   source max=2026-10-14 (matches ingested max); all other states no new source data at probe layer
+#   (Sunday GHA 39126360904 2026-10-18: OR/MN/WA/UT/IL/TX/MO +0 delta; AZ +2 max=10/14; PA +0 max=9/22;
+#   CA matrix job cancelled — still on 10/08 per prior Sunday 38147163196).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
     "OR": date(2026, 10, 14),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 9, 29),
+    "MN": date(2026, 10, 14),
     "UT": date(2026, 9, 15),
     "IL": date(2026, 5, 6),
-    "PA": date(2026, 9, 8),
-    "AZ": date(2026, 10, 8),
+    "PA": date(2026, 9, 22),
+    "AZ": date(2026, 10, 14),
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 27)
+LAST_MN_INSERT_BASELINE = date(2026, 10, 18)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
