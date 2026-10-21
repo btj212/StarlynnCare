@@ -424,6 +424,16 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   RIVER OAKS COLUMBIA HEIGHTS resolved 10/12; WOODBURY ESTATES resolved 10/14 and 10/13); MN resolved source
 #   max=2026-10-14 (new vs ingested max 2026-09-29); all other states no new source data at probe layer
 #   (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39077680657 + Sunday 39126360904).
+# Cron probe 2026-10-19T23:00 UTC: OR source max=2026-10-14 (unchanged vs ingested max 2026-10-14); MN insertDate
+#   max=2026-10-18 (unchanged vs Fri probe); MN resolved source max=2026-10-14 (matches DB after Sunday GHA
+#   39126360904 +5 and Fri 39175007010 +0); all other states no new probe-layer signal.
+# Cron probe 2026-10-20T23:00 UTC: OR source max=2026-10-14 (unchanged); MN insertDate max=2026-10-18 (unchanged);
+#   MN resolved max=2026-10-14 unchanged; CA/TX/WA/UT/IL/PA/AZ/MO no new probe-layer signal (Sunday GHA matrix).
+# Cron probe 2026-10-21T23:01 UTC: OR source max=2026-10-20 (+5 vs ingested max 2026-10-14: Makia Jackson AFH
+#   10/16 20 deficiencies; Shari Kroh AFH 10/19 3; Antony Leroka And Caroline Njagi AFH 10/20 2; Daniela Nitu AFH
+#   10/20 3; Caleb Pop AFH 10/20 1); MN insertDate max=2026-10-21 (+2 complaint events vs LAST_MN_INSERT_BASELINE
+#   2026-09-27, resolved 10/12 and 07/01); MN resolved source max=2026-10-14 (unchanged vs Sunday GHA); all other
+#   states no new probe-layer signal (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39175007010 + Sunday 39126360904).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
