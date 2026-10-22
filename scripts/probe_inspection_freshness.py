@@ -434,13 +434,16 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   10/20 3; Caleb Pop AFH 10/20 1); MN insertDate max=2026-10-21 (+2 complaint events vs LAST_MN_INSERT_BASELINE
 #   2026-09-27, resolved 10/12 and 07/01); MN resolved source max=2026-10-14 (unchanged vs Sunday GHA); all other
 #   states no new probe-layer signal (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39175007010 + Sunday 39126360904).
+# Run 39691195690 (2026-10-21T23:06 UTC, push after cron probe 2026-10-21): OR +12 inspections
+#   (13932→13944), max=2026-10-20; MN +100 inspections (5063→5163), max=2026-10-14 unchanged,
+#   changes_detected=12; Layer 5 post-ingest denorm failed on MN/OR — ingest steps succeeded.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 10, 14),
+    "OR": date(2026, 10, 20),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 9, 29),
+    "MN": date(2026, 10, 14),
     "UT": date(2026, 9, 15),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 9, 8),
@@ -448,7 +451,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 9, 27)
+LAST_MN_INSERT_BASELINE = date(2026, 10, 21)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
