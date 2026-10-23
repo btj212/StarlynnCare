@@ -23,10 +23,15 @@ PRODUCTION_URL = "https://www.starlynncare.com"
 AUDIT_PATH = REPO_ROOT / "docs/audits/sitemap-diff.md"
 STATE_SLUG = {
     "CA": "california",
+    "TX": "texas",
     "OR": "oregon",
     "WA": "washington",
     "MN": "minnesota",
-    "TX": "texas",
+    "UT": "utah",
+    "IL": "illinois",
+    "PA": "pennsylvania",
+    "AZ": "arizona",
+    "MO": "missouri",
 }
 
 
@@ -61,14 +66,21 @@ def _db_routable_paths() -> set[str]:
                 paths.add(f"/{slug}/facilities")
                 cur.execute(
                     """
-                    SELECT city_slug, slug FROM facilities
-                    WHERE publishable = true AND state_code = %s
+                    SELECT
+                        f.city_slug,
+                        f.slug,
+                        EXISTS (
+                            SELECT 1 FROM inspections i WHERE i.facility_id = f.id
+                        ) AS has_inspections
+                    FROM facilities f
+                    WHERE f.publishable = true AND f.state_code = %s
                     """,
                     (code,),
                 )
                 for r in cur.fetchall():
-                    paths.add(f"/{slug}/{r['city_slug']}/{r['slug']}")
                     paths.add(f"/{slug}/{r['city_slug']}")
+                    if r["has_inspections"]:
+                        paths.add(f"/{slug}/{r['city_slug']}/{r['slug']}")
     return paths
 
 
@@ -106,7 +118,7 @@ def main() -> None:
         f"Environment: {args.env} ({base_url})",
         "",
         f"- Sitemap URLs total: **{len(sitemap_paths)}**",
-        f"- DB routable facility/hub paths (sample set): **{len(db_paths)}**",
+        f"- DB sitemap-eligible facility/hub paths: **{len(db_paths)}**",
         "",
         "## Listed in sitemap but not in DB publishable set (facility/hub paths only)",
         "",
@@ -134,6 +146,7 @@ def main() -> None:
         "",
         "- Static/editorial URLs intentionally omitted from DB set.",
         "- Hub paths dedupe city_slug only; county hubs come from regions.ts not DB.",
+        "- Facility paths require at least one inspection, matching sitemap generation.",
         "",
     ])
 
