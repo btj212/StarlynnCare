@@ -11,6 +11,8 @@ export type SitemapUrlRow = {
   lastmod?: string;
 };
 
+const SITEMAP_QUERY_PAGE_SIZE = 1000;
+
 function escapeXml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -157,38 +159,71 @@ export async function collectHubEntriesForState(
   stateSlug: string,
   today: string,
 ): Promise<SitemapUrlRow[]> {
-  const { data: rows } = await supabase
-    .from("facilities")
-    .select("city_slug")
-    .eq("state_code", stateCode)
-    .eq("publishable", true);
+  type HubFacilityRow = {
+    id: string;
+    city_slug: string;
+    updated_at: string | null;
+  };
 
-  const countBySlug = new Map<string, number>();
-  for (const r of rows ?? []) {
-    const slug = (r as { city_slug: string }).city_slug;
-    if (!slug) continue;
-    countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
+  const rows: HubFacilityRow[] = [];
+  for (let from = 0; ; from += SITEMAP_QUERY_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("facilities")
+      .select("id, city_slug, updated_at")
+      .eq("state_code", stateCode)
+      .eq("publishable", true)
+      .order("id")
+      .range(from, from + SITEMAP_QUERY_PAGE_SIZE - 1);
+
+    if (error) {
+      throw new Error(`Failed to build ${stateCode} hub sitemap entries: ${error.message}`);
+    }
+
+    const page = (data ?? []) as HubFacilityRow[];
+    rows.push(...page);
+    if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
   }
 
-  const hubSlugs = new Set<string>();
+  const countBySlug = new Map<string, number>();
+  const lastmodBySlug = new Map<string, string>();
+  for (const r of rows) {
+    const slug = r.city_slug;
+    if (!slug) continue;
+    countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
+    const updated = r.updated_at?.split("T")[0];
+    if (updated && updated > (lastmodBySlug.get(slug) ?? "")) {
+      lastmodBySlug.set(slug, updated);
+    }
+  }
+
+  const hubLastmod = new Map<string, string>();
 
   for (const region of regionsForState(stateCode)) {
     if (region.kind !== "county") continue;
     const n = region.citySlugs.reduce((acc, s) => acc + (countBySlug.get(s) ?? 0), 0);
-    if (n > 0) hubSlugs.add(region.slug);
+    if (n === 0) continue;
+
+    const latest = region.citySlugs.reduce(
+      (max, slug) => {
+        const updated = lastmodBySlug.get(slug);
+        return updated && updated > max ? updated : max;
+      },
+      "",
+    );
+    hubLastmod.set(region.slug, latest || today);
   }
 
   for (const slug of countBySlug.keys()) {
-    hubSlugs.add(slug);
+    hubLastmod.set(slug, lastmodBySlug.get(slug) ?? today);
   }
 
-  return [...hubSlugs]
+  return [...hubLastmod]
     .sort()
-    .map((slug) => ({
+    .map(([slug, lastmod]) => ({
       loc: `${SITE_ORIGIN}/${stateSlug}/${slug}`,
       priority: "0.85",
       changefreq: "weekly" as const,
-      lastmod: today,
+      lastmod,
     }));
 }
 
@@ -223,26 +258,45 @@ export async function collectFacilityEntriesForState(
   // Use an inner join on inspections so only facilities with at least one inspection
   // are included. This prevents thin/noindex pages (publishable=true but 0 inspections)
   // from appearing in the sitemap and causing "noindex page in sitemap" Ahrefs errors.
-  const { data } = await supabase
-    .from("facilities")
-    .select("city_slug, slug, updated_at, inspections!facility_id!inner(id)")
-    .eq("state_code", stateCode)
-    .eq("publishable", true)
-    .order("city_slug")
-    .order("slug");
-
-  const facilities = (data ?? []) as Array<{
+  type FacilitySitemapRow = {
+    id: string;
     city_slug: string;
     slug: string;
-    updated_at: string;
-  }>;
+    updated_at: string | null;
+  };
 
-  return facilities.map((f) => ({
-    loc: `${SITE_ORIGIN}/${stateSlug}/${f.city_slug}/${f.slug}`,
-    priority: "0.8",
-    changefreq: "monthly" as const,
-    lastmod: f.updated_at ? f.updated_at.split("T")[0] : today,
-  }));
+  // Supabase/PostgREST caps responses at 1,000 rows by default. Several states
+  // exceed that limit, so an unpaginated query silently drops valid live pages
+  // from the sitemap while their routes continue to return 200.
+  const facilities: FacilitySitemapRow[] = [];
+  for (let from = 0; ; from += SITEMAP_QUERY_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("facilities")
+      .select("id, city_slug, slug, updated_at, inspections!facility_id!inner(id)")
+      .eq("state_code", stateCode)
+      .eq("publishable", true)
+      .order("id")
+      .range(from, from + SITEMAP_QUERY_PAGE_SIZE - 1);
+
+    if (error) {
+      throw new Error(`Failed to build ${stateCode} facility sitemap entries: ${error.message}`);
+    }
+
+    const page = (data ?? []) as FacilitySitemapRow[];
+    facilities.push(...page);
+    if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
+  }
+
+  return facilities
+    .sort((a, b) =>
+      a.city_slug.localeCompare(b.city_slug) || a.slug.localeCompare(b.slug),
+    )
+    .map((f) => ({
+      loc: `${SITE_ORIGIN}/${stateSlug}/${f.city_slug}/${f.slug}`,
+      priority: "0.8",
+      changefreq: "monthly" as const,
+      lastmod: f.updated_at ? f.updated_at.split("T")[0] : today,
+    }));
 }
 
 export async function collectFacilityEntries(
