@@ -443,11 +443,21 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   HOMES, BETHEL PAVILION HOMECARE, RESIDENTIAL CARE NINE MILE CRK, GOOD SHEPHERD HOMES — resolved
 #   dates 8/20–9/17); MN resolved max=2026-10-14 unchanged; all other states no new probe-layer signal
 #   (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39691195690 + Sunday 39126360904).
+# Run 39869381725 (2026-10-22T23:04 UTC, push after cron probe 2026-10-22): OR +3 inspections
+#   (13944→13947), max=2026-10-21; MN +6 inspections (5163→5169), max=2026-10-14 unchanged;
+#   AZ +6 max=2026-10-20; PA +13 max=2026-10-16; Layer 5 post-ingest denorm failed — ingest succeeded.
+# Cron probe 2026-10-23T23:00 UTC: OR source max=2026-10-21 (unchanged vs ingested max 2026-10-21);
+#   MN insertDate max=2026-10-23 (+13 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-10-22: ALPHAS HEALTH
+#   CARE LLC, BRIDGEWAY ESTATES, CENTRAL MINNESOTA SENIOR CARE, COMFORT CARE CENTER LLC, COMFORT LIVING
+#   INC, DIVINE ASSITED LIVING SERVICES, EDEN HOMES INC, GARDEN VIEW, GOODNESS AND MERCY HEALTH SERV,
+#   NORTH STAR ASSISTED LIVING, RISEN HOME CARE LLC, SOURIYATHAY ENTERPRISES LLC, VAIMAR SUITES LLC —
+#   resolved dates 1/09–9/29); MN resolved max=2026-10-14 unchanged; all other states no new probe-layer
+#   signal (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39869381725 + Sunday 39126360904).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 10, 20),
+    "OR": date(2026, 10, 21),
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 10, 14),
     "UT": date(2026, 9, 15),
@@ -457,7 +467,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 10, 21)
+LAST_MN_INSERT_BASELINE = date(2026, 10, 22)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
