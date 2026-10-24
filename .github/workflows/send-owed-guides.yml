@@ -1,0 +1,28 @@
+# Manual only. Sends the ALW checklists and the one scoresheet Loops never delivered.
+# Does not email Ned, area digests, or facility watches.
+name: Send owed guide emails
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install psycopg python-dotenv
+
+      - name: Send owed Loops guides
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          LOOPS_MAGNET_ALW_ID: cmr8t15xh002x0j0vgs4s4bdv
+          LOOPS_MAGNET_SCORESHEET_ID: cmr8szabn00r40j2b1fcmmmxt
+        run: python3 scripts/send_staged_catchups.py --approve
