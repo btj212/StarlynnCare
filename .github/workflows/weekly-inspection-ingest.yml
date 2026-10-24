@@ -33,6 +33,9 @@ on:
 
 jobs:
   ingest:
+    # A manual run for one state must not start the other states. Their
+    # follow-up check would fail and email an admin alert for a scan we skipped.
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.state == '' || inputs.state == matrix.state }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
