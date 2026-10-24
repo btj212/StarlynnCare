@@ -1,6 +1,7 @@
+import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
+import { registerCustomerCommitment } from "@/lib/customers/commitments";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
@@ -50,24 +51,46 @@ export async function POST(req: NextRequest) {
     .filter((f): f is ShortlistFacility => typeof f?.id === "string" && typeof f?.name === "string")
     .slice(0, 10);
 
-  const facilityNames = validFacilities.map((f) => f.name).join(", ");
+  if (validFacilities.length === 0) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
 
-  await addLoopsContact({
-    email,
-    userGroup: "shortlist",
+  const normalizedEmail = email.trim().toLowerCase();
+  const facilityNames = validFacilities.map((f) => f.name).join(", ");
+  const subjectKey = createHash("sha256")
+    .update(validFacilities.map((f) => f.id).sort().join(","))
+    .digest("hex")
+    .slice(0, 16);
+
+  await registerCustomerCommitment({
+    email: normalizedEmail,
+    product: "shortlist_report",
+    subjectKey,
     source: source ?? "shortlist_page",
-    journeyStage: "decision",
-    shortlistCount: String(validFacilities.length),
-    shortlistFacilities: facilityNames.slice(0, 500),
+    status: "open",
+    stage: "asset_pending",
+    dueAt: new Date().toISOString(),
+    metadata: { facilities: validFacilities },
+    contact: {
+      email: normalizedEmail,
+      userGroup: "shortlist",
+      source: source ?? "shortlist_page",
+      journeyStage: "decision",
+      shortlistCount: String(validFacilities.length),
+      shortlistFacilities: facilityNames.slice(0, 500),
+    },
   });
 
   recordSubmission({
     type: "shortlist_watch",
-    email,
+    email: normalizedEmail,
     source: source ?? "shortlist_page",
     summary: `${validFacilities.length} facilities · ${facilityNames.slice(0, 120)}`,
-    payload: { facilities: validFacilities },
+    payload: {
+      facilities: validFacilities,
+      promise: "One-time comparison report. Not an ongoing inspection alert.",
+    },
   }).catch((err) => console.error("[watch/shortlist] recordSubmission failed:", err));
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, delivered: false });
 }

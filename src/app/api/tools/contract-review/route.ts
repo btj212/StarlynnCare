@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
-import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
+import {
+  commitmentIdempotencyKey,
+  recordCustomerDelivery,
+  registerCustomerCommitment,
+} from "@/lib/customers/commitments";
+import { addBusinessDays, requestWindowKey } from "@/lib/customers/sla";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { isValidEmail } from "@/lib/security/email";
 
@@ -77,21 +82,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Upload failed — please try again" }, { status: 500 });
   }
 
-  // Add to Loops with journey stage
-  await addLoopsContact({
-    email,
-    userGroup: "digest_subscriber",
+  const normalizedEmail = email.trim().toLowerCase();
+  const dueAt = addBusinessDays(new Date(), 2).toISOString();
+  const registered = await registerCustomerCommitment({
+    email: normalizedEmail,
+    product: "contract_review",
+    subjectKey: "admission-agreement",
     source: "contract_decoder",
-    journeyStage: "decision",
+    status: "open",
+    stage: "file_received",
+    dueAt,
+    metadata: { storagePath, fileType: file.type },
+    contact: {
+      email: normalizedEmail,
+      userGroup: "offer_contract",
+      source: "contract_decoder",
+      journeyStage: "decision",
+    },
   });
 
-  // Audit log — fire-and-forget
+  await recordCustomerDelivery({
+    commitmentId: registered.commitmentId,
+    idempotencyKey: commitmentIdempotencyKey([
+      "file",
+      normalizedEmail,
+      requestWindowKey(),
+    ]),
+    kind: "confirmation",
+    status: "skipped",
+    templateKey: "contract_ack",
+    payload: {
+      note: "The file is already in the private bucket. The ack template asks the family to reply with a PDF, so it is not sent.",
+    },
+  });
+
   recordSubmission({
     type: "contract_review",
-    email,
+    email: normalizedEmail,
     source: "contract_decoder",
     summary: `contract decoder upload · ${file.name.slice(0, 80)}`,
-    payload: { storagePath, fileSize: file.size, fileType: file.type },
+    payload: { storagePath, fileSize: file.size, fileType: file.type, stage: "file_received", dueAt },
   }).catch((err) => console.error("[contract-review] recordSubmission failed:", err));
 
   return NextResponse.json({ ok: true });

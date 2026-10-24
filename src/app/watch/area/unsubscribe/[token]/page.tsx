@@ -32,10 +32,30 @@ export default async function AreaWatchUnsubscribePage({ params }: PageProps) {
   }
 
   const supabase = getServiceClient();
+  const { data: existing } = await supabase
+    .from("area_watchers")
+    .select("email, state_code, area_slug")
+    .eq("unsubscribe_token", token)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("area_watchers")
     .update({ active: false })
     .eq("unsubscribe_token", token);
+
+  if (
+    existing &&
+    typeof existing.email === "string" &&
+    typeof existing.state_code === "string" &&
+    typeof existing.area_slug === "string"
+  ) {
+    await supabase
+      .from("customer_commitments")
+      .update({ status: "unsubscribed", updated_at: new Date().toISOString() })
+      .eq("email", existing.email.trim().toLowerCase())
+      .eq("product", "area_watch")
+      .eq("subject_key", `${existing.state_code}:${existing.area_slug}`);
+  }
 
   if (error) {
     console.error("[watch/area] unsubscribe error:", error.message);

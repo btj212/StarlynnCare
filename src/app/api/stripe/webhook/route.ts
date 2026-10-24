@@ -10,6 +10,13 @@ import {
   sendPaidWatchWelcome,
   sendPaidWatchPaymentFailed,
 } from "@/lib/email/paidWatch";
+import {
+  commitmentIdempotencyKey,
+  recordCustomerDelivery,
+  registerCustomerCommitment,
+  syncPaidCommitment,
+} from "@/lib/customers/commitments";
+import { addBusinessDays, requestWindowKey } from "@/lib/customers/sla";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { stateFromCode } from "@/lib/states";
@@ -105,15 +112,56 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const manageUrl = canonicalFor(`/watch/billing/${row.billing_token}`);
   const facilityUrl = canonicalFor(facility.path);
 
-  await sendPaidWatchWelcome({
-    to: row.email,
-    facilityName: facility.name,
-    facilityUrl,
-    billingInterval: row.billing_interval,
-    manageUrl,
-  }).catch((err) =>
-    console.error("[stripe-webhook] paid welcome failed:", err),
-  );
+  let welcomeSent = false;
+  try {
+    await sendPaidWatchWelcome({
+      to: row.email,
+      facilityName: facility.name,
+      facilityUrl,
+      billingInterval: row.billing_interval,
+      manageUrl,
+    });
+    welcomeSent = true;
+  } catch (err) {
+    console.error("[stripe-webhook] paid welcome failed:", err);
+  }
+
+  const dueAt = addBusinessDays(new Date(), 1).toISOString();
+  const registered = await registerCustomerCommitment({
+    email: row.email,
+    product: "paid_facility_watch",
+    subjectKey: row.id,
+    source: "stripe_checkout_paid",
+    status: "open",
+    stage: "fulfillment_pending",
+    dueAt,
+    facilityId: row.facility_id,
+    metadata: {
+      billingInterval: row.billing_interval,
+      stripeSubscriptionId: row.stripe_subscription_id,
+      manageUrl,
+    },
+    contact: {
+      email: row.email,
+      userGroup: "paid_facility_watch",
+      source: "stripe_checkout_paid",
+      facilityName: facility.name,
+      facilityId: row.facility_id,
+      journeyStage: "resident",
+    },
+  });
+  await recordCustomerDelivery({
+    commitmentId: registered.commitmentId,
+    idempotencyKey: commitmentIdempotencyKey([
+      "paid-welcome",
+      row.id,
+      requestWindowKey(),
+    ]),
+    kind: "confirmation",
+    status: welcomeSent ? "sent" : "failed",
+    templateKey: "paid_welcome",
+    error: welcomeSent ? undefined : "welcome_not_sent",
+  });
 
   recordSubmission({
     // Reuse the existing allowed DB event type; source distinguishes paid.
@@ -147,11 +195,13 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
       .maybeSingle();
     if (!data) return;
   }
-  await syncSubscriptionFromStripe(sub);
+  const row = await syncSubscriptionFromStripe(sub);
+  if (row) await syncPaidCommitment(row);
 }
 
 async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
-  await syncSubscriptionFromStripe(sub);
+  const row = await syncSubscriptionFromStripe(sub);
+  if (row) await syncPaidCommitment(row);
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
@@ -234,7 +284,8 @@ export async function POST(req: NextRequest) {
         const subscriptionId = subscriptionIdFromInvoice(invoice);
         if (subscriptionId) {
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
-          await syncSubscriptionFromStripe(sub);
+          const row = await syncSubscriptionFromStripe(sub);
+          if (row) await syncPaidCommitment(row);
         }
         break;
       }

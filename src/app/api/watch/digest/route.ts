@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { sendMagnetEmail } from "@/lib/email/watch";
+import {
+  commitmentIdempotencyKey,
+  recordCustomerDelivery,
+  registerCustomerCommitment,
+} from "@/lib/customers/commitments";
+import { addCalendarDays, requestWindowKey } from "@/lib/customers/sla";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
@@ -36,42 +41,61 @@ export async function POST(req: NextRequest) {
 
   const { email, source, stateCode, journeyStage, magnet } = body;
 
-  if (!email) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  if (!email || !magnet) {
+    return NextResponse.json(
+      { error: "Choose a guide, or watch one state from the homepage bar." },
+      { status: 400 },
+    );
   }
 
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Invalid email" }, { status: 400 });
   }
 
-  await addLoopsContact({
-    email,
-    userGroup: "digest_subscriber",
-    source: source ?? "mobile_digest_bar",
-    journeyStage: journeyStage ?? "orientation",
-    ...(stateCode ? { stateCode } : {}),
-    ...(magnet ? { magnet } : {}),
+  const normalizedEmail = email.trim().toLowerCase();
+  const registered = await registerCustomerCommitment({
+    email: normalizedEmail,
+    product: "library_magnet",
+    subjectKey: magnet,
+    source: source ?? "library",
+    status: "open",
+    stage: "asset_pending",
+    dueAt: new Date().toISOString(),
+    followUpDueAt: addCalendarDays(new Date(), 7).toISOString(),
+    metadata: { magnet, stateCode: stateCode ?? null },
+    contact: {
+      email: normalizedEmail,
+      userGroup: "digest_subscriber",
+      source: source ?? "library",
+      journeyStage: journeyStage ?? "orientation",
+      ...(stateCode ? { stateCode } : {}),
+      magnet,
+    },
   });
+  const sent = await sendMagnetEmail({ to: normalizedEmail, magnet });
 
-  // Send magnet-specific transactional email when a checklist/guide was promised.
-  // Falls back silently when LOOPS_MAGNET_* env var is not yet set.
-  if (magnet) {
-    sendMagnetEmail({ to: email, magnet }).catch((err) =>
-      console.error("[watch/digest] sendMagnetEmail failed:", err),
-    );
-  }
+  await recordCustomerDelivery({
+    commitmentId: registered.commitmentId,
+    idempotencyKey: commitmentIdempotencyKey([
+      "asset",
+      magnet,
+      normalizedEmail,
+      requestWindowKey(),
+    ]),
+    kind: "asset",
+    status: sent ? "sent" : "failed",
+    templateKey: magnet,
+    fulfills: sent,
+    error: sent ? undefined : "magnet_template_not_sent",
+  });
 
   recordSubmission({
     type: "digest_subscriber",
-    email,
-    source: source ?? "mobile_digest_bar",
-    summary: magnet
-      ? `magnet · ${magnet}`
-      : stateCode
-        ? `digest · ${stateCode}`
-        : `digest · ${journeyStage ?? "orientation"}`,
-    payload: { stateCode: stateCode ?? null, journeyStage: journeyStage ?? "orientation", magnet: magnet ?? null },
+    email: normalizedEmail,
+    source: source ?? "library",
+    summary: `magnet · ${magnet}`,
+    payload: { stateCode: stateCode ?? null, journeyStage: journeyStage ?? "orientation", magnet },
   }).catch((err) => console.error("[watch/digest] recordSubmission failed:", err));
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, delivered: sent });
 }

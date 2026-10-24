@@ -19,6 +19,19 @@ export default async function WatchUnsubscribePage({ params }: PageProps) {
   }
 
   const supabase = getServiceClient();
+  const { data: existing } = await supabase
+    .from("facility_watchers")
+    .select("email, facility_id")
+    .eq("unsubscribe_token", token)
+    .maybeSingle();
+
+  if (existing && typeof existing.email === "string") {
+    await supabase
+      .from("customer_commitments")
+      .update({ status: "unsubscribed", updated_at: new Date().toISOString() })
+      .eq("email", existing.email.trim().toLowerCase())
+      .eq("facility_id", existing.facility_id);
+  }
 
   const { error } = await supabase
     .from("facility_watchers")

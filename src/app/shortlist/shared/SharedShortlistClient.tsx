@@ -47,11 +47,10 @@ function EmailCapture({ items }: { items: ShortlistItem[] }) {
     return (
       <div className="rounded-xl border border-teal/30 bg-teal/5 px-6 py-5 text-center">
         <p className="font-[family-name:var(--font-display)] text-[18px] text-ink">
-          You&apos;re on the list.
+          Saved.
         </p>
         <p className="mt-2 text-sm text-ink-3">
-          We&apos;ll send updates on these {items.length} shortlisted{" "}
-          {items.length === 1 ? "facility" : "facilities"} when inspection records change.
+          This comparison is queued. We&apos;ll email the inspection links. It is a one-time report, not an ongoing alert.
         </p>
       </div>
     );
@@ -60,10 +59,10 @@ function EmailCapture({ items }: { items: ShortlistItem[] }) {
   return (
     <div className="rounded-xl border border-paper-rule bg-paper-2 px-6 py-6">
       <h2 className="font-[family-name:var(--font-display)] text-[22px] text-ink mb-1">
-        Email me these {items.length} inspection reports
+        Email me this comparison
       </h2>
       <p className="text-sm text-ink-3 mb-5">
-        Get notified when any shortlisted facility receives a new inspection finding.
+        One-time report. To keep watching a city or state, use Area Watch.
         No sales calls, no referral commission — just the public record.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">

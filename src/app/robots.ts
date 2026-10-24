@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const DISALLOWED = ["/admin", "/admin/", "/api/", "/unlock", "/sign-in"];
+const DISALLOWED = ["/admin", "/admin/", "/api/", "/unlock", "/sign-in", "/preferences", "/unsubscribe"];
 
 export default function robots(): MetadataRoute.Robots {
   return {
