@@ -99,7 +99,7 @@ def main() -> int:
                   and d.status = 'pending'
                   and c.product = 'library_magnet'
                   and c.subject_key = 'tour_scoresheet'
-                  and c.created_at >= '2026-10-10'
+                  and c.consent_at >= '2026-10-10'
                 """,
             ),
         ]
@@ -125,6 +125,7 @@ def main() -> int:
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json",
                         "Idempotency-Key": str(row["idempotency_key"])[:100],
+                        "User-Agent": "Mozilla/5.0 (compatible; StarlynnCare/1.0; +https://www.starlynncare.com)",
                     },
                     method="POST",
                 )
