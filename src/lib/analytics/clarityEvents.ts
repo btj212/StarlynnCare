@@ -18,9 +18,16 @@ declare global {
 }
 
 function c(...args: Parameters<NonNullable<Window["clarity"]>>) {
-  if (typeof window !== "undefined" && typeof window.clarity === "function") {
-    window.clarity(...args);
-  }
+  if (typeof window === "undefined") return;
+  // The layout snippet installs this same queue, but only after the page is
+  // interactive. Events fired on first render used to be dropped.
+  const clarity = window.clarity ?? function clarityQueue(...queued: unknown[]) {
+    const fn = clarityQueue as unknown as { q?: unknown[][] };
+    fn.q = fn.q ?? [];
+    fn.q.push(queued);
+  };
+  window.clarity = clarity;
+  clarity(...args);
 }
 
 /**

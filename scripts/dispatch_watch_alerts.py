@@ -36,6 +36,48 @@ STATE_SLUGS = {
     "WA": "washington",
 }
 
+# County watches store the county slug, not a city. Keep this aligned with
+# ORANGE_COUNTY_CITIES in src/lib/regions.ts. California facilities have no
+# county column, so the match is by city slug.
+COUNTY_CITY_SLUGS = {
+    "orange-county": {
+        "aliso-viejo",
+        "anaheim",
+        "brea",
+        "buena-park",
+        "costa-mesa",
+        "cypress",
+        "dana-point",
+        "fountain-valley",
+        "fullerton",
+        "garden-grove",
+        "huntington-beach",
+        "irvine",
+        "la-habra",
+        "la-palma",
+        "laguna-beach",
+        "laguna-hills",
+        "laguna-niguel",
+        "laguna-woods",
+        "lake-forest",
+        "los-alamitos",
+        "mission-viejo",
+        "newport-beach",
+        "orange",
+        "placentia",
+        "rancho-santa-margarita",
+        "san-clemente",
+        "san-juan-capistrano",
+        "santa-ana",
+        "seal-beach",
+        "stanton",
+        "tustin",
+        "villa-park",
+        "westminster",
+        "yorba-linda",
+    },
+}
+
 
 def load_env() -> None:
     for name in (".env.local", ".env"):
@@ -162,6 +204,24 @@ def _load_deltas(conn: psycopg.Connection, scan_run_id: str) -> list[dict[str, A
         return [dict(row) for row in cur.fetchall()]
 
 
+def _delta_city_slug(delta: dict[str, Any]) -> str | None:
+    payload = delta.get("after_payload") or {}
+    city = payload.get("city_slug") or delta.get("city_slug")
+    return city if isinstance(city, str) and city else None
+
+
+def _delta_in_area(watcher: dict[str, Any], delta: dict[str, Any]) -> bool:
+    if watcher.get("source") == "state_modal":
+        return True
+    city = _delta_city_slug(delta)
+    if not city:
+        return False
+    county_cities = COUNTY_CITY_SLUGS.get(watcher.get("area_slug") or "")
+    if county_cities is not None:
+        return city in county_cities
+    return city == watcher.get("area_slug")
+
+
 def _area_url(watcher: dict[str, Any]) -> str:
     state_slug = STATE_SLUGS[watcher["state_code"]]
     if watcher.get("source") == "state_modal":
@@ -201,13 +261,7 @@ def _send_area_alerts(
     for watcher in watchers:
         if recipient_only and watcher["email"].lower() != recipient_only.lower():
             continue
-        relevant = deltas
-        if watcher.get("source") != "state_modal":
-            relevant = [
-                delta
-                for delta in deltas
-                if (delta.get("after_payload") or {}).get("city_slug") == watcher["area_slug"]
-            ]
+        relevant = [delta for delta in deltas if _delta_in_area(watcher, delta)]
 
         is_requested_no_change = (
             not relevant

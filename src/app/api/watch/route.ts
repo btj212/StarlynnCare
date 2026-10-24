@@ -10,6 +10,7 @@ import {
   registerCustomerCommitment,
 } from "@/lib/customers/commitments";
 import { addCalendarDays, requestWindowKey } from "@/lib/customers/sla";
+import { readAttribution } from "@/lib/customers/attribution";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
@@ -142,6 +143,7 @@ export async function POST(req: NextRequest) {
     dueAt: new Date().toISOString(),
     followUpDueAt: addCalendarDays(new Date(), followUpDays).toISOString(),
     facilityId,
+    metadata: readAttribution(body),
     contact: {
       email: normalizedEmail,
       userGroup,

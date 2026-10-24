@@ -401,11 +401,17 @@ export default function MediCalMemoryCarePage() {
           <H2 id="starlynncare-records">How StarlynnCare uses these public records</H2>
           <Prose>
             <p>
-              The participating-facility list for ALW is published by DHCS. We cross-reference DHCS&apos;s list against the
-              Community Care Licensing roster on the same quarterly cadence we refresh the rest of the California facility data,
-              and surface ALW participation as a data point on each facility profile where it applies. Where waitlist data is
-              available at the county level, we link to it directly rather than republishing it, because the underlying numbers
-              shift more often than a static page can keep accurate.
+              The participating-facility list for ALW is published by DHCS. StarlynnCare does not yet mark individual
+              facilities as ALW participants, so confirm a home on the{" "}
+              <a
+                href="https://www.dhcs.ca.gov/services/ltc/Pages/AssistedLivingWaiver.aspx"
+                className="text-teal underline underline-offset-4"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                DHCS Assisted Living Waiver page
+              </a>{" "}
+              before you rely on participation. Waitlist lengths change often enough that a copied number on this site would go stale.
             </p>
             <p>
               The reason the no-payment posture matters here specifically is that participating facilities operate on tighter
@@ -449,6 +455,12 @@ export default function MediCalMemoryCarePage() {
               Related on this site
             </p>
             <ul className="list-disc pl-5 space-y-2">
+              <li>
+                <Link href="/library/choosing-memory-care" className="text-teal underline underline-offset-4">
+                  Choosing memory care, one decision at a time
+                </Link>{" "}
+                — the five steps around this payer guide
+              </li>
               <li>
                 <Link href="/library/memory-care-vs-nursing-home" className="text-teal underline underline-offset-4">
                   Memory care vs. nursing home

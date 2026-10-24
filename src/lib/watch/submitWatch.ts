@@ -5,6 +5,7 @@ export async function submitWatch(params: {
   source: string;
   /** Optional journey-stage intent: 'research' | 'touring' | 'resident'. */
   intent?: string;
+  attribution?: Record<string, string>;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await fetch("/api/watch", {

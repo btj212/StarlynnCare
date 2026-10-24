@@ -50,7 +50,7 @@ export default async function PreferencesPage({ params }: PageProps) {
   const supabase = getServiceClient();
   const { data: pref } = await supabase
     .from("customer_preferences")
-    .select("email, unsubscribed_all")
+    .select("email, unsubscribed_all, journey_stage")
     .eq("token", token)
     .maybeSingle();
 
@@ -82,6 +82,7 @@ export default async function PreferencesPage({ params }: PageProps) {
           <PreferenceForm
             token={token}
             unsubscribedAll={pref.unsubscribed_all === true}
+            journeyStage={typeof pref.journey_stage === "string" ? pref.journey_stage : null}
             items={rows.map((row) => ({
               id: row.id,
               label: labelFor(row),

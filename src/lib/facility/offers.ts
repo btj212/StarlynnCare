@@ -1,21 +1,15 @@
 /**
- * Facility offer variants for the WTP test.
+ * Facility-page offer.
  *
- * Each facility gets one assigned variant, deterministic by facility.id —
- * stable across page loads, cache-safe, no per-visitor randomization needed.
- *
- * Reading the test results:
- *   Click rate  → Clarity dashboard, filter sessions by `offerVariant` tag.
- *   Conversions → /admin/submissions filtered by source = "offer_<variant>".
- *
- * The "watch" variant is Facility Watch Premium (paid). It is only assigned
- * when paid Facility Watch is enabled for the state.
+ * The 2026 rotation test is over. Records requests were the only offer
+ * families kept using, so every profile shows that offer. Premium still has
+ * its own block lower on the page. Tour prep and contract review are offered
+ * after someone asks for the record, not instead of it.
  */
 
 import {
   PAID_WATCH_ANCHOR,
   PAID_WATCH_MONTHLY_USD,
-  shouldShowPaidFacilityWatch,
 } from "@/lib/facility-watch/paidConfig";
 
 export type OfferId = "watch" | "records" | "contract" | "tour";
@@ -82,27 +76,12 @@ export const OFFERS: Offer[] = [
   },
 ];
 
-/**
- * Deterministically assign an offer variant to a facility.
- * Uses a simple char-sum hash of the UUID so every facility always
- * gets the same offer and pages remain ISR-cache-safe.
- *
- * Paid Facility Watch is excluded from the pool when the launch flag is off
- * or the state is not eligible (TX/MO).
- */
+/** Every facility page offers the full inspection record. */
 export function assignOffer(
-  facilityId: string,
-  stateCode?: string | null,
+  _facilityId: string,
+  _stateCode?: string | null,
 ): Offer {
-  const pool = shouldShowPaidFacilityWatch(stateCode)
-    ? OFFERS
-    : OFFERS.filter((o) => o.id !== "watch");
-  let sum = 0;
-  for (let i = 0; i < facilityId.length; i++) {
-    sum += facilityId.charCodeAt(i);
-  }
-  const idx = sum % pool.length;
-  return pool[idx] ?? OFFERS[1];
+  return getOfferById("records");
 }
 
 export function getOfferById(id: OfferId): Offer {

@@ -5,6 +5,7 @@ Loops transactional email helpers for Facility Watch change alerts.
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 
 import requests
 
@@ -105,7 +106,7 @@ def send_scan_failure_alert(*, state_code: str, details: str, workflow_url: str)
             "email": admin_email,
             "summary": f"{state_code} source scan failed",
             "details": details[:2000],
-            "submittedAt": "",
+            "submittedAt": datetime.now(timezone.utc).isoformat(),
             "adminUrl": workflow_url,
         },
     )

@@ -7,6 +7,7 @@ import {
   registerCustomerCommitment,
 } from "@/lib/customers/commitments";
 import { addCalendarDays, requestWindowKey } from "@/lib/customers/sla";
+import { readAttribution } from "@/lib/customers/attribution";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     stage: "asset_pending",
     dueAt: new Date().toISOString(),
     followUpDueAt: addCalendarDays(new Date(), 7).toISOString(),
-    metadata: { magnet, stateCode: stateCode ?? null },
+    metadata: { magnet, stateCode: stateCode ?? null, ...readAttribution(body) },
     contact: {
       email: normalizedEmail,
       userGroup: "digest_subscriber",

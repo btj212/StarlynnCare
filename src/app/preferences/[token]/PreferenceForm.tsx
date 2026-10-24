@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type Item = {
   id: string;
@@ -8,19 +9,60 @@ type Item = {
   status: string;
 };
 
+const STAGES = [
+  {
+    id: "researching",
+    label: "Still researching",
+    next: "Start with the decision guide, then the record on a facility page.",
+    href: "/library/choosing-memory-care",
+    link: "Open the decision guide",
+  },
+  {
+    id: "touring",
+    label: "Touring",
+    next: "Take the question list to the tour.",
+    href: "/library/37-questions-to-ask-on-a-memory-care-tour",
+    link: "Open the tour questions",
+  },
+  {
+    id: "signing",
+    label: "About to sign",
+    next: "Contract review is free.",
+    href: "/tools/contract-review",
+    link: "Decode a contract",
+  },
+  {
+    id: "placed",
+    label: "Already moved in",
+    next: "Facility Watch is on that facility’s page. It is $9 a month.",
+    href: null,
+    link: null,
+  },
+  {
+    id: "finished",
+    label: "No longer looking",
+    next: "You can stop every email below.",
+    href: null,
+    link: null,
+  },
+] as const;
+
 export function PreferenceForm({
   token,
   unsubscribedAll,
   items,
+  journeyStage,
 }: {
   token: string;
   unsubscribedAll: boolean;
   items: Item[];
+  journeyStage: string | null;
 }) {
   const [rows, setRows] = useState(items);
   const [allOff, setAllOff] = useState(unsubscribedAll);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [stage, setStage] = useState(journeyStage);
 
   async function send(body: Record<string, string>) {
     setPending(body.commitmentId ?? "all");
@@ -37,6 +79,11 @@ export function PreferenceForm({
     setPending(null);
     if (!res.ok) {
       setMessage(json.error ?? "Could not update. Try again.");
+      return;
+    }
+    if (body.action === "set_stage") {
+      setStage(body.stage ?? null);
+      setMessage("Saved.");
       return;
     }
     if (body.action === "unsubscribe_all") {
@@ -60,8 +107,39 @@ export function PreferenceForm({
     setMessage(json.billingSeparate ? "Email updates for that facility are stopped. Billing is unchanged." : "Saved.");
   }
 
+  const stageHelp = STAGES.find((item) => item.id === stage);
+
   return (
     <div className="mt-10 space-y-4">
+      <div className="border border-paper-rule p-4">
+        <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-ink-3">
+          Where are you in the decision?
+        </p>
+        <div className="mt-3 flex flex-col gap-2">
+          {STAGES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              disabled={pending !== null}
+              onClick={() => void send({ action: "set_stage", stage: item.id })}
+              className="min-h-11 border border-paper-rule px-3 py-2 text-left text-[15px] text-ink disabled:opacity-50"
+            >
+              {stage === item.id ? "✓ " : ""}
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {stageHelp && (
+          <p className="mt-3 text-[15px] leading-relaxed text-ink-2">
+            {stageHelp.next}{" "}
+            {stageHelp.href && (
+              <Link href={stageHelp.href} className="text-teal underline underline-offset-4">
+                {stageHelp.link}
+              </Link>
+            )}
+          </p>
+        )}
+      </div>
       {rows.length === 0 ? (
         <p className="text-ink-2">We don&apos;t have an active promise on this link.</p>
       ) : (

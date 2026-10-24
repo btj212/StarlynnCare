@@ -59,6 +59,26 @@ export default async function AdminPromisesPage({ searchParams }: PageProps) {
     );
   }
 
+  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recent } = await supabase
+    .from("customer_commitments")
+    .select("product, source, metadata, created_at")
+    .gte("created_at", since)
+    .limit(500);
+  const funnel = new Map<string, number>();
+  for (const row of recent ?? []) {
+    const product = typeof row.product === "string" ? row.product : "unknown";
+    const meta = row.metadata && typeof row.metadata === "object" ? row.metadata as Record<string, unknown> : {};
+    const channel = typeof meta.utmSource === "string"
+      ? meta.utmSource
+      : typeof meta.referrerHost === "string"
+        ? meta.referrerHost
+        : "not recorded";
+    const key = `${product} · ${channel}`;
+    funnel.set(key, (funnel.get(key) ?? 0) + 1);
+  }
+  const funnelRows = [...funnel.entries()].sort((a, b) => b[1] - a[1]);
+
   const rows = (data ?? []) as unknown as CommitmentRow[];
   const overdue = rows.filter((row) => row.status === "overdue").length;
   const needsReview = rows.filter((row) => row.status === "needs_review").length;
@@ -80,6 +100,25 @@ export default async function AdminPromisesPage({ searchParams }: PageProps) {
             Submissions
           </Link>
         </p>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <p className="text-[11px] uppercase tracking-wide text-gray-400">Signups, last 90 days</p>
+        <p className="mt-1 text-xs text-gray-500">
+          Grouped by product and the referring site or campaign saved with the signup. Google click totals stay in Search Console.
+        </p>
+        {funnelRows.length === 0 ? (
+          <p className="mt-3 text-sm text-gray-400">No signups in this window.</p>
+        ) : (
+          <ul className="mt-3 space-y-1 text-sm">
+            {funnelRows.map(([label, count]) => (
+              <li key={label} className="flex justify-between gap-4">
+                <span>{label}</span>
+                <span className="font-mono">{count}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

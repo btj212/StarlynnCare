@@ -7,6 +7,7 @@ import {
   emitOfferClick,
   emitOfferConvert,
 } from "@/lib/analytics/clarityEvents";
+import { captureAttribution } from "@/lib/customers/attribution";
 
 type Kind = "route" | "email";
 
@@ -115,6 +116,7 @@ function LibraryEmailCapture({
           source,
           journeyStage: "research",
           ...(magnet ? { magnet } : {}),
+          ...captureAttribution(),
         }),
       });
       if (res.ok) {

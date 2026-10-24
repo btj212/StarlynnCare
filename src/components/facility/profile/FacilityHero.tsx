@@ -11,6 +11,7 @@ import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
+import { FacilityShareButton } from "./FacilityShareButton";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -409,6 +410,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {/* Offer CTA — above the fold on all viewports */}
             <div className="mt-5">
               <OfferTriggerButton />
+              <FacilityShareButton facilityName={facility.name} />
             </div>
           </div>
 

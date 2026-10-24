@@ -13,7 +13,16 @@ export type CommitmentProduct =
   | "library_magnet"
   | "contract_review"
   | "shortlist_report"
-  | "waitlist";
+  | "waitlist"
+  | "monthly_update"
+  | "decision_course";
+
+export const JOURNEY_STAGES = ["researching", "touring", "signing", "placed", "finished"] as const;
+export type JourneyStage = (typeof JOURNEY_STAGES)[number];
+
+export function isJourneyStage(value: string): value is JourneyStage {
+  return (JOURNEY_STAGES as readonly string[]).includes(value);
+}
 
 export type CommitmentStatus =
   | "open"
@@ -213,6 +222,31 @@ export async function syncPaidCommitment(row: {
     .eq("email", row.email.trim().toLowerCase())
     .eq("product", "paid_facility_watch")
     .eq("subject_key", row.id);
+}
+
+export async function setJourneyStage(input: {
+  token: string;
+  stage: JourneyStage;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!/^[a-f0-9]{64}$/.test(input.token)) return { ok: false, error: "Invalid link." };
+  const supabase = getServiceClient();
+  const { data: pref } = await supabase
+    .from("customer_preferences")
+    .select("email")
+    .eq("token", input.token)
+    .maybeSingle();
+  const email = readString(pref, "email");
+  if (!email) return { ok: false, error: "This link is not active." };
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("customer_preferences")
+    .update({ journey_stage: input.stage, journey_stage_at: now, updated_at: now })
+    .eq("email", email);
+  if (error) return { ok: false, error: "Could not save." };
+
+  await upsertLoopsContact({ email, journeyStage: input.stage });
+  return { ok: true };
 }
 
 export async function updateCustomerPreference(input: {

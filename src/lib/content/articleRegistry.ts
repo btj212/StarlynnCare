@@ -37,6 +37,14 @@ export type RegistryArticle = {
 export const ARTICLE_REGISTRY: RegistryArticle[] = [
   // ── Universal (all states) ────────────────────────────────────────────────
   {
+    slug: "/library/choosing-memory-care",
+    title: "Choosing memory care, one decision at a time",
+    desc: "Five steps that point at the guides already on the site. No new statistics.",
+    states: ["all"],
+    tags: ["decision"],
+    live: true,
+  },
+  {
     slug: "/library/when-is-it-time-for-memory-care",
     title: "When is it time for memory care?",
     desc: "Safety signals, parallel clinical + regulatory tracks, and tour discipline before you sign.",

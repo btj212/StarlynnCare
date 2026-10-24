@@ -1,4 +1,4 @@
-import { UserButton } from "@clerk/nextjs";
+import { ClerkProvider, UserButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
+    <ClerkProvider>
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white px-6 py-3">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
@@ -67,5 +68,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
       <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
     </div>
+    </ClerkProvider>
   );
 }

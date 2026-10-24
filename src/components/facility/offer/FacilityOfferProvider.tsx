@@ -17,6 +17,7 @@ import {
   emitOfferConvert,
 } from "@/lib/analytics/clarityEvents";
 import { submitWatch } from "@/lib/watch/submitWatch";
+import { captureAttribution } from "@/lib/customers/attribution";
 import { PAID_WATCH_ANCHOR } from "@/lib/facility-watch/paidConfig";
 import { SupportAsk } from "@/components/support/SupportAsk";
 
@@ -56,6 +57,7 @@ function OfferModal({
   const [email, setEmail] = useState("");
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [tourState, setTourState] = useState<FormState>("idle");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +78,7 @@ function OfferModal({
       facilityName,
       source: `offer_${offer.id}`,
       intent: offer.journeyStage === "search" ? "research" : "touring",
+      attribution: captureAttribution(),
     });
 
     if (result.ok) {
@@ -114,7 +117,53 @@ function OfferModal({
             <p className="font-[family-name:var(--font-display)] text-[20px] leading-[1.35] text-ink">
               Check your inbox in the next few minutes.
             </p>
-            <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-3">
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={tourState === "submitting" || tourState === "success"}
+                onClick={async () => {
+                  setTourState("submitting");
+                  const tour = await submitWatch({
+                    email: email.trim(),
+                    facilityId,
+                    facilityName,
+                    source: "offer_tour",
+                    intent: "touring",
+                    attribution: captureAttribution(),
+                  });
+                  setTourState(tour.ok ? "success" : "error");
+                }}
+                className="h-11 w-full rounded-xl border border-clearing-rule-2 font-[family-name:var(--font-sans)] text-[14px] font-semibold text-ink disabled:opacity-50"
+              >
+                {tourState === "success"
+                  ? "Tour-prep pack sent"
+                  : tourState === "submitting"
+                    ? "Sending…"
+                    : "Touring soon? Send the tour-prep pack too"}
+              </button>
+              {tourState === "error" && (
+                <p className="font-[family-name:var(--font-mono)] text-[11px] text-rust">
+                  Could not send the tour pack. Try the button again.
+                </p>
+              )}
+              <a
+                href="/tools/contract-review"
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-clearing-rule-2 font-[family-name:var(--font-sans)] text-[14px] font-semibold text-ink"
+              >
+                About to sign? Decode the contract
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  document.getElementById(PAID_WATCH_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-clearing-rule-2 font-[family-name:var(--font-sans)] text-[14px] font-semibold text-ink"
+              >
+                Already living here? Facility Watch
+              </button>
+            </div>
+            <p className="mt-3 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-3">
               No spam. Unsubscribe any time.
             </p>
             <SupportAsk source={`offer_${offer.id}`} variant="modal" />
