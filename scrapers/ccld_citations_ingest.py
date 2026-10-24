@@ -965,7 +965,9 @@ def main() -> None:
     dsn = os.environ.get("DATABASE_URL", "")
 
     # ── Load facilities ──────────────────────────────────────────────────
-    with psycopg.connect(dsn) as conn:
+    print("Loading California facilities...", flush=True)
+    with psycopg.connect(dsn, connect_timeout=30) as conn:
+        conn.execute("SET statement_timeout = '120s'")
         query = """
             SELECT id::text, name, license_number, city,
                    serves_memory_care, publishable, license_status
