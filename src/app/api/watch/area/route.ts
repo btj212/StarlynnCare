@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
+import { registerCustomerCommitment } from "@/lib/customers/commitments";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
@@ -75,14 +75,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not save watch" }, { status: 500 });
   }
 
-  await addLoopsContact({
+  await registerCustomerCommitment({
     email: normalizedEmail,
-    userGroup: "area_watch",
+    product: "area_watch",
+    subjectKey: `${state.code}:${areaSlug}`,
     source: safeSource,
-    areaName,
-    areaSlug,
-    stateCode: state.code,
-    journeyStage: "search",
+    status: "active",
+    stage: "watching",
+    metadata: { areaName, areaSlug, stateCode: state.code },
+    contact: {
+      email: normalizedEmail,
+      userGroup: "area_watch",
+      source: safeSource,
+      areaName,
+      areaSlug,
+      stateCode: state.code,
+      journeyStage: "search",
+    },
   });
 
   // Admin alert + audit log — fire-and-forget, never blocks user response.

@@ -3,8 +3,13 @@ import { getServiceClient } from "@/lib/supabase/server";
 import { sendWatchWelcome, sendRecordsEmail, sendTourEmail } from "@/lib/email/watch";
 import { buildWatchWelcomeDigest } from "@/lib/watch/buildWatchWelcomeDigest";
 import { buildTourEmailDigest } from "@/lib/email/buildTourEmailDigest";
-import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
+import {
+  commitmentIdempotencyKey,
+  recordCustomerDelivery,
+  registerCustomerCommitment,
+} from "@/lib/customers/commitments";
+import { addCalendarDays, requestWindowKey } from "@/lib/customers/sla";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
@@ -96,12 +101,9 @@ export async function POST(req: NextRequest) {
         : "search";
   const normalizedEmail = email.trim().toLowerCase();
 
-  const userGroup: string =
-    offerSource === "offer_records"
-      ? "offer_records"
-      : offerSource === "offer_tour"
-        ? "offer_tour"
-        : "facility_watch";
+  const userGroup = offerSource === "offer_tour" ? "offer_tour" : "offer_records";
+  const product = offerSource === "offer_tour" ? "tour_pack" : "records_email";
+  const followUpDays = product === "tour_pack" ? 3 : 7;
 
   const supabase = getServiceClient();
   const confirmedAt = new Date().toISOString();
@@ -130,11 +132,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not save watch" }, { status: 500 });
   }
 
+  const registered = await registerCustomerCommitment({
+    email: normalizedEmail,
+    product,
+    subjectKey: facilityId,
+    source: offerSource,
+    status: "open",
+    stage: "asset_pending",
+    dueAt: new Date().toISOString(),
+    followUpDueAt: addCalendarDays(new Date(), followUpDays).toISOString(),
+    facilityId,
+    contact: {
+      email: normalizedEmail,
+      userGroup,
+      source: offerSource,
+      facilityName,
+      facilityId,
+      journeyStage,
+      ...(safeIntent ? { watchIntent: safeIntent } : {}),
+    },
+  });
+
+  let sent = false;
   try {
     const digest = await buildWatchWelcomeDigest(facilityId, data.unsubscribe_token);
 
     if (offerSource === "offer_records" || offerSource === "records_pull_interest") {
-      await sendRecordsEmail({
+      sent = await sendRecordsEmail({
         to: normalizedEmail,
         digest,
         unsubscribeToken: data.unsubscribe_token,
@@ -142,13 +166,13 @@ export async function POST(req: NextRequest) {
     } else if (offerSource === "offer_tour") {
       const tourDigest = await buildTourEmailDigest(facilityId, data.unsubscribe_token);
       if (tourDigest) {
-        await sendTourEmail({
+        sent = await sendTourEmail({
           to: normalizedEmail,
           digest: tourDigest,
           unsubscribeToken: data.unsubscribe_token,
         });
       } else {
-        await sendWatchWelcome({
+        sent = await sendWatchWelcome({
           to: normalizedEmail,
           facilityName,
           unsubscribeToken: data.unsubscribe_token,
@@ -156,8 +180,7 @@ export async function POST(req: NextRequest) {
         });
       }
     } else {
-      // report_waitlist and similar one-time captures
-      await sendWatchWelcome({
+      sent = await sendWatchWelcome({
         to: normalizedEmail,
         facilityName,
         unsubscribeToken: data.unsubscribe_token,
@@ -168,14 +191,20 @@ export async function POST(req: NextRequest) {
     console.error("[watch] email error:", emailErr);
   }
 
-  await addLoopsContact({
-    email: normalizedEmail,
-    userGroup,
-    source: offerSource,
-    facilityName,
-    facilityId: facilityId,
-    journeyStage,
-    ...(safeIntent ? { watchIntent: safeIntent } : {}),
+  await recordCustomerDelivery({
+    commitmentId: registered.commitmentId,
+    idempotencyKey: commitmentIdempotencyKey([
+      "asset",
+      product,
+      facilityId,
+      normalizedEmail,
+      requestWindowKey(),
+    ]),
+    kind: "asset",
+    status: sent ? "sent" : "failed",
+    templateKey: product,
+    fulfills: sent,
+    error: sent ? undefined : "transactional_not_sent",
   });
 
   recordSubmission({

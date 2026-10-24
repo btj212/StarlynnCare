@@ -8,11 +8,11 @@ async function sendLoopsTransactional(
   to: string,
   transactionalId: string,
   dataVariables: Record<string, string>,
-): Promise<void> {
+): Promise<boolean> {
   const apiKey = process.env.LOOPS_API_KEY;
   if (!apiKey) {
     console.error("[email] LOOPS_API_KEY not set — skipping transactional send");
-    return;
+    return false;
   }
   const res = await fetch("https://app.loops.so/api/v1/transactional", {
     method: "POST",
@@ -24,8 +24,10 @@ async function sendLoopsTransactional(
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`[email] Loops transactional error ${res.status}: ${body}`);
+    console.error("[email] Loops transactional error", res.status, body);
+    return false;
   }
+  return true;
 }
 
 export async function sendAreaWatchUpdate({
@@ -95,7 +97,7 @@ export async function sendWatchConfirmation({
   confirmationToken?: string;
   unsubscribeToken: string;
 }): Promise<void> {
-  return sendWatchWelcome({
+  await sendWatchWelcome({
     to,
     facilityName,
     unsubscribeToken,
@@ -114,13 +116,13 @@ export async function sendWatchWelcome({
   facilityName: string;
   unsubscribeToken: string;
   digest: WatchWelcomeDigest | null;
-}): Promise<void> {
+}): Promise<boolean> {
   const transactionalId =
     process.env.LOOPS_WATCH_WELCOME_ID ?? process.env.LOOPS_WATCH_CONFIRM_ID;
 
   if (!transactionalId) {
     console.error("[watch] LOOPS_WATCH_WELCOME_ID / LOOPS_WATCH_CONFIRM_ID not set — skipping email");
-    return;
+    return false;
   }
 
   const unsubscribeUrl = canonicalFor(`/watch/unsubscribe/${unsubscribeToken}`);
@@ -144,7 +146,7 @@ export async function sendWatchWelcome({
         unsubscribeUrl,
       };
 
-  await sendLoopsTransactional(to, transactionalId, {
+  return sendLoopsTransactional(to, transactionalId, {
     ...dataVariables,
     unsubscribeUrl: dataVariables.unsubscribeUrl ?? unsubscribeUrl,
   });
@@ -162,11 +164,11 @@ export async function sendRecordsEmail({
   to: string;
   digest: WatchWelcomeDigest | null;
   unsubscribeToken: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const transactionalId = process.env.LOOPS_RECORDS_EMAIL_ID;
   if (!transactionalId) {
     console.error("[records-email] LOOPS_RECORDS_EMAIL_ID not set — skipping email");
-    return;
+    return false;
   }
 
   const unsubscribeUrl = canonicalFor(`/watch/unsubscribe/${unsubscribeToken}`);
@@ -174,7 +176,7 @@ export async function sendRecordsEmail({
     ? { ...digest, unsubscribeUrl }
     : { facilityName: "", facilityUrl: "", recordSummary: "", recentEventsText: "", severityRankLine: "", quietPeriodLine: "", unsubscribeUrl };
 
-  await sendLoopsTransactional(to, transactionalId, vars);
+  return sendLoopsTransactional(to, transactionalId, vars);
 }
 
 /**
@@ -191,7 +193,7 @@ export async function sendMagnetEmail({
 }: {
   to: string;
   magnet: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const MAGNET_ENV: Record<string, string> = {
     crisis_checklist: "LOOPS_MAGNET_CRISIS_ID",
     readiness_guide: "LOOPS_MAGNET_READINESS_ID",
@@ -203,14 +205,14 @@ export async function sendMagnetEmail({
   const envKey = MAGNET_ENV[magnet];
   if (!envKey) {
     console.error(`[magnet-email] unknown magnet key "${magnet}" — skipping`);
-    return;
+    return false;
   }
   const transactionalId = process.env[envKey];
   if (!transactionalId) {
-    // Template not yet created in Loops — fall back to Loops welcome automation
-    return;
+    console.error(`[magnet-email] ${envKey} not set — checklist was promised and not sent`);
+    return false;
   }
-  await sendLoopsTransactional(to, transactionalId, {});
+  return sendLoopsTransactional(to, transactionalId, {});
 }
 
 /**
@@ -225,14 +227,14 @@ export async function sendTourEmail({
   to: string;
   digest: TourEmailDigest;
   unsubscribeToken: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const transactionalId = process.env.LOOPS_TOUR_EMAIL_ID;
   if (!transactionalId) {
     console.error("[tour-email] LOOPS_TOUR_EMAIL_ID not set — skipping email");
-    return;
+    return false;
   }
 
   const unsubscribeUrl = canonicalFor(`/watch/unsubscribe/${unsubscribeToken}`);
 
-  await sendLoopsTransactional(to, transactionalId, { ...digest, unsubscribeUrl });
+  return sendLoopsTransactional(to, transactionalId, { ...digest, unsubscribeUrl });
 }

@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Promises live in Supabase; Loops only delivers
+
+**Decided:** Every email capture is a row in `customer_commitments`, keyed by email + product + subject, with fulfillment in `customer_deliveries`. Loops contacts are upserted, and a later signup must not replace `userGroup`. Workflows fire from immutable `signup_<product>` events. One-time guides, records, and tour packs are not ongoing watches. Shortlist is a one-time comparison. The homepage mobile bar opens an Area Watch for one state. Catch-up email stays unsent until `scripts/send_staged_catchups.py --approve`.
+
+**Rejected:** Treating Loops `userGroup` as the source of truth (a second request hid the first). A national severe-citation digest that nothing sent. Auto-emailing the reconciled backlog as part of the ledger deploy.
+
+**Source:** Subscriber promise ledger, migration `0065_customer_commitments.sql`.
+
+---
+
 ## 2026-07 — Facility Watch Premium sits under the first inspection summary
 
 **Decided:** On facility profiles, the Premium checkout block (`FacilityWatchPaid`) renders directly under the first plain-language inspection summary inside `FacilityFullInspections`, not as a mid-page band between Peer Rank and the citation record. Early `FacilityWatchPremiumAnchor` still scrolls to `#facility-watch-premium`. Inspection rows that have a summary show that summary open; full citation / verbatim text is behind “Read full citation text”.

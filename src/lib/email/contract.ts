@@ -24,18 +24,22 @@ import { canonicalFor } from "@/lib/seo/canonical";
  *
  *     Unsubscribe: {unsubscribeUrl}
  */
-export async function sendContractAck({ to }: { to: string }): Promise<void> {
+export async function sendContractAck({
+  to,
+  preferenceUrl,
+}: {
+  to: string;
+  preferenceUrl?: string;
+}): Promise<boolean> {
   const transactionalId = process.env.LOOPS_CONTRACT_EMAIL_ID;
   const apiKey = process.env.LOOPS_API_KEY;
 
   if (!apiKey || !transactionalId) {
     console.error("[contract-email] LOOPS_API_KEY or LOOPS_CONTRACT_EMAIL_ID not set — skipping email");
-    return;
+    return false;
   }
 
-  // We don't have a facility-specific unsubscribe token for the contract offer
-  // (no facility_watchers row is created). Use a generic contact management URL.
-  const unsubscribeUrl = canonicalFor("/unsubscribe");
+  const unsubscribeUrl = preferenceUrl ?? canonicalFor("/unsubscribe");
 
   const res = await fetch("https://app.loops.so/api/v1/transactional", {
     method: "POST",
@@ -52,6 +56,8 @@ export async function sendContractAck({ to }: { to: string }): Promise<void> {
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`[contract-email] Loops transactional error ${res.status}: ${body}`);
+    console.error("[contract-email] Loops transactional error", res.status, body);
+    return false;
   }
+  return true;
 }

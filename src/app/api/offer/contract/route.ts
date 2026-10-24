@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addLoopsContact } from "@/lib/loops";
 import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { sendContractAck } from "@/lib/email/contract";
+import {
+  commitmentIdempotencyKey,
+  preferenceUrl,
+  recordCustomerDelivery,
+  registerCustomerCommitment,
+} from "@/lib/customers/commitments";
+import { addBusinessDays, requestWindowKey } from "@/lib/customers/sla";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
@@ -42,30 +48,49 @@ export async function POST(req: NextRequest) {
   }
 
   const offerSource = source ?? "contract_review_page";
+  const normalizedEmail = email.trim().toLowerCase();
+  const dueAt = addBusinessDays(new Date(), 2).toISOString();
 
-  // Send acknowledgment email — tells user to reply with their PDF
-  try {
-    await sendContractAck({ to: email });
-  } catch (emailErr) {
-    console.error("[offer/contract] email error:", emailErr);
-    // Continue — submission recorded even if email fails
-  }
-
-  // Add to Loops with offer_contract userGroup for automation targeting
-  await addLoopsContact({
-    email,
-    userGroup: "offer_contract",
+  const registered = await registerCustomerCommitment({
+    email: normalizedEmail,
+    product: "contract_review",
+    subjectKey: "admission-agreement",
     source: offerSource,
-    journeyStage: "decision",
+    status: "open",
+    stage: "requested",
+    dueAt,
+    contact: {
+      email: normalizedEmail,
+      userGroup: "offer_contract",
+      source: offerSource,
+      journeyStage: "decision",
+    },
   });
 
-  // Admin audit log
+  const sent = await sendContractAck({
+    to: normalizedEmail,
+    preferenceUrl: preferenceUrl(registered.preferenceToken),
+  });
+
+  await recordCustomerDelivery({
+    commitmentId: registered.commitmentId,
+    idempotencyKey: commitmentIdempotencyKey([
+      "ack",
+      normalizedEmail,
+      requestWindowKey(),
+    ]),
+    kind: "confirmation",
+    status: sent ? "sent" : "failed",
+    templateKey: "contract_ack",
+    error: sent ? undefined : "ack_not_sent",
+  });
+
   recordSubmission({
     type: "contract_review",
-    email,
+    email: normalizedEmail,
     source: offerSource,
     summary: `Contract review request · ${offerSource}`,
-    payload: { source: offerSource },
+    payload: { source: offerSource, stage: "requested", dueAt },
   }).catch((err) => console.error("[offer/contract] recordSubmission failed:", err));
 
   return NextResponse.json({ ok: true });

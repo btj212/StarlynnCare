@@ -1,4 +1,4 @@
-import { addLoopsContact } from "@/lib/loops";
+import { registerCustomerCommitment } from "@/lib/customers/commitments";
 
 export interface WaitlistEntry {
   email: string;
@@ -8,10 +8,19 @@ export interface WaitlistEntry {
 }
 
 export async function addToWaitlist(entry: WaitlistEntry): Promise<void> {
-  await addLoopsContact({
-    email: entry.email,
-    userGroup: "waitlist",
+  const email = entry.email.trim().toLowerCase();
+  await registerCustomerCommitment({
+    email,
+    product: "waitlist",
+    subjectKey: entry.zip?.trim() || entry.path,
     source: entry.path,
-    ...(entry.zip ? { zip: entry.zip } : {}),
+    status: "active",
+    metadata: { zip: entry.zip ?? null, path: entry.path },
+    contact: {
+      email,
+      userGroup: "waitlist",
+      source: entry.path,
+      journeyStage: "orientation",
+    },
   });
 }

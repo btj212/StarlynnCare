@@ -30,6 +30,9 @@ const EVENT_TYPES = [
   { key: "all",            label: "All" },
   { key: "facility_watch", label: "Facility Watch" },
   { key: "area_watch",     label: "Area Watch" },
+  { key: "digest_subscriber", label: "Guides" },
+  { key: "shortlist_watch", label: "Shortlist" },
+  { key: "contract_review", label: "Contract" },
   { key: "listing_report", label: "Listing Report" },
   { key: "review",         label: "Review" },
   { key: "waitlist",       label: "Waitlist" },
@@ -48,6 +51,9 @@ const ALERT_COLORS: Record<string, string> = {
 const TYPE_COLORS: Record<string, string> = {
   facility_watch: "bg-teal-100 text-teal-700",
   area_watch:     "bg-blue-100 text-blue-700",
+  digest_subscriber: "bg-emerald-100 text-emerald-800",
+  shortlist_watch: "bg-amber-100 text-amber-800",
+  contract_review: "bg-rose-100 text-rose-800",
   listing_report: "bg-orange-100 text-orange-700",
   review:         "bg-purple-100 text-purple-700",
   waitlist:       "bg-indigo-100 text-indigo-700",
@@ -116,7 +122,11 @@ export default async function AdminSubmissionsPage({ searchParams }: PageProps) 
       <div>
         <h1 className="text-2xl font-semibold text-navy">Submissions</h1>
         <p className="mt-1 text-sm text-gray-500">
-          All email captures across every form — most recent 200 shown.
+          All email captures across every form — most recent 200 shown.{" "}
+          <Link href="/admin/promises" className="text-teal underline underline-offset-2">
+            Open the promise queue
+          </Link>
+          . Admin-alert status is not proof the customer received anything.
         </p>
       </div>
 
@@ -195,7 +205,9 @@ export default async function AdminSubmissionsPage({ searchParams }: PageProps) 
                     </span>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-ink">
-                    {row.email}
+                    <Link href={`/admin/promises?email=${encodeURIComponent(row.email)}`} className="underline underline-offset-2">
+                      {row.email}
+                    </Link>
                   </td>
                   <td className="max-w-[280px] px-4 py-3 text-xs text-gray-700">
                     <div className="line-clamp-2">{row.summary}</div>
