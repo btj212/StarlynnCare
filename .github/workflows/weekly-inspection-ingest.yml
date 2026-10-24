@@ -48,6 +48,7 @@ jobs:
         run: pip install -r scrapers/requirements.txt
 
       - name: Run weekly inspection ingest (${{ matrix.state }})
+        id: ingest
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -95,7 +96,7 @@ jobs:
           retention-days: 30
 
       - name: Dispatch area and facility watch alerts — ${{ matrix.state }}
-        if: success()
+        if: steps.ingest.outcome == 'success'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
