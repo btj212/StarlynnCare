@@ -85,6 +85,7 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
       changefreq: "monthly" as const,
     })),
     { path: "/library", priority: "0.83", changefreq: "weekly" },
+    { path: "/library/choosing-memory-care", priority: "0.84", changefreq: "monthly" },
     { path: "/library/type-a-vs-type-b-deficiencies-explained", priority: "0.78", changefreq: "monthly" },
     { path: "/library/memory-care-vs-nursing-home", priority: "0.82", changefreq: "monthly" },
     { path: "/library/medi-cal-and-memory-care", priority: "0.82", changefreq: "monthly" },

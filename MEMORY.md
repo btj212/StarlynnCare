@@ -6,6 +6,24 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Ned stays off every list; Orange County is California; no “what was this worth” email
+
+**Decided:** Ned is excluded from every audience and every send until Blake says otherwise. The May Orange County Area Watch is California. The watch starts the day the state was confirmed, with no backlog email. County alerts match the Orange County city list in `src/lib/regions.ts`, because California facilities have no county column. The contract-review reply does not ask what the review was worth. Course emails and “this month in the record” stay drafts until Blake approves a specific preview.
+
+**Rejected:** Guessing another state for Orange County. Sending the empty West Covina or Oregon visit lists before the note is approved. Adding a pricing question to the contract-review follow-up.
+
+**Source:** Blake, 2026-10-24.
+
+## 2026-10 — Records offer won the facility-page test; email campaigns stay off until approved
+
+**Decided:** Every facility profile shows the full-record email offer. The four-way test (records, tour pack, contract, Premium) is over: records produced the signups, and Premium produced none. The confirmation screen can offer the tour pack, contract review, or Premium as a next step the person chooses. Monthly updates, the decision-course email sequence, catch-up notes, and any other campaign stay unsent until Blake approves that audience and that copy. Signup forms keep the current "no spam" line until that approval. A digest script may print a draft and must refuse to send.
+
+**Rejected:** Leaving the offer rotation in place after records won. Auto-enrolling the current list. Rewriting the privacy policy to promise a newsletter before the newsletter is approved.
+
+**Source:** Clarity export 2026-08-26 to 2026-10-24, commitment ledger, email list growth plan.
+
+---
+
 ## 2026-10 — Promises live in Supabase; Loops only delivers
 
 **Decided:** Every email capture is a row in `customer_commitments`, keyed by email + product + subject, with fulfillment in `customer_deliveries`. Loops contacts are upserted, and a later signup must not replace `userGroup`. Workflows fire from immutable `signup_<product>` events. One-time guides, records, and tour packs are not ongoing watches. Shortlist is a one-time comparison. The homepage mobile bar opens an Area Watch for one state. Catch-up email stays unsent until `scripts/send_staged_catchups.py --approve`.

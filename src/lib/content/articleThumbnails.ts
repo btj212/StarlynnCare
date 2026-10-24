@@ -12,6 +12,10 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
     alt:
       "Illustrated grandparent and grandchild walking together on the beach — representing the lifestyle and dignity questions families weigh when choosing between memory care and a nursing home",
   },
+  "/library/choosing-memory-care": {
+    src: "/illustrations/family-facility-tour-hallway.png",
+    alt: "Illustrated daughter and elderly mother being welcomed in a facility hallway — representing a family working through a memory care decision",
+  },
   "/library/when-is-it-time-for-memory-care": {
     src: "/illustrations/kitchen-conversation-two-women.png",
     alt:

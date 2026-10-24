@@ -43,6 +43,11 @@ type ArticleCard = { title: string; desc: string; href: string };
 
 const SECTION_DECISION: ArticleCard[] = [
   {
+    title: "Choosing memory care, one decision at a time",
+    desc: "Five steps: read the record, decide on timing, understand who pays, tour, and review the contract.",
+    href: "/library/choosing-memory-care",
+  },
+  {
     title: "The first 72 hours: a family crisis playbook",
     desc: "Discharge rights, the five questions before signing anything, ombudsman contacts, and a conflict-free shortlist — for families navigating an emergency placement.",
     href: "/library/the-first-72-hours",

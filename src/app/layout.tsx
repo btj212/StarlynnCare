@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Instrument_Serif, Inter_Tight, JetBrains_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { ShortlistProvider } from "@/lib/shortlist/context";
 import { ShortlistBar } from "@/components/shortlist/ShortlistBar";
 import "./globals.css";
@@ -77,12 +76,10 @@ export default function RootLayout({
     <html lang="en" className={`${instrumentSerif.variable} ${interTight.variable} ${jetbrainsMono.variable}`}>
       <body>
         {/* GovernanceBar rendered per-page inside page layouts, not globally, to avoid auth pages */}
-        <ClerkProvider>
-          <ShortlistProvider>
-            {children}
-            <ShortlistBar />
-          </ShortlistProvider>
-        </ClerkProvider>
+        <ShortlistProvider>
+          {children}
+          <ShortlistBar />
+        </ShortlistProvider>
         <Script src="https://analytics.ahrefs.com/analytics.js" data-key="IjDNyQvSmnNGFMK02hdywA" strategy="afterInteractive" />
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
