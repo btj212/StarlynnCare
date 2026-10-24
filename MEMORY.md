@@ -6,6 +6,50 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — California report checks are concurrent, bounded, and fail partial
+
+**Decided:** The routine California CCLD scan still checks every targeted
+publishable facility, but preloads the stored report inventory once and checks
+six facility indexes concurrently. It reuses one HTTP session per worker and
+opens a database connection only when a new report must be stored. A failed
+facility index is an incomplete check: errors make the scraper exit non-zero,
+which keeps the State Watch scan partial and prevents family alerts.
+
+**Outage behavior:** Three bounded request attempts replace six long attempts.
+Twelve consecutive facility-index failures open a circuit breaker; remaining
+homes are explicitly counted as unchecked and the run fails quickly. This is
+not treated as a successful zero-change scan. Routine scans also have a
+30-minute budget; unfinished homes become explicit errors rather than extending
+into the afternoon. The summary reports both targeted facilities and facility
+indexes actually checked.
+
+**Rejected:** Sequentially holding an idle database transaction while waiting
+on CDSS; letting a broad CDSS outage consume the six-hour workflow timeout;
+claiming comprehensive coverage when some facility indexes could not be read.
+
+**Source:** California run `40129407306`, stopped 2026-10-24 after more than two
+hours with zero reports stored.
+
+## 2026-10 — Facility and area watches email on any new inspection
+
+**Decided:** A facility watch and an area watch send when a completed scan adds an inspection, even if the citation count does not rise. More of those emails is the point. The note names the visit and says the citation count stayed put. It is not a rating. `scripts/dispatch_watch_alerts.py` already sends every family-facing delta from a completed scan, including `+0 citations`. Do not add a filter that drops those. The same promise is on Area Watch, Facility Watch Premium, the watch welcome, and “this month in the record.”
+
+**Rejected:** Waiting for a new citation before a watch email. Treating a quiet visit as an empty scan.
+
+**Flag:** A scan that is still running, partial, or failed still sends nothing. California scans have been stuck in `running` since 2026-10-18, so those watchers are not getting notes until a scan completes. Published Loops templates stay as they are until Blake approves a republish. Backlog catch-ups stay unsent until the rewritten notes are approved.
+
+**Source:** Blake, 2026-10-24.
+
+## 2026-10 — A visit with no new citation is the update
+
+**Decided:** When a watcher’s file gains an inspection and the citation count does not rise, that visit is the note. Say the visit date, say the citation count stayed where it was, and link the profile. A quiet visit is reassuring. It is not a star, a grade, or a claim that the older record is clean. Do not hold the note until a citation appears. The same rule applies to area catch-ups and to “this month in the record.”
+
+**Rejected:** Treating a +0-citation visit as nothing to report. Dating the note with the day we noticed the file change instead of the visit date on the profile. Awarding a gold star or any other score for a visit that added no citation.
+
+**Flag:** This replaces the catch-up instruction in migration `0065_customer_commitments.sql` that said to skip inspection-count bumps with no new citations. That migration stays as history. The West Covina and Oregon notes Blake approved on 2026-10-24 used the old framing and were rewritten the same day. They are not approved again until Blake says so. Still do not send before that approval.
+
+**Source:** Blake, 2026-10-24.
+
 ## 2026-10 — Ned stays off every list; Orange County is California; no “what was this worth” email
 
 **Decided:** Ned is excluded from every audience and every send until Blake says otherwise. The May Orange County Area Watch is California. The watch starts the day the state was confirmed, with no backlog email. County alerts match the Orange County city list in `src/lib/regions.ts`, because California facilities have no county column. The contract-review reply does not ask what the review was worth. Course emails and “this month in the record” stay drafts until Blake approves a specific preview.

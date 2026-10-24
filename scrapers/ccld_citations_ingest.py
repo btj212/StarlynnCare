@@ -43,7 +43,9 @@ import argparse
 import os
 import re
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -208,11 +210,25 @@ SCRAPER_NAME = "cdss_ccld_citations_alameda"
 TRANSPARENCY_BASE = "https://www.ccld.dss.ca.gov/transparencyapi/api"
 SOURCE_AGENCY = "California CDSS / Community Care Licensing Division"
 
-REQUEST_DELAY_SECS = 0.6
+REQUEST_DELAY_SECS = 0.25
 
 # Network hardening
-HTTP_TIMEOUT_SECS = 30
-HTTP_MAX_RETRIES = 6
+HTTP_TIMEOUT_SECS = 20
+HTTP_MAX_RETRIES = 3
+DEFAULT_WORKERS = 6
+INDEX_FAILURE_THRESHOLD = 12
+DEFAULT_MAX_MINUTES = 30
+_HTTP_LOCAL = threading.local()
+
+
+def _http_session() -> requests.Session:
+    """Reuse TLS connections within each worker without sharing sessions."""
+    session = getattr(_HTTP_LOCAL, "session", None)
+    if session is None:
+        session = requests.Session()
+        session.headers.update({"User-Agent": "Mozilla/5.0"})
+        _HTTP_LOCAL.session = session
+    return session
 
 
 def _get_with_retries(
@@ -224,13 +240,15 @@ def _get_with_retries(
     last_exc: Exception | None = None
     for attempt in range(max_retries):
         try:
-            r = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
+            r = _http_session().get(url, timeout=timeout)
             # Some facilities return 400 for invalid inx; callers handle it.
             if r.status_code in (429, 500, 502, 503, 504):
                 raise requests.HTTPError(f"HTTP {r.status_code}", response=r)
             return r
         except Exception as e:  # noqa: BLE001 - intentional broad retry boundary
             last_exc = e
+            if attempt == max_retries - 1:
+                break
             sleep = min(20.0, 0.8 * (2 ** attempt))
             if isinstance(e, requests.HTTPError) and getattr(e, "response", None) is not None:
                 ra = e.response.headers.get("Retry-After")
@@ -239,6 +257,30 @@ def _get_with_retries(
             print(f"Retrying request ({attempt+1}/{max_retries}) after {sleep:.1f}s: {url}", file=sys.stderr)
             time.sleep(sleep)
     raise RuntimeError(f"Request failed after {max_retries} attempts: {url}") from last_exc
+
+
+class IndexCircuitBreaker:
+    """Stop a run quickly when CDSS is broadly unavailable."""
+
+    def __init__(self, failure_threshold: int = INDEX_FAILURE_THRESHOLD) -> None:
+        self.failure_threshold = failure_threshold
+        self._consecutive_failures = 0
+        self._open = threading.Event()
+        self._lock = threading.Lock()
+
+    @property
+    def is_open(self) -> bool:
+        return self._open.is_set()
+
+    def record_success(self) -> None:
+        with self._lock:
+            self._consecutive_failures = 0
+
+    def record_failure(self) -> None:
+        with self._lock:
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= self.failure_threshold:
+                self._open.set()
 
 # Regex that detects dementia-care regulation citations in section numbers
 DEMENTIA_SECTION_RE = re.compile(r"8770[56]")
@@ -626,6 +668,11 @@ def parse_report(
         "narrative_text": narrative_text,
         "deficiencies": deficiencies,
         "has_dementia_citation": has_dementia_citation,
+        "report_index_metadata": {
+            "report_type": report_meta.get("REPORTTYPE"),
+            "report_date": report_meta.get("REPORTDATE"),
+            "control_number": report_meta.get("CONTROLNUMBER"),
+        },
         "source_url": source_url,
         "raw_html_len": len(html),
     }
@@ -645,6 +692,30 @@ def get_already_ingested_urls(
             (facility_id,),
         )
         return {row[0] for row in cur.fetchall()}
+
+
+def load_ingested_urls(
+    conn: psycopg.Connection,
+    facility_ids: list[str],
+) -> dict[str, set[str]]:
+    """Load existing report URLs once instead of querying once per facility."""
+    by_facility = {facility_id: set() for facility_id in facility_ids}
+    if not facility_ids:
+        return by_facility
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT facility_id::text, source_url
+            FROM inspections
+            WHERE facility_id = ANY(%s::uuid[])
+              AND source_url IS NOT NULL
+            """,
+            (facility_ids,),
+        )
+        for facility_id, source_url in cur.fetchall():
+            by_facility[facility_id].add(source_url)
+    return by_facility
 
 
 def insert_inspection(
@@ -688,6 +759,7 @@ def insert_inspection(
                     "inspector_name": parsed["inspector_name"],
                     "narrative": parsed["narrative_text"][:10000],
                     "raw_html_len": parsed["raw_html_len"],
+                    "report_index_metadata": parsed["report_index_metadata"],
                 }),
             ),
         )
@@ -770,10 +842,14 @@ def promote_memory_care(
 
 def process_facility(
     facility: dict[str, Any],
-    conn: psycopg.Connection,
+    conn: psycopg.Connection | None,
     scrape_run_id: str,
     dry_run: bool = False,
     refetch: bool = False,
+    already_ingested: set[str] | None = None,
+    dsn: str = "",
+    index_breaker: IndexCircuitBreaker | None = None,
+    deadline: float | None = None,
 ) -> dict[str, int]:
     fac_id = facility["id"]
     fac_name = facility["name"]
@@ -787,19 +863,36 @@ def process_facility(
         "deficiencies": 0,
         "dementia_citations": 0,
         "errors": 0,
+        "index_checked": 0,
     }
 
     if not fac_num or fac_num == "000000000":
         print(f"  Skipping — no license number: {fac_name}")
         return stats
 
-    # Fetch report index
+    if deadline is not None and time.monotonic() >= deadline:
+        print(f"  Scan time budget exhausted — not checked: {fac_name}")
+        stats["errors"] += 1
+        return stats
+
+    # Fetch report index. If CDSS is broadly down, leave the remaining homes
+    # unchecked and fail the run instead of waiting hours on identical retries.
+    if index_breaker is not None and index_breaker.is_open:
+        print(f"  CDSS unavailable — not checked: {fac_name}")
+        stats["errors"] += 1
+        return stats
+
     try:
         index_data = fetch_report_index(fac_num)
     except Exception as e:
         print(f"  ERROR fetching report index for {fac_name}: {e}")
+        if index_breaker is not None:
+            index_breaker.record_failure()
         stats["errors"] += 1
         return stats
+    if index_breaker is not None:
+        index_breaker.record_success()
+    stats["index_checked"] = 1
 
     count = index_data.get("COUNT", 0)
     report_array = index_data.get("REPORTARRAY", [])
@@ -811,9 +904,11 @@ def process_facility(
 
     print(f"  {fac_name}: {count} reports")
 
-    already_ingested: set[str] = set()
+    known_urls = already_ingested or set()
     if not dry_run:
         if refetch:
+            if conn is None:
+                raise ValueError("refetch requires an open database connection")
             # Delete all existing inspections (cascades to deficiencies) and start clean
             with conn.cursor() as cur:
                 cur.execute(
@@ -822,17 +917,25 @@ def process_facility(
                 )
             conn.commit()
             print(f"  -- Cleared existing inspections for refetch")
-        else:
-            already_ingested = get_already_ingested_urls(conn, fac_id)
+            known_urls = set()
+        elif already_ingested is None:
+            if conn is None:
+                raise ValueError("database connection or preloaded URLs required")
+            known_urls = get_already_ingested_urls(conn, fac_id)
 
     promoted = False
+    parsed_reports: list[dict[str, Any]] = []
     for inx in range(1, count + 1):
+        if deadline is not None and time.monotonic() >= deadline:
+            print(f"    Scan time budget exhausted during {fac_name}")
+            stats["errors"] += 1
+            break
         meta = report_array[inx - 1] if inx <= len(report_array) else {}
         source_url = (
             f"{TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx={inx}"
         )
 
-        if source_url in already_ingested:
+        if source_url in known_urls:
             stats["reports_skipped"] += 1
             continue
 
@@ -869,35 +972,53 @@ def process_facility(
                 stats["dementia_citations"] += 1
             continue
 
-        # Write to DB
-        try:
-            inspection_id = insert_inspection(conn, fac_id, parsed, scrape_run_id)
-            insert_deficiencies(conn, inspection_id, parsed["deficiencies"])
-            conn.commit()
-            stats["reports_ingested"] += 1
-            stats["deficiencies"] += n_def
+        parsed_reports.append(parsed)
 
-            if parsed["has_dementia_citation"]:
-                stats["dementia_citations"] += 1
-                if not promoted and not facility.get("serves_memory_care"):
-                    promote_memory_care(conn, fac_id, fac_name)
-                    conn.commit()
-                    promoted = True
+    if dry_run or not parsed_reports:
+        return stats
 
-        except Exception as e:
-            conn.rollback()
-            print(f"    inx={inx} DB error: {e}")
-            stats["errors"] += 1
+    def store_reports(write_conn: psycopg.Connection) -> None:
+        nonlocal promoted
+        for parsed in parsed_reports:
+            n_def = len(parsed["deficiencies"])
+            try:
+                inspection_id = insert_inspection(
+                    write_conn, fac_id, parsed, scrape_run_id
+                )
+                insert_deficiencies(
+                    write_conn, inspection_id, parsed["deficiencies"]
+                )
+                write_conn.commit()
+                stats["reports_ingested"] += 1
+                stats["deficiencies"] += n_def
+
+                if parsed["has_dementia_citation"]:
+                    stats["dementia_citations"] += 1
+                    if not promoted and not facility.get("serves_memory_care"):
+                        promote_memory_care(write_conn, fac_id, fac_name)
+                        write_conn.commit()
+                        promoted = True
+            except Exception as e:
+                write_conn.rollback()
+                print(f"    DB error: {e}")
+                stats["errors"] += 1
+
+    # Network requests happen before opening a write connection. This avoids
+    # holding an idle transaction while CDSS is slow or retrying.
+    if conn is not None:
+        store_reports(conn)
+    else:
+        with psycopg.connect(dsn, connect_timeout=30) as write_conn:
+            store_reports(write_conn)
 
     return stats
-
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="CDSS CCLD citation scraper → inspections + deficiencies"
     )
@@ -945,6 +1066,24 @@ def main() -> None:
             "and re-inserts from scratch. Use with --license to limit scope."
         ),
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=DEFAULT_WORKERS,
+        help=(
+            "Facilities checked concurrently (default: "
+            f"{DEFAULT_WORKERS}; use 1 for sequential diagnostics)."
+        ),
+    )
+    parser.add_argument(
+        "--max-minutes",
+        type=int,
+        default=DEFAULT_MAX_MINUTES,
+        help=(
+            "Maximum routine scan duration before failing partial "
+            f"(default: {DEFAULT_MAX_MINUTES})."
+        ),
+    )
     args = parser.parse_args()
 
     geo_filters = sum(
@@ -952,6 +1091,13 @@ def main() -> None:
     )
     if geo_filters > 1:
         parser.error("Use only one of --city, --county, --region")
+    if args.workers < 1 or args.workers > 12:
+        parser.error("--workers must be between 1 and 12")
+    if args.max_minutes < 1 or args.max_minutes > 180:
+        parser.error("--max-minutes must be between 1 and 180")
+    if args.refetch and args.workers != 1:
+        print("--refetch is destructive; using one worker.", flush=True)
+        args.workers = 1
 
     load_env()
 
@@ -966,6 +1112,7 @@ def main() -> None:
 
     # ── Load facilities ──────────────────────────────────────────────────
     print("Loading California facilities...", flush=True)
+    ingested_urls: dict[str, set[str]] = {}
     with psycopg.connect(dsn, connect_timeout=30) as conn:
         conn.execute("SET statement_timeout = '120s'")
         query = """
@@ -1000,13 +1147,27 @@ def main() -> None:
     if args.smoke:
         facilities = facilities[:3]
 
-    print(f"Facilities to process: {len(facilities)}")
+    if not args.dry_run and not args.refetch:
+        print("Loading existing California report inventory...", flush=True)
+        with psycopg.connect(dsn, connect_timeout=30) as conn:
+            conn.execute("SET statement_timeout = '120s'")
+            ingested_urls = load_ingested_urls(
+                conn, [facility["id"] for facility in facilities]
+            )
+
+    print(
+        f"Facilities to process: {len(facilities)} "
+        f"({args.workers} concurrent workers)",
+        flush=True,
+    )
     if args.dry_run:
         print("(DRY RUN — no DB writes)\n")
 
     # ── Open scrape_run ──────────────────────────────────────────────────
     scrape_run_id = "00000000-0000-0000-0000-000000000000"
     started_at = datetime.now(timezone.utc)
+    started_monotonic = time.monotonic()
+    deadline = started_monotonic + (args.max_minutes * 60)
 
     if not args.dry_run:
         with psycopg.connect(dsn) as conn:
@@ -1031,21 +1192,44 @@ def main() -> None:
         "deficiencies": 0,
         "dementia_citations": 0,
         "errors": 0,
+        "index_checked": 0,
         "facilities_processed": 0,
     }
 
     error_log_parts: list[str] = []
+    index_breaker = IndexCircuitBreaker()
 
-    for fac in facilities:
-        print(f"\n[{totals['facilities_processed']+1}/{len(facilities)}] "
-              f"{fac['name']} ({fac['city']})")
-
+    def process_one(fac: dict[str, Any]) -> dict[str, int]:
         if args.dry_run:
-            stats = process_facility(fac, None, scrape_run_id, dry_run=True)
-        else:
+            return process_facility(
+                fac,
+                None,
+                scrape_run_id,
+                dry_run=True,
+                deadline=deadline,
+            )
+        if args.refetch:
             with psycopg.connect(dsn) as conn:
-                stats = process_facility(fac, conn, scrape_run_id, dry_run=False, refetch=args.refetch)
+                return process_facility(
+                    fac,
+                    conn,
+                    scrape_run_id,
+                    dry_run=False,
+                    refetch=True,
+                    deadline=deadline,
+                )
+        return process_facility(
+            fac,
+            None,
+            scrape_run_id,
+            dry_run=False,
+            already_ingested=ingested_urls.get(fac["id"], set()),
+            dsn=dsn,
+            index_breaker=index_breaker,
+            deadline=deadline,
+        )
 
+    def record_result(fac: dict[str, Any], stats: dict[str, int]) -> None:
         for k in totals:
             if k in stats:
                 totals[k] += stats[k]
@@ -1055,6 +1239,37 @@ def main() -> None:
             error_log_parts.append(
                 f"{fac['name']}: {stats['errors']} errors"
             )
+        print(
+            f"Progress {totals['facilities_processed']}/{len(facilities)}: "
+            f"{fac['name']} — {stats['reports_ingested']} new, "
+            f"{stats['errors']} errors",
+            flush=True,
+        )
+
+    if args.workers == 1:
+        for fac in facilities:
+            record_result(fac, process_one(fac))
+    else:
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = {
+                executor.submit(process_one, fac): fac for fac in facilities
+            }
+            for future in as_completed(futures):
+                fac = futures[future]
+                try:
+                    stats = future.result()
+                except Exception as e:
+                    print(f"  ERROR processing {fac['name']}: {e}")
+                    stats = {
+                        "reports_seen": 0,
+                        "reports_ingested": 0,
+                        "reports_skipped": 0,
+                        "deficiencies": 0,
+                        "dementia_citations": 0,
+                        "errors": 1,
+                        "index_checked": 0,
+                    }
+                record_result(fac, stats)
 
     # ── Close scrape_run ─────────────────────────────────────────────────
     run_status = "success" if not error_log_parts else "partial"
@@ -1082,20 +1297,28 @@ def main() -> None:
             conn.commit()
 
     # ── Summary ──────────────────────────────────────────────────────────
+    summary_status = (
+        "DRY RUN"
+        if args.dry_run
+        else ("PARTIAL" if totals["errors"] else "COMPLETE")
+    )
     print(f"\n{'='*60}")
-    print(f"Phase D citations ingest — {'DRY RUN' if args.dry_run else 'COMPLETE'}")
+    print(f"Phase D citations ingest — {summary_status}")
     print(f"{'='*60}")
     print(f"  Facilities processed  : {totals['facilities_processed']}")
+    print(f"  Facility indexes checked: {totals['index_checked']}")
     print(f"  Reports seen          : {totals['reports_seen']}")
     print(f"  Reports ingested      : {totals['reports_ingested']}")
     print(f"  Reports skipped       : {totals['reports_skipped']} (already in DB)")
     print(f"  Deficiencies stored   : {totals['deficiencies']}")
     print(f"  §87705/87706 citations: {totals['dementia_citations']}")
     print(f"  Errors                : {totals['errors']}")
+    print(f"  Elapsed seconds       : {time.monotonic() - started_monotonic:.1f}")
     if not args.dry_run:
         print(f"  scrape_run id         : {scrape_run_id}")
     print(f"{'='*60}")
+    return 1 if totals["errors"] else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
