@@ -453,6 +453,15 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   NORTH STAR ASSISTED LIVING, RISEN HOME CARE LLC, SOURIYATHAY ENTERPRISES LLC, VAIMAR SUITES LLC —
 #   resolved dates 1/09–9/29); MN resolved max=2026-10-14 unchanged; all other states no new probe-layer
 #   signal (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 39869381725 + Sunday 39126360904).
+# Run 40037764267 (2026-10-23T23:06 UTC, push after cron probe 2026-10-23): MN +11 inspections
+#   (5169→5180), max=2026-10-14 unchanged; AZ +9 max=2026-10-22; OR +0 max=2026-10-21; Layer 5
+#   post-ingest denorm failed — ingest steps succeeded.
+# Run 40063182079 (2026-10-24T04:39 UTC, push #179): all matrix states +0 inspections (idempotent).
+# Cron probe 2026-10-24T23:01 UTC: OR source max=2026-10-21 (unchanged vs ingested max 2026-10-21);
+#   MN insertDate max=2026-10-24 (+4 survey PDFs vs LAST_MN_INSERT_BASELINE 2026-10-23: 3D INNOVATIVE
+#   CARES LLC resolved 9/10; ESTHERRA CARE LLC resolved 9/24; GENESIS ASSISTED LIVING LLC resolved
+#   7/30; HEATHERS MANOR resolved 5/21); MN resolved max=2026-10-14 unchanged; all other states no
+#   new probe-layer signal (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 40063182079 + 40037764267).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
@@ -462,12 +471,12 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "MN": date(2026, 10, 14),
     "UT": date(2026, 9, 15),
     "IL": date(2026, 5, 6),
-    "PA": date(2026, 9, 8),
-    "AZ": date(2026, 10, 8),
+    "PA": date(2026, 10, 16),  # GHA 40063182079 matrix
+    "AZ": date(2026, 10, 22),  # GHA 40037764267 +9
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 10, 22)
+LAST_MN_INSERT_BASELINE = date(2026, 10, 23)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
