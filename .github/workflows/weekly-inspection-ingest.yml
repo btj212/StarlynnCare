@@ -33,9 +33,6 @@ on:
 
 jobs:
   ingest:
-    # A manual run for one state must not start the other states. Their
-    # follow-up check would fail and email an admin alert for a scan we skipped.
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.state == '' || inputs.state == matrix.state }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
@@ -71,13 +68,15 @@ jobs:
             ARGS+=(--skip-ca)
           fi
           if [ -n "${{ inputs.state }}" ] && [ "${{ inputs.state }}" != "${{ matrix.state }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "Skipping ${{ matrix.state }} (workflow_dispatch targeted ${{ inputs.state }})"
             exit 0
           fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
           python3 scripts/weekly_inspection_ingest.py "${ARGS[@]}" --skip-validate --scan-run-output /tmp/state-watch-run-id
 
       - name: Layer 5 post-ingest — ${{ matrix.state }}
-        if: success()
+        if: success() && steps.ingest.outputs.skip != 'true'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python3 scripts/validate/post_ingest_check.py --state ${{ matrix.state }}
@@ -114,7 +113,7 @@ jobs:
         run: python3 scripts/dispatch_watch_alerts.py --scan-run-id "$(tr -d '\n' < /tmp/state-watch-run-id)"
 
       - name: Notify admin of failed scan — ${{ matrix.state }}
-        if: failure()
+        if: failure() && steps.ingest.outputs.skip != 'true'
         env:
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
           LOOPS_ADMIN_ALERT_ID: ${{ secrets.LOOPS_ADMIN_ALERT_ID }}
