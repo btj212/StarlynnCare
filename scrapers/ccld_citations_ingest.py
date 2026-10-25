@@ -698,17 +698,20 @@ def fetch_report_index(
 def wait_for_report_api(
     fac_num: str,
     *,
+    alternates: list[str] | None = None,
     attempts: int = 4,
     pause_seconds: float = 15.0,
     deadline: float | None = None,
 ) -> bool:
     """Warm the bursty CDSS report service before releasing concurrent work."""
+    candidates = [fac_num, *(alternates or [])]
     for attempt in range(1, attempts + 1):
         if deadline is not None and time.monotonic() >= deadline:
             return False
+        target = candidates[(attempt - 1) % len(candidates)]
         try:
-            probed = fetch_report_index(fac_num, max_retries=1)
-            _PREFLIGHT_INDEX[str(fac_num).zfill(9)] = probed
+            probed = fetch_report_index(target, max_retries=1)
+            _PREFLIGHT_INDEX[str(target).zfill(9)] = probed
             print(f"CDSS report API ready (probe {attempt}/{attempts}).", flush=True)
             return True
         except Exception as exc:
@@ -718,6 +721,10 @@ def wait_for_report_api(
             )
             if attempt < attempts:
                 time.sleep(pause_seconds)
+    print(
+        "CDSS report API unavailable after bounded startup probes",
+        flush=True,
+    )
     return False
 
 
@@ -1864,8 +1871,14 @@ def main() -> int:
     index_breaker = IndexCircuitBreaker()
     pending_snapshot_updates: list[tuple[str, str, dict[str, Any]]] = []
 
-    if api_facilities and not wait_for_report_api(
-        str(api_facilities[0]["license_number"]).zfill(9),
+    probe_targets = [
+        str(facility["license_number"]).zfill(9)
+        for facility in api_facilities[:4]
+        if facility.get("license_number")
+    ]
+    if probe_targets and not wait_for_report_api(
+        probe_targets[0],
+        alternates=probe_targets[1:],
         deadline=deadline,
     ):
         error_log_parts.append(
