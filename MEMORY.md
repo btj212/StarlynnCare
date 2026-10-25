@@ -584,6 +584,23 @@ or produce a complete/no-change claim.
 **Source:** `scrapers/ccld_citations_ingest.py`,
 `scripts/test_ccld_citations_ingest.py`.
 
+## 2026-10 — California crawl runs locally, not from GitHub
+
+**Decided:** The routine California watch is a macOS launchd job at
+`~/Developer/StarlynnCare`, outside iCloud. `DATABASE_URL` lives in Keychain
+service `starlynncare-database-url`. The job downloads the statewide CSV,
+deep-checks only missing or changed snapshots plus Maple Manor and Desert
+Hills Memory Care Center, and paces CDSS calls from a local health history.
+It does not dispatch customer alerts.
+
+**Why:** The same report endpoint answers from this Mac and times out from
+GitHub-hosted runners. The checkout under Documents is iCloud-backed, so Git
+and generated PDFs stall or fill the disk.
+
+**Source:** `scripts/run_ca_watch_local.sh`,
+`scripts/launchd/com.starlynncare.ca-watch.plist`,
+`scrapers/ccld_citations_ingest.py`.
+
 ---
 
 <!-- New session summaries go above this line -->

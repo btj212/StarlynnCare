@@ -315,6 +315,20 @@ retry incomplete facilities on the next pass.
 **Source:** `scrapers/ccld_citations_ingest.py`,
 `scripts/test_ccld_citations_ingest.py`.
 
+## 2026-10 — GitHub-hosted retries cannot reach CDSS
+
+**What didn't work:** Re-running the California report crawl from GitHub
+Actions. Four bounded probes to the same facility index all timed out, while
+the identical request from this Mac returned a report list. More hosted
+retries just repeated the outage and could not build the missing baselines.
+
+**What worked instead:** Run regulator requests from the Mac. Keep the
+statewide CSV as the fast check, and only deep-check facilities whose
+snapshot is missing or changed, plus the two homes absent from the bulk file.
+
+**Source:** `scripts/run_ca_watch_local.sh`,
+`scrapers/ccld_citations_ingest.py`.
+
 ---
 
 <!-- New entries go above this line. Format:

@@ -45,7 +45,9 @@ import hashlib
 import io
 import json
 import os
+import random
 import re
+import subprocess
 import sys
 import threading
 import time
@@ -219,14 +221,190 @@ BULK_URL = f"{TRANSPARENCY_BASE}/DownloadStateData/ResidentialElderCareFacility"
 
 REQUEST_DELAY_SECS = 0.25
 
-# Network hardening
+# Network hardening. Adaptive runs stay between one and four workers.
+# An explicit --workers override may still use the wider diagnostic range.
 HTTP_TIMEOUT_SECS = 20
 HTTP_MAX_RETRIES = 3
-DEFAULT_WORKERS = 8
+ADAPTIVE_WORKER_MIN = 1
+ADAPTIVE_WORKER_MAX = 4
 INDEX_FAILURE_THRESHOLD = 12
 DEFAULT_MAX_MINUTES = 30
+BULK_FALLBACK_LICENSES = frozenset({"372004436", "331880722"})
+KEYCHAIN_SERVICE = "starlynncare-database-url"
+KEYCHAIN_ACCOUNT = "starlynncare"
+SUPPORT_DIR = Path.home() / "Library/Application Support/StarlynnCare"
+WEATHER_PATH = SUPPORT_DIR / "cdss-weather.json"
+VAULT_ROOT = SUPPORT_DIR / "regulator-vault"
 _HTTP_LOCAL = threading.local()
 _CLIENT_GUID = str(uuid.uuid4())
+WEATHER_RETRY_SCALE = 1.0
+
+
+class RequestPacer:
+    """Space regulator calls so parallel workers cannot retry in lockstep."""
+
+    def __init__(self, min_interval: float = 0.0) -> None:
+        self.min_interval = min_interval
+        self._lock = threading.Lock()
+        self._next_at = 0.0
+        self.requests = 0
+        self.successes = 0
+        self.timeouts = 0
+        self.latency_ms: list[float] = []
+
+    def acquire(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            wait = max(0.0, self._next_at - now)
+            spread = random.uniform(0.0, self.min_interval)
+            self._next_at = max(now, self._next_at) + self.min_interval + spread
+        if wait:
+            time.sleep(wait)
+
+    def record(self, *, ok: bool, latency_ms: float, timed_out: bool) -> None:
+        with self._lock:
+            self.requests += 1
+            self.latency_ms.append(latency_ms)
+            if ok:
+                self.successes += 1
+            if timed_out:
+                self.timeouts += 1
+                self.min_interval = min(2.0, max(self.min_interval, 0.35) * 1.5)
+            elif ok and latency_ms < 1500 and self.min_interval > 0.2:
+                self.min_interval = max(0.2, self.min_interval * 0.95)
+
+
+PACER = RequestPacer()
+_PREFLIGHT_INDEX: dict[str, dict[str, Any]] = {}
+
+
+def retry_sleep_seconds(attempt: int, retry_after: str | None = None) -> float:
+    """Exponential backoff with jitter, widened when this hour has been unhealthy."""
+    if retry_after and str(retry_after).isdigit():
+        base = min(60.0, float(retry_after))
+        sleep = base + random.uniform(0.0, min(5.0, base * 0.25))
+    else:
+        base = min(20.0, 0.8 * (2 ** attempt))
+        sleep = base * random.uniform(0.5, 1.5)
+    return sleep * WEATHER_RETRY_SCALE
+
+
+def recommend_worker_count(samples: list[dict[str, Any]]) -> int:
+    """Choose 1–4 workers from recent CDSS latency and timeout rate."""
+    recent = samples[-8:]
+    requests_made = sum(int(sample.get("requests") or 0) for sample in recent)
+    if requests_made < 5:
+        return ADAPTIVE_WORKER_MIN
+    timeouts = sum(int(sample.get("timeouts") or 0) for sample in recent)
+    latencies = [
+        float(sample["latency_ms"])
+        for sample in recent
+        if sample.get("latency_ms") is not None
+    ]
+    average_latency = sum(latencies) / len(latencies) if latencies else 10_000.0
+    timeout_rate = timeouts / requests_made
+    if timeout_rate > 0.2 or average_latency > 8_000:
+        return 1
+    if timeout_rate < 0.05 and average_latency < 2_500:
+        return ADAPTIVE_WORKER_MAX
+    return 2
+
+
+def retry_scale_for_hour(samples: list[dict[str, Any]], hour: int) -> float:
+    relevant = [sample for sample in samples if sample.get("hour") == hour]
+    requests_made = sum(int(sample.get("requests") or 0) for sample in relevant)
+    if requests_made < 3:
+        return 1.0
+    timeouts = sum(int(sample.get("timeouts") or 0) for sample in relevant)
+    if timeouts / requests_made > 0.3:
+        return 1.75
+    return 1.0
+
+
+def best_observed_hour(samples: list[dict[str, Any]]) -> int | None:
+    by_hour: dict[int, dict[str, int]] = {}
+    for sample in samples:
+        if sample.get("hour") is None:
+            continue
+        bucket = by_hour.setdefault(int(sample["hour"]), {"requests": 0, "timeouts": 0})
+        bucket["requests"] += int(sample.get("requests") or 0)
+        bucket["timeouts"] += int(sample.get("timeouts") or 0)
+    ranked = [
+        (bucket["timeouts"] / bucket["requests"], hour)
+        for hour, bucket in by_hour.items()
+        if bucket["requests"] >= 3
+    ]
+    if not ranked:
+        return None
+    ranked.sort()
+    return ranked[0][1]
+
+
+def load_weather() -> dict[str, Any]:
+    try:
+        data = json.loads(WEATHER_PATH.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {"samples": []}
+    if not isinstance(data, dict) or not isinstance(data.get("samples"), list):
+        return {"samples": []}
+    return data
+
+
+def record_weather(workers: int) -> None:
+    samples = list(load_weather().get("samples") or [])
+    latencies = sorted(PACER.latency_ms)
+    median = latencies[len(latencies) // 2] if latencies else None
+    samples.append(
+        {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "hour": datetime.now().astimezone().hour,
+            "requests": PACER.requests,
+            "timeouts": PACER.timeouts,
+            "successes": PACER.successes,
+            "latency_ms": median,
+            "workers": workers,
+        }
+    )
+    WEATHER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    WEATHER_PATH.write_text(json.dumps({"samples": samples[-48:]}))
+
+
+def stage_regulator_original(report_key: str, html: str) -> None:
+    """Optional content-addressed copy. Off unless explicitly requested."""
+    if os.environ.get("STARLYNN_REGULATOR_VAULT") != "1":
+        return
+    try:
+        destination = VAULT_ROOT / report_key[:2] / f"{report_key}.html"
+        if destination.is_file():
+            return
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(html, encoding="utf-8")
+        manifest = VAULT_ROOT / "manifest.jsonl"
+        digest = hashlib.sha256(html.encode()).hexdigest()
+        with manifest.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"key": report_key, "sha256": digest}) + "\n")
+    except OSError as exc:
+        print(f"    regulator vault stage skipped: {exc}", file=sys.stderr)
+
+
+def publish_regulator_vault() -> None:
+    if os.environ.get("STARLYNN_REGULATOR_VAULT") != "1" or not VAULT_ROOT.is_dir():
+        return
+    try:
+        subprocess.run(
+            [
+                "rclone",
+                "copy",
+                str(VAULT_ROOT),
+                "starlynn-gdrive:StarlynnCare Data Archive/CDSS Report Vault",
+                "--retries",
+                "2",
+            ],
+            check=False,
+            timeout=120,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print(f"Regulator vault upload skipped: {exc}", file=sys.stderr)
 
 
 def _http_session() -> requests.Session:
@@ -264,22 +442,44 @@ def _get_with_retries(
 ) -> requests.Response:
     last_exc: Exception | None = None
     for attempt in range(max_retries):
+        started = time.monotonic()
         try:
-            r = _http_session().get(url, timeout=timeout)
+            PACER.acquire()
+            response = _http_session().get(url, timeout=timeout)
+            elapsed_ms = (time.monotonic() - started) * 1000
             # Some facilities return 400 for invalid inx; callers handle it.
-            if r.status_code in (429, 500, 502, 503, 504):
-                raise requests.HTTPError(f"HTTP {r.status_code}", response=r)
-            return r
-        except Exception as e:  # noqa: BLE001 - intentional broad retry boundary
-            last_exc = e
+            if response.status_code in (429, 500, 502, 503, 504):
+                PACER.record(
+                    ok=False,
+                    latency_ms=elapsed_ms,
+                    timed_out=response.status_code >= 500,
+                )
+                raise requests.HTTPError(
+                    f"HTTP {response.status_code}",
+                    response=response,
+                )
+            PACER.record(ok=True, latency_ms=elapsed_ms, timed_out=False)
+            return response
+        except Exception as exc:  # noqa: BLE001 - intentional broad retry boundary
+            last_exc = exc
+            if not isinstance(exc, requests.HTTPError):
+                PACER.record(
+                    ok=False,
+                    latency_ms=(time.monotonic() - started) * 1000,
+                    timed_out=isinstance(
+                        exc, (requests.Timeout, requests.ConnectionError)
+                    ),
+                )
             if attempt == max_retries - 1:
                 break
-            sleep = min(20.0, 0.8 * (2 ** attempt))
-            if isinstance(e, requests.HTTPError) and getattr(e, "response", None) is not None:
-                ra = e.response.headers.get("Retry-After")
-                if ra and ra.isdigit():
-                    sleep = min(60.0, float(ra))
-            print(f"Retrying request ({attempt+1}/{max_retries}) after {sleep:.1f}s: {url}", file=sys.stderr)
+            retry_after = None
+            if isinstance(exc, requests.HTTPError) and getattr(exc, "response", None) is not None:
+                retry_after = exc.response.headers.get("Retry-After")
+            sleep = retry_sleep_seconds(attempt, retry_after)
+            print(
+                f"Retrying request ({attempt + 1}/{max_retries}) after {sleep:.1f}s: {url}",
+                file=sys.stderr,
+            )
             time.sleep(sleep)
     raise RuntimeError(f"Request failed after {max_retries} attempts: {url}") from last_exc
 
@@ -389,11 +589,39 @@ NARRATIVE_CITATION_RE = re.compile(
 # ---------------------------------------------------------------------------
 
 
+def load_keychain_database_url() -> None:
+    """Read the local DSN without writing an env file or printing the secret."""
+    if os.environ.get("DATABASE_URL"):
+        return
+    try:
+        result = subprocess.run(
+            [
+                "security",
+                "find-generic-password",
+                "-s",
+                KEYCHAIN_SERVICE,
+                "-a",
+                KEYCHAIN_ACCOUNT,
+                "-w",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    value = result.stdout.strip()
+    if result.returncode == 0 and value:
+        os.environ["DATABASE_URL"] = value
+
+
 def load_env() -> None:
     for name in (".env.local", ".env"):
         p = REPO_ROOT / name
         if p.is_file():
             load_dotenv(p)
+    load_keychain_database_url()
 
 
 # ---------------------------------------------------------------------------
@@ -443,12 +671,28 @@ def find_cell_after(tbl_cells: list[str], label: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def fetch_report_index(fac_num: str) -> dict[str, Any]:
-    """Return {COUNT, REPORTARRAY} for a facility."""
+def _fetch_report_index_network(
+    fac_num: str,
+    *,
+    max_retries: int = HTTP_MAX_RETRIES,
+) -> dict[str, Any]:
     url = f"{TRANSPARENCY_BASE}/FacilityReports/{fac_num}"
-    r = _get_with_retries(url, timeout=20)
-    r.raise_for_status()
-    return r.json()
+    response = _get_with_retries(url, timeout=20, max_retries=max_retries)
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_report_index(
+    fac_num: str,
+    *,
+    max_retries: int = HTTP_MAX_RETRIES,
+) -> dict[str, Any]:
+    """Return {COUNT, REPORTARRAY}, reusing the startup probe when it matches."""
+    key = str(fac_num).zfill(9)
+    cached = _PREFLIGHT_INDEX.pop(key, None)
+    if cached is not None:
+        return cached
+    return _fetch_report_index_network(key, max_retries=max_retries)
 
 
 def wait_for_report_api(
@@ -463,7 +707,8 @@ def wait_for_report_api(
         if deadline is not None and time.monotonic() >= deadline:
             return False
         try:
-            fetch_report_index(fac_num)
+            probed = fetch_report_index(fac_num, max_retries=1)
+            _PREFLIGHT_INDEX[str(fac_num).zfill(9)] = probed
             print(f"CDSS report API ready (probe {attempt}/{attempts}).", flush=True)
             return True
         except Exception as exc:
@@ -484,7 +729,7 @@ def wait_for_report_api(
 def fetch_report_html(fac_num: str, inx: int) -> str | None:
     """Fetch HTML for report at position inx. Returns None on 4xx."""
     url = f"{TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx={inx}"
-    r = _get_with_retries(url, timeout=30)
+    r = _get_with_retries(url, timeout=30, max_retries=2)
     if r.status_code == 400:
         return None
     r.raise_for_status()
@@ -933,6 +1178,11 @@ def insert_inspection(
         return cur.fetchone()[0]
 
 
+def is_duplicate_inspection(exc: Exception) -> bool:
+    """A shifted report index can point at a row the database already stored."""
+    return isinstance(exc, psycopg.errors.UniqueViolation)
+
+
 def inspection_already_exists(
     conn: psycopg.Connection,
     facility_id: str,
@@ -997,6 +1247,79 @@ def insert_deficiencies(
                     None,                  # cited_date — set from report date in update below
                 ),
             )
+
+
+def license_key(facility: dict[str, Any]) -> str:
+    return str(facility.get("license_number") or "").zfill(9)
+
+
+def select_reconciliation_targets(
+    facilities: list[dict[str, Any]],
+    bulk_by_id: dict[str, dict[str, Any]],
+    previous_snapshots: dict[str, dict[str, Any]],
+    *,
+    refetch: bool,
+) -> dict[str, list[dict[str, Any]]]:
+    """Bulk comparison decides deep work. Named fallbacks are always included."""
+    fallbacks = [
+        facility
+        for facility in facilities
+        if license_key(facility) in BULK_FALLBACK_LICENSES
+    ]
+    fallback_ids = {facility["id"] for facility in fallbacks}
+    missing_bulk = [
+        facility
+        for facility in facilities
+        if facility["id"] not in bulk_by_id and facility["id"] not in fallback_ids
+    ]
+    unchanged: list[dict[str, Any]] = []
+    pending: list[dict[str, Any]] = []
+    for facility in facilities:
+        if facility["id"] not in bulk_by_id or facility["id"] in fallback_ids:
+            continue
+        if (
+            not refetch
+            and previous_snapshots.get(facility["id"], {}).get("fingerprint")
+            == bulk_by_id[facility["id"]]["fingerprint"]
+        ):
+            unchanged.append(facility)
+        else:
+            pending.append(facility)
+    return {
+        "unchanged": unchanged,
+        "missing_bulk": missing_bulk,
+        "fallbacks": fallbacks,
+        "deep": pending + missing_bulk + fallbacks,
+    }
+
+
+def snapshot_update_for(
+    facility: dict[str, Any],
+    inventory: list[dict[str, Any]],
+    bulk_snapshot: dict[str, Any] | None,
+) -> tuple[str, str, dict[str, Any]] | None:
+    """Persist a baseline only after the facility's report list reconciled."""
+    is_fallback = license_key(facility) in BULK_FALLBACK_LICENSES
+    if bulk_snapshot is not None:
+        snapshot_fingerprint = bulk_snapshot["fingerprint"]
+        bulk_payload = bulk_snapshot["payload"]
+    elif is_fallback:
+        snapshot_fingerprint = fingerprint(
+            {"fallback_reports": [report["key"] for report in inventory]}
+        )
+        bulk_payload = None
+    else:
+        return None
+    return (
+        facility["id"],
+        snapshot_fingerprint,
+        {
+            "schema_version": 1,
+            "bulk": bulk_payload,
+            "reports": inventory,
+            "bulk_fallback": is_fallback,
+        },
+    )
 
 
 def promote_memory_care(
@@ -1111,16 +1434,10 @@ def process_facility(
 
     if count == 0:
         print(f"  {fac_name}: no reports")
-        if not dry_run and bulk_snapshot is not None:
-            stats["_snapshot_update"] = (
-                fac_id,
-                bulk_snapshot["fingerprint"],
-                {
-                    "schema_version": 1,
-                    "bulk": bulk_snapshot["payload"],
-                    "reports": [],
-                },
-            )
+        if not dry_run:
+            snapshot_update = snapshot_update_for(facility, [], bulk_snapshot)
+            if snapshot_update is not None:
+                stats["_snapshot_update"] = snapshot_update
         return stats
 
     print(f"  {fac_name}: {count} reports")
@@ -1146,6 +1463,7 @@ def process_facility(
 
     promoted = False
     parsed_reports: list[dict[str, Any]] = []
+    confirmed_keys: set[str] = set()
     for inx, meta in enumerate(report_array):
         if deadline is not None and time.monotonic() >= deadline:
             print(f"    Scan time budget exhausted during {fac_name}")
@@ -1160,6 +1478,7 @@ def process_facility(
             previous_snapshot is None and source_url in known_urls
         ):
             stats["reports_skipped"] += 1
+            confirmed_keys.add(stable_key)
             continue
 
         time.sleep(REQUEST_DELAY_SECS)
@@ -1176,6 +1495,7 @@ def process_facility(
             stats["errors"] += 1
             continue
 
+        stage_regulator_original(stable_key, html)
         parsed = parse_report(html, meta, fac_num, source_url)
         if not parsed:
             print(f"    inx={inx} could not be parsed")
@@ -1208,11 +1528,15 @@ def process_facility(
         for parsed in parsed_reports:
             n_def = len(parsed["deficiencies"])
             try:
+                report_identity = str(
+                    parsed["report_index_metadata"]["report_key"]
+                )
                 if (
                     previous_snapshot is None
                     and inspection_already_exists(write_conn, fac_id, parsed)
                 ):
                     stats["reports_skipped"] += 1
+                    confirmed_keys.add(report_identity)
                     continue
                 inspection_id = insert_inspection(
                     write_conn, fac_id, parsed, scrape_run_id
@@ -1222,6 +1546,7 @@ def process_facility(
                 )
                 write_conn.commit()
                 stats["reports_ingested"] += 1
+                confirmed_keys.add(report_identity)
                 stats["deficiencies"] += n_def
 
                 if parsed["has_dementia_citation"]:
@@ -1232,6 +1557,10 @@ def process_facility(
                         promoted = True
             except Exception as e:
                 write_conn.rollback()
+                if is_duplicate_inspection(e):
+                    stats["reports_skipped"] += 1
+                    confirmed_keys.add(report_identity)
+                    continue
                 print(f"    DB error: {e}")
                 stats["errors"] += 1
 
@@ -1256,16 +1585,30 @@ def process_facility(
         )
         stats["errors"] += 1
 
-    if not stats["errors"] and bulk_snapshot is not None:
-        stats["_snapshot_update"] = (
-            fac_id,
-            bulk_snapshot["fingerprint"],
-            {
-                "schema_version": 1,
-                "bulk": bulk_snapshot["payload"],
-                "reports": inventory,
-            },
-        )
+    if not stats["errors"]:
+        snapshot_update = snapshot_update_for(facility, inventory, bulk_snapshot)
+        if snapshot_update is not None:
+            stats["_snapshot_update"] = snapshot_update
+    else:
+        # Keep confirmed report ids so the next pass retries only the gaps.
+        # The fingerprint stays pending, so this cannot look like "no change".
+        confirmed = [
+            report for report in inventory if report["key"] in confirmed_keys
+        ]
+        if confirmed and bulk_snapshot is not None:
+            stats["_snapshot_update"] = (
+                fac_id,
+                "pending:" + fingerprint(
+                    {"confirmed": [report["key"] for report in confirmed]}
+                ),
+                {
+                    "schema_version": 1,
+                    "bulk": bulk_snapshot["payload"],
+                    "reports": confirmed,
+                    "reconciliation": "pending",
+                    "bulk_fallback": license_key(facility) in BULK_FALLBACK_LICENSES,
+                },
+            )
 
     return stats
 
@@ -1325,11 +1668,17 @@ def main() -> int:
     parser.add_argument(
         "--workers",
         type=int,
-        default=DEFAULT_WORKERS,
+        default=None,
         help=(
-            "Facilities checked concurrently (default: "
-            f"{DEFAULT_WORKERS}; use 1 for sequential diagnostics)."
+            "Facilities checked concurrently. Omit to choose 1–4 from "
+            "observed CDSS health. Explicit values may be 1–12."
         ),
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Stage a bootstrap by reconciling only the first N matched facilities.",
     )
     parser.add_argument(
         "--max-minutes",
@@ -1347,8 +1696,10 @@ def main() -> int:
     )
     if geo_filters > 1:
         parser.error("Use only one of --city, --county, --region")
-    if args.workers < 1 or args.workers > 12:
+    if args.workers is not None and (args.workers < 1 or args.workers > 12):
         parser.error("--workers must be between 1 and 12")
+    if args.limit is not None and args.limit < 1:
+        parser.error("--limit must be at least 1")
     if args.max_minutes < 1 or args.max_minutes > 180:
         parser.error("--max-minutes must be between 1 and 180")
     if args.refetch and args.workers != 1:
@@ -1356,10 +1707,27 @@ def main() -> int:
         args.workers = 1
 
     load_env()
+    global WEATHER_RETRY_SCALE
+    weather_samples = list(load_weather().get("samples") or [])
+    if args.workers is None:
+        args.workers = recommend_worker_count(weather_samples)
+        print(f"Adaptive CDSS workers: {args.workers}", flush=True)
+    elif args.workers > ADAPTIVE_WORKER_MAX:
+        print(
+            f"Explicit worker override: {args.workers} "
+            f"(adaptive ceiling is {ADAPTIVE_WORKER_MAX})",
+            flush=True,
+        )
+    WEATHER_RETRY_SCALE = retry_scale_for_hour(
+        weather_samples,
+        datetime.now().astimezone().hour,
+    )
+    PACER.min_interval = 0.35
 
     if not args.dry_run and not os.environ.get("DATABASE_URL"):
         print(
-            "DATABASE_URL is not set. Add your Supabase Postgres URI to .env.local.",
+            "DATABASE_URL is not set. Store it in Keychain service "
+            f"{KEYCHAIN_SERVICE} or export it for this process.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -1403,6 +1771,8 @@ def main() -> int:
 
     if args.smoke:
         facilities = facilities[:3]
+    if args.limit is not None:
+        facilities = facilities[: args.limit]
 
     if not args.dry_run and not args.refetch:
         print("Loading existing California report inventory...", flush=True)
@@ -1422,26 +1792,15 @@ def main() -> int:
         for facility in facilities
         if facility["license_number"] in bulk_by_license
     }
-    missing_bulk = [
-        facility for facility in facilities
-        if facility["id"] not in bulk_snapshots
-    ]
-    unchanged_facilities = [
-        facility
-        for facility in facilities
-        if not args.refetch
-        and facility["id"] in bulk_snapshots
-        and previous_snapshots.get(facility["id"], {}).get("fingerprint")
-        == bulk_snapshots[facility["id"]]["fingerprint"]
-    ]
-    unchanged_ids = {facility["id"] for facility in unchanged_facilities}
-    candidate_facilities = [
-        facility
-        for facility in facilities
-        if facility["id"] in bulk_snapshots
-        and facility["id"] not in unchanged_ids
-    ]
-    api_facilities = candidate_facilities + missing_bulk
+    selected = select_reconciliation_targets(
+        facilities,
+        bulk_snapshots,
+        previous_snapshots,
+        refetch=args.refetch,
+    )
+    missing_bulk = selected["missing_bulk"]
+    unchanged_facilities = selected["unchanged"]
+    api_facilities = selected["deep"]
 
     print(
         f"Bulk rows matched: {len(bulk_snapshots)}/{len(facilities)}; "
@@ -1450,9 +1809,15 @@ def main() -> int:
         f"({args.workers} concurrent workers)",
         flush=True,
     )
+    if selected["fallbacks"]:
+        print(
+            "Permanent bulk-fallback indexes: "
+            + ", ".join(facility["name"] for facility in selected["fallbacks"]),
+            flush=True,
+        )
     if missing_bulk:
         print(
-            "Bulk fallback indexes: "
+            "Unexpected facilities absent from bulk export: "
             + ", ".join(facility["name"] for facility in missing_bulk),
             flush=True,
         )
@@ -1601,6 +1966,11 @@ def main() -> int:
                     }
                 record_result(fac, stats)
     flush_snapshot_updates()
+    try:
+        record_weather(args.workers)
+    except OSError as exc:
+        print(f"CDSS health history was not saved: {exc}", file=sys.stderr)
+    publish_regulator_vault()
 
     # ── Close scrape_run ─────────────────────────────────────────────────
     run_status = "success" if not error_log_parts else "partial"
@@ -1647,6 +2017,12 @@ def main() -> int:
     print(f"  Deficiencies stored   : {totals['deficiencies']}")
     print(f"  §87705/87706 citations: {totals['dementia_citations']}")
     print(f"  Errors                : {totals['errors']}")
+    print(f"  HTTP requests         : {PACER.requests}")
+    print(f"  HTTP timeouts         : {PACER.timeouts}")
+    print(f"  Retry scale           : {WEATHER_RETRY_SCALE:.2f}")
+    best_hour = best_observed_hour(load_weather().get("samples") or [])
+    if best_hour is not None:
+        print(f"  Healthiest observed hour: {best_hour:02d}:00 local")
     print(f"  Elapsed seconds       : {time.monotonic() - started_monotonic:.1f}")
     if not args.dry_run:
         print(f"  scrape_run id         : {scrape_run_id}")
