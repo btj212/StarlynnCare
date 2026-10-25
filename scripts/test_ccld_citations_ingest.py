@@ -284,6 +284,41 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
         self.assertTrue(ingest.is_duplicate_inspection(duplicate))
         self.assertFalse(ingest.is_duplicate_inspection(RuntimeError("db down")))
 
+    def test_unpublished_detail_still_baselines_a_fallback_home(self) -> None:
+        """A 404 means CDSS has no document; it must not block the other reports."""
+        maple = {
+            **FACILITY,
+            "name": "Maple Manor",
+            "license_number": "372004436",
+        }
+        index = {
+            "COUNT": 1,
+            "REPORTARRAY": [
+                {
+                    "REPORTPAGE": (
+                        "/WebReports/ABC.nsf/0/"
+                        "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+                    )
+                }
+            ],
+        }
+        with (
+            patch.object(ingest, "fetch_report_index", return_value=index),
+            patch.object(ingest, "fetch_report_html", return_value=""),
+        ):
+            result = ingest.process_facility(
+                maple,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                dsn="unused",
+                bulk_snapshot=None,
+            )
+
+        self.assertEqual(result["errors"], 0)
+        self.assertEqual(result["reports_skipped"], 1)
+        self.assertTrue(result["_snapshot_update"][2]["bulk_fallback"])
+
     def test_retry_backoff_is_jittered(self) -> None:
         """Workers must not wake up and retry at the same instant."""
         with patch.object(ingest.random, "uniform", return_value=0.5):

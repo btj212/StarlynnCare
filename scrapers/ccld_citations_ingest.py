@@ -751,6 +751,8 @@ def fetch_report_html(fac_num: str, inx: int) -> str | None:
     """Fetch HTML for report at position inx. Returns None on 4xx."""
     url = f"{TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx={inx}"
     r = _get_with_retries(url, timeout=15, max_retries=1)
+    if r.status_code == 404:
+        return ""
     if r.status_code == 400:
         return None
     r.raise_for_status()
@@ -1511,6 +1513,12 @@ def process_facility(
             stats["errors"] += 1
             continue
 
+        if html == "":
+            print(f"    inx={inx} is no longer published")
+            stats["reports_skipped"] += 1
+            confirmed_keys.add(stable_key)
+            continue
+
         if html is None:
             print(f"    inx={inx} listed by index but detail returned 400")
             stats["errors"] += 1
@@ -1616,7 +1624,10 @@ def process_facility(
         confirmed = [
             report for report in inventory if report["key"] in confirmed_keys
         ]
-        if confirmed and bulk_snapshot is not None:
+        if confirmed and (
+            bulk_snapshot is not None
+            or license_key(facility) in BULK_FALLBACK_LICENSES
+        ):
             stats["_snapshot_update"] = (
                 fac_id,
                 "pending:" + fingerprint(
@@ -1624,7 +1635,7 @@ def process_facility(
                 ),
                 {
                     "schema_version": 1,
-                    "bulk": bulk_snapshot["payload"],
+                    "bulk": None if bulk_snapshot is None else bulk_snapshot["payload"],
                     "reports": confirmed,
                     "reconciliation": "pending",
                     "bulk_fallback": license_key(facility) in BULK_FALLBACK_LICENSES,
