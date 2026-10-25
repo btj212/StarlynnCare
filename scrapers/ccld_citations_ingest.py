@@ -736,7 +736,7 @@ def wait_for_report_api(
 def fetch_report_html(fac_num: str, inx: int) -> str | None:
     """Fetch HTML for report at position inx. Returns None on 4xx."""
     url = f"{TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx={inx}"
-    r = _get_with_retries(url, timeout=30, max_retries=2)
+    r = _get_with_retries(url, timeout=15, max_retries=1)
     if r.status_code == 400:
         return None
     r.raise_for_status()
