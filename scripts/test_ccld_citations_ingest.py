@@ -223,6 +223,42 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
         self.assertTrue(breaker.is_open)
         self.assertEqual(fetch_index.call_count, 2)
 
+    def test_outage_circuit_allows_one_retry_after_a_cool_down(self) -> None:
+        """A later facility should get a chance if CDSS recovers."""
+        breaker = ingest.IndexCircuitBreaker(failure_threshold=1)
+        clock = {"now": 100.0}
+
+        with (
+            patch.object(ingest.time, "monotonic", lambda: clock["now"]),
+            patch.object(
+                ingest,
+                "fetch_report_index",
+                side_effect=[RuntimeError("down"), {"COUNT": 0, "REPORTARRAY": []}],
+            ) as fetch_index,
+        ):
+            first = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                dsn="unused",
+                index_breaker=breaker,
+            )
+            self.assertEqual(first["index_checked"], 0)
+            clock["now"] = 160.0
+            second = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                dsn="unused",
+                index_breaker=breaker,
+            )
+
+        self.assertEqual(second["index_checked"], 1)
+        self.assertFalse(breaker.is_open)
+        self.assertEqual(fetch_index.call_count, 2)
+
     def test_expired_scan_budget_marks_home_unchecked_without_request(self) -> None:
         """The routine crawl must not turn a source slowdown into an afternoon."""
         with (

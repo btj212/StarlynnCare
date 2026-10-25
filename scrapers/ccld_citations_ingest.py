@@ -552,21 +552,35 @@ class IndexCircuitBreaker:
         self.failure_threshold = failure_threshold
         self._consecutive_failures = 0
         self._open = threading.Event()
+        self._opened_at = 0.0
         self._lock = threading.Lock()
 
     @property
     def is_open(self) -> bool:
         return self._open.is_set()
 
+    def allow_attempt(self) -> bool:
+        """After a cool-down, let one facility try so a short outage can recover."""
+        with self._lock:
+            if not self._open.is_set():
+                return True
+            if time.monotonic() - self._opened_at < 45:
+                return False
+            self._open.clear()
+            self._consecutive_failures = 0
+            return True
+
     def record_success(self) -> None:
         with self._lock:
             self._consecutive_failures = 0
+            self._open.clear()
 
     def record_failure(self) -> None:
         with self._lock:
             self._consecutive_failures += 1
             if self._consecutive_failures >= self.failure_threshold:
                 self._open.set()
+                self._opened_at = time.monotonic()
 
 # Regex that detects dementia-care regulation citations in section numbers
 DEMENTIA_SECTION_RE = re.compile(r"8770[56]")
@@ -1403,7 +1417,7 @@ def process_facility(
 
     # Fetch report index. If CDSS is broadly down, leave the remaining homes
     # unchecked and fail the run instead of waiting hours on identical retries.
-    if index_breaker is not None and index_breaker.is_open:
+    if index_breaker is not None and not index_breaker.allow_attempt():
         print(f"  CDSS unavailable — not checked: {fac_name}")
         stats["errors"] += 1
         return stats
