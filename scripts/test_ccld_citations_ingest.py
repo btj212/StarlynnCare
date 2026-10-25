@@ -18,6 +18,45 @@ FACILITY = {
 
 
 class CaliforniaIncrementalScanTests(unittest.TestCase):
+    def test_preflight_waits_for_cold_report_api(self) -> None:
+        """A cold CDSS service should warm before statewide concurrency starts."""
+        with (
+            patch.object(
+                ingest,
+                "fetch_report_index",
+                side_effect=[RuntimeError("cold"), {"COUNT": 0, "REPORTARRAY": []}],
+            ) as fetch_index,
+            patch.object(ingest.time, "sleep") as sleep,
+        ):
+            ready = ingest.wait_for_report_api(
+                "000123456",
+                attempts=2,
+                pause_seconds=0,
+            )
+
+        self.assertTrue(ready)
+        self.assertEqual(fetch_index.call_count, 2)
+        sleep.assert_called_once_with(0)
+
+    def test_preflight_fails_bounded_when_source_stays_down(self) -> None:
+        """A true outage must fail partial without releasing hundreds of calls."""
+        with (
+            patch.object(
+                ingest,
+                "fetch_report_index",
+                side_effect=RuntimeError("down"),
+            ) as fetch_index,
+            patch.object(ingest.time, "sleep"),
+        ):
+            ready = ingest.wait_for_report_api(
+                "000123456",
+                attempts=3,
+                pause_seconds=0,
+            )
+
+        self.assertFalse(ready)
+        self.assertEqual(fetch_index.call_count, 3)
+
     def test_known_report_urls_require_no_report_download_or_db_connection(self) -> None:
         """Routine scans should use the index to skip records already stored."""
         fac_num = "000123456"

@@ -451,6 +451,31 @@ def fetch_report_index(fac_num: str) -> dict[str, Any]:
     return r.json()
 
 
+def wait_for_report_api(
+    fac_num: str,
+    *,
+    attempts: int = 4,
+    pause_seconds: float = 15.0,
+    deadline: float | None = None,
+) -> bool:
+    """Warm the bursty CDSS report service before releasing concurrent work."""
+    for attempt in range(1, attempts + 1):
+        if deadline is not None and time.monotonic() >= deadline:
+            return False
+        try:
+            fetch_report_index(fac_num)
+            print(f"CDSS report API ready (probe {attempt}/{attempts}).", flush=True)
+            return True
+        except Exception as exc:
+            print(
+                f"CDSS report API probe {attempt}/{attempts} failed: {exc}",
+                flush=True,
+            )
+            if attempt < attempts:
+                time.sleep(pause_seconds)
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Individual report HTML fetch + parse
 # ---------------------------------------------------------------------------
@@ -1416,14 +1441,21 @@ def main() -> int:
         if facility["id"] in bulk_snapshots
         and facility["id"] not in unchanged_ids
     ]
+    api_facilities = candidate_facilities + missing_bulk
 
     print(
         f"Bulk rows matched: {len(bulk_snapshots)}/{len(facilities)}; "
         f"unchanged: {len(unchanged_facilities)}; "
-        f"report indexes to reconcile: {len(candidate_facilities)} "
+        f"report indexes to reconcile: {len(api_facilities)} "
         f"({args.workers} concurrent workers)",
         flush=True,
     )
+    if missing_bulk:
+        print(
+            "Bulk fallback indexes: "
+            + ", ".join(facility["name"] for facility in missing_bulk),
+            flush=True,
+        )
     if args.dry_run:
         print("(DRY RUN — no DB writes)\n")
 
@@ -1463,13 +1495,19 @@ def main() -> int:
         "snapshots_updated": 0,
     }
 
-    error_log_parts = [
-        f"{facility['name']}: license missing from statewide bulk data"
-        for facility in missing_bulk
-    ]
-    totals["errors"] += len(missing_bulk)
+    error_log_parts: list[str] = []
     index_breaker = IndexCircuitBreaker()
     pending_snapshot_updates: list[tuple[str, str, dict[str, Any]]] = []
+
+    if api_facilities and not wait_for_report_api(
+        str(api_facilities[0]["license_number"]).zfill(9),
+        deadline=deadline,
+    ):
+        error_log_parts.append(
+            "CDSS report API unavailable after bounded startup probes"
+        )
+        totals["errors"] += 1
+        api_facilities = []
 
     def process_one(fac: dict[str, Any]) -> dict[str, Any]:
         if args.dry_run:
@@ -1480,7 +1518,7 @@ def main() -> int:
                 dry_run=True,
                 deadline=deadline,
                 previous_snapshot=previous_snapshots.get(fac["id"]),
-                bulk_snapshot=bulk_snapshots[fac["id"]],
+                bulk_snapshot=bulk_snapshots.get(fac["id"]),
             )
         if args.refetch:
             with psycopg.connect(dsn) as conn:
@@ -1491,7 +1529,7 @@ def main() -> int:
                     dry_run=False,
                     refetch=True,
                     deadline=deadline,
-                    bulk_snapshot=bulk_snapshots[fac["id"]],
+                    bulk_snapshot=bulk_snapshots.get(fac["id"]),
                 )
         return process_facility(
             fac,
@@ -1503,7 +1541,7 @@ def main() -> int:
             index_breaker=index_breaker,
             deadline=deadline,
             previous_snapshot=previous_snapshots.get(fac["id"]),
-            bulk_snapshot=bulk_snapshots[fac["id"]],
+            bulk_snapshot=bulk_snapshots.get(fac["id"]),
         )
 
     def flush_snapshot_updates() -> None:
@@ -1531,20 +1569,20 @@ def main() -> int:
             )
         print(
             f"Progress {totals['facilities_processed']}/"
-            f"{len(candidate_facilities)}: "
+            f"{len(api_facilities)}: "
             f"{fac['name']} — {stats['reports_ingested']} new, "
             f"{stats['errors']} errors",
             flush=True,
         )
 
     if args.workers == 1:
-        for fac in candidate_facilities:
+        for fac in api_facilities:
             record_result(fac, process_one(fac))
     else:
         with ThreadPoolExecutor(max_workers=args.workers) as executor:
             futures = {
                 executor.submit(process_one, fac): fac
-                for fac in candidate_facilities
+                for fac in api_facilities
             }
             for future in as_completed(futures):
                 fac = futures[future]
