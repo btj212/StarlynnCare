@@ -51,7 +51,7 @@ export function MobileDigestBar() {
     <div className={`m-cta-bar md:hidden ${show ? "show" : ""}`}>
       {status === "done" ? (
         <p className="font-[family-name:var(--font-mono)] text-[12px] text-grade-a py-1">
-          Watching {stateName}. We&rsquo;ll email when that state&rsquo;s public record changes.
+          Watching {stateName}. We&rsquo;ll email when an inspection is added, including a visit that adds no citation.
         </p>
       ) : (
         <>
@@ -93,7 +93,7 @@ export function MobileDigestBar() {
             </div>
           </form>
           <p className="font-[family-name:var(--font-mono)] text-[10px] text-ink-4">
-            Official-record changes for that state. Not a national alert.
+            An inspection in that state, even with no new citation. Not a national alert.
           </p>
           {status === "error" && (
             <p className="font-[family-name:var(--font-mono)] text-[10px] text-rust">

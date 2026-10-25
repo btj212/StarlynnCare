@@ -3,6 +3,9 @@
 
 This script does not email anyone. Monthly sends stay off until the
 audience, the copy, and the privacy wording are approved.
+
+A draft includes inspection visits even when the citation count does not
+rise. A quiet visit is part of the record, not a reason to skip the state.
 """
 
 from __future__ import annotations
