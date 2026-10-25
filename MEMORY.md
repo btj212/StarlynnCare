@@ -565,4 +565,25 @@ Append session summaries here (most recent first). Format: `YYYY-MM-DD — summa
 
 **Source:** `src/lib/states/profileConfig.ts`, component files above.
 
+## 2026-10 — California CDSS bulk-first report reconciliation
+
+**Decided:** Routine CA scans download the statewide
+`DownloadStateData/ResidentialElderCareFacility` CSV once and fingerprint each
+facility's compliance fields. The scraper only calls the bursty per-facility
+`FacilityReports` API when no snapshot exists or that fingerprint changed.
+Successful reconciliations persist both the bulk payload and a stable report
+inventory in `facility_watch_snapshots` under
+`ca_ccld_bulk_compliance_v1`.
+
+**Why:** The bulk CSV covers statewide compliance in seconds, while hundreds of
+individual API calls routinely time out. `REPORTPAGE` contains a stable Lotus
+document ID; indexed `inx=N` URLs are positional and can change when CDSS
+reorders or removes reports. Partial facilities never advance their snapshots
+or produce a complete/no-change claim.
+
+**Source:** `scrapers/ccld_citations_ingest.py`,
+`scripts/test_ccld_citations_ingest.py`.
+
+---
+
 <!-- New session summaries go above this line -->

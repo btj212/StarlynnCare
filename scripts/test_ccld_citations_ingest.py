@@ -22,8 +22,8 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
         """Routine scans should use the index to skip records already stored."""
         fac_num = "000123456"
         known_urls = {
+            f"{ingest.TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx=0",
             f"{ingest.TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx=1",
-            f"{ingest.TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx=2",
         }
         index = {"COUNT": 2, "REPORTARRAY": [{}, {}]}
 
@@ -45,6 +45,57 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
         self.assertEqual(result["reports_ingested"], 0)
         fetch_html.assert_not_called()
         connect.assert_not_called()
+
+    def test_report_inventory_is_zero_based_and_uses_stable_document_id(self) -> None:
+        """Report identity must survive CDSS array reordering."""
+        reports = ingest.normalize_report_inventory(
+            [
+                {
+                    "REPORTPAGE": (
+                        "/WebReports/ABC.nsf/0/"
+                        "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+                    )
+                },
+                {"REPORTPAGE": ""},
+            ]
+        )
+
+        self.assertEqual([report["index"] for report in reports], [0, 1])
+        self.assertEqual(
+            reports[0]["key"],
+            "1fde0d06ff9530ae88258e79000019de",
+        )
+
+    def test_failed_listed_detail_does_not_advance_snapshot(self) -> None:
+        """A partial facility reconciliation must remain eligible for retry."""
+        index = {
+            "COUNT": 1,
+            "REPORTARRAY": [
+                {
+                    "REPORTPAGE": (
+                        "/WebReports/ABC.nsf/0/"
+                        "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+                    )
+                }
+            ],
+        }
+        bulk = {"fingerprint": "new", "payload": {"Total Visits": "1"}}
+
+        with (
+            patch.object(ingest, "fetch_report_index", return_value=index),
+            patch.object(ingest, "fetch_report_html", return_value=None),
+        ):
+            result = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                dsn="unused",
+                bulk_snapshot=bulk,
+            )
+
+        self.assertEqual(result["errors"], 1)
+        self.assertNotIn("_snapshot_update", result)
 
     def test_repeated_index_failures_open_the_outage_circuit(self) -> None:
         """A CDSS outage should fail partial quickly instead of hanging for hours."""

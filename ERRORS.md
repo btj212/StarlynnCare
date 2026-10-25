@@ -297,6 +297,26 @@ The deficiencies query in the same page already had the correct pattern (chunked
 
 ---
 
+## 2026-10 — CDSS report indexes are zero-based and indexed URLs are unstable
+
+**What didn't work:** Iterating `range(1, COUNT + 1)` skipped the first real
+report and requested one nonexistent terminal index for every facility.
+Treating `FacilityReports?facNum=X&inx=N` as report identity also missed reports
+when CDSS arrays shrank or reordered. A statewide routine scan then spent over
+30 minutes retrying hundreds of index/detail requests and still covered only
+110 of 662 facilities.
+
+**What worked instead:** Mirror the official client contract and enumerate
+`REPORTARRAY` from zero. Use the Lotus document ID in `REPORTPAGE` as stable
+identity, send the official client headers, and use the statewide bulk CSV as
+the routine change detector. Persist only fully reconciled facility snapshots;
+retry incomplete facilities on the next pass.
+
+**Source:** `scrapers/ccld_citations_ingest.py`,
+`scripts/test_ccld_citations_ingest.py`.
+
+---
+
 <!-- New entries go above this line. Format:
 
 ## YYYY-MM — Short title

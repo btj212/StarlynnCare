@@ -40,11 +40,16 @@ Run modes
 from __future__ import annotations
 
 import argparse
+import csv
+import hashlib
+import io
+import json
 import os
 import re
 import sys
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -209,16 +214,19 @@ SCRAPER_NAME = "cdss_ccld_citations_alameda"
 
 TRANSPARENCY_BASE = "https://www.ccld.dss.ca.gov/transparencyapi/api"
 SOURCE_AGENCY = "California CDSS / Community Care Licensing Division"
+BULK_SOURCE = "ca_ccld_bulk_compliance_v1"
+BULK_URL = f"{TRANSPARENCY_BASE}/DownloadStateData/ResidentialElderCareFacility"
 
 REQUEST_DELAY_SECS = 0.25
 
 # Network hardening
 HTTP_TIMEOUT_SECS = 20
 HTTP_MAX_RETRIES = 3
-DEFAULT_WORKERS = 6
+DEFAULT_WORKERS = 8
 INDEX_FAILURE_THRESHOLD = 12
 DEFAULT_MAX_MINUTES = 30
 _HTTP_LOCAL = threading.local()
+_CLIENT_GUID = str(uuid.uuid4())
 
 
 def _http_session() -> requests.Session:
@@ -226,7 +234,24 @@ def _http_session() -> requests.Session:
     session = getattr(_HTTP_LOCAL, "session", None)
     if session is None:
         session = requests.Session()
-        session.headers.update({"User-Agent": "Mozilla/5.0"})
+        session.headers.update(
+            {
+                "DSS-Transparency-Config": json.dumps(
+                    {
+                        "Version": "11.18.0R",
+                        "deviceReady": 0,
+                        "GUID": _CLIENT_GUID,
+                        "DocProtocol": "https://",
+                    }
+                ),
+                "Accept": "application/json, text/plain, */*",
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 Chrome/120 Safari/537.36"
+                ),
+                "Referer": "https://www.ccld.dss.ca.gov/carefacilitysearch/",
+            }
+        )
         _HTTP_LOCAL.session = session
     return session
 
@@ -257,6 +282,67 @@ def _get_with_retries(
             print(f"Retrying request ({attempt+1}/{max_retries}) after {sleep:.1f}s: {url}", file=sys.stderr)
             time.sleep(sleep)
     raise RuntimeError(f"Request failed after {max_retries} attempts: {url}") from last_exc
+
+
+def fingerprint(payload: dict[str, Any]) -> str:
+    normalized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(normalized.encode()).hexdigest()
+
+
+def report_key(report_meta: dict[str, Any]) -> str:
+    """Return the stable Lotus document id exposed in REPORTPAGE."""
+    page = str(report_meta.get("REPORTPAGE") or "")
+    match = re.search(r"/0/([0-9A-F]+)", page, re.IGNORECASE)
+    if match:
+        return match.group(1).lower()
+    return fingerprint(
+        {
+            "facility": report_meta.get("FACILITYNUMBER"),
+            "type": report_meta.get("REPORTTYPE"),
+            "date": report_meta.get("REPORTDATE"),
+            "control": report_meta.get("CONTROLNUMBER"),
+            "page": page,
+        }
+    )
+
+
+def normalize_report_inventory(report_array: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "key": report_key(meta),
+            "index": index,
+            "report_type": meta.get("REPORTTYPE"),
+            "report_date": meta.get("REPORTDATE"),
+            "control_number": meta.get("CONTROLNUMBER") or None,
+            "report_page": meta.get("REPORTPAGE"),
+        }
+        for index, meta in enumerate(report_array)
+    ]
+
+
+def fetch_bulk_compliance() -> dict[str, dict[str, Any]]:
+    """Fetch one statewide CSV and fingerprint compliance fields per facility."""
+    response = _get_with_retries(BULK_URL, timeout=120)
+    response.raise_for_status()
+    reader = csv.DictReader(io.StringIO(response.text))
+    if not reader.fieldnames or "Last Visit Date" not in reader.fieldnames:
+        raise RuntimeError("CDSS bulk CSV is missing compliance columns")
+    compliance_start = reader.fieldnames.index("Last Visit Date")
+    compliance_fields = reader.fieldnames[compliance_start:]
+    result: dict[str, dict[str, Any]] = {}
+    for row in reader:
+        facility_number = str(row.get("Facility Number") or "").strip().zfill(9)
+        if not facility_number or facility_number == "000000000":
+            continue
+        payload = {
+            field: str(row.get(field) or "").strip()
+            for field in compliance_fields
+        }
+        result[facility_number] = {
+            "fingerprint": fingerprint(payload),
+            "payload": payload,
+        }
+    return result
 
 
 class IndexCircuitBreaker:
@@ -672,6 +758,8 @@ def parse_report(
             "report_type": report_meta.get("REPORTTYPE"),
             "report_date": report_meta.get("REPORTDATE"),
             "control_number": report_meta.get("CONTROLNUMBER"),
+            "report_page": report_meta.get("REPORTPAGE"),
+            "report_key": report_key(report_meta),
         },
         "source_url": source_url,
         "raw_html_len": len(html),
@@ -716,6 +804,60 @@ def load_ingested_urls(
         for facility_id, source_url in cur.fetchall():
             by_facility[facility_id].add(source_url)
     return by_facility
+
+
+def load_bulk_snapshots(
+    conn: psycopg.Connection,
+    facility_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    if not facility_ids:
+        return {}
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT facility_id::text, fingerprint, payload
+            FROM facility_watch_snapshots
+            WHERE source = %s
+              AND facility_id = ANY(%s::uuid[])
+            """,
+            (BULK_SOURCE, facility_ids),
+        )
+        return {
+            facility_id: {"fingerprint": snapshot_fingerprint, "payload": payload}
+            for facility_id, snapshot_fingerprint, payload in cur.fetchall()
+        }
+
+
+def upsert_bulk_snapshots(
+    dsn: str,
+    updates: list[tuple[str, str, dict[str, Any]]],
+) -> None:
+    if not updates:
+        return
+    with psycopg.connect(dsn, connect_timeout=30) as conn:
+        with conn.cursor() as cur:
+            cur.executemany(
+                """
+                INSERT INTO facility_watch_snapshots (
+                    facility_id, source, fingerprint, payload, scanned_at
+                )
+                VALUES (%s::uuid, %s, %s, %s::jsonb, now())
+                ON CONFLICT (facility_id, source) DO UPDATE SET
+                    fingerprint = EXCLUDED.fingerprint,
+                    payload = EXCLUDED.payload,
+                    scanned_at = now()
+                """,
+                [
+                    (
+                        facility_id,
+                        BULK_SOURCE,
+                        snapshot_fingerprint,
+                        psycopg.types.json.Jsonb(payload),
+                    )
+                    for facility_id, snapshot_fingerprint, payload in updates
+                ],
+            )
+        conn.commit()
 
 
 def insert_inspection(
@@ -764,6 +906,33 @@ def insert_inspection(
             ),
         )
         return cur.fetchone()[0]
+
+
+def inspection_already_exists(
+    conn: psycopg.Connection,
+    facility_id: str,
+    parsed: dict[str, Any],
+) -> bool:
+    """Guard bootstrap reconciliation against shifted report indexes."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT 1
+            FROM inspections
+            WHERE facility_id = %s
+              AND inspection_date IS NOT DISTINCT FROM %s
+              AND COALESCE(inspection_type, '') = COALESCE(%s, '')
+              AND complaint_id IS NOT DISTINCT FROM %s
+            LIMIT 1
+            """,
+            (
+                facility_id,
+                parsed["inspection_date"],
+                parsed["inspection_type"],
+                parsed["complaint_id"],
+            ),
+        )
+        return cur.fetchone() is not None
 
 
 def insert_deficiencies(
@@ -850,7 +1019,9 @@ def process_facility(
     dsn: str = "",
     index_breaker: IndexCircuitBreaker | None = None,
     deadline: float | None = None,
-) -> dict[str, int]:
+    previous_snapshot: dict[str, Any] | None = None,
+    bulk_snapshot: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     fac_id = facility["id"]
     fac_name = facility["name"]
     lic_num = facility["license_number"] or ""
@@ -894,12 +1065,37 @@ def process_facility(
         index_breaker.record_success()
     stats["index_checked"] = 1
 
-    count = index_data.get("COUNT", 0)
+    count = int(index_data.get("COUNT", 0))
     report_array = index_data.get("REPORTARRAY", [])
+    if count != len(report_array):
+        print(
+            f"  ERROR {fac_name}: index count {count} != array length "
+            f"{len(report_array)}"
+        )
+        stats["errors"] += 1
+        return stats
     stats["reports_seen"] = count
+    inventory = normalize_report_inventory(report_array)
+    previous_payload = (previous_snapshot or {}).get("payload") or {}
+    previous_reports = previous_payload.get("reports") or []
+    previous_keys = {
+        str(report.get("key"))
+        for report in previous_reports
+        if report.get("key")
+    }
 
     if count == 0:
         print(f"  {fac_name}: no reports")
+        if not dry_run and bulk_snapshot is not None:
+            stats["_snapshot_update"] = (
+                fac_id,
+                bulk_snapshot["fingerprint"],
+                {
+                    "schema_version": 1,
+                    "bulk": bulk_snapshot["payload"],
+                    "reports": [],
+                },
+            )
         return stats
 
     print(f"  {fac_name}: {count} reports")
@@ -925,17 +1121,19 @@ def process_facility(
 
     promoted = False
     parsed_reports: list[dict[str, Any]] = []
-    for inx in range(1, count + 1):
+    for inx, meta in enumerate(report_array):
         if deadline is not None and time.monotonic() >= deadline:
             print(f"    Scan time budget exhausted during {fac_name}")
             stats["errors"] += 1
             break
-        meta = report_array[inx - 1] if inx <= len(report_array) else {}
         source_url = (
             f"{TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx={inx}"
         )
+        stable_key = report_key(meta)
 
-        if source_url in known_urls:
+        if stable_key in previous_keys or (
+            previous_snapshot is None and source_url in known_urls
+        ):
             stats["reports_skipped"] += 1
             continue
 
@@ -949,11 +1147,14 @@ def process_facility(
             continue
 
         if html is None:
-            # 400 = no report at this index
+            print(f"    inx={inx} listed by index but detail returned 400")
+            stats["errors"] += 1
             continue
 
         parsed = parse_report(html, meta, fac_num, source_url)
         if not parsed:
+            print(f"    inx={inx} could not be parsed")
+            stats["errors"] += 1
             continue
 
         n_def = len(parsed["deficiencies"])
@@ -974,7 +1175,7 @@ def process_facility(
 
         parsed_reports.append(parsed)
 
-    if dry_run or not parsed_reports:
+    if dry_run:
         return stats
 
     def store_reports(write_conn: psycopg.Connection) -> None:
@@ -982,6 +1183,12 @@ def process_facility(
         for parsed in parsed_reports:
             n_def = len(parsed["deficiencies"])
             try:
+                if (
+                    previous_snapshot is None
+                    and inspection_already_exists(write_conn, fac_id, parsed)
+                ):
+                    stats["reports_skipped"] += 1
+                    continue
                 inspection_id = insert_inspection(
                     write_conn, fac_id, parsed, scrape_run_id
                 )
@@ -1005,11 +1212,35 @@ def process_facility(
 
     # Network requests happen before opening a write connection. This avoids
     # holding an idle transaction while CDSS is slow or retrying.
-    if conn is not None:
-        store_reports(conn)
-    else:
-        with psycopg.connect(dsn, connect_timeout=30) as write_conn:
-            store_reports(write_conn)
+    if parsed_reports:
+        if conn is not None:
+            store_reports(conn)
+        else:
+            with psycopg.connect(dsn, connect_timeout=30) as write_conn:
+                store_reports(write_conn)
+
+    if (
+        previous_snapshot is not None
+        and bulk_snapshot is not None
+        and previous_snapshot.get("fingerprint") != bulk_snapshot["fingerprint"]
+        and not parsed_reports
+        and not (set(report["key"] for report in inventory) - previous_keys)
+    ):
+        print(
+            f"  ERROR {fac_name}: bulk compliance changed without a new report id"
+        )
+        stats["errors"] += 1
+
+    if not stats["errors"] and bulk_snapshot is not None:
+        stats["_snapshot_update"] = (
+            fac_id,
+            bulk_snapshot["fingerprint"],
+            {
+                "schema_version": 1,
+                "bulk": bulk_snapshot["payload"],
+                "reports": inventory,
+            },
+        )
 
     return stats
 
@@ -1113,6 +1344,7 @@ def main() -> int:
     # ── Load facilities ──────────────────────────────────────────────────
     print("Loading California facilities...", flush=True)
     ingested_urls: dict[str, set[str]] = {}
+    previous_snapshots: dict[str, dict[str, Any]] = {}
     with psycopg.connect(dsn, connect_timeout=30) as conn:
         conn.execute("SET statement_timeout = '120s'")
         query = """
@@ -1154,9 +1386,41 @@ def main() -> int:
             ingested_urls = load_ingested_urls(
                 conn, [facility["id"] for facility in facilities]
             )
+            previous_snapshots = load_bulk_snapshots(
+                conn, [facility["id"] for facility in facilities]
+            )
+
+    print("Downloading statewide CDSS compliance data...", flush=True)
+    bulk_by_license = fetch_bulk_compliance()
+    bulk_snapshots = {
+        facility["id"]: bulk_by_license[facility["license_number"]]
+        for facility in facilities
+        if facility["license_number"] in bulk_by_license
+    }
+    missing_bulk = [
+        facility for facility in facilities
+        if facility["id"] not in bulk_snapshots
+    ]
+    unchanged_facilities = [
+        facility
+        for facility in facilities
+        if not args.refetch
+        and facility["id"] in bulk_snapshots
+        and previous_snapshots.get(facility["id"], {}).get("fingerprint")
+        == bulk_snapshots[facility["id"]]["fingerprint"]
+    ]
+    unchanged_ids = {facility["id"] for facility in unchanged_facilities}
+    candidate_facilities = [
+        facility
+        for facility in facilities
+        if facility["id"] in bulk_snapshots
+        and facility["id"] not in unchanged_ids
+    ]
 
     print(
-        f"Facilities to process: {len(facilities)} "
+        f"Bulk rows matched: {len(bulk_snapshots)}/{len(facilities)}; "
+        f"unchanged: {len(unchanged_facilities)}; "
+        f"report indexes to reconcile: {len(candidate_facilities)} "
         f"({args.workers} concurrent workers)",
         flush=True,
     )
@@ -1194,12 +1458,20 @@ def main() -> int:
         "errors": 0,
         "index_checked": 0,
         "facilities_processed": 0,
+        "bulk_checked": len(bulk_snapshots),
+        "facilities_unchanged": len(unchanged_facilities),
+        "snapshots_updated": 0,
     }
 
-    error_log_parts: list[str] = []
+    error_log_parts = [
+        f"{facility['name']}: license missing from statewide bulk data"
+        for facility in missing_bulk
+    ]
+    totals["errors"] += len(missing_bulk)
     index_breaker = IndexCircuitBreaker()
+    pending_snapshot_updates: list[tuple[str, str, dict[str, Any]]] = []
 
-    def process_one(fac: dict[str, Any]) -> dict[str, int]:
+    def process_one(fac: dict[str, Any]) -> dict[str, Any]:
         if args.dry_run:
             return process_facility(
                 fac,
@@ -1207,6 +1479,8 @@ def main() -> int:
                 scrape_run_id,
                 dry_run=True,
                 deadline=deadline,
+                previous_snapshot=previous_snapshots.get(fac["id"]),
+                bulk_snapshot=bulk_snapshots[fac["id"]],
             )
         if args.refetch:
             with psycopg.connect(dsn) as conn:
@@ -1217,6 +1491,7 @@ def main() -> int:
                     dry_run=False,
                     refetch=True,
                     deadline=deadline,
+                    bulk_snapshot=bulk_snapshots[fac["id"]],
                 )
         return process_facility(
             fac,
@@ -1227,32 +1502,49 @@ def main() -> int:
             dsn=dsn,
             index_breaker=index_breaker,
             deadline=deadline,
+            previous_snapshot=previous_snapshots.get(fac["id"]),
+            bulk_snapshot=bulk_snapshots[fac["id"]],
         )
 
-    def record_result(fac: dict[str, Any], stats: dict[str, int]) -> None:
+    def flush_snapshot_updates() -> None:
+        if args.dry_run or not pending_snapshot_updates:
+            return
+        updates = list(pending_snapshot_updates)
+        upsert_bulk_snapshots(dsn, updates)
+        totals["snapshots_updated"] += len(updates)
+        pending_snapshot_updates.clear()
+
+    def record_result(fac: dict[str, Any], stats: dict[str, Any]) -> None:
         for k in totals:
-            if k in stats:
+            if k in stats and isinstance(stats[k], int):
                 totals[k] += stats[k]
         totals["facilities_processed"] += 1
+        snapshot_update = stats.get("_snapshot_update")
+        if snapshot_update is not None:
+            pending_snapshot_updates.append(snapshot_update)
+            if len(pending_snapshot_updates) >= 25:
+                flush_snapshot_updates()
 
         if stats["errors"]:
             error_log_parts.append(
                 f"{fac['name']}: {stats['errors']} errors"
             )
         print(
-            f"Progress {totals['facilities_processed']}/{len(facilities)}: "
+            f"Progress {totals['facilities_processed']}/"
+            f"{len(candidate_facilities)}: "
             f"{fac['name']} — {stats['reports_ingested']} new, "
             f"{stats['errors']} errors",
             flush=True,
         )
 
     if args.workers == 1:
-        for fac in facilities:
+        for fac in candidate_facilities:
             record_result(fac, process_one(fac))
     else:
         with ThreadPoolExecutor(max_workers=args.workers) as executor:
             futures = {
-                executor.submit(process_one, fac): fac for fac in facilities
+                executor.submit(process_one, fac): fac
+                for fac in candidate_facilities
             }
             for future in as_completed(futures):
                 fac = futures[future]
@@ -1270,6 +1562,7 @@ def main() -> int:
                         "index_checked": 0,
                     }
                 record_result(fac, stats)
+    flush_snapshot_updates()
 
     # ── Close scrape_run ─────────────────────────────────────────────────
     run_status = "success" if not error_log_parts else "partial"
@@ -1306,7 +1599,10 @@ def main() -> int:
     print(f"Phase D citations ingest — {summary_status}")
     print(f"{'='*60}")
     print(f"  Facilities processed  : {totals['facilities_processed']}")
+    print(f"  Bulk records checked  : {totals['bulk_checked']}")
+    print(f"  Facilities unchanged  : {totals['facilities_unchanged']}")
     print(f"  Facility indexes checked: {totals['index_checked']}")
+    print(f"  Snapshots updated     : {totals['snapshots_updated']}")
     print(f"  Reports seen          : {totals['reports_seen']}")
     print(f"  Reports ingested      : {totals['reports_ingested']}")
     print(f"  Reports skipped       : {totals['reports_skipped']} (already in DB)")
