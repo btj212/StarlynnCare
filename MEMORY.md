@@ -601,6 +601,33 @@ and generated PDFs stall or fill the disk.
 `scripts/launchd/com.starlynncare.ca-watch.plist`,
 `scrapers/ccld_citations_ingest.py`.
 
+## 2026-10 — California routine mode is not ready
+
+**Measured:** Local staged runs, alerts not dispatched. One facility was
+partial in 533 seconds (21 requests, 16 timeouts, 1 new report). The first
+25 facilities took 1,311 seconds: 8 new reports, 14 snapshots, 75 requests.
+The first 100 took 5,785 seconds: 36 new reports, 52 snapshots, 353 requests.
+A 3-hour statewide pass checked 660 bulk rows, left 55 already-baselined
+homes untouched, and reconciled 607 others with 71 successful indexes,
+26 new reports, and 467 timeouts. No customer alert was sent.
+
+**Second runs:** A baselined bulk home took 1.6 seconds and made one HTTP
+call, the statewide CSV, with zero report-index calls. Desert Hills Memory
+Care Center’s second run took 2.9 seconds and two HTTP calls (CSV plus its
+index) and downloaded no report pages. Maple Manor’s second run took 7.2
+seconds and the same two calls. Both homes are absent from the bulk file;
+listed slots that return 404 are recorded as unpublished.
+
+**Still open:** 84 facilities have a complete snapshot, 51 have a pending
+one, and 527 of 662 publishable homes have no snapshot yet. Routine mode
+is not declared. The daily job is installed but will keep those homes
+pending until CDSS answers. The Google Drive PDF copy is also incomplete:
+the transfer was paused because reading the iCloud files filled the local
+disk, and 30,606 hydrated files were evicted back to iCloud.
+
+**Source:** `scrapers/ccld_citations_ingest.py`,
+`~/Library/Logs/StarlynnCare`.
+
 ---
 
 <!-- New session summaries go above this line -->
