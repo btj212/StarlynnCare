@@ -132,8 +132,7 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/arizona/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/arizona/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     { path: "/arizona/guides", priority: "0.80", changefreq: "monthly" },
-    // Missouri hub + guides + articles (live)
-    { path: "/missouri", priority: "0.88", changefreq: "weekly" },
+    // Missouri guides + articles. The state hub itself is listed once above.
     { path: "/missouri/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/missouri/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/missouri/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
