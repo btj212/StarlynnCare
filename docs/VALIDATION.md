@@ -87,6 +87,14 @@ Checks:
 
 A quiet week does not fail. The log prints how many facility rows were edited in the last 7 days, and a blank `facilities.last_inspection_date` is not a failure. The dated record lives on the inspection row. A California chain score that has moved away from the article is printed. It does not fail the scan. Family watch mail waits for this check to pass, and it is sent only by the Sunday schedule. California's morning crawl holds its notes until Sunday, and a scan that did not finish is left out.
 
+### Layer 6 — Live CMS parity (read-only, no mocks)
+
+```bash
+python3 scripts/validate/e2e_live_cms_parity.py --per-state 2 --seed 7
+```
+
+Pulls a sample of published CMS-certified homes' real deficiency rows from data.cms.gov, compares every stored field (F-tag, scope/severity, severity level, immediate jeopardy, correction date, description) through Supabase REST, then loads the live profile page. Needs only `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (works where port 5432 is blocked). Covers CMS-certified homes only (Utah today); other regulators are not yet covered.
+
 ---
 
 ## CI Integration
