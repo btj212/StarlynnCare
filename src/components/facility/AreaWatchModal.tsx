@@ -16,12 +16,12 @@ type FormState = "idle" | "submitting" | "success" | "error";
 const COPY = {
   city_modal: {
     headline: (areaName: string) => `Searching for memory care in ${areaName}?`,
-    sub: "Get a weekly digest when official inspection records change for facilities in this area — so you can compare before you pick one.",
+    sub: "Get a weekly note when an inspection is added for a facility in this area, including a visit that adds no citation.",
     button: "Get the area digest →",
   },
   state_modal: {
     headline: (areaName: string) => `Researching memory care in ${areaName}?`,
-    sub: "Get a weekly digest when official inspection records change across the state — useful while you are still narrowing cities.",
+    sub: "Get a weekly note when an inspection is added anywhere in the state, including a visit that adds no citation.",
     button: "Get the area digest →",
   },
 };

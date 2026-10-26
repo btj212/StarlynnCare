@@ -12,9 +12,61 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 **Rejected:** Treating “nothing changed this week” as a broken scraper. Failing every state because `last_inspection_date` is null. Failing Illinois because it has no bed counts. Leaving California in the GitHub queue, where the six-hour cancel on 2026-10-25 held up Texas, Washington, Arizona, and Missouri. Telling the admin that subscriber alerts were withheld when the scrape had already finished and the alert step ran.
 
-**Flag:** This replaces the post-ingest rules in `docs/VALIDATION.md` that required a 7-day `updated_at` and a non-null `last_inspection_date` for every state. `scripts/validate/db_invariants.py` already treated the inspection row as the coverage check and only expected the denormalized date to be backfilled for Minnesota. The weekly gate now uses that same 90% inspection-row bar. The bed allowance of five is the global invariant applied per state, so several states could each be under five and still trip the global check. The `cursor/email-list-growth` branch has newer entries above this one; keep both when those branches meet.
+**Flag:** This replaces the post-ingest rules in `docs/VALIDATION.md` that required a 7-day `updated_at` and a non-null `last_inspection_date` for every state. `scripts/validate/db_invariants.py` already treated the inspection row as the coverage check and only expected the denormalized date to be backfilled for Minnesota. The weekly gate now uses that same 90% inspection-row bar. The bed allowance of five is the global invariant applied per state, so several states could each be under five and still trip the global check. The California scan decisions and the sitemap date decision below stay in effect.
 
 **Source:** Sunday run `40194733653`. Blake, 2026-10-25.
+
+## 2026-10 — Sitemap dates come from the data, not the day the file was built
+
+**Decided:** A sitemap `lastmod` is a real content date. State hubs use the newest publishable facility `updated_at` in that state. City and county hubs, and facility profiles, keep the facility update date they already had. If no real date exists, the URL omits `lastmod`. The paginated facility query stays as it is: Arizona’s live profiles are already in the production sitemap.
+
+**Rejected:** Stamping every static URL, or any hub with a missing date, with the sitemap generation day. That made unchanged pages look newly edited on every crawl.
+
+**Source:** Search Console export, October 22, 2026. Pull request #183.
+
+## 2026-10 — California report checks are concurrent, bounded, and fail partial
+
+**Decided:** The routine California CCLD scan still checks every targeted
+publishable facility, but preloads the stored report inventory once and checks
+six facility indexes concurrently. It reuses one HTTP session per worker and
+opens a database connection only when a new report must be stored. A failed
+facility index is an incomplete check: errors make the scraper exit non-zero,
+which keeps the State Watch scan partial and prevents family alerts.
+
+**Outage behavior:** Three bounded request attempts replace six long attempts.
+Twelve consecutive facility-index failures open a circuit breaker; remaining
+homes are explicitly counted as unchecked and the run fails quickly. This is
+not treated as a successful zero-change scan. Routine scans also have a
+30-minute budget; unfinished homes become explicit errors rather than extending
+into the afternoon. The summary reports both targeted facilities and facility
+indexes actually checked.
+
+**Rejected:** Sequentially holding an idle database transaction while waiting
+on CDSS; letting a broad CDSS outage consume the six-hour workflow timeout;
+claiming comprehensive coverage when some facility indexes could not be read.
+
+**Source:** California run `40129407306`, stopped 2026-10-24 after more than two
+hours with zero reports stored.
+
+## 2026-10 — Facility and area watches email on any new inspection
+
+**Decided:** A facility watch and an area watch send when a completed scan adds an inspection, even if the citation count does not rise. More of those emails is the point. The note names the visit and says the citation count stayed put. It is not a rating. `scripts/dispatch_watch_alerts.py` already sends every family-facing delta from a completed scan, including `+0 citations`. Do not add a filter that drops those. The same promise is on Area Watch, Facility Watch Premium, the watch welcome, and “this month in the record.”
+
+**Rejected:** Waiting for a new citation before a watch email. Treating a quiet visit as an empty scan.
+
+**Flag:** A scan that is still running, partial, or failed still sends nothing. California scans have been stuck in `running` since 2026-10-18, so those watchers are not getting notes until a scan completes. Published Loops templates stay as they are until Blake approves a republish. Backlog catch-ups stay unsent until the rewritten notes are approved.
+
+**Source:** Blake, 2026-10-24.
+
+## 2026-10 — A visit with no new citation is the update
+
+**Decided:** When a watcher’s file gains an inspection and the citation count does not rise, that visit is the note. Say the visit date, say the citation count stayed where it was, and link the profile. A quiet visit is reassuring. It is not a star, a grade, or a claim that the older record is clean. Do not hold the note until a citation appears. The same rule applies to area catch-ups and to “this month in the record.”
+
+**Rejected:** Treating a +0-citation visit as nothing to report. Dating the note with the day we noticed the file change instead of the visit date on the profile. Awarding a gold star or any other score for a visit that added no citation.
+
+**Flag:** This replaces the catch-up instruction in migration `0065_customer_commitments.sql` that said to skip inspection-count bumps with no new citations. That migration stays as history. The West Covina and Oregon notes Blake approved on 2026-10-24 used the old framing and were rewritten the same day. They are not approved again until Blake says so. Still do not send before that approval.
+
+**Source:** Blake, 2026-10-24.
 
 ## 2026-10 — Ned stays off every list; Orange County is California; no “what was this worth” email
 
@@ -530,5 +582,70 @@ Append session summaries here (most recent first). Format: `YYYY-MM-DD — summa
 **Decided:** Utah (and potentially other states) stores both federal CMS nursing-home inspections (`source_agency = 'CMS'`) and state ALF inspections (`source_agency = 'UT-CCL'`) in the same facility profile. Every UI that says "DLBC citations" on a CMS-sourced row was wrong. `agencyLabelForInspection(insp, cfg)` in `profileConfig.ts` returns the correct label per row. Applied in `FacilityHero.tsx`, `FacilityRecord.tsx`, `FacilityFullInspections.tsx`.
 
 **Source:** `src/lib/states/profileConfig.ts`, component files above.
+
+## 2026-10 — California CDSS bulk-first report reconciliation
+
+**Decided:** Routine CA scans download the statewide
+`DownloadStateData/ResidentialElderCareFacility` CSV once and fingerprint each
+facility's compliance fields. The scraper only calls the bursty per-facility
+`FacilityReports` API when no snapshot exists or that fingerprint changed.
+Successful reconciliations persist both the bulk payload and a stable report
+inventory in `facility_watch_snapshots` under
+`ca_ccld_bulk_compliance_v1`.
+
+**Why:** The bulk CSV covers statewide compliance in seconds, while hundreds of
+individual API calls routinely time out. `REPORTPAGE` contains a stable Lotus
+document ID; indexed `inx=N` URLs are positional and can change when CDSS
+reorders or removes reports. Partial facilities never advance their snapshots
+or produce a complete/no-change claim.
+
+**Source:** `scrapers/ccld_citations_ingest.py`,
+`scripts/test_ccld_citations_ingest.py`.
+
+## 2026-10 — California crawl runs locally, not from GitHub
+
+**Decided:** The routine California watch is a macOS launchd job at
+`~/Developer/StarlynnCare`, outside iCloud. `DATABASE_URL` lives in Keychain
+service `starlynncare-database-url`. The job downloads the statewide CSV,
+deep-checks only missing or changed snapshots plus Maple Manor and Desert
+Hills Memory Care Center, and paces CDSS calls from a local health history.
+It does not dispatch customer alerts.
+
+**Why:** The same report endpoint answers from this Mac and times out from
+GitHub-hosted runners. The checkout under Documents is iCloud-backed, so Git
+and generated PDFs stall or fill the disk.
+
+**Source:** `scripts/run_ca_watch_local.sh`,
+`scripts/launchd/com.starlynncare.ca-watch.plist`,
+`scrapers/ccld_citations_ingest.py`.
+
+## 2026-10 — California routine mode is not ready
+
+**Measured:** Local staged runs, alerts not dispatched. One facility was
+partial in 533 seconds (21 requests, 16 timeouts, 1 new report). The first
+25 facilities took 1,311 seconds: 8 new reports, 14 snapshots, 75 requests.
+The first 100 took 5,785 seconds: 36 new reports, 52 snapshots, 353 requests.
+A 3-hour statewide pass checked 660 bulk rows, left 55 already-baselined
+homes untouched, and reconciled 607 others with 71 successful indexes,
+26 new reports, and 467 timeouts. No customer alert was sent.
+
+**Second runs:** A baselined bulk home took 1.6 seconds and made one HTTP
+call, the statewide CSV, with zero report-index calls. Desert Hills Memory
+Care Center’s second run took 2.9 seconds and two HTTP calls (CSV plus its
+index) and downloaded no report pages. Maple Manor’s second run took 7.2
+seconds and the same two calls. Both homes are absent from the bulk file;
+listed slots that return 404 are recorded as unpublished.
+
+**Still open:** 84 facilities have a complete snapshot, 51 have a pending
+one, and 527 of 662 publishable homes have no snapshot yet. Routine mode
+is not declared. The daily job is installed but will keep those homes
+pending until CDSS answers. The Google Drive PDF copy is also incomplete:
+the transfer was paused because reading the iCloud files filled the local
+disk, and 30,606 hydrated files were evicted back to iCloud.
+
+**Source:** `scrapers/ccld_citations_ingest.py`,
+`~/Library/Logs/StarlynnCare`.
+
+---
 
 <!-- New session summaries go above this line -->

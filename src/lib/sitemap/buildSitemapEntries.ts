@@ -21,16 +21,20 @@ function escapeXml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export function renderUrlset(entries: SitemapUrlRow[], today: string): string {
+export function renderUrlset(entries: SitemapUrlRow[]): string {
   const body = entries
-    .map(
-      (u) => `  <url>
-    <loc>${escapeXml(u.loc)}</loc>
-    <lastmod>${escapeXml(u.lastmod ?? today)}</lastmod>
+    .map((u) => {
+      // A missing date stays omitted. Substituting the generation date made
+      // unchanged pages look freshly edited every day.
+      const lastmod = u.lastmod
+        ? `\n    <lastmod>${escapeXml(u.lastmod)}</lastmod>`
+        : "";
+      return `  <url>
+    <loc>${escapeXml(u.loc)}</loc>${lastmod}
     <changefreq>${u.changefreq}</changefreq>
     <priority>${u.priority}</priority>
-  </url>`,
-    )
+  </url>`;
+    })
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -54,7 +58,7 @@ ${body}
 }
 
 /** Marketing + editorial URLs (no county/city hubs, no facility profiles). */
-export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
+export function collectStaticSitemapEntries(): SitemapUrlRow[] {
   const paths: Array<{ path: string; priority: string; changefreq: SitemapUrlRow["changefreq"] }> = [
     { path: "/", priority: "1.0", changefreq: "weekly" },
     { path: "/states", priority: "0.92", changefreq: "weekly" },
@@ -128,8 +132,7 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     { path: "/arizona/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/arizona/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     { path: "/arizona/guides", priority: "0.80", changefreq: "monthly" },
-    // Missouri hub + guides + articles (live)
-    { path: "/missouri", priority: "0.88", changefreq: "weekly" },
+    // Missouri guides + articles. The state hub itself is listed once above.
     { path: "/missouri/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/missouri/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/missouri/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
@@ -149,8 +152,52 @@ export function collectStaticSitemapEntries(today: string): SitemapUrlRow[] {
     loc: `${SITE_ORIGIN}${p.path}`,
     priority: p.priority,
     changefreq: p.changefreq,
-    lastmod: today,
   }));
+}
+
+/**
+ * State hubs are static URLs, but their content changes when facility data
+ * changes. Stamp each one with that state's newest publishable `updated_at`
+ * instead of the sitemap generation date.
+ */
+export async function stampCoveredStateHubLastmods(
+  supabase: SupabaseClient,
+  entries: SitemapUrlRow[],
+): Promise<SitemapUrlRow[]> {
+  const stateByPath = new Map(COVERED_STATES.map((state) => [`/${state.slug}`, state.code]));
+  const latestByCode = new Map<string, string>();
+
+  for (let from = 0; ; from += SITEMAP_QUERY_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("facilities")
+      .select("id, state_code, updated_at")
+      .eq("publishable", true)
+      .order("id")
+      .range(from, from + SITEMAP_QUERY_PAGE_SIZE - 1);
+
+    if (error) {
+      throw new Error(`Failed to date state hub sitemap entries: ${error.message}`);
+    }
+
+    const page = (data ?? []) as Array<{
+      id: string;
+      state_code: string;
+      updated_at: string | null;
+    }>;
+    for (const row of page) {
+      const updated = row.updated_at?.split("T")[0];
+      if (updated && updated > (latestByCode.get(row.state_code) ?? "")) {
+        latestByCode.set(row.state_code, updated);
+      }
+    }
+    if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
+  }
+
+  return entries.map((entry) => {
+    const stateCode = stateByPath.get(entry.loc.slice(SITE_ORIGIN.length));
+    const lastmod = stateCode ? latestByCode.get(stateCode) : undefined;
+    return lastmod ? { ...entry, lastmod } : entry;
+  });
 }
 
 /** Listing hubs for one state: counties + city_slug hubs that match `regionsForState`. */
@@ -158,7 +205,6 @@ export async function collectHubEntriesForState(
   supabase: SupabaseClient,
   stateCode: string,
   stateSlug: string,
-  today: string,
 ): Promise<SitemapUrlRow[]> {
   type HubFacilityRow = {
     id: string;
@@ -211,11 +257,11 @@ export async function collectHubEntriesForState(
       },
       "",
     );
-    hubLastmod.set(region.slug, latest || today);
+    hubLastmod.set(region.slug, latest);
   }
 
   for (const slug of countBySlug.keys()) {
-    hubLastmod.set(slug, lastmodBySlug.get(slug) ?? today);
+    hubLastmod.set(slug, lastmodBySlug.get(slug) ?? "");
   }
 
   return [...hubLastmod]
@@ -224,7 +270,7 @@ export async function collectHubEntriesForState(
       loc: `${SITE_ORIGIN}/${stateSlug}/${slug}`,
       priority: "0.85",
       changefreq: "weekly" as const,
-      lastmod,
+      ...(lastmod ? { lastmod } : {}),
     }));
 }
 
@@ -233,19 +279,17 @@ export async function collectHubEntriesForState(
  */
 export async function collectCaliforniaHubEntries(
   supabase: SupabaseClient,
-  today: string,
 ): Promise<SitemapUrlRow[]> {
-  return collectHubEntriesForState(supabase, "CA", "california", today);
+  return collectHubEntriesForState(supabase, "CA", "california");
 }
 
 /** County + city hubs for every covered state (publishable rows drive inclusion). */
 export async function collectCoveredStateHubEntries(
   supabase: SupabaseClient,
-  today: string,
 ): Promise<SitemapUrlRow[]> {
   const out: SitemapUrlRow[] = [];
   for (const s of COVERED_STATES) {
-    out.push(...(await collectHubEntriesForState(supabase, s.code, s.slug, today)));
+    out.push(...(await collectHubEntriesForState(supabase, s.code, s.slug)));
   }
   return out;
 }
@@ -254,7 +298,6 @@ export async function collectFacilityEntriesForState(
   supabase: SupabaseClient,
   stateCode: string,
   stateSlug: string,
-  today: string,
 ): Promise<SitemapUrlRow[]> {
   // Use an inner join on inspections so only facilities with at least one inspection
   // are included. This prevents thin/noindex pages (publishable=true but 0 inspections)
@@ -296,17 +339,16 @@ export async function collectFacilityEntriesForState(
       loc: `${SITE_ORIGIN}/${stateSlug}/${f.city_slug}/${f.slug}`,
       priority: "0.8",
       changefreq: "monthly" as const,
-      lastmod: f.updated_at ? f.updated_at.split("T")[0] : today,
+      ...(f.updated_at ? { lastmod: f.updated_at.split("T")[0] } : {}),
     }));
 }
 
 export async function collectFacilityEntries(
   supabase: SupabaseClient,
-  today: string,
 ): Promise<SitemapUrlRow[]> {
   const out: SitemapUrlRow[] = [];
   for (const s of COVERED_STATES) {
-    out.push(...(await collectFacilityEntriesForState(supabase, s.code, s.slug, today)));
+    out.push(...(await collectFacilityEntriesForState(supabase, s.code, s.slug)));
   }
   return out;
 }

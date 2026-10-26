@@ -134,7 +134,7 @@ export async function sendWatchWelcome({
         facilityUrl: "",
         cityState: "",
         licenseNumber: "",
-        recordSummary: `You're now watching ${facilityName}. We'll email you when the public record changes.`,
+        recordSummary: `You're now watching ${facilityName}. We'll email you when an inspection is added, including a visit that adds no citation.`,
         lastActivityDate: "—",
         lastActivityType: "—",
         quietPeriodLine: "",
@@ -142,7 +142,7 @@ export async function sendWatchWelcome({
         statsLine: "",
         severityRankLine: "",
         whatWeWatch:
-          "• New inspection records posted on the public regulator file\n• New violations or regulatory actions for this facility\n• License or memory-care endorsement status changes",
+          "• A new inspection visit, including one that adds no citation\n• New violations or regulatory actions for this facility\n• License or memory-care endorsement status changes",
         unsubscribeUrl,
       };
 

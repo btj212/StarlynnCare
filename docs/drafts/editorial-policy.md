@@ -35,6 +35,10 @@ A facility's grade is recalculated when any of the following occur:
 
 The footer on every profile page displays the date of the most recent data ingest. Families who see a discrepancy between what a facility told them and what the profile shows should check the primary regulator portal linked on the profile — if the regulator's record differs from ours, send a correction request to hello@starlynncare.com with the license number and the updated primary-source URL.
 
+## Watch notes and the monthly record
+
+A new inspection is reported to anyone watching that facility or its area, even when the citation count does not rise. The note gives the visit date on the profile and says the citation count stayed where it was. That is reassuring. It is not a grade, a star, or a claim that the older record is clean. The same rule applies to the monthly record. A scan that has not finished does not send a note.
+
 ## Conflict of interest
 
 StarlynnCare accepts no referral commissions, lead bonuses, or paid placement fees from facility operators. No operator can purchase a higher grade, a featured position, or adjacency to directory rankings. Sponsorship or promotional language does not appear adjacent to graded profiles.
