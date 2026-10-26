@@ -472,6 +472,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   MN insertDate max=2026-10-24 (unchanged vs Fri probe — same 4 survey PDFs; Sunday GHA MN +0);
 #   MN resolved max=2026-10-14 unchanged; all other states no new probe-layer signal (CA/TX/WA/IL/PA/AZ/MO
 #   refreshed or queued on Sunday GHA 40194733653; MO FOIA manual).
+# Cron probe 2026-10-26T23:01 UTC: OR source max=2026-10-23 (unchanged vs ingested baseline); MN insertDate
+#   max=2026-10-24 (unchanged — same 4 survey PDFs: 3D INNOVATIVE CARES, ESTHERRA CARE, GENESIS ASSISTED
+#   LIVING, HEATHERS MANOR; Sunday GHA 40194733653 MN +0, bundle licenses not in DB target list);
+#   MN resolved max=2026-10-14 unchanged; CA/TX/WA/UT/IL/PA/AZ/MO no new probe-layer signal (CA Mac job;
+#   TX manual TULIP; MO FOIA). Weekly workflow push trigger removed — MN retry needs workflow_dispatch.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
