@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — The review page shows the next homes that have no note
+
+**Decided:** The yellow queue loads homes that still need a decision and have no note, 1,000 at a time, in state then name order. A Next link loads the following 1,000. Keeping a home pending still saves the note and leaves the home unpublished. The note is what takes it off this page.
+
+**Rejected:** Raising the query limit. The API still returns 1,000 rows, so a higher limit does not reveal the later states. Hiding a pending home by changing its status would publish it or drop the decision.
+
+**Source:** Review session on 2026-10-26. The open window was California and Minnesota notes. The next page starts with the Minnesota homes that have no note, then Oregon and Pennsylvania.
+
 ## 2026-10 — California notes wait for a finished scan, then go out on Sunday
 
 **Decided:** The 6:15 Mac crawl still does not email when it finishes. On Sunday, after that crawl, notes go out only from California scans whose status is `completed` and only after the current California data check passes. Partial, failed, and running scans stay silent, including the partial scans that already recorded visit changes. The same scan is not sent twice. The first live California note has to be one recipient. Until that note is confirmed, Sunday prints the list and sends nothing.

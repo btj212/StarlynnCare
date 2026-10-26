@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — The review queue's 5,000-row limit still returned 1,000 homes
+
+**What went wrong:** The yellow queue asked for 5,000 homes that still need a decision. The database API stops at 1,000. Homes kept pending stay in that status, so their notes filled the window. California and Minnesota were all the page could show, and Oregon, Pennsylvania, Texas, and Washington never appeared. Refreshing did not help.
+
+**What worked instead:** Ask only for homes whose note is empty, 1,000 at a time, and put a Next link on the page. A saved note stays on the home and keeps it unpublished. It just leaves the window so the next state can load.
+
+**Source:** Review session on 2026-10-26. Unreviewed homes with no note: Minnesota 254, Oregon 128, Pennsylvania 657, Texas 75, Washington 7,144. California's remaining 20 already had notes.
+
 ## 2026-10 — A partial California crawl had visit changes and still must not email
 
 **What went wrong:** The morning Mac crawl often stops inside its time budget. Those runs are stored as `partial` and can still list new visits. Treating that list as a finished scan would email families about a crawl that did not finish. The older California data check would also have failed a quiet week, which would have blocked a finished scan for the wrong reason.
