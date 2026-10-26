@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — A partial California crawl had visit changes and still must not email
+
+**What went wrong:** The morning Mac crawl often stops inside its time budget. Those runs are stored as `partial` and can still list new visits. Treating that list as a finished scan would email families about a crawl that did not finish. The older California data check would also have failed a quiet week, which would have blocked a finished scan for the wrong reason.
+
+**What worked instead:** Sunday mail reads `state_scan_runs.status`. Only `completed` is eligible, and only after the current data check passes. The check no longer fails because facility rows were left untouched.
+
+**Source:** California scan rows from 2026-10-16 through 2026-10-25. Layer 5 run on 2026-10-26 passed 4/4.
+
 ## 2026-10 — Merging the ingest script started a production scan and could email families
 
 **What went wrong:** The weekly workflow ran on a push to `main` of `scripts/weekly_inspection_ingest.py` or `scripts/probe_inspection_freshness.py`. Merging earlier pull requests queued two full scans on the old data checks. The alert step also ran whenever the scrape itself succeeded, including when the data check failed, so a passing check on a weeknight merge would have emailed families.

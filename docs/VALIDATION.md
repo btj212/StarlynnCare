@@ -85,7 +85,7 @@ Checks:
 3. A state that publishes bed counts is missing them on no more than 5 homes. A state with no bed counts at all, such as Illinois, does not fail
 4. At least 90% of published homes have an inspection row
 
-A quiet week does not fail. The log prints how many facility rows were edited in the last 7 days, and a blank `facilities.last_inspection_date` is not a failure. The dated record lives on the inspection row. A California chain score that has moved away from the article is printed. It does not fail the scan. Family watch mail waits for this check to pass, and it is sent only by the Sunday schedule.
+A quiet week does not fail. The log prints how many facility rows were edited in the last 7 days, and a blank `facilities.last_inspection_date` is not a failure. The dated record lives on the inspection row. A California chain score that has moved away from the article is printed. It does not fail the scan. Family watch mail waits for this check to pass, and it is sent only by the Sunday schedule. California's morning crawl holds its notes until Sunday, and a scan that did not finish is left out.
 
 ---
 
