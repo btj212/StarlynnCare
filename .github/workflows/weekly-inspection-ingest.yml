@@ -1,7 +1,11 @@
-# Weekly full-source inspection check for every live state.
+# Weekly full-source inspection check for every live state except California.
 #
-# Matrix: one job per state so a slow OR/PA PDF pass cannot block MN/UT.
-# Requires secrets: DATABASE_URL, ANTHROPIC_API_KEY (for PDF parse steps).
+# California resumes on the Mac (launchd com.starlynncare.ca-watch, 6:15 local).
+# A GitHub California job held this one-at-a-time queue for six hours and was
+# then cancelled, which pushed every later state to the back of the day.
+#
+# States run one at a time. Pennsylvania and Washington are last because they
+# take the longest. Requires secrets: DATABASE_URL, ANTHROPIC_API_KEY.
 name: Weekly state source scan
 
 on:
@@ -13,20 +17,14 @@ on:
     paths:
       - "scripts/weekly_inspection_ingest.py"
       - "scripts/probe_inspection_freshness.py"
-      - ".github/workflows/weekly-inspection-ingest.yml"
   workflow_dispatch:
     inputs:
       state:
-        description: "Single state code (optional, e.g. OR). Leave blank for all."
+        description: "Single state code (optional, e.g. OR). Leave blank for all. California is not in this workflow."
         required: false
         type: string
-      skip_ca:
-        description: "Skip CA ingest"
-        required: false
-        type: boolean
-        default: false
       dispatch_alerts:
-        description: "Send facility and area watch emails after this manual run"
+        description: "On a manual run, also send facility and area watch emails"
         required: false
         type: boolean
         default: false
@@ -41,7 +39,7 @@ jobs:
       # each state opens multiple connections (MN/IL/PA/UT failed 2026-06-25 run 28137781944).
       max-parallel: 1
       matrix:
-        state: [MN, OR, IL, PA, UT, CA, TX, WA, AZ, MO]
+        state: [MN, OR, IL, UT, TX, AZ, MO, PA, WA]
     steps:
       - uses: actions/checkout@v4
 
@@ -59,23 +57,16 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
         run: |
-          ARGS=(--state "${{ matrix.state }}")
-          SKIP_CA="${{ inputs.skip_ca }}"
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            SKIP_CA="false"
-          fi
-          if [ "$SKIP_CA" = "true" ] && [ "${{ matrix.state }}" = "CA" ]; then
-            ARGS+=(--skip-ca)
-          fi
           if [ -n "${{ inputs.state }}" ] && [ "${{ inputs.state }}" != "${{ matrix.state }}" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "Skipping ${{ matrix.state }} (workflow_dispatch targeted ${{ inputs.state }})"
             exit 0
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"
-          python3 scripts/weekly_inspection_ingest.py "${ARGS[@]}" --skip-validate --scan-run-output /tmp/state-watch-run-id
+          python3 scripts/weekly_inspection_ingest.py --state "${{ matrix.state }}" --skip-validate --scan-run-output /tmp/state-watch-run-id
 
       - name: Layer 5 post-ingest — ${{ matrix.state }}
+        id: layer5
         if: success() && steps.ingest.outputs.skip != 'true'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -103,7 +94,7 @@ jobs:
           retention-days: 30
 
       - name: Dispatch area and facility watch alerts — ${{ matrix.state }}
-        if: steps.ingest.outcome == 'success' && (github.event_name != 'workflow_dispatch' || inputs.dispatch_alerts)
+        if: steps.ingest.outcome == 'success' && steps.ingest.outputs.skip != 'true' && (github.event_name != 'workflow_dispatch' || inputs.dispatch_alerts)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
@@ -112,8 +103,8 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://www.starlynncare.com
         run: python3 scripts/dispatch_watch_alerts.py --scan-run-id "$(tr -d '\n' < /tmp/state-watch-run-id)"
 
-      - name: Notify admin of failed scan — ${{ matrix.state }}
-        if: failure() && steps.ingest.outputs.skip != 'true'
+      - name: Notify admin of failed scrape — ${{ matrix.state }}
+        if: steps.ingest.outcome == 'failure' || steps.ingest.outcome == 'cancelled'
         env:
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
           LOOPS_ADMIN_ALERT_ID: ${{ secrets.LOOPS_ADMIN_ALERT_ID }}
@@ -122,6 +113,20 @@ jobs:
           python3 scripts/notify_scan_failure.py
           --state ${{ matrix.state }}
           --workflow-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          --details "The scheduled source scan failed before it finished. No subscriber alerts were sent."
+
+      - name: Notify admin of failed data check — ${{ matrix.state }}
+        if: steps.layer5.outcome == 'failure'
+        env:
+          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          LOOPS_ADMIN_ALERT_ID: ${{ secrets.LOOPS_ADMIN_ALERT_ID }}
+          ADMIN_ALERT_EMAIL: ${{ secrets.ADMIN_ALERT_EMAIL }}
+        run: >-
+          python3 scripts/notify_scan_failure.py
+          --state ${{ matrix.state }}
+          --summary "${{ matrix.state }} data check failed"
+          --workflow-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          --details "The source scan finished, but a data check this state can pass did not. Subscriber alerts still went out for any completed change."
 
   validate:
     needs: ingest

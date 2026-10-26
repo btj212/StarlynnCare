@@ -81,9 +81,11 @@ python3 scripts/validate/post_ingest_check.py --state TX --allow-shrink
 
 Checks:
 1. Row count did not decrease (without `--allow-shrink`)
-2. `peer_rank_pct` distribution is non-degenerate (stddev > 5)
-3. ≥80% of publishable facilities have `updated_at` within 7 days
-4. No newly-publishable facilities have `beds IS NULL` or `last_inspection_date IS NULL`
+2. `peer_rank_pct` distribution is non-degenerate (stddev > 5) once the state has at least 10 published homes
+3. A state that publishes bed counts is missing them on no more than 5 homes. A state with no bed counts at all, such as Illinois, does not fail
+4. At least 90% of published homes have an inspection row
+
+A quiet week does not fail. The log prints how many facility rows were edited in the last 7 days, and a blank `facilities.last_inspection_date` is not a failure. The dated record lives on the inspection row.
 
 ---
 
