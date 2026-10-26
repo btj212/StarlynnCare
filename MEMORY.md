@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — California notes wait for a finished scan, then go out on Sunday
+
+**Decided:** The 6:15 Mac crawl still does not email when it finishes. On Sunday, after that crawl, notes go out only from California scans whose status is `completed` and only after the current California data check passes. Partial, failed, and running scans stay silent, including the partial scans that already recorded visit changes. The same scan is not sent twice. The first live California note has to be one recipient. Until that note is confirmed, Sunday prints the list and sends nothing.
+
+**Rejected:** Putting California back on the GitHub queue. Emailing every morning. Emailing the partial crawls from this week. Opening Sunday mail to every California watcher before one named recipient has received a note.
+
+**Flag:** This replaces the line in the Sunday-email entry that said California still does not email from the Mac job. The other states still email only from the Sunday GitHub schedule. The Mac crawl's 90-minute cap and the 30-minute routine budget in the California concurrency entry are unchanged.
+
+**Source:** Blake, 2026-10-25. Ten days of California scans had no `completed` row.
+
 ## 2026-10 — Sunday is the only automatic family email
 
 **Decided:** Facility and area watch mail goes out from the Sunday 08:00 UTC scan, and only after that state's data check passes. A failed scrape or a failed data check sends the admin a note and sends families nothing. A hand-started run sends family mail only when its alert box is checked. Merging or pushing the ingest script does not start a scan.

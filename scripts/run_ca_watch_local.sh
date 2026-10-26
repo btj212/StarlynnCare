@@ -1,10 +1,12 @@
 #!/bin/bash
-# Local California watch. Customer alert dispatch is intentionally not invoked.
+# Local California watch. The crawl itself does not email families.
+# On Sunday, after the crawl, finished scans can send. A partial crawl stays silent.
 # Credentials come from Keychain at runtime and are not written to disk.
 
 set -euo pipefail
 
 ROOT="/Users/blakejones/Developer/StarlynnCare"
+PYTHON="/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"
 LOG_DIR="${HOME}/Library/Logs/StarlynnCare"
 SUPPORT_DIR="${HOME}/Library/Application Support/StarlynnCare"
 LOCK="${SUPPORT_DIR}/ca-watch.lock"
@@ -36,13 +38,13 @@ if [ "$avail_kb" -lt 1500000 ]; then
   exit 1
 fi
 
-python3 - "$LOCK" "$ROOT" "$LOG" <<'PY'
+"$PYTHON" - "$LOCK" "$ROOT" "$LOG" "$PYTHON" <<'PY'
 import fcntl
 import os
 import subprocess
 import sys
 
-lock_path, root, log_path = sys.argv[1:]
+lock_path, root, log_path, python_bin = sys.argv[1:]
 lock = open(lock_path, "a", encoding="utf-8")
 try:
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -53,7 +55,7 @@ except BlockingIOError:
 with open(log_path, "a", encoding="utf-8") as log:
     result = subprocess.run(
         [
-            sys.executable,
+            python_bin,
             "-u",
             "scripts/weekly_inspection_ingest.py",
             "--state",
@@ -65,5 +67,15 @@ with open(log_path, "a", encoding="utf-8") as log:
         stdout=log,
         stderr=subprocess.STDOUT,
     )
+    log.write("\n--- California Sunday alert check ---\n")
+    alert = subprocess.run(
+        [python_bin, "-u", "scripts/ca_sunday_alerts.py", "--send"],
+        cwd=root,
+        env=os.environ.copy(),
+        stdout=log,
+        stderr=subprocess.STDOUT,
+    )
+    if alert.returncode != 0:
+        log.write("California Sunday alert check failed. The crawl result is unchanged.\n")
 sys.exit(result.returncode)
 PY
