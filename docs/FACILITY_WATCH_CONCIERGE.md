@@ -179,6 +179,14 @@ If multiple families watch the same facility, one shared monitor is enough — f
 2. Pause or delete the Firecrawl monitor in the dashboard.
 3. Clear or keep `firecrawl_monitor_id` for audit; do not leave monitors running with zero payers.
 
+## What sends an official-record alert
+
+A completed scan that adds an inspection sends the facility alert and the area digest, even when the citation count does not rise. That visit is the update. The note should say the visit date on the profile and that the citation count stayed where it was. A quiet visit is reassuring. It is not a star, a grade, or a claim that the older record is clean.
+
+Do not wait for a new citation. Do not drop `+0 citations` rows out of `scripts/dispatch_watch_alerts.py`. A scan that is still running, partial, or failed sends nothing.
+
+License or publication changes still send, because they are a different change. Third-party news and review mentions stay on the paid concierge path above and are labeled as not an official finding.
+
 ## Launch states
 
 - **Premium replaces free per-facility signup.** New visitors cannot enroll in ongoing facility alerts via the old free strip/modal/sticky bar. Existing `facility_watchers` rows with `alerts_eligible=true` keep receiving official-record alerts.

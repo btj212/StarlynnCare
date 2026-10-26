@@ -147,9 +147,10 @@ export function FacilityWatchPaid({
 
               <p className="mt-4 max-w-[48ch] text-[15px] leading-relaxed text-paper/75">
                 Official inspection and license-record changes for{" "}
-                {facilityName}, plus news, public reviews, and complaint
-                mentions across the web — usually within a day of appearing
-                online. Nothing is swept under the rug.
+                {facilityName}, including a visit that adds no citation, plus
+                news, public reviews, and complaint mentions across the web —
+                usually within a day of appearing online. A quiet visit is
+                still an alert. Nothing is swept under the rug.
               </p>
 
               <ul className="mt-6 space-y-2 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-paper/70">
@@ -157,7 +158,7 @@ export function FacilityWatchPaid({
                   <span className="text-gold" aria-hidden>
                     ·
                   </span>
-                  <span>Official inspection and license-record alerts (included)</span>
+                  <span>Inspection alerts, including a visit with no new citation</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-gold" aria-hidden>

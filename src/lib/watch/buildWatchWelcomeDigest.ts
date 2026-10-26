@@ -198,7 +198,7 @@ export async function buildWatchWelcomeDigest(
     statsLine: `${cityState} · ${beds}`,
     severityRankLine: severityRankLine(snapshot, facility.state_code),
     whatWeWatch: [
-      "• New inspection records posted on the public regulator file",
+      "• A new inspection visit, including one that adds no citation",
       "• New violations or regulatory actions for this facility",
       "• License or memory-care endorsement status changes",
     ].join("\n"),

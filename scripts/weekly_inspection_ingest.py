@@ -149,10 +149,28 @@ def _max_date_in_mn_findings(path: Path) -> date | None:
     return max_d
 
 
+def _ca_citation_args(county: str | None = None) -> list[str]:
+    """Local runs pass scope through the environment. Alerts stay a separate step."""
+    args = ["--publishable"]
+    if county:
+        args.extend(["--county", county])
+    for env_name, flag in (
+        ("CA_CRAWL_MAX_MINUTES", "--max-minutes"),
+        ("CA_CRAWL_LIMIT", "--limit"),
+        ("CA_CRAWL_LICENSE", "--license"),
+        ("CA_CRAWL_WORKERS", "--workers"),
+    ):
+        value = os.environ.get(env_name)
+        if value:
+            args.extend([flag, value])
+    return args
+
+
 def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
     if skip:
         print("\n[CA] Skipped (--skip-ca)")
         return None
+    citation_args = _ca_citation_args(county)
     if county:
         # Roster refresh for one county
         roster_rc = _python(
@@ -169,12 +187,16 @@ def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
         )
         citations_rc = _python(
             str(SCRAPERS / "ccld_citations_ingest.py"),
-            "--publishable", "--county", county,
+            *citation_args,
             label=f"CA {county.title()} County citations ingest",
             allow_fail=True,
         )
         return roster_rc == 0 and recompute_rc == 0 and citations_rc == 0
-    rc = _python(str(SCRAPERS / "ccld_citations_ingest.py"), "--publishable", label="CA citations ingest")
+    rc = _python(
+        str(SCRAPERS / "ccld_citations_ingest.py"),
+        *citation_args,
+        label="CA citations ingest",
+    )
     return rc == 0
 
 
@@ -434,6 +456,7 @@ def main() -> int:
                 before_counts,
                 scan_metadata,
             )
+            print(f"  state_scan_run id: {scan_run_id}")
             if args.scan_run_output:
                 args.scan_run_output.write_text(scan_run_id)
             _SOURCE_RESULTS.clear()

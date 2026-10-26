@@ -323,7 +323,9 @@ export default function TermsPage() {
                 within a fixed number of hours.
               </li>
               <li>
-                Alerts include third-party reports and official-record changes. Third-party
+                Alerts include third-party reports and official-record changes. An
+                inspection that adds no citation is still an official-record alert.
+                Third-party
                 content is labeled as such and is not incorporated into facility grades or
                 official inspection history on this site.
               </li>
