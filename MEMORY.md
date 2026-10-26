@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Quality gates measure the record, not the row rewrite
+
+**Decided:** A validation check fails when the published record is wrong. It does not fail because a facility row was last rewritten more than 90 days ago, because Illinois has no bed counts, or because a composite rank is high in a state that stores no repeat flags. Bed blanks count only in states that publish beds, and only past five homes. A future inspection date fails the check when there is more than one, or when one is more than 120 days ahead. The single Washington source file dated 2026-12-01 stays a printed note. A dated article or sample file is allowed to fall behind the live record. It fails when a visit the sample named is gone, or when the scorecard file itself cannot be read. Pennsylvania and Utah retry a blocked page or a 500 once, then the scan fails and the email names that block. A week with no new Texas capture file is a quiet manual source. A capture that is sitting there and still cannot be ingested fails.
+
+**Rejected:** Treating `facilities.updated_at` as proof the scraper ran. Failing every pull request because Marquis Oregon City's composite rank is 78 while Oregon has zero repeat flags. Failing the build because a dated California article no longer matches today's citation totals. Letting a Pennsylvania 403 or a Utah 500 exit 0.
+
+**Flag:** This narrows the repeat-offender gate that was written for the Opal Care pattern. That gate compared a real repeated code with a composite whose repeat leg is empty in California and Oregon, so it could not see the bug it named. The Opal regression stays in the production smoke check. The bed allowance in the quiet-week entry still applies per state inside the weekly post-ingest check. This entry changes the global database check to the same idea: skip a state that publishes no beds, then allow five blanks among the states that do.
+
+**Source:** Data Validation run `40261769957`, which had been red for months. Blake, 2026-10-25.
+
 ## 2026-10 — A quiet week is a successful scan; California stays on the Mac
 
 **Decided:** The Sunday GitHub scan no longer includes California. California keeps resuming at 6:15 a.m. local through launchd job `com.starlynncare.ca-watch`. The other states still run one at a time, with Pennsylvania and Washington last so a long portal pass does not hold the shorter states. A finished scrape fails the job only when a check that state can pass fails: the published count shrinks, rank spread collapses, a state that publishes bed counts loses more than five, or fewer than 90% of published homes still have an inspection row. A week that edits no facility rows is a success. A blank `facilities.last_inspection_date` is not a failure. Illinois publishes no bed counts, so an all-null bed column is not a failure either. The admin email says whether the scrape itself stopped, or a real data check failed after a finished scrape. Family alerts still go out for a completed scheduled or push-triggered scan. A manual run sends them only when its alert box is checked.

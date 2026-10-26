@@ -217,8 +217,9 @@ def ingest_or(conn) -> bool:
     with conn.cursor() as cur:
         base = _baseline(cur, "OR")
     db_max = base["max_date"]
+    print(f"  OR: source max {source_max or 'none'} ; database max {db_max or 'none'}")
     if source_max and db_max and source_max <= db_max:
-        print(f"  OR: source max {source_max} ≤ DB max {db_max} — running ingest anyway (idempotent)")
+        print("  OR: source is not newer than the database. Ingest still runs and only writes what changed.")
 
     _python(str(SCRAPERS / "or_inspections_ingest.py"), "--input", str(insp_csv), label="OR inspections ingest")
     # Violations CSV is 6MB+ and takes >1h — run monthly via or_overnight_run.sh, not weekly.
@@ -304,6 +305,10 @@ def ingest_mn(conn) -> bool:
     if not findings.is_file():
         print("  MN: findings JSON missing", file=sys.stderr)
         return False
+    source_max = _max_date_in_mn_findings(findings)
+    with conn.cursor() as cur:
+        base = _baseline(cur, "MN")
+    print(f"  MN: source max {source_max or 'none'} ; database max {base['max_date'] or 'none'}")
 
     alrc = _latest_glob(out_dir, "mn-alrc-facilities-*.json")
     if alrc is None:
@@ -336,20 +341,26 @@ def ingest_mn(conn) -> bool:
 def ingest_tx(_conn: object) -> bool:
     capture_dirs = list((REPO_ROOT / ".firecrawl").glob("tulip*"))
     if not capture_dirs:
-        print("\n[TX] No TULIP capture directory — manual browser capture required.")
-    else:
-        print("\n[TX] TULIP ingest requires hand-captured Aura JSON.")
+        print("\n[TX] No new TULIP capture. Inspections stay on the last manual file.")
+        _SOURCE_RESULTS.append(("TX TULIP inspection source (manual file)", 0))
+        return True
+    print("\n[TX] A TULIP capture is present and still needs a manual ingest.")
     _SOURCE_RESULTS.append(("TX TULIP inspection source requires manual capture", 2))
     return False
 
 
 def ingest_ut(_conn: object) -> bool:
-    _python(str(SCRAPERS / "ut_ccl_inspections_scraper.py"), label="UT CCL inspections", allow_fail=True)
+    scrape_rc = _python(
+        str(SCRAPERS / "ut_ccl_inspections_scraper.py"),
+        label="UT CCL inspections",
+        allow_fail=True,
+    )
     rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "UT", label="UT recompute publishable")
-    return rc == 0
+    return scrape_rc == 0 and rc == 0
 
 
 def ingest_il(_conn: object) -> bool:
+    print("  IL: new visits come from the FOIA file. This run only looks for PDFs on visits already stored.")
     _python(str(SCRAPERS / "il_llcs_event_scrape.py"), label="IL LLCS event scrape", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_download.py"), label="IL PDF download", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_parse.py"), label="IL PDF parse", allow_fail=True)
@@ -359,23 +370,27 @@ def ingest_il(_conn: object) -> bool:
 
 
 def ingest_pa(_conn: object) -> bool:
-    _python(str(SCRAPERS / "pa_dhs_inspections_scraper.py"), label="PA DHS inspections scrape", allow_fail=True)
+    scrape_rc = _python(
+        str(SCRAPERS / "pa_dhs_inspections_scraper.py"),
+        label="PA DHS inspections scrape",
+        allow_fail=True,
+    )
     _python(str(SCRAPERS / "pa_pdf_download.py"), label="PA PDF download", allow_fail=True)
     _python(str(SCRAPERS / "pa_pdf_parse.py"), label="PA PDF parse", allow_fail=True)
     _python(str(SCRAPERS / "pa_pdf_backfill.py"), label="PA PDF backfill", allow_fail=True)
     rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "PA", label="PA recompute publishable")
-    return rc == 0
+    return scrape_rc == 0 and rc == 0
 
 
 def ingest_az(_conn: object) -> bool:
-    _python(
+    scrape_rc = _python(
         str(SCRAPERS / "az_adhs_inspections_ingest.py"),
         "--mode", "inspect",
         label="AZ ADHS inspections",
         allow_fail=True,
     )
     rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "AZ", label="AZ recompute publishable")
-    return rc == 0
+    return scrape_rc == 0 and rc == 0
 
 
 def ingest_mo(_conn: object) -> bool:

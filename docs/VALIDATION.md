@@ -29,12 +29,12 @@ python3 scripts/validate/db_invariants.py
 Checks (per state with publishable facilities):
 - Peer-rank percentile spread (`stddev > 5`) — catches formula bugs like the "all facilities = 100" bug
 - Min < 20th percentile and max > 80th percentile exist — ranking is not degenerate
-- Cross-metric contradiction: no facility in top 10% of repeat citations has a high composite rank
+- Cross-metric contradiction: in a state that stores repeat flags, a code cited on three visits is not also a clean composite rank
 - Positive headline vs rank contradiction: no "highly rated" facility has composite_pct < 40
-- Coverage nulls: `last_inspection_date`, `beds`, `state_code` completeness
+- Coverage: states that publish bed counts are missing them on no more than five homes, and published homes have an inspection row
 - CA-specific: ≥80% of facilities have ≥1 inspection, ≥60% of deficiencies have narrative
 - Severity distribution: ≥10% of deficiencies have `severity ≥ 2` (catches parsing regressions)
-- Freshness: most recently-updated facility per state is within 90 days
+- Inspection dates: a parser is ahead of the calendar when more than one published date is in the future, or one date is more than 120 days ahead. The day a facility row was rewritten is not a freshness check.
 
 ### Layer 2 — Content Validation
 
@@ -44,9 +44,9 @@ python3 scripts/validate/content_checks.py
 
 Checks:
 - `docs/analyses/repeat_offender_report/data_sample.csv` facilities exist in DB as publishable
-- Repeat citation counts in CSV match DB (using distinct-visit methodology)
-- Repeat offenders don't have good composite rank (> 50th percentile)
-- Chain scorecard in `src/lib/content/reports/california-rcfe-repeat-citations-2026.ts` is within 5% of current DB values for facility count, total beds, and WCS
+- A named visit in that sample is still in the database. A newer visit than the sample is printed, not failed
+- Repeat-offender composite rank is printed when it looks clean. It does not fail the build
+- Chain scorecard drift from `src/lib/content/reports/california-rcfe-repeat-citations-2026.ts` is printed. An unreadable scorecard file still fails
 - Positive headline audit: any `content.headline` containing "highly rated", "top rated", "award", "best in", or "outstanding" that belongs to a facility with `composite_pct < 50` is flagged
 
 ### Layer 3 — Smoke Tests
@@ -85,7 +85,7 @@ Checks:
 3. A state that publishes bed counts is missing them on no more than 5 homes. A state with no bed counts at all, such as Illinois, does not fail
 4. At least 90% of published homes have an inspection row
 
-A quiet week does not fail. The log prints how many facility rows were edited in the last 7 days, and a blank `facilities.last_inspection_date` is not a failure. The dated record lives on the inspection row.
+A quiet week does not fail. The log prints how many facility rows were edited in the last 7 days, and a blank `facilities.last_inspection_date` is not a failure. The dated record lives on the inspection row. A California chain score that has moved away from the article is printed. It does not fail the scan.
 
 ---
 

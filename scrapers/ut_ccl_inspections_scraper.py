@@ -71,18 +71,41 @@ _SESSION = requests.Session()
 _SESSION.headers.update({"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
 
 
-def fetch_facility_detail(ccl_id: int) -> dict | None:
-    """GET /api/public/facilities/{ccl_id} — returns full detail + inspections."""
+def status_is_retryable(status_code: int) -> bool:
+    """A 500 or a throttle can clear. A missing facility cannot."""
+    return status_code == 429 or status_code >= 500
+
+
+def fetch_facility_detail(ccl_id: int) -> tuple[dict | None, str]:
+    """GET one facility. Outcome is ok, missing, or failed."""
     url = f"{CCL_BASE}/facilities/{ccl_id}"
-    try:
-        r = _SESSION.get(url, timeout=20)
-        if r.status_code == 404:
-            return None
-        r.raise_for_status()
-        return r.json()
-    except requests.RequestException as exc:
-        print(f"  API ERROR {ccl_id}: {exc}", flush=True)
-        return None
+    for attempt in range(2):
+        try:
+            response = _SESSION.get(url, timeout=20)
+        except requests.RequestException as exc:
+            print(f"  API ERROR {ccl_id}: {exc}", flush=True)
+            if attempt == 0:
+                time.sleep(1)
+                continue
+            return None, "failed"
+        if response.status_code == 404:
+            return None, "missing"
+        if status_is_retryable(response.status_code):
+            print(
+                f"  API {response.status_code} {ccl_id} (attempt {attempt + 1})",
+                flush=True,
+            )
+            if attempt == 0:
+                time.sleep(1)
+                continue
+            return None, "failed"
+        try:
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            print(f"  API ERROR {ccl_id}: {exc}", flush=True)
+            return None, "failed"
+        return response.json(), "ok"
+    return None, "failed"
 
 
 # ---------------------------------------------------------------------------
@@ -316,6 +339,7 @@ def main() -> None:
     total_def = 0
     no_match = 0
     no_data = 0
+    api_errors = 0
 
     try:
         for i, fac in enumerate(facilities, 1):
@@ -329,10 +353,14 @@ def main() -> None:
                 continue
 
             print(f"[{i}/{len(facilities)}] {ext_id} ({ccl_id}) — {name}", flush=True)
-            detail = fetch_facility_detail(ccl_id)
-            if detail is None:
-                print(f"  404 — no CCL record found", flush=True)
+            detail, outcome = fetch_facility_detail(ccl_id)
+            if outcome == "missing":
+                print("  404 — no CCL record found", flush=True)
                 no_data += 1
+                time.sleep(REQUEST_DELAY)
+                continue
+            if outcome == "failed" or detail is None:
+                api_errors += 1
                 time.sleep(REQUEST_DELAY)
                 continue
 
@@ -363,9 +391,17 @@ def main() -> None:
 
     print(
         f"\nDone. {total_insp} inspections, {total_def} deficiency records. "
-        f"({no_match} skipped — bad external_id format, {no_data} not found in CCL API)",
+        f"({no_match} skipped — bad external_id format, {no_data} not found in CCL API, "
+        f"{api_errors} API errors after one retry)",
         flush=True,
     )
+    if api_errors:
+        print(
+            f"FAIL: {api_errors} Utah facility API calls stayed failed after one retry.",
+            file=sys.stderr,
+            flush=True,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":

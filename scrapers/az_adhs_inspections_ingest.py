@@ -489,6 +489,13 @@ def inspect_mode(dry_run: bool = False, limit: int | None = None) -> None:
                 time.sleep(2)
 
     print(f"\nDone. facilities ok={ok} err={err} skip={skip}  inspections={insp_total}", flush=True)
+    if err and not dry_run:
+        print(
+            f"FAIL: {err} Arizona facility calls failed.",
+            file=sys.stderr,
+            flush=True,
+        )
+        sys.exit(1)
     if dry_run:
         print("DRY RUN — no writes.")
 
