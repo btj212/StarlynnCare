@@ -54,16 +54,23 @@ const SELECT_COLUMNS = `
   city_slug
 `;
 
-async function loadReviewData() {
-  const supabase = getServiceClient();
+const PAGE_SIZE = 1000;
 
-  const { data: yellowRows, error: yellowError } = await supabase
+async function loadReviewData(page: number) {
+  const supabase = getServiceClient();
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  // The API returns at most 1,000 rows. Homes that already have a note stay
+  // needs_review, so they were filling that window and hiding every later state.
+  const { data: yellowRows, error: yellowError, count: yellowTotal } = await supabase
     .from("facilities")
-    .select(SELECT_COLUMNS)
+    .select(SELECT_COLUMNS, { count: "exact" })
     .eq("mc_review_status", "needs_review")
+    .or("mc_review_notes.is.null,mc_review_notes.eq.")
     .order("state_code")
     .order("name")
-    .limit(5000);
+    .range(from, to);
 
   if (yellowError) {
     console.error("Failed to load yellow queue:", yellowError);
@@ -176,6 +183,9 @@ async function loadReviewData() {
 
   return {
     yellowQueue: (yellowRows || []) as FacilityReview[],
+    yellowTotal: yellowTotal ?? (yellowRows || []).length,
+    page,
+    pageSize: PAGE_SIZE,
     redBucket: (redRows || []) as FacilityReview[],
     listingReports,
     yellowQueueReports,
@@ -184,8 +194,18 @@ async function loadReviewData() {
   };
 }
 
-export default async function MCReviewPage() {
-  const data = await loadReviewData();
+export const dynamic = "force-dynamic";
+
+type PageProps = { searchParams: Promise<{ page?: string }> };
+
+export default async function MCReviewPage({ searchParams }: PageProps) {
+  const { page: rawPage } = await searchParams;
+  const requested = Number.parseInt(rawPage ?? "1", 10);
+  const page = Number.isFinite(requested) && requested > 0 ? requested : 1;
+  const data = await loadReviewData(page);
+  const pageStart = data.yellowQueue.length === 0 ? 0 : (data.page - 1) * data.pageSize + 1;
+  const pageEnd = (data.page - 1) * data.pageSize + data.yellowQueue.length;
+  const hasNext = data.yellowTotal > data.page * data.pageSize;
 
   return (
     <div className="space-y-8">
@@ -201,8 +221,10 @@ export default async function MCReviewPage() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
               <div className="font-medium text-amber-900">Yellow Queue (Needs Review)</div>
-              <div className="text-2xl font-bold text-amber-700">{data.yellowQueue.length}</div>
-              <div className="text-amber-600 text-xs">Awaiting initial decision</div>
+              <div className="text-2xl font-bold text-amber-700">{data.yellowTotal.toLocaleString()}</div>
+              <div className="text-amber-600 text-xs">
+                No note yet. Showing {pageStart.toLocaleString()}–{pageEnd.toLocaleString()}.
+              </div>
             </div>
             <div className="bg-red-50 p-3 rounded-lg border border-red-200">
               <div className="font-medium text-red-900">Red Bucket (Rejected)</div>
@@ -210,6 +232,29 @@ export default async function MCReviewPage() {
               <div className="text-red-600 text-xs">Previously rejected</div>
             </div>
           </div>
+        </div>
+
+        <p className="mb-4 text-sm text-gray-600">
+          Homes that already have a note are hidden. Refresh this page to fill the open slots.
+          {hasNext ? " When this page is done, open the next 1,000." : ""}
+        </p>
+        <div className="mb-6 flex gap-4 text-sm">
+          {data.page > 1 ? (
+            <a
+              href={`/admin/mc-review?page=${data.page - 1}`}
+              className="font-medium text-blue-700 underline"
+            >
+              Previous 1,000 homes
+            </a>
+          ) : null}
+          {hasNext ? (
+            <a
+              href={`/admin/mc-review?page=${data.page + 1}`}
+              className="font-medium text-blue-700 underline"
+            >
+              Next 1,000 homes
+            </a>
+          ) : null}
         </div>
 
         <ReviewTabs
