@@ -462,11 +462,21 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   CARES LLC resolved 9/10; ESTHERRA CARE LLC resolved 9/24; GENESIS ASSISTED LIVING LLC resolved
 #   7/30; HEATHERS MANOR resolved 5/21); MN resolved max=2026-10-14 unchanged; all other states no
 #   new probe-layer signal (CA/TX/WA/UT/IL/PA/AZ/MO current per GHA 40063182079 + 40037764267).
+# Run 40141232559 (2026-10-24T23:04 UTC, push after cron probe 2026-10-24): MN +1 max=2026-10-14 unchanged;
+#   OR +0 max=2026-10-21; Layer 5 denorm failed — ingest steps succeeded.
+# Sunday GHA 40194733653 (2026-10-25T12:48 UTC schedule, in progress at probe time): OR +20 inspections
+#   (13947→13967), max=2026-10-23 (was 2026-10-21); MN +0 max=2026-10-14 unchanged (4 insertDate 10/24
+#   events still pending); UT +1 max=2026-09-23 unchanged; PA/IL/TX +0; matrix jobs AZ/WA/MO queued.
+# Cron probe 2026-10-25T23:01 UTC: OR source max=2026-10-23 (ingested Sunday GHA 40194733653 — Renell Kumeh
+#   AFH RL015098 10/23; Independence Health And Rehabilitation NF 10/22; Summer Miller AFH RL015057 10/22);
+#   MN insertDate max=2026-10-24 (unchanged vs Fri probe — same 4 survey PDFs; Sunday GHA MN +0);
+#   MN resolved max=2026-10-14 unchanged; all other states no new probe-layer signal (CA/TX/WA/IL/PA/AZ/MO
+#   refreshed or queued on Sunday GHA 40194733653; MO FOIA manual).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 10, 21),
+    "OR": date(2026, 10, 23),  # GHA 40194733653 +20
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
     "MN": date(2026, 10, 14),
     "UT": date(2026, 9, 15),
