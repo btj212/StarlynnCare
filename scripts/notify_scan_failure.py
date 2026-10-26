@@ -22,6 +22,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Notify admin of a failed state scan")
     parser.add_argument("--state", required=True)
     parser.add_argument("--workflow-url", required=True)
+    parser.add_argument(
+        "--details",
+        required=True,
+        help="What failed, and whether subscriber alerts were sent",
+    )
+    parser.add_argument(
+        "--summary",
+        default="",
+        help="Inbox line. Defaults to '{state} source scan failed'.",
+    )
     args = parser.parse_args()
 
     for name in (".env.local", ".env"):
@@ -31,9 +41,11 @@ def main() -> int:
             break
 
     try:
+        state = args.state.strip().upper()
         send_scan_failure_alert(
-            state_code=args.state,
-            details="The scheduled source scan or its validation step failed. No subscriber alerts were sent.",
+            state_code=state,
+            summary=args.summary.strip() or f"{state} source scan failed",
+            details=args.details,
             workflow_url=args.workflow_url,
         )
     except Exception as exc:  # noqa: BLE001

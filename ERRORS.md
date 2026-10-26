@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — Sunday scan emails fired on checks a quiet week cannot pass
+
+**What went wrong:** Run `40194733653` marked Minnesota, Oregon, Illinois, Pennsylvania, Utah, Arizona, Missouri, and Washington failed after the scrape step had already exited 0. The post-ingest hook required 80% of facility rows to be edited in the last 7 days, and it required `facilities.last_inspection_date` on every published home. Most states do not rewrite facility rows when the source is unchanged, and that date column is blank for every published home except most of Minnesota. Illinois also failed because none of its 30 homes have bed counts. The failure email always said no subscriber alerts were sent, including when the alert step still ran. California, sitting in the middle of the one-at-a-time queue, was cancelled at six hours and delayed the states behind it.
+
+**What worked instead:** Keep California on the Mac job. Judge the GitHub job by whether the scrape finished and whether the checks that state can actually pass succeeded. Print the quiet-week edit count instead of failing on it. Coverage is an inspection row, which every live state already has. Send one email when the scrape stops, and a different email when a real data check fails after a finished scrape.
+
+**Source:** GitHub Actions run `40194733653`; `scripts/validate/post_ingest_check.py`.
+
 ## 2026-07 — Local ESLint hangs under Node 24 without producing output
 
 **What went wrong:** Both `npx eslint ...` and direct `node node_modules/eslint/bin/eslint.js ...` remained asleep for more than five minutes with no file handles or diagnostics. Even `eslint --version` hung. This is local-tooling behavior under Node `v24.14.1`, not a reported lint violation.

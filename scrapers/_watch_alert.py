@@ -94,7 +94,13 @@ def send_area_change_alert(
     )
 
 
-def send_scan_failure_alert(*, state_code: str, details: str, workflow_url: str) -> None:
+def send_scan_failure_alert(
+    *,
+    state_code: str,
+    details: str,
+    workflow_url: str,
+    summary: str | None = None,
+) -> None:
     admin_email = os.environ.get("ADMIN_ALERT_EMAIL", "").strip()
     if not admin_email:
         raise RuntimeError("ADMIN_ALERT_EMAIL must be set")
@@ -104,7 +110,7 @@ def send_scan_failure_alert(*, state_code: str, details: str, workflow_url: str)
         data_variables={
             "submissionType": "State Source Scan Failure",
             "email": admin_email,
-            "summary": f"{state_code} source scan failed",
+            "summary": summary or f"{state_code} source scan failed",
             "details": details[:2000],
             "submittedAt": datetime.now(timezone.utc).isoformat(),
             "adminUrl": workflow_url,

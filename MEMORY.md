@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — A quiet week is a successful scan; California stays on the Mac
+
+**Decided:** The Sunday GitHub scan no longer includes California. California keeps resuming at 6:15 a.m. local through launchd job `com.starlynncare.ca-watch`. The other states still run one at a time, with Pennsylvania and Washington last so a long portal pass does not hold the shorter states. A finished scrape fails the job only when a check that state can pass fails: the published count shrinks, rank spread collapses, a state that publishes bed counts loses more than five, or fewer than 90% of published homes still have an inspection row. A week that edits no facility rows is a success. A blank `facilities.last_inspection_date` is not a failure. Illinois publishes no bed counts, so an all-null bed column is not a failure either. The admin email says whether the scrape itself stopped, or a real data check failed after a finished scrape. Family alerts still go out for a completed scheduled or push-triggered scan. A manual run sends them only when its alert box is checked.
+
+**Rejected:** Treating “nothing changed this week” as a broken scraper. Failing every state because `last_inspection_date` is null. Failing Illinois because it has no bed counts. Leaving California in the GitHub queue, where the six-hour cancel on 2026-10-25 held up Texas, Washington, Arizona, and Missouri. Telling the admin that subscriber alerts were withheld when the scrape had already finished and the alert step ran.
+
+**Flag:** This replaces the post-ingest rules in `docs/VALIDATION.md` that required a 7-day `updated_at` and a non-null `last_inspection_date` for every state. `scripts/validate/db_invariants.py` already treated the inspection row as the coverage check and only expected the denormalized date to be backfilled for Minnesota. The weekly gate now uses that same 90% inspection-row bar. The bed allowance of five is the global invariant applied per state, so several states could each be under five and still trip the global check. The `cursor/email-list-growth` branch has newer entries above this one; keep both when those branches meet.
+
+**Source:** Sunday run `40194733653`. Blake, 2026-10-25.
+
 ## 2026-10 — Ned stays off every list; Orange County is California; no “what was this worth” email
 
 **Decided:** Ned is excluded from every audience and every send until Blake says otherwise. The May Orange County Area Watch is California. The watch starts the day the state was confirmed, with no backlog email. County alerts match the Orange County city list in `src/lib/regions.ts`, because California facilities have no county column. The contract-review reply does not ask what the review was worth. Course emails and “this month in the record” stay drafts until Blake approves a specific preview.
