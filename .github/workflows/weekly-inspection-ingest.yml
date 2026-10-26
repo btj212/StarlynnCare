@@ -8,15 +8,14 @@
 # take the longest. Requires secrets: DATABASE_URL, ANTHROPIC_API_KEY.
 name: Weekly state source scan
 
+# Family mail goes out only from the Sunday schedule, and only after the data
+# check passes. A merge does not start a scan. A hand-started run sends mail
+# only when its alert box is checked. Pushing the ingest script used to start
+# the full scan and could email families on a weeknight.
 on:
   schedule:
     # Sundays 08:00 UTC (midnight Pacific during standard time)
     - cron: "0 8 * * 0"
-  push:
-    branches: [main]
-    paths:
-      - "scripts/weekly_inspection_ingest.py"
-      - "scripts/probe_inspection_freshness.py"
   workflow_dispatch:
     inputs:
       state:
@@ -94,7 +93,7 @@ jobs:
           retention-days: 30
 
       - name: Dispatch area and facility watch alerts — ${{ matrix.state }}
-        if: steps.ingest.outcome == 'success' && steps.ingest.outputs.skip != 'true' && (github.event_name != 'workflow_dispatch' || inputs.dispatch_alerts)
+        if: steps.ingest.outcome == 'success' && steps.ingest.outputs.skip != 'true' && steps.layer5.outcome == 'success' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.dispatch_alerts))
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
@@ -126,7 +125,7 @@ jobs:
           --state ${{ matrix.state }}
           --summary "${{ matrix.state }} data check failed"
           --workflow-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          --details "The source scan finished, but a data check this state can pass did not. Subscriber alerts still went out for any completed change."
+          --details "The source scan finished, but a data check this state can pass did not. No subscriber alerts were sent."
 
   validate:
     needs: ingest

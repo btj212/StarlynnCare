@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — Merging the ingest script started a production scan and could email families
+
+**What went wrong:** The weekly workflow ran on a push to `main` of `scripts/weekly_inspection_ingest.py` or `scripts/probe_inspection_freshness.py`. Merging earlier pull requests queued two full scans on the old data checks. The alert step also ran whenever the scrape itself succeeded, including when the data check failed, so a passing check on a weeknight merge would have emailed families.
+
+**What worked instead:** Take the push trigger off. Send family mail only from the Sunday schedule, and only when the data check passes. A manual run still has to opt in. Cancel the two scans that the merges had already started.
+
+**Source:** Runs `40262641487` and `40262771711`.
+
 ## 2026-10 — Data Validation stayed red on checks that do not describe the record
 
 **What went wrong:** Every pull request failed Layer 1. The failures were a facility `updated_at` older than 90 days in California, Minnesota, Oregon, Texas, and Utah; 34 homes with blank or zero beds, 30 of them the entire Illinois roster; and Marquis Oregon City Post Acute Rehab, whose composite rank was 78 with three repeated codes in a state that stores no repeat flags. Layer 2 then failed because a static California article had drifted from live citation totals. None of those checks said whether an inspection date was real.

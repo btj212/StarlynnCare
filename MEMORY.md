@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Sunday is the only automatic family email
+
+**Decided:** Facility and area watch mail goes out from the Sunday 08:00 UTC scan, and only after that state's data check passes. A failed scrape or a failed data check sends the admin a note and sends families nothing. A hand-started run sends family mail only when its alert box is checked. Merging or pushing the ingest script does not start a scan.
+
+**Rejected:** Letting a push of `scripts/weekly_inspection_ingest.py` or `scripts/probe_inspection_freshness.py` crawl production and email families on a weeknight. Sending the Sunday notes when the data check failed. Re-sending this week's held notes as part of the merge.
+
+**Flag:** This replaces the line in the quiet-week entry that said family alerts still go out for a push-triggered scan. The quiet-week checks themselves stay. California still does not email from the Mac job. Catch-up campaigns stay behind an explicit approve. Ned stays off every list.
+
+**Source:** Runs `40262641487` and `40262771711`, started by merges and cancelled before they could mail families. Blake, 2026-10-25.
+
 ## 2026-10 — Quality gates measure the record, not the row rewrite
 
 **Decided:** A validation check fails when the published record is wrong. It does not fail because a facility row was last rewritten more than 90 days ago, because Illinois has no bed counts, or because a composite rank is high in a state that stores no repeat flags. Bed blanks count only in states that publish beds, and only past five homes. A future inspection date fails the check when there is more than one, or when one is more than 120 days ahead. The single Washington source file dated 2026-12-01 stays a printed note. A dated article or sample file is allowed to fall behind the live record. It fails when a visit the sample named is gone, or when the scorecard file itself cannot be read. Pennsylvania and Utah retry a blocked page or a 500 once, then the scan fails and the email names that block. A week with no new Texas capture file is a quiet manual source. A capture that is sitting there and still cannot be ingested fails.
