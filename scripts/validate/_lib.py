@@ -11,20 +11,49 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _load_keychain_database_url() -> None:
+    """Local crawls read the DSN from Keychain. Never print or persist it."""
+    if os.environ.get("DATABASE_URL"):
+        return
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            [
+                "security",
+                "find-generic-password",
+                "-s",
+                "starlynncare-database-url",
+                "-a",
+                "starlynncare",
+                "-w",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    value = result.stdout.strip()
+    if result.returncode == 0 and value:
+        os.environ["DATABASE_URL"] = value
+
+
 def _load_env() -> None:
     """Load .env.local into os.environ (does not overwrite existing vars)."""
     env_file = REPO_ROOT / ".env.local"
-    if not env_file.exists():
-        return
-    for raw in env_file.read_text().splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, _, v = line.partition("=")
-        k = k.strip()
-        v = v.strip().strip('"').strip("'")
-        if k and k not in os.environ:
-            os.environ[k] = v
+    if env_file.exists():
+        for raw in env_file.read_text().splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            k = k.strip()
+            v = v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+    _load_keychain_database_url()
 
 
 def get_conn():

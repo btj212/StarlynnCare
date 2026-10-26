@@ -190,6 +190,7 @@ def _load_run(conn: psycopg.Connection, scan_run_id: str | None, state: str | No
 
 
 def _load_deltas(conn: psycopg.Connection, scan_run_id: str) -> list[dict[str, Any]]:
+    """Load every family-facing delta. A visit with no new citation still alerts."""
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """

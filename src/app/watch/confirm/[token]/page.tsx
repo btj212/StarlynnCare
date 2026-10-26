@@ -84,7 +84,7 @@ export default async function WatchConfirmPage({ params }: PageProps) {
 
           <div className="mt-8 border-l-2 border-teal/40 pl-5 space-y-3">
             <p className="font-[family-name:var(--font-display)] text-[18px] italic leading-relaxed text-ink-2">
-              You&rsquo;ll get an email when their inspection record changes. We&rsquo;re
+              You&rsquo;ll get an email when an inspection is added, including a visit that adds no citation. We&rsquo;re
               building that now — expect alerts starting later this summer.
             </p>
           </div>

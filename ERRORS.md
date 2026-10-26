@@ -8,6 +8,24 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — Sequential California checks held DB transactions during CDSS waits
+
+**What went wrong:** `ccld_citations_ingest.py` checked roughly 662 publishable
+homes one at a time, opened a database connection before each network check,
+and retried a slow CDSS request up to six times. A routine zero-change pass
+could therefore hold an idle transaction for minutes per home and run until
+GitHub's six-hour timeout. Cancellation then left `state_scan_runs` and
+`scrape_runs` falsely marked `running`.
+
+**What worked instead:** Preload stored report URLs in one query, check facility
+indexes with six bounded workers and per-worker HTTP connection reuse, and open
+write connections only for newly discovered reports. After twelve consecutive
+index failures, stop the outage crawl and return non-zero so the scan is
+recorded partial/failed and cannot notify families. Always close the two ledger
+rows after externally cancelling a job.
+
+**Source:** GitHub Actions run `40129407306`; `scrapers/ccld_citations_ingest.py`.
+
 ## 2026-07 — Local ESLint hangs under Node 24 without producing output
 
 **What went wrong:** Both `npx eslint ...` and direct `node node_modules/eslint/bin/eslint.js ...` remained asleep for more than five minutes with no file handles or diagnostics. Even `eslint --version` hung. This is local-tooling behavior under Node `v24.14.1`, not a reported lint violation.
@@ -276,6 +294,40 @@ The deficiencies query in the same page already had the correct pattern (chunked
 - Make the crawl **resilient per city**: extracted `_crawl_one_city()`, wrapped each city in a try/except that rebuilds the browser (handles both EPIPE browser-death and ERR_ABORTED) and retries once, then moves on. The crawl is **resumable** via the manifest (`(facility_name, inspection_date)` pairs), so completed facilities are skipped and any skipped city is recovered on a later pass.
 
 **Source:** `scrapers/mo_sod_ingest.py` (`_crawl_one_city`, `crawl`); MEMORY.md "Missouri inspector narratives".
+
+---
+
+## 2026-10 — CDSS report indexes are zero-based and indexed URLs are unstable
+
+**What didn't work:** Iterating `range(1, COUNT + 1)` skipped the first real
+report and requested one nonexistent terminal index for every facility.
+Treating `FacilityReports?facNum=X&inx=N` as report identity also missed reports
+when CDSS arrays shrank or reordered. A statewide routine scan then spent over
+30 minutes retrying hundreds of index/detail requests and still covered only
+110 of 662 facilities.
+
+**What worked instead:** Mirror the official client contract and enumerate
+`REPORTARRAY` from zero. Use the Lotus document ID in `REPORTPAGE` as stable
+identity, send the official client headers, and use the statewide bulk CSV as
+the routine change detector. Persist only fully reconciled facility snapshots;
+retry incomplete facilities on the next pass.
+
+**Source:** `scrapers/ccld_citations_ingest.py`,
+`scripts/test_ccld_citations_ingest.py`.
+
+## 2026-10 — GitHub-hosted retries cannot reach CDSS
+
+**What didn't work:** Re-running the California report crawl from GitHub
+Actions. Four bounded probes to the same facility index all timed out, while
+the identical request from this Mac returned a report list. More hosted
+retries just repeated the outage and could not build the missing baselines.
+
+**What worked instead:** Run regulator requests from the Mac. Keep the
+statewide CSV as the fast check, and only deep-check facilities whose
+snapshot is missing or changed, plus the two homes absent from the bulk file.
+
+**Source:** `scripts/run_ca_watch_local.sh`,
+`scrapers/ccld_citations_ingest.py`.
 
 ---
 

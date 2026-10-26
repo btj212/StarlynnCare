@@ -41,3 +41,10 @@ Facility template data variables:
 
 Subscriber delivery is gated on a fully completed state scan. Partial or failed
 source runs create no subscriber message.
+
+A completed scan emails facility and area watchers when an inspection is added,
+including a visit that adds no citation. That visit is the update. Do not filter
+it out. The note should give the visit date on the profile and say the citation
+count stayed where it was. It is not a rating, and it does not clear older
+citations. The MJML in this folder is the repo copy. Republish to Loops only
+after Blake approves that send.

@@ -43,6 +43,27 @@ class StateWatchAutomationTests(unittest.TestCase):
         self.assertIn("+1 inspections", summary)
         self.assertIn("+2 citations", summary)
 
+    def test_visit_with_no_new_citation_still_alerts(self) -> None:
+        """A visit that adds no citation is the watch email, not silence."""
+        before = {
+            "name": "Example Care",
+            "city": "Seattle",
+            "inspection_count": 2,
+            "deficiency_count": 4,
+            "record_fingerprint": "old",
+        }
+        after = {
+            "name": "Example Care",
+            "city": "Seattle",
+            "inspection_count": 3,
+            "deficiency_count": 4,
+            "record_fingerprint": "new",
+        }
+        change_type, summary = _delta_summary(before, after)
+        self.assertEqual(change_type, "inspection_record_changed")
+        self.assertIn("+1 inspections", summary)
+        self.assertIn("+0 citations", summary)
+
     def test_delivery_fingerprint_is_order_independent(self) -> None:
         """The same scan changes can only produce one subscriber delivery."""
         first = _delivery_fingerprint("area:watcher", ["change-b", "change-a"])
