@@ -103,6 +103,28 @@ def scan_is_dispatchable(status: str) -> bool:
     return status == "completed"
 
 
+def family_alerts_allowed(
+    *,
+    event_name: str,
+    dispatch_alerts: bool,
+    ingest_outcome: str,
+    layer5_outcome: str,
+    skipped: bool,
+) -> bool:
+    """Sunday is the only automatic family send, and only after the data check.
+
+    A hand-started run sends only when its alert box is checked. A push, a
+    skipped state, a failed scrape, or a failed data check sends nothing.
+    """
+    if skipped or ingest_outcome != "success" or layer5_outcome != "success":
+        return False
+    if event_name == "schedule":
+        return True
+    if event_name == "workflow_dispatch":
+        return bool(dispatch_alerts)
+    return False
+
+
 def _create_delivery(
     conn: psycopg.Connection,
     *,

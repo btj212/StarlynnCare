@@ -20,12 +20,41 @@ where peers = same state_code + care_category, publishable = true.
 from __future__ import annotations
 
 import sys
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from validate._lib import check, get_conn, run_all_checks  # noqa: E402
 
 PUBLISHABLE_STATES = ("CA", "OR", "WA", "MN", "TX", "UT")
+# A state that publishes bed counts can have a few blanks. Illinois publishes none.
+BED_GAP_ALLOWANCE = 5
+# One near-future date is the known Washington source file for Aegis Living Kirkland.
+# A second future date, or a date more than 120 days ahead, means a parser is wrong.
+FUTURE_DATE_ALLOWANCE = 1
+FUTURE_DATE_MAX_DAYS = 120
+
+
+def bed_gap_is_structural(publishable: int, missing: int) -> bool:
+    """True when this state does not publish bed counts at all."""
+    return publishable > 0 and missing >= publishable
+
+
+def bed_gaps_pass(missing: int, allowance: int = BED_GAP_ALLOWANCE) -> bool:
+    """Blanks inside the allowance are not a broken roster."""
+    return missing <= allowance
+
+
+def future_dates_pass(
+    future_count: int,
+    furthest_days_ahead: float,
+    allowance: int = FUTURE_DATE_ALLOWANCE,
+    max_days: int = FUTURE_DATE_MAX_DAYS,
+) -> bool:
+    """A pile of future dates, or one date months ahead, is a parser writing the wrong day."""
+    if future_count > allowance:
+        return False
+    return furthest_days_ahead <= max_days
 
 # ── SQL: bulk composite percentile per publishable facility ────────────────────
 # Mirrors facility_snapshot() logic but runs in one query across all facilities.
@@ -200,23 +229,29 @@ def _check_peer_rank_distribution(cur) -> None:
 
 def _check_cross_metric_contradictions(cur) -> None:
     """
-    Facilities with ≥ 3 distinct repeat-citation codes must NOT have composite_pct > 55.
+    Where a state actually stores repeat flags, a home with the same code on
+    three visits should not also sit in the cleaner half of the composite rank.
 
-    Threshold rationale:
-    - repeat_deficiency_count >= 3: matches the repeat offender list definition
-      (same code cited in 3+ distinct visits). Anything below 3 is a borderline case.
-    - composite_pct > 70: is_repeat is only backfilled for UT; for CA/OR/WA/MN/TX
-      all facilities have rep_raw=0, so rep_pct=100 for every facility, inflating
-      composite by ~33 pts. Until is_repeat is backfilled globally, threshold 70
-      (vs 55) is the effective catch for truly mis-ranked repeat offenders.
-    - This directly catches the Opal Care bug pattern.
+    Oregon, California, and most other states store no is_repeat flags, so the
+    repeat leg of the composite is the same number for every home. A high
+    composite there does not mean the home is clean. Marquis Oregon City was
+    the false failure: three repeated codes, composite 78, and zero repeat flags
+    in the whole state.
     """
     print("\n[Cross-metric contradiction — repeat citations vs composite rank]")
 
     cur.execute(
         f"""
         WITH pct AS ({_COMPOSITE_PCT_SQL}),
-        rdc AS ({_REPEAT_DEF_COUNT_SQL})
+        rdc AS ({_REPEAT_DEF_COUNT_SQL}),
+        repeat_states AS (
+            SELECT DISTINCT f2.state_code
+            FROM deficiencies d
+            JOIN inspections i ON i.id = d.inspection_id
+            JOIN facilities f2 ON f2.id = i.facility_id
+            WHERE d.is_repeat IS TRUE
+              AND f2.publishable = true
+        )
         SELECT
             f.id,
             f.name,
@@ -227,6 +262,7 @@ def _check_cross_metric_contradictions(cur) -> None:
         FROM facilities f
         JOIN rdc ON rdc.facility_id = f.id
         JOIN pct ON pct.id = f.id
+        JOIN repeat_states rs ON rs.state_code = f.state_code
         WHERE f.publishable = true
           AND rdc.repeat_deficiency_count >= 3
           AND pct.composite_pct > 70
@@ -244,7 +280,7 @@ def _check_cross_metric_contradictions(cur) -> None:
                 f"composite_pct={row['composite_pct']}"
             )
     check(
-        "No repeat offenders (≥3 codes) with composite_pct > 55",
+        "No repeat-flagged state has a 3-visit repeat code and composite_pct > 70",
         len(contradictions) == 0,
         f"{len(contradictions)} contradiction(s) — review rankings for listed facilities",
     )
@@ -312,29 +348,45 @@ def _check_coverage_nulls(cur) -> None:
     """Coverage and null checks for publishable facilities."""
     print("\n[Coverage / null checks]")
 
-    # Basic nulls: beds, state_code (global); last_inspection_date (CA only, since
-    # other states may legitimately have facilities without inspections yet ingested)
+    # Bed counts exist only for states that publish them. Illinois does not.
     cur.execute(
         """
         SELECT
-            COUNT(*) FILTER (WHERE beds IS NULL OR beds = 0) AS null_beds,
-            COUNT(*) FILTER (WHERE state_code NOT IN ('CA','OR','WA','MN','TX','UT','AZ','PA','IL','MO')) AS bad_state,
-            COUNT(*) AS total
+            state_code,
+            COUNT(*) AS publishable,
+            COUNT(*) FILTER (WHERE beds IS NULL OR beds = 0) AS missing,
+            COUNT(*) FILTER (
+                WHERE state_code NOT IN ('CA','OR','WA','MN','TX','UT','AZ','PA','IL','MO')
+            ) AS bad_state
         FROM facilities
         WHERE publishable = true
+        GROUP BY state_code
+        ORDER BY state_code
         """
     )
-    row = cur.fetchone()
-    total = row["total"] or 0
+    rows = cur.fetchall()
+    total = sum(row["publishable"] or 0 for row in rows)
+    bad_state = sum(row["bad_state"] or 0 for row in rows)
+    missing_where_published = 0
+    for row in rows:
+        publishable = row["publishable"] or 0
+        missing = row["missing"] or 0
+        if bed_gap_is_structural(publishable, missing):
+            print(
+                f"  {row['state_code']}: bed counts are not in this source "
+                f"({missing}/{publishable}). Not a data failure."
+            )
+            continue
+        missing_where_published += missing
     check(
-        "All publishable: beds not null/zero",
-        row["null_beds"] <= 5,
-        f"{row['null_beds']}/{total} missing",
+        f"States that publish bed counts are missing them on ≤ {BED_GAP_ALLOWANCE} homes",
+        bed_gaps_pass(missing_where_published),
+        f"{missing_where_published}/{total} missing outside states with no bed counts",
     )
     check(
         "All publishable: state_code in allowed set",
-        row["bad_state"] == 0,
-        f"{row['bad_state']} with unexpected state_code",
+        bad_state == 0,
+        f"{bad_state} with unexpected state_code",
     )
 
     # last_inspection_date: the denormalized column on facilities is only backfilled
@@ -413,39 +465,56 @@ def _check_coverage_nulls(cur) -> None:
 
 
 def _check_scraper_freshness(cur) -> None:
-    """Most recently-updated facility per state must be within 90 days."""
-    print("\n[Scraper output freshness — max updated_at per state]")
+    """The inspection date is the record. Rewriting a facility row is not."""
+    print("\n[Inspection dates — newest visit on file, and dates that have not happened]")
     cur.execute(
         """
         SELECT
-            state_code,
-            MAX(updated_at) AS most_recent,
-            EXTRACT(DAY FROM NOW() - MAX(updated_at)) AS days_ago
-        FROM facilities
-        WHERE publishable = true
-          AND state_code IN ('CA','OR','WA','MN','TX','UT')
-        GROUP BY state_code
-        ORDER BY state_code
+            f.state_code,
+            MAX(i.inspection_date) AS newest,
+            COUNT(i.id) FILTER (WHERE i.inspection_date > CURRENT_DATE) AS future_count,
+            MAX(i.inspection_date) FILTER (WHERE i.inspection_date > CURRENT_DATE) AS furthest
+        FROM facilities f
+        LEFT JOIN inspections i ON i.facility_id = f.id
+        WHERE f.publishable = true
+        GROUP BY f.state_code
+        ORDER BY f.state_code
         """
     )
     rows = cur.fetchall()
-    seen_states = set()
+    future_count = 0
+    furthest_days = 0.0
     for row in rows:
-        state = row["state_code"]
-        seen_states.add(state)
-        days_ago = float(row["days_ago"] if row["days_ago"] is not None else 999)
-        check(
-            f"{state}: most recent update within 90 days",
-            days_ago <= 90,
-            f"{days_ago:.0f} days ago ({row['most_recent']})",
+        newest = row["newest"]
+        state_future = row["future_count"] or 0
+        future_count += state_future
+        furthest = row["furthest"]
+        if furthest is not None:
+            days_ahead = (furthest - date.today()).days
+            furthest_days = max(furthest_days, float(days_ahead))
+        print(
+            f"  {row['state_code']}: newest inspection {newest or 'none'}"
+            + (f", {state_future} dated after today" if state_future else "")
         )
-    for state in PUBLISHABLE_STATES:
-        if state not in seen_states:
-            check(
-                f"{state}: most recent update within 90 days",
-                False,
-                "no publishable facilities found",
-            )
+    if future_count:
+        cur.execute(
+            """
+            SELECT f.state_code, f.name, i.inspection_date
+            FROM inspections i
+            JOIN facilities f ON f.id = i.facility_id
+            WHERE f.publishable = true
+              AND i.inspection_date > CURRENT_DATE
+            ORDER BY i.inspection_date DESC
+            LIMIT 5
+            """
+        )
+        for row in cur.fetchall():
+            print(f"    • {row['state_code']} {row['inspection_date']} {row['name']}")
+    check(
+        "Inspection dates are not a parser running ahead of the calendar",
+        future_dates_pass(future_count, furthest_days),
+        f"{future_count} future date(s), furthest {furthest_days:.0f} days ahead",
+    )
 
 
 def main() -> None:

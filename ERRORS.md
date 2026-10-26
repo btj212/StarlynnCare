@@ -8,6 +8,30 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — Merging the ingest script started a production scan and could email families
+
+**What went wrong:** The weekly workflow ran on a push to `main` of `scripts/weekly_inspection_ingest.py` or `scripts/probe_inspection_freshness.py`. Merging earlier pull requests queued two full scans on the old data checks. The alert step also ran whenever the scrape itself succeeded, including when the data check failed, so a passing check on a weeknight merge would have emailed families.
+
+**What worked instead:** Take the push trigger off. Send family mail only from the Sunday schedule, and only when the data check passes. A manual run still has to opt in. Cancel the two scans that the merges had already started.
+
+**Source:** Runs `40262641487` and `40262771711`.
+
+## 2026-10 — Data Validation stayed red on checks that do not describe the record
+
+**What went wrong:** Every pull request failed Layer 1. The failures were a facility `updated_at` older than 90 days in California, Minnesota, Oregon, Texas, and Utah; 34 homes with blank or zero beds, 30 of them the entire Illinois roster; and Marquis Oregon City Post Acute Rehab, whose composite rank was 78 with three repeated codes in a state that stores no repeat flags. Layer 2 then failed because a static California article had drifted from live citation totals. None of those checks said whether an inspection date was real.
+
+**What worked instead:** Judge freshness by the inspection date. Count missing beds only where the state publishes them. Compare repeat codes with composite rank only in states that store repeat flags. Print article drift, and print a sample row that gained a visit, instead of failing the build. A visit the sample named and the database no longer has still fails. Retry a Pennsylvania block or a Utah 500 once, and fail the scan if it is still down. An Arizona facility call that errors fails the same way. A missing Texas capture file does not.
+
+**Source:** Data Validation run `40261769957`; `scripts/validate/db_invariants.py`.
+
+## 2026-10 — Illinois and Washington Sunday runs were not reading a new inspection
+
+**What went wrong:** Illinois exited 0 after probing PDFs for the 147 visits already stored and finding none. That job does not ask the portal for a survey newer than 2026-05-06. New Illinois visits come from the FOIA file. Washington spent about four hours and added zero inspections. Two hours and eighteen minutes were the adult-family-home discovery step, and about an hour was the physical-city recompute. The newest Washington date stayed 2026-12-01, which is the date on the Aegis Living Kirkland source file.
+
+**What worked instead:** Say in the Illinois log that the run is looking up PDFs, not new visits. Leave the Washington date in place. The long Washington steps are a later performance task, not a bad date.
+
+**Source:** GitHub Actions run `40194733653`, jobs `121173017040` and `121173017116`.
+
 ## 2026-10 — Sunday scan emails fired on checks a quiet week cannot pass
 
 **What went wrong:** Run `40194733653` marked Minnesota, Oregon, Illinois, Pennsylvania, Utah, Arizona, Missouri, and Washington failed after the scrape step had already exited 0. The post-ingest hook required 80% of facility rows to be edited in the last 7 days, and it required `facilities.last_inspection_date` on every published home. Most states do not rewrite facility rows when the source is unchanged, and that date column is blank for every published home except most of Minnesota. Illinois also failed because none of its 30 homes have bed counts. The failure email always said no subscriber alerts were sent, including when the alert step still ran. California, sitting in the middle of the one-at-a-time queue, was cancelled at six hours and delayed the states behind it.

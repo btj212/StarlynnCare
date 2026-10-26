@@ -179,16 +179,44 @@ def make_session() -> requests.Session:
     return s
 
 
-def fetch_inspection_page(session: requests.Session, url: str) -> str | None:
-    try:
-        r = session.get(url, timeout=30)
-        if r.status_code == 404:
-            return None
-        r.raise_for_status()
-        return r.text
-    except requests.RequestException as exc:
-        print(f"  HTTP ERROR {url}: {exc}", file=sys.stderr, flush=True)
-        return None
+RETRYABLE_STATUS = {403, 429, 500, 502, 503, 504}
+
+
+def status_is_retryable(status_code: int) -> bool:
+    """A block or a gateway error can clear. A missing page cannot."""
+    return status_code in RETRYABLE_STATUS
+
+
+def fetch_inspection_page(session: requests.Session, url: str) -> tuple[str | None, bool]:
+    """Return (html, blocked). A 404 is a missing page, not a block."""
+    for attempt in range(2):
+        try:
+            response = session.get(url, timeout=30)
+        except requests.RequestException as exc:
+            print(f"  HTTP ERROR {url}: {exc}", file=sys.stderr, flush=True)
+            if attempt == 0:
+                time.sleep(2)
+                continue
+            return None, True
+        if response.status_code == 404:
+            return None, False
+        if status_is_retryable(response.status_code):
+            print(
+                f"  HTTP {response.status_code} {url} (attempt {attempt + 1})",
+                file=sys.stderr,
+                flush=True,
+            )
+            if attempt == 0:
+                time.sleep(2)
+                continue
+            return None, True
+        try:
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            print(f"  HTTP ERROR {url}: {exc}", file=sys.stderr, flush=True)
+            return None, True
+        return response.text, False
+    return None, True
 
 
 # ---------------------------------------------------------------------------
@@ -402,6 +430,7 @@ def main() -> None:
     total_pdf = 0
     no_data = 0
     no_table = 0
+    blocked = 0
 
     try:
         for i, fac in enumerate(facilities, 1):
@@ -412,7 +441,11 @@ def main() -> None:
                 f"[{i}/{len(facilities)}] {fac['external_id']} {fac['name'][:50]}",
                 flush=True,
             )
-            html = fetch_inspection_page(session, url)
+            html, page_blocked = fetch_inspection_page(session, url)
+            if page_blocked:
+                blocked += 1
+                polite_sleep()
+                continue
             if html is None:
                 no_data += 1
                 polite_sleep()
@@ -451,7 +484,7 @@ def main() -> None:
 
     print(
         f"\nDone. {total_insp} inspections, {total_pdf} PDF inventory rows. "
-        f"({no_data} pages 404, {no_table} pages had no table)",
+        f"({no_data} pages 404, {no_table} pages had no table, {blocked} stayed blocked)",
         flush=True,
     )
 
@@ -460,6 +493,14 @@ def main() -> None:
     if not args.dry_run and len(facilities) >= 10 and total_pdf == 0:
         print(
             "FAIL: 0 PDF inventory rows across 10+ facilities — DHS portal may have changed.",
+            file=sys.stderr,
+            flush=True,
+        )
+        sys.exit(1)
+
+    if blocked:
+        print(
+            f"FAIL: {blocked} facility pages stayed blocked after one retry.",
             file=sys.stderr,
             flush=True,
         )
