@@ -8,10 +8,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const today = new Date().toISOString().split("T")[0];
   const supabase = tryPublicSupabaseClient();
-  const entries = supabase ? await collectFacilityEntries(supabase, today) : [];
-  const xml = renderUrlset(entries, today);
+  const entries = supabase ? await collectFacilityEntries(supabase) : [];
+  const xml = renderUrlset(entries);
   return new NextResponse(xml, {
     headers: {
       "Content-Type": "application/xml",

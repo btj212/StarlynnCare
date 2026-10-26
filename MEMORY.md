@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Sitemap dates come from the data, not the day the file was built
+
+**Decided:** A sitemap `lastmod` is a real content date. State hubs use the newest publishable facility `updated_at` in that state. City and county hubs, and facility profiles, keep the facility update date they already had. If no real date exists, the URL omits `lastmod`. The paginated facility query stays as it is: Arizona’s live profiles are already in the production sitemap.
+
+**Rejected:** Stamping every static URL, or any hub with a missing date, with the sitemap generation day. That made unchanged pages look newly edited on every crawl.
+
+**Source:** Search Console export, October 22, 2026. Pull request #183.
+
 ## 2026-10 — California report checks are concurrent, bounded, and fail partial
 
 **Decided:** The routine California CCLD scan still checks every targeted
