@@ -105,8 +105,11 @@ def get_pending_backfill(
     approved_only: bool = False,
 ) -> list[dict[str, Any]]:
     sql = """
-        SELECT i.id, i.sha256, i.local_path, i.facility_id
+        SELECT i.id, i.sha256, i.local_path, i.facility_id,
+               i.source_url, i.doc_type, i.posted_month,
+               f.license_number, f.wa_facility_type
         FROM wa_pdf_inventory i
+        JOIN facilities f ON f.id = i.facility_id
         WHERE i.parse_status = 'done'
           AND i.backfill_status = 'pending'
           {fac_filter}
@@ -167,6 +170,96 @@ def find_inspection_for_pdf(
     return str(row[0]) if row else None
 
 
+_VISIT_TYPE = {"inspection": "standard", "investigation": "complaint"}
+_SOURCE_AGENCY = "WA DSHS ADSA"
+
+
+def ensure_visit_for_pdf(conn: psycopg.Connection, row: dict[str, Any], source_url: str) -> str | None:
+    """Open a visit for a report that has a posted month but no inspection row yet.
+
+    DSHS labels the report with a month, not a day. The visit is dated the first
+    of that month, which is how the older bundle ingest recorded the same pages.
+    An enforcement letter is not a visit.
+    """
+    kind = _VISIT_TYPE.get(row.get("doc_type") or "")
+    posted = row.get("posted_month") or ""
+    if kind is None or len(posted) != 7:
+        return None
+    inspection_date = f"{posted}-01"
+    facility_id = str(row["facility_id"])
+    is_complaint = kind == "complaint"
+    license_number = row.get("license_number") or ""
+    forms = (
+        "AFHForms.aspx"
+        if row.get("wa_facility_type") == "AFH"
+        else "BHForms.aspx"
+    )
+    page_url = (
+        f"https://fortress.wa.gov/dshs/adsaapps/lookup/{forms}?Lic={license_number}"
+    )
+    month_label = f"{posted[5:7]}/{posted[0:4]}"
+    type_label = "Investigations" if is_complaint else "Inspections"
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id::text FROM inspections
+            WHERE facility_id = %s::uuid
+              AND inspection_date = %s
+              AND inspection_type = %s
+              AND source_agency = %s
+            """,
+            (facility_id, inspection_date, kind, _SOURCE_AGENCY),
+        )
+        found = cur.fetchone()
+        if found:
+            inspection_id = str(found[0])
+        else:
+            cur.execute(
+                """
+                INSERT INTO inspections (
+                    facility_id, inspection_date, inspection_type, is_complaint,
+                    total_deficiency_count, source_url, source_agency, raw_data
+                ) VALUES (
+                    %s::uuid, %s, %s, %s,
+                    0, %s, %s, %s::jsonb
+                )
+                RETURNING id::text
+                """,
+                (
+                    facility_id,
+                    inspection_date,
+                    kind,
+                    is_complaint,
+                    page_url,
+                    _SOURCE_AGENCY,
+                    json.dumps({"washington": True, "posted_month": posted}),
+                ),
+            )
+            inspection_id = str(cur.fetchone()[0])
+        cur.execute(
+            """
+            INSERT INTO deficiencies (
+                id, inspection_id, code, description, inspector_narrative
+            )
+            SELECT gen_random_uuid(), %s::uuid, %s, %s, %s
+            WHERE NOT EXISTS (
+                SELECT 1 FROM deficiencies
+                WHERE inspection_id = %s::uuid AND inspector_narrative = %s
+            )
+            """,
+            (
+                inspection_id,
+                hashlib.sha256(source_url.encode()).hexdigest()[:16],
+                f"{_WA_PLACEHOLDER_PREFIX} {type_label} ({month_label})",
+                source_url,
+                inspection_id,
+                source_url,
+            ),
+        )
+    conn.commit()
+    return inspection_id
+
+
 def rebuild_narrative_from_deficiencies(
     parsed_deficiencies: list[dict[str, Any]],
 ) -> str:
@@ -199,12 +292,9 @@ def backfill_inspection(
             """
             SELECT COUNT(*) FROM deficiencies
             WHERE inspection_id = %s::uuid
-              AND (
-                description LIKE %s
-                OR inspector_narrative LIKE %s
-              )
+              AND inspector_narrative = %s
             """,
-            (inspection_id, f"{_WA_PLACEHOLDER_PREFIX}%", "https://%"),
+            (inspection_id, source_url),
         )
         row = cur.fetchone()
         placeholder_count = row[0] if row else 0
@@ -221,12 +311,9 @@ def backfill_inspection(
             """
             DELETE FROM deficiencies
             WHERE inspection_id = %s::uuid
-              AND (
-                description LIKE %s
-                OR inspector_narrative LIKE %s
-              )
+              AND inspector_narrative = %s
             """,
-            (inspection_id, f"{_WA_PLACEHOLDER_PREFIX}%", "https://%"),
+            (inspection_id, source_url),
         )
         deleted = cur.rowcount
 
@@ -275,8 +362,20 @@ def backfill_inspection(
             )
             inserted += cur.rowcount
 
-    # Rebuild narrative in inspections.raw_data
-    narrative = rebuild_narrative_from_deficiencies(parsed_deficiencies)
+    # Keep every report that landed on this visit, not only the PDF just read.
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT code, description FROM deficiencies
+            WHERE inspection_id = %s::uuid
+              AND coalesce(description, '') NOT LIKE %s
+            ORDER BY code
+            """,
+            (inspection_id, f"{_WA_PLACEHOLDER_PREFIX}%"),
+        )
+        narrative = rebuild_narrative_from_deficiencies(
+            [{"code": code, "description": desc} for code, desc in cur.fetchall()]
+        )
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -334,6 +433,8 @@ def backfill_one(
     source_url = r[0]
 
     inspection_id = find_inspection_for_pdf(conn, facility_id, source_url)
+    if not inspection_id and not dry_run:
+        inspection_id = ensure_visit_for_pdf(conn, row, source_url)
     if not inspection_id:
         print(f"  SKIP {inv_id}: no matching inspection for {source_url[:60]}")
         if not dry_run:
