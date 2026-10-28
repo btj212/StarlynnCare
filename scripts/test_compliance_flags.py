@@ -59,6 +59,21 @@ class ComplianceFlagTests(unittest.TestCase):
         self.assertIn("enforcement%20letters", links[0].url)
         self.assertTrue(links[0].url.startswith("https://fortress.wa.gov/"))
 
+    def test_an_apostrophe_in_the_filename_stays_in_the_path(self) -> None:
+        """DSHS writes an apostrophe as &#39;. Treating # as a fragment dropped the file."""
+        html = (
+            '<a href="/dshs/adsaapps/lookup/RCSForms/AF/754275/inspections/2024/R Aysha&#39;s.pdf">'
+            "04/2024 - Inspections</a>"
+        )
+        links = parse_forms_links(
+            html,
+            "https://fortress.wa.gov/dshs/adsaapps/lookup/AFHForms.aspx?Lic=754275",
+        )
+        self.assertEqual(len(links), 1)
+        self.assertIn("%27", links[0].url)
+        self.assertNotIn("%26", links[0].url)
+        self.assertTrue(links[0].url.lower().endswith(".pdf"))
+
     def test_beacons_of_hope_revocation_stays_tier_1(self) -> None:
         """License 756400 was revoked and stop-placed. Returned mail is not a lift."""
         result = classify_documents(load_home("756400"), as_of=AS_OF)
