@@ -6,6 +6,7 @@ carries the month and the category ("10/2026 - Enforcement Letters").
 
 from __future__ import annotations
 
+import html
 import re
 from dataclasses import dataclass
 from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
@@ -33,7 +34,8 @@ class FormLink:
 
 
 def absolutize(page_url: str, href: str) -> str:
-    absolute = urljoin(page_url, href)
+    # An apostrophe arrives as &#39;. The # would otherwise end the path.
+    absolute = urljoin(page_url, html.unescape(href.strip()))
     parts = urlsplit(absolute)
     path = quote(unquote(parts.path), safe="/%")
     return urlunsplit((parts.scheme, parts.netloc, path, parts.query, ""))
