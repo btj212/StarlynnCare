@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getServiceClient } from "@/lib/supabase/server";
 import { currentUserIsAdmin } from "@/lib/admin/auth";
+import { waAfhBlocksPublish } from "@/lib/facility/waAfhPublishGate";
 
 type ReviewAction = "approve" | "reject" | "pending" | "restore" | "approve_anyway";
 
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { data: currentFacility, error: fetchError } = await supabase
       .from("facilities")
       .select(
-        "id, license_status, mc_signal_explicit_name, memory_care_disclosure_filed, mc_signal_chain_curated, mc_review_status, mc_review_notes",
+        "id, state_code, wa_facility_type, state_records_checked_at, license_status, mc_signal_explicit_name, memory_care_disclosure_filed, mc_signal_chain_curated, mc_review_status, mc_review_notes",
       )
       .eq("id", facilityId)
       .single();
@@ -114,10 +115,17 @@ export async function POST(request: NextRequest) {
       currentFacility.mc_signal_chain_curated ||
       newStatus === "reviewed_publish";
 
+    const { data: complianceFlag } = await supabase
+      .from("facility_compliance_flags")
+      .select("tier, review_status")
+      .eq("facility_id", facilityId)
+      .maybeSingle();
+
     const publishable =
       currentFacility.license_status === "LICENSED" &&
       servesMC &&
-      newStatus !== "reviewed_reject";
+      newStatus !== "reviewed_reject" &&
+      !waAfhBlocksPublish(currentFacility, complianceFlag);
 
     const { error: flagsError } = await supabase
       .from("facilities")

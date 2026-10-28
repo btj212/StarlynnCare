@@ -235,7 +235,32 @@ def recompute_publishable(
     """
     freshness_months = _FRESHNESS_MONTHS.get(state_code.upper())
 
-    if freshness_months is not None:
+    if state_code.upper() == "WA":
+        # Adult family homes have no inspection rows until this pipeline reads
+        # DSHS. The records check replaces the 48-month inspection gate for them.
+        # An unapproved Tier 1 flag keeps the home unpublished.
+        freshness_clause = f"""
+          AND (
+            (
+              COALESCE(wa_facility_type, '') <> 'AFH'
+              AND EXISTS (
+                SELECT 1 FROM inspections i
+                WHERE i.facility_id = facilities.id
+                  AND i.inspection_date >= (CURRENT_DATE - INTERVAL '{freshness_months} months')
+              )
+            )
+            OR (
+              wa_facility_type = 'AFH'
+              AND state_records_checked_at IS NOT NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM facility_compliance_flags c
+                WHERE c.facility_id = facilities.id
+                  AND c.tier = 1
+                  AND c.review_status IS DISTINCT FROM 'approved'
+              )
+            )
+          )"""
+    elif freshness_months is not None:
         freshness_clause = f"""
           AND EXISTS (
             SELECT 1 FROM inspections i
