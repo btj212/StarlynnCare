@@ -14,6 +14,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 **Source:** Blake, 2026-10-27. Licenses 755245 and 753541 are Tier 2 because the stop placements were lifted. License 756400 is Tier 1.
 
+## 2026-10 — A Washington report dated only by month is a visit on the first of that month
+
+**Decided:** An inspection or investigation PDF becomes a visit dated the first of the month DSHS posted on the link. That is the same date the older bundle ingest used. A second report in that month is added to the same visit, and filling one report does not delete the other. An enforcement letter stays a compliance flag and does not become a visit.
+
+**Rejected:** Leaving the parsed text in a file with no visit, which kept the page saying no reports were posted. Inventing a day the letter does not state.
+
+**Source:** `wa_dshs_to_bundle.py` already used the first of the month. The approved-home parse on 2026-10-27 had no visit to attach to.
+
 ## 2026-10 — Small Arizona homes with no citations are not sent to Google
 
 **Decided:** An Arizona home with 10 or fewer beds and no citations stays on the site and is marked noindex, and it is left out of the sitemap. Google had re-crawled these pages and still declined to index them. The pages were the same template with nothing unique to quote.
