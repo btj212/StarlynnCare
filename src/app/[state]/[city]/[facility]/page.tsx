@@ -9,6 +9,8 @@ import { buildFacilityDescription, buildFacilityTitle, clipMetaDescription, REGU
 import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
+import { ComplianceFlagBanner } from "@/components/facility/ComplianceFlag";
+import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 
 // Section components
 import { FacilitySubNav } from "@/components/facility/profile/FacilitySubNav";
@@ -129,16 +131,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     citationCount: profile.totals.deficiencies,
   });
 
+  const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
+  const noReportsPosted =
+    facility.state_code === "WA" &&
+    checkedOn != null &&
+    profile.totals.inspections === 0 &&
+    profile.totals.deficiencies === 0 &&
+    !profile.complianceFlag;
   const desc = clipMetaDescription(
-    buildFacilityDescription({
-      name: facility.name,
-      percentile: compositePercentile,
-      stateName: state.name,
-      city: facility.city ?? state.name,
-      citationCount: profile.totals.deficiencies,
-      agency: REGULATOR_ABBR[state.code] ?? state.code,
-      lastInspected: shortMonthYear(lastInspectionDate),
-    }),
+    noReportsPosted
+      ? `${facility.name} has no DSHS reports posted as of ${checkedOn}.`
+      : buildFacilityDescription({
+          name: facility.name,
+          percentile: compositePercentile,
+          stateName: state.name,
+          city: facility.city ?? state.name,
+          citationCount: profile.totals.deficiencies,
+          agency: REGULATOR_ABBR[state.code] ?? state.code,
+          lastInspected: shortMonthYear(lastInspectionDate),
+        }),
   );
 
   // Thin-page guardrail: only noindex when the page has effectively no content
@@ -147,11 +158,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // future-proof guard rather than removing live pages from search.
   const tourQs = (facility.content as { tour_questions?: string[] } | null)
     ?.tour_questions;
+  const azSmallWithoutCitations =
+    facility.state_code === "AZ" &&
+    facility.beds != null &&
+    facility.beds <= 10 &&
+    profile.totals.allTimeDeficiencies === 0;
   const isThin =
-    profile.totals.inspections === 0 &&
-    profile.reviews.length === 0 &&
-    (tourQs?.length ?? 0) === 0 &&
-    profile.photoUrls.length === 0;
+    azSmallWithoutCitations ||
+    (profile.totals.inspections === 0 &&
+      profile.reviews.length === 0 &&
+      (tourQs?.length ?? 0) === 0 &&
+      profile.photoUrls.length === 0);
 
   return {
     title,
@@ -226,6 +243,7 @@ export default async function FacilityPage({ params }: PageProps) {
           facilityName={facility.name}
         >
         <main className="bg-paper">
+        <ComplianceFlagBanner flag={profile.complianceFlag} placement="top" />
         {/* Sticky sub-nav */}
         <FacilitySubNav profile={profile} />
 
@@ -285,6 +303,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
           {/* § 03 · Citation record — timeline + heatmap + inspection list */}
           <div className="order-3 md:order-none">
+            <ComplianceFlagBanner flag={profile.complianceFlag} placement="section" />
             <FacilityRecord profile={profile} />
           </div>
         </div>

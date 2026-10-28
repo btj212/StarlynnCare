@@ -94,6 +94,25 @@ def send_area_change_alert(
     )
 
 
+def send_admin_notice(*, summary: str, details: str, admin_url: str) -> None:
+    """One note to the operator. This does not email families."""
+    admin_email = os.environ.get("ADMIN_ALERT_EMAIL", "").strip()
+    if not admin_email:
+        raise RuntimeError("ADMIN_ALERT_EMAIL must be set")
+    _send_transactional(
+        to=admin_email,
+        template_env="LOOPS_ADMIN_ALERT_ID",
+        data_variables={
+            "submissionType": "Compliance flag",
+            "email": admin_email,
+            "summary": summary,
+            "details": details[:2000],
+            "submittedAt": datetime.now(timezone.utc).isoformat(),
+            "adminUrl": admin_url,
+        },
+    )
+
+
 def send_scan_failure_alert(
     *,
     state_code: str,

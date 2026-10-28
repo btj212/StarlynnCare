@@ -294,6 +294,36 @@ export async function collectCoveredStateHubEntries(
   return out;
 }
 
+/** Small Arizona homes with no citations are noindexed, so they stay out of the sitemap. */
+async function azSmallHomesThatHaveCitations(
+  supabase: SupabaseClient,
+  facilityIds: string[],
+): Promise<Set<string>> {
+  const found = new Set<string>();
+  for (let index = 0; index < facilityIds.length; index += 80) {
+    const chunk = facilityIds.slice(index, index + 80);
+    let lastId = "";
+    for (;;) {
+      let query = supabase
+        .from("inspections")
+        .select("id, facility_id, deficiencies!inner(id)")
+        .in("facility_id", chunk)
+        .order("id")
+        .limit(1000);
+      if (lastId) query = query.gt("id", lastId);
+      const { data, error } = await query;
+      if (error) {
+        throw new Error(`Failed to check Arizona citations: ${error.message}`);
+      }
+      const rows = (data ?? []) as Array<{ id: string; facility_id: string }>;
+      for (const row of rows) found.add(row.facility_id);
+      if (rows.length < 1000) break;
+      lastId = rows[rows.length - 1].id;
+    }
+  }
+  return found;
+}
+
 export async function collectFacilityEntriesForState(
   supabase: SupabaseClient,
   stateCode: string,
@@ -307,6 +337,7 @@ export async function collectFacilityEntriesForState(
     city_slug: string;
     slug: string;
     updated_at: string | null;
+    beds: number | null;
   };
 
   // Supabase/PostgREST caps responses at 1,000 rows by default. Several states
@@ -316,7 +347,7 @@ export async function collectFacilityEntriesForState(
   for (let from = 0; ; from += SITEMAP_QUERY_PAGE_SIZE) {
     const { data, error } = await supabase
       .from("facilities")
-      .select("id, city_slug, slug, updated_at, inspections!facility_id!inner(id)")
+      .select("id, city_slug, slug, updated_at, beds, inspections!facility_id!inner(id)")
       .eq("state_code", stateCode)
       .eq("publishable", true)
       .order("id")
@@ -331,7 +362,19 @@ export async function collectFacilityEntriesForState(
     if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
   }
 
-  return facilities
+  let listed = facilities;
+  if (stateCode === "AZ") {
+    const smallIds = facilities
+      .filter((facility) => facility.beds != null && facility.beds <= 10)
+      .map((facility) => facility.id);
+    const withCitations = await azSmallHomesThatHaveCitations(supabase, smallIds);
+    listed = facilities.filter(
+      (facility) =>
+        facility.beds == null || facility.beds > 10 || withCitations.has(facility.id),
+    );
+  }
+
+  return listed
     .sort((a, b) =>
       a.city_slug.localeCompare(b.city_slug) || a.slug.localeCompare(b.slug),
     )

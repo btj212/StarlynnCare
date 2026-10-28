@@ -277,6 +277,14 @@ def ingest_wa(conn) -> bool:
             allow_fail=True,
         ),
         _python(str(SCRAPERS / "wa_pdf_download.py"), label="WA PDF download", allow_fail=True),
+        _python(
+            str(SCRAPERS / "compliance_flags_run.py"),
+            "--state",
+            "WA",
+            "--approved-only",
+            label="WA compliance flags",
+            allow_fail=True,
+        ),
         _python(str(SCRAPERS / "wa_pdf_parse.py"), label="WA PDF parse", allow_fail=True),
         _python(
             str(SCRAPERS / "wa_pdf_backfill.py"),

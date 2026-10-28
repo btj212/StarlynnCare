@@ -6,6 +6,22 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Washington adult family homes wait for a records check
+
+**Decided:** Approving a Washington adult family home keeps the approval and does not publish the page until the DSHS document list for that license has been read. A Tier 1 flag (an open revocation, stop placement, condition, denial, suspension, or non-renewal) stays unpublished until a person approves the banner. A later lift of that same action drops it to Tier 2 and the banner shows both dates. Tier 3 is one sourced line in the record, not a banner. The page says "no DSHS reports posted" only after the check found none. Families are not emailed. A new Tier 1 flag emails the operator.
+
+**Rejected:** Leaving the 862 approved homes live while they said there were no citations. Treating a returned-mail letter as a new action, or letting the body of a lift letter count as a new order. Publishing a Tier 1 banner before a person has read it.
+
+**Source:** Blake, 2026-10-27. Licenses 755245 and 753541 are Tier 2 because the stop placements were lifted. License 756400 is Tier 1.
+
+## 2026-10 — Small Arizona homes with no citations are not sent to Google
+
+**Decided:** An Arizona home with 10 or fewer beds and no citations stays on the site and is marked noindex, and it is left out of the sitemap. Google had re-crawled these pages and still declined to index them. The pages were the same template with nothing unique to quote.
+
+**Rejected:** Removing the pages. Asking Google to validate the same pages again without changing what it is being asked to index.
+
+**Source:** Search Console coverage export, 2026-10-27. Indexed pages fell from 3,773 on August 4 to 1,637 on October 22. Arizona facility pages were 152 of the 162 validation failures.
+
 ## 2026-10 — The review page shows the next homes that have no note
 
 **Decided:** The yellow queue loads homes that still need a decision and have no note, 1,000 at a time, in state then name order. A Next link loads the following 1,000. Keeping a home pending still saves the note and leaves the home unpublished. The note is what takes it off this page.

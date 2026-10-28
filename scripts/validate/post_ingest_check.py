@@ -248,7 +248,14 @@ def _check_inspection_coverage(cur, state: str) -> None:
         """
         SELECT
             COUNT(DISTINCT f.id) AS total,
-            COUNT(DISTINCT i.facility_id) AS with_any_inspection
+            COUNT(DISTINCT f.id) FILTER (
+              WHERE i.id IS NOT NULL
+                 OR (
+                   f.state_code = 'WA'
+                   AND f.wa_facility_type = 'AFH'
+                   AND f.state_records_checked_at IS NOT NULL
+                 )
+            ) AS with_any_inspection
         FROM facilities f
         LEFT JOIN inspections i ON i.facility_id = f.id
         WHERE f.publishable = true
@@ -263,7 +270,7 @@ def _check_inspection_coverage(cur, state: str) -> None:
     check(
         f"{state}: ≥90% of publishable facilities have an inspection row",
         inspection_coverage_passes(with_inspection, total),
-        f"{with_inspection}/{total} ({pct:.0f}%) have inspections",
+        f"{with_inspection}/{total} ({pct:.0f}%) have an inspection or a completed records check",
     )
 
 

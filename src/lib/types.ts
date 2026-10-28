@@ -91,6 +91,8 @@ export interface Facility {
   license_status: string | null;
   license_expiration: string | null;
   publishable: boolean;
+  /** Set after the state document list has been read. Null means not checked yet. */
+  state_records_checked_at?: string | null;
 
   /**
    * CA-specific: the regulatory or signal basis for the memory-care classification.

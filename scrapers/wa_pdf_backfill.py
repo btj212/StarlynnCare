@@ -102,6 +102,7 @@ def get_pending_backfill(
     facility_id: str | None,
     limit: int | None,
     created_after: str | None = None,
+    approved_only: bool = False,
 ) -> list[dict[str, Any]]:
     sql = """
         SELECT i.id, i.sha256, i.local_path, i.facility_id
@@ -110,10 +111,17 @@ def get_pending_backfill(
           AND i.backfill_status = 'pending'
           {fac_filter}
           {created_after_filter}
+          {approved_filter}
         ORDER BY i.created_at
         {limit_clause}
     """
     fac_filter = "AND i.facility_id = %s::uuid" if facility_id else ""
+    approved_filter = """
+          AND i.facility_id IN (
+            SELECT id FROM facilities
+            WHERE state_code = 'WA' AND mc_review_status = 'reviewed_publish'
+          )
+    """ if approved_only else ""
     created_after_filter = "AND i.created_at >= %s::timestamptz" if created_after else ""
     limit_clause = f"LIMIT {limit}" if limit else ""
     params: list[Any] = [facility_id] if facility_id else []
@@ -125,6 +133,7 @@ def get_pending_backfill(
             sql.format(
                 fac_filter=fac_filter,
                 created_after_filter=created_after_filter,
+                approved_filter=approved_filter,
                 limit_clause=limit_clause,
             ),
             params,
@@ -355,6 +364,11 @@ def backfill_one(
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="WA PDF backfill — Wave 1a step 3")
     parser.add_argument("--facility-id", help="Only backfill one facility UUID")
+    parser.add_argument(
+        "--approved-only",
+        action="store_true",
+        help="Only Washington homes a person has approved",
+    )
     parser.add_argument("--limit", type=int)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
@@ -374,6 +388,7 @@ def main(argv: list[str] | None = None) -> None:
         args.facility_id,
         args.limit,
         os.environ.get("STATE_SCAN_STARTED_AT"),
+        approved_only=args.approved_only,
     )
     print(f"  {len(pending)} inventory rows to backfill")
 
