@@ -6,6 +6,7 @@ import {
   regulatorLicensePageLabel,
 } from "@/lib/seo/schema";
 import { buildFacilitySnippet } from "@/lib/seo/meta";
+import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
@@ -251,19 +252,31 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   // Use the most recent visit of any type for recency accuracy.
   const lastInspectionDate =
     profile.inspections[0]?.inspection_date ?? null;
-  const snippet = buildFacilitySnippet({
-    facilityName: facility.name,
-    stateName: state.name,
-    stateCode: state.code,
-    grade: profile.snapshot?.grade?.letter ?? null,
-    percentile: profile.snapshot?.grade?.composite_percentile ?? null,
-    severityPercentile: profile.snapshot?.metrics.severity.percentile ?? null,
-    frequencyPercentile: profile.snapshot?.metrics.frequency.percentile ?? null,
-    repeatsPercentile: profile.snapshot?.metrics.repeats.percentile ?? null,
-    citationCount: profile.totals.deficiencies,
-    lastInspectionDate,
-    variant: "prose",
-  });
+  const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
+  const noReportsPosted =
+    facility.state_code === "WA" &&
+    checkedOn != null &&
+    profile.totals.inspections === 0 &&
+    profile.totals.deficiencies === 0 &&
+    !profile.complianceFlag;
+  const formsUrl = noReportsPosted
+    ? dshsFormsUrl(facility.license_number, facility.wa_facility_type)
+    : null;
+  const snippet = noReportsPosted
+    ? `${facility.name} has no DSHS reports posted as of ${checkedOn}.`
+    : buildFacilitySnippet({
+        facilityName: facility.name,
+        stateName: state.name,
+        stateCode: state.code,
+        grade: profile.snapshot?.grade?.letter ?? null,
+        percentile: profile.snapshot?.grade?.composite_percentile ?? null,
+        severityPercentile: profile.snapshot?.metrics.severity.percentile ?? null,
+        frequencyPercentile: profile.snapshot?.metrics.frequency.percentile ?? null,
+        repeatsPercentile: profile.snapshot?.metrics.repeats.percentile ?? null,
+        citationCount: profile.totals.deficiencies,
+        lastInspectionDate,
+        variant: "prose",
+      });
 
   return (
     <section className="fp-hero border-b border-clearing-rule px-4 py-9 sm:px-6 md:px-[60px] md:py-14">
@@ -292,8 +305,13 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {/* Editorial summary — same data points as the meta snippet so
                 Google has narrative prose above-the-fold to lift. */}
             {snippet && (
-              <p className="mt-5 hidden max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 md:block sm:text-[18px]">
-                {snippet}
+              <p className={`mt-5 max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 sm:text-[18px] ${noReportsPosted ? "" : "hidden md:block"}`}>
+                {snippet}{" "}
+                {formsUrl ? (
+                  <a href={formsUrl} className="underline" rel="noopener noreferrer">
+                    DSHS record
+                  </a>
+                ) : null}
               </p>
             )}
 

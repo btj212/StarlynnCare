@@ -36,15 +36,9 @@ if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
 
 from _http_helpers import make_session, polite_sleep, session_get
+from wa_forms_links import FormLink, parse_forms_links
 
 AFH_FORMS_TMPL = "https://fortress.wa.gov/dshs/adsaapps/lookup/AFHForms.aspx?Lic={lic}"
-
-_PDF_URL_RE = re.compile(
-    r"https?://fortress\.wa\.gov/[^\s\"'<>]+\.pdf",
-    re.IGNORECASE,
-)
-
-_DATE_RE = re.compile(r"(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})")
 
 
 def load_env() -> None:
@@ -92,9 +86,9 @@ def fetch_afh_facilities(
         return cur.fetchall()
 
 
-def parse_pdf_links_from_html(html: str) -> list[str]:
-    """Extract direct PDF URLs from the AFHForms page HTML."""
-    return list(set(_PDF_URL_RE.findall(html)))
+def parse_pdf_links_from_html(html: str, page_url: str = AFH_FORMS_TMPL.format(lic="")) -> list[FormLink]:
+    """Document links, including the relative ones DSHS posts now."""
+    return parse_forms_links(html, page_url)
 
 
 def _parse_date_loose(raw: str | None):
@@ -114,23 +108,25 @@ def upsert_pdf_inventory(
     conn: psycopg.Connection,
     facility_id: str,
     license_number: str,
-    urls: list[str],
+    links: list[FormLink],
     *,
     dry_run: bool = False,
 ) -> int:
-    if dry_run or not urls:
-        return len(urls) if dry_run else 0
+    if dry_run or not links:
+        return len(links) if dry_run else 0
     inserted = 0
     with conn.cursor() as cur:
-        for url in urls:
+        for link in links:
             cur.execute(
                 """
                 INSERT INTO wa_pdf_inventory
-                  (facility_id, license_number, source_url, doc_type)
-                VALUES (%s, %s, %s, 'inspection')
-                ON CONFLICT (source_url) DO NOTHING
+                  (facility_id, license_number, source_url, doc_type, posted_month)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (source_url) DO UPDATE
+                  SET doc_type = EXCLUDED.doc_type,
+                      posted_month = EXCLUDED.posted_month
                 """,
-                (facility_id, license_number, url),
+                (facility_id, license_number, link.url, link.doc_type, link.posted_month),
             )
             inserted += cur.rowcount
     conn.commit()
@@ -154,17 +150,17 @@ def scrape_facility_pdfs(
         print(f"  ERR {facility['name']}: {exc}", file=sys.stderr)
         return 0
 
-    pdf_urls = parse_pdf_links_from_html(resp.text)
-    if not pdf_urls:
+    links = parse_pdf_links_from_html(resp.text, resp.url or url)
+    if not links:
         print(f"  {facility['name']} ({lic}): no PDFs found")
         return 0
 
-    print(f"  {facility['name']} ({lic}): {len(pdf_urls)} PDF(s)")
+    print(f"  {facility['name']} ({lic}): {len(links)} PDF(s)")
     n = upsert_pdf_inventory(
         conn,
         facility["id"],
         lic,
-        pdf_urls,
+        links,
         dry_run=dry_run,
     )
     return n

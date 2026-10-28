@@ -9,10 +9,8 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin
 
 import psycopg
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from psycopg.rows import dict_row
 
@@ -22,6 +20,7 @@ if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
 
 from _http_helpers import make_session, polite_sleep, session_get  # noqa: E402
+from wa_forms_links import parse_forms_links  # noqa: E402
 
 BH_FORMS_TMPL = "https://fortress.wa.gov/dshs/adsaapps/lookup/BHForms.aspx?Lic={license}"
 
@@ -80,46 +79,40 @@ def discover_facility(
         timeout=30,
     )
     response.raise_for_status()
-    soup = BeautifulSoup(response.text, "html.parser")
-    urls = sorted(
-        {
-            urljoin(response.url, href)
-            for anchor in soup.find_all("a", href=True)
-            if (href := anchor.get("href")) and href.lower().endswith(".pdf")
-        }
-    )
+    links = parse_forms_links(response.text, response.url or BH_FORMS_TMPL.format(license=license_number))
     inserted = 0
     if not dry_run:
         with conn.cursor() as cur:
-            for url in urls:
-                lowered_url = url.lower()
-                doc_type = (
-                    "complaint"
-                    if "complaint" in lowered_url
-                    else "inspection"
-                    if "/inspections/" in lowered_url
-                    else "other"
-                )
+            for link in links:
                 cur.execute(
                     """
                     INSERT INTO wa_pdf_inventory (
                       facility_id,
                       license_number,
                       source_url,
-                      doc_type
+                      doc_type,
+                      posted_month
                     )
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (source_url) DO NOTHING
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (source_url) DO UPDATE
+                      SET doc_type = EXCLUDED.doc_type,
+                          posted_month = EXCLUDED.posted_month
                     """,
-                    (facility["id"], facility["license_number"], url, doc_type),
+                    (
+                        facility["id"],
+                        facility["license_number"],
+                        link.url,
+                        link.doc_type,
+                        link.posted_month,
+                    ),
                 )
                 inserted += cur.rowcount
         conn.commit()
     print(
         f"  {facility['name']} ({facility['wa_facility_type']}): "
-        f"{len(urls)} found, {inserted} new"
+        f"{len(links)} found, {inserted} new"
     )
-    return len(urls), inserted
+    return len(links), inserted
 
 
 def main() -> int:

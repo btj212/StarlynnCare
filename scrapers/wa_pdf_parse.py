@@ -269,6 +269,11 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--sha256", help="Parse a specific PDF by sha256 prefix")
     parser.add_argument("--limit", type=int, help="Max PDFs to parse this run")
     parser.add_argument("--dry-run", action="store_true", help="Triage only, no LLM")
+    parser.add_argument(
+        "--approved-only",
+        action="store_true",
+        help="Only Washington homes a person has approved",
+    )
     args = parser.parse_args(argv)
 
     load_env()
@@ -283,11 +288,18 @@ def main(argv: list[str] | None = None) -> None:
           AND parse_status IN ('pending', 'ocr_needed')
           {sha_filter}
           {created_after_filter}
+          {approved_filter}
         ORDER BY created_at
     """
     sha_filter = "AND sha256 LIKE %s" if args.sha256 else ""
     created_after = os.environ.get("STATE_SCAN_STARTED_AT")
     created_after_filter = "AND created_at >= %s::timestamptz" if created_after else ""
+    approved_filter = """
+          AND facility_id IN (
+            SELECT id FROM facilities
+            WHERE state_code = 'WA' AND mc_review_status = 'reviewed_publish'
+          )
+    """ if args.approved_only else ""
     params: list[Any] = []
     if args.sha256:
         params.append(args.sha256 + "%")
@@ -297,11 +309,13 @@ def main(argv: list[str] | None = None) -> None:
         sql_with_limit = sql.format(
             sha_filter=sha_filter,
             created_after_filter=created_after_filter,
+            approved_filter=approved_filter,
         ) + f" LIMIT {args.limit}"
     else:
         sql_with_limit = sql.format(
             sha_filter=sha_filter,
             created_after_filter=created_after_filter,
+            approved_filter=approved_filter,
         )
 
     with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:

@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — Washington adult family home documents were invisible to the scraper
+
+**What went wrong:** The adult family home scraper only kept PDF links that were already a full `https://fortress.wa.gov/...pdf` address. DSHS posts relative links, with the month and the category in the link text (`10/2026 - Enforcement Letters`). Every weekly run recorded zero documents. Approving one of those homes published it, and the page said there were no citations. That included a home whose license had been revoked.
+
+**What worked instead:** Read the link and its text, keep the category and the month, and do not publish a Washington adult family home until that list has been read. A Tier 1 flag stays off the page until a person approves the banner. A later lift letter closes only the same kind of action.
+
+**Source:** AFHForms pages for licenses 756400, 755245, and 753541 on 2026-10-27.
+
 ## 2026-10 — The review queue's 5,000-row limit still returned 1,000 homes
 
 **What went wrong:** The yellow queue asked for 5,000 homes that still need a decision. The database API stops at 1,000. Homes kept pending stay in that status, so their notes filled the window. California and Minnesota were all the page could show, and Oregon, Pennsylvania, Texas, and Washington never appeared. Refreshing did not help.

@@ -39,6 +39,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               MC Review
             </Link>
             <Link
+              href="/admin/compliance"
+              className="text-sm font-medium text-slate hover:text-ink"
+            >
+              Compliance
+            </Link>
+            <Link
               href="/admin/watchers"
               className="text-sm font-medium text-slate hover:text-ink"
             >

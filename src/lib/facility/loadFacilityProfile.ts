@@ -27,6 +27,7 @@ import { stateFromSlug } from "@/lib/states";
 import { getStateProfileConfig } from "@/lib/states/profileConfig";
 import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import { canonicalFor } from "@/lib/seo/canonical";
+import type { ComplianceFlag } from "@/lib/facility/complianceFlag";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import {
   buildBreadcrumbList,
@@ -233,9 +234,13 @@ export interface FacilityProfile {
   totals: {
     inspections: number;
     deficiencies: number;
+    /** Deficiencies on record, including those older than the display window. */
+    allTimeDeficiencies: number;
     typeA: number;
     lastCitation: string | null;
   };
+  /** Released state enforcement flag. Pending Tier 1 is not public. */
+  complianceFlag: ComplianceFlag | null;
   /** Count of inspections older than INSPECTION_DISPLAY_YEARS that are hidden in free tier. */
   hiddenOlderCount: number;
   /** Year of the oldest inspection on record (used for footer copy). Null when no inspections exist. */
@@ -336,6 +341,24 @@ async function fetchFacility(
   if (error) return { facility: null, error: error.message, configured: true };
   const row = (data ?? [])[0] as Facility | undefined;
   return { facility: row ?? null, error: null, configured: true };
+}
+
+async function fetchComplianceFlag(facilityId: string): Promise<ComplianceFlag | null> {
+  const supabase = tryPublicSupabaseClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("facility_compliance_flags")
+    .select("tier, banner_text, docs, checked_at")
+    .eq("facility_id", facilityId)
+    .maybeSingle();
+  if (error || !data?.banner_text) return null;
+  if (data.tier !== 1 && data.tier !== 2 && data.tier !== 3) return null;
+  return {
+    tier: data.tier,
+    banner_text: data.banner_text,
+    docs: Array.isArray(data.docs) ? data.docs : [],
+    checked_at: data.checked_at,
+  };
 }
 
 async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
@@ -575,10 +598,11 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const region = regionFromSlug(stateSlug, regionSlug);
   const countyHub = countyRegionContainingCitySlug(state.code, facility.city_slug);
 
-  const [{ inspections: allInspections, deficiencies: allDeficiencies }, snapshot, reviews] = await Promise.all([
+  const [{ inspections: allInspections, deficiencies: allDeficiencies }, snapshot, reviews, complianceFlag] = await Promise.all([
     fetchInspectionsAndDeficiencies(facility.id),
     fetchSnapshot(facility.id),
     loadPublishedReviews(facility.id),
+    fetchComplianceFlag(facility.id),
   ]);
 
   // ── Free-tier display cap ──────────────────────────────────────────────────
@@ -769,9 +793,11 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     totals: {
       inspections: inspections.length,
       deficiencies: totalDeficiencies,
+      allTimeDeficiencies: allDeficiencies.length,
       typeA: typeACount,
       lastCitation,
     },
+    complianceFlag,
     hiddenOlderCount,
     oldestHiddenYear,
     dataDepth,
