@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SITE_ORIGIN } from "@/lib/seo/canonical";
+import {
+  azSmallHomeWithoutCitations,
+  facilityListedInSitemap,
+} from "@/lib/seo/indexability";
 import { regionsForState } from "@/lib/regions";
 import { COVERED_STATES } from "@/lib/states";
 import { RESEARCH_INDEX } from "@/lib/content/research";
@@ -42,14 +46,33 @@ ${body}
 </urlset>`;
 }
 
-export function renderSitemapIndex(childPaths: string[], today: string): string {
-  const body = childPaths
-    .map(
-      (path) => `  <sitemap>
-    <loc>${escapeXml(`${SITE_ORIGIN}${path}`)}</loc>
-    <lastmod>${escapeXml(today)}</lastmod>
-  </sitemap>`,
-    )
+export type SitemapIndexEntry = {
+  path: string;
+  /** Omitted when the child file has no real content date. */
+  lastmod?: string;
+};
+
+/** Newest real content date in a child sitemap. Generation day is not a date. */
+export function latestContentDate(entries: SitemapUrlRow[]): string | undefined {
+  let latest = "";
+  for (const entry of entries) {
+    if (entry.lastmod && entry.lastmod > latest) latest = entry.lastmod;
+  }
+  return latest || undefined;
+}
+
+export function renderSitemapIndex(children: SitemapIndexEntry[]): string {
+  const body = children
+    .map((child) => {
+      // The index used to stamp every child with the generation day, so Google
+      // was told the sitemap changed even when no page in it had changed.
+      const lastmod = child.lastmod
+        ? `\n    <lastmod>${escapeXml(child.lastmod)}</lastmod>`
+        : "";
+      return `  <sitemap>
+    <loc>${escapeXml(`${SITE_ORIGIN}${child.path}`)}</loc>${lastmod}
+  </sitemap>`;
+    })
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -210,13 +233,14 @@ export async function collectHubEntriesForState(
     id: string;
     city_slug: string;
     updated_at: string | null;
+    beds: number | null;
   };
 
   const rows: HubFacilityRow[] = [];
   for (let from = 0; ; from += SITEMAP_QUERY_PAGE_SIZE) {
     const { data, error } = await supabase
       .from("facilities")
-      .select("id, city_slug, updated_at")
+      .select("id, city_slug, updated_at, beds")
       .eq("state_code", stateCode)
       .eq("publishable", true)
       .order("id")
@@ -231,12 +255,26 @@ export async function collectHubEntriesForState(
     if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
   }
 
+  const smallArizonaIds =
+    stateCode === "AZ"
+      ? rows
+          .filter((facility) => azSmallHomeWithoutCitations(stateCode, facility.beds, 0))
+          .map((facility) => facility.id)
+      : [];
+  const citedSmallHomes = await azSmallHomesThatHaveCitations(supabase, smallArizonaIds);
+  const indexableBySlug = new Map<string, number>();
   const countBySlug = new Map<string, number>();
   const lastmodBySlug = new Map<string, string>();
   for (const r of rows) {
     const slug = r.city_slug;
     if (!slug) continue;
     countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
+    const excluded = azSmallHomeWithoutCitations(
+      stateCode,
+      r.beds,
+      citedSmallHomes.has(r.id) ? 1 : 0,
+    );
+    if (!excluded) indexableBySlug.set(slug, (indexableBySlug.get(slug) ?? 0) + 1);
     const updated = r.updated_at?.split("T")[0];
     if (updated && updated > (lastmodBySlug.get(slug) ?? "")) {
       lastmodBySlug.set(slug, updated);
@@ -247,7 +285,7 @@ export async function collectHubEntriesForState(
 
   for (const region of regionsForState(stateCode)) {
     if (region.kind !== "county") continue;
-    const n = region.citySlugs.reduce((acc, s) => acc + (countBySlug.get(s) ?? 0), 0);
+    const n = region.citySlugs.reduce((acc, s) => acc + (indexableBySlug.get(s) ?? 0), 0);
     if (n === 0) continue;
 
     const latest = region.citySlugs.reduce(
@@ -261,6 +299,8 @@ export async function collectHubEntriesForState(
   }
 
   for (const slug of countBySlug.keys()) {
+    // A city whose homes are all excluded Arizona pages cannot justify a hub URL.
+    if ((indexableBySlug.get(slug) ?? 0) === 0) continue;
     hubLastmod.set(slug, lastmodBySlug.get(slug) ?? "");
   }
 
@@ -362,17 +402,18 @@ export async function collectFacilityEntriesForState(
     if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
   }
 
-  let listed = facilities;
-  if (stateCode === "AZ") {
-    const smallIds = facilities
-      .filter((facility) => facility.beds != null && facility.beds <= 10)
-      .map((facility) => facility.id);
-    const withCitations = await azSmallHomesThatHaveCitations(supabase, smallIds);
-    listed = facilities.filter(
-      (facility) =>
-        facility.beds == null || facility.beds > 10 || withCitations.has(facility.id),
-    );
-  }
+  const smallIds = facilities
+    .filter((facility) => azSmallHomeWithoutCitations(stateCode, facility.beds, 0))
+    .map((facility) => facility.id);
+  const withCitations = await azSmallHomesThatHaveCitations(supabase, smallIds);
+  const listed = facilities.filter((facility) =>
+    facilityListedInSitemap({
+      stateCode,
+      beds: facility.beds,
+      deficiencyCount: withCitations.has(facility.id) ? 1 : 0,
+      inspectionCount: 1,
+    }),
+  );
 
   return listed
     .sort((a, b) =>

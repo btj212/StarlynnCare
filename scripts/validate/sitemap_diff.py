@@ -18,6 +18,7 @@ from urllib.parse import urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from validate._html_parse import extract_sitemap_locs, path_from_url  # noqa: E402
 from validate._lib import REPO_ROOT, fetch_page, get_conn  # noqa: E402
+from validate.search_console_coverage import az_small_home_without_citations  # noqa: E402
 
 PRODUCTION_URL = "https://www.starlynncare.com"
 AUDIT_PATH = REPO_ROOT / "docs/audits/sitemap-diff.md"
@@ -69,17 +70,31 @@ def _db_routable_paths() -> set[str]:
                     SELECT
                         f.city_slug,
                         f.slug,
+                        f.beds,
                         EXISTS (
                             SELECT 1 FROM inspections i WHERE i.facility_id = f.id
-                        ) AS has_inspections
+                        ) AS has_inspections,
+                        EXISTS (
+                            SELECT 1
+                            FROM inspections i
+                            JOIN deficiencies d ON d.inspection_id = i.id
+                            WHERE i.facility_id = f.id
+                        ) AS has_citations
                     FROM facilities f
                     WHERE f.publishable = true AND f.state_code = %s
                     """,
                     (code,),
                 )
                 for r in cur.fetchall():
-                    paths.add(f"/{slug}/{r['city_slug']}")
-                    if r["has_inspections"]:
+                    excluded = az_small_home_without_citations(
+                        code,
+                        r["beds"],
+                        0 if not r["has_citations"] else 1,
+                    )
+                    # A city of only excluded homes is noindex, so it is not a missing sitemap URL.
+                    if not excluded and r["city_slug"]:
+                        paths.add(f"/{slug}/{r['city_slug']}")
+                    if r["has_inspections"] and not excluded and r["city_slug"] and r["slug"]:
                         paths.add(f"/{slug}/{r['city_slug']}/{r['slug']}")
     return paths
 
@@ -146,7 +161,7 @@ def main() -> None:
         "",
         "- Static/editorial URLs intentionally omitted from DB set.",
         "- Hub paths dedupe city_slug only; county hubs come from regions.ts not DB.",
-        "- Facility paths require at least one inspection, matching sitemap generation.",
+        "- Facility paths require at least one inspection, and small Arizona homes with no citations are excluded, matching the sitemap.",
         "",
     ])
 
