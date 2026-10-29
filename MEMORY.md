@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — A CDSS 503 is an outage, and baselines wait for the API
+
+**Decided:** When the California transparency API returns HTTP 503, the morning crawl stops at the statewide file and sends nothing. That is the API being down, not a bug in the crawler. Do not fall back to per-facility report calls or to the public search page while those API calls fail the same way. The public search page can still load. Routine mode stays undeclared until the API is back and the homes with no snapshot have been checked.
+
+**Measured on the evening of 2026-10-28:** The statewide file and a facility report index both returned 503. The search page returned 200. The Oct 27 and Oct 28 crawls failed the same way before checking any home. Of 716 publishable California homes, 342 have a finished snapshot, 49 are pending, and 325 have none. The Mac job folder is on current `main`.
+
+**Rejected:** Treating the two failed mornings as a crawler regression. Calling the report API anyway, which answers 503 too. Scraping the HTML search page as a substitute for the bulk file.
+
+**Source:** `~/Library/Logs/StarlynnCare/ca-watch.log` for 2026-10-27 and 2026-10-28, and a live check of the same URLs that evening.
+
 ## 2026-10 — Washington adult family homes wait for a records check
 
 **Decided:** Approving a Washington adult family home keeps the approval and does not publish the page until the DSHS document list for that license has been read. A Tier 1 flag (an open revocation, stop placement, condition, denial, suspension, or non-renewal) stays unpublished until a person approves the banner. A later lift of that same action drops it to Tier 2 and the banner shows both dates. Tier 3 is one sourced line in the record, not a banner. The page says "no DSHS reports posted" only after the check found none. Families are not emailed. A new Tier 1 flag emails the operator.
