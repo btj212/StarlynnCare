@@ -24,6 +24,12 @@ python3 scripts/validate/soft404_report.py --env production
 
 # Sitemap vs DB diff
 python3 scripts/validate/sitemap_diff.py --env production
+
+# Search Console coverage vs the October 27 baseline
+python3 scripts/validate/search_console_coverage.py \
+  --coverage-zip /path/to/Coverage.zip \
+  --validation-zip /path/to/Coverage-Validation.zip \
+  --check-live --url https://www.starlynncare.com
 ```
 
 Preview:

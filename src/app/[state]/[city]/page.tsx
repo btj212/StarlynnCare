@@ -56,6 +56,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let withDeficiency = 0;
   let findingsDate: string | null = null;
   let metaFirstPublishedAt: string | null = null;
+  let hubNoindex = false;
   if (supabase) {
     const summary = await loadRegionHubSummary(supabase, region);
     // Only 404 on a confirmed empty hub. A transient Supabase error used to
@@ -65,6 +66,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     withDeficiency = summary.withDeficiency;
     findingsDate = summary.findingsDate;
     metaFirstPublishedAt = summary.firstPublishedAt;
+    hubNoindex =
+      !summary.fetchError &&
+      summary.totalCount > 0 &&
+      summary.indexableFacilityCount === 0;
   }
 
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
@@ -118,6 +123,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: metaTitle,
     description: desc,
     alternates: { canonical },
+    ...(hubNoindex ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       title: metaTitle,
       description: desc,

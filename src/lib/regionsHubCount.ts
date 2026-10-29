@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Region } from "@/lib/regions";
+import { azSmallHomeWithoutCitations } from "@/lib/seo/indexability";
 
 /**
  * Exact publishable facility count for a listing region (matches hub page query).
@@ -40,12 +41,18 @@ export async function loadRegionHubSummary(
   withDeficiency: number;
   findingsDate: string | null;
   firstPublishedAt: string | null;
+  /**
+   * Homes that can still justify the hub. Zero with a non-zero total means
+   * every home is an excluded Arizona small home, so the hub is noindex.
+   * A failed record check leaves this equal to totalCount.
+   */
+  indexableFacilityCount: number;
   /** Set when the facilities query failed — callers must not treat this as an empty hub. */
   fetchError: string | null;
 }> {
   const { data: facRows, error: facErr } = await supabase
     .from("facilities")
-    .select("id, updated_at, created_at")
+    .select("id, updated_at, created_at, beds")
     .eq("state_code", region.state.code)
     .eq("publishable", true)
     .in("city_slug", region.citySlugs as unknown as string[]);
@@ -57,6 +64,7 @@ export async function loadRegionHubSummary(
       withDeficiency: 0,
       findingsDate: null,
       firstPublishedAt: null,
+      indexableFacilityCount: 0,
       fetchError: facErr.message,
     };
   }
@@ -89,6 +97,7 @@ export async function loadRegionHubSummary(
       withDeficiency: 0,
       findingsDate,
       firstPublishedAt,
+      indexableFacilityCount: 0,
       fetchError: null,
     };
   }
@@ -96,6 +105,7 @@ export async function loadRegionHubSummary(
   // Chunk to avoid URL-length limits and PostgREST's 1000-row default cap.
   const INSP_CHUNK = 150;
   const inspFacMap = new Map<string, string>();
+  let recordCheckIncomplete = false;
   for (let ci = 0; ci < facilityIds.length; ci += INSP_CHUNK) {
     const chunk = facilityIds.slice(ci, ci + INSP_CHUNK);
     const { data: inspRows, error: inspErr } = await supabase
@@ -105,6 +115,7 @@ export async function loadRegionHubSummary(
       .limit(5000);
     if (inspErr) {
       console.error("[loadRegionHubSummary] inspections:", inspErr.message);
+      recordCheckIncomplete = true;
       break;
     }
     for (const i of (inspRows ?? []) as Array<{ id: string; facility_id: string }>) {
@@ -124,6 +135,7 @@ export async function loadRegionHubSummary(
       .limit(5000);
     if (defErr) {
       console.error("[loadRegionHubSummary] deficiencies:", defErr.message);
+      recordCheckIncomplete = true;
       break;
     }
     for (const d of (defRows ?? []) as Array<{ inspection_id: string }>) {
@@ -132,11 +144,20 @@ export async function loadRegionHubSummary(
     }
   }
 
+  const indexableFacilityCount = recordCheckIncomplete
+    ? totalCount
+    : (facRows ?? []).filter((row) => {
+        const beds = (row as { beds: number | null }).beds;
+        const deficiencyCount = facilitiesWithAnyDef.has(row.id) ? 1 : 0;
+        return !azSmallHomeWithoutCitations(region.state.code, beds, deficiencyCount);
+      }).length;
+
   return {
     totalCount,
     withDeficiency: facilitiesWithAnyDef.size,
     findingsDate,
     firstPublishedAt,
+    indexableFacilityCount,
     fetchError: null,
   };
 }

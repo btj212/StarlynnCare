@@ -28,6 +28,7 @@ import { FacilityFullInspections } from "@/components/facility/profile/FacilityF
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
 import { assignOffer } from "@/lib/facility/offers";
 import { shouldShowPaidFacilityWatch } from "@/lib/facility-watch/paidConfig";
+import { facilityMarkedNoindex } from "@/lib/seo/indexability";
 
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
@@ -152,23 +153,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         }),
   );
 
-  // Thin-page guardrail: only noindex when the page has effectively no content
-  // (no inspections, no reviews, no tour Q&A, no photo). Verified <1% of the
-  // publishable index meets this bar across CA/TX/OR/WA/MN, so this stays a
-  // future-proof guard rather than removing live pages from search.
+  // Noindex when the page has no record at all, or when it is a small Arizona
+  // home with no citations. The sitemap uses the same predicates.
   const tourQs = (facility.content as { tour_questions?: string[] } | null)
     ?.tour_questions;
-  const azSmallWithoutCitations =
-    facility.state_code === "AZ" &&
-    facility.beds != null &&
-    facility.beds <= 10 &&
-    profile.totals.allTimeDeficiencies === 0;
-  const isThin =
-    azSmallWithoutCitations ||
-    (profile.totals.inspections === 0 &&
-      profile.reviews.length === 0 &&
-      (tourQs?.length ?? 0) === 0 &&
-      profile.photoUrls.length === 0);
+  const isThin = facilityMarkedNoindex({
+    stateCode: facility.state_code,
+    beds: facility.beds,
+    deficiencyCount: profile.totals.allTimeDeficiencies,
+    inspectionCount: profile.totals.inspections,
+    reviewCount: profile.reviews.length,
+    tourQuestionCount: tourQs?.length ?? 0,
+    photoCount: profile.photoUrls.length,
+  });
 
   return {
     title,

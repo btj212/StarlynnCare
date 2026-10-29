@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Sitemap index dates follow the pages, and empty Arizona hubs leave search
+
+**Decided:** The sitemap index omits a child `lastmod` unless that child file has a real content date, and then it uses the newest of those dates. It does not use the day the index was built. A city or county hub is `noindex` and stays out of the sitemap when every publishable home on it is an Arizona home of 10 or fewer beds with no citations. A cited home stays indexable. A county page that lists one city stays indexable. The October 27 Search Console export remains the comparison point: 1,637 indexed, 4,773 not indexed, 3,684 crawled but not indexed.
+
+**Rejected:** Stamping the three child sitemaps with today's date. Noindexing the 121 failed facility URLs that still have a record. Guessing redirects for the 760 not-found URLs without that issue's URL table. Collapsing a one-city county hub into the city URL.
+
+**Source:** Search Console exports `starlynncare.com-Coverage-2026-10-27.zip` and `starlynncare.com-Coverage-Validation-2026-10-27.zip`. `src/lib/seo/indexability.ts`. `docs/audits/search-console-coverage.md`.
+
 ## 2026-10 — A CDSS 503 is an outage, and baselines wait for the API
 
 **Decided:** When the California transparency API returns HTTP 503, the morning crawl stops at the statewide file and sends nothing. That is the API being down, not a bug in the crawler. Do not fall back to per-facility report calls or to the public search page while those API calls fail the same way. The public search page can still load. Routine mode stays undeclared until the API is back and the homes with no snapshot have been checked.
