@@ -48,21 +48,17 @@ function Badge({ label, title, tone = "teal", href }: BadgeProps) {
 }
 
 export function OrMcSignalBadges({ signals }: Props) {
-  const { mceEndorsed, mceEvidence, afhClass, enhancedOversight, unendorsedMcViolation } = signals;
+  const { mceEndorsed, afhClass, enhancedOversight, unendorsedMcViolation } = signals;
 
   const hasAny = mceEndorsed || afhClass !== null || enhancedOversight || unendorsedMcViolation;
   if (!hasAny) return null;
-
-  const mceTitle = mceEvidence
-    ? `ORS 443.886 Memory Care Endorsement — verified via ${mceEvidence}`
-    : "ORS 443.886 Memory Care Endorsement";
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 mt-2">
       {mceEndorsed && (
         <Badge
           label="Endorsed Memory Care Community"
-          title={mceTitle}
+          title="ORS 443.886 Memory Care Endorsement"
           tone="teal"
         />
       )}
