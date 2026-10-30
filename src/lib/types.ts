@@ -104,6 +104,7 @@ export interface Facility {
   /** TX HHSC scaffold — migration 0014_tx_scaffold_columns.sql */
   tx_license_class?: string | null;
   tx_alzheimer_certified?: boolean | null;
+  tx_alzheimer_cert_no?: string | null;
 
   // Added in migration 0008_capacity_tier_and_mc_disclosure.sql
   /**
@@ -119,6 +120,12 @@ export interface Facility {
   memory_care_disclosure_filed: boolean;
   /** Provenance string for memory_care_disclosure_filed. */
   memory_care_disclosure_source: string | null;
+  /** PA HSD special-care string. Null, "Secure Dementia Care Unit", or "Special Care". */
+  mc_designation_type?: string | null;
+  il_dementia_program_flag?: boolean | null;
+  mn_dementia_care_licensed?: boolean | null;
+  mo_alzheimer_scu?: boolean | null;
+  az_memory_care_endorsed?: boolean | null;
 
   // Added in migration 0004_facility_photos.sql
   photo_url: string | null;

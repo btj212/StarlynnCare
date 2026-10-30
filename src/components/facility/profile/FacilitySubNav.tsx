@@ -4,7 +4,7 @@ import { FacilitySubNavAnchors } from "@/components/facility/profile/FacilitySub
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 
 export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
-  const { facility, state, region, county, rulesCards, tourQuestions } = profile;
+  const { facility, state, region, county, rulesCards, tourQuestions, faqPairs } = profile;
 
   const backHref = region
     ? `/${state.slug}/${region.slug}`
@@ -17,6 +17,7 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
     { href: "#record", label: "Record", show: true },
     { href: "#rules", label: "Rules", show: rulesCards.length > 0 },
     { href: "#tour", label: "Tour", show: tourQuestions.length >= 3 },
+    { href: "#faq", label: "Questions", show: faqPairs.length > 0 },
     { href: "#full-record", label: "Full record", show: true },
   ].filter((a) => a.show);
 

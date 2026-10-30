@@ -10,6 +10,8 @@ import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
+import { FacilityMemoryCareBasis } from "./FacilityMemoryCareBasis";
+import { formatRecordDate } from "@/lib/format/formatRecordDate";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityShareButton } from "./FacilityShareButton";
@@ -404,6 +406,14 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {profile.orMcSignals && (
               <OrMcSignalBadges signals={profile.orMcSignals} />
             )}
+
+            <FacilityMemoryCareBasis basis={profile.memoryCareBasis} />
+
+            {profile.latestVisit ? (
+              <p className="mt-2 mb-0 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-ink-3">
+                Last inspection {formatRecordDate(profile.latestVisit.date)}
+              </p>
+            ) : null}
 
             {/* Mobile-only percentile badge — rank summary visible without scrolling */}
             {profile.snapshot?.grade && (

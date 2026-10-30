@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — A memory-care basis is a state file, not a name match
+
+**Decided:** The facility basis block uses a regulator source already stored on the home: disclosure source, Pennsylvania designation, Oregon endorsement, Washington signal, Texas Alzheimer certification, or the state dementia flag. A name match, a chain note, and `manual review — known MC chain operator` are not a state file, so the block says the basis is not yet recorded. Oregon `mce_evidence` is quoted only when it is a sentence. The ingest token `providers_csv` is not printed. `ca_memory_care_designation_basis` is in the TypeScript type and in migration 0013, and it is not a column on the live database, so the block does not depend on it. Utah's license office on the page is DLBC, inside the Dept. of Health and Human Services. Illinois's 30 published homes are name matches (`il_mc_name_match`) with no dementia-program flag. Utah has no memory-care designation column. Secure-unit bed counts are on every published Utah home, including nursing homes, so they are not a basis.
+
+**Rejected:** Quoting `mc_queue_evidence`. Treating an Illinois name match as verification. Printing `providers_csv`. Calling Utah's office DHHS on the page when the license office we already name is DLBC. Using a secure-bed count as a memory-care designation.
+
+**Source:** AEO cycle 1. Production column check on 2026-10-29. `src/lib/facility/memoryCareBasis.ts`.
+
 ## 2026-10 — Sitemap index dates follow the pages, and empty Arizona hubs leave search
 
 **Decided:** The sitemap index omits a child `lastmod` unless that child file has a real content date, and then it uses the newest of those dates. It does not use the day the index was built. A city or county hub is `noindex` and stays out of the sitemap when every publishable home on it is an Arizona home of 10 or fewer beds with no citations. A cited home stays indexable. A county page that lists one city stays indexable. The October 27 Search Console export remains the comparison point: 1,637 indexed, 4,773 not indexed, 3,684 crawled but not indexed.
