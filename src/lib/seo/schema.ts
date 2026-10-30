@@ -18,6 +18,8 @@ import {
 import { SITE_ORIGIN, canonicalFor } from "@/lib/seo/canonical";
 import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import { formatRecordDate } from "@/lib/format/formatRecordDate";
 
 /**
  * Optional snapshot-derived extras the LocalBusiness/MedicalOrganization JSON-LD
@@ -188,6 +190,7 @@ export function buildLocalBusinessForFacility(
     reviews?: Review[];
     /** Snapshot-derived extras used to mirror the meta description copy. */
     extras?: FacilitySchemaExtras;
+    memoryCare?: MemoryCareBasis;
   },
 ): object {
   const businessId = `${opts.canonicalUrl}#business`;
@@ -221,6 +224,20 @@ export function buildLocalBusinessForFacility(
       name: "Care category",
       value: facility.care_category,
     });
+  if (opts.memoryCare) {
+    additionalProperty.push({
+      "@type": "PropertyValue",
+      name: "Memory care basis",
+      value: opts.memoryCare.label,
+    });
+    if (opts.memoryCare.sourceUrl) {
+      additionalProperty.push({
+        "@type": "PropertyValue",
+        name: "Memory care source",
+        value: opts.memoryCare.sourceUrl,
+      });
+    }
+  }
 
   const lat = parseCoord(facility.latitude);
   const lng = parseCoord(facility.longitude);
@@ -259,6 +276,17 @@ export function buildLocalBusinessForFacility(
       : {}),
     ...(sameAs.length ? { sameAs } : {}),
     ...(additionalProperty.length ? { additionalProperty } : {}),
+    ...(opts.memoryCare?.recorded
+      ? {
+          amenityFeature: [
+            {
+              "@type": "LocationFeatureSpecification",
+              name: "Memory care",
+              value: true,
+            },
+          ],
+        }
+      : {}),
     ...orgBlock,
     ...(opts.reviews?.length
       ? { aggregateRating: nestedAggregateFromReviews(opts.reviews) }
@@ -776,15 +804,16 @@ export function buildDefinedTermSchema(input: {
 /**
  * MedicalWebPage JSON-LD for facility profile pages — the YMYL-strength
  * WebPage node that city/state hubs have always emitted but facility profiles
- * were missing. Includes `reviewedBy` (RN reviewer) and `lastReviewed`
- * (most-recent inspection date or today's ISO date as fallback).
+ * were missing. Includes `reviewedBy` (RN reviewer). `lastReviewed` is the
+ * most recent non-complaint inspection date when we have one. It is omitted
+ * when we do not. Do not fill it with today's date.
  */
 export function buildFacilityMedicalWebPage(input: {
   name: string;
   url: string;
   description?: string;
-  /** ISO yyyy-mm-dd. Use most-recent non-complaint inspection date, fallback to today. */
-  lastReviewed: string;
+  /** ISO yyyy-mm-dd. Most recent non-complaint inspection. Omit when none. */
+  lastReviewed?: string | null;
   /** ISO 8601 — facility.created_at, the first time this facility was published. */
   datePublished?: string | null;
   /** ISO 8601 — facility.updated_at or last inspection date, whichever is more recent. */
@@ -798,7 +827,7 @@ export function buildFacilityMedicalWebPage(input: {
     ...(input.description ? { description: input.description } : {}),
     ...(input.datePublished ? { datePublished: input.datePublished } : {}),
     ...(input.dateModified ? { dateModified: input.dateModified } : {}),
-    lastReviewed: input.lastReviewed,
+    ...(input.lastReviewed ? { lastReviewed: input.lastReviewed } : {}),
     reviewedBy: buildStarlynnPerson(),
     isPartOf: {
       "@type": "WebSite",
@@ -808,69 +837,126 @@ export function buildFacilityMedicalWebPage(input: {
   };
 }
 
-/**
- * Build a FAQPage schema for facility profiles using real facility data.
- *
- * Generates data-driven Q&A pairs (inspection count, quality grade) so
- * every facility page has unique FAQ content — preventing Google from
- * suppressing rich results due to identical boilerplate answers.
- *
- * Tour questions (from facility.content.tour_questions) are included as
- * additional FAQ entries whose answers incorporate facility-specific facts
- * rather than the identical template text that applied to all facilities.
- *
- * Returns null when no meaningful Q&A can be generated (no data, no tour
- * questions), so callers can skip emitting the FAQPage node entirely.
- */
-export function buildFacilityFaqSchema(input: {
+export type FacilityFaqPair = { q: string; a: string };
+
+export type FacilityFaqInput = {
   facilityName: string;
   stateName: string;
+  stateCode: string;
   pageUrl: string;
   inspectionCount: number;
   deficiencyCount: number;
+  /** True when older inspections exist outside the three-year display window. */
+  countsCoverThreeYears: boolean;
   lastInspectionDate: string | null;
+  lastInspectionType: string | null;
+  /** Matches the inspection list: complaints stay complaints. Other non-complaint visits use that list's label. */
+  lastInspectionIsComplaint: boolean;
+  seriousFindings: Array<{ label: string; count: number }>;
   percentile: number | null;
-  tourQuestions: string[];
-}): object | null {
-  const pairs: Array<{ q: string; a: string }> = [];
+  memoryCareLabel: string;
+  licenseNumber: string | null;
+  licenseUrl: string | null;
+  regulatorName: string;
+};
 
-  const lastDateStr = input.lastInspectionDate
-    ? `, most recently on ${input.lastInspectionDate}`
-    : "";
+function visitPhrase(type: string | null, isComplaint: boolean): string {
+  if (isComplaint || type?.trim().toLowerCase() === "complaint") return "a complaint investigation";
+  if (type?.trim().toLowerCase() === "other") return "filed as other";
+  return "an annual compliance visit";
+}
+
+function proseTag(label: string): string {
+  if (label === "IJ" || label.startsWith("IJ ")) return "immediate jeopardy";
+  if (label === "Immediate Jeopardy") return "immediate jeopardy";
+  if (label === "Type A" || label === "Type 1") return label;
+  return label.toLowerCase();
+}
+
+function joinOr(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} or ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, or ${items[items.length - 1]}`;
+}
+
+function seriousTermWhenNone(stateCode: string): string {
+  if (stateCode === "CA") return "Type A";
+  if (stateCode === "IL") return "Type 1";
+  return "immediate jeopardy";
+}
+
+function seriousSentence(
+  findings: Array<{ label: string; count: number }>,
+  stateCode: string,
+): string {
+  const total = findings.reduce((sum, finding) => sum + finding.count, 0);
+  if (total === 0) return `None are tagged ${seriousTermWhenNone(stateCode)}.`;
+  const labels = [...new Set(findings.map((finding) => proseTag(finding.label)))];
+  return `${total} ${total === 1 ? "is" : "are"} tagged ${joinOr(labels)}.`;
+}
+
+/**
+ * Visible FAQ pairs for a facility page. The JSON-LD uses the same pairs.
+ * A question is included only when the fact it answers is on the record.
+ * Tour prompts stay in the tour section. They are not answers.
+ */
+export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[] {
+  const pairs: FacilityFaqPair[] = [];
+  const name = input.facilityName;
+
+  pairs.push({
+    q: `Does ${name} provide memory care?`,
+    a: input.memoryCareLabel,
+  });
+
+  if (input.lastInspectionDate) {
+    const date = formatRecordDate(input.lastInspectionDate);
+    const visit = visitPhrase(input.lastInspectionType, input.lastInspectionIsComplaint);
+    pairs.push({
+      q: `When was ${name} last inspected?`,
+      a: `${name} was last inspected on ${date}. That visit is ${visit}.`,
+    });
+  }
 
   if (input.inspectionCount > 0) {
-    const inspPlural = input.inspectionCount !== 1 ? "inspections" : "inspection";
-    const defPlural = input.deficiencyCount !== 1 ? "deficiencies" : "deficiency";
+    const defWord = input.deficiencyCount === 1 ? "deficiency" : "deficiencies";
+    const inspWord = input.inspectionCount === 1 ? "inspection" : "inspections";
+    const window = input.countsCoverThreeYears ? " in the last three years" : "";
+    let answer = `${name} has ${input.deficiencyCount} ${defWord} across ${input.inspectionCount} ${inspWord}${window}.`;
+    if (input.deficiencyCount > 0) {
+      answer += ` ${seriousSentence(input.seriousFindings, input.stateCode)}`;
+    }
     pairs.push({
-      q: `How many inspections has ${input.facilityName} had?`,
-      a: `${input.facilityName} has ${input.inspectionCount} ${inspPlural} on record with ${input.stateName} regulators${lastDateStr}, with ${input.deficiencyCount} ${defPlural} documented across those inspections.`,
+      q: `How many citations does ${name} have?`,
+      a: answer,
+    });
+  }
+
+  if (input.licenseNumber?.trim()) {
+    const license = input.licenseNumber.trim();
+    const link = input.licenseUrl ? ` State record: ${input.licenseUrl}` : "";
+    pairs.push({
+      q: `Who licenses ${name}?`,
+      a: `${input.regulatorName} licenses ${name}. The license number is ${license}.${link}`,
     });
   }
 
   if (input.percentile != null) {
-    const rankStr = input.percentile >= 50
-      ? `top ${Math.max(1, 100 - input.percentile)}%`
-      : `bottom ${Math.max(1, input.percentile)}%`;
+    const rankStr =
+      input.percentile >= 50
+        ? `top ${Math.max(1, 100 - input.percentile)}%`
+        : `bottom ${Math.max(1, input.percentile)}%`;
     pairs.push({
-      q: `How does ${input.facilityName} compare to similar ${input.stateName} facilities?`,
-      a: `Based on deficiency severity, repeat citations, and inspection frequency, ${input.facilityName} ranks in the ${rankStr} of ${input.stateName} memory care facilities in peer comparison on StarlynnCare.`,
+      q: `How does ${name} compare to similar ${input.stateName} facilities?`,
+      a: `Based on deficiency severity, repeat citations, and inspection frequency, ${name} ranks in the ${rankStr} of ${input.stateName} memory care facilities in peer comparison on StarlynnCare.`,
     });
   }
 
-  // Tour questions with facility-specific context so answers are not identical
-  // across all facilities. Each answer includes the facility's real inspection
-  // stats before directing families to ask staff directly.
-  const contextPrefix =
-    input.inspectionCount > 0
-      ? `${input.facilityName} has ${input.deficiencyCount} ${input.deficiencyCount !== 1 ? "deficiencies" : "deficiency"} documented across ${input.inspectionCount} ${input.stateName} regulator ${input.inspectionCount !== 1 ? "inspections" : "inspection"}${lastDateStr}. `
-      : "";
-  for (const q of input.tourQuestions) {
-    pairs.push({
-      q,
-      a: `${contextPrefix}Ask staff this question directly and compare their response to ${input.facilityName}'s public inspection record on StarlynnCare.`,
-    });
-  }
+  return pairs;
+}
 
+export function buildFacilityFaqSchema(input: FacilityFaqInput): object | null {
+  const pairs = buildFacilityFaqPairs(input);
   if (!pairs.length) return null;
   return buildFaqSchemaFromPairs(pairs, input.pageUrl);
 }

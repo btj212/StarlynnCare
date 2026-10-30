@@ -21,6 +21,7 @@ import { FacilityPeerRank } from "@/components/facility/profile/FacilityPeerRank
 import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
 import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
+import { FacilityFaq } from "@/components/facility/profile/FacilityFaq";
 import { FacilityWatchPremiumAnchor } from "@/components/facility/FacilityWatchPremiumAnchor";
 import { FacilityOfferBar } from "@/components/facility/FacilityOfferBar";
 import { FacilityOfferProvider } from "@/components/facility/offer/FacilityOfferProvider";
@@ -310,6 +311,8 @@ export default async function FacilityPage({ params }: PageProps) {
 
         {/* § 05 · Tour prep cards (hidden when < 3 tour questions) */}
         <FacilityTourPrep profile={profile} />
+
+        <FacilityFaq pairs={profile.faqPairs} />
 
         {/* § 07 · Full inspection record (summary-first; Premium under first summary) */}
         <FacilityFullInspections profile={profile} showPaidWatch={showPaidWatch} />

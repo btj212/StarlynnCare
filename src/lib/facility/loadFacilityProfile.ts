@@ -31,11 +31,16 @@ import type { ComplianceFlag } from "@/lib/facility/complianceFlag";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import {
   buildBreadcrumbList,
-  buildFacilityFaqSchema,
+  buildFacilityFaqPairs,
+  buildFaqSchemaFromPairs,
   buildFacilityMedicalWebPage,
   buildLocalBusinessForFacility,
   buildReviewSchema,
+  regulatorLicensePageFor,
 } from "@/lib/seo/schema";
+import { memoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import { seriousFindingCounts } from "@/lib/facility/seriousFindings";
 import type { Facility, Deficiency, DataDepth, InspectionVisibilityTier } from "@/lib/types";
 import type { StateProfileConfig, Rule } from "@/lib/states/profileConfig";
 import type { Review } from "@/components/reviews/ReviewCard";
@@ -271,6 +276,12 @@ export interface FacilityProfile {
   rulesCards: RuleCard[];
   /** Tour questions from facility.content.tour_questions. */
   tourQuestions: string[];
+  /** State-file basis for listing this home as memory care. */
+  memoryCareBasis: MemoryCareBasis;
+  /** FAQ pairs. The visible section and the FAQ JSON-LD use this same list. */
+  faqPairs: Array<{ q: string; a: string }>;
+  /** Newest inspection we fetched, including those outside the three-year window. */
+  latestVisit: { date: string; type: string | null; isComplaint: boolean } | null;
 
   reviews: Review[];
   /** Photo URLs — up to 5 for the gallery; sourced from photo_urls[] with photo_url fallback. */
@@ -740,6 +751,36 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
 
   const lastNonComplaintInspection =
     inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
+  const latestVisit = allInspections[0]
+    ? {
+        date: allInspections[0].inspection_date,
+        type: allInspections[0].inspection_type,
+        isComplaint: allInspections[0].is_complaint,
+      }
+    : null;
+  const licenseRecordUrl = regulatorLicensePageFor(facility.state_code, facility.license_number);
+  const careBasis = {
+    ...memoryCareBasis(facility),
+    ...(licenseRecordUrl ? { sourceUrl: licenseRecordUrl } : {}),
+  };
+  const faqPairs = buildFacilityFaqPairs({
+    facilityName: facility.name,
+    stateName: state.name,
+    stateCode: state.code,
+    pageUrl: canonicalUrl,
+    inspectionCount: inspections.length,
+    deficiencyCount: totalDeficiencies,
+    countsCoverThreeYears: hiddenOlderCount > 0,
+    lastInspectionDate: latestVisit?.date ?? null,
+    lastInspectionType: latestVisit?.type ?? null,
+    lastInspectionIsComplaint: latestVisit?.isComplaint ?? false,
+    seriousFindings: seriousFindingCounts(deficiencies, cfg.formatSeverityTag),
+    percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
+    memoryCareLabel: careBasis.label,
+    licenseNumber: facility.license_number,
+    licenseUrl: careBasis.sourceUrl,
+    regulatorName: careBasis.regulator,
+  });
 
   const jsonLd: object[] = [
     buildLocalBusinessForFacility(facility, state, {
@@ -750,13 +791,14 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         citationCount: totalDeficiencies,
         lastInspectionDate: lastNonComplaintInspection,
       },
+      memoryCare: careBasis,
     }),
     buildBreadcrumbList(breadcrumbTrail),
     // Fix 1: MedicalWebPage + reviewedBy — previously missing from facility profiles
     buildFacilityMedicalWebPage({
       name: `${facility.name} — StarlynnCare`,
       url: canonicalUrl,
-      lastReviewed: lastNonComplaintInspection ?? new Date().toISOString().split("T")[0],
+      lastReviewed: lastNonComplaintInspection,
       datePublished: new Date(facility.created_at).toISOString(),
       dateModified: (() => {
         const updatedAt = new Date(facility.updated_at).getTime();
@@ -768,18 +810,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     }),
     ...reviews.map((r) => buildReviewSchema(r, businessId)),
   ];
-  // Fix 2: FAQ with real facility data instead of identical template answers
-  const faqSchema = buildFacilityFaqSchema({
-    facilityName: facility.name,
-    stateName: state.name,
-    pageUrl: canonicalUrl,
-    inspectionCount: inspections.length,
-    deficiencyCount: totalDeficiencies,
-    lastInspectionDate: lastNonComplaintInspection,
-    percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
-    tourQuestions,
-  });
-  if (faqSchema) jsonLd.push(faqSchema);
+  if (faqPairs.length) jsonLd.push(buildFaqSchemaFromPairs(faqPairs, canonicalUrl));
 
   return {
     facility,
@@ -811,6 +842,9 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
 
     rulesCards,
     tourQuestions,
+    memoryCareBasis: careBasis,
+    faqPairs,
+    latestVisit,
 
     reviews,
     photoUrls,
