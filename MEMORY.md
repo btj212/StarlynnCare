@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — /data counts homes, and a failed count is not a zero
+
+**Decided:** The state table on `/data` counts publishable homes: how many have an inspection on file, and how many have a serious citation in the last 24 months. Serious is a Type A finding or a finding stored at severity 3 or higher, the same rule as the city hubs. That column counts homes, not findings. A real zero stays a zero. Washington's newest stored inspection date can fall after today when the source file dated the visit the first of a month, and the page shows that date. If a count query errors, the section says the counts could not be loaded.
+
+**Rejected:** `count_serious_deficiencies`, which counts findings over six months and returns 0 when the query fails. Hiding the Washington date because it reads as future.
+
+**Source:** Live counts on 2026-10-30. `src/lib/data/stateMemoryCareStats.ts`.
+
 ## 2026-10 — A memory-care basis is a state file, not a name match
 
 **Decided:** The facility basis block uses a regulator source already stored on the home: disclosure source, Pennsylvania designation, Oregon endorsement, Washington signal, Texas Alzheimer certification, or the state dementia flag. A name match, a chain note, and `manual review — known MC chain operator` are not a state file, so the block says the basis is not yet recorded. Oregon `mce_evidence` is quoted only when it is a sentence. The ingest token `providers_csv` is not printed. `ca_memory_care_designation_basis` is in the TypeScript type and in migration 0013, and it is not a column on the live database, so the block does not depend on it. Utah's license office on the page is DLBC, inside the Dept. of Health and Human Services. Illinois's 30 published homes are name matches (`il_mc_name_match`) with no dementia-program flag. Utah has no memory-care designation column. Secure-unit bed counts are on every published Utah home, including nursing homes, so they are not a basis.
