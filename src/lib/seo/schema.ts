@@ -850,6 +850,8 @@ export type FacilityFaqInput = {
   countsCoverThreeYears: boolean;
   lastInspectionDate: string | null;
   lastInspectionType: string | null;
+  /** Matches the inspection list: complaints stay complaints. Other non-complaint visits use that list's label. */
+  lastInspectionIsComplaint: boolean;
   seriousFindings: Array<{ label: string; count: number }>;
   percentile: number | null;
   memoryCareLabel: string;
@@ -858,27 +860,10 @@ export type FacilityFaqInput = {
   regulatorName: string;
 };
 
-const VISIT_PHRASE: Record<string, string> = {
-  complaint: "a complaint visit",
-  routine: "a routine inspection",
-  standard: "a routine inspection",
-  annual: "an annual inspection",
-  inspection: "an inspection",
-  "follow-up": "a follow-up visit",
-  "follow up": "a follow-up visit",
-  initial: "an initial inspection",
-  facility_reported_incident: "a facility-reported incident",
-  monitoring: "a monitoring visit",
-  "state licensure": "a state licensure visit",
-  validation: "a validation visit",
-  kitchen: "a kitchen inspection",
-  "re-licensure": "a re-licensure visit",
-  "change of owner": "a change-of-owner visit",
-};
-
-function visitPhrase(type: string | null): string | null {
-  if (!type?.trim()) return null;
-  return VISIT_PHRASE[type.trim().toLowerCase()] ?? null;
+function visitPhrase(type: string | null, isComplaint: boolean): string {
+  if (isComplaint || type?.trim().toLowerCase() === "complaint") return "a complaint investigation";
+  if (type?.trim().toLowerCase() === "other") return "filed as other";
+  return "an annual compliance visit";
 }
 
 function proseTag(label: string): string {
@@ -926,12 +911,10 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
 
   if (input.lastInspectionDate) {
     const date = formatRecordDate(input.lastInspectionDate);
-    const visit = visitPhrase(input.lastInspectionType);
+    const visit = visitPhrase(input.lastInspectionType, input.lastInspectionIsComplaint);
     pairs.push({
       q: `When was ${name} last inspected?`,
-      a: visit
-        ? `${name} was last inspected on ${date}. That visit is ${visit}.`
-        : `${name} was last inspected on ${date}.`,
+      a: `${name} was last inspected on ${date}. That visit is ${visit}.`,
     });
   }
 

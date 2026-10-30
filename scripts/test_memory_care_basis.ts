@@ -120,6 +120,7 @@ const pairs = buildFacilityFaqPairs({
   countsCoverThreeYears: true,
   lastInspectionDate: "2026-09-23",
   lastInspectionType: "annual",
+  lastInspectionIsComplaint: false,
   seriousFindings: [{ label: "IJ", count: 1 }],
   percentile: 80,
   memoryCareLabel: MEMORY_CARE_BASIS_UNRECORDED,
@@ -131,7 +132,7 @@ const pairs = buildFacilityFaqPairs({
 assert.equal(pairs.some((pair) => pair.q.includes("tour")), false);
 assert.equal(pairs[0].a, MEMORY_CARE_BASIS_UNRECORDED);
 assert.match(pairs.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /September 23, 2026/);
-assert.match(pairs.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /annual inspection/);
+assert.match(pairs.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /annual compliance visit/);
 assert.match(pairs.find((pair) => pair.q.startsWith("How many"))?.a ?? "", /last three years/);
 assert.match(pairs.find((pair) => pair.q.startsWith("How many"))?.a ?? "", /immediate jeopardy/);
 assert.match(pairs.find((pair) => pair.q.startsWith("Who licenses"))?.a ?? "", /F23/);
@@ -148,6 +149,7 @@ const thin = buildFacilityFaqPairs({
   countsCoverThreeYears: false,
   lastInspectionDate: null,
   lastInspectionType: null,
+  lastInspectionIsComplaint: false,
   seriousFindings: [],
   percentile: null,
   memoryCareLabel: "Washington DSHS lists a dementia care contract for this home.",

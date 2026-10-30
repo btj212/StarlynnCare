@@ -281,7 +281,7 @@ export interface FacilityProfile {
   /** FAQ pairs. The visible section and the FAQ JSON-LD use this same list. */
   faqPairs: Array<{ q: string; a: string }>;
   /** Newest inspection we fetched, including those outside the three-year window. */
-  latestVisit: { date: string; type: string | null } | null;
+  latestVisit: { date: string; type: string | null; isComplaint: boolean } | null;
 
   reviews: Review[];
   /** Photo URLs — up to 5 for the gallery; sourced from photo_urls[] with photo_url fallback. */
@@ -755,6 +755,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     ? {
         date: allInspections[0].inspection_date,
         type: allInspections[0].inspection_type,
+        isComplaint: allInspections[0].is_complaint,
       }
     : null;
   const licenseRecordUrl = regulatorLicensePageFor(facility.state_code, facility.license_number);
@@ -772,6 +773,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     countsCoverThreeYears: hiddenOlderCount > 0,
     lastInspectionDate: latestVisit?.date ?? null,
     lastInspectionType: latestVisit?.type ?? null,
+    lastInspectionIsComplaint: latestVisit?.isComplaint ?? false,
     seriousFindings: seriousFindingCounts(deficiencies, cfg.formatSeverityTag),
     percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
     memoryCareLabel: careBasis.label,
