@@ -2,16 +2,27 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { StateMemoryCareStatsSection } from "@/components/data/StateMemoryCareStatsSection";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { loadStateMemoryCareStats } from "@/lib/data/stateMemoryCareStats";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { buildBreadcrumbList, buildDatasetSchema, buildWebPageWithReviewer } from "@/lib/seo/schema";
+import {
+  buildBreadcrumbList,
+  buildDatasetSchema,
+  buildStateMemoryCareStatsDataset,
+  buildWebPageWithReviewer,
+} from "@/lib/seo/schema";
+import { COVERED_STATES } from "@/lib/states";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
 const DATA_PATH = "/data";
 const dataCanonical = canonicalFor(DATA_PATH);
+const STATE_COUNT = COVERED_STATES.length;
 const dataDesc =
-  "Overview of the memory care inspection and quality dataset behind StarlynnCare — sourced from CDSS, HHSC, Oregon DHS, WA DSHS, MDH, and PA DHS across 8 states.";
-const dataTitle = "Dataset — Memory Care Inspection Records (8 States) | StarlynnCare";
+  "Inspection records behind StarlynnCare, with a live count for each state we cover.";
+const dataTitle = `Dataset — Memory Care Inspection Records (${STATE_COUNT} States) | StarlynnCare`;
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: dataTitle,
@@ -35,6 +46,7 @@ export const metadata: Metadata = {
 export default async function DataPage() {
   const supabase = tryPublicSupabaseClient();
   let lastDatasetRefresh: string | null = null;
+  const stateStats = supabase ? await loadStateMemoryCareStats(supabase) : null;
   if (supabase) {
     const { data } = await supabase
       .from("facilities")
@@ -61,6 +73,20 @@ export default async function DataPage() {
       description: dataDesc,
     }),
     buildDatasetSchema({ pageUrl: dataCanonical, methodologyUrl }),
+    ...(stateStats
+      ? [
+          buildStateMemoryCareStatsDataset({
+            pageUrl: dataCanonical,
+            stateNames: stateStats.rows.map((row) => row.name),
+            cutoff: stateStats.cutoff,
+            newestInspection: stateStats.rows.reduce<string | null>((latest, row) => {
+              if (!row.newestInspection) return latest;
+              if (!latest || row.newestInspection > latest) return row.newestInspection;
+              return latest;
+            }, null),
+          }),
+        ]
+      : []),
   ];
 
   return (
@@ -76,7 +102,7 @@ export default async function DataPage() {
             · Dataset
           </p>
           <h1 className="mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
-            Memory Care Inspection &amp; Quality Records — 8 States
+            Memory Care Inspection Records — {STATE_COUNT} States
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-slate">
             StarlynnCare aggregates public regulatory data into facility-level
@@ -84,24 +110,19 @@ export default async function DataPage() {
             profiles — what it contains, where it comes from, and how it is
             updated.
           </p>
+        </article>
 
+        <StateMemoryCareStatsSection stats={stateStats} />
+
+        <article className="mx-auto max-w-[760px] px-6 pb-14 md:px-8 md:pb-20">
           <section className="mt-10 space-y-4 text-base leading-relaxed text-slate">
             <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
               Sources
             </h2>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>
-                <strong className="text-ink">California CDSS Community Care Licensing</strong>{" "}
-                — RCFE roster (open data), inspection reports and deficiency
-                citations (transparency API), and related complaint outcomes
-                where published.
-              </li>
-              <li>
-                <strong className="text-ink">CMS Care Compare</strong> — federal
-                quality and survey context for facilities with a CMS
-                identifier.
-              </li>
-            </ul>
+            <p>
+              Each row above names the state license office the count comes from.
+              CMS Care Compare is used where a facility has a federal identifier.
+            </p>
           </section>
 
           <section className="mt-10 space-y-4 text-base leading-relaxed text-slate">
@@ -190,7 +211,7 @@ export default async function DataPage() {
             </ul>
             <p className="text-[14px] text-ink-3 pt-2">
               Attribution: StarlynnCare, {lastDatasetRefresh ?? "2026"}.{" "}
-              Source data: CDSS Community Care Licensing.{" "}
+              Source data: the state license offices named above.{" "}
               <Link href="/methodology" className="text-teal underline underline-offset-2 hover:underline">
                 Methodology →
               </Link>

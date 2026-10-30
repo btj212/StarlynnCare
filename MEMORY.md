@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — /data counts homes, and a failed count is not a zero
+
+**Decided:** The state table on `/data` counts publishable homes: how many have an inspection on file, and how many have a serious citation in the last 24 months. Serious is a Type A finding or a finding stored at severity 3 or higher, the same rule as the city hubs. That column counts homes, not findings. A real zero stays a zero. Washington's newest stored inspection date can fall after today when the source file dated the visit the first of a month, and the page shows that date. If a count query errors, the section says the counts could not be loaded.
+
+**Rejected:** `count_serious_deficiencies`, which counts findings over six months and returns 0 when the query fails. Hiding the Washington date because it reads as future.
+
+**Source:** Live counts on 2026-10-30. `src/lib/data/stateMemoryCareStats.ts`.
+
 ## 2026-10 — Sitemap index dates follow the pages, and empty Arizona hubs leave search
 
 **Decided:** The sitemap index omits a child `lastmod` unless that child file has a real content date, and then it uses the newest of those dates. It does not use the day the index was built. A city or county hub is `noindex` and stays out of the sitemap when every publishable home on it is an Arizona home of 10 or fewer beds with no citations. A cited home stays indexable. A county page that lists one city stays indexable. The October 27 Search Console export remains the comparison point: 1,637 indexed, 4,773 not indexed, 3,684 crawled but not indexed.

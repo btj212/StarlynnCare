@@ -656,6 +656,41 @@ export function buildDatasetSchema(input: {
   };
 }
 
+/** The /data state table. Counts stay on the page; this names what is measured. */
+export function buildStateMemoryCareStatsDataset(input: {
+  pageUrl: string;
+  stateNames: string[];
+  cutoff: string;
+  newestInspection: string | null;
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: "State memory care record counts",
+    description: `Published memory care homes, homes with an inspection on file, homes with a serious citation on or after ${input.cutoff}, and the newest inspection date stored, for ${input.stateNames.join(", ")}. A serious citation is a Type A finding or a finding stored at severity 3 or higher. The serious figure counts homes, not findings.`,
+    url: input.pageUrl,
+    creator: { "@type": "Organization", name: "StarlynnCare" },
+    isAccessibleForFree: true,
+    spatialCoverage: input.stateNames.map((name) => ({ "@type": "Place", name })),
+    ...(input.newestInspection
+      ? { temporalCoverage: `../${input.newestInspection}` }
+      : {}),
+    variableMeasured: [
+      "Published homes",
+      "Homes with an inspection on file",
+      "Homes with a serious citation in 24 months",
+      "Newest inspection date",
+    ],
+    distribution: [
+      {
+        "@type": "DataDownload",
+        encodingFormat: "text/html",
+        contentUrl: input.pageUrl,
+      },
+    ],
+  };
+}
+
 /** Person JSON-LD for Rebecca Lynn Starkey (clinical author / reviewer). */
 export function buildStarlynnPerson(): object {
   const img = `${SITE_ORIGIN}${STARLYNN_AUTHOR_IMAGE_PATH}`;
