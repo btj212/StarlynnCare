@@ -10,6 +10,61 @@ function passes(heading: string, first: [string, string, string], second: [strin
   };
 }
 
+const SHARED_SECTIONS: DeslopSection[] = [
+  passes(
+    "What should I read in a report?",
+    [
+      "Reading an inspection report can feel daunting, but focusing on a few key red flags will reveal everything you need to know.",
+      "The date. Whether the visit followed a complaint. The rule cited and the inspector's description of what happened.",
+      "feel daunting, key red flags, reveal everything you need to know",
+    ],
+    [
+      "Pay close attention to the severity label, which tells you how dangerous the home is.",
+      "The severity label the state used. The next section says what that label means on a profile here. Whether a later inspection found the same problem again.",
+      "pay close attention, how dangerous the home is",
+    ],
+  ),
+  passes(
+    "What records do we hold? (inspection window)",
+    [
+      "Our robust dataset captures every inspection and complaint the state has ever recorded.",
+      "Since the cutoff date, we hold this many inspections of published homes. This many followed a complaint.",
+      "robust dataset, captures every, ever recorded",
+    ],
+    [
+      "Since the cutoff date, we hold this many inspections of published homes. Zero followed a complaint.",
+      "When a state's files carry no complaint flag at all, the page says the files do not mark complaints, instead of printing zero.",
+      "printing zero for a flag the files do not carry",
+    ],
+  ),
+  passes(
+    "What should I ask the home?",
+    [
+      "Arm yourself with these essential questions to hold the home accountable.",
+      "Ask about each finding from the last 24 months, and what the home changed afterward.",
+      "arm yourself, essential, hold the home accountable",
+    ],
+    [
+      "Make sure the home is fully transparent about any ongoing issues and shares its paperwork.",
+      "Ask whether any complaint investigation is still open. Ask to see the most recent inspection report the home received.",
+      "fully transparent, ongoing issues, shares its paperwork",
+    ],
+  ),
+  passes(
+    "Common questions",
+    [
+      "A spotless inspection history is the best guarantee of a safe, high-quality home.",
+      "No. An inspection records what the state found on the day it looked.",
+      "spotless, best guarantee, safe, high-quality",
+    ],
+    [
+      "No. An inspection records what the state found on the day it looked, so do your due diligence.",
+      "No. An inspection records what the state found on the day it looked. Read the newest report, check whether later visits followed a complaint, and visit the home yourself.",
+      "do your due diligence",
+    ],
+  ),
+];
+
 export const ARIZONA_HOW_TO_DESLOP: DeslopSection[] = [
   passes(
     "Where to look",
@@ -37,6 +92,33 @@ export const ARIZONA_HOW_TO_DESLOP: DeslopSection[] = [
       "metric, severity integers, stakeholders, contextualize, taxonomy",
     ],
   ),
+  passes(
+    "Opening answer",
+    [
+      "Checking an Arizona memory care home's track record is easier than you might think, thanks to the state's helpful online tools.",
+      "Search the home's name on AZ Care Check, the Arizona Department of Health Services site, and open its inspection reports.",
+      "easier than you might think, helpful online tools",
+    ],
+    [
+      "Search the home's name on AZ Care Check and open its inspection reports. Our page shows the full history.",
+      "Read the newest report first, then any visit that followed a complaint. The StarlynnCare page for the home lists the inspections we hold from the last three years.",
+      "the full history",
+    ],
+  ),
+  passes(
+    "Directed Care and memory care",
+    [
+      "A Directed Care license proves an Arizona home is a true memory care specialist.",
+      "ADHS told us in a June 2026 public records response that homes licensed for directed care services are automatically authorized for memory care services.",
+      "proves, true memory care specialist",
+    ],
+    [
+      "ADHS told us that homes licensed for directed care services are automatically authorized for memory care services, which signals quality.",
+      "The license level is not an inspection result.",
+      "which signals quality",
+    ],
+  ),
+  ...SHARED_SECTIONS,
 ];
 
 export const CALIFORNIA_HOW_TO_DESLOP: DeslopSection[] = [
@@ -66,6 +148,33 @@ export const CALIFORNIA_HOW_TO_DESLOP: DeslopSection[] = [
       "denotes, pursuant to, taxonomy",
     ],
   ),
+  passes(
+    "Opening answer",
+    [
+      "California boasts one of the nation's most rigorous inspection systems, giving families unparalleled insight.",
+      "Search the home's name or facility number on the CDSS care facility search and open its reports.",
+      "boasts, most rigorous, unparalleled insight",
+    ],
+    [
+      "California inspects homes regularly, so the record is always current.",
+      "California must inspect every residential care facility for the elderly at least once a year, unannounced. Read the newest report first, and look for Type A citations.",
+      "regularly, always current",
+    ],
+  ),
+  passes(
+    "CDSS search and statute",
+    [
+      "The CDSS search contains a facility's complete history.",
+      "CDSS says the search holds five years of facility information. For older records, call the regional office listed on the facility's page.",
+      "complete history",
+    ],
+    [
+      "Homes must quickly fix any problem inspectors find.",
+      "The home must fix a deficiency within 10 days of notice, unless the plan of correction sets a different date.",
+      "quickly, any problem",
+    ],
+  ),
+  ...SHARED_SECTIONS,
 ];
 
 export const PENNSYLVANIA_HOW_TO_DESLOP: DeslopSection[] = [
@@ -95,6 +204,33 @@ export const PENNSYLVANIA_HOW_TO_DESLOP: DeslopSection[] = [
       "comprises, categorically excluded, danger tone",
     ],
   ),
+  passes(
+    "Opening answer",
+    [
+      "Pennsylvania's Department of Health makes it simple to review any memory care home's record.",
+      "Search the home's name in the Department of Human Services provider directory and open its inspection results.",
+      "Department of Health (wrong office), simple, any",
+    ],
+    [
+      "Search the home's name in the Department of Human Services provider directory and open its inspection results.",
+      "Personal care homes and assisted living residences are licensed by DHS, not the Department of Health. Read the newest inspection first.",
+      "(named the office that does not license these homes, since families confuse the two)",
+    ],
+  ),
+  passes(
+    "Directory search tips",
+    [
+      "A few quick tricks will help you breeze through the directory.",
+      "Choose the Office of Long-Term Living as the program office, and type at least four characters of the home's name.",
+      "quick tricks, breeze through",
+    ],
+    [
+      "The directory is always current.",
+      "DHS says the directory refreshes daily.",
+      "always current",
+    ],
+  ),
+  ...SHARED_SECTIONS,
 ];
 
 export const WASHINGTON_HOW_TO_DESLOP: DeslopSection[] = [
@@ -124,4 +260,31 @@ export const WASHINGTON_HOW_TO_DESLOP: DeslopSection[] = [
       "danger tone, stored severity of three or higher",
     ],
   ),
+  passes(
+    "Opening answer",
+    [
+      "Washington offers families a treasure trove of reports for every memory care home.",
+      "Find the home on the DSHS assisted living facility locator and open its ALF Reports page.",
+      "treasure trove, every memory care home",
+    ],
+    [
+      "That page has everything you need.",
+      "That page lists routine inspections, complaint investigations, enforcement letters, and fire inspections. Read the newest inspection and every investigation since.",
+      "everything you need",
+    ],
+  ),
+  passes(
+    "ALF Reports page",
+    [
+      "DSHS inspects homes frequently and posts complete reports right away.",
+      "DSHS sorts that page into four kinds of report. Inspections happen at least every 18 months. Posting times vary.",
+      "frequently, complete, right away",
+    ],
+    [
+      "Some details may be hidden for unclear reasons.",
+      "DSHS may black out information that is confidential or could identify a resident.",
+      "hidden for unclear reasons",
+    ],
+  ),
+  ...SHARED_SECTIONS,
 ];

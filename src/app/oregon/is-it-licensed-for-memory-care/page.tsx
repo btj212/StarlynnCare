@@ -25,6 +25,7 @@ export default function OregonMemoryCareEndorsementPage() {
       eyebrow="Oregon"
       heading={<>Is this Oregon home endorsed for <em>memory care</em>?</>}
       image={OREGON_DESIGNATION.image}
+      faq={OREGON_DESIGNATION.faq}
       crumbs={[
         { name: "Home", path: "/" },
         { name: "Oregon", path: "/oregon" },

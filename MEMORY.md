@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Gated articles answer first and carry a visible FAQ
+
+**Decided:** Each gated article opens with a direct answer to its title question, uses question-shaped H2s, and ends with `ArticleFaq`. The FAQ pairs live in the article's content file, and the page passes the same pairs to `GatedArticleFrame` for `FAQPage` JSON-LD, so the markup always matches the visible text. FAQ answers stay static and hold only rule facts verified from an opened source. Live counts stay in the body with a `DataFootnote`. When a state's inspection files carry no complaint flag at all (Pennsylvania today), the page says the flag is missing instead of printing zero.
+
+**Rejected:** FAQ JSON-LD without visible questions. Live numbers inside FAQ answers. Padding pages to a word count with claims we had not checked.
+
+**Source:** AEO depth pass, 2026-10-31. `src/components/articles/ArticleFaq.tsx`, `src/lib/data/inspectionWindow.ts`.
+
 ## 2026-10 — A new article stays hidden until the review screen approves it
 
 **Decided:** Articles written for the citation cycle stay in code. `article_reviews` stores only whether a path is approved or held. No row means the page 404s and stays out of the sitemap, llms.txt, the library, the research hub, and state guide lists. Approve is refused unless the deslop log has two passes for every section and the illustration file exists. Generated illustrations are allowed when they match the watercolor library and are approved on `/admin/articles`. A generated image has no real people, no facility names, no readable text, and no drawn numbers.

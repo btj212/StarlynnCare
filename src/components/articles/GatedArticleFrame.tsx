@@ -8,7 +8,8 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { isArticleApproved } from "@/lib/content/articleReview";
 import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
-import { buildArticleSchema, buildBreadcrumbList } from "@/lib/seo/schema";
+import { buildArticleSchema, buildBreadcrumbList, buildFaqSchemaFromPairs } from "@/lib/seo/schema";
+import type { FaqPair } from "@/components/articles/ArticleFaq";
 
 type Crumb = { name: string; path: string };
 
@@ -28,6 +29,8 @@ type Props = {
     ctaLabel: string;
     stateNavHref: string;
   };
+  /** Must be the same pairs the body renders with ArticleFaq. */
+  faq?: readonly FaqPair[];
   children: ReactNode;
 };
 
@@ -41,6 +44,7 @@ export async function GatedArticleFrame({
   image,
   crumbs,
   nav,
+  faq,
   children,
 }: Props) {
   if (!(await isArticleApproved(path))) notFound();
@@ -54,6 +58,7 @@ export async function GatedArticleFrame({
       image: `${SITE_ORIGIN}${image.src}`,
     }),
     buildBreadcrumbList(crumbs.map((crumb) => ({ name: crumb.name, url: canonicalFor(crumb.path) }))),
+    ...(faq && faq.length > 0 ? [buildFaqSchemaFromPairs([...faq], canonical)] : []),
   ];
 
   return (

@@ -25,6 +25,7 @@ export default function MissouriMemoryCareDesignationPage() {
       eyebrow="Missouri"
       heading={<>Is this Missouri home licensed for <em>memory care</em>?</>}
       image={MISSOURI_DESIGNATION.image}
+      faq={MISSOURI_DESIGNATION.faq}
       crumbs={[
         { name: "Home", path: "/" },
         { name: "Missouri", path: "/missouri" },
