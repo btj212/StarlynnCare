@@ -51,10 +51,11 @@ export default async function AdminArticleReviewPage({
           alt={article.illustration.alt}
           width={1024}
           height={768}
-          className="mb-6 h-auto w-full max-w-[720px]"
+          className="h-auto w-full max-w-[720px]"
         />
-        <p className="mb-6 font-mono text-[11px] text-gray-500">{article.illustration.alt}</p>
-        <Body />
+        <div className="mt-6">
+          <Body />
+        </div>
       </section>
 
       <section className="space-y-6">
