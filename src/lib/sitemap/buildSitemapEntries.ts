@@ -139,9 +139,11 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     })),
     // Texas-specific articles (live)
     { path: "/texas/type-a-b-c-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/texas/is-it-licensed-for-memory-care", priority: "0.78", changefreq: "monthly" },
     { path: "/texas/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Oregon-specific articles (live)
     { path: "/oregon/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/oregon/is-it-licensed-for-memory-care", priority: "0.78", changefreq: "monthly" },
     { path: "/oregon/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Washington-specific articles (live)
     { path: "/washington/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
@@ -158,11 +160,13 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     // Missouri guides + articles. The state hub itself is listed once above.
     { path: "/missouri/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/missouri/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/missouri/is-it-licensed-for-memory-care", priority: "0.78", changefreq: "monthly" },
     { path: "/missouri/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Pennsylvania hub + guides + articles (live)
     { path: "/pennsylvania", priority: "0.88", changefreq: "weekly" },
     { path: "/pennsylvania/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/pennsylvania/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/pennsylvania/is-it-licensed-for-memory-care", priority: "0.78", changefreq: "monthly" },
     { path: "/pennsylvania/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Pennsylvania insights data stories (live)
     { path: "/pennsylvania/insights", priority: "0.80", changefreq: "monthly" },

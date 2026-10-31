@@ -1,5 +1,23 @@
 import type { ReactNode } from "react";
+import {
+  MissouriDesignationBody,
+  OregonDesignationBody,
+  PennsylvaniaDesignationBody,
+  TexasDesignationBody,
+} from "@/components/articles/DesignationBodies";
 import { SeriousCitationsByState } from "@/components/articles/SeriousCitationsByState";
+import {
+  MISSOURI_DESIGNATION,
+  OREGON_DESIGNATION,
+  PENNSYLVANIA_DESIGNATION,
+  TEXAS_DESIGNATION,
+} from "@/lib/content/designationArticles";
+import {
+  MISSOURI_DESIGNATION_DESLOP,
+  OREGON_DESIGNATION_DESLOP,
+  PENNSYLVANIA_DESIGNATION_DESLOP,
+  TEXAS_DESIGNATION_DESLOP,
+} from "@/lib/content/designationDeslop";
 
 /** One deslop pass: the sentence before, the sentence after, and what was cut. */
 export type DeslopPass = {
@@ -112,6 +130,34 @@ export const REVIEW_ARTICLES: ReviewArticle[] = [
         ],
       },
     ],
+  },
+  {
+    path: OREGON_DESIGNATION.path,
+    title: OREGON_DESIGNATION.title,
+    illustration: OREGON_DESIGNATION.image,
+    Body: OregonDesignationBody,
+    deslop: OREGON_DESIGNATION_DESLOP,
+  },
+  {
+    path: PENNSYLVANIA_DESIGNATION.path,
+    title: PENNSYLVANIA_DESIGNATION.title,
+    illustration: PENNSYLVANIA_DESIGNATION.image,
+    Body: PennsylvaniaDesignationBody,
+    deslop: PENNSYLVANIA_DESIGNATION_DESLOP,
+  },
+  {
+    path: MISSOURI_DESIGNATION.path,
+    title: MISSOURI_DESIGNATION.title,
+    illustration: MISSOURI_DESIGNATION.image,
+    Body: MissouriDesignationBody,
+    deslop: MISSOURI_DESIGNATION_DESLOP,
+  },
+  {
+    path: TEXAS_DESIGNATION.path,
+    title: TEXAS_DESIGNATION.title,
+    illustration: TEXAS_DESIGNATION.image,
+    Body: TexasDesignationBody,
+    deslop: TEXAS_DESIGNATION_DESLOP,
   },
 ];
 

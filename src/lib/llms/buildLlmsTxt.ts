@@ -5,6 +5,12 @@ import { regionsForState } from "@/lib/regions";
 import { COVERED_STATES } from "@/lib/states";
 import { joinAnd, regulatorFor } from "@/lib/states/regulators";
 import { keepApproved, loadApprovedPaths } from "@/lib/content/articleReview";
+import {
+  MISSOURI_DESIGNATION,
+  OREGON_DESIGNATION,
+  PENNSYLVANIA_DESIGNATION,
+  TEXAS_DESIGNATION,
+} from "@/lib/content/designationArticles";
 import { RESEARCH_INDEX } from "@/lib/content/research";
 
 /**
@@ -39,6 +45,15 @@ export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise
     .map((r) => `- ${canonicalFor(r.href)} — ${r.title} (${r.scope}, ${r.bylineDate})`)
     .join("\n");
   const visiblePillars = keepApproved(pillarUrls, (url) => new URL(url).pathname, approved);
+  const designationGuides = [
+    OREGON_DESIGNATION,
+    PENNSYLVANIA_DESIGNATION,
+    MISSOURI_DESIGNATION,
+    TEXAS_DESIGNATION,
+  ];
+  const designationLines = keepApproved(designationGuides, (guide) => guide.path, approved)
+    .map((guide) => `- ${canonicalFor(guide.path)} — ${guide.title}`)
+    .join("\n");
 
   const apiLines = COVERED_STATES.map(
     (st) =>
@@ -122,7 +137,7 @@ StarlynnCare publishes original analyses of inspection records under /research. 
 
 ${researchLines}
 
-## Editorial articles
+${designationLines ? `## Is this home licensed for memory care?\n${designationLines}\n\n` : ""}## Editorial articles
 ${visiblePillars.map((u) => `- ${u}`).join("\n")}
 - ${canonicalFor("/library/37-questions-to-ask-on-a-memory-care-tour")} — 37 questions to ask on a memory care tour (printable; RN-reviewed)
 

@@ -334,6 +334,38 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     tags: ["decision", "licensing"],
     live: true,
   },
+  {
+    slug: "/oregon/is-it-licensed-for-memory-care",
+    title: "Is this Oregon home endorsed for memory care?",
+    desc: "Oregon bars advertising memory care until DHS grants the endorsement. How to check the license, and how many published homes the state file lists as endorsed.",
+    states: ["OR"],
+    tags: ["licensing"],
+    live: true,
+  },
+  {
+    slug: "/pennsylvania/is-it-licensed-for-memory-care",
+    title: "Is this Pennsylvania home licensed for memory care?",
+    desc: "A secured dementia care unit on a personal care home, and special care on an assisted living residence. What each rule says, and how many homes the state file lists.",
+    states: ["PA"],
+    tags: ["licensing"],
+    live: true,
+  },
+  {
+    slug: "/missouri/is-it-licensed-for-memory-care",
+    title: "Is this Missouri home licensed for memory care?",
+    desc: "Missouri has no standalone memory care license. The Alzheimer's special care unit disclosure and the ALF** license are different filings.",
+    states: ["MO"],
+    tags: ["licensing"],
+    live: true,
+  },
+  {
+    slug: "/texas/is-it-licensed-for-memory-care",
+    title: "Is this Texas home certified for Alzheimer's care?",
+    desc: "A home that advertises specialized Alzheimer's care needs an HHSC certification. What the rule requires, and how many published homes the state file lists.",
+    states: ["TX"],
+    tags: ["licensing"],
+    live: true,
+  },
 ];
 
 /**

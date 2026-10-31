@@ -6,6 +6,22 @@
 export type ArticleThumbnail = { src: string; alt: string };
 
 const THUMBNAILS: Record<string, ArticleThumbnail> = {
+  "/oregon/is-it-licensed-for-memory-care": {
+    src: "/illustrations/oregon-memory-care-endorsement.png",
+    alt: "Illustrated wooden garden gate standing open onto a path, with climbing roses and no sign — standing in for the endorsement a home must have before it advertises memory care",
+  },
+  "/pennsylvania/is-it-licensed-for-memory-care": {
+    src: "/illustrations/pennsylvania-memory-care-designation.png",
+    alt: "Illustrated hallway with a closed door and a window seat — standing in for the two Pennsylvania names for a dementia unit",
+  },
+  "/missouri/is-it-licensed-for-memory-care": {
+    src: "/illustrations/missouri-memory-care-designation.png",
+    alt: "Illustrated porch with two empty chairs and a closed folder — standing in for Missouri's disclosure filing, not a separate memory care license",
+  },
+  "/texas/is-it-licensed-for-memory-care": {
+    src: "/illustrations/texas-alzheimer-certification.png",
+    alt: "Illustrated courtyard bench under a tree — standing in for the certificate a Texas home must post if it advertises Alzheimer's care",
+  },
   "/research/memory-care-serious-citations-by-state": {
     src: "/illustrations/serious-citations-by-state.png",
     alt: "Illustrated wooden table by a window, with a closed folder, a cup, and a small plant — standing in for a family reading a state's inspection record",
