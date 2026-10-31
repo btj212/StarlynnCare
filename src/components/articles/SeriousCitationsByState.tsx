@@ -3,7 +3,7 @@ import { DataFootnote } from "@/components/editorial/DataFootnote";
 import {
   formatRecordDate,
   loadStateMemoryCareStats,
-  type StateMemoryCareStats,
+  type StateMemoryCareStat,
 } from "@/lib/data/stateMemoryCareStats";
 import {
   SERIOUS_COUNT_SENTENCE,
@@ -20,6 +20,33 @@ function formatCount(n: number): string {
   return n.toLocaleString("en-US");
 }
 
+/**
+ * A row is a state result only when the serious count can be measured.
+ * Fewer than 25 published homes is a stub. Texas is 1, and the next covered state is 30.
+ * Under half inspected is a partial file. Washington is about a third; every other covered state is above 96%.
+ * Half or more of recent findings with no class and no severity makes the count, including a zero, unmeasured.
+ */
+const MIN_PUBLISHED_FOR_STATE_COUNT = 25;
+
+function omissionKind(row: StateMemoryCareStat): "published" | "inspections" | "uncoded" | null {
+  if (row.published < MIN_PUBLISHED_FOR_STATE_COUNT) return "published";
+  if (row.withInspection * 2 < row.published) return "inspections";
+  if (row.findings > 0 && row.uncodedFindings * 2 >= row.findings) return "uncoded";
+  return null;
+}
+
+function omissionSentence(row: StateMemoryCareStat): string {
+  const kind = omissionKind(row);
+  if (kind === "published") {
+    const homes = row.published === 1 ? "home" : "homes";
+    return `${row.name} has ${formatCount(row.published)} published ${homes} in this directory. That is not a state count.`;
+  }
+  if (kind === "inspections") {
+    return `${row.name} has an inspection on file for ${formatCount(row.withInspection)} of ${formatCount(row.published)} published homes.`;
+  }
+  return `${row.name} has ${formatCount(row.uncodedFindings)} of ${formatCount(row.findings)} findings in the last 24 months with no citation class and no stored severity. A serious count is not shown.`;
+}
+
 function inspectionSentence(published: number, withInspection: number, newest: string | null): string {
   const date = formatRecordDate(newest);
   const coverage =
@@ -29,11 +56,11 @@ function inspectionSentence(published: number, withInspection: number, newest: s
   return date ? `${coverage} The newest inspection date we hold is ${date}.` : coverage;
 }
 
-function ReportTable({ stats }: { stats: StateMemoryCareStats }) {
+function ReportTable({ rows }: { rows: StateMemoryCareStat[] }) {
   return (
     <>
       <ul className="mt-8 divide-y divide-sc-border md:hidden">
-        {stats.rows.map((row) => (
+        {rows.map((row) => (
           <li key={row.code} className="py-5">
             <p className="font-medium text-navy">{row.name}</p>
             <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
@@ -59,7 +86,7 @@ function ReportTable({ stats }: { stats: StateMemoryCareStats }) {
             </tr>
           </thead>
           <tbody>
-            {stats.rows.map((row) => (
+            {rows.map((row) => (
               <tr key={row.code} className="border-t border-sc-border align-top">
                 <td className="py-4 pr-4">
                   <Link href={`/${row.slug}`} className="font-medium text-navy underline-offset-2 hover:underline">
@@ -107,8 +134,31 @@ export async function SeriousCitationsByState() {
       <p className="mt-4 text-[17px] leading-relaxed text-ink-2">
         A home with no inspection on file is not in the serious-citation count. The line for each state says how many published homes have an inspection, and the newest inspection date we hold.
       </p>
+      <h2 className="mt-12 font-[family-name:var(--font-display)] text-2xl text-navy">
+        Which states are left out?
+      </h2>
+      <p className="mt-4 text-[17px] leading-relaxed text-ink-2">
+        This table leaves out a state when the serious count would not be a measurement. The{" "}
+        <Link href="/data" className="text-teal underline-offset-2 hover:underline">
+          dataset page
+        </Link>{" "}
+        still lists every covered state.
+      </p>
       {stats ? (
-        <ReportTable stats={stats} />
+        <>
+          {stats.rows.some((row) => omissionKind(row) != null) ? (
+            stats.rows
+              .filter((row) => omissionKind(row) != null)
+              .map((row) => (
+                <p key={row.code} className="mt-4 text-[17px] leading-relaxed text-ink-2">
+                  {omissionSentence(row)}
+                </p>
+              ))
+          ) : (
+            <p className="mt-4 text-[17px] leading-relaxed text-ink-2">No covered state is left out.</p>
+          )}
+          <ReportTable rows={stats.rows.filter((row) => omissionKind(row) == null)} />
+        </>
       ) : (
         <p className="mt-8 text-[17px] leading-relaxed text-ink-2">
           The state counts could not be loaded.
@@ -116,15 +166,8 @@ export async function SeriousCitationsByState() {
       )}
       <DataFootnote
         source="Inspection and deficiency rows on publishable homes"
-        note="Same rule as the state table on /data."
+        note="Same rule as the state table on /data. This table leaves out a state the dataset page still lists."
       />
-      <p className="mt-8 text-[17px] leading-relaxed text-ink-2">
-        The same counts, without these notes, are on{" "}
-        <Link href="/data" className="text-teal underline-offset-2 hover:underline">
-          the dataset page
-        </Link>
-        .
-      </p>
     </>
   );
 }

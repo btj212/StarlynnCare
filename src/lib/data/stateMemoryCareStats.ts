@@ -6,6 +6,7 @@ import { COVERED_STATES } from "@/lib/states";
  * use: a Type A finding, or a finding stored at severity 3 or higher.
  * The serious column counts homes, not findings. A query that errors returns
  * null so the page does not print a zero it did not measure.
+ * findings and uncodedFindings are for the research report. /data does not show them.
  */
 
 export type StateMemoryCareStat = {
@@ -17,6 +18,10 @@ export type StateMemoryCareStat = {
   withInspection: number;
   seriousHomes: number;
   newestInspection: string | null;
+  /** Findings in the last 24 months. Used to tell an unmeasured count from a measured one. */
+  findings: number;
+  /** Those findings with no citation class and no stored severity. */
+  uncodedFindings: number;
 };
 
 export type StateMemoryCareStats = {
@@ -97,6 +102,40 @@ async function countSeriousHomes(
   return count;
 }
 
+function findingsQuery(supabase: SupabaseClient, code: string, cutoff: string) {
+  return supabase
+    .from("deficiencies")
+    .select("id, inspections!inner(inspection_date, facilities!inner(state_code, publishable))", {
+      count: "exact",
+      head: true,
+    })
+    .eq("inspections.facilities.state_code", code)
+    .eq("inspections.facilities.publishable", true)
+    .gte("inspections.inspection_date", cutoff);
+}
+
+async function countFindings(
+  supabase: SupabaseClient,
+  code: string,
+  cutoff: string,
+): Promise<number | null> {
+  const { count, error } = await findingsQuery(supabase, code, cutoff);
+  if (error || count == null) return null;
+  return count;
+}
+
+async function countUncodedFindings(
+  supabase: SupabaseClient,
+  code: string,
+  cutoff: string,
+): Promise<number | null> {
+  const { count, error } = await findingsQuery(supabase, code, cutoff)
+    .is("class", null)
+    .is("severity", null);
+  if (error || count == null) return null;
+  return count;
+}
+
 async function newestInspection(
   supabase: SupabaseClient,
   code: string,
@@ -120,19 +159,32 @@ export async function loadStateMemoryCareStats(
   const rows: StateMemoryCareStat[] = [];
 
   for (const state of COVERED_STATES) {
-    const [published, withInspection, seriousHomes, newest] = await Promise.all([
-      countPublished(supabase, state.code),
-      countWithInspection(supabase, state.code),
-      countSeriousHomes(supabase, state.code, cutoff),
-      newestInspection(supabase, state.code),
-    ]);
+    const [published, withInspection, seriousHomes, newest, findings, uncodedFindings] =
+      await Promise.all([
+        countPublished(supabase, state.code),
+        countWithInspection(supabase, state.code),
+        countSeriousHomes(supabase, state.code, cutoff),
+        newestInspection(supabase, state.code),
+        countFindings(supabase, state.code, cutoff),
+        countUncodedFindings(supabase, state.code, cutoff),
+      ]);
     if (
       published == null ||
       withInspection == null ||
       seriousHomes == null ||
-      newest === undefined
+      newest === undefined ||
+      findings == null ||
+      uncodedFindings == null
     ) {
-      console.error(`[stateMemoryCareStats] count failed for ${state.code}`);
+      const failed = [
+        published == null ? "published" : "",
+        withInspection == null ? "withInspection" : "",
+        seriousHomes == null ? "seriousHomes" : "",
+        newest === undefined ? "newest" : "",
+        findings == null ? "findings" : "",
+        uncodedFindings == null ? "uncoded" : "",
+      ].filter(Boolean);
+      console.error(`[stateMemoryCareStats] count failed for ${state.code}: ${failed.join(", ")}`);
       return null;
     }
     rows.push({
@@ -144,6 +196,8 @@ export async function loadStateMemoryCareStats(
       withInspection,
       seriousHomes,
       newestInspection: newest,
+      findings,
+      uncodedFindings,
     });
   }
 
