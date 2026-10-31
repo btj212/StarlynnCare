@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — The by-state report omits a serious count it cannot measure
+
+**Decided:** `/research/memory-care-serious-citations-by-state` shows a state only when it has at least 25 published homes, an inspection on at least half of them, and fewer than half of its findings in the last 24 months left with no citation class and no severity. The page names each omitted state with the live count behind that cut, and does not print that state's serious total. `/data` still lists every covered state, and a measured zero there stays a zero.
+
+**Rejected:** Dropping those states from `/data`. Printing Texas or Oregon as zero serious citations.
+
+**Source:** Hold note on the report, 2026-10-31. That day's file: Texas had 1 published home of 1,389 on file; Oregon had 1,009 of 1,009 findings uncoded; Illinois had 153 of 190 uncoded; Washington had an inspection for 352 of 1,038 published homes.
+
 ## 2026-10 — Gated articles answer first and carry a visible FAQ
 
 **Decided:** Each gated article opens with a direct answer to its title question, uses question-shaped H2s, and ends with `ArticleFaq`. The FAQ pairs live in the article's content file, and the page passes the same pairs to `GatedArticleFrame` for `FAQPage` JSON-LD, so the markup always matches the visible text. FAQ answers stay static and hold only rule facts verified from an opened source. Live counts stay in the body with a `DataFootnote`. When a state's inspection files carry no complaint flag at all (Pennsylvania today), the page says the flag is missing instead of printing zero.
