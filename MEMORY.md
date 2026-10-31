@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — The by-state report omits a serious count it cannot measure
+
+**Decided:** `/research/memory-care-serious-citations-by-state` shows a state only when it has at least 25 published homes, an inspection on at least half of them, and fewer than half of its findings in the last 24 months left with no citation class and no severity. The page names each omitted state with the live count behind that cut, and does not print that state's serious total. `/data` still lists every covered state, and a measured zero there stays a zero.
+
+**Rejected:** Dropping those states from `/data`. Printing Texas or Oregon as zero serious citations.
+
+**Source:** Hold note on the report, 2026-10-31. That day's file: Texas had 1 published home of 1,389 on file; Oregon had 1,009 of 1,009 findings uncoded; Illinois had 153 of 190 uncoded; Washington had an inspection for 352 of 1,038 published homes.
+
 ## 2026-10 — Colorado assisted living and nursing homes are separate records
 
 **Decided:** The Colorado universe is the CDPHE ArcGIS assisted-living directory. The May 18, 2026 HFQ workbooks are a dated records snapshot, not a live inspection feed. Future-dated complaint rows stay quarantined with their original values. CMS nursing homes are a second care setting, matched only by certification number. A shared name and street is a review note, not a merge. A home is published only with an explicit memory or dementia name, a verified curated chain, or both A Place for Mom and Caring.com, plus an inspection in 36 months. One directory listing stays in review. CDPHE does not publish a facility-level Secure Environment roster, so no page says the state verified memory care. Assisted living uses Level A–E. Nursing homes use CMS letters A–L. A rank needs at least 10 homes in that care setting, so the one published nursing home is not ranked. Street View uploads send the `sb_` service key as both the bearer token and the `apikey` header. Tour-question dates for Colorado include complaint investigations. Family State Watch and paid Facility Watch stay off until a recurring inspection refresh exists. A directory refresh is not an inspection refresh.
