@@ -19,6 +19,12 @@ export const STATE_REGULATORS: Record<string, StateRegulator> = {
     portalUrl: "https://azcarecheck.azdhs.gov",
     cite: "ADHS (Arizona)",
   },
+  CO: {
+    short: "CDPHE",
+    long: "Colorado Department of Public Health and Environment",
+    portalUrl: "https://cdphe.colorado.gov/health-facilities/find-and-compare-facilities",
+    cite: "CDPHE (Colorado)",
+  },
   CA: {
     short: "CDSS",
     long: "California Dept. of Social Services · Community Care Licensing",

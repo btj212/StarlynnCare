@@ -218,7 +218,35 @@ _FRESHNESS_MONTHS: dict[str, int | None] = {
     # MO: DHSS FOIA data covers 2018–2026; use 36 months to ensure active facilities
     # have recent inspection data before publishing.
     "MO": 36,
+    # CO: the HFQ workbook is a point-in-time file and CMS surveys are current.
+    # 36 months matches the other states whose public record is not a live portal.
+    "CO": 36,
 }
+
+
+def sync_colorado_care_category(conn: psycopg.Connection, dry_run: bool = False) -> int:
+    """Keep assisted living and nursing homes in separate peer categories.
+
+    A memory-care signal changes the category. It does not turn a nursing
+    home into an assisted living residence, and it does not publish the row.
+    """
+    sql = """
+        UPDATE facilities
+        SET care_category = CASE
+              WHEN co_care_setting = 'NH' AND serves_memory_care THEN 'snf_dementia_scu'
+              WHEN co_care_setting = 'NH' THEN 'snf_general'
+              WHEN serves_memory_care THEN 'alf_memory_care'
+              ELSE 'alf_general'
+            END
+        WHERE state_code = 'CO'
+          AND co_care_setting IN ('ALR', 'NH')
+    """
+    if dry_run:
+        print("  Step 1b: Would set Colorado care categories from the care setting and memory-care signal")
+        return 0
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return cur.rowcount
 
 
 def recompute_publishable(
@@ -499,6 +527,8 @@ def main() -> None:
         # Step 4 (promote) runs BEFORE step 3 (queue chain-only) so promotions
         # don't get re-queued in the same run.
         step1_updated = recompute_serves_memory_care(conn, args.state, args.dry_run)
+        if args.state.upper() == "CO":
+            sync_colorado_care_category(conn, args.dry_run)
         step2_updated = recompute_publishable(conn, args.state, args.dry_run)
         step4_updated = promote_queue_with_tier1_signals(conn, args.state, args.dry_run)
         step3a_updated = mark_chain_only_for_review(conn, args.state, args.dry_run)

@@ -94,7 +94,16 @@ function MetricCell({ label, percentile, peerMedian, desc }: MetricCellProps) {
 
 export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
   const { facility, snapshot, state, cfg } = profile;
-  const careLabel = CARE_LABEL[facility.care_category] ?? "care";
+  const careLabel =
+    state.code === "CO" && facility.care_category === "alf_memory_care"
+      ? "assisted living memory care"
+      : state.code === "CO" && facility.care_category === "alf_general"
+        ? "assisted living"
+        : state.code === "CO" && facility.care_category === "snf_dementia_scu"
+          ? "nursing home memory care"
+          : state.code === "CO" && facility.care_category === "snf_general"
+            ? "nursing home"
+            : CARE_LABEL[facility.care_category] ?? "care";
   const peerN = snapshot?.peer_set.n ?? 0;
   const fallbackLevel = snapshot?.peer_set.fallback_level ?? 1;
   const bedNormalized = fallbackLevel === 0;
@@ -109,10 +118,12 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
           label="Peer Comparison"
-          title={<>Compared to {peerTitle}</>}
+          title={peerN < 10 ? <>Not ranked against a peer group.</> : <>Compared to {peerTitle}</>}
           deck={
-            `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.inspectionWindowMonths}-month window. Higher percentile = better performance on inspection record.` +
-            ` Source: ${cfg.agencyLong}.`
+            peerN < 10
+              ? `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.agencyLong}. A rank needs at least 10 homes in the same care setting.`
+              : `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.inspectionWindowMonths}-month window. Higher percentile = better performance on inspection record.` +
+                ` Source: ${cfg.agencyLong}.`
           }
           invert
         />
@@ -120,6 +131,10 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
         {!snapshot || !snapshot.has_inspections ? (
           <div className="rounded-sm bg-paper-2/10 px-6 py-8 text-center text-paper/60 font-[family-name:var(--font-mono)] text-[13px] tracking-wide">
             Peer comparison data not yet available — inspection records for this facility are still being indexed.
+          </div>
+        ) : peerN < 10 ? (
+          <div className="rounded-sm bg-paper-2/10 px-6 py-8 text-center text-paper/60 font-[family-name:var(--font-mono)] text-[13px] tracking-wide">
+            Not enough homes in this care setting for a rank. The inspection record below is the record.
           </div>
         ) : (
           <>

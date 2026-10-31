@@ -15,7 +15,7 @@ export const revalidate = 3600;
 const PAGE_CANONICAL = canonicalFor("/states");
 const PAGE_TITLE = "Memory care by state | StarlynnCare";
 const PAGE_DESC =
-  "Inspection-backed memory care facility directories for California, Arizona, Oregon, Washington, Minnesota, Pennsylvania, Utah, Illinois, and Missouri — sourced directly from each state's regulator.";
+  "Inspection-backed memory care facility directories for California, Arizona, Oregon, Washington, Minnesota, Pennsylvania, Utah, Illinois, Missouri, Texas, and Colorado — sourced directly from each state's regulator.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -41,6 +41,7 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   AZ: "ADHS BRFL · Directed Care ALH & ALC · AZ Care Check",
   IL: "IDPH · Assisted Living & Shared Housing",
   MO: "DHSS LTCR · ALF** & Alzheimer's SCU Disclosure · 19 CSR 30",
+  CO: "CDPHE assisted living · CMS nursing homes · Chapter 7",
 };
 
 async function getStateCounts(): Promise<Record<string, number>> {

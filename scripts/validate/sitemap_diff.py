@@ -33,6 +33,7 @@ STATE_SLUG = {
     "PA": "pennsylvania",
     "AZ": "arizona",
     "MO": "missouri",
+    "CO": "colorado",
 }
 
 

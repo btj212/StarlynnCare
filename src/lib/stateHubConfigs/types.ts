@@ -54,6 +54,8 @@ export interface StateHubConfig {
   regulatorAbbr: string;
   /** Secondary source label for inspection counts. */
   inspectionSrc: string;
+  /** Replaces the default "Updated regularly" when the file is not a live feed. */
+  inspectionDelta?: string;
   /** Whether the ZIP search form is shown on the hub's hero. */
   showZipSearch: boolean;
   /**
@@ -100,7 +102,7 @@ export function buildStateStatItems(
       n: stats.inspections > 0 ? stats.inspections.toLocaleString() : "0",
       label: "State inspection reports, parsed and dated",
       src: inspectionSrc,
-      delta: "Updated regularly",
+      delta: config.inspectionDelta ?? "Updated regularly",
     },
     ...(hasSevereCitationData
       ? [

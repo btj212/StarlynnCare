@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { buildFacilityDescription, buildFacilityTitle, clipMetaDescription, REGULATOR_ABBR, shortMonthYear } from "@/lib/seo/meta";
+import { buildFacilityDescription, buildFacilityTitle, clipMetaDescription, reportablePercentile, shortMonthYear } from "@/lib/seo/meta";
 import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
@@ -133,7 +133,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Data-driven meta title + description.
   const lastInspectionDate =
     profile.inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
-  const compositePercentile = profile.snapshot?.grade?.composite_percentile ?? null;
+  const compositePercentile = reportablePercentile(
+    profile.snapshot?.grade?.composite_percentile,
+    profile.snapshot?.peer_set.n,
+  );
 
   const title = buildFacilityTitle({
     name: facility.name,
@@ -159,7 +162,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           stateName: state.name,
           city: facility.city ?? state.name,
           citationCount: profile.totals.deficiencies,
-          agency: REGULATOR_ABBR[state.code] ?? state.code,
+          agency: profile.cfg.agencyShort,
           lastInspected: shortMonthYear(lastInspectionDate),
         }),
   );
@@ -394,7 +397,7 @@ export default async function FacilityPage({ params }: PageProps) {
         </main>
         </FacilityOfferProvider>
         <div className="-order-1">
-          <GovernanceBar />
+          <GovernanceBar scope={facility.state_code} />
           <SiteNav countStateCode={facility.state_code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} stateNavHref={`/${state.slug}`} />
         </div>
       </div>

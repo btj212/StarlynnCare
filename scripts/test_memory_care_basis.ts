@@ -160,4 +160,24 @@ const thin = buildFacilityFaqPairs({
 assert.equal(thin.length, 1);
 assert.match(thin[0].a, /dementia care contract/);
 
+const coloradoName = memoryCareBasis({
+  state_code: "CO",
+  memory_care_disclosure_source: "name indicates memory care",
+});
+assert.equal(coloradoName.recorded, false);
+assert.equal(coloradoName.label, MEMORY_CARE_BASIS_UNRECORDED);
+
+const coloradoPlain = memoryCareBasis({ state_code: "CO" });
+assert.equal(coloradoPlain.recorded, false);
+assert.equal(coloradoPlain.regulatorShort, "CDPHE");
+
+const coloradoNursing = memoryCareBasis({
+  state_code: "CO",
+  co_care_setting: "NH",
+  source_url: "https://www.medicare.gov/care-compare/details/nursing-home/065266",
+});
+assert.equal(coloradoNursing.recorded, false);
+assert.equal(coloradoNursing.regulatorShort, "CMS");
+assert.match(coloradoNursing.sourceUrl ?? "", /medicare\.gov/);
+
 console.log("memory care basis checks passed");

@@ -6,7 +6,7 @@
  */
 
 /** States whose official-record weekly scan is not yet dependable enough for paid promises. */
-export const PAID_WATCH_EXCLUDED_STATE_CODES = new Set(["TX", "MO"]);
+export const PAID_WATCH_EXCLUDED_STATE_CODES = new Set(["TX", "MO", "CO"]);
 
 export const PAID_WATCH_MONTHLY_USD = 9;
 export const PAID_WATCH_ANNUAL_USD = 59;

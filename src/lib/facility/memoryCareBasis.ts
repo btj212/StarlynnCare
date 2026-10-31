@@ -41,6 +41,10 @@ export type MemoryCareBasisInput = {
   mo_alzheimer_scu?: boolean | null;
   az_memory_care_endorsed?: boolean | null;
   state_records_checked_at?: string | null;
+  /** Colorado care setting. Nursing homes are CMS-certified, not CDPHE-licensed. */
+  co_care_setting?: "ALR" | "NH" | null;
+  /** Official facility record. Used for a Colorado nursing home's Care Compare link. */
+  source_url?: string | null;
 };
 
 const CA_CITATION =
@@ -113,6 +117,26 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   });
 
   const source = facility.memory_care_disclosure_source?.trim() || null;
+
+  // CDPHE licenses assisted living, but it does not publish a facility-level
+  // Secure Environment roster. A name, a chain, or a directory listing is not
+  // a state file. Show a basis only when that file is stored on the row.
+  if (facility.state_code === "CO") {
+    if (facility.co_care_setting === "NH") {
+      const careCompare = facility.source_url?.trim();
+      return {
+        ...basis,
+        regulator: "Centers for Medicare & Medicaid Services",
+        regulatorShort: "CMS",
+        sourceUrl:
+          careCompare && careCompare.startsWith("http")
+            ? careCompare
+            : "https://www.medicare.gov/care-compare/",
+      };
+    }
+    return basis;
+  }
+
   if (source && !isManualReview(source) && source !== "PA DHS HSD bulk export") {
     if (source === "TX HHSC Alzheimer Certification") {
       return recorded(texasLabel(facility.tx_alzheimer_cert_no));

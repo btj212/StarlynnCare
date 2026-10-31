@@ -29,7 +29,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRAPERS = REPO_ROOT / "scrapers"
-COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ", "MO")
+COVERED_STATES = ("CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ", "MO", "CO")
 STATE_SLUGS = {
     "CA": "california",
     "TX": "texas",
@@ -41,6 +41,7 @@ STATE_SLUGS = {
     "PA": "pennsylvania",
     "AZ": "arizona",
     "MO": "missouri",
+    "CO": "colorado",
 }
 PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 
@@ -484,6 +485,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "PA": date(2026, 10, 16),  # GHA 40063182079 matrix
     "AZ": date(2026, 10, 22),  # GHA 40037764267 +9
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
+    "CO": date(2026, 5, 18),  # one-time CDPHE HFQ workbook; not a live inspection feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
 LAST_MN_INSERT_BASELINE = date(2026, 10, 23)
@@ -627,6 +629,12 @@ STATE_PROBERS = {
     "PA": lambda skip: probe_static("PA", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
     "AZ": lambda skip: probe_static("AZ", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
     "MO": lambda skip: probe_static("MO", "FOIA Excel (missourirecords.xlsx) — no live regulator feed; manual refresh"),
+    "CO": lambda skip: probe_static(
+        "CO",
+        "CDPHE HFQ workbook dated 2026-05-18 is a one-time citation file. "
+        "An ArcGIS directory refresh does not refresh inspections. "
+        "CMS nursing-home files follow the CMS cadence. Do not send State Watch from a directory-only refresh.",
+    ),
 }
 
 

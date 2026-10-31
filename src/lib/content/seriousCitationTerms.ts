@@ -53,4 +53,8 @@ export const SERIOUS_PROFILE_TAGS: Record<string, SeriousProfileTag> = {
     tag: "Immediate jeopardy",
     note: "On a Missouri profile, the red tag is an immediate-jeopardy flag.",
   },
+  CO: {
+    tag: "Level E",
+    note: "On a Colorado assisted living profile, the red tag is Level E, immediate jeopardy. On a Colorado nursing-home profile, the red tag is a CMS letter J, K, or L. Those are not the same scale. This count still includes severity 3 or higher.",
+  },
 };

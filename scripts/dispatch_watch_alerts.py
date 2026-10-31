@@ -34,6 +34,8 @@ STATE_SLUGS = {
     "TX": "texas",
     "UT": "utah",
     "WA": "washington",
+    # Present so a future Colorado alert has a real path. Weekly dispatch is not enabled.
+    "CO": "colorado",
 }
 
 # County watches store the county slug, not a city. Keep this aligned with
@@ -447,9 +449,22 @@ def main() -> int:
 
     recipient_only: str | None = args.recipient_only.strip().lower() if args.recipient_only else None
 
+    if args.state == "CO":
+        print(
+            "Colorado State Watch is not enabled. A directory refresh is not an inspection refresh.",
+            file=sys.stderr,
+        )
+        return 1
+
     load_env()
     conn = get_conn()
     run = _load_run(conn, args.scan_run_id, args.state)
+    if run.get("state_code") == "CO":
+        print(
+            "Colorado State Watch is not enabled. A directory refresh is not an inspection refresh.",
+            file=sys.stderr,
+        )
+        return 1
     if not scan_is_dispatchable(run["status"]):
         print(
             f"Skipping alerts for {run['id']}: scan status is {run['status']}, not completed.",

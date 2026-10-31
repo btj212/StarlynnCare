@@ -35,6 +35,7 @@ const OFFICES: Record<string, string> = {
   PA: "Pennsylvania Dept. of Human Services",
   AZ: "Arizona Dept. of Health Services · Bureau of Residential Facilities Licensing",
   MO: "Missouri Dept. of Health and Senior Services · Section for Long-Term Care Regulation",
+  CO: "Colorado Department of Public Health and Environment",
 };
 
 export function seriousCitationCutoff(now = new Date()): string {
