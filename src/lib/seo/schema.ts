@@ -747,9 +747,11 @@ export function buildArticleSchema(input: {
   url: string;
   datePublished: string;
   dateModified?: string;
+  /** Absolute image URL. Defaults to the site Open Graph image. */
+  image?: string;
   /** Optional extra types e.g. FAQPage handled separately */
 }): object {
-  const ogImage = `${SITE_ORIGIN}/og-default.png`;
+  const ogImage = input.image ?? `${SITE_ORIGIN}/og-default.png`;
   const dateModified = input.dateModified ?? input.datePublished;
   return {
     "@context": "https://schema.org",

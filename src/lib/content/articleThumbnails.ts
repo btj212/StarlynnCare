@@ -6,6 +6,10 @@
 export type ArticleThumbnail = { src: string; alt: string };
 
 const THUMBNAILS: Record<string, ArticleThumbnail> = {
+  "/research/memory-care-serious-citations-by-state": {
+    src: "/illustrations/serious-citations-by-state.png",
+    alt: "Illustrated wooden table by a window, with a closed folder, a cup, and a small plant — standing in for a family reading a state's inspection record",
+  },
   // ── Universal library articles ──────────────────────────────────────────────
   "/library/memory-care-vs-nursing-home": {
     src: "/illustrations/beach-grandparent-grandchild.png",
