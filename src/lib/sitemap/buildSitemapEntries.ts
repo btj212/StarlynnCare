@@ -124,6 +124,7 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/memory-care-vs-assisted-living", priority: "0.85", changefreq: "monthly" },
     { path: "/california/glossary", priority: "0.78", changefreq: "monthly" },
     { path: "/california/37-questions-to-ask-on-a-tour", priority: "0.78", changefreq: "monthly" },
+    { path: "/california/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
     // State-specific guides indexes
     { path: "/texas/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/oregon/guides", priority: "0.80", changefreq: "monthly" },
@@ -150,11 +151,13 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/washington/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     { path: "/washington/why-dshs-contract-isnt-a-quality-badge", priority: "0.76", changefreq: "monthly" },
     { path: "/washington/how-to-read-our-inspection-data", priority: "0.76", changefreq: "monthly" },
+    { path: "/washington/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
     // Minnesota-specific articles (live)
     { path: "/minnesota/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/minnesota/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Arizona-specific articles (live)
     { path: "/arizona/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/arizona/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
     { path: "/arizona/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     { path: "/arizona/guides", priority: "0.80", changefreq: "monthly" },
     // Missouri guides + articles. The state hub itself is listed once above.
@@ -167,6 +170,7 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/pennsylvania/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/pennsylvania/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/pennsylvania/is-it-licensed-for-memory-care", priority: "0.78", changefreq: "monthly" },
+    { path: "/pennsylvania/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
     { path: "/pennsylvania/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Pennsylvania insights data stories (live)
     { path: "/pennsylvania/insights", priority: "0.80", changefreq: "monthly" },

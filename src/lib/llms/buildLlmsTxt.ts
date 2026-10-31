@@ -11,6 +11,7 @@ import {
   PENNSYLVANIA_DESIGNATION,
   TEXAS_DESIGNATION,
 } from "@/lib/content/designationArticles";
+import { HOW_TO_CHECK } from "@/lib/content/howToCheckArticles";
 import { RESEARCH_INDEX } from "@/lib/content/research";
 
 /**
@@ -52,6 +53,9 @@ export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise
     TEXAS_DESIGNATION,
   ];
   const designationLines = keepApproved(designationGuides, (guide) => guide.path, approved)
+    .map((guide) => `- ${canonicalFor(guide.path)} — ${guide.title}`)
+    .join("\n");
+  const howToLines = keepApproved(Object.values(HOW_TO_CHECK), (guide) => guide.path, approved)
     .map((guide) => `- ${canonicalFor(guide.path)} — ${guide.title}`)
     .join("\n");
 
@@ -137,7 +141,7 @@ StarlynnCare publishes original analyses of inspection records under /research. 
 
 ${researchLines}
 
-${designationLines ? `## Is this home licensed for memory care?\n${designationLines}\n\n` : ""}## Editorial articles
+${designationLines ? `## Is this home licensed for memory care?\n${designationLines}\n\n` : ""}${howToLines ? `## How to check an inspection record\n${howToLines}\n\n` : ""}## Editorial articles
 ${visiblePillars.map((u) => `- ${u}`).join("\n")}
 - ${canonicalFor("/library/37-questions-to-ask-on-a-memory-care-tour")} — 37 questions to ask on a memory care tour (printable; RN-reviewed)
 

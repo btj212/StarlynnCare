@@ -30,15 +30,17 @@ import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings
 import { assignOffer } from "@/lib/facility/offers";
 import { shouldShowPaidFacilityWatch } from "@/lib/facility-watch/paidConfig";
 import { facilityMarkedNoindex } from "@/lib/seo/indexability";
+import { isArticleApproved } from "@/lib/content/articleReview";
+import { HOW_TO_CHECK } from "@/lib/content/howToCheckArticles";
 
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 
 /** State-specific guide pages that exist today — omit links for states without a live article. */
-function facilityEditorialLinks(
+async function facilityEditorialLinks(
   stateCode: string,
   stateName: string,
-): Array<{ href: string; label: string }> {
+): Promise<Array<{ href: string; label: string }>> {
   const licensingHref: Partial<Record<string, string>> = {
     TX: "/texas/type-a-b-c-licensing",
     OR: "/oregon/memory-care-licensing",
@@ -83,6 +85,14 @@ function facilityEditorialLinks(
   }
 
   links.push({ href: "/methodology", label: "Our inspection scoring methodology →" });
+
+  const howTo = HOW_TO_CHECK[stateCode as keyof typeof HOW_TO_CHECK];
+  if (howTo && (await isArticleApproved(howTo.path))) {
+    links.push({
+      href: howTo.path,
+      label: `How to check a ${stateName} memory care inspection record →`,
+    });
+  }
 
   return links;
 }
@@ -372,7 +382,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
           {/* Editorial resource links */}
           <div className="border-t border-paper-rule pt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6 text-[13.5px]">
-            {facilityEditorialLinks(facility.state_code, state.name).map(({ href, label }) => (
+            {(await facilityEditorialLinks(facility.state_code, state.name)).map(({ href, label }) => (
               <a key={href} href={href} className="text-teal hover:underline underline-offset-4">
                 {label}
               </a>
