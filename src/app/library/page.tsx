@@ -13,6 +13,7 @@ import {
   buildTopicCollectionPage,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
+import { keepApproved, loadApprovedPaths } from "@/lib/content/articleReview";
 import { getArticleThumbnail } from "@/lib/content/articleThumbnails";
 
 const LIBRARY_PATH = "/library";
@@ -152,13 +153,13 @@ function ArticleGrid({ items }: { items: ArticleCard[] }) {
   );
 }
 
-export default function LibraryIndexPage() {
-  const itemListEntries = [
-    ...SECTION_DECISION,
-    ...SECTION_COSTS,
-    ...SECTION_RECORD,
-    ...SECTION_CLINICAL,
-  ].map((a) => ({
+export default async function LibraryIndexPage() {
+  const approved = await loadApprovedPaths();
+  const decision = keepApproved(SECTION_DECISION, (article) => article.href, approved);
+  const costs = keepApproved(SECTION_COSTS, (article) => article.href, approved);
+  const record = keepApproved(SECTION_RECORD, (article) => article.href, approved);
+  const clinical = keepApproved(SECTION_CLINICAL, (article) => article.href, approved);
+  const itemListEntries = [...decision, ...costs, ...record, ...clinical].map((a) => ({
     name: a.title,
     url: canonicalFor(a.href),
   }));
@@ -219,7 +220,7 @@ export default function LibraryIndexPage() {
               label="Decision guides"
               title={<>Choosing care settings <em>without the sales narrative.</em></>}
             />
-            <ArticleGrid items={SECTION_DECISION} />
+            <ArticleGrid items={decision} />
           </section>
 
           <section id="costs-payers">
@@ -227,7 +228,7 @@ export default function LibraryIndexPage() {
               label="Costs & payers"
               title={<>Money, Medi-Cal, and <em>what quotes hide.</em></>}
             />
-            <ArticleGrid items={SECTION_COSTS} />
+            <ArticleGrid items={costs} />
           </section>
 
           <section id="public-record">
@@ -235,7 +236,7 @@ export default function LibraryIndexPage() {
               label="Reading the public record"
               title={<>CDSS inspections, citations, and <em>tours that match reality.</em></>}
             />
-            <ArticleGrid items={SECTION_RECORD} />
+            <ArticleGrid items={record} />
           </section>
 
           <section id="clinical-literacy">
@@ -243,7 +244,7 @@ export default function LibraryIndexPage() {
               label="Clinical literacy"
               title={<>Diagnosis vocabulary <em>for families — not clinicians.</em></>}
             />
-            <ArticleGrid items={SECTION_CLINICAL} />
+            <ArticleGrid items={clinical} />
           </section>
 
           <p className="font-[family-name:var(--font-mono)] text-[12px] text-ink-3 border-t border-paper-rule pt-10">

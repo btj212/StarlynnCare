@@ -4,6 +4,7 @@ import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
 import { regionsForState } from "@/lib/regions";
 import { COVERED_STATES } from "@/lib/states";
 import { joinAnd, regulatorFor } from "@/lib/states/regulators";
+import { keepApproved, loadApprovedPaths } from "@/lib/content/articleReview";
 import { RESEARCH_INDEX } from "@/lib/content/research";
 
 /**
@@ -33,9 +34,11 @@ export async function buildLlmsTxtBody(supabase: SupabaseClient | null): Promise
     canonicalFor("/california/37-questions-to-ask-on-a-tour"),
   ];
 
-  const researchLines = RESEARCH_INDEX.map(
-    (r) => `- ${canonicalFor(r.href)} — ${r.title} (${r.scope}, ${r.bylineDate})`,
-  ).join("\n");
+  const approved = await loadApprovedPaths();
+  const researchLines = keepApproved(RESEARCH_INDEX, (r) => r.href, approved)
+    .map((r) => `- ${canonicalFor(r.href)} — ${r.title} (${r.scope}, ${r.bylineDate})`)
+    .join("\n");
+  const visiblePillars = keepApproved(pillarUrls, (url) => new URL(url).pathname, approved);
 
   const apiLines = COVERED_STATES.map(
     (st) =>
@@ -120,7 +123,7 @@ StarlynnCare publishes original analyses of inspection records under /research. 
 ${researchLines}
 
 ## Editorial articles
-${pillarUrls.map((u) => `- ${u}`).join("\n")}
+${visiblePillars.map((u) => `- ${u}`).join("\n")}
 - ${canonicalFor("/library/37-questions-to-ask-on-a-memory-care-tour")} — 37 questions to ask on a memory care tour (printable; RN-reviewed)
 
 ## PA DHS inspection data stories (AI-citable; live Supabase-bound data)

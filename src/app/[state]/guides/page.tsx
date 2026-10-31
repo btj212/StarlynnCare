@@ -15,6 +15,7 @@ import {
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import { getArticleThumbnail } from "@/lib/content/articleThumbnails";
+import { keepApproved, loadApprovedPaths } from "@/lib/content/articleReview";
 import { getArticlesForState, type RegistryArticle } from "@/lib/content/articleRegistry";
 import { getStateHubConfig } from "@/lib/stateHubConfigs";
 import { stateFromSlug } from "@/lib/states";
@@ -178,7 +179,8 @@ export default async function StateGuidesPage({ params }: PageProps) {
   if (!resolved) notFound();
   const { config } = resolved;
 
-  const articles = getArticlesForState(config.stateCode);
+  const approved = await loadApprovedPaths();
+  const articles = keepApproved(getArticlesForState(config.stateCode), (article) => article.slug, approved);
 
   // Deduplicate by slug (registry articles and stateArticles could overlap)
   const seen = new Set<string>();

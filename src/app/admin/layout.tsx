@@ -33,6 +33,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Hub content
             </Link>
             <Link
+              href="/admin/articles"
+              className="text-sm font-medium text-slate hover:text-ink"
+            >
+              Articles
+            </Link>
+            <Link
               href="/admin/mc-review"
               className="text-sm font-medium text-slate hover:text-ink"
             >
