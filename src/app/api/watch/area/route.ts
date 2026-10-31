@@ -49,6 +49,12 @@ export async function POST(req: NextRequest) {
   if (!state) {
     return NextResponse.json({ error: "Unsupported state" }, { status: 400 });
   }
+  if (state.code === "CO") {
+    return NextResponse.json(
+      { error: "Colorado inspection alerts are not available yet." },
+      { status: 400 },
+    );
+  }
 
   const normalizedEmail = email.trim().toLowerCase();
   const safeSource = source === "state_modal" ? "state_modal" : "city_modal";

@@ -223,7 +223,7 @@ export default async function StateGuidesPage({ params }: PageProps) {
   return (
     <>
       <JsonLd objects={jsonLd} />
-      <GovernanceBar />
+      <GovernanceBar scope={config.stateCode} />
       <SiteNav countStateCode={config.stateCode} badge={config.stateName} ctaHref={`/${stateSlug}/facilities`} ctaLabel={`Browse ${config.stateName} facilities`} stateNavHref={`/${stateSlug}`} />
       <main className="min-h-[50vh]" style={{ background: "var(--color-paper)" }}>
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>

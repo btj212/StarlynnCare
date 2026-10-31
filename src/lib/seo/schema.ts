@@ -33,6 +33,8 @@ export type FacilitySchemaExtras = {
   citationCount?: number;
   /** ISO yyyy-mm-dd of last non-complaint inspection. */
   lastInspectionDate?: string | null;
+  /** Profile regulator. Colorado nursing homes are CMS, not the state CDPHE abbreviation. */
+  regulatorAbbr?: string | null;
 };
 
 export type BreadcrumbItem = { name: string; url: string };
@@ -161,6 +163,7 @@ function facilityDescription(
       citationCount: extras.citationCount ?? 0,
       lastInspectionDate: extras.lastInspectionDate ?? null,
       variant: "prose",
+      regulatorAbbr: extras.regulatorAbbr,
     });
   }
 
@@ -972,9 +975,12 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
   if (input.licenseNumber?.trim()) {
     const license = input.licenseNumber.trim();
     const link = input.licenseUrl ? ` State record: ${input.licenseUrl}` : "";
+    const certifies = /medicare|cms/i.test(input.regulatorName);
     pairs.push({
-      q: `Who licenses ${name}?`,
-      a: `${input.regulatorName} licenses ${name}. The license number is ${license}.${link}`,
+      q: certifies ? `Who certifies ${name}?` : `Who licenses ${name}?`,
+      a: certifies
+        ? `${input.regulatorName} certifies ${name}. The certification number is ${license}.${link}`
+        : `${input.regulatorName} licenses ${name}. The license number is ${license}.${link}`,
     });
   }
 

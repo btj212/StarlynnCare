@@ -301,7 +301,7 @@ def main() -> int:
     parser.add_argument("--apply", action="store_true", help="Write changes to DB (default: dry-run)")
     args = parser.parse_args()
 
-    all_states = ["CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ", "MO"]
+    all_states = ["CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ", "MO", "CO"]
 
     if args.all:
         state_codes = all_states

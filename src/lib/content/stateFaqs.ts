@@ -230,6 +230,30 @@ export const AZ_FAQS: FaqItem[] = [
 /** Same as `CA_FAQS` — kept for `homeFaqs` re-exports and legacy `HOME_FAQS` imports. */
 export const HOME_FAQS = CA_FAQS;
 
+/** Colorado CDPHE assisted living and CMS nursing homes. No invented prices. */
+export const CO_FAQS: FaqItem[] = [
+  {
+    q: "Where does Colorado memory care data come from?",
+    a: "Assisted living residences come from the Colorado Department of Public Health and Environment health-facilities directory. Complaint and citation rows in this first release come from a CDPHE records file dated May 18, 2026. Nursing homes come from CMS Care Compare. The two records are kept separate.",
+  },
+  {
+    q: "Does Colorado have a memory-care license?",
+    a: "No. CDPHE licenses assisted living residences under 6 CCR 1011-1 Chapter 7. A secure environment is optional, and CDPHE does not publish a facility-level list of homes that have one. Dementia training is required for every assisted living residence, so training is not a memory-care designation.",
+  },
+  {
+    q: "Why are some nursing homes not listed?",
+    a: "A nursing home is listed only when a memory-care signal is strong enough to publish: the name, a verified memory-care chain, or two independent directories. A home we are still checking stays off the public list. Uncertain is a review status, not a claim that the home offers memory care.",
+  },
+  {
+    q: "Are Colorado Level A through E the same as CMS letters?",
+    a: "No. Level A through E are CDPHE assisted-living citations. Level E is immediate jeopardy. CMS nursing-home letters A through L are a different scale. A letter E on a nursing home is not a Colorado Level E.",
+  },
+  {
+    q: "Do you accept payments from facilities?",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator.",
+  },
+];
+
 /** Missouri DHSS LTCR framing. */
 export const MO_FAQS: FaqItem[] = [
   {

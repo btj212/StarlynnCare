@@ -9,6 +9,7 @@ const SCOPE_LABELS: Record<string, string> = {
   PA: "EST 2026 IN PA",
   AZ: "EST 2026 IN AZ",
   MO: "EST 2026 IN MO",
+  CO: "EST 2026 IN CO",
   national: "EST 2025 · 10 STATES",
 };
 

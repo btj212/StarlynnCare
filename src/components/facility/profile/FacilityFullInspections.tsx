@@ -97,8 +97,7 @@ function DeficiencyBlock({
             {ruleOnly && (
               <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-ink-3">
                 This is the rule that was cited, not the inspector&rsquo;s specific
-                finding. The detailed Statement of Deficiencies is in the official
-                report below.
+                finding.
               </p>
             )}
           </>

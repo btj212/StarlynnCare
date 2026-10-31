@@ -62,6 +62,7 @@ export const REGULATOR_ABBR: Record<string, string> = {
   PA: "PA DHS",
   AZ: "ADHS",
   MO: "DHSS",
+  CO: "CDPHE",
 };
 
 /**
@@ -90,6 +91,7 @@ const STATE_ABBR: Record<string, string> = {
   Illinois: "IL",
   Arizona: "AZ",
   Missouri: "MO",
+  Colorado: "CO",
 };
 
 const MAX_TITLE = 60;
@@ -120,6 +122,15 @@ function clipTitle(s: string): string {
  *
  * YMYL rule: never invent a percentile rank. Null → no claim.
  */
+/** A rank against fewer than 10 peers is not a public claim. */
+export function reportablePercentile(
+  percentile: number | null | undefined,
+  peerCount: number | null | undefined,
+): number | null {
+  if (percentile == null || (peerCount ?? 0) < 10) return null;
+  return percentile;
+}
+
 export function buildFacilityTitle(input: {
   name: string;
   stateName: string;
@@ -266,6 +277,8 @@ export interface FacilitySnippetArgs {
   /** "meta" emits the "What X's website won't show you:" prefix. "prose" emits a
    *  natural-prose sentence suitable for in-page rendering. Default "meta". */
   variant?: FacilitySnippetVariant;
+  /** Overrides the state-level regulator abbreviation. Colorado nursing homes are CMS, not CDPHE. */
+  regulatorAbbr?: string | null;
 }
 
 /**
@@ -315,9 +328,10 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
     citationCount,
     lastInspectionDate,
     variant = "meta",
+    regulatorAbbr,
   } = args;
 
-  const reg = REGULATOR_ABBR[stateCode] ?? "state";
+  const reg = regulatorAbbr?.trim() || REGULATOR_ABBR[stateCode] || "state";
 
   // Clamp the displayed rank so we never print "top 0%" / "bottom 0%" — at the
   // tails (percentile === 100 or === 0) say "top 1%" / "bottom 1%" instead.
@@ -354,7 +368,8 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   if (variant === "prose") {
     if (rankFrag) {
       const tail = [citeFrag, inspFrag].filter(Boolean).join("; ");
-      return `${facilityName} is ${rankFrag} with ${tail}.`;
+      const ranked = rankFrag.charAt(0).toLowerCase() + rankFrag.slice(1);
+      return `${facilityName} is ${ranked} with ${tail}.`;
     }
     return `${facilityName} has ${citeFrag}${inspFrag ? `; ${inspFrag}` : ""}.`;
   }

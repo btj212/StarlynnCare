@@ -41,6 +41,7 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   AZ: "ADHS BRFL · Directed Care ALH & ALC · AZ Care Check",
   IL: "IDPH · Assisted Living & Shared Housing",
   MO: "DHSS LTCR · ALF** & Alzheimer's SCU Disclosure · 19 CSR 30",
+  CO: "CDPHE assisted living · CMS nursing homes · Chapter 7",
 };
 
 async function getStateCounts(): Promise<Record<string, number>> {

@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from validate._lib import check, get_conn, run_all_checks  # noqa: E402
 
-PUBLISHABLE_STATES = ("CA", "OR", "WA", "MN", "TX", "UT")
+PUBLISHABLE_STATES = ("CA", "OR", "WA", "MN", "TX", "UT", "CO")
 # A state that publishes bed counts can have a few blanks. Illinois publishes none.
 BED_GAP_ALLOWANCE = 5
 # One near-future date is the known Washington source file for Aegis Living Kirkland.
@@ -356,7 +356,7 @@ def _check_coverage_nulls(cur) -> None:
             COUNT(*) AS publishable,
             COUNT(*) FILTER (WHERE beds IS NULL OR beds = 0) AS missing,
             COUNT(*) FILTER (
-                WHERE state_code NOT IN ('CA','OR','WA','MN','TX','UT','AZ','PA','IL','MO')
+                WHERE state_code NOT IN ('CA','OR','WA','MN','TX','UT','AZ','PA','IL','MO','CO')
             ) AS bad_state
         FROM facilities
         WHERE publishable = true
