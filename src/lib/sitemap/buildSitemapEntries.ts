@@ -170,6 +170,10 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/missouri/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/missouri/is-it-licensed-for-memory-care", priority: "0.78", changefreq: "monthly" },
     { path: "/missouri/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
+    { path: "/colorado", priority: "0.88", changefreq: "weekly" },
+    { path: "/colorado/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/colorado/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/colorado/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Pennsylvania hub + guides + articles (live)
     { path: "/pennsylvania", priority: "0.88", changefreq: "weekly" },
     { path: "/pennsylvania/guides", priority: "0.80", changefreq: "monthly" },

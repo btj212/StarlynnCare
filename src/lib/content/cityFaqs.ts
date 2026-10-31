@@ -153,6 +153,23 @@ function getStateStrings(stateCode: string): StateStrings {
     };
   }
 
+  if (code === "CO") {
+    return {
+      costRange: (city, isCounty) =>
+        isCounty
+          ? `CDPHE does not publish monthly rates for assisted living in ${city}. Ask each home for its current price. An assisted living residence and a nursing home are priced under different rules.`
+          : `CDPHE does not publish a monthly rate for assisted living in ${city}. The price you hear on a tour is the home's own quote, not a state figure.`,
+      licenseQ: `What makes a facility "memory care" in Colorado?`,
+      licenseA: `Colorado does not issue a separate memory-care license. Assisted living residences are licensed by CDPHE under 6 CCR 1011-1 Chapter 7. A secure environment is optional, and CDPHE does not publish a list of homes that have one. Dementia training is required for every assisted living residence, so training alone is not a memory-care designation. StarlynnCare lists a home as memory care only when the name, a verified chain, or two independent directories say so. That is not a CDPHE certificate.`,
+      facilityVsNursingQ: `What's the difference between assisted living and a nursing home in Colorado?`,
+      facilityVsNursingA: `An assisted living residence is licensed by CDPHE. Citations use Level A through E, and Level E is immediate jeopardy. A nursing home is certified by CMS. Its citations are F-tags with letters A through L. A letter E on a nursing home is not a Colorado Level E. StarlynnCare does not rank the two against each other.`,
+      deficiencyLabel: "CDPHE Level C, D, or E citation, or a CMS deficiency at severity 3 or higher, depending on the care setting",
+      medicaidQ: (city) => `Does Health First Colorado cover memory care in ${city}?`,
+      medicaidA: (city) =>
+        `Health First Colorado can pay for some services in a certified Alternative Care Facility. It does not automatically pay room and board in every assisted living residence. A nursing home that takes Medicaid is a different benefit. Ask the home which program it accepts in ${city}.`,
+    };
+  }
+
   // California (default)
   const costGuideUrl = canonicalFor("/california/cost-guide");
   const alwUrl = "https://www.dhcs.ca.gov/individuals/Pages/ALW.aspx";
@@ -218,7 +235,10 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
     },
     {
       q: `How does StarlynnCare rank memory care facilities in ${cityName}?`,
-      a: `StarlynnCare does not assign a single letter grade. Instead, each profile shows four independent signals derived from state inspection records: deficiency severity (Type-A vs. Type-B in California, equivalent classes in other states), repeat citation rate, inspection frequency relative to peers, and trajectory over time. Facilities with too few inspections on record show a "limited history" notice rather than a misleading score. All underlying data is sourced from mandatory public records — CDSS for California, HHSC LTCR for Texas, DHS for Oregon, and equivalent agencies for other states. Full methodology is at <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">starlynncare.com/methodology</a>.`,
+      a:
+        stateCode === "CO"
+          ? `Assisted living residences are compared with other Colorado assisted living residences. A nursing home is compared only with other Colorado nursing homes, and only when at least 10 homes share that care setting. Level A–E is the CDPHE scale. CMS letters A–L are the nursing-home scale. A home with too few peers shows its inspection record and no rank. Methodology: <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">starlynncare.com/methodology</a>.`
+          : `StarlynnCare does not assign a single letter grade. Instead, each profile shows four independent signals derived from state inspection records: deficiency severity (Type-A vs. Type-B in California, equivalent classes in other states), repeat citation rate, inspection frequency relative to peers, and trajectory over time. Facilities with too few inspections on record show a "limited history" notice rather than a misleading score. All underlying data is sourced from mandatory public records — CDSS for California, HHSC LTCR for Texas, DHS for Oregon, and equivalent agencies for other states. Full methodology is at <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">starlynncare.com/methodology</a>.`,
     },
     {
       q: `What should I look for on a memory care tour in ${cityName}?`,
@@ -226,13 +246,19 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
     },
     {
       q: `Where can I find inspection reports for memory care facilities in ${cityName}?`,
-      a: `Every facility profile on StarlynnCare links directly to its state inspection records — the same documents regulators use to evaluate compliance. For California facilities, reports come from the CDSS Community Care Licensing portal; for Texas, from HHSC LTCR; for Oregon, DHS Long-Term Care Licensing; for Washington, DSHS. On each facility profile, navigate to the "Inspection record" section to see full verbatim citations with dates and regulatory citations. You can also access the <a href="${canonicalFor("/api/facilities/" + region.state.slug)}" class="text-teal underline underline-offset-4">underlying raw data</a> (open dataset).`,
+      a:
+        stateCode === "CO"
+          ? `Assisted living profiles link to CDPHE Find and Compare Facilities. The citation text in this release comes from a CDPHE records file dated May 18, 2026. Nursing-home profiles link to Medicare Care Compare. Each profile's inspection record names which regulator wrote the finding.`
+          : `Every facility profile on StarlynnCare links directly to its state inspection records — the same documents regulators use to evaluate compliance. For California facilities, reports come from the CDSS Community Care Licensing portal; for Texas, from HHSC LTCR; for Oregon, DHS Long-Term Care Licensing; for Washington, DSHS. On each facility profile, navigate to the "Inspection record" section to see full verbatim citations with dates and regulatory citations. You can also access the <a href="${canonicalFor("/api/facilities/" + region.state.slug)}" class="text-teal underline underline-offset-4">underlying raw data</a> (open dataset).`,
     },
     {
       q: isCounty
         ? `What are the ratings for memory care facilities in ${cityName}?`
         : `How are memory care facilities in ${cityName} rated?`,
-      a: `StarlynnCare uses state inspection data — not self-reported surveys or paid placements — to evaluate facilities. Each profile surfaces four signals: citation severity (e.g. Type-A vs. Type-B in California), citation frequency relative to peers, repeat-finding rate, and inspection recency. Facilities with too few inspections receive a "limited history" label rather than a misleading composite score. You can sort the list of ${cityName} facilities by inspection record using the "By record" sort toggle to see the cleanest inspection histories first. No referral commissions influence how facilities appear.`,
+      a:
+        stateCode === "CO"
+          ? `Profiles use the public inspection record, not a star rating and not a payment from the home. Assisted living severity is CDPHE Level A through E. Nursing-home severity is the CMS letter on the F-tag. You can sort ${cityName} facilities with the "By record" toggle. No referral commission changes the order.`
+          : `StarlynnCare uses state inspection data — not self-reported surveys or paid placements — to evaluate facilities. Each profile surfaces four signals: citation severity (e.g. Type-A vs. Type-B in California), citation frequency relative to peers, repeat-finding rate, and inspection recency. Facilities with too few inspections receive a "limited history" label rather than a misleading composite score. You can sort the list of ${cityName} facilities by inspection record using the "By record" sort toggle to see the cleanest inspection histories first. No referral commissions influence how facilities appear.`,
     },
     {
       q: s.medicaidQ(cityName),

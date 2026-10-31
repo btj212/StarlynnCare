@@ -50,6 +50,7 @@ STATE_SLUGS = {
     "pennsylvania": "PA",
     "arizona": "AZ",
     "missouri": "MO",
+    "colorado": "CO",
 }
 # Two- and three-segment editorial URLs are not city hubs or facility profiles.
 EDITORIAL_SEGMENTS = {

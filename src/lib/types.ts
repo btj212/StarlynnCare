@@ -133,6 +133,8 @@ export interface Facility {
 
   // WA-specific columns — migration 0019_wa_directory_columns.sql + 0029_wa_universe.sql
   wa_facility_type?: string | null;
+  /** Colorado care setting. ALR is CDPHE assisted living. NH is a CMS nursing home. */
+  co_care_setting?: "ALR" | "NH" | null;
   wa_dementia_care_contract?: boolean | null;
   wa_memory_care_certified?: boolean | null;
   wa_earc_sdc_contracted?: boolean | null;

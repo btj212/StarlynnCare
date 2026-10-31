@@ -273,7 +273,7 @@ export default function MethodologyPage() {
           <Section id="coverage-heading" title="Current coverage">
             <p>
               StarlynnCare currently publishes inspection data for{" "}
-              <strong>over 4,100 facilities across 10 states</strong>, with coverage
+              <strong>over 4,100 facilities across 11 states</strong>, with coverage
               expanding as we ingest new state licensing data.
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -287,6 +287,7 @@ export default function MethodologyPage() {
               <li><span className="font-medium text-ink">Illinois</span> — early coverage; 30 facilities published to date.</li>
               <li><span className="font-medium text-ink">Missouri</span> — 267 ALF** and Alzheimer&rsquo;s SCU Disclosure facilities (§198.510 RSMo + ALF** license), obtained via FOIA from DHSS.</li>
               <li><span className="font-medium text-ink">Texas</span> — early coverage expanding; ingest in progress.</li>
+              <li><span className="font-medium text-ink">Colorado</span> — 71 published homes: 70 CDPHE assisted living residences and 1 CMS nursing home. CDPHE does not publish a facility-level memory-care roster.</li>
             </ul>
             <p>
               Only facilities with an active state license and at least one

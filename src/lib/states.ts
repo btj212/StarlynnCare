@@ -27,6 +27,7 @@ export const STATES: ReadonlyArray<StateInfo> = [
   { slug: "pennsylvania", code: "PA", name: "Pennsylvania" },
   { slug: "arizona", code: "AZ", name: "Arizona" },
   { slug: "missouri", code: "MO", name: "Missouri" },
+  { slug: "colorado", code: "CO", name: "Colorado" },
 ];
 
 /** States with at least one publishable facility — used by the home page + sitemap. */
@@ -41,6 +42,7 @@ export const COVERED_STATES: ReadonlyArray<StateInfo> = [
   { slug: "pennsylvania", code: "PA", name: "Pennsylvania" },
   { slug: "arizona", code: "AZ", name: "Arizona" },
   { slug: "missouri", code: "MO", name: "Missouri" },
+  { slug: "colorado", code: "CO", name: "Colorado" },
 ];
 
 export function stateFromSlug(slug: string): StateInfo | null {

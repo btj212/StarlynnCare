@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { regionFromSlug, type Region } from "@/lib/regions";
-import { stateFromSlug, COVERED_STATES } from "@/lib/states";
+import { stateFromSlug } from "@/lib/states";
 
 /**
  * Resolve a listing hub (/[state]/[city]) from static regions first, then from
@@ -10,9 +10,9 @@ import { stateFromSlug, COVERED_STATES } from "@/lib/states";
  * can differ from our curated `regions.ts` city lists. We trust it because:
  *
  *   - we only fall back for slugs that resolve to a *publishable* row, and
- *   - we only fall back inside `COVERED_STATES`,
+ *   - the state slug has to be one we already route (`STATES`).
  *
- * so an uncovered state can never return a region from this path.
+ * Homepage, footer, and the facility sitemap still wait for `COVERED_STATES`.
  */
 export async function resolveListingRegion(
   stateSlug: string,
@@ -24,8 +24,6 @@ export async function resolveListingRegion(
 
   const state = stateFromSlug(stateSlug);
   if (!state || !supabase) return null;
-  const isCovered = COVERED_STATES.some((s) => s.code === state.code);
-  if (!isCovered) return null;
 
   const slug = regionSlug.toLowerCase();
   const { data, error } = await supabase

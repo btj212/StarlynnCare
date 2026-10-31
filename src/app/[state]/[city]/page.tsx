@@ -417,7 +417,9 @@ export default async function RegionPage({ params }: PageProps) {
       ? `${totalCount} Alzheimer-certified assisted living facilities in ${region.name}, ranked by HHSC inspection records — public LTCR data where published.`
       : region.state.code === "AZ"
         ? `${totalCount} licensed memory care facilities in ${region.name}, ranked by ADHS inspection records. AZ Care Check inspection history for every facility.`
-        : `${totalCount} licensed memory care facilities in ${region.name}, ranked by state inspection records. Full CDSS citation history for every facility.`;
+        : region.state.code === "CO"
+          ? `${totalCount} memory care facilities in ${region.name}. Assisted living citations are CDPHE Level A–E. Nursing homes use CMS F-tags. The two are not ranked together.`
+          : `${totalCount} licensed memory care facilities in ${region.name}, ranked by state inspection records. Full CDSS citation history for every facility.`;
 
   // Data source label for stat blocks — state-specific regulator attribution.
   const stateDataSrc =
@@ -429,10 +431,11 @@ export default async function RegionPage({ params }: PageProps) {
     : region.state.code === "IL" ? "IDPH"
     : region.state.code === "PA" ? "PA DHS"
     : region.state.code === "MO" ? "DHSS"
+    : region.state.code === "CO" ? "CDPHE / CMS"
     : "CDSS";
 
   // States where we have row-level deficiency data (deficiencies table populated).
-  const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA", "AZ", "MO"]);
+  const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA", "AZ", "MO", "CO"]);
   // For PA county pages, sort the ItemList JSON-LD by record rank (most severe first)
   // so ItemList positions reflect the displayed "By record" ordering.
   const sortedFacilitiesForItemList =
@@ -592,7 +595,9 @@ export default async function RegionPage({ params }: PageProps) {
                       ? "Facilities with at least one A.A.C. R9-10 deficiency finding in the indexed inspection record (24 months where dated)"
                       : region.state.code === "MO"
                         ? "Facilities with at least one DHSS deficiency finding in the indexed inspection record (24 months where dated)"
-                        : "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
+                        : region.state.code === "CO"
+                          ? "Facilities with at least one CDPHE Level C–E citation or CMS severity 3–4 deficiency in the indexed record"
+                          : "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
                   src: stateDataSrc,
                   delta: totalCount > 0 ? `${severePct}% of indexed facilities` : undefined,
                 },
@@ -728,6 +733,16 @@ export default async function RegionPage({ params }: PageProps) {
                           ({severePct}%) have at least one A.A.C. R9-10 deficiency cited in their
                           ADHS inspection record from the past 24 months.
                         </>
+                      ) : region.state.code === "CO" ? (
+                        <>
+                          Of the{" "}
+                          <strong className="font-normal text-rust">{totalCount}</strong>{" "}
+                          memory care facilities indexed in {region.name},{" "}
+                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
+                          ({severePct}%) have at least one higher-severity finding on file.
+                          Assisted living findings use CDPHE Levels A–E. Nursing-home findings use CMS letters.
+                          Those scales are not combined into one rank.
+                        </>
                       ) : region.state.code === "MO" ? (
                         <>
                           Of the{" "}
@@ -757,7 +772,9 @@ export default async function RegionPage({ params }: PageProps) {
                               ? "ADHS BRFL / AZ Care Check"
                               : region.state.code === "MO"
                                 ? "Missouri DHSS Section for Long-Term Care Regulation"
-                                : "CA CDSS Community Care Licensing"
+                                : region.state.code === "CO"
+                                  ? "CDPHE assisted living records and CMS nursing-home surveys"
+                                  : "CA CDSS Community Care Licensing"
                         }
                         refreshed={findingsDate}
                         note={
@@ -767,7 +784,9 @@ export default async function RegionPage({ params }: PageProps) {
                               ? "Deficiencies cited under A.A.C. Title 9, Chapter 10 (Health Care Institutions)"
                               : region.state.code === "MO"
                                 ? "Deficiency tags cited under 19 CSR 30 (ALF/RCF); complaint investigations shown separately"
-                                : "Type-A = immediate health/safety risk; Type-B = lesser violation"
+                                : region.state.code === "CO"
+                                  ? "Level E is immediate jeopardy for assisted living. CMS J, K, and L are immediate jeopardy for nursing homes."
+                                  : "Type-A = immediate health/safety risk; Type-B = lesser violation"
                         }
                       />
                     )}
@@ -916,27 +935,40 @@ export default async function RegionPage({ params }: PageProps) {
                 title={<>What memory care costs <em>in this city.</em></>}
               />
               <p className="text-[16px] leading-[1.7] text-ink-2 max-w-[60ch]">
-                Median monthly cost in {region.name} ranges from approximately{" "}
-                <strong className="font-semibold">{formatCostRange(region.state.code, "city")}</strong>{" "}
-                based on regional benchmarks.{" "}
-                {region.state.code === "CA" ? (
+                {region.state.code === "CO" ? (
                   <>
-                    For statewide ranges, financing options, and hidden fees, read{" "}
-                    <Link href="/california/cost-guide" className="text-teal underline underline-offset-4">
-                      What memory care costs in California
-                    </Link>
-                    . Methodology for future verified city medians:{" "}
+                    CDPHE does not publish a monthly rate for assisted living in {region.name}.
+                    The price on a tour is the home&apos;s quote. A nursing home is priced under a different program.
                   </>
                 ) : (
-                  <>For how we separate pricing estimates from inspection-derived facts, see </>
+                  <>
+                    Median monthly cost in {region.name} ranges from approximately{" "}
+                    <strong className="font-semibold">{formatCostRange(region.state.code, "city")}</strong>{" "}
+                    based on regional benchmarks.{" "}
+                    {region.state.code === "CA" ? (
+                      <>
+                        For statewide ranges, financing options, and hidden fees, read{" "}
+                        <Link href="/california/cost-guide" className="text-teal underline underline-offset-4">
+                          What memory care costs in California
+                        </Link>
+                        . Methodology for future verified city medians:{" "}
+                      </>
+                    ) : (
+                      <>For how we separate pricing estimates from inspection-derived facts, see </>
+                    )}
+                    <Link href="/methodology" className="text-teal underline underline-offset-4">
+                      how we source data
+                    </Link>
+                    .
+                  </>
                 )}
-                <Link href="/methodology" className="text-teal underline underline-offset-4">
-                  how we source data
-                </Link>
-                .
               </p>
               <DataFootnote
-                source={`Regional estimate · ${getStateCostBand(region.state.code).source}`}
+                source={
+                  region.state.code === "CO"
+                    ? "CDPHE does not publish assisted-living rates"
+                    : `Regional estimate · ${getStateCostBand(region.state.code).source}`
+                }
                 note="Facility-specific quotes required before signing"
               />
             </div>
@@ -1035,9 +1067,11 @@ export default async function RegionPage({ params }: PageProps) {
 
         </main>
         <div className="-order-1">
-          <GovernanceBar />
+          <GovernanceBar scope={region.state.code} />
           <SiteNav countStateCode={region.state.code} badge={region.state.name} ctaHref={`/${region.state.slug}/facilities`} ctaLabel={`Browse ${region.state.name} facilities`} stateNavHref={`/${region.state.slug}`} />
-          <AreaWatchModal areaName={region.name} areaSlug={region.slug} stateCode={region.state.code} source="city_modal" />
+          {region.state.code !== "CO" && (
+            <AreaWatchModal areaName={region.name} areaSlug={region.slug} stateCode={region.state.code} source="city_modal" />
+          )}
         </div>
       </div>
       <SiteFooter />

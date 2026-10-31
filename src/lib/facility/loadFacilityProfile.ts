@@ -667,7 +667,10 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
       ?.inspection_date ?? null;
 
   // Per-state config — WA nursing homes get CMS/F-tag config
-  const cfg = getStateProfileConfig(state.code, facility.wa_facility_type);
+  const cfg = getStateProfileConfig(
+    state.code,
+    facility.co_care_setting === "NH" ? "NH" : facility.wa_facility_type,
+  );
 
   // ── Narrative validity gate ───────────────────────────────────────────────
   // True when at least one visible inspection has real parsed narrative text.
@@ -775,7 +778,10 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     lastInspectionType: latestVisit?.type ?? null,
     lastInspectionIsComplaint: latestVisit?.isComplaint ?? false,
     seriousFindings: seriousFindingCounts(deficiencies, cfg.formatSeverityTag),
-    percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
+    percentile:
+      (degradedSnapshot?.peer_set.n ?? 0) >= 10
+        ? degradedSnapshot?.grade?.composite_percentile ?? null
+        : null,
     memoryCareLabel: careBasis.label,
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
@@ -787,9 +793,13 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
       canonicalUrl,
       reviews: reviews.length ? reviews : undefined,
       extras: {
-        percentile: degradedSnapshot?.grade?.composite_percentile ?? null,
+        percentile:
+          (degradedSnapshot?.peer_set.n ?? 0) >= 10
+            ? degradedSnapshot?.grade?.composite_percentile ?? null
+            : null,
         citationCount: totalDeficiencies,
         lastInspectionDate: lastNonComplaintInspection,
+        regulatorAbbr: cfg.agencyShort,
       },
       memoryCare: careBasis,
     }),

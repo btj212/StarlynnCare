@@ -5,7 +5,7 @@ import {
   regulatorLicensePageFor,
   regulatorLicensePageLabel,
 } from "@/lib/seo/schema";
-import { buildFacilitySnippet } from "@/lib/seo/meta";
+import { buildFacilitySnippet, reportablePercentile } from "@/lib/seo/meta";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
@@ -76,7 +76,8 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   // match the peer-rank bar (higher percentile = fewer weighted citations/bed).
   const sevTier: "good" | "mid" | "bad" | null =
     sevPct === null ? null : sevPct >= 67 ? "good" : sevPct <= 33 ? "bad" : "mid";
-  const showSeverityCallout = !!snapshot?.has_inspections && sevTier !== null;
+  const showSeverityCallout =
+    (snapshot?.peer_set.n ?? 0) >= 10 && !!snapshot?.has_inspections && sevTier !== null;
   const sevTierColor =
     sevTier === "good"
       ? "var(--color-grade-b)"
@@ -124,7 +125,12 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
 
   const copy: string = (() => {
     const beds = facility.beds ? `A ${facility.beds}-bed` : "A";
-    const licType = SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility";
+    const licType =
+      facility.state_code === "CO"
+        ? facility.co_care_setting === "NH"
+          ? "CMS nursing home"
+          : "CDPHE assisted living residence"
+        : (SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility");
     const citLabel =
       totals.deficiencies === 0
         ? "no citations on file"
@@ -264,20 +270,25 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   const formsUrl = noReportsPosted
     ? dshsFormsUrl(facility.license_number, facility.wa_facility_type)
     : null;
+  const reportableRank = reportablePercentile(
+    profile.snapshot?.grade?.composite_percentile,
+    profile.snapshot?.peer_set.n,
+  );
   const snippet = noReportsPosted
     ? `${facility.name} has no DSHS reports posted as of ${checkedOn}.`
     : buildFacilitySnippet({
         facilityName: facility.name,
         stateName: state.name,
         stateCode: state.code,
-        grade: profile.snapshot?.grade?.letter ?? null,
-        percentile: profile.snapshot?.grade?.composite_percentile ?? null,
-        severityPercentile: profile.snapshot?.metrics.severity.percentile ?? null,
-        frequencyPercentile: profile.snapshot?.metrics.frequency.percentile ?? null,
-        repeatsPercentile: profile.snapshot?.metrics.repeats.percentile ?? null,
+        grade: reportableRank == null ? null : profile.snapshot?.grade?.letter ?? null,
+        percentile: reportableRank,
+        severityPercentile: reportableRank == null ? null : profile.snapshot?.metrics.severity.percentile ?? null,
+        frequencyPercentile: reportableRank == null ? null : profile.snapshot?.metrics.frequency.percentile ?? null,
+        repeatsPercentile: reportableRank == null ? null : profile.snapshot?.metrics.repeats.percentile ?? null,
         citationCount: profile.totals.deficiencies,
         lastInspectionDate,
         variant: "prose",
+        regulatorAbbr: profile.cfg.agencyShort,
       });
 
   return (
@@ -320,14 +331,23 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {/* Tags */}
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="fp-tag rounded-full bg-clearing-chip px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
-                {SHORT_CATEGORY_LABEL[facility.care_category]}
+                {facility.state_code === "CO"
+                  ? facility.co_care_setting === "NH"
+                    ? "Nursing home"
+                    : "Assisted living"
+                  : SHORT_CATEGORY_LABEL[facility.care_category]}
               </span>
+              {facility.state_code === "CO" && (
+                <span className="fp-tag rounded-full bg-clearing-chip px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
+                  {facility.co_care_setting === "NH" ? "CMS" : "CDPHE"}
+                </span>
+              )}
               {facility.beds && (
                 <span className="fp-tag rounded-full bg-ink px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-gold-soft">
                   {facility.beds} beds
                 </span>
               )}
-              {isMc && (
+              {isMc && facility.state_code !== "CO" && (
                 <span className="fp-tag rounded-full bg-clearing-chip px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
                   Dementia-trained staff
                 </span>
@@ -416,7 +436,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             ) : null}
 
             {/* Mobile-only percentile badge — rank summary visible without scrolling */}
-            {profile.snapshot?.grade && (
+            {reportableRank != null && profile.snapshot?.grade && (
               <div className="mt-4 flex items-center gap-4 border-t border-clearing-rule pt-4 md:hidden">
                 <div>
                   <div className="mb-0.5 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-4">

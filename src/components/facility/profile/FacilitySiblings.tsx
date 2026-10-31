@@ -148,7 +148,7 @@ export async function FacilitySiblings({ profile }: { profile: FacilityProfile }
                     {formatFacilityName(s.name)}
                   </div>
                   <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-ink-3">
-                    {s.city ?? ""}{s.beds ? ` · ${s.beds} beds · RCFE` : ""}
+                    {s.city ?? ""}{s.beds ? ` · ${s.beds} beds · ${state.code === "CO" ? "Assisted living" : "RCFE"}` : ""}
                   </div>
                   {inspLabel && (
                     <div className="mt-2 flex items-center justify-between border-t border-paper-rule pt-2.5 font-[family-name:var(--font-mono)] text-[10.5px] text-ink-2">

@@ -19,6 +19,7 @@ const STATE_REGULATORS: Record<string, string> = {
   UT: "DLBC",
   IL: "IDPH",
   MO: "DHSS",
+  CO: "CDPHE",
 };
 
 const STATE_DESCRIPTIONS: Record<string, string> = {
@@ -32,6 +33,7 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   UT: "Type I & II Assisted Living · DLBC · R432-270",
   IL: "Public regulator data · IDPH",
   MO: "ALF** & Alzheimer's SCU Disclosure · DHSS LTCR · 19 CSR 30",
+  CO: "CDPHE assisted living · CMS nursing homes · no state memory-care roster",
 };
 
 // TX is temporarily hidden from the grid — only 1 facility live (pilot).

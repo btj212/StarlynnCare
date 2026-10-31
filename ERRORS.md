@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — Street View uploads returned HTTP 400 with the new Supabase key
+
+**What went wrong:** `scrapers/fetch_streetview.py` uploaded JPEGs to the `facility-photos` bucket with only `Authorization: Bearer`. The service key is the newer `sb_` key, not a JWT. Storage rejected every file with HTTP 400. The image itself was a valid JPEG.
+
+**What worked instead:** Send the same key again as the `apikey` header, next to the bearer token. A rerun is safe: a failed upload never writes `photo_url`, and a later upload uses `x-upsert`.
+
+**Source:** Colorado Street View pass on 2026-10-31. One manual upload of the same bytes succeeded after the header was added.
+
 ## 2026-10 — Turbopack dev will not start in a worktree with a linked node_modules
 
 **What went wrong:** A git worktree that symlinks `node_modules` from the main checkout failed `next dev` with a Turbopack panic: "Symlink [project]/node_modules is invalid, it points out of the filesystem root." Every page returned an empty body.

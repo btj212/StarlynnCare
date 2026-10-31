@@ -12,7 +12,7 @@
  * (RCFE, CDSS, Medi-Cal, CCL, HHSC, etc.) — see docs/NEW_STATE_PLAYBOOK.md.
  */
 
-export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "IL" | "UT" | "PA" | "AZ" | "MO" | "all";
+export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "IL" | "UT" | "PA" | "AZ" | "MO" | "CO" | "all";
 
 export type ArticleTag =
   | "licensing"
@@ -334,6 +334,23 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     tags: ["decision", "licensing"],
     live: true,
   },
+
+  {
+    slug: "/colorado/memory-care-licensing",
+    title: "How Colorado licenses assisted living",
+    desc: "CDPHE licenses assisted living under Chapter 7. There is no separate memory-care license and no public secure-environment roster.",
+    states: ["CO"],
+    tags: ["licensing", "inspection"],
+    live: true,
+  },
+  {
+    slug: "/colorado/memory-care-vs-nursing-home",
+    title: "Assisted living and nursing homes in Colorado",
+    desc: "CDPHE Level A–E citations and CMS F-tags are different records. StarlynnCare does not rank them on one scale.",
+    states: ["CO"],
+    tags: ["decision", "licensing"],
+    live: true,
+  },
   {
     slug: "/oregon/is-it-licensed-for-memory-care",
     title: "Is this Oregon home endorsed for memory care?",
@@ -402,7 +419,7 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     slug: "/library/what-a-serious-citation-means",
     title: "What a serious citation means in each state",
     desc: "Serious is not one legal term. What each state's profile calls its red tag, and how the count on /data is wider than some of those tags.",
-    states: ["CA", "TX", "OR", "WA", "MN", "IL", "UT", "PA", "AZ", "MO"],
+    states: ["CA", "TX", "OR", "WA", "MN", "IL", "UT", "PA", "AZ", "MO", "CO"],
     tags: ["inspection"],
     live: true,
   },
