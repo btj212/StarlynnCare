@@ -22,6 +22,15 @@ export type ResearchEntry = {
 
 export const RESEARCH_INDEX: ResearchEntry[] = [
   {
+    href: "/research/memory-care-serious-citations-by-state",
+    kind: "analysis",
+    title: "Serious citations at memory care homes, by state",
+    dek: "Published homes, homes with an inspection on file, and homes with a serious citation in the last 24 months. The count matches /data. The note under each state says what that profile calls its top tag.",
+    scope: "All covered states",
+    bylineDate: "October 2026",
+    headlineFinding: "Serious-citation homes, counted by state",
+  },
+  {
     href: "/reports/california-rcfe-repeat-citations-2026",
     kind: "flagship-report",
     title:
