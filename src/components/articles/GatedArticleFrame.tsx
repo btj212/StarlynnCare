@@ -21,7 +21,7 @@ type Props = {
   heading: ReactNode;
   image: { src: string; alt: string };
   crumbs: Crumb[];
-  nav: {
+  nav?: {
     badge: string;
     countStateCode: string;
     ctaHref: string;
@@ -60,13 +60,17 @@ export async function GatedArticleFrame({
     <>
       <JsonLd objects={jsonLd} />
       <GovernanceBar />
-      <SiteNav
-        badge={nav.badge}
-        countStateCode={nav.countStateCode}
-        ctaHref={nav.ctaHref}
-        ctaLabel={nav.ctaLabel}
-        stateNavHref={nav.stateNavHref}
-      />
+      {nav ? (
+        <SiteNav
+          badge={nav.badge}
+          countStateCode={nav.countStateCode}
+          ctaHref={nav.ctaHref}
+          ctaLabel={nav.ctaLabel}
+          stateNavHref={nav.stateNavHref}
+        />
+      ) : (
+        <SiteNav />
+      )}
       <main className="mx-auto max-w-[760px] px-6 py-12 md:py-16">
         <article>
           <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-ink-4">
