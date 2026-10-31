@@ -114,6 +114,8 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/library", priority: "0.83", changefreq: "weekly" },
     { path: "/library/choosing-memory-care", priority: "0.84", changefreq: "monthly" },
     { path: "/library/type-a-vs-type-b-deficiencies-explained", priority: "0.78", changefreq: "monthly" },
+    { path: "/library/what-a-serious-citation-means", priority: "0.78", changefreq: "monthly" },
+    { path: "/library/the-first-72-hours", priority: "0.78", changefreq: "monthly" },
     { path: "/library/memory-care-vs-nursing-home", priority: "0.82", changefreq: "monthly" },
     { path: "/library/medi-cal-and-memory-care", priority: "0.82", changefreq: "monthly" },
     { path: "/library/dementia-vs-alzheimers-vs-lewy-body", priority: "0.78", changefreq: "monthly" },
@@ -125,13 +127,16 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/california/glossary", priority: "0.78", changefreq: "monthly" },
     { path: "/california/37-questions-to-ask-on-a-tour", priority: "0.78", changefreq: "monthly" },
     { path: "/california/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
+    { path: "/california/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     // State-specific guides indexes
     { path: "/texas/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/oregon/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/washington/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/minnesota/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/illinois/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/illinois/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     { path: "/utah/guides", priority: "0.80", changefreq: "monthly" },
+    { path: "/utah/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     // State facilities browse pages
     ...COVERED_STATES.map((s) => ({
       path: `/${s.slug}/facilities`,

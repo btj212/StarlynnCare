@@ -95,6 +95,11 @@ const SECTION_RECORD: ArticleCard[] = [
     href: "/library/type-a-vs-type-b-deficiencies-explained",
   },
   {
+    title: "What a serious citation means in each state",
+    desc: "Serious is not one legal term. What each state's profile calls its red tag, and how the count on /data is wider.",
+    href: "/library/what-a-serious-citation-means",
+  },
+  {
     title: "California memory care glossary",
     desc: "RCFE, ALW, and licensing terms you will see on profiles and CDSS exports.",
     href: "/california/glossary",

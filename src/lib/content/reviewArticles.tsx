@@ -11,6 +11,7 @@ import {
   PennsylvaniaHowToCheckBody,
   WashingtonHowToCheckBody,
 } from "@/components/articles/HowToCheckBodies";
+import { SeriousCitationExplainer } from "@/components/articles/SeriousCitationExplainer";
 import { SeriousCitationsByState } from "@/components/articles/SeriousCitationsByState";
 import {
   MISSOURI_DESIGNATION,
@@ -25,6 +26,8 @@ import {
   TEXAS_DESIGNATION_DESLOP,
 } from "@/lib/content/designationDeslop";
 import { HOW_TO_CHECK } from "@/lib/content/howToCheckArticles";
+import { SERIOUS_EXPLAINER } from "@/lib/content/seriousExplainer";
+import { SERIOUS_EXPLAINER_DESLOP } from "@/lib/content/seriousExplainerDeslop";
 import {
   ARIZONA_HOW_TO_DESLOP,
   CALIFORNIA_HOW_TO_DESLOP,
@@ -199,6 +202,13 @@ export const REVIEW_ARTICLES: ReviewArticle[] = [
     illustration: HOW_TO_CHECK.WA.image,
     Body: WashingtonHowToCheckBody,
     deslop: WASHINGTON_HOW_TO_DESLOP,
+  },
+  {
+    path: SERIOUS_EXPLAINER.path,
+    title: SERIOUS_EXPLAINER.title,
+    illustration: SERIOUS_EXPLAINER.image,
+    Body: SeriousCitationExplainer,
+    deslop: SERIOUS_EXPLAINER_DESLOP,
   },
 ];
 

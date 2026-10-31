@@ -6,6 +6,10 @@
 export type ArticleThumbnail = { src: string; alt: string };
 
 const THUMBNAILS: Record<string, ArticleThumbnail> = {
+  "/library/what-a-serious-citation-means": {
+    src: "/illustrations/what-a-serious-citation-means.png",
+    alt: "Illustrated table with four plain closed envelopes, a pencil, and a sprig of greenery — standing in for the different words states use for a serious citation",
+  },
   "/arizona/how-to-check-a-memory-care-record": {
     src: "/illustrations/arizona-how-to-check.png",
     alt: "Illustrated windowsill with a clay bowl, a closed notebook, and a sprig of sage — standing in for looking up an Arizona inspection record",

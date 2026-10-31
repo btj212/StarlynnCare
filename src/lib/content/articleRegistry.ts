@@ -12,7 +12,7 @@
  * (RCFE, CDSS, Medi-Cal, CCL, HHSC, etc.) — see docs/NEW_STATE_PLAYBOOK.md.
  */
 
-export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "PA" | "AZ" | "MO" | "all";
+export type ArticleState = "CA" | "TX" | "OR" | "WA" | "MN" | "IL" | "UT" | "PA" | "AZ" | "MO" | "all";
 
 export type ArticleTag =
   | "licensing"
@@ -395,6 +395,46 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     title: "Is this Texas home certified for Alzheimer's care?",
     desc: "A home that advertises specialized Alzheimer's care needs an HHSC certification. What the rule requires, and how many published homes the state file lists.",
     states: ["TX"],
+    tags: ["licensing"],
+    live: true,
+  },
+  {
+    slug: "/library/what-a-serious-citation-means",
+    title: "What a serious citation means in each state",
+    desc: "Serious is not one legal term. What each state's profile calls its red tag, and how the count on /data is wider than some of those tags.",
+    states: ["CA", "TX", "OR", "WA", "MN", "IL", "UT", "PA", "AZ", "MO"],
+    tags: ["inspection"],
+    live: true,
+  },
+  {
+    slug: "/library/the-first-72-hours",
+    title: "The first 72 hours: a family crisis playbook",
+    desc: "Discharge rights, the five questions before signing anything, ombudsman contacts, and a conflict-free shortlist.",
+    states: ["all"],
+    tags: ["decision"],
+    live: true,
+  },
+  {
+    slug: "/california/memory-care-licensing",
+    title: "California memory care licensing: RCFEs, CDSS, and Type A/B deficiencies",
+    desc: "California licenses memory care homes as RCFEs under CDSS. What the Alzheimer's special care disclosure means, and how to read a profile.",
+    states: ["CA"],
+    tags: ["licensing"],
+    live: true,
+  },
+  {
+    slug: "/illinois/memory-care-licensing",
+    title: "Illinois memory care licensing: ALEs, SHEs, and IDPH",
+    desc: "Illinois licenses residential memory care as Assisted Living Establishments or Shared Housing Establishments under IDPH and 77 Ill. Adm. Code Part 295.",
+    states: ["IL"],
+    tags: ["licensing"],
+    live: true,
+  },
+  {
+    slug: "/utah/memory-care-licensing",
+    title: "Utah memory care licensing: assisted living and DLBC",
+    desc: "Utah licenses assisted living through the Division of Licensing and Background Checks. How inspections are labeled on a profile.",
+    states: ["UT"],
     tags: ["licensing"],
     live: true,
   },
