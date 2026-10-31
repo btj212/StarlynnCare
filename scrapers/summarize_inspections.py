@@ -210,6 +210,28 @@ Rules:
 9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
 
 # Map state code to system prompt — explicit branching keeps prompt selection auditable.
+SYSTEM_PROMPT_CO = f"""You summarize Colorado CDPHE assisted-living inspection and complaint
+findings for families researching memory care. Today is {TODAY}.
+
+These homes are assisted living residences under 6 CCR 1011-1 Chapter 7. Findings use
+Colorado Level A through E. Level E is immediate jeopardy. Do not call these California
+Type A or Type B citations, and do not call them CMS F-tags.
+
+The text is the inspector's citation or survey comment. A short outcome such as
+"Unsubstantiated" means no violation was confirmed. Do not invent a finding from a tag
+number alone.
+
+Rules:
+1. Write exactly 2-3 sentences. No bullet points. No headers. No markdown.
+2. State what kind of visit it was when the inspection type makes that clear.
+3. State what was found, or say no violation was confirmed when the outcome is unsubstantiated.
+4. If a death, injury, or harm is described, state what happened factually.
+5. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
+6. Do NOT invent facts not in the source text.
+7. Do NOT name specific residents, staff, or inspectors.
+8. Do NOT use "the report states" or "according to the document".
+9. Dates in 2025 or 2026 are real. Do not call them future events."""
+
 SYSTEM_PROMPTS_BY_STATE = {
     "CA": SYSTEM_PROMPT,
     "TX": SYSTEM_PROMPT_TX,
@@ -218,6 +240,7 @@ SYSTEM_PROMPTS_BY_STATE = {
     "MN": SYSTEM_PROMPT_MN,
     "UT": SYSTEM_PROMPT_UT,
     "IL": SYSTEM_PROMPT_IL,
+    "CO": SYSTEM_PROMPT_CO,
 }
 
 USER_TEMPLATE = """Inspection type: {inspection_type}
@@ -293,33 +316,82 @@ def main() -> None:
 
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
-            where_parts = [
-                "raw_data->>'narrative' IS NOT NULL",
-                "raw_data->>'narrative' != ''",
-            ]
             params: list = []
-
-            if not args.refetch:
-                where_parts.append("narrative_summary IS NULL")
-            if args.facility_id:
-                where_parts.append("facility_id = %s")
-                params.append(args.facility_id)
-            where_parts.append("f.state_code = %s")
-            params.append(args.state.upper())
-
-            where_clause = " AND ".join(where_parts)
-            cur.execute(
-                f"""
-                SELECT i.id, i.inspection_type, i.is_complaint,
-                       i.raw_data->>'outcome', i.raw_data->>'narrative',
-                       f.name, f.state_code
-                FROM inspections i
-                JOIN facilities f ON f.id = i.facility_id
-                WHERE {where_clause}
-                ORDER BY f.name, i.inspection_date DESC
-                """,
-                params,
-            )
+            if args.state.upper() == "CO":
+                # Colorado stores the inspector's words on the citation, not in
+                # raw_data.narrative. CMS tag statements are the rule text, so
+                # they are left out of this summary.
+                where_parts = [
+                    "i.source_agency = 'CO-CDPHE'",
+                    """(
+                        EXISTS (
+                            SELECT 1 FROM deficiencies d
+                            WHERE d.inspection_id = i.id
+                              AND length(btrim(coalesce(d.inspector_narrative, ''))) >= 80
+                        )
+                        OR (
+                            length(btrim(coalesce(i.raw_data->>'inspection_comments', ''))) >= 120
+                            AND i.raw_data->>'inspection_comments' NOT LIKE 'Citation coded%%'
+                        )
+                    )""",
+                ]
+                if not args.refetch:
+                    where_parts.append("i.narrative_summary IS NULL")
+                if args.facility_id:
+                    where_parts.append("i.facility_id = %s")
+                    params.append(args.facility_id)
+                where_parts.append("f.state_code = %s")
+                params.append("CO")
+                cur.execute(
+                    f"""
+                    SELECT i.id, i.inspection_type, i.is_complaint,
+                           i.raw_data->>'complaint_findings',
+                           concat_ws(
+                             E'\\n\\n',
+                             CASE
+                               WHEN length(btrim(coalesce(i.raw_data->>'inspection_comments', ''))) >= 120
+                                AND i.raw_data->>'inspection_comments' NOT LIKE 'Citation coded%%'
+                               THEN i.raw_data->>'inspection_comments'
+                             END,
+                             (
+                               SELECT string_agg(d.inspector_narrative, E'\\n\\n' ORDER BY d.code)
+                               FROM deficiencies d
+                               WHERE d.inspection_id = i.id
+                                 AND length(btrim(coalesce(d.inspector_narrative, ''))) >= 80
+                             )
+                           ),
+                           f.name, f.state_code
+                    FROM inspections i
+                    JOIN facilities f ON f.id = i.facility_id
+                    WHERE {" AND ".join(where_parts)}
+                    ORDER BY f.name, i.inspection_date DESC
+                    """,
+                    params,
+                )
+            else:
+                where_parts = [
+                    "raw_data->>'narrative' IS NOT NULL",
+                    "raw_data->>'narrative' != ''",
+                ]
+                if not args.refetch:
+                    where_parts.append("narrative_summary IS NULL")
+                if args.facility_id:
+                    where_parts.append("facility_id = %s")
+                    params.append(args.facility_id)
+                where_parts.append("f.state_code = %s")
+                params.append(args.state.upper())
+                cur.execute(
+                    f"""
+                    SELECT i.id, i.inspection_type, i.is_complaint,
+                           i.raw_data->>'outcome', i.raw_data->>'narrative',
+                           f.name, f.state_code
+                    FROM inspections i
+                    JOIN facilities f ON f.id = i.facility_id
+                    WHERE {" AND ".join(where_parts)}
+                    ORDER BY f.name, i.inspection_date DESC
+                    """,
+                    params,
+                )
             rows = cur.fetchall()
 
     print(f"Records to summarize: {len(rows)}")

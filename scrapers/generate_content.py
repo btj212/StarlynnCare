@@ -86,8 +86,16 @@ def load_facilities(
     name_filter: str | None = None,
     slugs: list[str] | None = None,
     city_slugs: list[str] | None = None,
+    include_unpublished: bool = False,
 ) -> list[dict[str, Any]]:
-    query = """
+    if include_unpublished and state_code.upper() != "CO":
+        raise SystemExit("--include-unpublished is only for Colorado.")
+    visibility = (
+        "(f.publishable = true OR f.mc_review_status = 'needs_review')"
+        if include_unpublished
+        else "f.publishable = true"
+    )
+    query = f"""
         SELECT
             f.id::text,
             f.state_code,
@@ -126,13 +134,14 @@ def load_facilities(
                 AS dementia_citation_count,
             (SELECT MAX(i.inspection_date)::text
              FROM inspections i
-             WHERE i.facility_id = f.id AND NOT i.is_complaint)
+             WHERE i.facility_id = f.id
+               AND (NOT i.is_complaint OR %(state_code)s = 'CO'))
                 AS last_inspection_date,
             (SELECT COUNT(*)::int
              FROM inspections i WHERE i.facility_id = f.id AND i.is_complaint)
                 AS complaint_count
         FROM facilities f
-        WHERE f.publishable = true AND f.state_code = %(state_code)s
+        WHERE {visibility} AND f.state_code = %(state_code)s
     """
     params: dict[str, Any] = {"state_code": state_code.upper()}
     if slugs:
@@ -465,12 +474,52 @@ NONCA_STATE_META: dict[str, dict[str, str]] = {
         "deficiency_terminology": "correction order",
         "complaint_terminology": "complaint findings",
     },
+    "CO": {
+        "state_full": "Colorado",
+        "regulator_short": "CDPHE",
+        "regulator_full": "Colorado Department of Public Health and Environment",
+        "mc_designation_label": (
+            "no facility-level Secure Environment roster. Do not say CDPHE verified memory care"
+        ),
+        "license_law": "6 CCR 1011-1 Chapter 7 for assisted living; CMS certification for nursing homes",
+        "facility_type": (
+            "the care setting on this row. Assisted living uses CDPHE Level A-E. "
+            "A nursing home uses CMS F-tag letters. Do not mix those scales"
+        ),
+        "deficiency_terminology": "citation",
+        "complaint_terminology": "complaint investigation",
+    },
 }
 
 
-def generation_system_for_state(state_code: str) -> str:
-    """Return the GENERATION_SYSTEM prompt for OR/WA/MN — parameterized by state meta."""
+def meta_for_facility(state_code: str, fac: dict[str, Any]) -> dict[str, str]:
+    """State copy, with Colorado nursing homes kept on the CMS scale."""
     meta = NONCA_STATE_META[state_code.upper()]
+    if state_code.upper() == "CO" and str(fac.get("care_category") or "").startswith("snf"):
+        return {
+            **meta,
+            "regulator_short": "CMS",
+            "regulator_full": "Centers for Medicare & Medicaid Services",
+            "mc_designation_label": (
+                "no CMS memory-care license. Do not say Medicare certification means memory care"
+            ),
+            "license_law": (
+                "federal nursing-home certification. Citations are CMS F-tags, not CDPHE Level A-E"
+            ),
+            "facility_type": (
+                "a nursing home. Use CMS F-tag scope and severity. "
+                "Do not describe these findings as CDPHE Level A-E citations"
+            ),
+        }
+    return meta
+
+
+def generation_system_for_state(
+    state_code: str,
+    meta: dict[str, str] | None = None,
+) -> str:
+    """Return the GENERATION_SYSTEM prompt for OR/WA/MN — parameterized by state meta."""
+    meta = meta or NONCA_STATE_META[state_code.upper()]
     return f"""\
 You generate tour questions for StarlynnCare — built from {meta["state_full"]} ({meta["regulator_short"]})
 public assisted living and memory care data.
@@ -501,9 +550,12 @@ DATE BAN — no relative time math; use exact dates from source data.
 """
 
 
-def generation_human_template_for_state(state_code: str) -> str:
+def generation_human_template_for_state(
+    state_code: str,
+    meta: dict[str, str] | None = None,
+) -> str:
     """Return the GENERATION_HUMAN_TEMPLATE for OR/WA/MN — parameterized by state meta."""
-    meta = NONCA_STATE_META[state_code.upper()]
+    meta = meta or NONCA_STATE_META[state_code.upper()]
     sc = state_code.upper()
     return f"""\
 Generate tour questions for the following facility. Return ONLY valid JSON with these exact keys:
@@ -544,9 +596,12 @@ Now generate the content block for {{name}}. Output JSON only, no markdown fence
 """
 
 
-def quality_gate_system_for_state(state_code: str) -> str:
+def quality_gate_system_for_state(
+    state_code: str,
+    meta: dict[str, str] | None = None,
+) -> str:
     """Return the QUALITY_GATE_SYSTEM for OR/WA/MN — parameterized by state meta."""
-    meta = NONCA_STATE_META[state_code.upper()]
+    meta = meta or NONCA_STATE_META[state_code.upper()]
     today = datetime.now(timezone.utc).strftime("%B %d, %Y")
     return f"""\
 You are a quality checker for StarlynnCare tour questions for {meta["state_full"].upper()} facilities. Today: {today}.
@@ -621,6 +676,12 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         mc_note = fac["memory_care_designation"] or (
             "(MDH Assisted Living with Dementia Care license status from roster)"
         )
+    elif st == "CO" and str(fac.get("care_category") or "").startswith("snf"):
+        mc_note = "(CMS certification is not a memory-care license)"
+    elif st == "CO":
+        mc_note = (
+            "(CDPHE does not publish a facility-level Secure Environment roster)"
+        )
     else:
         mc_note = fac["memory_care_designation"] or (
             "(none — memory care is operator-advertised, not formally designated in CDSS licensing data)"
@@ -659,8 +720,9 @@ def generate_content(
         prompt = GENERATION_HUMAN_TEMPLATE_TX.format(**ctx)
         system = GENERATION_SYSTEM_TX
     elif st in NONCA_STATE_META:
-        prompt = generation_human_template_for_state(st).format(**ctx)
-        system = generation_system_for_state(st)
+        meta = meta_for_facility(st, fac)
+        prompt = generation_human_template_for_state(st, meta).format(**ctx)
+        system = generation_system_for_state(st, meta)
     else:
         prompt = GENERATION_HUMAN_TEMPLATE.format(**ctx)
         system = GENERATION_SYSTEM
@@ -704,7 +766,7 @@ def quality_gate(
     if st == "TX":
         gate_system = QUALITY_GATE_SYSTEM_TX
     elif st in NONCA_STATE_META:
-        gate_system = quality_gate_system_for_state(st)
+        gate_system = quality_gate_system_for_state(st, meta_for_facility(st, fac))
     else:
         gate_system = QUALITY_GATE_SYSTEM
     try:
@@ -762,6 +824,11 @@ def main() -> None:
         default=DEFAULT_STATE,
         help=f"State code for publishable facilities to load (default: {DEFAULT_STATE})",
     )
+    parser.add_argument(
+        "--include-unpublished",
+        action="store_true",
+        help="Colorado only: also write content for homes in needs_review. Does not publish them.",
+    )
     args = parser.parse_args()
 
     load_env()
@@ -790,6 +857,7 @@ def main() -> None:
             name_filter=args.facility,
             slugs=args.slugs,
             city_slugs=city_slug_list,
+            include_unpublished=args.include_unpublished,
         )
 
     print(f"Facilities loaded: {len(facilities)}")

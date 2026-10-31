@@ -130,6 +130,7 @@ import { ilProfileConfig } from "./IL/profileConfig";
 import { paProfileConfig } from "./PA/profileConfig";
 import { azProfileConfig } from "./AZ/profileConfig";
 import { moProfileConfig } from "./MO/profileConfig";
+import { coAlrProfileConfig, coNhProfileConfig } from "./CO/profileConfig";
 
 const STATE_CONFIGS: Record<string, StateProfileConfig> = {
   CA: caProfileConfig,
@@ -142,6 +143,7 @@ const STATE_CONFIGS: Record<string, StateProfileConfig> = {
   PA: paProfileConfig,
   AZ: azProfileConfig,
   MO: moProfileConfig,
+  CO: coAlrProfileConfig,
 };
 
 /**
@@ -155,6 +157,7 @@ export function getStateProfileConfig(
 ): StateProfileConfig {
   const upper = stateCode.toUpperCase();
   if (upper === "WA" && facilityType === "NH") return waNhProfileConfig;
+  if (upper === "CO" && facilityType === "NH") return coNhProfileConfig;
   return STATE_CONFIGS[upper] ?? makeNullConfig(upper);
 }
 

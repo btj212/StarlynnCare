@@ -305,6 +305,11 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     load_env()
+    if args.state.upper() == "CO":
+        raise SystemExit(
+            "Colorado nursing homes are loaded by scrapers/co_cms_ingest.py. "
+            "This script matches on CCN alone and would overwrite city and name."
+        )
 
     print(f"=== CMS NH Directory Ingest — {args.state.upper()} ===")
     session = make_session()

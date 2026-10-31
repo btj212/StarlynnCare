@@ -30,14 +30,14 @@ function QfCell({ label, children }: { label: string; children: React.ReactNode 
 
 export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
   const { facility, totals, inspections } = profile;
-  const lastInspDate = inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
+  const lastInspDate = inspections[0]?.inspection_date ?? facility.last_inspection_date ?? null;
   const phone = formatPhone(facility.phone);
 
   return (
     <div className="border-y border-clearing-rule bg-clearing-tint">
       <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6 md:px-[60px]">
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
-          <QfCell label="Licensed beds">
+          <QfCell label={facility.co_care_setting === "NH" ? "Certified beds" : "Licensed beds"}>
             {facility.beds ?? "—"}
           </QfCell>
           <QfCell label="Last inspection">

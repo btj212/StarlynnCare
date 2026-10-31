@@ -17,7 +17,7 @@ import {
   buildStateHubCollectionPage,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
-import { OR_FAQS, WA_FAQS, MN_FAQS, TX_FAQS, type FaqItem } from "@/lib/content/stateFaqs";
+import { OR_FAQS, WA_FAQS, MN_FAQS, TX_FAQS, CO_FAQS, type FaqItem } from "@/lib/content/stateFaqs";
 import { getStateHubConfig } from "@/lib/stateHubConfigs";
 import { loadStateHubData } from "@/lib/data/stateHub";
 import { StateHubSections } from "@/components/state-hub/StateHubSections";
@@ -53,7 +53,9 @@ export async function generateMetadata({
 
   const dataDriven =
     facilityCount > 0
-      ? `${facilityCount} licensed memory care facilities across ${state.name}. ${severeCount} severe deficiencies on record. Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
+      ? state.code === "CO"
+        ? `${facilityCount} memory care facilities across Colorado. Assisted living records are from CDPHE. Nursing homes are from CMS. The two are not ranked together.`
+        : `${facilityCount} licensed memory care facilities across ${state.name}. ${severeCount} severe deficiencies on record. Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
       : null;
 
   const fallbackByCode: Record<string, string> = {
@@ -62,6 +64,7 @@ export async function generateMetadata({
     OR: `Oregon DHS inspection records for every Memory Care Endorsed ALF and RCF across Oregon — sourced from the DHS LTC Licensing portal.`,
     WA: `DSHS inspection and investigation records for every Specialized Dementia Care ALF across Washington — sourced from the DSHS ALF Reports portal.`,
     MN: `MDH inspection records for every licensed Assisted Living Facility with Dementia Care across Minnesota — sourced from the MN Department of Health.`,
+    CO: `CDPHE assisted-living records and CMS nursing-home surveys for Colorado. The two care settings are not ranked together, and CDPHE does not publish a memory-care roster.`,
   };
   const desc = clipMetaDescription(
     dataDriven ??
@@ -127,7 +130,9 @@ export default async function StatePage({ params }: PageProps) {
               ctaLabel={`${state.name} memory care facilities`}
               stateNavHref={`/${state.slug}`}
             />
-            <AreaWatchModal areaName={state.name} areaSlug={state.slug} stateCode={state.code} source="state_modal" delayMs={20000} />
+            {state.code !== "CO" && (
+              <AreaWatchModal areaName={state.name} areaSlug={state.slug} stateCode={state.code} source="state_modal" delayMs={20000} />
+            )}
             <main>
               <StateHubSections data={data} config={richConfig} />
             </main>
@@ -194,7 +199,13 @@ export default async function StatePage({ params }: PageProps) {
   const statePageTitle = `Memory Care in ${state.name} - State Inspection Data`;
   const statePageDesc = `Memory care facility profiles in ${state.name}, built from state and federal primary sources.`;
 
-  const STATE_FAQS: Record<string, FaqItem[]> = { OR: OR_FAQS, WA: WA_FAQS, MN: MN_FAQS, TX: TX_FAQS };
+  const STATE_FAQS: Record<string, FaqItem[]> = {
+    OR: OR_FAQS,
+    WA: WA_FAQS,
+    MN: MN_FAQS,
+    TX: TX_FAQS,
+    CO: CO_FAQS,
+  };
   const stateFaqs = STATE_FAQS[state.code] ?? null;
 
   const stateJsonLd = [
@@ -427,9 +438,11 @@ export default async function StatePage({ params }: PageProps) {
         )}
         </main>
         <div className="-order-1">
-          <GovernanceBar />
+          <GovernanceBar scope={state.code} />
           <SiteNav countStateCode={state.code} badge={state.name} ctaHref={`/${state.slug}/facilities`} ctaLabel={`Browse ${state.name} facilities`} stateNavHref={`/${state.slug}`} hideStateLink />
-          <AreaWatchModal areaName={state.name} areaSlug={state.slug} stateCode={state.code} source="state_modal" delayMs={20000} />
+          {state.code !== "CO" && (
+            <AreaWatchModal areaName={state.name} areaSlug={state.slug} stateCode={state.code} source="state_modal" delayMs={20000} />
+          )}
         </div>
       </div>
       <SiteFooter />

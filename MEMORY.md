@@ -14,6 +14,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 **Source:** Hold note on the report, 2026-10-31. That day's file: Texas had 1 published home of 1,389 on file; Oregon had 1,009 of 1,009 findings uncoded; Illinois had 153 of 190 uncoded; Washington had an inspection for 352 of 1,038 published homes.
 
+## 2026-10 — Colorado assisted living and nursing homes are separate records
+
+**Decided:** The Colorado universe is the CDPHE ArcGIS assisted-living directory. The May 18, 2026 HFQ workbooks are a dated records snapshot, not a live inspection feed. Future-dated complaint rows stay quarantined with their original values. CMS nursing homes are a second care setting, matched only by certification number. A shared name and street is a review note, not a merge. A home is published only with an explicit memory or dementia name, a verified curated chain, or both A Place for Mom and Caring.com, plus an inspection in 36 months. One directory listing stays in review. CDPHE does not publish a facility-level Secure Environment roster, so no page says the state verified memory care. Assisted living uses Level A–E. Nursing homes use CMS letters A–L. A rank needs at least 10 homes in that care setting, so the one published nursing home is not ranked. Street View uploads send the `sb_` service key as both the bearer token and the `apikey` header. Tour-question dates for Colorado include complaint investigations. Family State Watch and paid Facility Watch stay off until a recurring inspection refresh exists. A directory refresh is not an inspection refresh.
+
+**Rejected:** Repairing the 87 future-dated complaint dates. Auto-merging the five name-and-street overlaps. Treating the CMS tag statement as an inspector narrative. Publishing a home from one directory. Comparing a nursing home with assisted living peers. Inventing a Colorado monthly rate. Turning on weekly inspection alerts from the one-time HFQ file.
+
+**Measured:** 685 assisted living residences and 210 nursing homes. 71 published: 70 assisted living and Garden Terrace Alzheimer's Center of Excellence in Aurora. 1,575 assisted-living narratives summarized. 379 homes received tour questions, including every published home. 36 homes still in review failed the quality gate.
+
+**Source:** CDPHE Find and Compare, HFQ files dated May 18, 2026, and CMS Provider Information and Health Deficiencies for October 2026. `docs/drafts/colorado-pipeline-audit.md`.
+
 ## 2026-10 — Gated articles answer first and carry a visible FAQ
 
 **Decided:** Each gated article opens with a direct answer to its title question, uses question-shaped H2s, and ends with `ArticleFaq`. The FAQ pairs live in the article's content file, and the page passes the same pairs to `GatedArticleFrame` for `FAQPage` JSON-LD, so the markup always matches the visible text. FAQ answers stay static and hold only rule facts verified from an opened source. Live counts stay in the body with a `DataFootnote`. When a state's inspection files carry no complaint flag at all (Pennsylvania today), the page says the flag is missing instead of printing zero.

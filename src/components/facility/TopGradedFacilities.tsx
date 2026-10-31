@@ -119,7 +119,7 @@ export async function TopGradedFacilities({
               </div>
               {f.composite !== null && (
                 <span className="shrink-0 font-[family-name:var(--font-mono)] text-[11px] font-semibold px-2 py-1 rounded bg-teal/10 text-teal-deep tabular-nums">
-                  Top {100 - f.composite}%
+                  Top {Math.max(1, 100 - f.composite)}%
                 </span>
               )}
             </Link>

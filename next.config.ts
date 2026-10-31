@@ -115,6 +115,8 @@ const nextConfig: NextConfig = {
       { source: "/az/:path*", destination: "/arizona/:path*", permanent: true },
       { source: "/mo", destination: "/missouri", permanent: true },
       { source: "/mo/:path*", destination: "/missouri/:path*", permanent: true },
+      { source: "/co", destination: "/colorado", permanent: true },
+      { source: "/co/:path*", destination: "/colorado/:path*", permanent: true },
     ];
   },
 };

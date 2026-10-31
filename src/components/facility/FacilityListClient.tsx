@@ -125,7 +125,10 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
   const displayName = formatFacilityName(f.name);
   const signal = trustSignal(f);
   const [g1, g2] = gradientFor(displayName);
-  const typeLabel = CATEGORY_SHORT[f.care_category] ?? "Care facility";
+  const typeLabel =
+    stateSlug === "colorado" && f.care_category.startsWith("alf")
+      ? "Assisted living"
+      : CATEGORY_SHORT[f.care_category] ?? "Care facility";
   const isMc =
     f.memory_care_disclosure_filed ||
     f.serves_memory_care ||
@@ -452,7 +455,9 @@ export function FacilityListClient({
             <section className="mt-12">
               <SectionHead title="Memory care · 7–49 beds" count={mcMedium.length} />
               <p className="mt-1.5 text-xs text-muted">
-                Small to medium freestanding RCFEs with a memory-care program.
+                {stateSlug === "colorado"
+                  ? "Smaller assisted living residences with a memory-care program."
+                  : "Small to medium freestanding RCFEs with a memory-care program."}
               </p>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {mcMedium.map((f) => (

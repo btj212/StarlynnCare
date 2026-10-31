@@ -374,6 +374,11 @@ def main(argv: list[str] | None = None) -> None:
 
     load_env()
     state = args.state.upper()
+    if state == "CO":
+        raise SystemExit(
+            "Colorado nursing-home deficiencies are loaded by scrapers/co_cms_ingest.py. "
+            "This script attaches a deficiency to any facility with the same CCN."
+        )
     print(f"=== CMS NH Deficiencies Ingest — {state} ===")
 
     session = make_session()

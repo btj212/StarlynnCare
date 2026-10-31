@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { FacilityProfile, TimelinePoint, ScopeSeverityCell } from "@/lib/facility/loadFacilityProfile";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
@@ -143,6 +144,15 @@ function heatFill(count: number, sev: number): string {
   return "#eed6cf";
 }
 
+function cdpheCellCode(sev: number, scope: string): string {
+  if (sev === 4) return "E";
+  if (sev === 3 && scope === "isolated") return "C";
+  if (sev === 3 && scope === "pattern") return "D";
+  if (sev === 2 && scope === "pattern") return "B";
+  if (sev === 1 && scope === "isolated") return "A";
+  return "";
+}
+
 function cmsCellCode(sev: number, scope: string): string {
   const col = SCOPES.indexOf(scope as typeof SCOPES[number]);
   if (col === -1) return "";
@@ -155,7 +165,13 @@ function cmsCellCode(sev: number, scope: string): string {
   return codes[sev]?.[col] ?? "";
 }
 
-function ScopeSeverityGrid({ grid }: { grid: ScopeSeverityCell[] }) {
+function ScopeSeverityGrid({
+  grid,
+  agencyShort,
+}: {
+  grid: ScopeSeverityCell[];
+  agencyShort: string;
+}) {
   const lookup = new Map<string, ScopeSeverityCell>();
   for (const cell of grid) lookup.set(`${cell.sev}-${cell.scope}`, cell);
 
@@ -170,7 +186,11 @@ function ScopeSeverityGrid({ grid }: { grid: ScopeSeverityCell[] }) {
         </span>
       </div>
       <p className="mb-4 font-[family-name:var(--font-display)] text-[18px] italic text-ink-2">
-        Scope × Severity (CMS A–L)
+        {agencyShort === "CDPHE"
+          ? "CDPHE Level A–E"
+          : agencyShort === "CMS"
+            ? "CMS scope and severity (A–L)"
+            : "Scope × Severity (CMS A–L)"}
       </p>
 
       {total === 0 ? (
@@ -189,9 +209,8 @@ function ScopeSeverityGrid({ grid }: { grid: ScopeSeverityCell[] }) {
 
           {/* Data rows */}
           {SEV_ROWS.map((sev) => (
-            <>
+            <Fragment key={sev}>
               <div
-                key={`lbl-${sev}`}
                 className={`flex items-center pr-2 text-right font-[family-name:var(--font-mono)] text-[9px] ${sev === 4 ? "font-semibold text-gold" : "text-ink-3"}`}
               >
                 {SEV_LABELS[sev]}
@@ -200,7 +219,10 @@ function ScopeSeverityGrid({ grid }: { grid: ScopeSeverityCell[] }) {
                 const cell = lookup.get(`${sev}-${scope}`);
                 const count = cell?.count ?? 0;
                 const fill = heatFill(count, sev);
-                const code = cmsCellCode(sev, scope);
+                const code =
+                  agencyShort === "CDPHE"
+                    ? cdpheCellCode(sev, scope)
+                    : cmsCellCode(sev, scope);
                 return (
                   <div
                     key={`${sev}-${scope}`}
@@ -225,7 +247,7 @@ function ScopeSeverityGrid({ grid }: { grid: ScopeSeverityCell[] }) {
                   </div>
                 );
               })}
-            </>
+            </Fragment>
           ))}
         </div>
       )}
@@ -328,7 +350,7 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
           <div className="border border-paper-rule bg-paper-2 p-8">
             <TimelineRail timeline={timeline} windowMonths={cfg.timelineWindowMonths} />
           </div>
-          <ScopeSeverityGrid grid={scopeSeverityGrid} />
+          <ScopeSeverityGrid grid={scopeSeverityGrid} agencyShort={cfg.agencyShort} />
         </div>
 
         {/* Full-width inspection list below */}

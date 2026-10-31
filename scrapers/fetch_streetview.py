@@ -67,6 +67,7 @@ def upload_to_storage(image_bytes: bytes, storage_path: str) -> str:
         method="PUT",
         headers={
             "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
             "Content-Type": "image/jpeg",
             "x-upsert": "true",
         },
@@ -130,6 +131,11 @@ def main() -> None:
         dest="city_slugs",
         help="Comma-separated city_slug values to filter",
     )
+    parser.add_argument(
+        "--include-unpublished",
+        action="store_true",
+        help="Colorado only: also fetch homes still in needs_review. Does not publish them.",
+    )
     args = parser.parse_args()
 
     if not DATABASE_URL:
@@ -153,11 +159,15 @@ def main() -> None:
 
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
+            if args.include_unpublished and args.state.upper() != "CO":
+                print("ERROR: --include-unpublished is only for Colorado.", file=sys.stderr)
+                sys.exit(1)
             where = [
                 "latitude IS NOT NULL",
                 "longitude IS NOT NULL",
                 "state_code = %s",
-                "publishable = true",
+                "publishable = true" if not args.include_unpublished
+                else "(publishable = true OR mc_review_status = 'needs_review')",
             ]
             params: list = [args.state]
             if not args.refetch:
