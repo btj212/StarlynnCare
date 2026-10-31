@@ -23,7 +23,9 @@ Internal watercolor-style illustrations for guides and hubs. **No stock photogra
 
 ## Provenance
 
-Commissioned for StarlynnCare editorial use. All rights reserved unless otherwise documented in a separate license file.
+Art is commissioned for StarlynnCare, or generated in this watercolor style and approved on `/admin/articles`. All rights reserved unless otherwise documented in a separate license file.
+
+A generated image follows the storybook watercolor of `family.png`. It shows no real or recognizable people, no facility names or logos, and no legible text. It does not show a report, a chart, or a screen with numbers or citations, because a drawn figure would read as data the site did not publish.
 
 ---
 

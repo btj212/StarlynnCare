@@ -12,6 +12,7 @@ import {
   buildTopicCollectionPage,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
+import { keepApproved, loadApprovedPaths } from "@/lib/content/articleReview";
 import { RESEARCH_INDEX } from "@/lib/content/research";
 
 const RESEARCH_PATH = "/research";
@@ -38,11 +39,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ResearchHubPage() {
-  const flagship = RESEARCH_INDEX.filter((r) => r.kind === "flagship-report");
-  const analyses = RESEARCH_INDEX.filter((r) => r.kind === "analysis");
+export default async function ResearchHubPage() {
+  const approved = await loadApprovedPaths();
+  const visible = keepApproved(RESEARCH_INDEX, (entry) => entry.href, approved);
+  const flagship = visible.filter((r) => r.kind === "flagship-report");
+  const analyses = visible.filter((r) => r.kind === "analysis");
 
-  const itemListEntries = RESEARCH_INDEX.map((r) => ({
+  const itemListEntries = visible.map((r) => ({
     name: r.title,
     url: canonicalFor(r.href),
   }));

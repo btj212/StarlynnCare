@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — A new article stays hidden until the review screen approves it
+
+**Decided:** Articles written for the citation cycle stay in code. `article_reviews` stores only whether a path is approved or held. No row means the page 404s and stays out of the sitemap, llms.txt, the library, the research hub, and state guide lists. Approve is refused unless the deslop log has two passes for every section and the illustration file exists. Generated illustrations are allowed when they match the watercolor library and are approved on `/admin/articles`. A generated image has no real people, no facility names, no readable text, and no drawn numbers.
+
+**Rejected:** Moving article text into `hub_content`. Publishing on merge. Reusing one illustration across the new articles.
+
+**Source:** AEO article plan, 2026-10-31. `supabase/migrations/0068_article_reviews.sql`.
+
 ## 2026-10 — /data counts homes, and a failed count is not a zero
 
 **Decided:** The state table on `/data` counts publishable homes: how many have an inspection on file, and how many have a serious citation in the last 24 months. Serious is a Type A finding or a finding stored at severity 3 or higher, the same rule as the city hubs. That column counts homes, not findings. A real zero stays a zero. Washington's newest stored inspection date can fall after today when the source file dated the visit the first of a month, and the page shows that date. If a count query errors, the section says the counts could not be loaded.
