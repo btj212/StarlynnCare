@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-10 — Turbopack dev will not start in a worktree with a linked node_modules
+
+**What went wrong:** A git worktree that symlinks `node_modules` from the main checkout failed `next dev` with a Turbopack panic: "Symlink [project]/node_modules is invalid, it points out of the filesystem root." Every page returned an empty body.
+
+**What worked instead:** `npx next dev --webpack -p <port>` in the worktree. `npx tsc --noEmit` works with the symlink as is.
+
+**Source:** `cursor/aeo-article-depth` worktree, 2026-10-31.
+
 ## 2026-10 — Washington adult family home documents were invisible to the scraper
 
 **What went wrong:** The adult family home scraper only kept PDF links that were already a full `https://fortress.wa.gov/...pdf` address. DSHS posts relative links, with the month and the category in the link text (`10/2026 - Enforcement Letters`). Every weekly run recorded zero documents. Approving one of those homes published it, and the page said there were no citations. That included a home whose license had been revoked.

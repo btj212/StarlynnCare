@@ -1,5 +1,15 @@
 import type { DeslopSection } from "@/lib/content/reviewArticles";
 
+function passes(heading: string, first: [string, string, string], second: [string, string, string]): DeslopSection {
+  return {
+    heading,
+    passes: [
+      { before: first[0], after: first[1], cut: first[2] },
+      { before: second[0], after: second[1], cut: second[2] },
+    ],
+  };
+}
+
 export const SERIOUS_EXPLAINER_DESLOP: DeslopSection[] = [
   {
     heading: "Opening",
@@ -57,4 +67,69 @@ export const SERIOUS_EXPLAINER_DESLOP: DeslopSection[] = [
       },
     ],
   },
+  passes(
+    "Opening answer",
+    [
+      "A serious citation is the ultimate warning sign that a memory care home has failed its residents.",
+      "A serious citation is a finding in the top severity class a state uses.",
+      "ultimate warning sign, failed its residents",
+    ],
+    [
+      "A serious citation is a finding in the top severity class a state uses, and the labels vary across jurisdictions.",
+      "A serious citation is a finding in the top severity class a state uses, and each state names that class differently: Type A in California, Type 1 in Illinois, and immediate jeopardy in most other states we cover.",
+      "labels vary across jurisdictions",
+    ],
+  ),
+  passes(
+    "What is the red tag in each state?",
+    [
+      "This handy cheat sheet decodes every state's confusing jargon at a glance.",
+      "A two-column table: state, and the red tag on a profile.",
+      "handy cheat sheet, decodes, confusing jargon",
+    ],
+    [
+      "Each cell gives the state's full severity scale.",
+      "Each cell gives only the label that turns a profile tag red. The section for each state below says what is not that tag.",
+      "full severity scale (the table does not show one)",
+    ],
+  ),
+  passes(
+    "How often are homes inspected?",
+    [
+      "States inspect memory care homes constantly to keep residents safe.",
+      "California inspects every residential care facility for the elderly at least once a year, unannounced. Oregon surveys assisted living and residential care facilities every 24 months.",
+      "constantly, keep residents safe",
+    ],
+    [
+      "Every state on this page also inspects after complaints.",
+      "Washington DSHS says it inspects each assisted living facility at least every 18 months. (Cut the line about every state inspecting after complaints: not confirmed for all ten.)",
+      "unconfirmed claim about all ten states",
+    ],
+  ),
+  passes(
+    "How should I compare homes in two states?",
+    [
+      "With our powerful cross-state data, you can instantly compare any two homes nationwide.",
+      "Compare a home with others in its own state first. States label findings differently, inspect on different schedules, and write to different rules.",
+      "powerful, instantly, any two homes nationwide",
+    ],
+    [
+      "Then simply check the label to see which home is safer.",
+      "Then read the finding itself. The date, the rule cited, and the inspector's description say more than the label.",
+      "simply, which home is safer",
+    ],
+  ),
+  passes(
+    "Common questions",
+    [
+      "A serious citation means the home is dangerous right now.",
+      "It records what the state found on the inspection date.",
+      "dangerous right now",
+    ],
+    [
+      "Cross-state comparisons are perfectly apples to apples on our site.",
+      "Only roughly. States label, schedule, and write findings differently. Compare a home with others in its own state first.",
+      "perfectly apples to apples",
+    ],
+  ),
 ];

@@ -25,6 +25,7 @@ export default function PennsylvaniaMemoryCareDesignationPage() {
       eyebrow="Pennsylvania"
       heading={<>Is this Pennsylvania home licensed for <em>memory care</em>?</>}
       image={PENNSYLVANIA_DESIGNATION.image}
+      faq={PENNSYLVANIA_DESIGNATION.faq}
       crumbs={[
         { name: "Home", path: "/" },
         { name: "Pennsylvania", path: "/pennsylvania" },

@@ -25,6 +25,7 @@ export function HowToCheckPage({ code, children }: { code: HowToState; children:
         ctaLabel: `${article.stateName} memory care facilities`,
         stateNavHref: article.statePath,
       }}
+      faq={article.faq}
     >
       {children}
     </GatedArticleFrame>

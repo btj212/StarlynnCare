@@ -25,6 +25,7 @@ export default function SeriousCitationExplainerPage() {
       eyebrow="Library"
       heading={<>What a serious citation means <em>in each state</em></>}
       image={SERIOUS_EXPLAINER.image}
+      faq={SERIOUS_EXPLAINER.faq}
       crumbs={[
         { name: "Home", path: "/" },
         { name: "Library", path: "/library" },
