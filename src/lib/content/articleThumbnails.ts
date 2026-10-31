@@ -6,6 +6,22 @@
 export type ArticleThumbnail = { src: string; alt: string };
 
 const THUMBNAILS: Record<string, ArticleThumbnail> = {
+  "/arizona/how-to-check-a-memory-care-record": {
+    src: "/illustrations/arizona-how-to-check.png",
+    alt: "Illustrated windowsill with a clay bowl, a closed notebook, and a sprig of sage — standing in for looking up an Arizona inspection record",
+  },
+  "/california/how-to-check-a-memory-care-record": {
+    src: "/illustrations/california-how-to-check.png",
+    alt: "Illustrated empty chair by a window, with a closed book and a small succulent — standing in for looking up a California inspection record",
+  },
+  "/pennsylvania/how-to-check-a-memory-care-record": {
+    src: "/illustrations/pennsylvania-how-to-check.png",
+    alt: "Illustrated brick step with a closed umbrella and a fern — standing in for looking up a Pennsylvania inspection record",
+  },
+  "/washington/how-to-check-a-memory-care-record": {
+    src: "/illustrations/washington-how-to-check.png",
+    alt: "Illustrated table by a rainy window, with a teapot and a closed folder — standing in for looking up a Washington inspection record",
+  },
   "/oregon/is-it-licensed-for-memory-care": {
     src: "/illustrations/oregon-memory-care-endorsement.png",
     alt: "Illustrated wooden garden gate standing open onto a path, with climbing roses and no sign — standing in for the endorsement a home must have before it advertises memory care",

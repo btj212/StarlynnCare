@@ -5,6 +5,12 @@ import {
   PennsylvaniaDesignationBody,
   TexasDesignationBody,
 } from "@/components/articles/DesignationBodies";
+import {
+  ArizonaHowToCheckBody,
+  CaliforniaHowToCheckBody,
+  PennsylvaniaHowToCheckBody,
+  WashingtonHowToCheckBody,
+} from "@/components/articles/HowToCheckBodies";
 import { SeriousCitationsByState } from "@/components/articles/SeriousCitationsByState";
 import {
   MISSOURI_DESIGNATION,
@@ -18,6 +24,13 @@ import {
   PENNSYLVANIA_DESIGNATION_DESLOP,
   TEXAS_DESIGNATION_DESLOP,
 } from "@/lib/content/designationDeslop";
+import { HOW_TO_CHECK } from "@/lib/content/howToCheckArticles";
+import {
+  ARIZONA_HOW_TO_DESLOP,
+  CALIFORNIA_HOW_TO_DESLOP,
+  PENNSYLVANIA_HOW_TO_DESLOP,
+  WASHINGTON_HOW_TO_DESLOP,
+} from "@/lib/content/howToCheckDeslop";
 
 /** One deslop pass: the sentence before, the sentence after, and what was cut. */
 export type DeslopPass = {
@@ -158,6 +171,34 @@ export const REVIEW_ARTICLES: ReviewArticle[] = [
     illustration: TEXAS_DESIGNATION.image,
     Body: TexasDesignationBody,
     deslop: TEXAS_DESIGNATION_DESLOP,
+  },
+  {
+    path: HOW_TO_CHECK.AZ.path,
+    title: HOW_TO_CHECK.AZ.title,
+    illustration: HOW_TO_CHECK.AZ.image,
+    Body: ArizonaHowToCheckBody,
+    deslop: ARIZONA_HOW_TO_DESLOP,
+  },
+  {
+    path: HOW_TO_CHECK.CA.path,
+    title: HOW_TO_CHECK.CA.title,
+    illustration: HOW_TO_CHECK.CA.image,
+    Body: CaliforniaHowToCheckBody,
+    deslop: CALIFORNIA_HOW_TO_DESLOP,
+  },
+  {
+    path: HOW_TO_CHECK.PA.path,
+    title: HOW_TO_CHECK.PA.title,
+    illustration: HOW_TO_CHECK.PA.image,
+    Body: PennsylvaniaHowToCheckBody,
+    deslop: PENNSYLVANIA_HOW_TO_DESLOP,
+  },
+  {
+    path: HOW_TO_CHECK.WA.path,
+    title: HOW_TO_CHECK.WA.title,
+    illustration: HOW_TO_CHECK.WA.image,
+    Body: WashingtonHowToCheckBody,
+    deslop: WASHINGTON_HOW_TO_DESLOP,
   },
 ];
 
