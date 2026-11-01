@@ -99,6 +99,11 @@ locale-prefixed (`/en`, `/pa`, `/hi`, `/es`); `/ops` therefore resolves to
 `/auth/callback` URL. Only existing Auth users with a `profiles` row whose
 role is `dispatcher` or `admin` can open the operations board.
 
+The dedicated Vercel project uses `tmt/apps/web` as its root. Its committed
+`vercel.json` installs from the TMT workspace and builds the web package with
+its workspace dependencies. Configure `PUBLIC_WEB_BASE_URL` separately for
+each Vercel environment so canonical URLs match the deployed host.
+
 For automated tests only, `TMT_WEB_FIXTURE_MODE=test` supplies fictional
 operations data and bypasses Auth. Any other non-empty value fails, and fixture
 mode is refused when `NODE_ENV=production`. Never configure this variable in
