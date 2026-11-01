@@ -1,6 +1,6 @@
 # Search Console coverage audit
 
-Generated: 2026-10-29 02:37 UTC
+Generated: 2026-11-01 03:59 UTC
 
 ## October 27 baseline
 
@@ -55,12 +55,6 @@ Failed validation is Google declining a URL it already crawled. Pending has not 
 - `https://www.starlynncare.com/_next/static/chunks/0_mlz0pv7w_04.js?dpl=dpl_6qKmgR3uz33HSbkryvpwgSU7WkEf`
 - `https://www.starlynncare.com/_next/static/media/7ebf22b5a21034f8-s.p.10_7676vm7pyy.woff2?dpl=dpl_F6hNEofDEVasTpVVdno9EZB82jnY`
 
-### Failed / facility / enrich: 3
-
-- `https://www.starlynncare.com/pennsylvania/plymouth-meeting/the-pinnacle-at-plymouth-meeting-150232`
-- `https://www.starlynncare.com/missouri/springfield/close-to-paradise-assisted-living-llc-mo34076`
-- `https://www.starlynncare.com/missouri/warrensburg/country-club-rehab-and-healthcare-center-mo20892`
-
 ### Failed / facility / noindex: 35
 
 - `https://www.starlynncare.com/arizona/scottsdale/kierland-sanctuary-al12512`
@@ -77,21 +71,21 @@ Failed validation is Google declining a URL it already crawled. Pending has not 
 - `https://www.starlynncare.com/arizona/scottsdale/phoenix-assisted-living-llc-al10763`
 - … and 23 more
 
-### Failed / facility / retain: 118
+### Failed / facility / retain: 121
 
 - `https://www.starlynncare.com/arizona/tucson/brookdale-tanque-verde-al11370`
 - `https://www.starlynncare.com/arizona/scottsdale/sherwood-heights-adult-living-al11786`
 - `https://www.starlynncare.com/arizona/scottsdale/sun-valley-manor-assisted-living-home-al1459`
 - `https://www.starlynncare.com/arizona/tucson/bridgewater-la-cholla-operations-llc-al11318`
 - `https://www.starlynncare.com/arizona/scottsdale/manor-on-paradise-al11859`
+- `https://www.starlynncare.com/pennsylvania/plymouth-meeting/the-pinnacle-at-plymouth-meeting-150232`
 - `https://www.starlynncare.com/arizona/yuma/river-valley-estates-al10648`
 - `https://www.starlynncare.com/arizona/tucson/cherry-s-assisted-living-al7391`
 - `https://www.starlynncare.com/arizona/scottsdale/silver-bells-adult-care-home-al0755`
+- `https://www.starlynncare.com/missouri/springfield/close-to-paradise-assisted-living-llc-mo34076`
 - `https://www.starlynncare.com/arizona/scottsdale/the-greenway-manor-ii-al11904`
 - `https://www.starlynncare.com/arizona/tucson/simancas-assisted-living-home-al6570`
-- `https://www.starlynncare.com/arizona/scottsdale/paradise-valley-care-home-llc-al10820`
-- `https://www.starlynncare.com/arizona/scottsdale/vi-at-silverstone-a-vi-plaza-companies-communit-al8222`
-- … and 106 more
+- … and 109 more
 
 ### Pending / asset / ignore: 49
 
@@ -118,24 +112,14 @@ Failed validation is Google declining a URL it already crawled. Pending has not 
 - `https://www.starlynncare.com/pennsylvania/facilities`
 - `https://www.starlynncare.com/arizona/facilities`
 
-### Pending / facility / enrich: 53
+### Pending / facility / enrich: 2
 
-- `https://www.starlynncare.com/pennsylvania/bryn-mawr/bryn-mawr-village-148340`
-- `https://www.starlynncare.com/pennsylvania/waynesboro/the-leland-of-laurel-run-329940`
-- `https://www.starlynncare.com/missouri/reeds-spring/wedgewood-gardens-mo20615`
-- `https://www.starlynncare.com/missouri/bernie/winchester-place-assisted-living-llc-mo31391`
-- `https://www.starlynncare.com/illinois/glen-ellyn/churchill-place-memory-care-131035`
-- `https://www.starlynncare.com/missouri/columbia/lenoir-manor-mo04750`
-- `https://www.starlynncare.com/pennsylvania/tyrone/the-preserve-at-cedarwood-339720`
-- `https://www.starlynncare.com/missouri/saint-louis/dolan-memory-care-at-mason-manor-mo19861`
-- `https://www.starlynncare.com/pennsylvania/warrendale/the-province-of-wexford-449360`
-- `https://www.starlynncare.com/pennsylvania/wilkes-barre-towns/highland-park-senior-living-226300`
-- `https://www.starlynncare.com/missouri/lee-s-summit/silverado-lee-s-summit-mo31077`
-- `https://www.starlynncare.com/pennsylvania/allentown/luther-crest-retirement-community-216290`
-- … and 41 more
+- `https://www.starlynncare.com/washington/spokane/fairview-assisted-living-inc-1146`
+- `https://www.starlynncare.com/arizona/prescott/margaret-t-morris-center-al2349`
 
-### Pending / facility / missing: 11
+### Pending / facility / missing: 13
 
+- `https://www.starlynncare.com/missouri/ozark/century-pines-assisted-living-mo01200`
 - `https://www.starlynncare.com/missouri/carthage/st-luke-s-care-center-inc-mo07606`
 - `https://www.starlynncare.com/oregon/portland/russellville-park-memory-care-50360`
 - `https://www.starlynncare.com/oregon/lake-oswego/marie-rose-residential-care-50401`
@@ -147,6 +131,7 @@ Failed validation is Google declining a URL it already crawled. Pending has not 
 - `https://www.starlynncare.com/oregon/hillsboro/rosewood-memory-care-50290`
 - `https://www.starlynncare.com/oregon/mcminnville/fircrest-senior-living-50358`
 - `https://www.starlynncare.com/oregon/corvallis/willamette-springs-memory-care-50436`
+- … and 1 more
 
 ### Pending / facility / noindex: 61
 
@@ -164,58 +149,86 @@ Failed validation is Google declining a URL it already crawled. Pending has not 
 - `https://www.starlynncare.com/arizona/green-valley/haven-springs-at-green-valley-al12932`
 - … and 49 more
 
-### Pending / facility / retain: 700
+### Pending / facility / retain: 749
 
 - `https://www.starlynncare.com/arizona/mesa/santorini-villas-assisted-living-llc-al11701`
 - `https://www.starlynncare.com/washington/south-hill/bonaventure-of-puyallup-2555`
 - `https://www.starlynncare.com/california/riverside/canyon-crest-assisted-living-and-memory-care-881537`
 - `https://www.starlynncare.com/washington/key-center/mustard-seed-village-2657`
+- `https://www.starlynncare.com/pennsylvania/bryn-mawr/bryn-mawr-village-148340`
 - `https://www.starlynncare.com/missouri/ellisville/autumn-view-gardens-mo20751`
 - `https://www.starlynncare.com/missouri/chesterfield/kinwell-at-chesterfield-mo30848`
 - `https://www.starlynncare.com/minnesota/crosby/heartwood-mn280`
 - `https://www.starlynncare.com/arizona/phoenix/paradise-valley-senior-living-al6981`
 - `https://www.starlynncare.com/minnesota/andover/personal-care-senior-living-ll-mn2216`
+- `https://www.starlynncare.com/pennsylvania/waynesboro/the-leland-of-laurel-run-329940`
 - `https://www.starlynncare.com/missouri/independence/jackson-creek-post-acute-mo25709`
-- `https://www.starlynncare.com/missouri/sikeston/la-bonne-maison-assisted-living-mo28804`
-- `https://www.starlynncare.com/missouri/fayette/lodge-the-mo28815`
-- … and 688 more
+- … and 737 more
 
-### Pending / hub / enrich: 15
+### Pending / hub / missing: 1
 
-- `https://www.starlynncare.com/pennsylvania/lemoyne`
-- `https://www.starlynncare.com/pennsylvania/cranberry-township`
-- `https://www.starlynncare.com/pennsylvania/exton`
-- `https://www.starlynncare.com/pennsylvania/fayetteville`
-- `https://www.starlynncare.com/missouri/sunset-hills`
-- `https://www.starlynncare.com/pennsylvania/harleysville`
-- `https://www.starlynncare.com/pennsylvania/mars`
-- `https://www.starlynncare.com/illinois/arlington-heights`
-- `https://www.starlynncare.com/illinois/savoy`
-- `https://www.starlynncare.com/pennsylvania/st-benedict`
-- `https://www.starlynncare.com/pennsylvania/monroeville`
-- `https://www.starlynncare.com/pennsylvania/warrington`
-- … and 3 more
+- `https://www.starlynncare.com/missouri/elsberry`
 
-### Pending / hub / retain: 105
+### Pending / hub / retain: 119
 
 - `https://www.starlynncare.com/california/cameron-park`
+- `https://www.starlynncare.com/pennsylvania/lemoyne`
+- `https://www.starlynncare.com/pennsylvania/cranberry-township`
 - `https://www.starlynncare.com/california/placerville`
 - `https://www.starlynncare.com/california/beverly-hills`
+- `https://www.starlynncare.com/pennsylvania/exton`
 - `https://www.starlynncare.com/pennsylvania/allentown`
 - `https://www.starlynncare.com/minnesota/thief-river-falls`
+- `https://www.starlynncare.com/pennsylvania/fayetteville`
 - `https://www.starlynncare.com/oregon/sandy`
 - `https://www.starlynncare.com/california/cardiff-by-the-sea`
 - `https://www.starlynncare.com/minnesota/st-anthony`
-- `https://www.starlynncare.com/california/san-mateo-county`
-- `https://www.starlynncare.com/minnesota/arden-hills`
-- `https://www.starlynncare.com/oregon/ontario`
-- `https://www.starlynncare.com/washington/bainbridge-island`
-- … and 93 more
+- … and 107 more
+
+## Rejected facilities
+
+These are facility URLs in the validation export whose status is Failed. A cited home stays indexable. A home with no bed count stays indexable. A missing narrative is an enrich job, not a noindex rule.
+
+Failed facility URLs matched to a publishable row: 156. Unmatched: 0.
+
+### By state
+
+- AZ: 152
+- MO: 3
+- PA: 1
+
+### By capacity
+
+- 7 to 10 beds: 107
+- 11 beds or more: 26
+- 6 beds or fewer: 23
+
+### By inspection
+
+- has an inspection: 156
+
+### By citation
+
+- has a citation: 117
+- no citation: 39
+
+### By content
+
+- inspection with a stored narrative: 153
+- inspection without a stored narrative: 3
+
+### Would a small-home rule fit any other state?
+
+- AZ: 152 failed, 35 are 10 beds or fewer with no citation, 114 have a citation, 0 have no bed count.
+- MO: 3 failed, 1 are 10 beds or fewer with no citation, 2 have a citation, 0 have no bed count.
+- PA: 1 failed, 0 are 10 beds or fewer with no citation, 1 have a citation, 0 have no bed count.
+
+This export supports Arizona's existing rule and does not support a new state exclusion. Other states stay indexable, including homes with unknown bed counts and homes that have been cited.
 
 ## Indexability parity
 
-- Indexable and listed: 4148
-- Noindex and unlisted: 1089
+- Indexable and listed: 4419
+- Noindex and unlisted: 1094
 - Noindex but still listed (must be 0): 0
 - Indexable but unlisted: 0. These are homes with no inspection that still have a review, tour question, or photo. The page can be indexed if found. The sitemap does not request them, because the not-indexed pile is already the problem.
 

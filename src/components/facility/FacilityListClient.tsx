@@ -251,6 +251,7 @@ export function FacilityListClient({
   hiddenSmallCount,
   initialShowSmall = false,
   defaultSortBy = "name",
+  resultsOnly = false,
 }: {
   facilities: ListFacility[];
   stateSlug: string;
@@ -260,6 +261,8 @@ export function FacilityListClient({
   initialShowSmall?: boolean;
   /** Default sort order. Pass "record" to surface fewest-citations-first. */
   defaultSortBy?: SortBy;
+  /** Server already chose this page. Render the cards without a second search box. */
+  resultsOnly?: boolean;
 }) {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
@@ -332,6 +335,16 @@ export function FacilityListClient({
       f.capacity_tier !== "small",
   );
   const smallHomes = filtered.filter((f) => f.capacity_tier === "small");
+
+  if (resultsOnly) {
+    return (
+      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {facilities.map((f) => (
+          <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div>

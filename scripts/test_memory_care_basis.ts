@@ -127,12 +127,14 @@ const pairs = buildFacilityFaqPairs({
   licenseNumber: "F23",
   licenseUrl: "https://ccl.utah.gov",
   regulatorName: utah.regulator,
+  regulatorAbbr: "DLBC",
 });
 
 assert.equal(pairs.some((pair) => pair.q.includes("tour")), false);
 assert.equal(pairs[0].a, MEMORY_CARE_BASIS_UNRECORDED);
 assert.match(pairs.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /September 23, 2026/);
 assert.match(pairs.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /annual compliance visit/);
+assert.match(pairs.find((pair) => pair.q.startsWith("Has "))?.a ?? "", /4 deficiencies from DLBC in the last three years/);
 assert.match(pairs.find((pair) => pair.q.startsWith("How many"))?.a ?? "", /last three years/);
 assert.match(pairs.find((pair) => pair.q.startsWith("How many"))?.a ?? "", /immediate jeopardy/);
 assert.match(pairs.find((pair) => pair.q.startsWith("Who licenses"))?.a ?? "", /F23/);
@@ -156,6 +158,7 @@ const thin = buildFacilityFaqPairs({
   licenseNumber: null,
   licenseUrl: null,
   regulatorName: "Washington DSHS",
+  regulatorAbbr: "DSHS",
 });
 assert.equal(thin.length, 1);
 assert.match(thin[0].a, /dementia care contract/);

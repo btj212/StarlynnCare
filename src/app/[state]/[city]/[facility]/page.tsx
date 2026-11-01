@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { buildFacilityDescription, buildFacilityTitle, clipMetaDescription, reportablePercentile, shortMonthYear } from "@/lib/seo/meta";
+import { displayCityName } from "@/lib/resolveListingRegion";
 import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
@@ -142,8 +143,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     name: facility.name,
     stateName: state.name,
     percentile: compositePercentile,
-    city: facility.city ?? state.name,
+    city: displayCityName(facility.city, facility.city_slug) || state.name,
     citationCount: profile.totals.deficiencies,
+    inspectionCount: profile.totals.inspections,
+    reviewCount: profile.reviews.length,
   });
 
   const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
@@ -160,8 +163,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           name: facility.name,
           percentile: compositePercentile,
           stateName: state.name,
-          city: facility.city ?? state.name,
+          city: displayCityName(facility.city, facility.city_slug) || state.name,
           citationCount: profile.totals.deficiencies,
+          inspectionCount: profile.totals.inspections,
+          reviewCount: profile.reviews.length,
           agency: profile.cfg.agencyShort,
           lastInspected: shortMonthYear(lastInspectionDate),
         }),

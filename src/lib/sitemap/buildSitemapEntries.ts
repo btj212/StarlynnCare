@@ -135,6 +135,7 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/minnesota/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/illinois/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/illinois/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/illinois/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
     { path: "/illinois/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     { path: "/utah/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/utah/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
@@ -150,6 +151,7 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/texas/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Oregon-specific articles (live)
     { path: "/oregon/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/oregon/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
     { path: "/oregon/is-it-licensed-for-memory-care", priority: "0.78", changefreq: "monthly" },
     { path: "/oregon/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Washington-specific articles (live)
@@ -160,6 +162,7 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/washington/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
     // Minnesota-specific articles (live)
     { path: "/minnesota/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/minnesota/how-to-check-a-memory-care-record", priority: "0.78", changefreq: "monthly" },
     { path: "/minnesota/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     // Arizona-specific articles (live)
     { path: "/arizona/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
@@ -324,12 +327,25 @@ export async function collectHubEntriesForState(
 
   return [...hubLastmod]
     .sort()
-    .map(([slug, lastmod]) => ({
-      loc: `${SITE_ORIGIN}/${stateSlug}/${slug}`,
-      priority: "0.85",
-      changefreq: "weekly" as const,
-      ...(lastmod ? { lastmod } : {}),
-    }));
+    .flatMap(([slug, lastmod]) => {
+      const dated = lastmod ? { lastmod } : {};
+      const hub: SitemapUrlRow = {
+        loc: `${SITE_ORIGIN}/${stateSlug}/${slug}`,
+        priority: "0.85",
+        changefreq: "weekly",
+        ...dated,
+      };
+      // County hubs are not a city_slug. Their facilities page is linked from
+      // the hub. City browse pages are listed so the full directory is findable.
+      if (!countBySlug.has(slug)) return [hub];
+      const browse: SitemapUrlRow = {
+        loc: `${SITE_ORIGIN}/${stateSlug}/${slug}/facilities`,
+        priority: "0.5",
+        changefreq: "weekly",
+        ...dated,
+      };
+      return [hub, browse];
+    });
 }
 
 /**

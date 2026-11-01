@@ -1,6 +1,6 @@
 import type { FaqPair } from "@/components/articles/ArticleFaq";
 
-export type HowToState = "AZ" | "CA" | "PA" | "WA";
+export type HowToState = "AZ" | "CA" | "IL" | "MN" | "OR" | "PA" | "WA";
 
 export type HowToArticle = {
   code: HowToState;
@@ -172,6 +172,105 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
       {
         q: "Is a DSHS dementia-care contract a quality rating?",
         a: "No. It is a contract to serve residents with dementia. It does not grade the home.",
+      },
+      CLEAN_RECORD,
+    ],
+  },
+  OR: {
+    code: "OR",
+    path: "/oregon/how-to-check-a-memory-care-record",
+    title: "How to check an Oregon memory care inspection record",
+    description:
+      "Where to look on the Oregon long-term care licensing site, what a level 4 finding means, and how many published homes have an inspection on file.",
+    datePublished: "2026-10-31",
+    badge: "Oregon",
+    stateName: "Oregon",
+    statePath: "/oregon",
+    facilitiesPath: "/oregon/facilities",
+    image: {
+      src: "/illustrations/oregon-how-to-check.png",
+      alt: "Illustrated rainy windowsill with a fern, a ceramic cup, and a closed folder — standing in for looking up an Oregon inspection record",
+    },
+    answer:
+      "Search the home's name on the Oregon long-term care licensing site and open its survey record. DHS says assisted living and residential care facilities are surveyed every 24 months, and that the site updates every 24 hours. A memory care endorsement is permission to advertise memory care. It is not an inspection result.",
+    faq: [
+      {
+        q: "Where are Oregon assisted living inspection records?",
+        a: "On the Oregon Department of Human Services long-term care licensing site. Search the home's name and open its record. The StarlynnCare page for the home links to that record when we stored a link.",
+      },
+      {
+        q: "How often does Oregon survey an assisted living facility?",
+        a: "DHS says assisted living and residential care facilities are surveyed every 24 months, and an endorsed memory care unit is surveyed on its facility's schedule.",
+      },
+      {
+        q: "Does a memory care endorsement mean the home passed inspection?",
+        a: "No. The endorsement is the permission a home must have before it advertises memory care. It is not a grade.",
+      },
+      {
+        q: "What does the red tag on an Oregon profile mean?",
+        a: "Level 4, labeled IJ. Level 3 is not that tag. The count of homes with a serious citation on /data is wider: it also includes a finding stored at severity 3.",
+      },
+      CLEAN_RECORD,
+    ],
+  },
+  IL: {
+    code: "IL",
+    path: "/illinois/how-to-check-a-memory-care-record",
+    title: "How to check an Illinois memory care inspection record",
+    description:
+      "Where to look on the Illinois Department of Public Health facility lookup, what a Type 1 citation is, and how many published homes have an inspection on file.",
+    datePublished: "2026-10-31",
+    badge: "Illinois",
+    stateName: "Illinois",
+    statePath: "/illinois",
+    facilitiesPath: "/illinois/facilities",
+    image: {
+      src: "/illustrations/illinois-how-to-check.png",
+      alt: "Illustrated empty chair by a window, with a closed notebook and dried wheat in a jar — standing in for looking up an Illinois inspection record",
+    },
+    answer:
+      "Search the home's name on the Illinois Department of Public Health facility lookup and open its record. Assisted living establishments follow 77 Ill. Adm. Code 295. On a StarlynnCare profile the red tag is Type 1. A rule number names the rule. It does not, by itself, describe what the inspector saw.",
+    faq: [
+      {
+        q: "Where do I look up an Illinois assisted living inspection?",
+        a: "On the Illinois Department of Public Health facility lookup. Search the home's name and open its record. The StarlynnCare page for the home lists the inspections we hold.",
+      },
+      {
+        q: "What is a Type 1 citation in Illinois?",
+        a: "Type 1 is the red tag on an Illinois profile. A Type 1 citation is not a memory care designation.",
+      },
+      {
+        q: "Does a rule number tell me what the inspector saw?",
+        a: "No. When the public file names a rule, such as a section of 77 Ill. Adm. Code 295, that names the rule. It does not describe what the inspector saw.",
+      },
+      CLEAN_RECORD,
+    ],
+  },
+  MN: {
+    code: "MN",
+    path: "/minnesota/how-to-check-a-memory-care-record",
+    title: "How to check a Minnesota memory care inspection record",
+    description:
+      "Where to look in the Minnesota Department of Health provider directory, what an immediate-jeopardy flag means, and how many published homes have an inspection on file.",
+    datePublished: "2026-10-31",
+    badge: "Minnesota",
+    stateName: "Minnesota",
+    statePath: "/minnesota",
+    facilitiesPath: "/minnesota/facilities",
+    image: {
+      src: "/illustrations/minnesota-how-to-check.png",
+      alt: "Illustrated snowy windowsill with a folded blanket, a ceramic mug, and a pine sprig — standing in for looking up a Minnesota inspection record",
+    },
+    answer:
+      "Search the home on the Minnesota Department of Health provider directory and open its inspection record. On a StarlynnCare profile the red tag is an immediate-jeopardy flag. Read the newest inspection first.",
+    faq: [
+      {
+        q: "Where are Minnesota assisted living inspection records?",
+        a: "In the Minnesota Department of Health provider directory. Search the home and open its record. The StarlynnCare page for the home links to that record when we stored a link.",
+      },
+      {
+        q: "What does the red tag on a Minnesota profile mean?",
+        a: "An immediate-jeopardy flag. The count of homes with a serious citation on /data is wider: it also includes a finding stored at severity 3 or higher.",
       },
       CLEAN_RECORD,
     ],

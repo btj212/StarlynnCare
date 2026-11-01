@@ -67,6 +67,48 @@ const STEPS: Record<HowToState, ReactNode> = {
       </p>
     </>
   ),
+  OR: (
+    <>
+      <p className={prose}>
+        Search the home&apos;s name on the{" "}
+        <External href="https://ltclicensing.oregon.gov">Oregon long-term care licensing site</External> and open its survey record. The record on that site is the original. This directory&apos;s page for the home links to it when we stored a link.
+      </p>
+      <p className={`mt-4 ${prose}`}>
+        DHS says the site updates every 24 hours, and that complaints still under investigation or findings under appeal are not shown. Assisted living and residential care facilities are surveyed every 24 months. An endorsed memory care unit is surveyed on its facility&apos;s schedule.
+      </p>
+      <p className={`mt-4 ${prose}`}>
+        A memory care endorsement is permission to advertise memory care. It is not an inspection result. That is explained in{" "}
+        <Link href="/oregon/memory-care-licensing" className={linkCls}>how Oregon licenses memory care</Link>.
+      </p>
+    </>
+  ),
+  IL: (
+    <>
+      <p className={prose}>
+        Search the home&apos;s name on the{" "}
+        <External href="https://llcs.dph.illinois.gov/s/facility-lookup?language=en_US">Illinois Department of Public Health facility lookup</External> and open its record. This directory&apos;s page for the home lists the inspections we hold.
+      </p>
+      <p className={`mt-4 ${prose}`}>
+        Assisted living establishments follow 77 Ill. Adm. Code 295. When a citation names a rule, that names the rule. It does not describe what the inspector saw. A rule about a dementia program is not a designation that the home provides memory care.
+      </p>
+      <p className={`mt-4 ${prose}`}>
+        The license names are in{" "}
+        <Link href="/illinois/memory-care-licensing" className={linkCls}>how Illinois licenses memory care</Link>.
+      </p>
+    </>
+  ),
+  MN: (
+    <>
+      <p className={prose}>
+        Search the home in the{" "}
+        <External href="https://www.health.state.mn.us/facilities/providers/index.html">Minnesota Department of Health provider directory</External> and open its inspection record. The record on that site is the original. This directory&apos;s page for the home links to it when we stored a link.
+      </p>
+      <p className={`mt-4 ${prose}`}>
+        Licensing for assisted living with dementia care is explained in{" "}
+        <Link href="/minnesota/memory-care-licensing" className={linkCls}>how Minnesota licenses memory care</Link>.
+      </p>
+    </>
+  ),
   WA: (
     <>
       <p className={prose}>
@@ -90,6 +132,9 @@ const STEPS: Record<HowToState, ReactNode> = {
 const TAG_NOTES: Record<HowToState, string> = {
   AZ: "On an Arizona profile, the red tag is immediate jeopardy. High risk and enforcement are not that label. The count of homes with a serious citation still includes a finding stored at severity 3 or higher.",
   CA: SERIOUS_PROFILE_TAGS.CA.note,
+  OR: SERIOUS_PROFILE_TAGS.OR.note,
+  IL: `${SERIOUS_PROFILE_TAGS.IL.note} A Type 1 citation is not a memory care designation.`,
+  MN: `${SERIOUS_PROFILE_TAGS.MN.note} The count of homes with a serious citation still includes a finding stored at severity 3 or higher.`,
   PA: "On a Pennsylvania profile, immediate jeopardy, revocation, substantiated abuse, and a provisional license are red tags. A civil money penalty is not a red tag.",
   WA: "On a Washington assisted living profile, the red tag is immediate jeopardy. The count of homes with a serious citation still includes a finding stored at severity 3 or higher.",
 };
@@ -202,4 +247,16 @@ export function PennsylvaniaHowToCheckBody() {
 
 export function WashingtonHowToCheckBody() {
   return <HowToCheckBody code="WA" />;
+}
+
+export function OregonHowToCheckBody() {
+  return <HowToCheckBody code="OR" />;
+}
+
+export function IllinoisHowToCheckBody() {
+  return <HowToCheckBody code="IL" />;
+}
+
+export function MinnesotaHowToCheckBody() {
+  return <HowToCheckBody code="MN" />;
 }

@@ -95,7 +95,6 @@ const STATE_ABBR: Record<string, string> = {
 };
 
 const MAX_TITLE = 60;
-const hasMemoryCare = (s: string) => /\bmemory\s+care\b/i.test(s);
 
 /** Clip a title string to MAX_TITLE characters at a word boundary. */
 function clipTitle(s: string): string {
@@ -105,23 +104,6 @@ function clipTitle(s: string): string {
   return (lastSpace > MAX_TITLE * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
 }
 
-/**
- * Build a ≤60-character facility page title.
- *
- * Top-half facilities (composite_percentile ≥ 50) get a comparative rank claim:
- *   "Autumn Glow · Top 14% of California Memory Care"
- *
- * Bottom-half and unrated facilities lead with the inspection/citation hook
- * when `citationCount` is supplied — this is the unique differentiator vs
- * A Place for Mom / Caring.com who structurally can't show this:
- *   "Anaheim Villa · 0 Citations · Memory Care, Anaheim CA"
- *   "Sunrise Memory Care · 3 Citations · Pasadena, CA"
- *
- * When citationCount is omitted, falls back to geographic anchor:
- *   "Oakwood Gardens · Memory Care in Pasadena, CA"
- *
- * YMYL rule: never invent a percentile rank. Null → no claim.
- */
 /** A rank against fewer than 10 peers is not a public claim. */
 export function reportablePercentile(
   percentile: number | null | undefined,
@@ -131,75 +113,75 @@ export function reportablePercentile(
   return percentile;
 }
 
+function countLabel(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+/**
+ * Name and place first. A comparative rank stays in the description and on
+ * the page, not in the title, because facility-name searches need the city.
+ * "Reviews" appears only when a published review exists.
+ */
 export function buildFacilityTitle(input: {
   name: string;
   stateName: string;
-  /** Composite percentile 0–100, higher = better. Null when peer set too thin. */
+  /** Kept for callers. Rank is no longer a title claim. */
   percentile: number | null;
   city: string;
-  /** Total deficiency count. When provided, surfaces as a SERP hook for non-top-half facilities. */
   citationCount?: number | null;
+  inspectionCount?: number | null;
+  reviewCount?: number | null;
 }): string {
-  const { name, stateName, percentile, city, citationCount } = input;
+  const { name, stateName, city, citationCount, inspectionCount, reviewCount } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
-
-  // Top-half — comparative ranking claim allowed.
-  if (percentile != null && percentile >= 50) {
-    const topPct = Math.max(1, 100 - percentile);
-    const candidates = [
-      `${name} · Top ${topPct}% of ${stateName} Memory Care`,
-      `${name} · Top ${topPct}% in ${stateName}`,
-      `${name} · Top ${topPct}% in ${abbr}`,
-      `${name} · Top ${topPct}%`,
-      name,
-    ];
-    return clipTitle(candidates.find((c) => c.length <= MAX_TITLE) ?? candidates.at(-1)!);
+  const place = `${name}, ${city}, ${abbr}`;
+  const inspections = inspectionCount ?? 0;
+  const reviews = reviewCount ?? 0;
+  const facts: string[] = [];
+  if (inspections > 0) facts.push(countLabel(inspections, "inspection", "inspections"));
+  if (citationCount != null && inspections > 0) {
+    facts.push(countLabel(citationCount, "citation", "citations"));
   }
+  if (reviews > 0) facts.push("reviews");
 
-  // Bottom-half or unrated — lead with Reviews + citation hook so the title
-  // matches "[facility name] reviews" queries where weak rankers dominate.
-  if (citationCount != null) {
-    const citeHook =
-      citationCount === 0
-        ? "0 Citations"
-        : `${citationCount} Citation${citationCount === 1 ? "" : "s"}`;
-    const citeVariants: string[] = hasMemoryCare(name)
-      ? [
-          `${name} Reviews · ${citeHook} · ${city}, ${abbr}`,
-          `${name} · ${citeHook} · ${city}, ${abbr}`,
-          `${name} · ${citeHook} · ${abbr}`,
-          `${name} · ${citeHook}`,
-          name,
-        ]
-      : [
-          `${name} Reviews · ${citeHook} · ${city}, ${abbr}`,
-          `${name} · ${citeHook} · Memory Care, ${city} ${abbr}`,
-          `${name} · ${citeHook} · ${city}, ${abbr}`,
-          `${name} · ${citeHook} · ${abbr}`,
-          `${name} · ${citeHook}`,
-          name,
-        ];
-    return clipTitle(citeVariants.find((c) => c.length <= MAX_TITLE) ?? citeVariants.at(-1)!);
+  const candidates = [
+    facts.length ? `${place}: ${joinTitleFacts(facts)}` : place,
+    facts.length > 1 ? `${place}: ${joinTitleFacts(facts.slice(0, -1))}` : place,
+    place,
+    `${name}, ${city}`,
+    `${name}, ${abbr}`,
+    name,
+  ];
+  return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? name);
+}
+
+function joinTitleFacts(facts: string[]): string {
+  if (facts.length <= 1) return facts[0] ?? "";
+  if (facts.length === 2) return `${facts[0]} and ${facts[1]}`;
+  return `${facts.slice(0, -1).join(", ")} and ${facts[facts.length - 1]}`;
+}
+
+/** One factual sentence for the top of a facility page. Null when there is no record to cite. */
+export function buildFacilityRecordSentence(input: {
+  citationCount: number;
+  inspectionCount: number;
+  lastInspected: string | null;
+  regulatorAbbr: string;
+  licenseNumber: string | null;
+}): string | null {
+  if (input.inspectionCount < 1) {
+    return input.licenseNumber
+      ? `No ${input.regulatorAbbr} inspection is on record. License ${input.licenseNumber}.`
+      : null;
   }
-
-  // No citation count — geographic anchor, Reviews prefix where it fits.
-  const geoVariants: string[] = hasMemoryCare(name)
-    ? [
-        `${name} Reviews · ${city}, ${abbr}`,
-        `${name} · ${city}, ${abbr}`,
-        `${name} · ${city}`,
-        `${name} · ${abbr}`,
-        name,
-      ]
-    : [
-        `${name} Reviews · Memory Care, ${city} ${abbr}`,
-        `${name} · Memory Care in ${city}, ${abbr}`,
-        `${name} · Memory Care in ${city}`,
-        `${name} · ${city}, ${abbr}`,
-        `${name} · ${city}`,
-        name,
-      ];
-  return clipTitle(geoVariants.find((c) => c.length <= MAX_TITLE) ?? geoVariants.at(-1)!);
+  const cite =
+    input.citationCount === 1
+      ? `1 ${input.regulatorAbbr} citation on record`
+      : `${input.citationCount} ${input.regulatorAbbr} citations on record`;
+  const parts = [cite];
+  if (input.lastInspected) parts.push(`last inspected ${input.lastInspected}`);
+  if (input.licenseNumber) parts.push(`license ${input.licenseNumber}`);
+  return `${parts.join(", ")}.`;
 }
 
 /** Minimum length for meta descriptions to avoid Ahrefs/Google "too short" warnings. */
@@ -221,19 +203,27 @@ export function buildFacilityDescription(f: {
   stateName: string;
   city: string;
   citationCount: number;
+  inspectionCount?: number;
+  reviewCount?: number;
   /** Regulator abbreviation: "CDSS" / "DSHS" / "OR DHS" / "MDH" */
   agency: string;
   /** Pre-formatted month+year string, e.g. "Apr 2026" */
   lastInspected: string | null;
 }): string {
   const citations =
-    f.citationCount === 0
-      ? `clean inspection record`
-      : f.citationCount === 1
-        ? `1 ${f.agency} citation on record`
-        : `${f.citationCount} ${f.agency} citations on record`;
+    (f.inspectionCount ?? 1) < 1
+      ? `no ${f.agency} inspection on record`
+      : f.citationCount === 0
+        ? `no ${f.agency} citations on record`
+        : f.citationCount === 1
+          ? `1 ${f.agency} citation on record`
+          : `${f.citationCount} ${f.agency} citations on record`;
   const inspPart = f.lastInspected ? ` · last inspected ${f.lastInspected}` : "";
   const ctaSuffix = `View the full inspection record on StarlynnCare — no referral fees.`;
+  const reviewCta =
+    (f.reviewCount ?? 0) > 0
+      ? ` Read reviews and the full ${f.agency} inspection record on StarlynnCare.`
+      : ` Read the full ${f.agency} inspection record on StarlynnCare.`;
 
   // Top-half — comparative claim.
   if (f.percentile != null && f.percentile >= 50) {
@@ -249,7 +239,7 @@ export function buildFacilityDescription(f: {
 
   // Bottom-half or unrated — facts only, no ranking language.
   const base = `${f.name} in ${f.city}, ${f.stateName} · ${citations}${inspPart}.`;
-  const cta = ` Read reviews & the full ${f.agency} inspection record on StarlynnCare.`;
+  const cta = reviewCta;
   const core = base + cta;
   if (core.length >= MIN_DESC) return core;
   // Pad to minimum with a useful phrase about memory care.

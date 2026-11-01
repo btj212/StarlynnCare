@@ -111,7 +111,7 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
 
   // Generate a one-liner headline
   const content = profile.facility.content as { headline?: string; intro?: string } | null;
-  const headline = content?.headline ?? null;
+  const headline = content?.headline?.replace(/\.+$/, "").trim() || null;
   const intro = content?.intro ?? null;
 
   return (

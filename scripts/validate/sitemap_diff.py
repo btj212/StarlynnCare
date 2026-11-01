@@ -95,6 +95,7 @@ def _db_routable_paths() -> set[str]:
                     # A city of only excluded homes is noindex, so it is not a missing sitemap URL.
                     if not excluded and r["city_slug"]:
                         paths.add(f"/{slug}/{r['city_slug']}")
+                        paths.add(f"/{slug}/{r['city_slug']}/facilities")
                     if r["has_inspections"] and not excluded and r["city_slug"] and r["slug"]:
                         paths.add(f"/{slug}/{r['city_slug']}/{r['slug']}")
     return paths

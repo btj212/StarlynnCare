@@ -26,6 +26,18 @@ const THUMBNAILS: Record<string, ArticleThumbnail> = {
     src: "/illustrations/washington-how-to-check.png",
     alt: "Illustrated table by a rainy window, with a teapot and a closed folder — standing in for looking up a Washington inspection record",
   },
+  "/oregon/how-to-check-a-memory-care-record": {
+    src: "/illustrations/oregon-how-to-check.png",
+    alt: "Illustrated rainy windowsill with a fern, a ceramic cup, and a closed folder — standing in for looking up an Oregon inspection record",
+  },
+  "/illinois/how-to-check-a-memory-care-record": {
+    src: "/illustrations/illinois-how-to-check.png",
+    alt: "Illustrated empty chair by a window, with a closed notebook and dried wheat in a jar — standing in for looking up an Illinois inspection record",
+  },
+  "/minnesota/how-to-check-a-memory-care-record": {
+    src: "/illustrations/minnesota-how-to-check.png",
+    alt: "Illustrated snowy windowsill with a folded blanket, a ceramic mug, and a pine sprig — standing in for looking up a Minnesota inspection record",
+  },
   "/oregon/is-it-licensed-for-memory-care": {
     src: "/illustrations/oregon-memory-care-endorsement.png",
     alt: "Illustrated wooden garden gate standing open onto a path, with climbing roses and no sign — standing in for the endorsement a home must have before it advertises memory care",

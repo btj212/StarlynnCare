@@ -30,6 +30,8 @@ import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
+import { rankHubFacilities } from "@/lib/facility/hubPreview";
+import { displayCityName } from "@/lib/resolveListingRegion";
 import { parentCountyForCity } from "@/lib/regions";
 import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
 import { loadPublishedHubContent, sanitizeHubHtml } from "@/lib/content/loadHubContent";
@@ -436,22 +438,19 @@ export default async function RegionPage({ params }: PageProps) {
 
   // States where we have row-level deficiency data (deficiencies table populated).
   const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA", "AZ", "MO", "CO"]);
-  // For PA county pages, sort the ItemList JSON-LD by record rank (most severe first)
-  // so ItemList positions reflect the displayed "By record" ordering.
-  const sortedFacilitiesForItemList =
-    region.state.code === "PA" && isCounty
-      ? [...facilities].sort(
-          (a, b) => b.serious_citations - a.serious_citations || b.total_citations - a.total_citations,
-        )
-      : facilities;
-  const itemListFacilities = sortedFacilitiesForItemList.map((f) => ({
+  const hubRank = rankHubFacilities(facilities);
+  const itemListFacilities = hubRank.itemList.map((f) => ({
     name: f.name,
     url: canonicalFor(`/${region.state.slug}/${f.city_slug}/${f.slug}`),
     facilityId: f.id,
     street: f.street,
-    city: f.city,
+    city: displayCityName(f.city, f.city_slug),
     postalCode: f.zip,
     addressRegion: region.state.name,
+  }));
+  const hubPreview = hubRank.preview.map((f) => ({
+    ...f,
+    city: displayCityName(f.city, f.city_slug),
   }));
   // Any deficiency (Type A or Type B) — matches the "§ Findings" label.
   // serious_citations is retained on each facility for card-level red/amber badging.
@@ -858,28 +857,37 @@ export default async function RegionPage({ params }: PageProps) {
         {!fetchError && totalCount > 0 && (
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-14">
             <SectionHead
-              label={isCounty ? `§ ${region.name} — All Facilities` : "§ All Facilities"}
+              label={isCounty ? `§ ${region.name} — Facilities` : "§ Facilities"}
               title={
-                isCounty
-                  ? <>{region.name} — <em>every licensed facility ranked by inspection record.</em></>
-                  : <>All memory care in {region.name}, <em>ranked by inspection record.</em></>
+                <>
+                  Memory care in {region.name}, <em>starting with the fullest public records.</em>
+                </>
               }
             />
             <aside className="mb-6 font-[family-name:var(--font-sans)] text-[13px] text-ink-3">
-              Use <strong className="font-semibold text-ink-2">By record</strong> to sort fewest citations first.
-              Tier badges reflect inspection severity, repeat citations, and citation frequency relative to
-              peers in {region.name}.{" "}
+              This first set is the homes with the most inspection history
+              {smallCount > 0 && !hubRank.onlySmallHomes
+                ? `, leaving out ${smallCount} homes of 6 beds or fewer`
+                : ""}
+              .{" "}
+              <Link
+                href={`/${region.state.slug}/${region.slug}/facilities`}
+                className="font-semibold text-teal underline underline-offset-4"
+              >
+                Browse all {totalCount} facilities in {region.name}
+              </Link>
+              .{" "}
               <Link href="/methodology" className="text-teal underline underline-offset-4">
                 See methodology
               </Link>
               .
             </aside>
             <FacilityListClient
-              facilities={facilities}
+              facilities={hubPreview}
               stateSlug={region.state.slug}
               regionName={region.name}
-              hiddenSmallCount={smallCount}
-              initialShowSmall={smallCount > 0}
+              hiddenSmallCount={0}
+              initialShowSmall={hubRank.onlySmallHomes}
             />
           </div>
         )}

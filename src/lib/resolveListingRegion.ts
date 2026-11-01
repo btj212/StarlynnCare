@@ -2,6 +2,34 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { regionFromSlug, type Region } from "@/lib/regions";
 import { stateFromSlug } from "@/lib/states";
 
+const CITY_SMALL_WORDS = new Set(["of", "the", "and", "de", "del", "la", "las", "los"]);
+
+/** Title-case a stored city only when the regulator file is all capitals. */
+export function displayCityName(name: string | null | undefined, slug?: string | null): string {
+  const trimmed = name?.trim() ?? "";
+  if (!trimmed) return slug ? titleFromCitySlug(slug) : "";
+  const letters = trimmed.replace(/[^A-Za-z]/g, "");
+  if (!letters || letters !== letters.toUpperCase()) return trimmed.replace(/\.+$/, "");
+  return titleCaseCity(trimmed);
+}
+
+function titleFromCitySlug(slug: string): string {
+  return titleCaseCity(slug.replace(/-/g, " "));
+}
+
+function titleCaseCity(value: string): string {
+  return value
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word, index) => {
+      if (word === "st." || word === "st") return "St.";
+      if (index > 0 && CITY_SMALL_WORDS.has(word)) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
 /**
  * Resolve a listing hub (/[state]/[city]) from static regions first, then from
  * any city_slug in a covered state that has at least one publishable facility.
@@ -41,7 +69,7 @@ export async function resolveListingRegion(
 
   return {
     slug,
-    name: city,
+    name: displayCityName(city, slug),
     kind: "city",
     state,
     citySlugs: [slug],

@@ -8,6 +8,9 @@ import {
 import {
   ArizonaHowToCheckBody,
   CaliforniaHowToCheckBody,
+  IllinoisHowToCheckBody,
+  MinnesotaHowToCheckBody,
+  OregonHowToCheckBody,
   PennsylvaniaHowToCheckBody,
   WashingtonHowToCheckBody,
 } from "@/components/articles/HowToCheckBodies";
@@ -31,6 +34,9 @@ import { SERIOUS_EXPLAINER_DESLOP } from "@/lib/content/seriousExplainerDeslop";
 import {
   ARIZONA_HOW_TO_DESLOP,
   CALIFORNIA_HOW_TO_DESLOP,
+  ILLINOIS_HOW_TO_DESLOP,
+  MINNESOTA_HOW_TO_DESLOP,
+  OREGON_HOW_TO_DESLOP,
   PENNSYLVANIA_HOW_TO_DESLOP,
   WASHINGTON_HOW_TO_DESLOP,
 } from "@/lib/content/howToCheckDeslop";
@@ -221,6 +227,27 @@ export const REVIEW_ARTICLES: ReviewArticle[] = [
     illustration: HOW_TO_CHECK.WA.image,
     Body: WashingtonHowToCheckBody,
     deslop: WASHINGTON_HOW_TO_DESLOP,
+  },
+  {
+    path: HOW_TO_CHECK.OR.path,
+    title: HOW_TO_CHECK.OR.title,
+    illustration: HOW_TO_CHECK.OR.image,
+    Body: OregonHowToCheckBody,
+    deslop: OREGON_HOW_TO_DESLOP,
+  },
+  {
+    path: HOW_TO_CHECK.IL.path,
+    title: HOW_TO_CHECK.IL.title,
+    illustration: HOW_TO_CHECK.IL.image,
+    Body: IllinoisHowToCheckBody,
+    deslop: ILLINOIS_HOW_TO_DESLOP,
+  },
+  {
+    path: HOW_TO_CHECK.MN.path,
+    title: HOW_TO_CHECK.MN.title,
+    illustration: HOW_TO_CHECK.MN.image,
+    Body: MinnesotaHowToCheckBody,
+    deslop: MINNESOTA_HOW_TO_DESLOP,
   },
   {
     path: SERIOUS_EXPLAINER.path,

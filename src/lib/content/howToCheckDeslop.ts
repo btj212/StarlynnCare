@@ -288,3 +288,158 @@ export const WASHINGTON_HOW_TO_DESLOP: DeslopSection[] = [
   ),
   ...SHARED_SECTIONS,
 ];
+
+export const OREGON_HOW_TO_DESLOP: DeslopSection[] = [
+  passes(
+    "Where to look",
+    [
+      "The Oregon licensing portal is a one-stop shop that reveals whether a home is truly safe.",
+      "Search the home's name on the Oregon long-term care licensing site and open its survey record.",
+      "one-stop shop, truly safe",
+    ],
+    [
+      "Search the home's name on the Oregon long-term care licensing site and open its survey record. Our page always has the original.",
+      "The record on that site is the original. This directory's page for the home links to it when we stored a link.",
+      "always has the original",
+    ],
+  ),
+  passes(
+    "What the red tag means",
+    [
+      "Level 4 and level 3 are the same thing, and both mean the home failed.",
+      "On an Oregon profile, level 4 is labeled IJ. Level 3 is not.",
+      "the same thing, the home failed",
+    ],
+    [
+      "The serious-home count operationalizes severity three and above as a stakeholder signal.",
+      "The count of homes with a serious citation still includes a finding stored at severity 3.",
+      "operationalizes, stakeholder signal",
+    ],
+  ),
+  passes(
+    "Opening answer",
+    [
+      "Checking an Oregon memory care home is simple, and the endorsement means the home passed a quality test.",
+      "Search the home's name on the Oregon long-term care licensing site and open its survey record.",
+      "simple, passed a quality test",
+    ],
+    [
+      "DHS surveys homes constantly and posts every complaint the same day.",
+      "DHS says assisted living and residential care facilities are surveyed every 24 months, and that the site updates every 24 hours.",
+      "constantly, every complaint the same day",
+    ],
+  ),
+  passes(
+    "Memory care endorsement",
+    [
+      "A memory care endorsement proves the home is a specialist and has a clean record.",
+      "A memory care endorsement is permission to advertise memory care. It is not an inspection result.",
+      "proves, specialist, clean record",
+    ],
+    [
+      "An endorsed unit is inspected more often than the rest of the building.",
+      "An endorsed memory care unit is surveyed on its facility's schedule.",
+      "inspected more often",
+    ],
+  ),
+  ...SHARED_SECTIONS,
+];
+
+export const ILLINOIS_HOW_TO_DESLOP: DeslopSection[] = [
+  passes(
+    "Where to look",
+    [
+      "The IDPH lookup is the definitive quality score for every Illinois memory care home.",
+      "Search the home's name on the Illinois Department of Public Health facility lookup and open its record.",
+      "definitive quality score",
+    ],
+    [
+      "Search the home's name on the facility lookup and retrieve the compliance artifact.",
+      "This directory's page for the home lists the inspections we hold.",
+      "compliance artifact",
+    ],
+  ),
+  passes(
+    "What the red tag means",
+    [
+      "Type 1 means the home is a dementia program, the same as a California Type A.",
+      "On an Illinois profile, the red tag is Type 1. A Type 1 citation is not a memory care designation.",
+      "dementia program, the same as a California Type A",
+    ],
+    [
+      "A 295.4060 line proves the home is designated for memory care.",
+      "A rule about a dementia program is not a designation that the home provides memory care.",
+      "proves the home is designated",
+    ],
+  ),
+  passes(
+    "Opening answer",
+    [
+      "Illinois posts a plain-English account of everything the inspector saw.",
+      "Search the home's name on the Illinois Department of Public Health facility lookup and open its record.",
+      "plain-English account of everything the inspector saw",
+    ],
+    [
+      "Assisted living establishments are governed by a comprehensive quality framework.",
+      "Assisted living establishments follow 77 Ill. Adm. Code 295.",
+      "comprehensive quality framework",
+    ],
+  ),
+  passes(
+    "Rule numbers",
+    [
+      "If the file names a rule, that is what the inspector saw.",
+      "When a citation names a rule, that names the rule. It does not describe what the inspector saw.",
+      "that is what the inspector saw",
+    ],
+    [
+      "The rule title is a narrative of the visit.",
+      "A rule number names the rule. It does not, by itself, describe what the inspector saw.",
+      "narrative of the visit",
+    ],
+  ),
+  ...SHARED_SECTIONS,
+];
+
+export const MINNESOTA_HOW_TO_DESLOP: DeslopSection[] = [
+  passes(
+    "Where to look",
+    [
+      "The Minnesota report card is a simple grade that tells you which home is safest.",
+      "Search the home in the Minnesota Department of Health provider directory and open its inspection record.",
+      "simple grade, which home is safest",
+    ],
+    [
+      "Search the provider directory and pull the home's quality score.",
+      "The record on that site is the original. This directory's page for the home links to it when we stored a link.",
+      "quality score",
+    ],
+  ),
+  passes(
+    "What the red tag means",
+    [
+      "Immediate jeopardy and every other finding are the same red tag.",
+      "On a Minnesota profile, the red tag is an immediate-jeopardy flag.",
+      "every other finding, the same red tag",
+    ],
+    [
+      "The home count is limited to the immediate-jeopardy flag.",
+      "The count of homes with a serious citation still includes a finding stored at severity 3 or higher.",
+      "limited to the immediate-jeopardy flag",
+    ],
+  ),
+  passes(
+    "Opening answer",
+    [
+      "Minnesota makes it easy to see which memory care home is the best.",
+      "Search the home on the Minnesota Department of Health provider directory and open its inspection record.",
+      "easy, the best",
+    ],
+    [
+      "Read the newest inspection first and you will know if the home is safe.",
+      "Read the newest inspection first. An inspection records what the state found on the day it looked.",
+      "you will know if the home is safe",
+    ],
+  ),
+  ...SHARED_SECTIONS,
+];

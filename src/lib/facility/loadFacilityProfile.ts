@@ -786,6 +786,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
     regulatorName: careBasis.regulator,
+    regulatorAbbr: cfg.agencyShort,
   });
 
   const jsonLd: object[] = [

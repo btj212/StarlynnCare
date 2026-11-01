@@ -899,6 +899,8 @@ export type FacilityFaqInput = {
   licenseNumber: string | null;
   licenseUrl: string | null;
   regulatorName: string;
+  /** Short name used in “cited by ADHS?” — same agency the page names. */
+  regulatorAbbr: string;
 };
 
 function visitPhrase(type: string | null, isComplaint: boolean): string {
@@ -968,6 +970,17 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
     const defWord = input.deficiencyCount === 1 ? "deficiency" : "deficiencies";
     const inspWord = input.inspectionCount === 1 ? "inspection" : "inspections";
     const window = input.countsCoverThreeYears ? " in the last three years" : "";
+    const cited =
+      input.deficiencyCount === 0
+        ? `No. ${name} has no ${input.regulatorAbbr} citations${window}.`
+        : `Yes. ${name} has ${input.deficiencyCount} ${defWord} from ${input.regulatorAbbr}${window}.`;
+    pairs.push({
+      q: `Has ${name} been cited by ${input.regulatorAbbr}?`,
+      a:
+        input.deficiencyCount > 0
+          ? `${cited} ${seriousSentence(input.seriousFindings, input.stateCode)}`
+          : cited,
+    });
     let answer = `${name} has ${input.deficiencyCount} ${defWord} across ${input.inspectionCount} ${inspWord}${window}.`;
     if (input.deficiencyCount > 0) {
       answer += ` ${seriousSentence(input.seriousFindings, input.stateCode)}`;
