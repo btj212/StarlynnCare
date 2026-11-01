@@ -132,7 +132,7 @@ export default async function MethodologyPage() {
   const methodologyFaqs = [
     {
       q: "How does StarlynnCare rate memory care facilities?",
-      a: "StarlynnCare rates facilities using only official state inspection records — no paid placements, referral fees, or user-submitted content. We compute four independent signals (compliance record, severity record, dementia-care specificity, and complaint pattern) and compare each against the facility's local peer set using 33rd and 66th percentile cutoffs.",
+      a: "StarlynnCare rates facilities using only official state inspection records. A flat fee from an eligible community can add labeled information to that community's own page, and it cannot change a grade or a rank. We compute four independent signals (compliance record, severity record, dementia-care specificity, and complaint pattern) and compare each against the facility's local peer set using 33rd and 66th percentile cutoffs.",
     },
     {
       q: "Why doesn't StarlynnCare publish a composite score or star rating?",
@@ -174,9 +174,10 @@ export default async function MethodologyPage() {
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-slate">
             Every number on StarlynnCare comes directly from official state
-            inspection records. We do not invent data, accept paid placements,
-            or produce a single letter grade. Instead, we show four independent
-            signals and let families weigh them.
+            inspection records. We do not invent data, sell a better grade, or
+            produce a single letter grade. A community that clears a published
+            bar can pay to add labeled information to its own page. We show four
+            independent signals and let families weigh them.
           </p>
           <p className="mt-3 text-sm text-muted">
             Looking for a summary of how we rate facilities?{" "}

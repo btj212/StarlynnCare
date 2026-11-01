@@ -118,8 +118,10 @@ export default function EditorialPolicyPage() {
             </p>
             <p>
               StarlynnCare indexes records produced by state and federal regulators in the course of statutory
-              inspections. The site does not solicit voluntary data submissions from facilities, accept paid
-              placement, or derive content from facility-side surveys.
+              inspections. Communities that clear a published bar can pay a flat fee to add labeled photos,
+              prices, and a tour button to their own page. That material is labeled as the community&apos;s and
+              is not treated as a state record. The site does not derive grades from facility-side surveys,
+              and it does not remove or soften a finding because someone paid.
             </p>
           </Section>
 
@@ -141,14 +143,19 @@ export default function EditorialPolicyPage() {
 
           <Section id="coi" title="Conflict of interest">
             <p>
-              StarlynnCare does not accept referral commissions, lead bonuses, or paid placement fees from
-              facility operators. Sponsorship language cannot appear adjacent to ranked profiles or directory
-              rankings.
+              StarlynnCare does not accept referral commissions or lead bonuses. No operator can purchase a
+              higher grade, a featured position, or a higher place in any list. A flat partner fee buys only
+              the labeled block on that community&apos;s own page. Another community&apos;s advertisement never
+              appears there.
             </p>
             <p>
-              Founders hold no equity interests in licensed operators reviewed on this site. Future partnerships
-              (research grants, foundation funding) will be disclosed here if they could materially influence
-              methodology.
+              Founders hold no equity interests in licensed operators reviewed on this site. The partner
+              program is disclosed on this page and at{" "}
+              <Link href="/partners" className="text-teal underline underline-offset-4">
+                /partners
+              </Link>
+              . Research grants, foundation funding, and any other partnership will be disclosed here if
+              they could materially influence methodology.
             </p>
           </Section>
 

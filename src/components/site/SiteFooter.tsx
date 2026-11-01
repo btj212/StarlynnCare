@@ -106,6 +106,7 @@ export async function SiteFooter() {
           <div>
             <h5 className={headingCls}>About</h5>
             <nav className="flex flex-col gap-1 text-[14px]" aria-label="About links">
+              <Link href="/partners" className={linkCls}>For communities</Link>
               <Link href="/about" className={linkCls}>Our editorial desk</Link>
               <Link href="/california/37-questions-to-ask-on-a-tour" className={linkCls}>Tour checklist (37 questions)</Link>
               <Link href="/about" className={linkCls}>For discharge planners</Link>

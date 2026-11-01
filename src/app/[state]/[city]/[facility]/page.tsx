@@ -105,6 +105,8 @@ import { MetroNearbyFacilities } from "@/components/facility/MetroNearbyFaciliti
 import { SameOperatorFacilities } from "@/components/facility/SameOperatorFacilities";
 import { FacilityBrowseLinks } from "@/components/facility/FacilityBrowseLinks";
 import { ReportListingForm } from "@/components/facility/ReportListingForm";
+import { PartnerCommunityPanel } from "@/components/facility/partner/PartnerCommunityPanel";
+import { loadPublicPartnerPanel } from "@/lib/partners/panel";
 
 export const revalidate = 3600;
 export const maxDuration = 60;
@@ -245,6 +247,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
   const profile = result as import("@/lib/facility/loadFacilityProfile").FacilityProfile;
   const { facility, state, county, backHref, backLabel } = profile;
+  const partnerPanel = await loadPublicPartnerPanel(facility.id);
   const offer = assignOffer(facility.id, facility.state_code);
   const showPaidWatch = shouldShowPaidFacilityWatch(facility.state_code);
 
@@ -322,6 +325,12 @@ export default async function FacilityPage({ params }: PageProps) {
             <ComplianceFlagBanner flag={profile.complianceFlag} placement="section" />
             <FacilityRecord profile={profile} />
           </div>
+
+          {partnerPanel ? (
+            <div className="order-4 md:order-none">
+              <PartnerCommunityPanel panel={partnerPanel} />
+            </div>
+          ) : null}
         </div>
 
         {/* § 04 · Rulebook accordion (hidden when state has no rules configured) */}

@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-10 — Verified Partner is a flat fee on a community’s own page
+
+**Decided:** A community that passes `partner_gate` can pay a flat founding rate ($149/month or $1,490/year, first 20) or the standard rate ($249/month or $2,490/year) for a labeled panel and a tour request that goes only to that community. The operator plan is a manual invoice. Checkout stays off until `PARTNER_CHECKOUT_ENABLED=1`, which waits on counsel and insurance. The gate is service-role only. A failed gate hides the panel and pauses Stripe collection; a manual pause is not auto-resumed; prices older than 30 days hide, and do not pause billing. Grades, ranks, citations, list order, and free facility replies stay outside the partnership. Facility Watch acquisition and Premium are unchanged. October 2026 watcher rows with `alerts_eligible=false` are one-time record requests, not paid subscriptions.
+
+**Rejected:** A $75 per-request fee. Washington RCW 18.330 and the unresolved California referral-disclosure question are why. Treating the public “top half” line as eligibility. Inferring a paid Facility Watch from `customer_commitments`. Letting anon read partner tables or call the gate.
+
+**Source:** `supabase/migrations/0071_verified_partners.sql`, `src/lib/partners/`, `src/app/partners/page.tsx`.
+
+---
+
 ## 2026-11 — Inspection summaries say only what the public file supports
 
 **Decided:** A plain-English summary is stored on `inspections.narrative_summary` for every published visit. Illinois FOIA lines are rule numbers, violation classes, and fines. Those summaries name the 77 Ill. Adm. Code 295 section and say the file does not describe what the inspector saw. They are written in code, not by a model. A 295.4060 citation stays a citation of the dementia-program rule. It does not say the home has the Alzheimer's Special Care designation. Other states quote one sentence from the stored finding when that sentence exists, and say whether it is an account or a requirement. A real inspector narrative still goes to `summarize_inspections.py`, with a prompt for that state. Pennsylvania, Arizona, and Missouri do not fall through to the California Title 22 prompt. A visit with no citation text gets one sentence saying so. A model refusal is not a summary.

@@ -9,7 +9,8 @@ export type SubmissionEventType =
   | "review"
   | "waitlist"
   | "shortlist_watch"
-  | "contract_review";
+  | "contract_review"
+  | "partner_tour";
 
 export interface RecordSubmissionArgs {
   type: SubmissionEventType;

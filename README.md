@@ -1,6 +1,6 @@
 # StarlynnCare
 
-Memory care quality transparency: primary-source CMS and state agency data, cited facility profiles, no paid placement.
+Memory care quality transparency: primary-source CMS and state agency data, cited facility profiles, no paid rankings.
 
 ## Stack
 

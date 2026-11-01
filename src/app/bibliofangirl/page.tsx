@@ -491,8 +491,8 @@ export default async function BibliofangirlPage() {
           <p className="text-[12px] text-ink-4 border-t border-paper-rule pt-6">
             Data sourced from Pennsylvania DHS Human Services Provider Directory inspection records.
             This page is not indexed by search engines and was prepared for a specific user inquiry.
-            All data reflects the public PA DHS inspection record — StarlynnCare does not accept
-            payment from facilities and does not alter inspection findings.
+            All data reflects the public PA DHS inspection record. A flat partner fee never
+            changes a grade, a rank, or an inspection finding.
           </p>
         </div>
       </main>

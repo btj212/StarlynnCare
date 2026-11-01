@@ -98,6 +98,7 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/about", priority: "0.75", changefreq: "monthly" },
     { path: "/data", priority: "0.8", changefreq: "monthly" },
     { path: "/editorial-policy", priority: "0.72", changefreq: "monthly" },
+    { path: "/partners", priority: "0.7", changefreq: "monthly" },
     { path: "/terms", priority: "0.55", changefreq: "yearly" },
     { path: "/privacy", priority: "0.55", changefreq: "yearly" },
     { path: "/research", priority: "0.85", changefreq: "weekly" },

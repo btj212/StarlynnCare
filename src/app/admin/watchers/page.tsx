@@ -111,6 +111,19 @@ async function loadWatcherStats() {
   return { total, alertEligible, oneTimeLeads, byState, topFacilities };
 }
 
+async function loadAreaWatchCount() {
+  const supabase = getServiceClient();
+  const { count, error } = await supabase
+    .from("area_watchers")
+    .select("id", { count: "exact", head: true })
+    .eq("active", true);
+  if (error) {
+    console.error("[admin/watchers] area watch load error:", error.message);
+    return null;
+  }
+  return count ?? 0;
+}
+
 async function loadPaidSubscriptions() {
   const supabase = getServiceClient();
   const { data, error } = await supabase
@@ -154,29 +167,36 @@ async function loadPaidSubscriptions() {
 export default async function AdminWatchersPage() {
   const stats = await loadWatcherStats();
   const paid = await loadPaidSubscriptions();
+  const areaWatch = await loadAreaWatchCount();
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-navy">Facility Watch</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Paid Facility Watch subscriptions, legacy official-record alert
-          recipients, and one-time email leads.
+        <p className="mt-1 max-w-3xl text-sm text-gray-500">
+          Ongoing Facility Watch, one-time record or tour leads, Area Watch, and
+          paid subscriptions are separate. A row with alerts off is a one-time
+          record or tour request, not an ongoing watch. Paid status comes only
+          from facility watch subscriptions, not from customer commitments.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
-            label: "Official-alert recipients",
+            label: "Ongoing Facility Watch",
             value: stats.alertEligible.toLocaleString(),
           },
           {
-            label: "One-time email leads",
+            label: "One-time record or tour leads",
             value: stats.oneTimeLeads.toLocaleString(),
           },
           {
-            label: "Total facility_watchers rows",
+            label: "Area Watch",
+            value: areaWatch == null ? "Unavailable" : areaWatch.toLocaleString(),
+          },
+          {
+            label: "All facility watcher rows",
             value: stats.total.toLocaleString(),
           },
         ].map(({ label, value }) => (
@@ -191,7 +211,10 @@ export default async function AdminWatchersPage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-navy">Paid Facility Watch</h2>
+        <h2 className="mb-1 text-lg font-semibold text-navy">Paid Facility Watch</h2>
+        <p className="mb-3 text-sm text-gray-500">
+          Stripe subscriptions only. A customer commitment is not a payment.
+        </p>
         <div className="grid gap-4 sm:grid-cols-4">
           {[
             { label: "Active / past due", value: paid.active },
@@ -259,7 +282,7 @@ export default async function AdminWatchersPage() {
       {stats.byState.length > 0 && (
         <div>
           <h2 className="mb-3 text-lg font-semibold text-navy">
-            Official-alert recipients by state
+            Ongoing Facility Watch by state
           </h2>
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <table className="w-full text-sm">
@@ -287,7 +310,7 @@ export default async function AdminWatchersPage() {
       {stats.topFacilities.length > 0 && (
         <div>
           <h2 className="mb-3 text-lg font-semibold text-navy">
-            Top 10 facilities by official-alert recipients
+            Top 10 facilities by ongoing Facility Watch
           </h2>
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <table className="w-full text-sm">

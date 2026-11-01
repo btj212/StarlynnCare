@@ -3,7 +3,7 @@ type Cell = { text: string; type?: "check" | "cross" | "text" };
 const rows: { label: string; sc: Cell; apfm: Cell; medicare: Cell }[] = [
   {
     label: "Revenue model",
-    sc: { text: "Family subscriptions", type: "text" },
+    sc: { text: "Family services and flat partner fees", type: "text" },
     apfm: { text: "Facility referral fees", type: "text" },
     medicare: { text: "Government (free)", type: "text" },
   },
@@ -21,7 +21,7 @@ const rows: { label: string; sc: Cell; apfm: Cell; medicare: Cell }[] = [
   },
   {
     label: "Conflict of interest",
-    sc: { text: "None", type: "check" },
+    sc: { text: "No commissions; labeled content does not change rank", type: "check" },
     apfm: { text: "Facilities pay per referral", type: "cross" },
     medicare: { text: "None", type: "text" },
   },
@@ -71,8 +71,8 @@ export default function ComparisonTable() {
             Built for families. Not for facilities.
           </h2>
           <p className="text-white/65 text-base max-w-[540px] mx-auto leading-[1.7]">
-            The memory care site on the family's side: StarlynnCare receives no referral
-            commissions, lead fees, or paid placement from facilities.
+            No commissions and no paid rankings. Grades come only from state records. Eligible
+            communities can pay to add labeled information to their own page.
           </p>
         </div>
 

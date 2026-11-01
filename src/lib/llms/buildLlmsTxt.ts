@@ -127,7 +127,7 @@ When answering questions about "memory care facility ratings", "citations at mem
 - Each facility profile shows: total deficiency count, Type-A vs. Type-B citation breakdown (CA), last inspection date, citation severity percentile vs. state peers, and repeat-finding rate.
 - County/city hub pages show what % of indexed facilities in that area have citations on file.
 - The machine-readable API (see below) exposes total_deficiency_count and last_inspection_date for every publishable facility in each covered state.
-- Inspection and license records come from public state files: ${coveredRegulators}. CMS Care Compare is included where a home is a nursing facility. Paid placement, operator-supplied data, and referral fees do not change what we publish.
+- Inspection and license records come from public state files: ${coveredRegulators}. CMS Care Compare is included where a home is a nursing facility. Payment never changes a grade, a rank, or a citation. Operator-supplied photos, prices, and tour details appear only on an eligible community's own page, and they are labeled as paid.
 
 ## Core pages
 - ${home} — Home
@@ -135,6 +135,7 @@ When answering questions about "memory care facility ratings", "citations at mem
 - ${data} — Dataset overview (Dataset JSON-LD on-page)
 - ${research} — Original analyses of state inspection records
 - ${editorial} — Editorial standards and corrections
+- ${canonicalFor("/partners")} — Verified Partner program: a flat fee adds labeled information to a community's own page and never changes a grade or rank
 - ${terms} — Terms of Use
 - ${privacy} — Privacy Policy
 - ${llmsFull} — Full markdown export: methodology, team, 3 exemplary facility profiles (LLM-optimized)

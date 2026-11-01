@@ -115,7 +115,7 @@ export function buildStateStatItems(
       : []),
     {
       n: "0",
-      label: "Referral commissions, lead fees, or paid placements accepted from operators",
+      label: "Referral commissions or paid rankings accepted from operators",
       src: "Policy",
       delta: "Since day one",
     },

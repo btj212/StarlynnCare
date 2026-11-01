@@ -250,7 +250,7 @@ export default function CrisisPlaybookPage() {
             </p>
             <p className="text-[15.5px] text-ink-2 leading-relaxed mb-4">
               Build a comparison shortlist of facilities in your area, ranked by inspection grade.
-              No referral fees. No paid placement. The same public record the state uses — in plain language.
+              No referral fees. No paid rankings. The same public record the state uses — in plain language.
             </p>
             <Link
               href="/california"

@@ -235,7 +235,7 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
             </h1>
             <p className="font-[family-name:var(--font-display)] italic text-[18px] leading-[1.5] text-ink-3 max-w-[52ch] mt-3">
               Search, filter, and compare every publishable memory care facility in {state.name}.
-              Rankings built from state inspection data — no referral commissions, no paid placement.
+              Rankings built from state inspection data — no referral commissions, no paid rankings.
             </p>
             <div className="mt-5 flex flex-wrap items-baseline gap-6 border-l-2 border-teal pl-5 font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-[0.04em]">
               <span>

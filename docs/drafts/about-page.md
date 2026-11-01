@@ -23,7 +23,7 @@ Facility grades are derived from peer comparison within each state, not across s
 
 ## What we don't do
 
-StarlynnCare takes no referral commissions, lead bonuses, or paid placement fees from facility operators. No facility can purchase a higher grade, a featured listing, or adjacency to the top of any search result on this site. That is not a marketing claim — it is a structural constraint. Referral fees create the exact conflict that motivated building this in the first place: a directory paid by operators cannot tell families which operators fail inspections. If that policy ever changes, this page will say so before any contract is signed.
+StarlynnCare takes no referral commissions or lead bonuses. No facility can purchase a higher grade, a featured listing, or adjacency to the top of any search result on this site. Communities that clear a published bar can pay a flat fee to add labeled photos, prices, and a tour button to their own page. That fee does not change the record. Referral commissions stay off the table because a directory paid per placement cannot tell families which operators fail inspections.
 
 ## The people behind it
 

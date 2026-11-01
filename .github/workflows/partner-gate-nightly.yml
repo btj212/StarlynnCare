@@ -1,0 +1,37 @@
+# Re-check Verified Partner eligibility after the snapshot cache refresh.
+# A cache failure must not skip the gate: billing still pauses when a partner fails.
+# STRIPE_SECRET_KEY is required once any partner has a subscription. Until then the
+# job exits 0. Do not set PARTNER_CHECKOUT_ENABLED here.
+name: Partner gate nightly
+
+on:
+  schedule:
+    - cron: "30 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Refresh snapshot cache
+        id: cache
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python3 scrapers/refresh_snapshot_cache.py
+
+      - name: Reconcile partner gates
+        if: success() || failure()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: python3 scrapers/partner_gate_nightly.py

@@ -93,7 +93,7 @@ Happy to share more data or get on a quick call.
 
 Hi [Name],
 
-I'm writing from StarlynnCare, a free directory of licensed memory care facilities in California built entirely from state inspection records. No paid placements, no referral fees, no commission on tours.
+I'm writing from StarlynnCare, a free directory of licensed memory care facilities in California built entirely from state inspection records. No paid rankings, no referral fees, no commission on tours.
 
 Two resources I think would be directly useful for AARP CA members:
 
@@ -174,7 +174,7 @@ We're reaching out to Bay Area ombudsman offices to see whether StarlynnCare wou
 1. Being listed in any resource guides your office distributes to families navigating placement decisions
 2. Any feedback on what information would be most useful to surface for families at the decision-making stage
 
-We take no money from facilities and have no referral relationship with any operator. Our full funding model is at https://starlynncare.com/editorial-policy.
+We take no referral commissions, and payment never changes a grade or a rank. Communities that clear a published bar can pay a flat fee to add labeled information to their own page. Our full funding model is at https://starlynncare.com/editorial-policy.
 
 Thank you for the work your office does. Please feel free to reach out if you'd like to see a demonstration or discuss a resource listing.
 
@@ -193,7 +193,7 @@ Hi [Name],
 
 I'm reaching out from StarlynnCare (https://starlynncare.com), a free online directory of licensed memory care facilities built from California state inspection records.
 
-We work with families navigating memory care placement — often under time pressure, with limited information and no guide through the process. Our directory surfaces the public inspection record for every licensed RCFE in California in plain language, at no charge and with no paid placements from operators.
+We work with families navigating memory care placement — often under time pressure, with limited information and no guide through the process. Our directory surfaces the public inspection record for every licensed RCFE in California in plain language, at no charge to families and with no paid rankings.
 
 For the East Bay specifically, we cover hundreds of facilities across Alameda and Contra Costa counties.
 

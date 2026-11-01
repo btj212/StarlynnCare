@@ -41,7 +41,7 @@ A new inspection is reported to anyone watching that facility or its area, even 
 
 ## Conflict of interest
 
-StarlynnCare accepts no referral commissions, lead bonuses, or paid placement fees from facility operators. No operator can purchase a higher grade, a featured position, or adjacency to directory rankings. Sponsorship or promotional language does not appear adjacent to graded profiles.
+StarlynnCare accepts no referral commissions or lead bonuses. No operator can purchase a higher grade, a featured position, or adjacency to directory rankings. Communities that clear a published bar can pay a flat fee for a labeled block on their own page. Another community's advertisement does not appear there.
 
 Neither founder holds equity in any licensed memory care operator reviewed on this site. No commercial relationships with operators are pending. Future partnerships — research grants, foundation funding, or data licensing — will be disclosed on this page before they take effect if they could materially influence how facilities are graded or surfaced.
 

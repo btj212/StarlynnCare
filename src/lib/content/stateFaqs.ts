@@ -1,3 +1,5 @@
+import { operatorPaymentFaqAnswer } from "@/lib/seo/governance";
+
 export interface FaqItem {
   q: string;
   a: string;
@@ -11,7 +13,9 @@ export const CA_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews. We are funded by reader memberships and the sale of our annual data report to public-interest organizations.",
+    a: operatorPaymentFaqAnswer(
+      "Rankings are derived solely from state inspection records and verified family reviews. We are funded by the founder, optional reader services, flat fees from eligible communities, reader memberships, and the sale of our annual data report to public-interest organizations.",
+    ),
   },
   {
     q: "How often is the data updated?",
@@ -35,7 +39,9 @@ export const TX_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews. We are funded by reader memberships and the sale of our annual data report to public-interest organizations.",
+    a: operatorPaymentFaqAnswer(
+      "Rankings are derived solely from state inspection records and verified family reviews. We are funded by the founder, optional reader services, flat fees from eligible communities, reader memberships, and the sale of our annual data report to public-interest organizations.",
+    ),
   },
   {
     q: "How often is Texas data updated?",
@@ -59,7 +65,9 @@ export const OR_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    a: operatorPaymentFaqAnswer(
+      "Rankings are derived solely from state inspection records and verified family reviews.",
+    ),
   },
   {
     q: "How often is Oregon data updated?",
@@ -83,7 +91,9 @@ export const WA_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    a: operatorPaymentFaqAnswer(
+      "Rankings are derived solely from state inspection records and verified family reviews.",
+    ),
   },
   {
     q: "How often is Washington data updated?",
@@ -107,7 +117,9 @@ export const MN_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    a: operatorPaymentFaqAnswer(
+      "Rankings are derived solely from state inspection records and verified family reviews.",
+    ),
   },
   {
     q: "How often is Minnesota data updated?",
@@ -135,7 +147,9 @@ export const UT_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    a: operatorPaymentFaqAnswer(
+      "Rankings are derived solely from state inspection records and verified family reviews.",
+    ),
   },
   {
     q: "How often is Utah data updated?",
@@ -163,7 +177,9 @@ export const IL_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Data is derived solely from state inspection records and verified family reviews.",
+    a: operatorPaymentFaqAnswer(
+      "Data is derived solely from state inspection records and verified family reviews.",
+    ),
   },
   {
     q: "How often is Illinois data updated?",
@@ -191,7 +207,9 @@ export const PA_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from DHS inspection records and verified family reviews.",
+    a: operatorPaymentFaqAnswer(
+      "Rankings are derived solely from DHS inspection records and verified family reviews.",
+    ),
   },
   {
     q: "Can a facility correct or respond to information on its profile?",
@@ -219,7 +237,9 @@ export const AZ_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Data is derived solely from ADHS inspection records and verified family reviews.",
+    a: operatorPaymentFaqAnswer(
+      "Data is derived solely from ADHS inspection records and verified family reviews.",
+    ),
   },
   {
     q: "How often is Arizona data updated?",
@@ -250,7 +270,9 @@ export const CO_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator.",
+    a: operatorPaymentFaqAnswer(
+      "Grades and rankings come only from state inspection records.",
+    ),
   },
 ];
 
@@ -266,7 +288,9 @@ export const MO_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from DHSS inspection records and verified family reviews.",
+    a: operatorPaymentFaqAnswer(
+      "Rankings are derived solely from DHSS inspection records and verified family reviews.",
+    ),
   },
   {
     q: "How often is Missouri data updated?",

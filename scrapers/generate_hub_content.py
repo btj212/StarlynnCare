@@ -223,7 +223,7 @@ def existing_status(
 GENERATION_SYSTEM = """\
 You write the editorial intro for a StarlynnCare CITY hub page — the page a
 family lands on when searching "memory care <city>". StarlynnCare is an
-inspection-data directory: independent, no paid placement, every claim traceable
+inspection-data directory: independent grades, no paid rankings, every claim traceable
 to a state regulator.
 
 Voice: upscale, editorial, plain English. No marketing language. No hype. No

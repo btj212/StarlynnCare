@@ -327,7 +327,7 @@ export default function MemoryCareVsNursingHomePage() {
               Every California memory care facility profile on this site is built from Community Care Licensing&apos;s primary records. We pull each facility&apos;s licensure status, inspection dates, citation history, and enforcement actions directly from CCL on a quarterly cadence, with same-day refreshes when major regulatory actions are posted. We render the citation data in plain language, but we link the original CCL document for every line, so you can verify any claim we make against the source.
             </p>
             <p>
-              We do not accept payment from any facility listed. There is no premium tier, no sponsored placement, no commission for tour-bookings, no advertising relationship with any operator. The funding model is described in our{" "}
+              No community can pay for a better grade, a higher rank, or a commission on a tour. A community that clears a published bar can pay a flat fee to add labeled information to its own page, and that block is labeled as paid. The funding model is described in our{" "}
               <Link href="/editorial-policy" className="text-teal underline underline-offset-4">
                 editorial policy
               </Link>

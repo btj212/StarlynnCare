@@ -1,4 +1,4 @@
-import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
+import { GOVERNANCE_24_WORDS, GOVERNANCE_EMPHASIS } from "@/lib/seo/governance";
 
 const SCOPE_LABELS: Record<string, string> = {
   CA: "EST 2025 IN CA",
@@ -12,6 +12,17 @@ const SCOPE_LABELS: Record<string, string> = {
   CO: "EST 2026 IN CO",
   national: "EST 2025 · 11 STATES",
 };
+
+export function GovernanceStatement() {
+  const [before, after] = GOVERNANCE_24_WORDS.split(GOVERNANCE_EMPHASIS);
+  return (
+    <>
+      {before}
+      <strong className="font-semibold text-white">{GOVERNANCE_EMPHASIS}</strong>
+      {after}
+    </>
+  );
+}
 
 type GovernanceBarProps = {
   /** Two-letter state code for state hubs, or "national" for the homepage. Defaults to "CA". */
@@ -38,13 +49,7 @@ export function GovernanceBar({ scope = "CA" }: GovernanceBarProps = {}) {
 
         {/* Statement */}
         <p className="flex-1 text-left text-[12.5px] leading-snug opacity-95 md:text-[13.5px] md:leading-normal">
-          {GOVERNANCE_24_WORDS
-            .split(/(no referral commissions, lead fees, or paid placement)/i)
-            .map((part, i) =>
-              /no referral commissions/i.test(part)
-                ? <strong key={i} className="font-semibold text-white">{part}</strong>
-                : <span key={i}>{part}</span>
-            )}
+          <GovernanceStatement />
         </p>
 
         {/* Right badge */}

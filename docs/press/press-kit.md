@@ -84,7 +84,7 @@ StarlynnCare makes that record readable in plain language for the first time: ev
 
 ## What we are / what we are not
 
-- **Free, no commission, no paid placement.** Facilities do not pay to appear and cannot pay to rank higher. Full editorial policy: https://starlynncare.com/editorial-policy
+- **Free to families, no commissions, no paid rankings.** Every licensed community appears from the public record and cannot pay for a higher grade or a higher place in any list. Communities that clear a published bar can pay a flat fee to add labeled photos, prices, and a tour button to their own page. Full editorial policy: https://starlynncare.com/editorial-policy
 - **Government data only.** Every inspection record links to the original CDSS source document.
 - **YMYL-standard editorial practice.** No invented ratings, no aggregate star scores from thin data.
 - **Not a lead-generation service.** We do not take referral fees or sell family contact information.

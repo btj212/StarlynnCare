@@ -21,6 +21,11 @@ import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { stateFromCode } from "@/lib/states";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import {
+  isVerifiedPartnerSubscription,
+  partnerSubscriptionExists,
+  syncPartnerFromStripe,
+} from "@/lib/partners/billing";
 
 export const runtime = "nodejs";
 
@@ -54,8 +59,31 @@ async function loadFacilityLabel(facilityId: string): Promise<{
   };
 }
 
+async function handlePartnerCheckout(session: Stripe.Checkout.Session) {
+  const subscriptionId =
+    typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id;
+  if (!subscriptionId) {
+    console.error("[stripe-webhook] partner checkout missing subscription");
+    return;
+  }
+  const stripe = getStripe();
+  const sub = await stripe.subscriptions.retrieve(subscriptionId);
+  await syncPartnerFromStripe(sub);
+}
+
+async function partnerEvent(sub: Stripe.Subscription): Promise<boolean> {
+  if (isVerifiedPartnerSubscription(sub)) return true;
+  return partnerSubscriptionExists(sub.id);
+}
+
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (session.mode !== "subscription") return;
+  if (session.metadata?.product === "verified_partner") {
+    await handlePartnerCheckout(session);
+    return;
+  }
   if (session.metadata?.product !== "facility_watch_paid") return;
 
   const subscriptionId =
@@ -185,6 +213,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
+  if (await partnerEvent(sub)) {
+    await syncPartnerFromStripe(sub);
+    return;
+  }
   if (sub.metadata?.product !== "facility_watch_paid") {
     // Still sync if we already track this subscription id.
     const supabase = getServiceClient();
@@ -200,6 +232,10 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
+  if (await partnerEvent(sub)) {
+    await syncPartnerFromStripe(sub);
+    return;
+  }
   const row = await syncSubscriptionFromStripe(sub);
   if (row) await syncPaidCommitment(row);
 }
@@ -210,6 +246,10 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   const stripe = getStripe();
   const sub = await stripe.subscriptions.retrieve(subscriptionId);
+  if (await partnerEvent(sub)) {
+    await syncPartnerFromStripe(sub);
+    return;
+  }
   const row = await syncSubscriptionFromStripe(sub);
   if (!row) return;
 
@@ -284,6 +324,10 @@ export async function POST(req: NextRequest) {
         const subscriptionId = subscriptionIdFromInvoice(invoice);
         if (subscriptionId) {
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          if (await partnerEvent(sub)) {
+            await syncPartnerFromStripe(sub);
+            break;
+          }
           const row = await syncSubscriptionFromStripe(sub);
           if (row) await syncPaidCommitment(row);
         }

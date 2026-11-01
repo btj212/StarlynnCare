@@ -57,6 +57,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Watchers
             </Link>
             <Link
+              href="/admin/partners"
+              className="text-sm font-medium text-slate hover:text-ink"
+            >
+              Partners
+            </Link>
+            <Link
               href="/admin/prr-queue"
               className="text-sm font-medium text-slate hover:text-ink"
             >

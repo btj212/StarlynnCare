@@ -3,7 +3,7 @@ import Stripe from "stripe";
 let stripeClient: Stripe | null = null;
 
 /** Trim CLI/env newlines — `vercel env add` via printf can leave a trailing \\n. */
-function envTrim(name: string): string | undefined {
+export function envTrim(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value || undefined;
 }

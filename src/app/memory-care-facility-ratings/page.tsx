@@ -15,7 +15,7 @@ const PAGE_PATH = "/memory-care-facility-ratings";
 const pageCanonical = canonicalFor(PAGE_PATH);
 const pageTitle = "Memory Care Facility Ratings | StarlynnCare";
 const pageDesc =
-  "Memory care facility ratings, explained: how we grade every facility from state inspection records — with no referral commissions or paid placement.";
+  "Memory care facility ratings, explained: how we grade every facility from state inspection records — with no referral commissions and no paid rankings.";
 
 export const metadata: Metadata = {
   title: pageTitle,
@@ -121,7 +121,7 @@ const STATE_SECTIONS: Array<{
 const FAQ_PAIRS = [
   {
     q: "How does StarlynnCare rate memory care facilities?",
-    a: "StarlynnCare rates facilities using only official state inspection records — we do not accept paid placements, referral fees, or operator submissions that could bias rankings. Each facility is scored on four independent signals derived from its state inspection file: citation severity (how serious), citation frequency (how often), repeat citations (the same problem recurring), and inspection recency (how current the data is). These signals are compared against the facility's local peer set so a rural facility is not penalized for having fewer inspections than a large urban community.",
+    a: "StarlynnCare rates facilities using only official state inspection records. An eligible community can pay a flat fee to add labeled information to its own page, and that payment cannot change a grade or a rank. Each facility is scored on four independent signals derived from its state inspection file: citation severity (how serious), citation frequency (how often), repeat citations (the same problem recurring), and inspection recency (how current the data is). These signals are compared against the facility's local peer set so a rural facility is not penalized for having fewer inspections than a large urban community.",
   },
   {
     q: "What does 'rated by inspection records' mean?",
@@ -133,7 +133,7 @@ const FAQ_PAIRS = [
   },
   {
     q: "Why are these ratings better than A Place for Mom or Caring.com?",
-    a: "A Place for Mom, Caring.com, and similar referral services earn revenue by connecting families to facilities — which creates a structural conflict: they cannot publish inspection-derived ratings that penalize their paying customers. StarlynnCare earns no referral fees or commissions from any facility, so we can publish the full inspection record for every facility including those that would never pay to be listed.",
+    a: "A Place for Mom, Caring.com, and similar referral services earn revenue by connecting families to facilities — which creates a structural conflict: they cannot publish inspection-derived ratings that penalize their paying customers. StarlynnCare earns no referral fees or commissions from any facility. A community that clears a published bar can pay a flat fee to add labeled information to its own page, and that fee does not change the inspection record or the rank. We publish the full inspection record for every facility, including those that would never pay to be listed.",
   },
   {
     q: "How often is the inspection data updated?",
@@ -194,7 +194,7 @@ export default function MemoryCareFacilityRatingsPage() {
               </h1>
               <p className="mt-5 text-[19px] leading-[1.5] text-ink-3 max-w-[58ch]">
                 How we grade every licensed memory care facility from state inspection
-                records — no referral fees, no paid placements, no invented data.
+                records — no referral fees, no paid rankings, no invented data.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3 text-[13px]">

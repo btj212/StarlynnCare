@@ -20,7 +20,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
  *     • Refund policies — what happens if a resident leaves in the first 30–90 days
  *     • Ancillary fee schedules — extras not in the headline monthly rate
  *
- *     StarlynnCare receives no referral commissions or fees from facilities.
+ *     StarlynnCare takes no referral commissions. A flat partner fee never changes a grade or a rank.
  *
  *     Unsubscribe: {unsubscribeUrl}
  */

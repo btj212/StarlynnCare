@@ -3,7 +3,7 @@ const stats = [
   { number: "418,972", label: "Federal inspection records" },
   { number: "$0", label: "Referral commissions charged" },
   { number: "26K", label: "Monthly searches, no good answer" },
-  { number: "100%", label: "Independent — no facility partnerships" },
+  { number: "100%", label: "Independent — no paid rankings" },
 ];
 
 export default function StatBar() {

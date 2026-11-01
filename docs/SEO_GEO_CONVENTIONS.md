@@ -70,7 +70,7 @@ Legacy aliases (`navy`, `warm-white`, `slate`, `muted`, `sc-border`, `footer-bg`
 
 1. **Governance bar**: use `<GovernanceBar />` at the top of every hub page. Not on Clerk/auth routes.
 2. **Site chrome**: `<SiteNav />` (async server component, fetches live facility count) + `<SiteFooter />` (async, fetches last-refreshed date).
-3. **No fictional numbers**: any stat visible to users must come from the DB or a confirmed policy constant (`GOVERNANCE_24_WORDS`, `0` commissions). Never paste prototype placeholder numbers into production.
+3. **No fictional numbers**: any stat visible to users must come from the DB or a confirmed policy constant (`GOVERNANCE_24_WORDS`, `0` referral commissions, `0` paid rankings). A flat partner fee is allowed only for labeled content on that community's own page. Never paste prototype placeholder numbers into production.
 
 ## 8b. Physical city — authoritative source and 301 redirect policy
 

@@ -43,7 +43,7 @@ export function NationalHomeSections({ data }: Props) {
     },
     {
       n: "0",
-      label: "Referral commissions, lead fees, or paid placements accepted from operators",
+      label: "Referral commissions or paid rankings accepted from operators",
       src: "Policy",
       delta: "Since day one",
     },
@@ -87,7 +87,7 @@ export function NationalHomeSections({ data }: Props) {
 
               <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] text-ink-3">
                 <span>✓ No sales calls</span>
-                <span>✓ No paid placement</span>
+                <span>✓ No paid rankings</span>
                 {liveStates.length > 0 && (
                   <span className="text-ink-4">
                     {liveStates.map((s) => s.stateCode).join(" · ")}

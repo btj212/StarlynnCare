@@ -257,8 +257,8 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
         : `How are memory care facilities in ${cityName} rated?`,
       a:
         stateCode === "CO"
-          ? `Profiles use the public inspection record, not a star rating and not a payment from the home. Assisted living severity is CDPHE Level A through E. Nursing-home severity is the CMS letter on the F-tag. You can sort ${cityName} facilities with the "By record" toggle. No referral commission changes the order.`
-          : `StarlynnCare uses state inspection data — not self-reported surveys or paid placements — to evaluate facilities. Each profile surfaces four signals: citation severity (e.g. Type-A vs. Type-B in California), citation frequency relative to peers, repeat-finding rate, and inspection recency. Facilities with too few inspections receive a "limited history" label rather than a misleading composite score. You can sort the list of ${cityName} facilities by inspection record using the "By record" sort toggle to see the cleanest inspection histories first. No referral commissions influence how facilities appear.`,
+          ? `Profiles use the public inspection record, not a star rating. A flat partner fee never changes the grade or the sort. Assisted living severity is CDPHE Level A through E. Nursing-home severity is the CMS letter on the F-tag. You can sort ${cityName} facilities with the "By record" toggle. No referral commission changes the order.`
+          : `StarlynnCare uses state inspection data — not self-reported surveys or paid rankings — to evaluate facilities. Each profile surfaces four signals: citation severity (e.g. Type-A vs. Type-B in California), citation frequency relative to peers, repeat-finding rate, and inspection recency. Facilities with too few inspections receive a "limited history" label rather than a misleading composite score. You can sort the list of ${cityName} facilities by inspection record using the "By record" sort toggle to see the cleanest inspection histories first. No referral commissions influence how facilities appear.`,
     },
     {
       q: s.medicaidQ(cityName),

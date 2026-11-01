@@ -593,7 +593,7 @@ export function buildOrganizationSchema(): object {
     url: SITE_ORIGIN,
     logo: `${SITE_ORIGIN}/illustrations/logo-mark.png`,
     description:
-      "StarlynnCare publishes verified state inspection records, citations, and family reviews for licensed memory care facilities. Independent of operators: no referral commissions, lead fees, or paid placements from facilities.",
+      "StarlynnCare publishes verified state inspection records, citations, and family reviews for licensed memory care facilities. No referral commissions and no paid rankings. Eligible communities can pay to add labeled information to their own page.",
     foundingDate: "2025",
     founder: { "@id": `${SITE_ORIGIN}/about#person-blake-jones` },
     employee: [{ "@id": `${SITE_ORIGIN}#person-starlynn-starkey` }],
@@ -610,9 +610,9 @@ export function buildOrganizationSchema(): object {
     ],
     funding: {
       "@type": "MonetaryGrant",
-      name: "Founder-funded; no operator commissions",
+      name: "No referral commissions; flat partner fees do not buy rankings",
       description:
-        "StarlynnCare receives no referral commissions, lead fees, or paid placements from facility operators. Funding comes from the founder and optional reader services such as Facility Watch.",
+        "StarlynnCare takes no referral commissions and does not sell rankings. Funding comes from the founder, optional reader services such as Facility Watch, and flat fees from communities that clear a published bar.",
     },
     sameAs: [
       aboutUrl,

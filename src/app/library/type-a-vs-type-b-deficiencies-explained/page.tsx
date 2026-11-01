@@ -292,8 +292,9 @@ export default function TypeATypeBPage() {
               Each facility profile on StarlynnCare displays the count and type of deficiencies
               from CDSS inspection records ingested directly from the public CCLD transparency
               API. Type A findings are surfaced prominently; repeat findings across the same
-              regulatory section are flagged. No paid placement, operator-supplied content, or
-              referral revenue influences how a facility is ranked or displayed.
+              regulatory section are flagged. No payment changes how a facility is ranked.
+              Operator-supplied photos and prices, when a community qualifies, stay labeled
+              and do not change the inspection record.
             </p>
           </Prose>
 

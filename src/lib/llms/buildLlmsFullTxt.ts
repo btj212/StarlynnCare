@@ -142,7 +142,7 @@ StarlynnCare is an independent memory care directory that publishes verified sta
 
 **Clinical reviewer:** ${STARLYNN_AUTHOR_DISPLAY_NAME}, ${STARLYNN_AUTHOR_CREDENTIALS}. California Board of Registered Nursing license #${STARLYNN_AUTHOR_LICENSE}, verifiable at https://search.dca.ca.gov/. Rebecca reviews methodology, facility profile copy, and the clinical accuracy of inspection record interpretations published on the site.
 
-**Business model:** No referral commissions, lead fees, or paid placement from operators. Public inspection records remain openly readable. Optional paid services such as Facility Watch fund monitoring. Revenue may also come from reader memberships and the sale of the annual data report to public-interest organizations.
+**Business model:** No referral commissions and no paid rankings. Public inspection records remain openly readable. Eligible communities can pay a flat fee to add labeled information to their own page. Optional paid services such as Facility Watch fund family-side monitoring. Revenue may also come from reader memberships and the sale of the annual data report to public-interest organizations.
 
 **About page:** ${aboutUrl}
 
@@ -184,7 +184,7 @@ StarlynnCare does not publish a single letter grade. Profiles show disaggregated
 
 ### What we do not do
 
-- We do not accept facility-submitted content as fact
+- We do not treat facility-submitted photos, prices, or descriptions as inspection facts
 - We do not fabricate aggregate ratings from thin data (fewer than 3 published reviews = no AggregateRating on-page)
 - We do not use NursingHome schema.org type for RCFEs — they are distinct license classes
 - We do not proxy CMS star ratings as our own scores

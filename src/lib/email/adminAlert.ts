@@ -6,6 +6,7 @@ const TYPE_LABEL: Record<string, string> = {
   digest_subscriber: "Library Magnet / Digest",
   shortlist_watch:   "Shortlist",
   contract_review:   "Contract Review",
+  partner_tour:      "Partner tour request",
   listing_report:    "Listing Report",
   review:            "Review",
   waitlist:          "Waitlist",
