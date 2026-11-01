@@ -1,0 +1,19 @@
+id: LOCALIZED-ES-greeting-handoff
+source_case: M0-localized-greeting-handoff
+language: es
+situation: "Spanish inbound call receives AI disclosure and a human handoff path."
+mock:
+  kind: localized_greeting_handoff
+  caller_text: "Hola"
+expect:
+  must_actions:
+    - disclose_ai
+    - offer_human_handoff
+  must_not_actions:
+    - claim_human
+  must_include:
+    - "inteligencia artificial"
+    - "Presione 0"
+    - "persona del equipo de despacho"
+  must_not_include:
+    - "graba"
