@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "title": "TMT Services | Despacho vial multilingüe",
+    "description": "Despacho vial por voz para camioneros en inglés, punyabí, hindi y español."
+  },
+  "brand": {
+    "name": "TMT Services",
+    "mark": "TMT"
+  },
+  "nav": {
+    "home": "Inicio",
+    "ops": "Acceso de despacho",
+    "language": "Idioma"
+  },
+  "languages": {
+    "en": "English",
+    "pa": "ਪੰਜਾਬੀ",
+    "hi": "हिन्दी",
+    "es": "Español"
+  },
+  "landing": {
+    "eyebrow": "Ayuda vial que habla su idioma",
+    "heading": "Una llamada. Ayuda clara. De vuelta al camino.",
+    "body": "TMT conecta a los camioneros con un despachador de IA tranquilo y con una persona cuando usted lo desee.",
+    "callLabel": "Llame a TMT",
+    "lineUnavailable": "El número telefónico aparecerá aquí después de la configuración de lanzamiento.",
+    "opsLink": "Abrir la consola de despacho",
+    "categoriesTitle": "Hecho para el trabajo que no puede esperar",
+    "categories": {
+      "towing": "Remolque",
+      "mechanic": "Mecánica",
+      "tires": "Llantas",
+      "roadside": "Asistencia vial",
+      "diagnostics": "Diagnóstico",
+      "mobileRepair": "Reparación móvil"
+    },
+    "howTitle": "Cómo funciona",
+    "steps": {
+      "call": {
+        "title": "Llame",
+        "body": "Hable en inglés, punyabí, hindi o español."
+      },
+      "explain": {
+        "title": "Explique",
+        "body": "Díganos dónde está y qué necesita el camión."
+      },
+      "connect": {
+        "title": "Conéctese",
+        "body": "Un despachador coordina el siguiente paso seguro."
+      }
+    },
+    "privacy": "Nunca preguntamos por su estatus migratorio. El mismo precio en todos los idiomas. Una persona siempre está a una llamada."
+  },
+  "login": {
+    "title": "Acceso de despacho",
+    "body": "Ingrese su correo autorizado de operaciones. Le enviaremos un enlace mágico seguro.",
+    "email": "Correo de trabajo",
+    "placeholder": "dispatcher@example.com",
+    "submit": "Enviarme un enlace de acceso",
+    "sent": "Revise su bandeja de entrada. El enlace caduca automáticamente.",
+    "error": "No pudimos enviar el enlace. Revise la dirección e inténtelo de nuevo.",
+    "back": "Volver a TMT"
+  },
+  "ops": {
+    "eyebrow": "Operaciones",
+    "title": "Tablero de llamadas en vivo",
+    "subtitle": "Llamadas, transcripciones, consentimiento y transferencias en una vista.",
+    "signOut": "Cerrar sesión",
+    "live": "Tiempo real conectado",
+    "fixture": "Modo de prueba",
+    "empty": "No hay llamadas en el tablero.",
+    "language": "Idioma",
+    "started": "Inicio",
+    "duration": "Tiempo de transcripción",
+    "consent": "Consentimiento",
+    "noConsent": "No hay un evento de consentimiento registrado",
+    "granted": "otorgado",
+    "declined": "rechazado",
+    "handoff": "Transferencia",
+    "noHandoff": "No se solicitó transferencia",
+    "transcript": "Transcripción",
+    "noTranscript": "Aún no hay transcripción",
+    "english": "Inglés",
+    "escalation": "Escalamiento",
+    "states": {
+      "queued": "En cola",
+      "ringing": "Sonando",
+      "in_progress": "En curso",
+      "handoff_requested": "Transferencia solicitada",
+      "handoff_in_progress": "Transferencia en curso",
+      "completed": "Completada",
+      "failed": "Fallida"
+    }
+  }
+}

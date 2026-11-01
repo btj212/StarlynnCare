@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "title": "TMT Services | Multilingual roadside dispatch",
+    "description": "Voice-first roadside dispatch for truck drivers in English, Punjabi, Hindi and Spanish."
+  },
+  "brand": {
+    "name": "TMT Services",
+    "mark": "TMT"
+  },
+  "nav": {
+    "home": "Home",
+    "ops": "Dispatcher sign in",
+    "language": "Language"
+  },
+  "languages": {
+    "en": "English",
+    "pa": "ਪੰਜਾਬੀ",
+    "hi": "हिन्दी",
+    "es": "Español"
+  },
+  "landing": {
+    "eyebrow": "Roadside help that speaks your language",
+    "heading": "One call. Clear help. Back on the road.",
+    "body": "TMT connects truck drivers with a calm AI dispatcher and a human whenever you want one.",
+    "callLabel": "Call TMT",
+    "lineUnavailable": "The live phone line will appear here after launch setup.",
+    "opsLink": "Open the dispatcher console",
+    "categoriesTitle": "Built for the work that cannot wait",
+    "categories": {
+      "towing": "Towing",
+      "mechanic": "Mechanic",
+      "tires": "Tires",
+      "roadside": "Roadside assistance",
+      "diagnostics": "Diagnostics",
+      "mobileRepair": "Mobile repair"
+    },
+    "howTitle": "How it works",
+    "steps": {
+      "call": {
+        "title": "Call",
+        "body": "Speak in English, Punjabi, Hindi or Spanish."
+      },
+      "explain": {
+        "title": "Explain",
+        "body": "Tell us where you are and what the truck needs."
+      },
+      "connect": {
+        "title": "Connect",
+        "body": "A dispatcher coordinates the next safe step."
+      }
+    },
+    "privacy": "We never ask about immigration status. Same price in every language. A person is always one call away."
+  },
+  "login": {
+    "title": "Dispatcher sign in",
+    "body": "Enter your approved operations email. We will send a secure magic link.",
+    "email": "Work email",
+    "placeholder": "dispatcher@example.com",
+    "submit": "Email me a sign-in link",
+    "sent": "Check your inbox. The sign-in link expires automatically.",
+    "error": "We could not send the link. Check the address and try again.",
+    "back": "Back to TMT"
+  },
+  "ops": {
+    "eyebrow": "Operations",
+    "title": "Live call board",
+    "subtitle": "Calls, transcripts, consent and handoffs in one view.",
+    "signOut": "Sign out",
+    "live": "Realtime connected",
+    "fixture": "Test fixture mode",
+    "empty": "No calls are on the board.",
+    "language": "Language",
+    "started": "Started",
+    "duration": "Transcript timing",
+    "consent": "Consent",
+    "noConsent": "No consent event on record",
+    "granted": "granted",
+    "declined": "declined",
+    "handoff": "Handoff",
+    "noHandoff": "No handoff requested",
+    "transcript": "Transcript",
+    "noTranscript": "No transcript yet",
+    "english": "English",
+    "escalation": "Escalation",
+    "states": {
+      "queued": "Queued",
+      "ringing": "Ringing",
+      "in_progress": "In progress",
+      "handoff_requested": "Handoff requested",
+      "handoff_in_progress": "Handoff in progress",
+      "completed": "Completed",
+      "failed": "Failed"
+    }
+  }
+}

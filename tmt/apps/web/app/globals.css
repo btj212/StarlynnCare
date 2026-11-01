@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+:root {
+  --tmt-orange: #e5863e;
+  --tmt-navy: #28323e;
+  --tmt-cream: #f7f3ed;
+  --tmt-white: #ffffff;
+  --tmt-line: #d8d5d0;
+  --tmt-muted: #66717b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--tmt-cream);
+  color: var(--tmt-navy);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(90deg, transparent 0 96%, rgb(229 134 62 / 8%) 96%),
+    var(--tmt-cream);
+  font-family:
+    "Noto Sans Gurmukhi", "Noto Sans Devanagari", Inter, ui-sans-serif,
+    system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
+  font-stretch: condensed;
+  letter-spacing: -0.025em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--tmt-orange);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--tmt-orange);
+  color: var(--tmt-navy);
+}
