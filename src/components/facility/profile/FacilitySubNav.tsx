@@ -12,6 +12,7 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
 
   type Anchor = { href: string; label: string; show: boolean };
   const anchors: Anchor[] = [
+    { href: "#reviews", label: "Reviews", show: profile.reviews.length > 0 },
     { href: "#snapshot", label: "Snapshot", show: true },
     { href: "#peer", label: "Peer rank", show: true },
     { href: "#record", label: "Record", show: true },

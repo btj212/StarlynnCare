@@ -5,7 +5,8 @@ import {
   regulatorLicensePageFor,
   regulatorLicensePageLabel,
 } from "@/lib/seo/schema";
-import { buildFacilitySnippet, reportablePercentile } from "@/lib/seo/meta";
+import { buildFacilityRecordSentence, buildFacilitySnippet, reportablePercentile, shortMonthYear } from "@/lib/seo/meta";
+import { displayCityName } from "@/lib/resolveListingRegion";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
@@ -35,7 +36,8 @@ const MC_CATEGORIES: CareCategory[] = [
 
 function formatAddr(facility: FacilityProfile["facility"]): string {
   const stateCode = (facility.state_code ?? "").toUpperCase();
-  const cityZip = [facility.city, facility.zip].filter(Boolean).join(`, ${stateCode} `);
+  const city = displayCityName(facility.city, facility.city_slug);
+  const cityZip = [city, facility.zip].filter(Boolean).join(`, ${stateCode} `);
   return [facility.street, cityZip].filter(Boolean).join(" · ");
 }
 
@@ -160,7 +162,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
       <div className={hasGrid ? "p-7" : "p-7"}>
         <div className="mb-3.5 flex items-center gap-2 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.14em] text-gold">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
-          Facility · {facility.city ?? profile.state.name}
+          Facility · {displayCityName(facility.city, facility.city_slug) || profile.state.name}
         </div>
 
         {/* When < 4 photos: compact side-by-side with single photo */}
@@ -274,9 +276,20 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
     profile.snapshot?.grade?.composite_percentile,
     profile.snapshot?.peer_set.n,
   );
+  const recordSentence = noReportsPosted
+    ? null
+    : buildFacilityRecordSentence({
+        citationCount: profile.totals.deficiencies,
+        inspectionCount: profile.totals.inspections,
+        lastInspected: shortMonthYear(lastInspectionDate),
+        regulatorAbbr: profile.cfg.agencyShort,
+        licenseNumber: facility.license_number,
+      });
   const snippet = noReportsPosted
     ? `${facility.name} has no DSHS reports posted as of ${checkedOn}.`
-    : buildFacilitySnippet({
+    : profile.totals.inspections < 1
+      ? null
+      : buildFacilitySnippet({
         facilityName: facility.name,
         stateName: state.name,
         stateCode: state.code,
@@ -297,7 +310,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         {/* Eyebrow */}
         <div className="mb-3.5">
           <span className="clearing-chip">
-            {state.name} · {facility.city ?? ""}
+            {state.name} · {displayCityName(facility.city, facility.city_slug)}
           </span>
         </div>
 
@@ -308,17 +321,22 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(40px,6vw,84px)] font-normal leading-[0.95] tracking-[-0.025em] text-ink">
               {lastWord ? (
                 <>
-                  {mainPart} <em className="not-italic text-teal">{lastWord}.</em>
+                  {mainPart} <em className="not-italic text-teal">{lastWord}</em>
                 </>
               ) : (
-                <em className="not-italic text-teal">{facility.name}.</em>
+                <em className="not-italic text-teal">{facility.name}</em>
               )}
             </h1>
 
             {/* Editorial summary — same data points as the meta snippet so
                 Google has narrative prose above-the-fold to lift. */}
+            {recordSentence && (
+              <p className="mt-5 max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 sm:text-[18px]">
+                {recordSentence}
+              </p>
+            )}
             {snippet && (
-              <p className={`mt-5 max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 sm:text-[18px] ${noReportsPosted ? "" : "hidden md:block"}`}>
+              <p className={`max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 sm:text-[18px] ${recordSentence ? "mt-3" : "mt-5"}`}>
                 {snippet}{" "}
                 {formsUrl ? (
                   <a href={formsUrl} className="underline" rel="noopener noreferrer">
@@ -364,7 +382,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             </div>
 
             {addr && (
-              <div className="mt-4 hidden font-[family-name:var(--font-display)] text-[20px] italic text-ink-2 md:block">
+              <div className="mt-4 font-[family-name:var(--font-display)] text-[18px] italic leading-snug text-ink-2 sm:text-[20px]">
                 {addr}
                 {phone && (
                   <a

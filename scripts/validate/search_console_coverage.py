@@ -200,6 +200,8 @@ def classify_path(path: str) -> tuple[str, str | None]:
         return "state", state
     if len(parts) == 2:
         return "hub", state
+    if len(parts) == 3 and parts[2] == "facilities":
+        return "hub", state
     if len(parts) == 3:
         return "facility", state
     return "other", state
@@ -431,6 +433,140 @@ def excluded_city_hubs(facilities: list[FacilityFacts]) -> list[str]:
     return paths
 
 
+def capacity_band(beds: int | None) -> str:
+    if beds is None:
+        return "beds unknown"
+    if beds <= 6:
+        return "6 beds or fewer"
+    if beds <= AZ_SMALL_BED_LIMIT:
+        return "7 to 10 beds"
+    return "11 beds or more"
+
+
+def rejected_facility_facts(
+    validation: dict[str, Any],
+    facilities: list[FacilityFacts] | None,
+) -> list[FacilityFacts | None]:
+    """Failed facility URLs only. Google declined these after a crawl."""
+    if facilities is None:
+        return []
+    by_key = {(item.state_code, item.slug): item for item in facilities}
+    found: list[FacilityFacts | None] = []
+    for row in validation["rows"]:
+        if row["status"] != "Failed" or row["kind"] != "facility":
+            continue
+        if row["state"] not in STATE_SLUGS:
+            continue
+        parts = [part for part in row["path"].split("/") if part]
+        if len(parts) < 3:
+            continue
+        found.append(by_key.get((STATE_SLUGS[row["state"]], parts[2])))
+    return found
+
+
+def _count_lines(title: str, counts: Counter[str]) -> list[str]:
+    lines = [f"### {title}", ""]
+    if not counts:
+        lines.append("None.")
+        lines.append("")
+        return lines
+    for label, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])):
+        lines.append(f"- {label}: {count}")
+    lines.append("")
+    return lines
+
+
+def rejected_breakdown_lines(
+    validation: dict[str, Any],
+    facilities: list[FacilityFacts] | None,
+) -> list[str]:
+    """State, size, inspection, citation, and narrative splits for declined facility URLs."""
+    if facilities is None:
+        return ["Database check skipped, so rejected facilities were not split.", ""]
+    facts = rejected_facility_facts(validation, facilities)
+    known = [item for item in facts if item is not None]
+    missing = len(facts) - len(known)
+    lines = [
+        "## Rejected facilities",
+        "",
+        "These are facility URLs in the validation export whose status is Failed. "
+        "A cited home stays indexable. A home with no bed count stays indexable. "
+        "A missing narrative is an enrich job, not a noindex rule.",
+        "",
+        f"Failed facility URLs matched to a publishable row: {len(known)}. Unmatched: {missing}.",
+        "",
+    ]
+    lines.extend(_count_lines("By state", Counter(item.state_code for item in known)))
+    lines.extend(_count_lines("By capacity", Counter(capacity_band(item.beds) for item in known)))
+    lines.extend(
+        _count_lines(
+            "By inspection",
+            Counter("has an inspection" if item.inspections > 0 else "no inspection" for item in known),
+        )
+    )
+    lines.extend(
+        _count_lines(
+            "By citation",
+            Counter("has a citation" if item.deficiencies > 0 else "no citation" for item in known),
+        )
+    )
+    lines.extend(
+        _count_lines(
+            "By content",
+            Counter(
+                "inspection with a stored narrative"
+                if item.inspections > 0 and item.has_narrative
+                else "inspection without a stored narrative"
+                if item.inspections > 0
+                else "no inspection"
+                for item in known
+            ),
+        )
+    )
+    by_state: dict[str, list[FacilityFacts]] = {}
+    for item in known:
+        by_state.setdefault(item.state_code, []).append(item)
+    lines.append("### Would a small-home rule fit any other state?")
+    lines.append("")
+    supported: list[str] = []
+    for state, items in sorted(by_state.items()):
+        small_uncited = [
+            item
+            for item in items
+            if item.beds is not None and item.beds <= AZ_SMALL_BED_LIMIT and item.deficiencies == 0
+        ]
+        cited = [item for item in items if item.deficiencies > 0]
+        unknown_beds = [item for item in items if item.beds is None]
+        share = len(small_uncited) / len(items) if items else 0
+        lines.append(
+            f"- {state}: {len(items)} failed, {len(small_uncited)} are 10 beds or fewer with no citation, "
+            f"{len(cited)} have a citation, {len(unknown_beds)} have no bed count."
+        )
+        # A new state rule needs the failed set to be mostly known-bed, uncited, small homes,
+        # with no cited home in that failed set. Arizona already has the rule.
+        if (
+            state != "AZ"
+            and items
+            and not cited
+            and not unknown_beds
+            and share >= 0.8
+            and len(small_uncited) >= 15
+        ):
+            supported.append(state)
+    lines.append("")
+    if supported:
+        lines.append(
+            "This export would support a small-home exclusion for: " + ", ".join(supported) + "."
+        )
+    else:
+        lines.append(
+            "This export supports Arizona's existing rule and does not support a new state exclusion. "
+            "Other states stay indexable, including homes with unknown bed counts and homes that have been cited."
+        )
+    lines.append("")
+    return lines
+
+
 def render_report(
     coverage: dict[str, Any],
     validation: dict[str, Any],
@@ -439,6 +575,7 @@ def render_report(
     hub_notes: list[str],
     not_found_note: str,
     excluded_hubs: list[str],
+    rejected_lines: list[str] | None = None,
 ) -> str:
     delta = baseline_delta(coverage, validation)
     statuses = Counter(row["status"] for row in validation["rows"])
@@ -495,6 +632,8 @@ def render_report(
         if len(urls) > 12:
             lines.append(f"- … and {len(urls) - 12} more")
         lines.append("")
+    if rejected_lines:
+        lines.extend(rejected_lines)
     lines.extend(["## Indexability parity", ""])
     if parity is None:
         lines.append("Database check skipped.")
@@ -691,6 +830,35 @@ def select_samples(validation: dict[str, Any], cohorts: dict[tuple[str, str, str
     return samples
 
 
+def assert_index_policy() -> None:
+    """Same table as scripts/test_indexability.ts. Cited, unknown-bed, and non-Arizona homes stay in."""
+    cases = [
+        ("AZ", 6, 2, 3, 0, 0, 0, False, True),
+        ("IL", None, 0, 2, 0, 0, 0, False, True),
+        ("AZ", 8, 0, 1, 0, 0, 1, True, False),
+        ("OR", 6, 0, 2, 0, 0, 0, False, True),
+        ("WA", 40, 0, 4, 0, 0, 0, False, True),
+        ("TX", 80, 0, 0, 0, 0, 0, True, False),
+        ("CA", 20, 0, 0, 0, 0, 2, False, False),
+    ]
+    for state, beds, deficiencies, inspections, reviews, tours, photos, noindex, listed in cases:
+        facts = FacilityFacts(
+            state_code=state,
+            city_slug="city",
+            slug="home",
+            beds=beds,
+            inspections=inspections,
+            deficiencies=deficiencies,
+            reviews=reviews,
+            tour_questions=tours,
+            photos=photos,
+            has_narrative=inspections > 0,
+        )
+        assert facility_marked_noindex(facts) is noindex, state
+        assert facility_listed_in_sitemap(facts) is listed, state
+        assert not (facility_marked_noindex(facts) and facility_listed_in_sitemap(facts))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Audit Search Console coverage exports")
     parser.add_argument("--coverage-zip", required=True, type=Path)
@@ -700,6 +868,7 @@ def main() -> None:
     parser.add_argument("--url", default="https://www.starlynncare.com")
     parser.add_argument("--skip-db", action="store_true")
     args = parser.parse_args()
+    assert_index_policy()
 
     coverage = parse_coverage_zip(args.coverage_zip)
     validation = parse_validation_zip(args.validation_zip)
@@ -737,7 +906,14 @@ def main() -> None:
             "Export that table before proposing a redirect or a removal."
         )
     report = render_report(
-        coverage, validation, cohorts, parity, hub_notes, not_found_note, excluded_hubs
+        coverage,
+        validation,
+        cohorts,
+        parity,
+        hub_notes,
+        not_found_note,
+        excluded_hubs,
+        rejected_breakdown_lines(validation, facilities),
     )
     AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
     AUDIT_PATH.write_text(report, encoding="utf-8")

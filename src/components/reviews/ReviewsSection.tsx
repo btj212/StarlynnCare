@@ -53,7 +53,7 @@ export async function ReviewsSection({
   const categoryAverages = computeCategoryAverages(reviews);
 
   return (
-    <section className="space-y-8">
+    <section id="reviews" className="scroll-mt-36 space-y-8 md:scroll-mt-28">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="font-[family-name:var(--font-sans)] text-2xl font-semibold text-navy">
