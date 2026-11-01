@@ -382,12 +382,12 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             </div>
 
             {addr && (
-              <div className="mt-4 font-[family-name:var(--font-display)] text-[18px] italic leading-snug text-ink-2 sm:text-[20px]">
-                {addr}
+              <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-[family-name:var(--font-display)] text-[18px] italic leading-snug text-ink-2 sm:text-[20px]">
+                <span>{addr}</span>
                 {phone && (
                   <a
                     href={`tel:${facility.phone}`}
-                    className="ml-4 font-[family-name:var(--font-sans)] text-[13px] not-italic tracking-[0.02em] text-ink-3 transition-colors hover:text-ink"
+                    className="hidden font-[family-name:var(--font-sans)] text-[13px] not-italic tracking-[0.02em] text-ink-3 transition-colors hover:text-ink md:inline"
                   >
                     {phone}
                   </a>
@@ -404,12 +404,12 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       title={verifyLabel}
-                      className="ml-3 font-[family-name:var(--font-sans)] text-[12px] font-medium not-italic tracking-[0.02em] text-teal underline decoration-teal/30 underline-offset-4 transition-colors hover:decoration-teal"
+                      className="font-[family-name:var(--font-sans)] text-[12px] font-medium not-italic tracking-[0.02em] text-teal underline decoration-teal/30 underline-offset-4 transition-colors hover:decoration-teal"
                     >
                       LIC# {facility.license_number} ↗
                     </a>
                   ) : (
-                    <span className="ml-3 font-[family-name:var(--font-sans)] text-[12px] font-medium not-italic tracking-[0.02em] text-teal">
+                    <span className="font-[family-name:var(--font-sans)] text-[12px] font-medium not-italic tracking-[0.02em] text-teal">
                       LIC# {facility.license_number}
                     </span>
                   );
