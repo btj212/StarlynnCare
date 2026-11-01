@@ -101,9 +101,7 @@ export function MobileHomeView({
       <div className="m-stat-strip">
         {statItems.map((s, i) => (
           <div key={i} className="m-stat-card">
-            <div className="src">
-              [{String(i + 1).padStart(2, "0")}] {s.src}
-            </div>
+            <div className="src">{s.src}</div>
             <div className="n">
               {s.n}
               {s.unit && <span style={{ fontSize: "0.55em", color: "var(--color-ink-3)" }}> {s.unit}</span>}

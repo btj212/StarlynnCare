@@ -206,8 +206,8 @@ _FRESHNESS_MONTHS: dict[str, int | None] = {
     "MN": 48,
     "WA": 48,
     "UT": 36,
-    # IL: FOIA window is Jan 2024 – May 2026; 36 months matches OR gate and keeps
-    # the publishable set fresh. Facilities with no events in 36 months are stale.
+    # IL: FOIA visits in the current workbook run Nov 2022 – May 2026. The gate
+    # stays 36 months. A home with no visit in that window is stale.
     "IL": 36,
     # PA: DHS HSD bulk export carries the memory-care designation directly.
     "PA": 36,
@@ -375,6 +375,10 @@ def mark_single_directory_for_review(
           AND NOT memory_care_disclosure_filed
           AND NOT mc_signal_chain_curated
           AND NOT mc_signal_deficiency_keyword
+          AND NOT (state_code = 'IL' AND COALESCE(il_mc_name_match, false))
+          AND NOT (state_code = 'IL' AND COALESCE(il_dementia_program_flag, false))
+          AND NOT (state_code = 'MO' AND COALESCE(mo_alzheimer_scu, false))
+          AND NOT (state_code = 'MO' AND mo_level_of_care = 'ALF**')
           AND mc_review_status NOT IN ('reviewed_publish','reviewed_reject')
     """
 

@@ -448,6 +448,14 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
     live: true,
   },
   {
+    slug: "/illinois/memory-care-vs-nursing-home",
+    title: "Assisted living and nursing homes in Illinois are not the same record",
+    desc: "IDPH licenses assisted living and shared housing under 210 ILCS 9. CMS surveys nursing homes. A memory-care name is not an Alzheimer's designation.",
+    states: ["IL"],
+    tags: ["decision", "licensing"],
+    live: true,
+  },
+  {
     slug: "/utah/memory-care-licensing",
     title: "Utah memory care licensing: assisted living and DLBC",
     desc: "Utah licenses assisted living through the Division of Licensing and Background Checks. How inspections are labeled on a profile.",

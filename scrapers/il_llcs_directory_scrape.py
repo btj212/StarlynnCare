@@ -11,11 +11,9 @@ This script provides three ingestion modes:
                         convert to CSV and pass here.
 
   --bootstrap-from-foia PATH
-                        Bootstrap stub records from the FOIA workbook
-                        ("FOIA AL Visits-2024 to present.xlsx").
-                        Creates a row per unique (name, license_number) pair
-                        from the workbook — no addresses, but enough to land
-                        the inspection data from il_foia_visits_ingest.py.
+                        Refused. The workbook Name column is a visit id, not a
+                        facility license. Use il_foia_visits_ingest.py, which
+                        matches the physical name and quarantines the rest.
 
   --probe               Attempt direct HTTP probe against the LLCS API.
                         Salesforce Community APIs are often accessible without
@@ -29,14 +27,10 @@ MC-candidate filter (applied in all modes):
                         indicates a dementia/special-care unit program)
 
 Usage:
-  python3 -u scrapers/il_llcs_directory_scrape.py --bootstrap-from-foia \\
-      "$HOME/Downloads/FOIA AL Visits-2024 to present.xlsx"
-
   python3 -u scrapers/il_llcs_directory_scrape.py --from-csv path/to/facilities.csv
 
   python3 -u scrapers/il_llcs_directory_scrape.py --probe
 
-  python3 -u scrapers/il_llcs_directory_scrape.py --bootstrap-from-foia ... --dry-run
 """
 
 from __future__ import annotations
@@ -71,6 +65,19 @@ _MC_PATTERN = re.compile(
 
 # IL IDPH 8-digit license number format
 _LICENSE_RE = re.compile(r"^\d{8}$")
+
+FOIA_BOOTSTRAP_REFUSAL = (
+    "Refusing --bootstrap-from-foia. The workbook Name column is a visit id, "
+    "not a facility license. Creating one facility per visit would publish "
+    "unresolved names and invent license numbers. Match visits to the current "
+    "LLCS directory with il_foia_visits_ingest.py, and quarantine names that "
+    "directory does not list."
+)
+
+
+def refuse_foia_bootstrap() -> None:
+    print(FOIA_BOOTSTRAP_REFUSAL, file=sys.stderr)
+    raise SystemExit(2)
 
 
 def load_env() -> None:
@@ -273,37 +280,8 @@ def _load_foia_records(xlsx_path: Path) -> list[dict[str, Any]]:
 
 
 def run_bootstrap_foia(xlsx_path: Path, dry_run: bool) -> None:
-    records = _load_foia_records(xlsx_path)
-    mc_records = [r for r in records if r["serves_memory_care"]]
-    print(
-        f"  MC candidates (Tier 1 name-match): {len(mc_records)} of {len(records)}",
-        flush=True,
-    )
-
-    if not mc_records:
-        print("  No MC candidates found in FOIA workbook.", flush=True)
-        return
-
-    if dry_run:
-        for r in mc_records[:10]:
-            print(
-                f"    {r['license_number']} | {r['name'][:50]:50s} | "
-                f"slug={r['slug'][:30]}"
-            )
-        print(f"  ... ({len(mc_records)} total, dry-run no writes)")
-        return
-
-    conn = get_conn()
-    ok = err = 0
-    with conn:
-        for rec in mc_records:
-            if upsert_record(conn, rec):
-                ok += 1
-            else:
-                err += 1
-        conn.commit()
-
-    print(f"\nDone. {ok} upserted, {err} errors.", flush=True)
+    del xlsx_path, dry_run
+    refuse_foia_bootstrap()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -565,7 +543,7 @@ def main() -> None:
     mode.add_argument(
         "--bootstrap-from-foia",
         metavar="XLSX_PATH",
-        help="Bootstrap stub records from the FOIA workbook (fastest first run)",
+        help="Refused. The workbook Name column is a visit id, not a facility license.",
     )
     mode.add_argument(
         "--from-csv",
@@ -583,6 +561,9 @@ def main() -> None:
 
     load_env()
 
+    if args.bootstrap_from_foia:
+        refuse_foia_bootstrap()
+
     if args.probe:
         run_probe()
         return
@@ -591,14 +572,7 @@ def main() -> None:
         print("DATABASE_URL not set.", file=sys.stderr)
         sys.exit(1)
 
-    if args.bootstrap_from_foia:
-        p = Path(args.bootstrap_from_foia)
-        if not p.is_file():
-            print(f"File not found: {p}", file=sys.stderr)
-            sys.exit(1)
-        run_bootstrap_foia(p, dry_run=args.dry_run)
-
-    elif args.from_csv:
+    if args.from_csv:
         p = Path(args.from_csv)
         if not p.is_file():
             print(f"File not found: {p}", file=sys.stderr)

@@ -29,10 +29,11 @@ export function MobileNationalHomeView({ data }: Props) {
   const { totalFacilities, totalInspections, totalSevereCitations, states, topCities, sampleReviews, lastRefreshed } = data;
   const liveStates = states.filter((s) => s.facilityCount >= MIN_LIVE_THRESHOLD);
   const pilotStates = states.filter((s) => s.facilityCount > 0 && s.facilityCount < MIN_LIVE_THRESHOLD);
+  const indexedStateCount = liveStates.length + pilotStates.length;
   const reviewsToShow = sampleReviews.slice(0, 3);
 
   const statItems = [
-    { n: totalFacilities > 0 ? totalFacilities.toLocaleString() : "0", label: `Licensed memory care facilities indexed across ${liveStates.length} states`, src: "Multi-state" },
+    { n: totalFacilities > 0 ? totalFacilities.toLocaleString() : "0", label: `Licensed memory care facilities indexed across ${indexedStateCount} states`, src: "Multi-state" },
     { n: totalInspections > 0 ? totalInspections.toLocaleString() : "0", label: "State inspection reports, parsed and dated", src: "Regulators", delta: "Updated regularly" },
     { n: totalSevereCitations > 0 ? totalSevereCitations.toLocaleString() : "0", label: "Severe deficiencies on file in the last 6 months", src: "State regulators" },
     { n: "0", label: "Referral commissions, lead fees, or paid placements accepted from operators", src: "Policy", delta: "Since day one" },
@@ -44,7 +45,7 @@ export function MobileNationalHomeView({ data }: Props) {
 
       <section className="m-hero">
         <div className="eyebrow">
-          {liveStates.length} States · Vol. 01 · 2026
+          {indexedStateCount} States · Vol. 01 · 2026
         </div>
         <h1>
           Find memory care you can <em>trust,</em>{" "}
@@ -84,9 +85,7 @@ export function MobileNationalHomeView({ data }: Props) {
       <div className="m-stat-strip">
         {statItems.map((s, i) => (
           <div key={i} className="m-stat-card">
-            <div className="src">
-              [{String(i + 1).padStart(2, "0")}] {s.src}
-            </div>
+            <div className="src">{s.src}</div>
             <div className="n">{s.n}</div>
             {s.delta && <div className="delta">↑ {s.delta}</div>}
             <div className="lbl">{s.label}</div>

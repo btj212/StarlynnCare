@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import type { FacilityProfile, TimelinePoint, ScopeSeverityCell } from "@/lib/facility/loadFacilityProfile";
 import { SectionHead } from "@/components/editorial/SectionHead";
+import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import Link from "next/link";
 
@@ -296,7 +297,7 @@ function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
             </span>
             <div>
               <div className="font-[family-name:var(--font-display)] text-[18px] tracking-[-0.005em]">
-                {insp.is_complaint ? "Complaint Investigation" : insp.inspection_type === "other" ? "Other Visit" : "Annual Compliance Visit"}
+                {visitKindLabel(insp)}
               </div>
               <div className="mt-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.06em] text-ink-3">
                 {insp.is_complaint && outcome ? `${outcome}` : agencyLabelForInspection(insp, cfg).short}

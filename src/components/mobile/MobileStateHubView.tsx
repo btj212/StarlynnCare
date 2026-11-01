@@ -25,6 +25,7 @@ export function MobileStateHubView({ data, config }: Props) {
   const statItems = buildStateStatItems(data.stats, config);
   const { counties, topCities, stats, sampleReviews } = data;
   const reviewsToShow = sampleReviews.slice(0, 3);
+  const cityFirst = counties.length === 0 && config.comingCounties.length === 0;
 
   return (
     <>
@@ -74,9 +75,7 @@ export function MobileStateHubView({ data, config }: Props) {
       <div className="m-stat-strip">
         {statItems.map((s, i) => (
           <div key={i} className="m-stat-card">
-            <div className="src">
-              [{String(i + 1).padStart(2, "0")}] {s.src}
-            </div>
+            <div className="src">{s.src}</div>
             <div className="n">
               {s.n}
               {s.unit && <span style={{ fontSize: "0.55em", color: "var(--color-ink-3)" }}> {s.unit}</span>}
@@ -173,10 +172,12 @@ export function MobileStateHubView({ data, config }: Props) {
           </div>
           <div className="px-[18px] pb-6">
             <Link
-              href={`/${stateSlug}`}
+              href={cityFirst ? `/${stateSlug}/facilities` : `/${stateSlug}`}
               className="font-[family-name:var(--font-mono)] text-[12px] uppercase tracking-[0.1em] text-rust underline underline-offset-4"
             >
-              View all {stateName} counties →
+              {cityFirst
+                ? `Browse all ${stateName} facilities →`
+                : `View all ${stateName} counties →`}
             </Link>
           </div>
         </>

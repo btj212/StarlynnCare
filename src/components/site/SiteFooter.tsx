@@ -119,7 +119,7 @@ export async function SiteFooter() {
           <span className="flex flex-wrap gap-x-4 gap-y-1">
             <Link href="/terms" className="transition-colors hover:text-white">Terms of Use</Link>
             <Link href="/privacy" className="transition-colors hover:text-white">Privacy Policy</Link>
-            <span>{lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · OR DHS · WA DSHS · HHSC · MDH · DLBC · IDPH · CDPHE · CMS</span>
+            <span>{lastRefreshed ? `Last data refresh ${lastRefreshed}` : "Data refreshed weekly"} · CDSS · OR DHS · WA DSHS · HHSC · MDH · DLBC · IDPH · PA DHS · ADHS · DHSS · CDPHE · CMS</span>
           </span>
         </div>
       </div>

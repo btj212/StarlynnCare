@@ -62,6 +62,8 @@ STATE_NAMES = {
     "MN": "minnesota",
     "TX": "texas",
     "CO": "colorado",
+    "IL": "illinois",
+    "MO": "missouri",
 }
 
 

@@ -211,6 +211,7 @@ def insert_inspection(
             )
             ON CONFLICT (facility_id, inspection_date, inspection_type,
                          COALESCE(source_agency, ''))
+            WHERE source_event_id IS NULL
             DO NOTHING
             RETURNING id::text
             """,

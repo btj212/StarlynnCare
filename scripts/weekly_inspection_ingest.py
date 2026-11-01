@@ -368,8 +368,8 @@ def ingest_ut(_conn: object) -> bool:
 
 
 def ingest_il(_conn: object) -> bool:
-    print("  IL: new visits come from the FOIA file. This run only looks for PDFs on visits already stored.")
-    _python(str(SCRAPERS / "il_llcs_event_scrape.py"), label="IL LLCS event scrape", allow_fail=True)
+    print("  IL: new visits come from the FOIA file. This run records that LLCS has no public PDF URL.")
+    _python(str(SCRAPERS / "il_llcs_documents.py"), label="IL LLCS document attempts", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_download.py"), label="IL PDF download", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_parse.py"), label="IL PDF parse", allow_fail=True)
     _python(str(SCRAPERS / "il_pdf_backfill.py"), label="IL PDF backfill", allow_fail=True)

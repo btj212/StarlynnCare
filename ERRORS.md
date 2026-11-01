@@ -8,6 +8,46 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — A model refusal was stored as the family's summary
+
+**What went wrong:** Visits whose stored text is a cover sheet, an abbreviation list, or a form heading were sent to the summarizer. When the model answered "I cannot provide a summary," that sentence was saved on `narrative_summary` and shown on the profile. A few California cover pages also hid a real finding that lived on the deficiency row, not in `raw_data.narrative`.
+
+**What worked instead:** Treat a cover, a glossary, and an unreadable report as not a finding. Quote the deficiency account when it says what happened. When the file does not include the finding, say that in one sentence, and include a marked substantiated or unsubstantiated result only when that field is stored. Reject any model reply that says "I cannot" or "please provide." Leave a real multi-sentence narrative for the state-specific prompt.
+
+**Source:** `scrapers/plain_visit_summaries.py` and `scrapers/summarize_inspections.py`.
+
+## 2026-11 — An Illinois rule number is not an inspector's account
+
+**What went wrong:** The Illinois visit file stores lines like `295.6000, T1, $2,000`. Sending those to the California summarizer, or to a prompt that says "state what was found," produces an invented incident. The profile also hid `narrative_summary` whenever `raw_data.narrative` was missing, so a real summary never appeared. Updating each inspection with `WHERE id::text =` could not use the primary key, and one batch sat for several minutes. `$1K` was read as a one-dollar fine, and `$1.000` was read as one dollar.
+
+**What worked instead:** Translate the section number with the official Part 295 title, name the Type and the fine, and say the file does not describe what the inspector saw. Show a stored summary even when there is no long narrative. Load the new summaries into a temp table and update on `inspections.id`. Treat `$1K` as $1,000 and `$1.000` as $1,000. A later `**CA 2K` is the revised amount, not California.
+
+**Source:** `scrapers/plain_visit_summaries.py`.
+
+## 2026-11 — A plain fetch of the Illinois LLCS lookup is not the roster
+
+**What went wrong:** `https://llcs.dph.illinois.gov/s/facility-lookup` returns a Salesforce shell to a non-JavaScript fetch. Guest REST on `LLCS_Facility__c` is 401. The 2021 open-data file `8z4a-ix8q` still looks like a roster and is expired. A title-case of all-caps portal names turned `II` into `Ii`, `MC` into `Mc`, and `MCHENRY` into `Mchenry`. A slash in `AVONLEA COTTAGE #1/QUAD CITIES` was dropped on the first repair.
+
+**What worked instead:** The same guest session the page uses answers Aura calls with `aura.token=null`: `FacilitySearchLookupHomePage.getFaciliyResult` by county, `RecordUi.getRecordUis` with the Alzheimer field requested as an optional field, and `LLCS_LicensePageUnauth.getLicenseResult` for `licId`. Two full pulls matched. Title-case keeps LLC, MC, II, and McHenry, and keeps slashes. The designation is that lookup field, not a 295.4060 citation and not a directory ad.
+
+**Source:** `scrapers/il_llcs_live_roster.py` and `scrapers/il_llcs_roster_apply.py`.
+
+## 2026-10 — Missouri tour questions copied California Title 22
+
+**What went wrong:** The non-California prompt included the Silverado Berkeley example and a fallback line that said memory care was "not formally designated in CDSS licensing data." Missouri questions then cited CDSS and Title 22 §87705. A later pass cited section 198.510 as if that disclosure were on the facility's row. The model quality gate let some of those through. The single-directory review step also marked published Illinois name-match homes as `needs_review` because it did not treat `il_mc_name_match` as a stronger signal.
+
+**What worked instead:** Drop the California example from the non-California prompt. Tell the generator not to mention a designation, a disclosure, or a statute section. Reject the question in code if it contains CDSS, Title 22, 87705, 198.510, "designation," or "disclosure." Leave the single-directory queue for homes that do not already have the Illinois name match, the Illinois dementia flag, or a Missouri government signal.
+
+**Source:** `scrapers/generate_content.py` and `scrapers/recompute_publishable.py`. Illinois and Missouri parity rebuild, 2026-10-31.
+
+## 2026-10 — Missouri same-day visits and Illinois visit ids were collapsed
+
+**What went wrong:** The Missouri loader upserted on facility, date, and type, so 169 events that shared a day were overwritten and 231 of their tags were deleted. A rerun also turned Excel datetimes into text and then stored a blank inspection date. The Illinois loader treated the FOIA `Name` cell as a license number. The LLCS portal is a Salesforce shell with no facility list, and the open-data file expires in 2021.
+
+**What worked instead:** Keep one inspection per Missouri `EVENT_ID` and per Illinois visit id. Parse the spreadsheet date before it is stored as text. Match Illinois visits by physical name, quarantine the rest, and refuse `--bootstrap-from-foia`. Do not insert an `il_inspection_inventory` row unless someone supplies a real PDF URL. There was no ShowMeLTC manifest in this checkout, so the narrative summary used the inspector text already stored.
+
+**Source:** `records.xlsx` SHA-256 `ff7e732b7e2e39d5e9d085ecd9976669f36b6705d0012405ec6e3da98c4ada55` and the FOIA workbook SHA-256 `2218c844463e75a3e4f9d934dc6f24ac874f0ec89c7c5f0ea7f0c88f2c4d86b4`. `docs/drafts/illinois-missouri-parity-audit.md`.
+
 ## 2026-10 — Street View uploads returned HTTP 400 with the new Supabase key
 
 **What went wrong:** `scrapers/fetch_streetview.py` uploaded JPEGs to the `facility-photos` bucket with only `Authorization: Bearer`. The service key is the newer `sb_` key, not a JWT. Storage rejected every file with HTTP 400. The image itself was a valid JPEG.

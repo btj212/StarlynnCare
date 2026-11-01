@@ -28,7 +28,7 @@ export function NationalHomeSections({ data }: Props) {
     {
       n: totalFacilities > 0 ? totalFacilities.toLocaleString() : "0",
       label: `Licensed memory care facilities indexed across ${liveStates.length + pilotStates.length} states`,
-      src: "CDSS · DHS · DSHS · MDH · HHSC · PA DHS",
+      src: "CDSS · DHS · DSHS · MDH · HHSC · PA DHS · ADHS · IDPH · DHSS · DLBC · CDPHE",
     },
     {
       n: totalInspections > 0 ? totalInspections.toLocaleString() : "0",

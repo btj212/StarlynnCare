@@ -127,6 +127,20 @@ const STATES: Array<{ name: string; hub: string; tag: string; body: ReactNode }>
       </>
     ),
   },
+  {
+    name: "Colorado",
+    hub: "/colorado",
+    tag: "Level E on assisted living; CMS J, K, or L on a nursing home",
+    body: (
+      <>
+        On a Colorado assisted living profile, the red tag is Level E, immediate jeopardy. On a Colorado nursing-home profile, the red tag is a CMS letter J, K, or L. Those are not the same scale. This count still includes severity 3 or higher. Assisted living is licensed by CDPHE under 6 CCR 1011-1 Chapter 7.{" "}
+        <Link href="/colorado/memory-care-vs-nursing-home" className={linkCls}>
+          Assisted living and nursing homes
+        </Link>{" "}
+        explains why the two records stay separate.
+      </>
+    ),
+  },
 ];
 
 export async function SeriousCitationExplainer() {

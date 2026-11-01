@@ -65,6 +65,7 @@ async function getStateCounts(): Promise<Record<string, number>> {
 
 export default async function StatesPage() {
   const counts = await getStateCounts();
+  const listedStates = COVERED_STATES.filter((s) => s.code !== "TX");
 
   const stateJsonLd = [
     buildBreadcrumbList([
@@ -110,11 +111,11 @@ export default async function StatesPage() {
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
           <SectionHead
             label="Covered states"
-            title={<>Ten states, <em>one editorial standard.</em></>}
+            title={<>{listedStates.length} states, <em>one editorial standard.</em></>}
           />
           {/* TX hidden until full HHSC dataset is ingested — remove filter to restore */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {COVERED_STATES.filter((s) => s.code !== "TX").map((state) => {
+            {listedStates.map((state) => {
               const count = counts[state.code] ?? 0;
               return (
                 <Link

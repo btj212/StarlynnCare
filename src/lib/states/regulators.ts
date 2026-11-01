@@ -34,7 +34,7 @@ export const STATE_REGULATORS: Record<string, StateRegulator> = {
   IL: {
     short: "IDPH",
     long: "Illinois Department of Public Health, Division of Assisted Living",
-    portalUrl: "https://llcs.dph.illinois.gov/s/?language=en_US",
+    portalUrl: "https://llcs.dph.illinois.gov/s/facility-lookup?language=en_US",
     cite: "IDPH (Illinois)",
   },
   MN: {

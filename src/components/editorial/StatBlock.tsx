@@ -46,7 +46,7 @@ export function StatBlock({ stats, footnotes, compact = false }: StatBlockProps)
             }`}
           >
             <span className="absolute top-3.5 right-4 font-[family-name:var(--font-sans)] text-[11px] font-medium uppercase tracking-[0.08em] text-ink-4">
-              [{String(i + 1).padStart(2, "0")}] {s.src}
+              {s.src}
             </span>
 
             <div

@@ -1,22 +1,26 @@
 import type { FacilityProfile, InspectionRow, DeficiencyRow } from "@/lib/facility/loadFacilityProfile";
+import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import type { Deficiency } from "@/lib/types";
 import { FacilityWatchPaid } from "@/components/facility/FacilityWatchPaid";
 import { FullHistoryWaitlist } from "./FullHistoryWaitlist";
 
-// Mirrors inspectionHasRealNarrative from loadFacilityProfile — duplicated here
-// so this component stays a pure function of its props with no cross-layer import.
+// A stored plain-language summary is shown even when the source file has no
+// long narrative. The placeholder check is only for the summary text itself.
 const WA_PLACEHOLDER_RE_UI = /^—:\s*WA DSHS report:/i;
 const URL_RE_UI = /^https?:\/\//i;
 
-function narrativeIsPlaceholder(narrative: string | null | undefined): boolean {
-  if (!narrative || narrative.trim().length < 100) return true;
-  const text = narrative.trim();
-  if (WA_PLACEHOLDER_RE_UI.test(text)) return true;
-  // Multi-PDF concatenation: every non-empty line is a placeholder
-  const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
-  return lines.every((l) => WA_PLACEHOLDER_RE_UI.test(l) || l.startsWith("—:"));
+function summaryIsUsable(summary: string | null | undefined): boolean {
+  // A stored summary stands on its own. Illinois and several other states
+  // never have a long source narrative; hiding the summary in that case
+  // left families with the raw citation line.
+  if (!summary) return false;
+  const text = summary.trim();
+  if (text.length < 80) return false;
+  if (WA_PLACEHOLDER_RE_UI.test(text)) return false;
+  if (/^(I don't have enough|I cannot write|I can't write)\b/i.test(text)) return false;
+  return true;
 }
 
 function isPdfUrl(text: string | null | undefined): boolean {
@@ -138,8 +142,7 @@ function ExpandedRow({
     ? `${Math.round((insp.raw_data.duration_minutes / 60) * 10) / 10} hrs on-site`
     : null;
 
-  const hasSummary =
-    !!insp.narrative_summary && !narrativeIsPlaceholder(insp.raw_data?.narrative);
+  const hasSummary = summaryIsUsable(insp.narrative_summary);
   const hasFullCitationBody = defs.length > 0 || isSubGap || !!rawNarrative;
   const findingCount = defs.length + (isSubGap ? 1 : 0);
 
@@ -299,11 +302,7 @@ function InspectionItem({
     ? `${tag.label} · ${defs.length} finding${defs.length === 1 ? "" : "s"}`
     : `${defs.length} finding${defs.length === 1 ? "" : "s"}`;
 
-  const inspType = insp.is_complaint
-    ? "Complaint Investigation"
-    : insp.inspection_type === "other"
-    ? "Other Visit"
-    : "Annual Compliance Visit";
+  const inspType = visitKindLabel(insp);
 
   const outcome = insp.is_complaint && insp.raw_data?.outcome ? insp.raw_data.outcome : null;
 
@@ -409,8 +408,7 @@ export function FacilityFullInspections({
     if (!showPaidWatch || inspections.length === 0) return null;
     const withSummary = inspections.find(
       (insp) =>
-        !!insp.narrative_summary &&
-        !narrativeIsPlaceholder(insp.raw_data?.narrative),
+        summaryIsUsable(insp.narrative_summary),
     );
     return (withSummary ?? inspections[0]).id;
   })();

@@ -15,7 +15,7 @@ export const ilStateConfig: StateHubConfig = {
     {
       n: "Step 01",
       t: "FOIA-sourced inspection record",
-      p: "Inspection and complaint records for Illinois Assisted Living Establishments (ALEs) and Shared Housing Establishments (SHEs) are sourced from the Illinois Department of Public Health (IDPH) Division of Assisted Living via a Freedom of Information Act request, covering January 2024 through May 2026. Per-event Statement of Deficiency PDFs are fetched from the IDPH LLCS portal.",
+      p: "Inspection and complaint records for Illinois Assisted Living Establishments (ALEs) and Shared Housing Establishments (SHEs) are sourced from the Illinois Department of Public Health (IDPH) Division of Assisted Living via a Freedom of Information Act request, covering November 2022 through May 2026. A visit row names the rule that was cited. It is not the inspector's narrative. A statement of deficiency is added only when the LLCS portal publishes the PDF.",
     },
     {
       n: "Step 02",
@@ -37,6 +37,13 @@ export const ilStateConfig: StateHubConfig = {
       tags: ["licensing"],
       live: true,
     },
+    {
+      slug: "memory-care-vs-nursing-home",
+      title: "Memory care vs. nursing home in Illinois",
+      desc: "IDPH-licensed assisted living and shared housing are a different record from a CMS-surveyed nursing home.",
+      tags: ["decision", "licensing"],
+      live: true,
+    },
   ],
   editorialCards: [
     {
@@ -50,18 +57,18 @@ export const ilStateConfig: StateHubConfig = {
     {
       kind: "Illinois decision guide",
       title: "Memory care vs. nursing home in Illinois",
-      desc: "IDPH-regulated ALEs vs. CMS-regulated skilled nursing — different regulators, inspection records, Medicaid funding, and how to choose the right setting.",
-      meta: "Coming soon",
-      href: null,
-      live: false,
+      desc: "IDPH-licensed assisted living and shared housing are a different record from a CMS-surveyed nursing home. A memory-care name is not the Special Alzheimer's designation.",
+      meta: "Live · Decision guide",
+      href: "/illinois/memory-care-vs-nursing-home",
+      live: true,
     },
     {
       kind: "Illinois editorial library",
       title: "All Illinois guides & explainers",
       desc: "Decision guides, licensing explainers, and clinical primers — every StarlynnCare article for Illinois families.",
-      meta: "Coming soon",
-      href: null,
-      live: false,
+      meta: "Live · Full library",
+      href: "/illinois/guides",
+      live: true,
     },
   ],
 };

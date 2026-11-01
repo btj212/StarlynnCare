@@ -46,6 +46,7 @@ export const ilProfileConfig: StateProfileConfig = {
   formatSeverityTag: ilFormatSeverityTag,
   formNameForDeficiency: () => null,
   regulatorPortalUrl: "https://llcs.dph.illinois.gov/s/?language=en_US",
+  deficiencyTextIsRuleOnly: true,
   // Part 295 rule cards TBD — ship empty array per OR/UT pattern.
   // Statute: https://www.ilga.gov/agencies/JCAR/Sections?PartID=07700295
   rulebook: [],

@@ -187,7 +187,9 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
     return recorded(texasLabel(facility.tx_alzheimer_cert_no));
   }
   if (facility.il_dementia_program_flag) {
-    return recorded("Illinois IDPH records a dementia program on this license.");
+    return recorded(
+      "Illinois IDPH lists an Alzheimer's Special Care Program for this home on the LLCS facility lookup.",
+    );
   }
   if (facility.mn_dementia_care_licensed) {
     return recorded("Minnesota licenses this home for assisted living with dementia care.");

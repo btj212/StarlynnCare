@@ -135,6 +135,7 @@ export function collectStaticSitemapEntries(): SitemapUrlRow[] {
     { path: "/minnesota/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/illinois/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/illinois/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
+    { path: "/illinois/memory-care-vs-nursing-home", priority: "0.78", changefreq: "monthly" },
     { path: "/utah/guides", priority: "0.80", changefreq: "monthly" },
     { path: "/utah/memory-care-licensing", priority: "0.78", changefreq: "monthly" },
     // State facilities browse pages

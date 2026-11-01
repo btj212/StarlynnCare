@@ -31,11 +31,18 @@ from datetime import date, datetime, timezone
 from typing import Any
 
 import psycopg
+from dotenv import load_dotenv
 from psycopg.rows import dict_row
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+
+for _env_name in (".env.local", ".env"):
+    _env_path = os.path.join(os.path.dirname(__file__), "..", _env_name)
+    if os.path.isfile(_env_path):
+        load_dotenv(_env_path)
+        break
 
 SOCRATA_BASE = "https://data.mo.gov/resource/fenu-sipv.json"
 SOCRATA_LIMIT = 5000  # well above 1,101 rows

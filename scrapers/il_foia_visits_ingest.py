@@ -1,655 +1,373 @@
 #!/usr/bin/env python3
-"""
-Illinois IDPH FOIA workbook ingest.
+"""Illinois IDPH FOIA visit ingest.
 
-Reads "FOIA AL Visits-2024 to present.xlsx" (received 2026-05-19) and inserts
-inspections + deficiencies into the DB for IL MC-candidate facilities.
+The workbook column "Name" is the visit id. It is not a facility license.
+Visits are grouped by the facility's physical name and attached only to an
+Illinois facility already in the directory. A name the directory does not
+list is quarantined. This script does not create facilities and does not
+invent license numbers.
 
-Column map (verbatim from workbook):
-  col 0: "Facility: Facility/Establishment Name"  → facility name (string)
-  col 1: "Name"                                   → IDPH license number (8-digit)
-  col 2: "Survey-Sub Type"                        → compound event type string
-  col 3: "Survey Exit Date"                       → inspection_date (MM/DD/YYYY)
-  col 4: "Tags/Findings Cited"                    → multi-line citation blob
-  col 5: "Fine Amount"                            → civil_money_penalty_total (numeric)
-
-Survey-Sub Type normalization:
-  The field may contain multiple `; `-joined tokens, e.g.:
-    "7D COI = Complaint Original Investigation; 7D FRI  = Facility Reported Incident"
-  We split on "; ", map each token's prefix code, pick the most material single type
-  for inspections.inspection_type, and store the full raw string in raw_data.
-
-Tags/Findings Cited normalization:
-  Lines split on `_x000D_` + newlines. Each line parsed for:
-    - 295.XXXX code(s)
-    - Type (T1/T2/T3) or GV (General Violation)
-    - Dollar amount or K-shorthand fine
-    - "Repeat" prefix
-    - "REMOVED PER SOD" → status = 'removed_per_sod'
-    - "No Violations" / empty → no deficiency rows for this inspection
-  Lines that don't match the pattern are kept verbatim in a fallback deficiency row.
+A stored visit that has no event id can be claimed by one workbook row. The
+lowest visit id keeps that row. Every other visit is inserted on its own id.
 
 Usage:
-  python3 -u scrapers/il_foia_visits_ingest.py \\
-      --input "$HOME/Downloads/FOIA AL Visits-2024 to present.xlsx"
-
-  python3 -u scrapers/il_foia_visits_ingest.py \\
-      --input ... --dry-run
-
-  python3 -u scrapers/il_foia_visits_ingest.py \\
-      --input ... --smoke     # first 20 rows only
-
-  python3 -u scrapers/il_foia_visits_ingest.py \\
-      --input ... --license 00174877  # single facility
+    python3 -u scrapers/il_foia_visits_ingest.py --input /path/to/visits.xlsx
+    python3 -u scrapers/il_foia_visits_ingest.py --input /path/to/visits.xlsx --dry-run
 """
-
 from __future__ import annotations
 
 import argparse
 import os
-import re
 import sys
 import uuid
-from datetime import date, datetime
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 import psycopg
-import psycopg.types.json
 from dotenv import load_dotenv
+from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from il_foia_parse import (
+    REASON_AMBIGUOUS,
+    REASON_UNMATCHED,
+    normalize_facility_name,
+    pair_visits,
+    parse_visit_row,
+    visit_id_from_cell,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-STATE_CODE = "IL"
-SOURCE_AGENCY = "IDPH-DAL"
-# Placeholder source URL format — Phase 3 (il_llcs_event_scrape.py) fills real URLs.
-_SOURCE_URL_TMPL = "https://llcs.dph.illinois.gov/s/?language=en_US#license={license}"
-
-# ---------------------------------------------------------------------------
-# Survey-Sub Type priority order for picking the single canonical type
-# Higher index = higher priority when multiple types appear in one event.
-# ---------------------------------------------------------------------------
-_TYPE_PRIORITY: dict[str, int] = {
-    "FRI": 1,           # Facility Reported Incident — lowest
-    "desk_audit": 2,
-    "initial": 3,
-    "follow-up": 4,
-    "focused": 5,
-    "special": 6,
-    "COI": 7,           # Complaint Original Investigation — highest
-}
-
-_TYPE_MAP: dict[str, tuple[str, bool]] = {
-    # (inspection_type, is_complaint)
-    "COI":        ("complaint", True),
-    "FRI":        ("facility_reported_incident", False),
-    "L/IN":       ("initial", False),
-    "L/P1":       ("initial", False),
-    "L/SP":       ("special", False),
-    "L/desk":     ("desk_audit", False),
-    "FIC":        ("focused", False),
-    "C/F1":       ("follow-up", False),
-    "M/F1":       ("follow-up", False),
-    "24HR":       ("complaint", True),
-    "30D":        ("complaint", True),
-    "7D":         ("complaint", True),
-}
-
-# Regex to extract the SHORT key from a token like "7D COI = Complaint …"
-_SUBTYPE_KEY_RE = re.compile(
-    r"(?:24HR|30D|7D)?\s*"
-    r"(COI|FRI|L/IN|L/P1|L/SP|L/desk|FIC|C/F1|M/F1)",
-    re.IGNORECASE,
-)
-
-# ---------------------------------------------------------------------------
-# Citation parsing
-# ---------------------------------------------------------------------------
-
-# Matches lines like:
-#   "295.6010 a)1)2), T2, $500"
-#   "Repeat 295.4010 d)g), T2, $1K"
-#   "295.4010 a)_x000D_295.5000 a)d)j)..."  ← handled by prior line-split
-_CITATION_RE = re.compile(
-    r"(?P<repeat>(?:repeat)\s+)?"
-    r"(?P<code>295\.\d{4}(?:\s*[a-zA-Z0-9\(\)\)\s-]*)?)?"
-    r"(?:,\s*(?P<sev>T[123]|GV))?"
-    r"(?:[,\s]*\$?(?P<fine>[\d,]+[kK]?))?"
-    r"(?:\s*\*{0,2}(?P<note>[A-Z][A-Z ]+)\*{0,2})?",
-    re.IGNORECASE,
-)
-
-# Normalize fine strings like "$500", "1K", "1,000" → float
-_FINE_RE = re.compile(r"^[\$,\s]*(?P<num>\d[\d,]*)(?P<k>[kK])?$")
-
-_SEVERITY_MAP: dict[str, tuple[int, str]] = {
-    "T1": (3, "Type 1"),
-    "T2": (2, "Type 2"),
-    "T3": (1, "Type 3"),
-    "GV": (1, "General Violation"),
-}
-
-_NO_VIOLATION_PATTERNS = re.compile(
-    r"\bno\s+violations?\b|\bnone\b|^none$|^no violation|no\s+violation\s+found",
-    re.IGNORECASE,
-)
-_REMOVED_SOD_RE = re.compile(r"removed\s+per\s+sod", re.IGNORECASE)
-
-
-def _parse_fine(raw: str) -> float | None:
-    if not raw:
-        return None
-    m = _FINE_RE.match(raw.strip())
-    if not m:
-        return None
-    n = float(m.group("num").replace(",", ""))
-    if m.group("k"):
-        n *= 1000
-    return n
-
-
-def _split_citation_lines(raw: str) -> list[str]:
-    """Split the Tags/Findings field into one line per citation."""
-    if not raw:
-        return []
-    # openpyxl returns carriage-returns as literal \r (chr 13) or as _x000D_ in older files
-    text = str(raw).replace("_x000D_", "\n").replace("\r", "\n")
-    lines = [ln.strip() for ln in text.splitlines()]
-    return [ln for ln in lines if ln]
-
-
-def _parse_citation_line(line: str) -> dict[str, Any] | None:
-    """
-    Parse one line from Tags/Findings Cited into a deficiency-like dict.
-    Returns None if the line is a no-violation marker (still insert the inspection).
-    Returns a dict with keys: code, state_severity_raw, severity, is_repeat,
-                              civil_money_penalty, status, raw_line
-    """
-    if _NO_VIOLATION_PATTERNS.search(line):
-        return None  # clean inspection
-
-    removed_sod = bool(_REMOVED_SOD_RE.search(line))
-    if removed_sod and not re.search(r"295\.", line):
-        # Pure removal note, no code visible
-        return {
-            "code": None,
-            "state_severity_raw": None,
-            "severity": None,
-            "is_repeat": False,
-            "civil_money_penalty": None,
-            "status": "removed_per_sod",
-            "raw_line": line,
-        }
-
-    m = _CITATION_RE.match(line)
-    if not m or not m.group("code"):
-        # Keep as raw fallback so we don't silently drop data
-        return {
-            "code": None,
-            "state_severity_raw": None,
-            "severity": None,
-            "is_repeat": False,
-            "civil_money_penalty": None,
-            "status": "open",
-            "raw_line": line,
-        }
-
-    raw_code = re.sub(r"\s+", " ", (m.group("code") or "").strip().rstrip(",").rstrip())
-    # Strip trailing severity token the greedy code group consumed (e.g. "295.9040 T2")
-    raw_code = re.sub(r"\s+(?:T[123]|GV)\s*$", "", raw_code, flags=re.IGNORECASE).strip()
-    # Strip trailing "repeat" word embedded in the code field (e.g. "295.4010 a) repeat")
-    _had_inline_repeat = bool(re.search(r"\brepeat\b\s*$", raw_code, re.IGNORECASE))
-    raw_code = re.sub(r"\s+repeat\s*$", "", raw_code, flags=re.IGNORECASE).strip()
-
-    sev_token = (m.group("sev") or "").upper().strip()
-    # Capture severity from "Repeat T2" style (sev follows "repeat" without comma separator)
-    if not sev_token:
-        _sev_anywhere = re.search(r"\b(T[123]|GV)\b", line, re.IGNORECASE)
-        if _sev_anywhere:
-            sev_token = _sev_anywhere.group(1).upper()
-
-    sev_int, sev_raw = _SEVERITY_MAP.get(sev_token, (None, None))
-    is_repeat = bool(m.group("repeat")) or _had_inline_repeat
-    # Also detect "Repeat" appearing anywhere in the line that isn't the leading group
-    if not is_repeat and re.search(r"\brepeat\b", line, re.IGNORECASE):
-        is_repeat = True
-
-    fine = _parse_fine(m.group("fine") or "")
-    # Fallback: scan for dollar amount anywhere in the line if regex didn't capture it
-    if fine is None:
-        _fine_anywhere = re.search(r"\$\s*(\d[\d,]*[kK]?)", line, re.IGNORECASE)
-        if _fine_anywhere:
-            fine = _parse_fine(_fine_anywhere.group(1))
-    note = (m.group("note") or "").strip()
-    status = "removed_per_sod" if (removed_sod or "REMOVED PER SOD" in note.upper()) else "open"
-
-    # Severity null when removed per SOD
-    if status == "removed_per_sod":
-        sev_int = None
-        sev_raw = None
-
-    return {
-        "code": raw_code[:200] if raw_code else None,
-        "state_severity_raw": sev_raw,
-        "severity": sev_int,
-        "is_repeat": is_repeat,
-        "civil_money_penalty": fine,
-        "status": status,
-        "raw_line": line,
-    }
-
-
-def parse_citations(raw: str) -> list[dict[str, Any]] | None:
-    """
-    Parse Tags/Findings Cited field.
-    Returns:
-      None  — field indicates no violations (don't insert any deficiency rows)
-      []    — field is empty / unparseable
-      [...]  — list of deficiency dicts
-    """
-    lines = _split_citation_lines(raw)
-    if not lines:
-        return []
-
-    results: list[dict[str, Any]] = []
-    for line in lines:
-        parsed = _parse_citation_line(line)
-        if parsed is None:
-            return None  # no violations marker found — stop and return None
-        results.append(parsed)
-    return results
-
-
-# ---------------------------------------------------------------------------
-# Survey-Sub Type parsing
-# ---------------------------------------------------------------------------
-
-
-def _parse_subtype_token(token: str) -> str | None:
-    """Return the SHORT key (COI, FRI, L/IN …) for a single token."""
-    token = token.strip()
-    for key in _TYPE_MAP:
-        if key.lower() in token.lower():
-            return key
-    m = _SUBTYPE_KEY_RE.search(token)
-    return m.group(1).upper() if m else None
-
-
-def parse_survey_subtype(raw: str) -> tuple[str, bool, str]:
-    """
-    Parse the compound "Survey-Sub Type" field.
-    Returns (inspection_type, is_complaint, canonical_key).
-    """
-    tokens = [t.strip() for t in raw.split(";") if t.strip()]
-    if not tokens:
-        return "inspection", False, "UNK"
-
-    best_key: str | None = None
-    best_priority = -1
-    is_complaint = False
-
-    for token in tokens:
-        key = _parse_subtype_token(token)
-        if key is None:
-            continue
-        itype, ic = _TYPE_MAP.get(key, ("inspection", False))
-        if ic:
-            is_complaint = True
-        p = _TYPE_PRIORITY.get(key, 0)
-        if p > best_priority:
-            best_priority = p
-            best_key = key
-
-    if best_key is None:
-        return "inspection", is_complaint, "UNK"
-
-    itype, ic = _TYPE_MAP.get(best_key, ("inspection", False))
-    if ic:
-        is_complaint = True
-    return itype, is_complaint, best_key
-
-
-# ---------------------------------------------------------------------------
-# Date parsing
-# ---------------------------------------------------------------------------
-
-
-def _parse_date(raw: Any) -> date | None:
-    if raw is None:
-        return None
-    if isinstance(raw, (date, datetime)):
-        return raw.date() if isinstance(raw, datetime) else raw
-    s = str(raw).strip()
-    if not s:
-        return None
-    for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y", "%m/%d/%y"):
-        try:
-            return datetime.strptime(s, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-# ---------------------------------------------------------------------------
-# DB helpers
-# ---------------------------------------------------------------------------
+SOURCE = "foia_visits"
+AGENCY = "IDPH-DAL"
+PORTAL = "https://llcs.dph.illinois.gov/s/?language=en_US"
 
 
 def load_env() -> None:
     for name in (".env.local", ".env"):
-        p = REPO_ROOT / name
-        if p.is_file():
-            load_dotenv(p)
+        path = REPO_ROOT / name
+        if path.is_file():
+            load_dotenv(path)
             return
 
 
-def get_conn() -> psycopg.Connection:
-    url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
-    if not url:
-        raise RuntimeError("DATABASE_URL / POSTGRES_URL not set")
-    return psycopg.connect(url)
+def database_url() -> str | None:
+    return os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or os.environ.get("POSTGRES_URL")
 
 
-def load_facility_map(conn: psycopg.Connection) -> dict[str, str]:
-    """Return {license_number: facility_id} for all IL facilities."""
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT license_number, id::text FROM facilities "
-            "WHERE state_code = 'IL' AND license_number IS NOT NULL"
-        )
-        return {row[0]: row[1] for row in cur.fetchall()}
+def load_rows(path: Path) -> list[tuple[int, tuple[Any, ...]]]:
+    try:
+        import openpyxl
+    except ImportError:
+        sys.exit("openpyxl not installed — run: pip3 install openpyxl")
+    workbook = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    sheet = workbook.active
+    rows: list[tuple[int, tuple[Any, ...]]] = []
+    for excel_row, values in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+        if not values or values[0] is None:
+            continue
+        rows.append((excel_row, tuple(values)))
+    workbook.close()
+    return rows
 
 
-def insert_inspection(
+def classify_visits(
+    visits: list[dict[str, Any]],
+    facilities: list[dict[str, Any]],
+) -> None:
+    by_name: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for facility in facilities:
+        by_name[normalize_facility_name(facility["name"])].append(facility)
+    for visit in visits:
+        if visit["disposition"] != "normalized":
+            continue
+        matches = by_name.get(visit["normalized_name"], [])
+        if len(matches) == 1:
+            visit["facility_id"] = matches[0]["id"]
+            continue
+        visit["disposition"] = "quarantined"
+        visit["reason"] = REASON_AMBIGUOUS if len(matches) > 1 else REASON_UNMATCHED
+        visit["facility_id"] = None
+
+
+_LEDGER_SQL = """
+INSERT INTO il_source_rows (
+    source, source_key, disposition, reason, facility_external_id, raw
+) VALUES (%s, %s, %s, %s, %s, %s)
+ON CONFLICT (source, source_key) DO UPDATE SET
+    disposition = EXCLUDED.disposition,
+    reason = EXCLUDED.reason,
+    facility_external_id = EXCLUDED.facility_external_id,
+    raw = EXCLUDED.raw,
+    ingested_at = now()
+"""
+
+
+def write_ledger(cur: psycopg.Cursor, visits: list[dict[str, Any]]) -> None:
+    if not visits:
+        return
+    cur.executemany(
+        _LEDGER_SQL,
+        [
+            (
+                SOURCE,
+                visit["source_key"],
+                visit["disposition"],
+                visit["reason"],
+                None,
+                Jsonb({**visit["raw"], "facility_id": visit.get("facility_id")}),
+            )
+            for visit in visits
+        ],
+    )
+
+
+def insert_visit(
     cur: psycopg.Cursor,
-    facility_id: str,
-    insp_date: date,
-    inspection_type: str,
-    is_complaint: bool,
-    civil_penalty_total: float | None,
-    raw_subtype: str,
-    license_number: str,
+    visit: dict[str, Any],
     scrape_run_id: str,
 ) -> str | None:
-    """Insert one inspection row. Returns inspection_id or None (duplicate)."""
-    source_url = _SOURCE_URL_TMPL.format(license=license_number)
-    raw_data = psycopg.types.json.Jsonb({"survey_subtype": raw_subtype})
     cur.execute(
         """
         INSERT INTO inspections (
             facility_id, inspection_date, inspection_type,
             is_complaint, civil_money_penalty_total,
-            source_url, source_agency, scrape_run_id,
+            source_url, source_agency, source_event_id, scrape_run_id,
             raw_data
         ) VALUES (
-            %s, %s, %s,
-            %s, %s,
-            %s, %s, %s::uuid,
-            %s
+            %(facility_id)s, %(inspection_date)s, %(inspection_type)s,
+            %(is_complaint)s, %(civil_money_penalty_total)s,
+            '', %(source_agency)s, %(source_event_id)s, %(scrape_run_id)s,
+            %(raw_data)s
         )
-        ON CONFLICT (facility_id, inspection_date, inspection_type,
-                     COALESCE(source_agency, ''))
+        ON CONFLICT (source_agency, source_event_id) WHERE source_event_id IS NOT NULL
         DO NOTHING
         RETURNING id::text
         """,
-        (
-            facility_id, insp_date, inspection_type,
-            is_complaint, civil_penalty_total,
-            source_url, SOURCE_AGENCY, scrape_run_id,
-            raw_data,
-        ),
+        {
+            "facility_id": visit["facility_id"],
+            "inspection_date": visit["inspection_date"],
+            "inspection_type": visit["inspection_type"],
+            "is_complaint": visit["is_complaint"],
+            "civil_money_penalty_total": visit["civil_penalty_total"],
+            "source_agency": AGENCY,
+            "source_event_id": visit["source_event_id"],
+            "scrape_run_id": scrape_run_id,
+            "raw_data": Jsonb({
+                "survey_subtype": visit["survey_subtype"],
+                "visit_id": visit["source_event_id"],
+                "portal_url": PORTAL,
+            }),
+        },
     )
     row = cur.fetchone()
-    return str(row[0]) if row else None
-
-
-def insert_deficiency(
-    cur: psycopg.Cursor,
-    inspection_id: str,
-    d: dict[str, Any],
-) -> None:
-    # Use raw_line as description for traceability when we have no structured code
-    code = d["code"] or f"__il_{uuid.uuid4().hex[:16]}"
-    desc = d["raw_line"][:2000] if d.get("raw_line") else None
+    if row:
+        return str(row["id"])
     cur.execute(
         """
-        INSERT INTO deficiencies (
-            inspection_id,
-            code, description,
-            severity, state_severity_raw,
-            is_repeat, civil_money_penalty, status
-        ) VALUES (
-            %s::uuid,
-            %s, %s,
-            %s, %s,
-            %s, %s, %s
-        )
+        SELECT id::text AS id
+        FROM inspections
+        WHERE source_agency = %s AND source_event_id = %s
         """,
-        (
-            inspection_id,
-            code[:200], desc,
-            d.get("severity"), d.get("state_severity_raw"),
-            bool(d.get("is_repeat")), d.get("civil_money_penalty"), d.get("status", "open"),
-        ),
+        (AGENCY, visit["source_event_id"]),
     )
+    found = cur.fetchone()
+    return str(found["id"]) if found else None
 
 
-def deficiency_exists(cur: psycopg.Cursor, inspection_id: str, code: str) -> bool:
-    cur.execute(
-        "SELECT 1 FROM deficiencies WHERE inspection_id = %s::uuid AND code = %s LIMIT 1",
-        (inspection_id, code),
-    )
-    return cur.fetchone() is not None
-
-
-# ---------------------------------------------------------------------------
-# Row processing
-# ---------------------------------------------------------------------------
-
-
-def process_row(
-    conn: psycopg.Connection,
-    row_idx: int,
-    raw: tuple,
-    fac_map: dict[str, str],
-    scrape_run_id: str,
-    dry_run: bool,
-) -> dict[str, int]:
-    """Process one workbook row. Returns stats dict."""
-    stats: dict[str, int] = {
-        "inserted_insp": 0,
-        "inserted_def": 0,
-        "skipped_non_mc": 0,
-        "skipped_no_date": 0,
-        "skipped_dup_insp": 0,
-        "errors": 0,
-    }
-
-    raw_name    = str(raw[0]).strip() if raw[0] is not None else ""
-    raw_lic     = str(raw[1]).strip() if raw[1] is not None else ""
-    raw_subtype = str(raw[2]).strip() if raw[2] is not None else ""
-    raw_date    = raw[3]
-    raw_tags    = str(raw[4]).strip() if raw[4] is not None else ""
-    raw_fine    = raw[5]
-
-    license_number = re.sub(r"\D", "", raw_lic).zfill(8) if raw_lic else None
-    if not license_number:
-        stats["errors"] += 1
-        return stats
-
-    facility_id = fac_map.get(license_number)
-    if facility_id is None:
-        stats["skipped_non_mc"] += 1
-        return stats
-
-    insp_date = _parse_date(raw_date)
-    if insp_date is None:
-        stats["skipped_no_date"] += 1
-        print(f"  [row {row_idx}] no date for {license_number} — skipping", flush=True)
-        return stats
-
-    inspection_type, is_complaint, _key = parse_survey_subtype(raw_subtype)
-
-    civil_total: float | None = None
-    if raw_fine is not None:
-        try:
-            civil_total = float(raw_fine)
-        except (TypeError, ValueError):
-            pass
-
-    # Parse citations (may be None = no violations, [] = empty, [...] = deficiencies)
-    citation_result = parse_citations(raw_tags)
-
-    if dry_run:
-        dcount = len(citation_result) if citation_result else 0
-        print(
-            f"  [row {row_idx}] {license_number} | {raw_name[:35]:35s} | "
-            f"{insp_date} | {inspection_type:30s} | "
-            f"defs={dcount} | fine={civil_total}"
-        )
-        stats["inserted_insp"] += 1
-        stats["inserted_def"] += dcount
-        return stats
-
-    sp = f"sp_il_row_{row_idx}"
-    with conn.cursor() as cur:
-        try:
-            cur.execute(f"SAVEPOINT {sp}")
-
-            insp_id = insert_inspection(
-                cur, facility_id, insp_date, inspection_type,
-                is_complaint, civil_total, raw_subtype, license_number, scrape_run_id,
+def insert_missing_citations(cur: psycopg.Cursor, inspection_id: str, visit: dict[str, Any]) -> int:
+    citations = visit["citations"] or []
+    inserted = 0
+    for citation in citations:
+        cur.execute(
+            """
+            INSERT INTO deficiencies (
+                inspection_id, code, description,
+                severity, state_severity_raw,
+                is_repeat, civil_money_penalty, status
             )
-
-            if insp_id is None:
-                cur.execute(f"RELEASE SAVEPOINT {sp}")
-                stats["skipped_dup_insp"] += 1
-                return stats
-
-            stats["inserted_insp"] += 1
-
-            # citation_result = None means no violations; don't insert any deficiency rows
-            if citation_result:
-                for d in citation_result:
-                    code = d["code"] or f"__il_{uuid.uuid4().hex[:16]}"
-                    if not deficiency_exists(cur, insp_id, code):
-                        d["code"] = code
-                        sp2 = f"sp_il_def_{row_idx}_{stats['inserted_def']}"
-                        try:
-                            cur.execute(f"SAVEPOINT {sp2}")
-                            insert_deficiency(cur, insp_id, d)
-                            cur.execute(f"RELEASE SAVEPOINT {sp2}")
-                            stats["inserted_def"] += 1
-                        except Exception as de:
-                            cur.execute(f"ROLLBACK TO SAVEPOINT {sp2}")
-                            print(f"  DEF ERROR row {row_idx}: {de}", file=sys.stderr, flush=True)
-
-            cur.execute(f"RELEASE SAVEPOINT {sp}")
-
-        except Exception as exc:
-            cur.execute(f"ROLLBACK TO SAVEPOINT {sp}")
-            print(f"  ROW ERROR {row_idx} {license_number}: {exc}", file=sys.stderr, flush=True)
-            stats["errors"] += 1
-
-    return stats
+            SELECT %(inspection_id)s, %(code)s, %(description)s,
+                   %(severity)s, %(state_severity_raw)s,
+                   %(is_repeat)s, %(civil_money_penalty)s, %(status)s
+            WHERE NOT EXISTS (
+                SELECT 1 FROM deficiencies existing
+                WHERE existing.inspection_id = %(inspection_id)s
+                  AND existing.code = %(code)s
+            )
+            RETURNING id
+            """,
+            {
+                "inspection_id": inspection_id,
+                "code": citation["code"][:200],
+                "description": (citation.get("raw_line") or "")[:2000] or None,
+                "severity": citation.get("severity"),
+                "state_severity_raw": citation.get("state_severity_raw"),
+                "is_repeat": bool(citation.get("is_repeat")),
+                "civil_money_penalty": citation.get("civil_money_penalty"),
+                "status": citation.get("status") or "open",
+            },
+        )
+        if cur.fetchone():
+            inserted += 1
+    return inserted
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+def claim_visit(cur: psycopg.Cursor, inspection_id: str, visit: dict[str, Any]) -> None:
+    cur.execute(
+        """
+        UPDATE inspections
+        SET source_event_id = %(source_event_id)s,
+            raw_data = COALESCE(raw_data, '{}'::jsonb) || %(raw_data)s
+        WHERE id = %(id)s
+          AND source_event_id IS NULL
+        """,
+        {
+            "id": inspection_id,
+            "source_event_id": visit["source_event_id"],
+            "raw_data": Jsonb({
+                "visit_id": visit["source_event_id"],
+                "portal_url": PORTAL,
+            }),
+        },
+    )
+
+
+def run(path: Path, dry_run: bool, smoke: bool, visit_id: str | None) -> None:
+    load_env()
+    numbered = load_rows(path)
+    if smoke:
+        numbered = numbered[:20]
+    if visit_id:
+        target = visit_id_from_cell(visit_id)
+        numbered = [row for row in numbered if visit_id_from_cell(row[1][1] if len(row[1]) > 1 else None) == target]
+        print(f"Filtered to visit id {target}: {len(numbered)} rows.", flush=True)
+
+    visits = [parse_visit_row(values, excel_row) for excel_row, values in numbered]
+    print(f"Loaded {len(visits)} visit rows.", flush=True)
+
+    url = database_url()
+    if dry_run and not url:
+        quarantined = sum(1 for visit in visits if visit["disposition"] == "quarantined")
+        print(f"Dry-run without a database: {len(visits) - quarantined} dated visits, {quarantined} quarantined by the file.")
+        return
+    if not url:
+        sys.exit("DATABASE_URL not set")
+
+    with psycopg.connect(url, row_factory=dict_row) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id::text AS id, name
+                FROM facilities
+                WHERE state_code = 'IL'
+                """
+            )
+            facilities = list(cur.fetchall())
+            cur.execute(
+                """
+                SELECT i.id::text AS id,
+                       i.facility_id::text AS facility_id,
+                       i.inspection_date,
+                       i.inspection_type,
+                       i.source_event_id,
+                       i.raw_data->>'survey_subtype' AS survey_subtype
+                FROM inspections i
+                JOIN facilities f ON f.id = i.facility_id
+                WHERE f.state_code = 'IL' AND i.source_agency = %s
+                """,
+                (AGENCY,),
+            )
+            stored = list(cur.fetchall())
+
+    classify_visits(visits, facilities)
+    ready = [visit for visit in visits if visit["disposition"] == "normalized"]
+    print(
+        f"  {len(ready)} visits match a directory name. "
+        f"{len(visits) - len(ready)} are quarantined.",
+        flush=True,
+    )
+    if dry_run:
+        print("Dry-run: no rows written.")
+        return
+
+    by_facility: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    stored_by_facility: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for visit in ready:
+        by_facility[visit["facility_id"]].append(visit)
+    for row in stored:
+        stored_by_facility[row["facility_id"]].append(row)
+
+    scrape_run_id = str(uuid.uuid4())
+    claimed = 0
+    inserted_visits = 0
+    inserted_findings = 0
+    with psycopg.connect(url, row_factory=dict_row, autocommit=True) as conn:
+        for facility_id, facility_visits in by_facility.items():
+            claims, inserts = pair_visits(facility_visits, stored_by_facility.get(facility_id, []))
+            visit_by_id = {visit["source_event_id"]: visit for visit in facility_visits}
+            with conn.transaction():
+                with conn.cursor() as cur:
+                    for inspection_id, source_event_id in claims:
+                        claim_visit(cur, inspection_id, visit_by_id[source_event_id])
+                        claimed += 1
+                    for visit in inserts:
+                        inspection_id = insert_visit(cur, visit, scrape_run_id)
+                        if inspection_id is None:
+                            raise RuntimeError(f"visit {visit['source_event_id']} was not stored")
+                        inserted_visits += 1
+                        inserted_findings += insert_missing_citations(cur, inspection_id, visit)
+                    write_ledger(cur, facility_visits)
+
+        quarantined = [visit for visit in visits if visit["disposition"] != "normalized"]
+        for start in range(0, len(quarantined), 200):
+            chunk = quarantined[start:start + 200]
+            with conn.transaction():
+                with conn.cursor() as cur:
+                    write_ledger(cur, chunk)
+
+        matched_ids = [visit["source_event_id"] for visit in ready]
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT count(*)::int AS n
+                FROM inspections
+                WHERE source_agency = %s AND source_event_id = ANY(%s)
+                """,
+                (AGENCY, matched_ids or [""]),
+            )
+            stored_events = cur.fetchone()["n"]
+            cur.execute(
+                "SELECT count(*)::int AS n FROM il_source_rows WHERE source = %s",
+                (SOURCE,),
+            )
+            stored_ledger = cur.fetchone()["n"]
+
+    print(
+        f"Done. claimed={claimed} inserted_visits={inserted_visits} "
+        f"inserted_findings={inserted_findings}",
+        flush=True,
+    )
+    print(f"Reconcile: events {stored_events}/{len(ready)} ledger {stored_ledger}/{len(visits)}", flush=True)
+    if stored_events != len(ready) or stored_ledger != len(visits):
+        sys.exit(1)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="IL IDPH FOIA workbook ingest")
-    parser.add_argument("--input", required=True, help="Path to the FOIA .xlsx file")
-    parser.add_argument("--dry-run", action="store_true", help="Print rows, no DB writes")
-    parser.add_argument("--smoke", action="store_true", help="Process first 20 data rows only")
-    parser.add_argument("--license", help="Process only rows matching this license number")
+    parser = argparse.ArgumentParser(description="Illinois IDPH FOIA visit ingest")
+    parser.add_argument("--input", required=True)
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--visit-id", help="Process one workbook visit id. This is not a facility license.")
+    parser.add_argument("--license", help="Deprecated name for --visit-id. The workbook value is a visit id.")
     args = parser.parse_args()
-
-    load_env()
-
-    xlsx_path = Path(args.input)
-    if not xlsx_path.is_file():
-        print(f"File not found: {xlsx_path}", file=sys.stderr)
-        sys.exit(1)
-
-    if not args.dry_run and not os.environ.get("DATABASE_URL"):
-        print("DATABASE_URL not set.", file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        import openpyxl
-    except ImportError:
-        print("ERROR: openpyxl not installed. Run: pip install openpyxl", file=sys.stderr)
-        sys.exit(1)
-
-    print(f"Loading {xlsx_path.name} …", flush=True)
-    wb = openpyxl.load_workbook(str(xlsx_path), data_only=True, read_only=True)
-    ws = wb.active
-
-    all_rows: list[tuple] = []
-    for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True)):
-        if not row or row[0] is None:
-            continue
-        all_rows.append(tuple(row))
-
-    wb.close()
-    print(f"  {len(all_rows)} data rows loaded.", flush=True)
-
-    if args.smoke:
-        all_rows = all_rows[:20]
+    path = Path(args.input)
+    if not path.is_file():
+        sys.exit(f"File not found: {path}")
     if args.license:
-        target_lic = re.sub(r"\D", "", args.license).zfill(8)
-        all_rows = [r for r in all_rows if re.sub(r"\D", "", str(r[1] or "")).zfill(8) == target_lic]
-        print(f"  Filtered to license {target_lic}: {len(all_rows)} rows.", flush=True)
-
-    # Pre-load facility map (OR learning #5 — avoid per-row SELECT)
-    if args.dry_run:
-        fac_map: dict[str, str] = {}
-        print("  [dry-run] skipping DB facility map load", flush=True)
-    else:
-        conn_temp = get_conn()
-        fac_map = load_facility_map(conn_temp)
-        conn_temp.close()
-        print(f"  Facility map: {len(fac_map)} IL facilities in DB.", flush=True)
-
-    totals: dict[str, int] = {
-        "inserted_insp": 0, "inserted_def": 0,
-        "skipped_non_mc": 0, "skipped_no_date": 0,
-        "skipped_dup_insp": 0, "errors": 0,
-    }
-
-    scrape_run_id = str(uuid.uuid4())
-
-    if args.dry_run:
-        print("\n--- DRY RUN ---\n")
-        for i, row in enumerate(all_rows, start=2):
-            st = process_row(None, i, row, fac_map, scrape_run_id, dry_run=True)  # type: ignore[arg-type]
-            for k in totals:
-                totals[k] += st.get(k, 0)
-        print(f"\nDry-run totals: {totals}")
-        return
-
-    conn = get_conn()
-    try:
-        for i, row in enumerate(all_rows, start=2):
-            st = process_row(conn, i, row, fac_map, scrape_run_id, dry_run=False)
-            for k in totals:
-                totals[k] += st.get(k, 0)
-        conn.commit()
-    finally:
-        conn.close()
-
-    print(
-        f"\nDone. scrape_run_id={scrape_run_id}\n"
-        f"  Inspections inserted : {totals['inserted_insp']}\n"
-        f"  Deficiencies inserted: {totals['inserted_def']}\n"
-        f"  Skipped (non-MC)     : {totals['skipped_non_mc']}\n"
-        f"  Skipped (no date)    : {totals['skipped_no_date']}\n"
-        f"  Skipped (dup insp)   : {totals['skipped_dup_insp']}\n"
-        f"  Errors               : {totals['errors']}",
-        flush=True,
-    )
+        print("--license filters the visit id column. It is not a facility license.", flush=True)
+    run(path, args.dry_run, args.smoke, args.visit_id or args.license)
 
 
 if __name__ == "__main__":

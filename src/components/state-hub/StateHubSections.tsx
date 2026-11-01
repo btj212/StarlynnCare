@@ -24,6 +24,7 @@ export function StateHubSections({ data, config }: Props) {
   const { counties, topCities, stats, sampleReviews } = data;
 
   const countyCode = stateCode;
+  const cityFirst = counties.length === 0 && config.comingCounties.length === 0;
 
   return (
     <>
@@ -75,15 +76,19 @@ export function StateHubSections({ data, config }: Props) {
       />
 
       <StateHubBrowse
-        sectionTitle={<>Start with your county, <em>or jump to your city.</em></>}
+        sectionTitle={
+          cityFirst
+            ? <>Find a home by <em>city.</em></>
+            : <>Start with your county, <em>or jump to your city.</em></>
+        }
         stateSlug={stateSlug}
-        browseSectionTitle={`By county · ${counties.length} live`}
+        browseSectionTitle={cityFirst ? "Cities with a published home" : `By county · ${counties.length} live`}
         counties={counties}
         comingCounties={config.comingCounties}
         popularCitiesTitle="Popular cities · By facility count"
         topCities={topCities}
-        viewAllHref={`/${stateSlug}`}
-        viewAllLabel={`View all ${stateName} counties →`}
+        viewAllHref={cityFirst ? `/${stateSlug}/facilities` : `/${stateSlug}`}
+        viewAllLabel={cityFirst ? `Browse all ${stateName} facilities →` : `View all ${stateName} counties →`}
       />
 
       <StateHubEditorial

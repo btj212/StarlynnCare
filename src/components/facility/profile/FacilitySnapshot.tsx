@@ -123,7 +123,7 @@ export function FacilitySnapshot({ profile }: { profile: FacilityProfile }) {
             headline ? (
               <>{headline.split(",")[0]}, <em>{headline.split(",").slice(1).join(",").trim() || "reviewed on public record."}</em></>
             ) : (
-              <>A {facility.capacity_tier ?? "care"} home, <em>reviewed on public record.</em></>
+              <>A {facility.capacity_tier && facility.capacity_tier !== "unknown" ? facility.capacity_tier : "care"} home, <em>reviewed on public record.</em></>
             )
           }
           deck={intro ?? undefined}

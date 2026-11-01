@@ -27,6 +27,7 @@ import os
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 
 import anthropic
@@ -199,7 +200,10 @@ Rules:
 1. Write exactly 2-3 sentences. No bullet points. No headers. No markdown.
 2. State what kind of visit it was (complaint investigation, facility-reported incident, special
    survey, follow-up) when clear from the inspection type.
-3. State what was found — or, for unsubstantiated complaints, clearly say no violation was found.
+3. If the source names a rule, a fine, or a violation class, say that. If it does not describe
+   what the inspector saw, say the file does not describe the incident. Do not invent an
+   incident from a rule number. A citation of section 295.4060 is a citation of the
+   dementia-program rule, not proof the home has a memory-care designation.
 4. If a death, injury, or harm is described, state what happened factually. Do not soften it and
    do not amplify it.
 5. Do NOT use evaluative adjectives: "serious", "severe", "significant", "alarming", "concerning",
@@ -232,6 +236,69 @@ Rules:
 8. Do NOT use "the report states" or "according to the document".
 9. Dates in 2025 or 2026 are real. Do not call them future events."""
 
+SYSTEM_PROMPT_PA = f"""You summarize Pennsylvania Department of Human Services inspection and complaint
+findings for families researching memory care. Today is {TODAY}.
+
+These records cover personal care homes and assisted living residences. The text may be
+the inspector's narrative, or it may only be the requirement the survey cited. If the
+text is a requirement, say that requirement was cited. Do not describe an incident that
+is not written in the text. Do not mention California, Title 22, or CDSS.
+
+Rules:
+1. Write exactly 2-3 sentences. No bullet points. No headers. No markdown.
+2. Use the inspection type that was provided.
+3. Do NOT invent facts not in the source text.
+4. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
+5. Do NOT name specific residents, staff, or inspectors.
+6. Dates in 2025 or 2026 are real. Do not call them future events."""
+
+SYSTEM_PROMPT_AZ = f"""You summarize Arizona Department of Health Services assisted-living inspection
+and complaint findings for families researching memory care. Today is {TODAY}.
+
+The text may be an inspector's account ("based on observation") or a quotation of an
+Arizona administrative rule. If it is a rule, say the survey cited that requirement.
+Do not turn a rule quotation into a story about what happened. Do not mention California,
+Title 22, or CDSS.
+
+Rules:
+1. Write exactly 2-3 sentences. No bullet points. No headers. No markdown.
+2. Use the inspection type that was provided.
+3. Do NOT invent facts not in the source text.
+4. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
+5. Do NOT name specific residents, staff, or inspectors.
+6. Dates in 2025 or 2026 are real. Do not call them future events."""
+
+SYSTEM_PROMPT_MO = f"""You summarize Missouri Department of Health and Senior Services inspection and
+complaint findings for families researching memory care. Today is {TODAY}.
+
+Use only the text provided. Do not say the home has a memory-care designation unless the
+text says that. Do not cite 19 CSR 30-86.047 or section 198.510 unless those citations
+appear in the text. Do not mention California, Title 22, or CDSS.
+
+Rules:
+1. Write exactly 2-3 sentences. No bullet points. No headers. No markdown.
+2. Use the inspection type that was provided.
+3. Do NOT invent facts not in the source text.
+4. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
+5. Do NOT name specific residents, staff, or inspectors.
+6. Dates in 2025 or 2026 are real. Do not call them future events."""
+
+SYSTEM_PROMPT_GENERIC = f"""You summarize a state inspection or complaint record for families researching
+memory care. Today is {TODAY}.
+
+Use only the text provided. If the text is a regulation the survey cited, say that
+requirement was cited. Do not describe an incident that is not written in the text.
+Do not mention California, Title 22, or CDSS unless those words appear in the text.
+Do not apply another state's violation labels.
+
+Rules:
+1. Write exactly 2-3 sentences. No bullet points. No headers. No markdown.
+2. Use the inspection type that was provided.
+3. Do NOT invent facts not in the source text.
+4. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
+5. Do NOT name specific residents, staff, or inspectors.
+6. Dates in 2025 or 2026 are real. Do not call them future events."""
+
 SYSTEM_PROMPTS_BY_STATE = {
     "CA": SYSTEM_PROMPT,
     "TX": SYSTEM_PROMPT_TX,
@@ -241,6 +308,9 @@ SYSTEM_PROMPTS_BY_STATE = {
     "UT": SYSTEM_PROMPT_UT,
     "IL": SYSTEM_PROMPT_IL,
     "CO": SYSTEM_PROMPT_CO,
+    "PA": SYSTEM_PROMPT_PA,
+    "AZ": SYSTEM_PROMPT_AZ,
+    "MO": SYSTEM_PROMPT_MO,
 }
 
 USER_TEMPLATE = """Inspection type: {inspection_type}
@@ -273,18 +343,38 @@ def summarize(
         outcome=outcome or "N/A",
         narrative=narrative[:6000],  # stay well within context
     )
-    system = SYSTEM_PROMPTS_BY_STATE.get(state_code.upper(), SYSTEM_PROMPT)
-    try:
-        resp = client.messages.create(
-            model=MODEL,
-            max_tokens=300,
-            system=system,
-            messages=[{"role": "user", "content": user_msg}],
-        )
-        return resp.content[0].text.strip()
-    except Exception as e:
-        print(f"    Claude error: {e}")
-        return None
+    system = SYSTEM_PROMPTS_BY_STATE.get(state_code.upper(), SYSTEM_PROMPT_GENERIC)
+    for attempt in range(5):
+        try:
+            resp = client.messages.create(
+                model=MODEL,
+                max_tokens=300,
+                system=system,
+                messages=[{"role": "user", "content": user_msg}],
+            )
+            text = resp.content[0].text.strip()
+            if re.search(
+                r"\b(I don't|I do not|I cannot|I can't|I can not)\b|please provide|to write an accurate",
+                text,
+                re.I,
+            ):
+                print("    Claude refused")
+                return None
+            if text.startswith("#"):
+                print("    Claude refused")
+                return None
+            if state_code.upper() != "CA" and re.search(r"\b(Title 22|CDSS)\b", text):
+                print("    rejected California wording on a non-CA record")
+                return None
+            return text
+        except Exception as e:
+            message = str(e).lower()
+            if attempt < 4 and any(token in message for token in ("429", "rate", "overloaded", "529")):
+                time.sleep(min(30, 2 ** attempt))
+                continue
+            print(f"    Claude error: {e}")
+            return None
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +392,17 @@ def main() -> None:
         "--state",
         default="CA",
         help="Only summarize inspections for facilities in this state (default: CA)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Parallel Claude calls. Ingest scripts stay at 1.",
+    )
+    parser.add_argument(
+        "--publishable",
+        action="store_true",
+        help="Only inspections on homes that are currently published.",
     )
     args = parser.parse_args()
 
@@ -342,6 +443,8 @@ def main() -> None:
                     params.append(args.facility_id)
                 where_parts.append("f.state_code = %s")
                 params.append("CO")
+                if args.publishable:
+                    where_parts.append("f.publishable = true")
                 cur.execute(
                     f"""
                     SELECT i.id, i.inspection_type, i.is_complaint,
@@ -380,6 +483,8 @@ def main() -> None:
                     params.append(args.facility_id)
                 where_parts.append("f.state_code = %s")
                 params.append(args.state.upper())
+                if args.publishable:
+                    where_parts.append("f.publishable = true")
                 cur.execute(
                     f"""
                     SELECT i.id, i.inspection_type, i.is_complaint,
@@ -399,63 +504,79 @@ def main() -> None:
         print("Nothing to do.")
         return
 
+    if args.smoke:
+        rows = rows[:3]
+
+    workers = max(1, args.workers)
     processed = 0
     succeeded = 0
     failed = 0
 
+    def _summarize_row(row):
+        insp_id, insp_type, is_complaint, outcome, raw_narrative, fac_name, st_code = row
+        narrative = clean_narrative(raw_narrative)
+        if not narrative:
+            return insp_id, fac_name, None, "empty"
+        if args.dry_run:
+            return insp_id, fac_name, narrative[:150], "dry"
+        if client is None:
+            return insp_id, fac_name, None, "fail"
+        summary = summarize(
+            client,
+            insp_type or "visit",
+            bool(is_complaint),
+            outcome,
+            narrative,
+            state_code=st_code or "CA",
+        )
+        if not summary:
+            return insp_id, fac_name, None, "fail"
+        return insp_id, fac_name, summary, "ok"
+
     with psycopg.connect(DATABASE_URL) as conn:
-        for insp_id, insp_type, is_complaint, outcome, raw_narrative, fac_name, st_code in rows:
-            print(f"\n→ {fac_name[:45]} | {insp_type} | {'complaint' if is_complaint else 'routine'}")
-
-            narrative = clean_narrative(raw_narrative)
-            if not narrative:
-                print("  — Empty after cleaning, skipping")
-                processed += 1
-                if args.smoke and processed >= 3:
-                    break
-                continue
-
-            if args.dry_run:
-                print(f"  [dry-run] Narrative ({len(narrative)} chars): {narrative[:150]}…")
-                processed += 1
-                if args.smoke and processed >= 3:
-                    break
-                continue
-
-            summary = summarize(
-                client,
-                insp_type or "visit",
-                is_complaint,
-                outcome,
-                narrative,
-                state_code=st_code or "CA",
-            )
-            if not summary:
-                print("  ✗ Summary generation failed")
+        def _record(result):
+            nonlocal processed, succeeded, failed
+            insp_id, fac_name, summary, status = result
+            processed += 1
+            if status == "empty":
+                if workers == 1:
+                    print(f"\n→ {fac_name[:45]}\n  — Empty after cleaning, skipping")
+                return
+            if status == "dry":
+                print(f"\n→ {fac_name[:45]}\n  [dry-run] {summary}")
+                return
+            if status != "ok" or not summary:
                 failed += 1
-                processed += 1
-                if args.smoke and processed >= 3:
-                    break
-                time.sleep(0.5)
-                continue
-
-            print(f"  ✓ {summary[:120]}{'…' if len(summary) > 120 else ''}")
-
+                print(f"\n→ {fac_name[:45]}\n  ✗ Summary generation failed")
+                return
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE inspections SET narrative_summary = %s WHERE id = %s",
+                    """
+                    UPDATE inspections
+                    SET narrative_summary = %s
+                    WHERE id = %s AND narrative_summary IS NULL
+                    """,
                     (summary, insp_id),
                 )
                 conn.commit()
-
             succeeded += 1
-            processed += 1
+            if workers == 1 or processed % 25 == 0 or processed == len(rows):
+                print(f"  ✓ {processed}/{len(rows)} {str(fac_name)[:40]}: {summary[:110]}")
 
-            if args.smoke and processed >= 3:
-                print("\n[smoke] Stopping after 3 records.")
-                break
-
-            time.sleep(0.15)  # stay well under rate limit
+        if workers == 1:
+            for row in rows:
+                result = _summarize_row(row)
+                _record(result)
+                if result[3] == "fail":
+                    time.sleep(0.5)
+                elif result[3] == "ok":
+                    time.sleep(0.15)
+        else:
+            print(f"Running {workers} workers.", flush=True)
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futures = [pool.submit(_summarize_row, row) for row in rows]
+                for future in as_completed(futures):
+                    _record(future.result())
 
     print(f"\nDone. {succeeded} summarized, {failed} failed, {processed} processed.")
 

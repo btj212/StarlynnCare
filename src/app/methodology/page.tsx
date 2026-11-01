@@ -6,6 +6,10 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
 import { buildBreadcrumbList, buildFaqSchemaFromPairs, buildWebPageWithReviewer } from "@/lib/seo/schema";
+import { loadStateMemoryCareStats, type StateMemoryCareStats } from "@/lib/data/stateMemoryCareStats";
+import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+
+export const revalidate = 3600;
 
 const METHODOLOGY_PATH = "/methodology";
 const methodologyCanonical = canonicalFor(METHODOLOGY_PATH);
@@ -111,7 +115,20 @@ function TierKey() {
   );
 }
 
-export default function MethodologyPage() {
+function publishedCount(stats: StateMemoryCareStats | null, code: string): number | null {
+  const row = stats?.rows.find((item) => item.code === code);
+  return row ? row.published : null;
+}
+
+export default async function MethodologyPage() {
+  const supabase = tryPublicSupabaseClient();
+  const coverageStats = supabase ? await loadStateMemoryCareStats(supabase) : null;
+  const publishedTotal = coverageStats
+    ? coverageStats.rows.reduce((sum, row) => sum + row.published, 0)
+    : null;
+  const statesWithHomes = coverageStats
+    ? coverageStats.rows.filter((row) => row.published > 0).length
+    : null;
   const methodologyFaqs = [
     {
       q: "How does StarlynnCare rate memory care facilities?",
@@ -123,7 +140,7 @@ export default function MethodologyPage() {
     },
     {
       q: "Where does the inspection data come from?",
-      a: "Data comes directly from official state licensing portals: CDSS Community Care Licensing (CA), Oregon DHS LTC Licensing (OR), DSHS ALTSA (WA), Minnesota MDH (MN), HHSC LTCR (TX), PA DHS OLTL (PA), ADHS BRFL (AZ), DLBC (UT), IDPH (IL), and DHSS LTCR (MO). We ingest records on a regular automated schedule and publish only facilities with an active state license and at least one published inspection record.",
+      a: "Data comes directly from official state licensing portals: CDSS Community Care Licensing (CA), Oregon DHS LTC Licensing (OR), DSHS ALTSA (WA), Minnesota MDH (MN), HHSC LTCR (TX), PA DHS OLTL (PA), ADHS BRFL (AZ), DLBC (UT), IDPH (IL), DHSS LTCR (MO), and CDPHE plus CMS Care Compare (CO). We ingest records on a regular automated schedule and publish only facilities with an active state license and at least one published inspection record.",
     },
   ];
   const methodologyJsonLd = [
@@ -240,7 +257,7 @@ export default function MethodologyPage() {
                   <tr>
                     <td className="py-2.5 pr-4 font-medium text-ink align-top">IL</td>
                     <td className="py-2.5 pr-4 align-top">Illinois Dept. of Public Health (IDPH) — Assisted Living and Shared Housing Establishments</td>
-                    <td className="py-2.5 align-top">IDPH public inspection records</td>
+                    <td className="py-2.5 align-top">IDPH LLCS public facility lookup (active roster and the Alzheimer&rsquo;s Special Care Program field); IDPH FOIA visit file for citations</td>
                   </tr>
                   <tr>
                     <td className="py-2.5 pr-4 font-medium text-ink align-top">PA</td>
@@ -257,6 +274,11 @@ export default function MethodologyPage() {
                     <td className="py-2.5 pr-4 align-top">Missouri DHSS Section for Long-Term Care Regulation — Assisted Living Facilities (ALF, ALF**) and Residential Care Facilities (RCF, RCF*) meeting the §198.510 Alzheimer&rsquo;s SCU Disclosure or ALF** non-self-evacuation authorization</td>
                     <td className="py-2.5 align-top">data.mo.gov Socrata fenu-sipv LTC Directory (facility roster); DHSS FOIA records (inspection/deficiency data, 2018–2026)</td>
                   </tr>
+                  <tr>
+                    <td className="py-2.5 pr-4 font-medium text-ink align-top">CO</td>
+                    <td className="py-2.5 pr-4 align-top">Colorado Department of Public Health and Environment — assisted living residences under 6 CCR 1011-1 Chapter 7; CMS Care Compare for nursing homes</td>
+                    <td className="py-2.5 align-top">CDPHE health-facilities directory; CDPHE records file; CMS Provider Information. CDPHE does not publish a facility-level memory-care roster.</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -272,22 +294,36 @@ export default function MethodologyPage() {
           {/* ── Coverage ── */}
           <Section id="coverage-heading" title="Current coverage">
             <p>
-              StarlynnCare currently publishes inspection data for{" "}
-              <strong>over 4,100 facilities across 11 states</strong>, with coverage
-              expanding as we ingest new state licensing data.
+              {publishedTotal != null && statesWithHomes != null ? (
+                <>
+                  StarlynnCare currently publishes{" "}
+                  <strong>
+                    {publishedTotal.toLocaleString()} facilities across {statesWithHomes} states
+                  </strong>
+                  . The counts below are published homes in the live directory.
+                </>
+              ) : (
+                <>
+                  Published counts are on the{" "}
+                  <Link href="/data" className="font-medium text-teal underline underline-offset-4 hover:underline">
+                    dataset page
+                  </Link>
+                  .
+                </>
+              )}
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li><span className="font-medium text-ink">California</span> — licensed RCFEs across California, covering counties statewide.</li>
-              <li><span className="font-medium text-ink">Arizona</span> — 1,908 Directed Care ALHs and ALCs. ADHS confirmed Directed Care = memory care authorized (public records, Jun 2026).</li>
-              <li><span className="font-medium text-ink">Minnesota</span> — 552 licensed assisted living facilities with Dementia Care license (ALDC and AL).</li>
-              <li><span className="font-medium text-ink">Oregon</span> — 131 licensed residential care facilities with Memory Care Endorsement.</li>
-              <li><span className="font-medium text-ink">Washington</span> — 180 licensed assisted living facilities with Specialized Dementia Care contract.</li>
-              <li><span className="font-medium text-ink">Pennsylvania</span> — 355 PCH and ALR facilities with Special Care designation.</li>
-              <li><span className="font-medium text-ink">Utah</span> — 118 Type I &amp; II assisted living facilities.</li>
-              <li><span className="font-medium text-ink">Illinois</span> — early coverage; 30 facilities published to date.</li>
-              <li><span className="font-medium text-ink">Missouri</span> — 267 ALF** and Alzheimer&rsquo;s SCU Disclosure facilities (§198.510 RSMo + ALF** license), obtained via FOIA from DHSS.</li>
-              <li><span className="font-medium text-ink">Texas</span> — early coverage expanding; ingest in progress.</li>
-              <li><span className="font-medium text-ink">Colorado</span> — 71 published homes: 70 CDPHE assisted living residences and 1 CMS nursing home. CDPHE does not publish a facility-level memory-care roster.</li>
+              <li><span className="font-medium text-ink">California</span> — {publishedCount(coverageStats, "CA")?.toLocaleString() ?? "licensed"} RCFEs, covering counties statewide.</li>
+              <li><span className="font-medium text-ink">Arizona</span> — {publishedCount(coverageStats, "AZ")?.toLocaleString() ?? "Directed Care"} published homes. ADHS confirmed Directed Care authorizes memory care (public records, Jun 2026).</li>
+              <li><span className="font-medium text-ink">Minnesota</span> — {publishedCount(coverageStats, "MN")?.toLocaleString() ?? "licensed"} published assisted living facilities with a Dementia Care license (ALDC and AL).</li>
+              <li><span className="font-medium text-ink">Oregon</span> — {publishedCount(coverageStats, "OR")?.toLocaleString() ?? "licensed"} published residential care facilities with a Memory Care Endorsement.</li>
+              <li><span className="font-medium text-ink">Washington</span> — {publishedCount(coverageStats, "WA")?.toLocaleString() ?? "licensed"} published assisted living facilities with a Specialized Dementia Care contract.</li>
+              <li><span className="font-medium text-ink">Pennsylvania</span> — {publishedCount(coverageStats, "PA")?.toLocaleString() ?? "designated"} published PCH and ALR facilities with a Special Care designation.</li>
+              <li><span className="font-medium text-ink">Utah</span> — {publishedCount(coverageStats, "UT")?.toLocaleString() ?? "licensed"} published Type I and II assisted living facilities.</li>
+              <li><span className="font-medium text-ink">Illinois</span> — {publishedCount(coverageStats, "IL")?.toLocaleString() ?? "published"} published homes. The Alzheimer&rsquo;s Special Care Program field is on the public LLCS lookup. Citations come from the IDPH visit file.</li>
+              <li><span className="font-medium text-ink">Missouri</span> — {publishedCount(coverageStats, "MO")?.toLocaleString() ?? "published"} published homes with an ALF** license or an Alzheimer&rsquo;s special care unit disclosure, from the DHSS directory and FOIA records.</li>
+              <li><span className="font-medium text-ink">Texas</span> — {publishedCount(coverageStats, "TX") != null ? `${publishedCount(coverageStats, "TX")?.toLocaleString()} published homes.` : "Early coverage; ingest in progress."}</li>
+              <li><span className="font-medium text-ink">Colorado</span> — {publishedCount(coverageStats, "CO")?.toLocaleString() ?? "published"} published homes. Assisted living records are CDPHE. Nursing homes are CMS. CDPHE does not publish a facility-level memory-care roster.</li>
             </ul>
             <p>
               Only facilities with an active state license and at least one

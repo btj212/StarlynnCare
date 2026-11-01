@@ -106,7 +106,9 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
             : CARE_LABEL[facility.care_category] ?? "care";
   const peerN = snapshot?.peer_set.n ?? 0;
   const fallbackLevel = snapshot?.peer_set.fallback_level ?? 1;
-  const bedNormalized = fallbackLevel === 0;
+  // Null beds are grouped with the small bucket by the snapshot function.
+  // Illinois does not publish bed counts, so that group is not a bed match.
+  const bedNormalized = fallbackLevel === 0 && facility.beds != null;
 
   const peerNLabel = peerN > 0 ? peerN.toLocaleString() : "similar";
   const peerTitle = bedNormalized

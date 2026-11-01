@@ -135,7 +135,10 @@ def load_facilities(
             (SELECT MAX(i.inspection_date)::text
              FROM inspections i
              WHERE i.facility_id = f.id
-               AND (NOT i.is_complaint OR %(state_code)s = 'CO'))
+               AND (
+                 NOT i.is_complaint
+                 OR %(state_code)s IN ('CO', 'IL', 'MO')
+               ))
                 AS last_inspection_date,
             (SELECT COUNT(*)::int
              FROM inspections i WHERE i.facility_id = f.id AND i.is_complaint)
@@ -489,6 +492,32 @@ NONCA_STATE_META: dict[str, dict[str, str]] = {
         "deficiency_terminology": "citation",
         "complaint_terminology": "complaint investigation",
     },
+    "IL": {
+        "state_full": "Illinois",
+        "regulator_short": "IDPH",
+        "regulator_full": "Illinois Department of Public Health, Division of Assisted Living",
+        "mc_designation_label": (
+            "not in this file. Do not say IDPH issued a Special Alzheimer's designation, "
+            "and do not say the home lacks one. Do not invent a bed count"
+        ),
+        "license_law": "210 ILCS 9 and 77 Ill. Adm. Code Part 295",
+        "facility_type": "Assisted Living Establishment or Shared Housing Establishment",
+        "deficiency_terminology": "cited rule. The visit file is not the inspector's narrative",
+        "complaint_terminology": "complaint visit",
+    },
+    "MO": {
+        "state_full": "Missouri",
+        "regulator_short": "DHSS",
+        "regulator_full": "Missouri Department of Health and Senior Services",
+        "mc_designation_label": (
+            "Do not mention a statute section, an Alzheimer's disclosure, or a designation. "
+            "Ask only about the inspection counts, dates, and deficiency totals in this block."
+        ),
+        "license_law": "Chapter 198 RSMo and 19 CSR 30",
+        "facility_type": "Assisted Living Facility or Residential Care Facility",
+        "deficiency_terminology": "cited tag. Use an inspector narrative only when one is on the record",
+        "complaint_terminology": "complaint investigation",
+    },
 }
 
 
@@ -529,7 +558,8 @@ Write for families researching dementia care. Plain English. No jargon. No marke
 Tour questions rules:
 - Generate 4-5 questions. Prefer exactly 4 unless 5 naturally follows from distinct facts.
 - Each question MUST reference at least one concrete fact from the source data — counts,
-  dates, deficiency themes, or memory-care designation context.
+  dates, or deficiency themes. Do not mention a designation, and do not say the state
+  does or does not issue one, unless that fact is written in the source data.
 - Do NOT cite California Title 22 / CDSS, or Texas HHSC / Alzheimer Certification — this row
   is in {meta["state_full"]}. Reference {meta["regulator_short"]} regulator framing where relevant.
 - Do NOT ask about staffing ratios, caregiver counts, overnight coverage, training hours,
@@ -575,8 +605,8 @@ License status       : {{license_status}}
 License expires      : {{license_expiration}}
 Facility type        : {meta["facility_type"]} ({meta["license_law"]})
 Memory care signal   : {{serves_mc}}
-Memory care designation: {{mc_designation}}
-Designation context  : {meta["mc_designation_label"]} where applicable
+Memory care note     : {{mc_designation}}
+Regulator note       : {meta["mc_designation_label"]}
 
 Inspection history ({meta["regulator_full"]})
   Total reports on file  : {{inspection_count}}
@@ -586,11 +616,8 @@ Inspection history ({meta["regulator_full"]})
   Complaints on file     : {{complaint_count}}
   Most recent inspection : {{last_inspection_date}}  ← use EXACT date. Today is {{today}}.
 
-GOLD-STANDARD EXAMPLE (Silverado Berkeley — California — tone only; do NOT copy the
-California regulatory citations into a {meta["state_full"]} facility's questions)
------------------------------------------------------------------------------------------------
-{{example_json}}
------------------------------------------------------------------------------------------------
+Do not cite California Title 22, CDSS, or section 87705. This home is in {meta["state_full"]}.
+Do not copy another state's regulator into the questions.
 
 Now generate the content block for {{name}}. Output JSON only, no markdown fences.
 """
@@ -615,10 +642,12 @@ FAIL if a question:
      states. The facility is in {meta["state_full"]}; correct regulator is {meta["regulator_short"]}.
   4. Contains zero facility-specific facts.
   5. Wrong array length (<4 or >5 questions).
+  6. Says the home has a memory-care designation, or says it lacks one, when the
+     source data does not state that fact. A name match is not that designation.
 
 PASS {meta["state_full"]}-specific regulatory documentation questions when grounded in
-inspection counts/dates (corrective-action plans, written dementia program documentation,
-{meta["mc_designation_label"]} status, etc.).
+inspection counts/dates (corrective-action plans and written dementia program
+documentation). Designation context: {meta["mc_designation_label"]}.
 
 Output JSON only — no markdown fences.
 """
@@ -682,9 +711,23 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         mc_note = (
             "(CDPHE does not publish a facility-level Secure Environment roster)"
         )
-    else:
+    elif st == "IL":
+        mc_note = (
+            "The visit file does not say whether IDPH granted a Special Alzheimer's "
+            "designation. Do not mention a designation."
+        )
+    elif st == "MO":
+        mc_note = fac["memory_care_designation"] or (
+            "This row does not state a separate memory-care license. "
+            "Do not say the home has or lacks an Alzheimer's designation."
+        )
+    elif st == "CA":
         mc_note = fac["memory_care_designation"] or (
             "(none — memory care is operator-advertised, not formally designated in CDSS licensing data)"
+        )
+    else:
+        mc_note = fac["memory_care_designation"] or (
+            "(not in this file — do not invent a designation)"
         )
     return {
         "name": fac["name"],
@@ -747,6 +790,25 @@ def generate_content(
     except Exception as e:
         print(f"    Generation error: {e}")
         return None
+
+
+def invented_designation_claim(state_code: str, content: dict[str, Any]) -> str | None:
+    """Reject questions that cite another state or invent a designation."""
+    text = " ".join(content.get("tour_questions") or []).lower()
+    state = state_code.upper()
+    if state != "CA" and ("cdss" in text or "title 22" in text or "87705" in text):
+        return "A question cites California licensing law."
+    if state in {"IL", "MO"} and (
+        "designation" in text
+        or "does not issue" in text
+        or "do not issue" in text
+        or "does not hold" in text
+        or "not formally" in text
+        or "198.510" in text
+        or "disclosure" in text
+    ):
+        return "A question mentions a designation this file does not state."
+    return None
 
 
 def quality_gate(
@@ -904,8 +966,19 @@ def main() -> None:
         if not content:
             stats["errors"] += 1
             continue
+        if invented_designation_claim(fac.get("state_code") or "", content):
+            print("  Regenerating without the designation claim…")
+            content = generate_content(client, fac)
+            if not content:
+                stats["errors"] += 1
+                continue
 
         # Quality gate
+        claim = invented_designation_claim(fac.get("state_code") or "", content)
+        if claim:
+            print(f"  ✗ {claim}")
+            stats["failed_gate"] += 1
+            continue
         if args.skip_quality_gate:
             print("  ⚠ Skipping quality gate (--skip-quality-gate)")
             passed, issues = True, []

@@ -19,6 +19,7 @@ import { SITE_ORIGIN, canonicalFor } from "@/lib/seo/canonical";
 import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
 
 /**
@@ -901,9 +902,14 @@ export type FacilityFaqInput = {
 };
 
 function visitPhrase(type: string | null, isComplaint: boolean): string {
-  if (isComplaint || type?.trim().toLowerCase() === "complaint") return "a complaint investigation";
-  if (type?.trim().toLowerCase() === "other") return "filed as other";
-  return "an annual compliance visit";
+  const label = visitKindLabel({
+    is_complaint: isComplaint || type?.trim().toLowerCase() === "complaint",
+    inspection_type: type,
+  });
+  if (label === "Other Visit") return "filed as other";
+  const phrase = label.toLowerCase();
+  const article = /^[aeiou]/.test(phrase) ? "an" : "a";
+  return `${article} ${phrase}`;
 }
 
 function proseTag(label: string): string {

@@ -6,6 +6,34 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Inspection summaries say only what the public file supports
+
+**Decided:** A plain-English summary is stored on `inspections.narrative_summary` for every published visit. Illinois FOIA lines are rule numbers, violation classes, and fines. Those summaries name the 77 Ill. Adm. Code 295 section and say the file does not describe what the inspector saw. They are written in code, not by a model. A 295.4060 citation stays a citation of the dementia-program rule. It does not say the home has the Alzheimer's Special Care designation. Other states quote one sentence from the stored finding when that sentence exists, and say whether it is an account or a requirement. A real inspector narrative still goes to `summarize_inspections.py`, with a prompt for that state. Pennsylvania, Arizona, and Missouri do not fall through to the California Title 22 prompt. A visit with no citation text gets one sentence saying so. A model refusal is not a summary.
+
+**Rejected:** Asking a model to "state what was found" from a rule number. Pasting the raw citation as the family's summary. Hiding a stored summary when the source narrative is empty. Calling a facility-reported incident an annual compliance visit.
+
+**Source:** `scrapers/plain_visit_summaries.py` and `scrapers/summarize_inspections.py`. Section titles are the JCAR headings for Part 295.
+
+## 2026-11 — The live LLCS lookup is the Illinois assisted-living roster
+
+**Decided:** The current Assisted Living and Shared Housing list is the public LLCS facility lookup, `https://llcs.dph.illinois.gov/s/facility-lookup?language=en_US`. IDPH's "View the list" button on the assisted-living page opens that portal. The guest Aura API returns the roster, including `LLCS_Alzheimer_s_Special_Care_Program__c` and the license tab's `licId`. A second full pull on 2026-11-01 matched the first on every facility id, program field, and license id: 630 search rows, 502 active, 335 Alzheimer's Special Care Program Yes, 167 No, none blank. Inactive and change-of-ownership rows stay in `il_source_rows` and are not the current designation. New homes use the padded `licId` as `license_number`. The original 33 homes keep the visit id already stored in `license_number` and keep their slugs. Probationary licenses are stored and stay unpublished. A citation of 77 Ill. Adm. Code 295.4060 or 295.1100 does not set the flag. A Place for Mom and Caring.com are advertising corroboration only. This supersedes the 2026-10 sentence that said the public LLCS portal does not return a current roster. The visit-id rule in that entry still stands.
+
+**Rejected:** The 2021 open-data file `8z4a-ix8q` as a license list. Filing a new designation FOIA when the lookup already publishes the field. Treating an Inactive - CHOW row as the current program. Publishing a home because only one directory lists it. Rewriting the original 33 license numbers. Using the June 2026 landscape PDF counts (504 establishments, 327 memory care) as the inventory.
+
+**Measured:** 338 Illinois homes. 335 have the program flag. 300 are published: 297 licensed program-Yes homes with an inspection in 36 months, plus Betty's Garden Memory Care, Gurnee Memory Care, and South Prairie Memory Care by name match. South Prairie's live program field is No, so its page does not claim the designation. 15 probationary Yes homes and 23 licensed Yes homes with no fresh visit stay unpublished. Directory pages matched 137 homes on A Place for Mom and 79 on Caring.com, 68 on both, 0 ambiguous. 67 of the both-directory matches are program Yes. The other is Gurnee Memory Care, already published by name match.
+
+**Source:** `scrapers/il_llcs_live_roster.py`, `scrapers/il_llcs_roster_apply.py`, `scrapers/il_directory_corroboration.py`.
+
+## 2026-10 — Illinois visit ids and Missouri event ids stay separate
+
+**Decided:** The Illinois FOIA column `Name` is the visit id, not a facility license. A visit is attached only when the physical name matches a facility already in the directory. Every other name is quarantined in `il_source_rows`. The public LLCS portal does not return a current roster, and the 2021 open-data file is not used as a license list. The Missouri workbook is one inspection per `EVENT_ID`, even when two events share a facility, a date, and a survey type. `inspections.source_event_id` holds that id. Rows without one keep the old facility/date/type key. A reload must not delete an inspector narrative or replace a ShowMeLTC link. Illinois citation text is the rule that was cited. Illinois and Missouri hubs with no county list browse by city. A historical reload does not send State Watch or Facility Watch mail.
+
+**Rejected:** Creating one Illinois facility per visit id. Publishing an unmatched name. Using the stale open-data file as an Alzheimer's designation. Collapsing same-day Missouri events. Inventing a PDF URL or a monthly rate.
+
+**Measured:** Missouri: 8,907 events, 12,051 findings, and 1,705 narrative summaries, from 17,035 workbook rows. Illinois: 148 dated visits on 33 homes, 206 findings, and 2,061 quarantined visit rows. 30 Illinois homes and 268 Missouri homes stayed published. All 30 Illinois homes have tour questions. 243 Missouri homes do. Photos: 27 of 30 Illinois, 211 of 268 Missouri.
+
+**Source:** `docs/drafts/illinois-missouri-parity-audit.md`. Workbook SHA-256 values are in that audit.
+
 ## 2026-10 — Colorado assisted living and nursing homes are separate records
 
 **Decided:** The Colorado universe is the CDPHE ArcGIS assisted-living directory. The May 18, 2026 HFQ workbooks are a dated records snapshot, not a live inspection feed. Future-dated complaint rows stay quarantined with their original values. CMS nursing homes are a second care setting, matched only by certification number. A shared name and street is a review note, not a merge. A home is published only with an explicit memory or dementia name, a verified curated chain, or both A Place for Mom and Caring.com, plus an inspection in 36 months. One directory listing stays in review. CDPHE does not publish a facility-level Secure Environment roster, so no page says the state verified memory care. Assisted living uses Level A–E. Nursing homes use CMS letters A–L. A rank needs at least 10 homes in that care setting, so the one published nursing home is not ranked. Street View uploads send the `sb_` service key as both the bearer token and the `apikey` header. Tour-question dates for Colorado include complaint investigations. Family State Watch and paid Facility Watch stay off until a recurring inspection refresh exists. A directory refresh is not an inspection refresh.

@@ -28,12 +28,15 @@ export function StateHubBrowse({
   viewAllHref,
   viewAllLabel,
 }: Props) {
+  const cityFirst = counties.length === 0 && comingCounties.length === 0;
+
   return (
     <section id="browse" className="border-b border-clearing-rule bg-clearing-tint">
       <div className="mx-auto max-w-[1280px] px-4 py-16 sm:px-6 md:px-[60px] md:py-20">
         <SectionHead label={sectionLabel} title={sectionTitle} />
 
-        <div className="grid items-start gap-12 md:grid-cols-[1.2fr_2fr]">
+        <div className={cityFirst ? "" : "grid items-start gap-12 md:grid-cols-[1.2fr_2fr]"}>
+          {cityFirst ? null : (
           <div>
             <p className="smallcaps mb-3.5">{browseSectionTitle}</p>
             <div className="flex flex-col gap-2">
@@ -73,6 +76,7 @@ export function StateHubBrowse({
               {viewAllLabel}
             </Link>
           </div>
+          )}
 
           <div>
             <p className="smallcaps mb-3.5">{popularCitiesTitle}</p>
@@ -88,6 +92,14 @@ export function StateHubBrowse({
                 </Link>
               ))}
             </div>
+            {cityFirst ? (
+              <Link
+                href={viewAllHref}
+                className="mt-4 inline-block font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4 hover:text-rust"
+              >
+                {viewAllLabel}
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
