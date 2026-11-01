@@ -145,6 +145,25 @@ export const REVIEW_ARTICLES: ReviewArticle[] = [
           },
         ],
       },
+      {
+        heading: "Which states are left out?",
+        passes: [
+          {
+            before:
+              "We excluded states with incomplete data so this trusted report only shows the states families can rely on. Oregon has zero serious citations.",
+            after:
+              "This table leaves out a state when the serious count would not be a measurement. Oregon has zero serious citations.",
+            cut: "excluded, incomplete, trusted, families can rely on",
+          },
+          {
+            before:
+              "This table leaves out a state when the serious count would not be a measurement. Oregon has zero serious citations.",
+            after:
+              "This table leaves out a state when the serious count would not be a measurement. The dataset page still lists every covered state.",
+            cut: "zero serious citations",
+          },
+        ],
+      },
     ],
   },
   {
