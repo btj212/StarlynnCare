@@ -14,8 +14,9 @@ Static invariant tests run without a database:
 pnpm --filter @tmt/db test
 ```
 
-Live SQL verification requires Docker and a current Supabase CLI. From the
-`tmt/` directory, run the exact external gate:
+Live SQL verification requires Docker and a current Supabase CLI. TMT CI runs
+this gate against a database-only local Supabase stack on every pull request.
+To reproduce it from the `tmt/` directory:
 
 ```bash
 pnpm dlx supabase@2.122.0 start --workdir packages/db
@@ -34,6 +35,6 @@ clean database, load the seed again without conflicts, prove anonymous and
 non-ops denial, prove dispatcher reads, and prove dispatcher client writes are
 denied. Type generation must happen only after that clean migration succeeds.
 
-The current cloud worker has no Docker daemon, `psql`, or preconfigured
-Supabase project, so it cannot execute this live gate. Static tests do not
-replace it and no in-memory or fake SQL engine is used.
+The cloud worker itself has no Docker daemon, so the authoritative live result
+is the TMT CI database step. Static tests do not replace it and no in-memory or
+fake SQL engine is used.

@@ -2,6 +2,8 @@ name: TMT CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "tmt/**"
       - ".github/workflows/tmt-ci.yml"
@@ -44,6 +46,24 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Start database-only Supabase stack
+        run: >-
+          pnpm dlx supabase@2.122.0 start
+          --workdir packages/db
+          --exclude
+          gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Reset and test database twice
+        run: |
+          pnpm dlx supabase@2.122.0 db reset --local --workdir packages/db
+          pnpm dlx supabase@2.122.0 test db --local --workdir packages/db
+          pnpm dlx supabase@2.122.0 db reset --local --workdir packages/db
+          pnpm dlx supabase@2.122.0 test db --local --workdir packages/db
+
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm dlx supabase@2.122.0 stop --no-backup --workdir packages/db || true
 
       - name: Install Chromium
         run: pnpm --filter @tmt/web exec playwright install --with-deps chromium

@@ -180,8 +180,9 @@ adapter.
 - Live voice/recording requires owned test numbers, ConversationRelay access,
   counsel review, and native-speaker review of Punjabi, Hindi, and Spanish
   scripts.
-- Live Supabase verification requires a project or local Docker-backed Supabase
-  stack to apply the clean migration and run the pgTAP deny/allow suite.
+- TMT CI applies the migration and seed twice against a Docker-backed,
+  database-only local Supabase stack and runs the pgTAP deny/allow suite after
+  each reset. A local Docker-backed stack is required to reproduce that gate.
 - Punjabi STT/TTS must pass a native-speaker roadside-noise bake-off before a
   production voice is selected.
 - The current Twilio SDK emits the documented ConversationRelay TwiML and
