@@ -473,22 +473,27 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   MN insertDate max=2026-10-24 (unchanged vs Fri probe — same 4 survey PDFs; Sunday GHA MN +0);
 #   MN resolved max=2026-10-14 unchanged; all other states no new probe-layer signal (CA/TX/WA/IL/PA/AZ/MO
 #   refreshed or queued on Sunday GHA 40194733653; MO FOIA manual).
+# Run 41316847867 (2026-11-01T14:34 UTC Sunday schedule): OR +33 max=2026-10-29; MN +32 max=2026-10-28;
+#   AZ +40 max=2026-10-29; UT +1 max=2026-10-05; PA +23 max=2026-10-16; IL/MO/TX +0; WA job cancelled.
+# Cron probe 2026-11-04T23:04 UTC: OR source max=2026-10-29 (0 rows after — matches GHA 41316847867);
+#   MN resolved max=2026-10-28, insertDate max=2026-11-01 (0 events after those baselines); no net-new data.
+#   CA/TX/WA/UT/IL/PA/AZ/MO need DATABASE_URL or manual source; MO FOIA unchanged; CO one-time HFQ only.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 10, 23),  # GHA 40194733653 +20
+    "OR": date(2026, 10, 29),  # GHA 41316847867 +33
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 10, 14),
-    "UT": date(2026, 9, 15),
-    "IL": date(2026, 5, 6),
-    "PA": date(2026, 10, 16),  # GHA 40063182079 matrix
-    "AZ": date(2026, 10, 22),  # GHA 40037764267 +9
+    "MN": date(2026, 10, 28),  # GHA 41316847867 +32
+    "UT": date(2026, 10, 5),  # GHA 41316847867 +1
+    "IL": date(2026, 5, 9),  # GHA 41316847867 +0
+    "PA": date(2026, 10, 16),  # GHA 41316847867 +23
+    "AZ": date(2026, 10, 29),  # GHA 41316847867 +40
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
     "CO": date(2026, 5, 18),  # one-time CDPHE HFQ workbook; not a live inspection feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 10, 23)
+LAST_MN_INSERT_BASELINE = date(2026, 11, 1)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
