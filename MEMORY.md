@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — A severity rank is shown only when the state records a severity
+
+**Decided:** `facility_snapshot` sets the severity percentile to null, and with it the letter grade, when half or more of the peer group's findings in 36 months have no severity, no class, and no immediate-jeopardy flag. `severity_measured` is false. The profile says the state does not record a severity, and it hides the scope-and-severity grid. Oregon is entirely in that group, so its cached grades are cleared. Illinois, and Colorado assisted living, are in it too. Their cached grades were already blank. A peer group with no findings stays measured. The trajectory chart still counts findings.
+
+**Rejected:** Turning the rank off for Oregon only. Relabeling the Oregon bar as citations per bed and keeping a letter. Treating a missing severity as severity 1.
+
+**Source:** Counts on 2026-11-07. Oregon had 1,975 of 1,975 findings uncoded. Illinois had 1,688 of 1,921. Colorado assisted living had 353 of 528. Washington stayed under half in every care setting.
+
+---
+
 ## 2026-11 — AI assistants may fetch the facility API and look up one home
 
 **Decided:** `robots.txt` allows `/api/facilities/` for GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and CCBot. The longer allow wins over `Disallow: /api/`. Every other crawler still skips `/api/`, and the JSON stays `noindex`. `GET /api/facilities/{state}/lookup?q=` returns up to 5 publishable homes in that state by name or license number. `serious_findings` uses the report's rule: a Type A citation or severity 3 or higher in the last 24 months, and null when half or more of that home's findings have no class and no severity. A measured zero stays zero. A database error is HTTP 500, not an empty match list. Plan excerpts are included only for Pennsylvania, Oregon, and Utah, and only when the stored text is at least 40 characters.

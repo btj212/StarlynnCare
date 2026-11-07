@@ -177,6 +177,33 @@ def _check_peer_rank_distribution(cur) -> None:
     print("\n[Peer rank distribution]")
     for state in PUBLISHABLE_STATES:
         cur.execute(
+            """
+            SELECT COUNT(*) AS n,
+                   COUNT(*) FILTER (
+                     WHERE d.severity IS NULL
+                       AND d.class IS NULL
+                       AND NOT COALESCE(d.immediate_jeopardy, false)
+                   ) AS uncoded
+            FROM deficiencies d
+            JOIN inspections i ON i.id = d.inspection_id
+            JOIN facilities f ON f.id = i.facility_id
+            WHERE f.publishable
+              AND f.state_code = %s
+              AND i.inspection_date >= CURRENT_DATE - INTERVAL '36 months'
+            """,
+            (state,),
+        )
+        coded = cur.fetchone()
+        findings = coded["n"] or 0
+        uncoded = coded["uncoded"] or 0
+        if findings > 0 and uncoded * 2 >= findings:
+            print(
+                f"  SKIP  {state}: peer_rank spread checks "
+                f"(severity unmeasured, {uncoded} of {findings} findings have no class and no severity)"
+            )
+            continue
+
+        cur.execute(
             f"""
             WITH pct AS ({_COMPOSITE_PCT_SQL})
             SELECT
