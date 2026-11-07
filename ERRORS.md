@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — Arizona plan text was the word View
+
+**What went wrong:** The inspections ingest stored the button label `View`. The plan is a separate public page, not a file and not behind a login. Reading the button text, reading a detached copy of the page, and passing `page.wait_for_function` its argument in the wrong position all came back empty. The page also shows a "Sorry to interrupt CSS Error" dialog. That dialog is not the plan. `--mode deficiencies` deletes the findings and inserts them again, so it is the wrong way to fill in the text.
+
+**What worked instead:** Open `inspection-plan-of-corrections` for that finding. Read the connected element's text. Wait until a known label is followed by a line that is not another label. Update `plan_of_correction` only where it is still `View`, matched within the inspection by the rule text and the evidence. A finding that does not match stays `View`.
+
+**Source:** `scrapers/az_adhs_inspections_ingest.py --mode poc`.
+
 ## 2026-11 — A model refusal was stored as the family's summary
 
 **What went wrong:** Visits whose stored text is a cover sheet, an abbreviation list, or a form heading were sent to the summarizer. When the model answered "I cannot provide a summary," that sentence was saved on `narrative_summary` and shown on the profile. A few California cover pages also hid a real finding that lived on the deficiency row, not in `raw_data.narrative`.
