@@ -19,7 +19,7 @@ const EXCERPT_CHARS = 500;
 const MIN_PLAN_CHARS = 40;
 
 /** States whose stored plan text is a real follow-up, not a stub or a parser join. */
-const PLAN_EXCERPT_STATES = new Set(["PA", "OR", "UT"]);
+const PLAN_EXCERPT_STATES = new Set(["PA", "OR", "UT", "AZ"]);
 
 const UNMEASURED_NOTE =
   "A serious count is not shown. Half or more of this home's findings in the last 24 months have no citation class and no stored severity.";

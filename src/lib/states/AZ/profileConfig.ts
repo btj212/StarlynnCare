@@ -30,5 +30,6 @@ export const azProfileConfig: StateProfileConfig = {
   formatSeverityTag: azFormatSeverityTag,
   formNameForDeficiency: () => null,
   regulatorPortalUrl: "https://azcarecheck.azdhs.gov",
+  followUp: { label: "The home's plan of correction" },
   rulebook: [],
 };
