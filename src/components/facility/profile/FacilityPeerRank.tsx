@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { peerRankBarFillCss } from "@/lib/peerRankBar";
@@ -19,9 +20,10 @@ type MetricCellProps = {
   percentile: number | null;
   peerMedian?: number | null;
   desc: string;
+  emptyMessage?: ReactNode;
 };
 
-function MetricCell({ label, percentile, peerMedian, desc }: MetricCellProps) {
+function MetricCell({ label, percentile, peerMedian, desc, emptyMessage }: MetricCellProps) {
   // Suppress when the metric is degenerate: peer_median = 0 means the majority
   // of the peer group has zero repeat citations, so everyone ties at 100th and
   // the ranking carries no information. Treat identically to the null/no-data case.
@@ -32,7 +34,7 @@ function MetricCell({ label, percentile, peerMedian, desc }: MetricCellProps) {
   if (percentile === null || isDegenerate) {
     const suppressedMsg = isDegenerate
       ? <>Not enough repeat citations<br />among peers to rank.</>
-      : <>No routine inspections<br />on file.</>;
+      : emptyMessage ?? <>No routine inspections<br />on file.</>;
     return (
       <div className="bg-paper-2 p-7 pb-6 flex flex-col">
         <div className="mb-4 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-ink-3">
@@ -145,6 +147,15 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
                 label="Severity rank"
                 percentile={snapshot.metrics.severity.percentile}
                 desc="Weighted citations per bed."
+                emptyMessage={
+                  snapshot.severity_measured === false ? (
+                    <>
+                      The state does not record
+                      <br />
+                      a severity for these findings.
+                    </>
+                  ) : undefined
+                }
               />
               <MetricCell
                 label="Repeat rank"
@@ -159,7 +170,9 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
               />
             </div>
             <p className="mt-5 font-[family-name:var(--font-mono)] text-[11px] text-paper/50 tracking-[0.06em] leading-relaxed">
-              Rankings based on {cfg.inspectionWindowMonths}-month {cfg.agencyShort} inspection data. Severity and frequency: fewer citations = higher percentile. Repeat rate: lower repeat citation share = higher percentile.
+              {snapshot.severity_measured === false
+                ? `The severity rank is not shown. ${cfg.agencyShort} does not record a severity on these findings. Frequency: fewer citations = higher percentile. Repeat rate: lower repeat citation share = higher percentile.`
+                : `Rankings based on ${cfg.inspectionWindowMonths}-month ${cfg.agencyShort} inspection data. Severity and frequency: fewer citations = higher percentile. Repeat rate: lower repeat citation share = higher percentile.`}
             </p>
           </>
         )}

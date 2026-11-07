@@ -189,6 +189,11 @@ export type SnapshotPayload = {
   };
   grade: { letter: string; composite_percentile: number } | null;
   has_inspections: boolean;
+  /**
+   * False when half or more of the peer group's findings have no severity
+   * and no class. Missing means an older snapshot, which is treated as measured.
+   */
+  severity_measured?: boolean;
   trajectory_series: Array<{
     month: string;
     facility_score: number;
