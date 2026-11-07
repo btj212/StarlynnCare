@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — California report checks run in batches, then look again
+
+**Decided:** The morning crawl still uses the statewide file as the change detector and still does not email from a partial scan. Homes that need a report index are checked eight at a time, least recently checked first. If two batches in a row cannot read the index, that wave stops. The run looks again on a fresh connection after 5, 10, 15, and 20 minutes, unless a wait would run past the 90-minute budget. A pending home whose stored statewide row still matches today, and whose index has no new document id, is not a new failure. The snapshot stays pending, and only its checked time moves, so the next morning tries the homes that were missed. An unread home is carried over, not failed, when that stored row still matches, or when it is Maple Manor or Desert Hills and already has a snapshot. A statewide row that changed today, and was not read, still fails the run.
+
+**Rejected:** Treating a different HTTP version, a dropped client header, or the public search page as another source. Those were tried on 2026-11-07. The report index and the report page hung with no bytes on HTTP/1.0, HTTP/1.1, and HTTP/2. The search page returned 503. The statewide file returned 200. Calling the report API the same way for every home after the first batches fail. Failing the whole state because a pending home could not be re-read on a morning when its statewide row did not change.
+
+**Flag:** This narrows the October rule that any unread facility index makes the scan partial, and the same-day rule that any bulk change without a new report id fails the run every morning. The first day of a bulk change still fails. An unread home whose state row has not changed is carried over. Repeating an already stored gap does not fail the run.
+
+**Source:** `scrapers/ccld_citations_ingest.py`. Manual run `1e6a2659-3cbb-49bd-abdf-f19eea185c30` on 2026-11-07 read 22 of 42 homes, then the index went dark again.
+
+---
+
 ## 2026-11 — AI assistants may fetch the facility API and look up one home
 
 **Decided:** `robots.txt` allows `/api/facilities/` for GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and CCBot. The longer allow wins over `Disallow: /api/`. Every other crawler still skips `/api/`, and the JSON stays `noindex`. `GET /api/facilities/{state}/lookup?q=` returns up to 5 publishable homes in that state by name or license number. `serious_findings` uses the report's rule: a Type A citation or severity 3 or higher in the last 24 months, and null when half or more of that home's findings have no class and no severity. A measured zero stays zero. A database error is HTTP 500, not an empty match list. Plan excerpts are included only for Pennsylvania, Oregon, and Utah, and only when the stored text is at least 40 characters.
@@ -23,6 +35,8 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 **Rejected:** Showing Arizona's 11,973 rows. Each one is the stub `View`. Showing Colorado's 244 plans. The parser joins the headings onto the first word. Showing Illinois `status`. The backfill writes `open` on every row, so it is not a correction flag. Clearing those columns in place.
 
 **Source:** Counts on 2026-11-07. Pennsylvania had 19,986 plans of at least 40 characters, 16,629 corrected and 665 not corrected, and 279 fines. Oregon had 1,804 plans. Utah had 347 follow-ups. Illinois had 439 fines.
+
+---
 
 ## 2026-11 — Facility Watch is free through the records request
 

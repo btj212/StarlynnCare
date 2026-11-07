@@ -435,6 +435,218 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
                 ingest.stage_regulator_original("abcdef", "<html>secret</html>")
             self.assertEqual(list(Path(tmp).rglob("*")), [])
 
+    def test_report_waves_wait_then_retry_the_same_index(self) -> None:
+        """A dead report service gets later looks inside the morning budget."""
+        self.assertEqual(ingest.REPORT_WAVE_COUNT, 5)
+        self.assertEqual(ingest.report_wave_pause_seconds(1), 0)
+        self.assertEqual(ingest.report_wave_pause_seconds(2), 300)
+        self.assertEqual(ingest.report_wave_pause_seconds(3), 600)
+        self.assertEqual(ingest.report_wave_pause_seconds(4), 900)
+        self.assertEqual(ingest.report_wave_pause_seconds(5), 1200)
+        homes = [{"name": f"Home {index}"} for index in range(18)]
+        batches = ingest.split_report_batches(homes, size=8)
+        self.assertEqual([len(batch) for batch in batches], [8, 8, 2])
+
+    def test_pending_gap_with_the_same_bulk_row_does_not_fail_again(self) -> None:
+        """Re-reading an already stored gap must not keep the state scan partial."""
+        page = (
+            "/WebReports/ABC.nsf/0/"
+            "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+        )
+        bulk_body = {"Last Visit Date": "10/30/2026", "Total Visits": "4"}
+        bulk = {"fingerprint": ingest.fingerprint(bulk_body), "payload": bulk_body}
+        previous = {
+            "fingerprint": "pending:already-recorded",
+            "payload": {
+                "reconciliation": "pending",
+                "bulk": bulk_body,
+                "reports": [{"key": "1fde0d06ff9530ae88258e79000019de"}],
+            },
+        }
+        index = {"COUNT": 1, "REPORTARRAY": [{"REPORTPAGE": page}]}
+
+        with (
+            patch.object(ingest, "fetch_report_index", return_value=index),
+            patch.object(ingest, "fetch_report_html") as fetch_html,
+        ):
+            result = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                dsn="unused",
+                previous_snapshot=previous,
+                bulk_snapshot=bulk,
+            )
+
+        self.assertEqual(result["index_checked"], 1)
+        self.assertEqual(result["errors"], 0)
+        self.assertNotIn("_snapshot_update", result)
+        self.assertEqual(result["_touch_scanned_at"], FACILITY["id"])
+        fetch_html.assert_not_called()
+
+    def test_unread_pending_home_with_unchanged_row_is_carried_over(self) -> None:
+        """A down index must not fail the run when the state file has not changed."""
+        bulk_body = {"Last Visit Date": "10/30/2026"}
+        bulk = {"fingerprint": ingest.fingerprint(bulk_body), "payload": bulk_body}
+        previous = {
+            "fingerprint": "pending:already",
+            "payload": {"reconciliation": "pending", "bulk": bulk_body},
+        }
+        maple = {
+            **FACILITY,
+            "name": "Maple Manor",
+            "license_number": "372004436",
+        }
+
+        self.assertTrue(
+            ingest.unread_home_is_carried_over(FACILITY, previous, bulk)
+        )
+        self.assertTrue(
+            ingest.unread_home_is_carried_over(maple, {"fingerprint": "reports"}, None)
+        )
+
+    def test_unread_home_whose_row_changed_today_still_fails(self) -> None:
+        """A new statewide row we never opened is still an incomplete scan."""
+        old_body = {"Last Visit Date": "10/01/2026"}
+        new_body = {"Last Visit Date": "10/30/2026"}
+        previous = {
+            "fingerprint": ingest.fingerprint(old_body),
+            "payload": {"bulk": old_body},
+        }
+        bulk = {"fingerprint": ingest.fingerprint(new_body), "payload": new_body}
+
+        self.assertFalse(
+            ingest.unread_home_is_carried_over(FACILITY, previous, bulk)
+        )
+        self.assertFalse(ingest.unread_home_is_carried_over(FACILITY, None, bulk))
+
+    def test_least_recently_checked_home_goes_first(self) -> None:
+        """The homes a short window missed yesterday are the first ones tried today."""
+        from datetime import datetime, timezone
+
+        older = {**FACILITY, "name": "Older"}
+        newer = {
+            **FACILITY,
+            "id": "00000000-0000-0000-0000-000000000002",
+            "name": "Newer",
+            "license_number": "999000111",
+        }
+        never = {
+            **FACILITY,
+            "id": "00000000-0000-0000-0000-000000000003",
+            "name": "Never",
+            "license_number": "888000111",
+        }
+        bulk = {
+            older["id"]: {"fingerprint": "a", "payload": {}},
+            newer["id"]: {"fingerprint": "b", "payload": {}},
+            never["id"]: {"fingerprint": "c", "payload": {}},
+        }
+        previous = {
+            older["id"]: {
+                "fingerprint": "pending:old",
+                "scanned_at": datetime(2026, 11, 1, tzinfo=timezone.utc),
+            },
+            newer["id"]: {
+                "fingerprint": "pending:new",
+                "scanned_at": datetime(2026, 11, 6, tzinfo=timezone.utc),
+            },
+        }
+
+        selected = ingest.select_reconciliation_targets(
+            [newer, older, never],
+            bulk,
+            previous,
+            refetch=False,
+        )
+
+        self.assertEqual(
+            [facility["name"] for facility in selected["deep"]],
+            ["Never", "Older", "Newer"],
+        )
+
+    def test_new_bulk_change_without_a_new_report_stays_unresolved(self) -> None:
+        """A statewide row that changed today still blocks a completed claim."""
+        page = (
+            "/WebReports/ABC.nsf/0/"
+            "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+        )
+        old_body = {"Last Visit Date": "10/01/2026", "Total Visits": "3"}
+        new_body = {"Last Visit Date": "10/30/2026", "Total Visits": "4"}
+        previous = {
+            "fingerprint": ingest.fingerprint(old_body),
+            "payload": {
+                "bulk": old_body,
+                "reports": [{"key": "1fde0d06ff9530ae88258e79000019de"}],
+            },
+        }
+        bulk = {"fingerprint": ingest.fingerprint(new_body), "payload": new_body}
+        index = {"COUNT": 1, "REPORTARRAY": [{"REPORTPAGE": page}]}
+
+        with patch.object(ingest, "fetch_report_index", return_value=index):
+            result = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                dsn="unused",
+                previous_snapshot=previous,
+                bulk_snapshot=bulk,
+            )
+
+        self.assertEqual(result["errors"], 1)
+        self.assertTrue(result["_snapshot_update"][1].startswith("pending:"))
+        self.assertEqual(result["_snapshot_update"][2]["reconciliation"], "pending")
+
+    def test_pending_snapshot_still_opens_a_new_report_id(self) -> None:
+        """A new document id is still fetched, even on a home that was pending."""
+        old_page = (
+            "/WebReports/ABC.nsf/0/"
+            "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+        )
+        new_page = (
+            "/WebReports/ABC.nsf/0/"
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA?OpenDocument"
+        )
+        bulk_body = {"Last Visit Date": "10/30/2026", "Total Visits": "4"}
+        bulk = {"fingerprint": ingest.fingerprint(bulk_body), "payload": bulk_body}
+        previous = {
+            "fingerprint": "pending:already-recorded",
+            "payload": {
+                "reconciliation": "pending",
+                "bulk": bulk_body,
+                "reports": [{"key": "1fde0d06ff9530ae88258e79000019de"}],
+            },
+        }
+        index = {
+            "COUNT": 2,
+            "REPORTARRAY": [
+                {"REPORTPAGE": old_page},
+                {"REPORTPAGE": new_page},
+            ],
+        }
+
+        with (
+            patch.object(ingest, "fetch_report_index", return_value=index),
+            patch.object(ingest, "fetch_report_html", return_value=None) as fetch_html,
+        ):
+            result = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                dsn="unused",
+                previous_snapshot=previous,
+                bulk_snapshot=bulk,
+            )
+
+        self.assertEqual(fetch_html.call_count, 1)
+        self.assertEqual(result["errors"], 1)
+        self.assertIn("_snapshot_update", result)
+        self.assertTrue(result["_snapshot_update"][1].startswith("pending:"))
+        self.assertNotEqual(result["_snapshot_update"][1], bulk["fingerprint"])
+
     def test_regulator_vault_is_content_addressed(self) -> None:
         """The same Lotus id is stored once, even if CDSS is fetched again."""
         with tempfile.TemporaryDirectory() as tmp:

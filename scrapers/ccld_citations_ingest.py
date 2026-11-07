@@ -229,6 +229,16 @@ ADAPTIVE_WORKER_MIN = 1
 ADAPTIVE_WORKER_MAX = 4
 INDEX_FAILURE_THRESHOLD = 12
 DEFAULT_MAX_MINUTES = 30
+# Deep checks run in small batches. A dead report service ends a wave after
+# two failed batches instead of walking every home. Later waves are the same
+# index call on a fresh connection, after a wait, because the service comes
+# and goes inside a morning.
+REPORT_BATCH_SIZE = 8
+# Five looks, spaced through the 90-minute morning budget. A wave whose
+# wait would run past the deadline is skipped.
+REPORT_WAVE_PAUSES_SECONDS = (0, 300, 600, 900, 1200)
+REPORT_WAVE_COUNT = len(REPORT_WAVE_PAUSES_SECONDS)
+REPORT_FAILED_BATCHES_PER_WAVE = 2
 BULK_FALLBACK_LICENSES = frozenset({"372004436", "331880722"})
 KEYCHAIN_SERVICE = "starlynncare-database-url"
 KEYCHAIN_ACCOUNT = "starlynncare"
@@ -432,6 +442,30 @@ def _http_session() -> requests.Session:
         )
         _HTTP_LOCAL.session = session
     return session
+
+
+def reset_http_session() -> None:
+    """Drop a reused TLS connection before a later report wave."""
+    session = getattr(_HTTP_LOCAL, "session", None)
+    if session is not None:
+        session.close()
+        delattr(_HTTP_LOCAL, "session")
+
+
+def report_wave_pause_seconds(wave: int) -> float:
+    """Wave 1 starts immediately. Later waves wait, then try the same index."""
+    if wave < 1 or wave > len(REPORT_WAVE_PAUSES_SECONDS):
+        return 0.0
+    return float(REPORT_WAVE_PAUSES_SECONDS[wave - 1])
+
+
+def split_report_batches(
+    facilities: list[dict[str, Any]],
+    size: int = REPORT_BATCH_SIZE,
+) -> list[list[dict[str, Any]]]:
+    if size < 1:
+        raise ValueError("report batch size must be at least 1")
+    return [facilities[index:index + size] for index in range(0, len(facilities), size)]
 
 
 def _get_with_retries(
@@ -716,8 +750,9 @@ def wait_for_report_api(
     attempts: int = 4,
     pause_seconds: float = 15.0,
     deadline: float | None = None,
+    label: str = "startup",
 ) -> bool:
-    """Warm the bursty CDSS report service before releasing concurrent work."""
+    """Warm the bursty CDSS report service before releasing a batch."""
     candidates = [fac_num, *(alternates or [])]
     for attempt in range(1, attempts + 1):
         if deadline is not None and time.monotonic() >= deadline:
@@ -726,20 +761,57 @@ def wait_for_report_api(
         try:
             probed = fetch_report_index(target, max_retries=1)
             _PREFLIGHT_INDEX[str(target).zfill(9)] = probed
-            print(f"CDSS report API ready (probe {attempt}/{attempts}).", flush=True)
+            print(
+                f"CDSS report API ready ({label} probe {attempt}/{attempts}).",
+                flush=True,
+            )
             return True
         except Exception as exc:
             print(
-                f"CDSS report API probe {attempt}/{attempts} failed: {exc}",
+                f"CDSS report API {label} probe {attempt}/{attempts} failed: {exc}",
                 flush=True,
             )
             if attempt < attempts:
                 time.sleep(pause_seconds)
     print(
-        "CDSS report API unavailable after bounded startup probes",
+        f"CDSS report API unavailable after bounded {label} probes",
         flush=True,
     )
     return False
+
+
+def stored_bulk_fingerprint(previous_snapshot: dict[str, Any] | None) -> str | None:
+    """Fingerprint the bulk body already saved on the snapshot, if it has one."""
+    payload = (previous_snapshot or {}).get("payload") or {}
+    bulk = payload.get("bulk") if isinstance(payload, dict) else None
+    if isinstance(bulk, dict) and bulk:
+        return fingerprint(bulk)
+    return None
+
+
+def bulk_payload_changed(
+    previous_snapshot: dict[str, Any] | None,
+    bulk_snapshot: dict[str, Any] | None,
+) -> bool:
+    """True when today's statewide row differs from the bulk body we stored."""
+    if previous_snapshot is None or bulk_snapshot is None:
+        return False
+    stored = stored_bulk_fingerprint(previous_snapshot)
+    if stored is None:
+        column = str(previous_snapshot.get("fingerprint") or "")
+        if column.startswith("pending:"):
+            return False
+        return column != bulk_snapshot["fingerprint"]
+    return stored != bulk_snapshot["fingerprint"]
+
+
+def snapshot_is_pending(previous_snapshot: dict[str, Any] | None) -> bool:
+    if not previous_snapshot:
+        return False
+    payload = previous_snapshot.get("payload") or {}
+    if isinstance(payload, dict) and payload.get("reconciliation") == "pending":
+        return True
+    return str(previous_snapshot.get("fingerprint") or "").startswith("pending:")
 
 
 # ---------------------------------------------------------------------------
@@ -1108,7 +1180,7 @@ def load_bulk_snapshots(
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT facility_id::text, fingerprint, payload
+            SELECT facility_id::text, fingerprint, payload, scanned_at
             FROM facility_watch_snapshots
             WHERE source = %s
               AND facility_id = ANY(%s::uuid[])
@@ -1116,9 +1188,31 @@ def load_bulk_snapshots(
             (BULK_SOURCE, facility_ids),
         )
         return {
-            facility_id: {"fingerprint": snapshot_fingerprint, "payload": payload}
-            for facility_id, snapshot_fingerprint, payload in cur.fetchall()
+            facility_id: {
+                "fingerprint": snapshot_fingerprint,
+                "payload": payload,
+                "scanned_at": scanned_at,
+            }
+            for facility_id, snapshot_fingerprint, payload, scanned_at in cur.fetchall()
         }
+
+
+def touch_snapshot_scanned_at(dsn: str, facility_ids: list[str]) -> None:
+    """Record that a pending home was re-read without changing its fingerprint."""
+    if not facility_ids:
+        return
+    with psycopg.connect(dsn, connect_timeout=30) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE facility_watch_snapshots
+                SET scanned_at = now()
+                WHERE source = %s
+                  AND facility_id = ANY(%s::uuid[])
+                """,
+                (BULK_SOURCE, facility_ids),
+            )
+        conn.commit()
 
 
 def upsert_bulk_snapshots(
@@ -1276,6 +1370,36 @@ def license_key(facility: dict[str, Any]) -> str:
     return str(facility.get("license_number") or "").zfill(9)
 
 
+def deep_sort_key(
+    facility: dict[str, Any],
+    previous_snapshots: dict[str, dict[str, Any]],
+) -> tuple[int, str, str]:
+    """Never-checked and oldest snapshots go first, so a short window rotates."""
+    scanned = (previous_snapshots.get(facility["id"]) or {}).get("scanned_at")
+    if scanned is None:
+        return (0, "", facility.get("name") or "")
+    if hasattr(scanned, "isoformat"):
+        scanned = scanned.isoformat()
+    return (1, str(scanned), facility.get("name") or "")
+
+
+def unread_home_is_carried_over(
+    facility: dict[str, Any],
+    previous_snapshot: dict[str, Any] | None,
+    bulk_snapshot: dict[str, Any] | None,
+) -> bool:
+    """An unread home fails the run only when today's state file is new."""
+    if (
+        snapshot_is_pending(previous_snapshot)
+        and not bulk_payload_changed(previous_snapshot, bulk_snapshot)
+    ):
+        return True
+    return (
+        license_key(facility) in BULK_FALLBACK_LICENSES
+        and previous_snapshot is not None
+    )
+
+
 def select_reconciliation_targets(
     facilities: list[dict[str, Any]],
     bulk_by_id: dict[str, dict[str, Any]],
@@ -1308,11 +1432,13 @@ def select_reconciliation_targets(
             unchanged.append(facility)
         else:
             pending.append(facility)
+    deep = pending + missing_bulk + fallbacks
+    deep.sort(key=lambda facility: deep_sort_key(facility, previous_snapshots))
     return {
         "unchanged": unchanged,
         "missing_bulk": missing_bulk,
         "fallbacks": fallbacks,
-        "deep": pending + missing_bulk + fallbacks,
+        "deep": deep,
     }
 
 
@@ -1602,17 +1728,35 @@ def process_facility(
             with psycopg.connect(dsn, connect_timeout=30) as write_conn:
                 store_reports(write_conn)
 
-    if (
-        previous_snapshot is not None
-        and bulk_snapshot is not None
-        and previous_snapshot.get("fingerprint") != bulk_snapshot["fingerprint"]
+    new_report_ids = {report["key"] for report in inventory} - previous_keys
+    unexplained_bulk_change = (
+        bulk_payload_changed(previous_snapshot, bulk_snapshot)
         and not parsed_reports
-        and not (set(report["key"] for report in inventory) - previous_keys)
-    ):
+        and not new_report_ids
+    )
+    if unexplained_bulk_change:
         print(
             f"  ERROR {fac_name}: bulk compliance changed without a new report id"
         )
         stats["errors"] += 1
+
+    # The gap is already on the pending snapshot. Reading the same index
+    # again, with the same statewide row, is not a new failure. Leave the
+    # snapshot pending so the next morning looks again, and let the rest of
+    # the run finish.
+    if (
+        snapshot_is_pending(previous_snapshot)
+        and not bulk_payload_changed(previous_snapshot, bulk_snapshot)
+        and not new_report_ids
+        and not parsed_reports
+        and not stats["errors"]
+    ):
+        print(
+            f"  {fac_name}: pending gap unchanged; index has no new report id",
+            flush=True,
+        )
+        stats["_touch_scanned_at"] = fac_id
+        return stats
 
     if not stats["errors"]:
         snapshot_update = snapshot_update_for(facility, inventory, bulk_snapshot)
@@ -1890,27 +2034,13 @@ def main() -> int:
         "bulk_checked": len(bulk_snapshots),
         "facilities_unchanged": len(unchanged_facilities),
         "snapshots_updated": 0,
+        "carried_over": 0,
     }
 
     error_log_parts: list[str] = []
     index_breaker = IndexCircuitBreaker()
     pending_snapshot_updates: list[tuple[str, str, dict[str, Any]]] = []
-
-    probe_targets = [
-        str(facility["license_number"]).zfill(9)
-        for facility in api_facilities[:4]
-        if facility.get("license_number")
-    ]
-    if probe_targets and not wait_for_report_api(
-        probe_targets[0],
-        alternates=probe_targets[1:],
-        deadline=deadline,
-    ):
-        error_log_parts.append(
-            "CDSS report API unavailable after bounded startup probes"
-        )
-        totals["errors"] += 1
-        api_facilities = []
+    scanned_at_touches: list[str] = []
 
     def process_one(fac: dict[str, Any]) -> dict[str, Any]:
         if args.dry_run:
@@ -1955,6 +2085,13 @@ def main() -> int:
         totals["snapshots_updated"] += len(updates)
         pending_snapshot_updates.clear()
 
+    def flush_scanned_at_touches() -> None:
+        if args.dry_run or not scanned_at_touches:
+            return
+        touches = list(dict.fromkeys(scanned_at_touches))
+        touch_snapshot_scanned_at(dsn, touches)
+        scanned_at_touches.clear()
+
     def record_result(fac: dict[str, Any], stats: dict[str, Any]) -> None:
         for k in totals:
             if k in stats and isinstance(stats[k], int):
@@ -1965,6 +2102,9 @@ def main() -> int:
             pending_snapshot_updates.append(snapshot_update)
             if len(pending_snapshot_updates) >= 25:
                 flush_snapshot_updates()
+        touched = stats.get("_touch_scanned_at")
+        if touched:
+            scanned_at_touches.append(str(touched))
 
         if stats["errors"]:
             error_log_parts.append(
@@ -1978,15 +2118,26 @@ def main() -> int:
             flush=True,
         )
 
-    if args.workers == 1:
-        for fac in api_facilities:
-            record_result(fac, process_one(fac))
-    else:
+    def process_batch(batch: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Check one batch. Homes whose index was not read go back to a later wave."""
+        unchecked: list[dict[str, Any]] = []
+
+        def accept(fac: dict[str, Any], stats: dict[str, Any]) -> None:
+            if stats.get("index_checked"):
+                record_result(fac, stats)
+                return
+            print(
+                f"  {fac['name']}: index not read; holding for a later wave",
+                flush=True,
+            )
+            unchecked.append(fac)
+
+        if args.workers == 1 or len(batch) == 1:
+            for fac in batch:
+                accept(fac, process_one(fac))
+            return unchecked
         with ThreadPoolExecutor(max_workers=args.workers) as executor:
-            futures = {
-                executor.submit(process_one, fac): fac
-                for fac in api_facilities
-            }
+            futures = {executor.submit(process_one, fac): fac for fac in batch}
             for future in as_completed(futures):
                 fac = futures[future]
                 try:
@@ -2000,10 +2151,90 @@ def main() -> int:
                         "deficiencies": 0,
                         "dementia_citations": 0,
                         "errors": 1,
-                        "index_checked": 0,
+                        "index_checked": 1,
                     }
-                record_result(fac, stats)
+                accept(fac, stats)
+        return unchecked
+
+    remaining = list(api_facilities)
+    for wave in range(1, REPORT_WAVE_COUNT + 1):
+        if not remaining:
+            break
+        pause = report_wave_pause_seconds(wave)
+        if pause:
+            if time.monotonic() + pause >= deadline:
+                print(
+                    "Skipping a later CDSS report wave: the scan budget would run out.",
+                    flush=True,
+                )
+                break
+            print(
+                f"CDSS report wave {wave}: waiting {int(pause)}s, then retrying "
+                f"{len(remaining)} homes on a fresh connection.",
+                flush=True,
+            )
+            time.sleep(pause)
+            reset_http_session()
+        failed_batches = 0
+        deferred: list[dict[str, Any]] = []
+        while remaining:
+            if time.monotonic() >= deadline:
+                deferred.extend(remaining)
+                remaining = []
+                break
+            batch = remaining[:REPORT_BATCH_SIZE]
+            remaining = remaining[REPORT_BATCH_SIZE:]
+            probe_targets = [
+                str(facility["license_number"]).zfill(9)
+                for facility in batch[:4]
+                if facility.get("license_number")
+            ]
+            attempts = 2 if failed_batches == 0 else 1
+            ready = (not probe_targets) or wait_for_report_api(
+                probe_targets[0],
+                alternates=probe_targets[1:],
+                attempts=attempts,
+                deadline=deadline,
+                label=f"wave {wave}",
+            )
+            if not ready:
+                failed_batches += 1
+                deferred.extend(batch)
+                if failed_batches >= REPORT_FAILED_BATCHES_PER_WAVE:
+                    deferred.extend(remaining)
+                    remaining = []
+                    print(
+                        f"CDSS report wave {wave} stopped after "
+                        f"{failed_batches} failed batches.",
+                        flush=True,
+                    )
+                    break
+                continue
+            failed_batches = 0
+            print(
+                f"CDSS report wave {wave}: checking {len(batch)} homes.",
+                flush=True,
+            )
+            deferred.extend(process_batch(batch))
+            flush_snapshot_updates()
+            flush_scanned_at_touches()
+        remaining = deferred
+
+    for fac in remaining:
+        previous = previous_snapshots.get(fac["id"])
+        bulk = bulk_snapshots.get(fac["id"])
+        if unread_home_is_carried_over(fac, previous, bulk):
+            totals["carried_over"] += 1
+            print(
+                f"  Carried over (state file unchanged): {fac['name']}",
+                flush=True,
+            )
+            continue
+        print(f"  CDSS report index not checked this run: {fac['name']}", flush=True)
+        totals["errors"] += 1
+        error_log_parts.append(f"{fac['name']}: report index not checked")
     flush_snapshot_updates()
+    flush_scanned_at_touches()
     try:
         record_weather(args.workers)
     except OSError as exc:
@@ -2055,6 +2286,7 @@ def main() -> int:
     print(f"  Deficiencies stored   : {totals['deficiencies']}")
     print(f"  §87705/87706 citations: {totals['dementia_citations']}")
     print(f"  Errors                : {totals['errors']}")
+    print(f"  Carried over (state file unchanged): {totals['carried_over']}")
     print(f"  HTTP requests         : {PACER.requests}")
     print(f"  HTTP timeouts         : {PACER.timeouts}")
     print(f"  Retry scale           : {WEATHER_RETRY_SCALE:.2f}")
