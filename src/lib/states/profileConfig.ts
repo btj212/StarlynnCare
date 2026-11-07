@@ -96,6 +96,18 @@ export interface StateProfileConfig {
    * report — unless a real `inspector_narrative` has since been ingested.
    */
   deficiencyTextIsRuleOnly?: boolean;
+  /**
+   * Stored follow-up for a finding. Omit it and the profile shows nothing extra,
+   * including states whose column is a stub or a parser artifact.
+   * `label` is the heading for plan or follow-up text of at least 40 characters.
+   * `showStatus` is only for a column the state itself uses as corrected or not.
+   * `showFine` reads `civil_money_penalty` and hides a missing or zero amount.
+   */
+  followUp?: {
+    label?: string;
+    showStatus?: boolean;
+    showFine?: boolean;
+  };
 }
 
 /**
