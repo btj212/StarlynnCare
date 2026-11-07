@@ -473,6 +473,14 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   MN insertDate max=2026-10-24 (unchanged vs Fri probe — same 4 survey PDFs; Sunday GHA MN +0);
 #   MN resolved max=2026-10-14 unchanged; all other states no new probe-layer signal (CA/TX/WA/IL/PA/AZ/MO
 #   refreshed or queued on Sunday GHA 40194733653; MO FOIA manual).
+# Cron probe 2026-11-07T23:03 UTC: OR source max=2026-11-06 (+18 rows vs ingested max 2026-10-23:
+#   Temesgen Helsabo and Tsega Kidanemariam AFH Monitoring 11/06; Adela Galgotiu AFH Re-Licensure 11/06;
+#   Bilal Hilowle AFH Monitoring 11/05; Anchor Care LLC AFH Monitoring 11/05; plus 14 rows 10/27–11/04);
+#   MN insertDate max=2026-11-07 (+91 events vs LAST_MN_INSERT_BASELINE 2026-10-23, incl. 30 on 11/07);
+#   MN resolved source max=2026-10-28 (+18 rows vs ingested max 2026-10-14); all other states no new
+#   probe-layer signal (CA/TX/WA/UT/IL/PA/AZ/MO/CO current per Sunday GHA 41316847867 + CA Mac watch).
+#   Ingest blocked in automation env (no DATABASE_URL; workflow_dispatch HTTP 403). Operator action:
+#   workflow_dispatch weekly-inspection-ingest.yml for OR then MN.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
