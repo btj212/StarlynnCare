@@ -39,6 +39,12 @@ MODES:
     Rate-limited by page render time (~5s/page, ~3 concurrent workers).
     Use --limit and --offset to run in chunks.
 
+  --mode poc
+    For each AZ inspection that still has plan_of_correction = 'View', opens
+    the inspection page, follows each Plan of Correction link, and updates
+    that one column. It never deletes a finding. A row it cannot match stays
+    'View' and is logged.
+
   --mode publish
     Re-runs recompute_publishable for AZ.
 
@@ -50,6 +56,8 @@ Usage:
     python3 -u scrapers/az_adhs_inspections_ingest.py --mode deficiencies --dry-run --limit 20
     python3 -u scrapers/az_adhs_inspections_ingest.py --mode deficiencies
     python3 -u scrapers/az_adhs_inspections_ingest.py --mode deficiencies --offset 1000
+    python3 -u scrapers/az_adhs_inspections_ingest.py --mode poc --dry-run --limit 10
+    python3 -u scrapers/az_adhs_inspections_ingest.py --mode poc
     python3 -u scrapers/az_adhs_inspections_ingest.py --mode publish
 
 PREREQUISITES:
@@ -69,6 +77,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 from uuid import UUID
 
 import psycopg
@@ -751,6 +760,298 @@ def deficiencies_mode(
         print("DRY RUN — no writes.")
 
 
+# ── Mode: plan of correction ──────────────────────────────────────────────────
+
+_PLAN_PAGE = "https://azcarecheck.azdhs.gov/s/inspection-plan-of-corrections"
+_PLAN_LABELS = (
+    "Temporary Solution",
+    "Name, title and/or Position of the Person Responsible",
+    "Permanent Solution",
+    "Date temporary correction was complete",
+    "Monitoring",
+    "Date permanent correction will be complete",
+)
+
+
+def _norm_cell(value: str | None) -> str:
+    return re.sub(r"\s+", " ", value or "").strip()
+
+
+def _plan_url(href: str) -> str | None:
+    query = parse_qs(urlparse(href).query)
+    item = (query.get("inspectionItem") or [None])[0]
+    facility = (query.get("facilityId") or [None])[0]
+    if not item or not facility:
+        return None
+    return f"{_PLAN_PAGE}?inspectionItem={item}&facilityId={facility}"
+
+
+def _inspection_plan_links(page: Any) -> list[dict[str, str]]:
+    """Return rule text, evidence, and plan URL for each grid row that has one."""
+    found: list[dict[str, str]] = []
+    for row in page.query_selector_all("[role='row']")[1:]:
+        rule = ""
+        for th in row.query_selector_all("th"):
+            text = th.inner_text().strip()
+            if text:
+                rule = text
+                break
+        cells = row.query_selector_all("[role='gridcell']")
+        evidence = cells[0].inner_text().strip() if cells else ""
+        link = row.query_selector("a[href*='inspection-plan-of-corrections']")
+        href = link.get_attribute("href") if link else None
+        plan_url = _plan_url(href) if href else None
+        if rule or evidence:
+            found.append({"rule": rule, "evidence": evidence, "plan_url": plan_url or ""})
+    return found
+
+
+def _plan_fields(raw: str) -> str | None:
+    """Keep the home's answers. Drop the repeated mobile copy and the file control."""
+    marker = "Plan of Correction for Inspection"
+    first = raw.find(marker)
+    if first >= 0:
+        second = raw.find(marker, first + len(marker))
+        if second > 0:
+            raw = raw[:second]
+    chunks: list[tuple[int, str]] = []
+    for label in _PLAN_LABELS:
+        idx = raw.find(label)
+        if idx >= 0:
+            chunks.append((idx, label))
+    chunks.sort()
+    parts: list[str] = []
+    for i, (idx, label) in enumerate(chunks):
+        start = idx + len(label)
+        end = chunks[i + 1][0] if i + 1 < len(chunks) else len(raw)
+        files_at = raw.find("\nFiles", start)
+        if start <= files_at < end:
+            end = files_at
+        value = re.sub(r"\s+", " ", raw[start:end]).strip()
+        if value:
+            parts.append(f"{label}\n{value}")
+    return "\n\n".join(parts) or None
+
+
+def _read_plan_page(page: Any, plan_url: str) -> str | None:
+    """Read the home's plan fields. None when the page has no plan text."""
+    page.goto(plan_url, wait_until="domcontentloaded", timeout=60_000)
+    try:
+        # The labels render before the answers. Wait until a label is followed
+        # by a line that is not another label.
+        page.wait_for_function(
+            """(labels) => {
+              const root = document.querySelector("c-azcc-inspection-plan-of-correction");
+              if (!root) return false;
+              const text = root.innerText || "";
+              for (const label of labels) {
+                const idx = text.indexOf(label);
+                if (idx < 0) continue;
+                const lines = text.slice(idx + label.length).split(/\\n/).map(s => s.trim()).filter(Boolean);
+                const next = lines[0] || "";
+                if (!next || next === "Files" || next === "Attach") continue;
+                if (labels.some(other => next === other || next.startsWith(other))) continue;
+                return true;
+              }
+              return false;
+            }""",
+            arg=list(_PLAN_LABELS),
+            timeout=20_000,
+        )
+    except Exception:
+        return None
+    raw = page.locator("c-azcc-inspection-plan-of-correction").inner_text()
+    return _plan_fields(raw)
+
+
+def _match_view_row(
+    stored: list[dict[str, str]],
+    rule: str,
+    evidence: str,
+) -> str | None:
+    """Return one deficiency id, or None when the row is missing or ambiguous."""
+    rule_key = _norm_cell(rule)
+    evidence_key = _norm_cell(evidence)
+    hits = [
+        row["id"]
+        for row in stored
+        if _norm_cell(row["description"]) == rule_key
+        and _norm_cell(row["inspector_narrative"]) == evidence_key
+    ]
+    if len(hits) == 1:
+        return hits[0]
+    return None
+
+
+def _poc_for_inspection(
+    page: Any,
+    conn: Any,
+    insp_id: str,
+    fac_sf_id: str,
+    sf_insp_id: str,
+    dry_run: bool,
+) -> tuple[int, int, list[str]]:
+    details = (
+        "https://azcarecheck.azdhs.gov/s/inspection-details"
+        f"?inspectionId={sf_insp_id}&facilityId={fac_sf_id}"
+    )
+    page.goto(details, wait_until="domcontentloaded", timeout=60_000)
+    page.wait_for_selector("[role='grid']", timeout=20_000)
+    grid = _inspection_plan_links(page)
+    stored = [
+        {"id": str(row[0]), "description": row[1] or "", "inspector_narrative": row[2] or ""}
+        for row in conn.execute(
+            """
+            SELECT id, description, inspector_narrative
+            FROM deficiencies
+            WHERE inspection_id = %s
+              AND btrim(plan_of_correction) = 'View'
+            """,
+            (insp_id,),
+        ).fetchall()
+    ]
+    updated = skipped = 0
+    notes: list[str] = []
+    claimed: set[str] = set()
+    for item in grid:
+        if not item["plan_url"]:
+            continue
+        match_id = _match_view_row(stored, item["rule"], item["evidence"])
+        if match_id is None or match_id in claimed:
+            skipped += 1
+            notes.append(f"unmatched {insp_id} {item['rule'][:80]}")
+            continue
+        text = _read_plan_page(page, item["plan_url"])
+        if not text:
+            skipped += 1
+            notes.append(f"empty {insp_id} {item['rule'][:80]}")
+            continue
+        claimed.add(match_id)
+        if not dry_run:
+            conn.execute(
+                """
+                UPDATE deficiencies
+                SET plan_of_correction = %s
+                WHERE id = %s
+                  AND btrim(plan_of_correction) = 'View'
+                """,
+                (text, match_id),
+            )
+        updated += 1
+        notes.append(f"plan {insp_id} {len(text)} chars | {text[:160].replace(chr(10), ' ')}")
+    return updated, skipped, notes
+
+
+def _process_poc_batch(
+    tasks: list[tuple[Any, ...]],
+    dry_run: bool,
+    worker_id: int,
+) -> tuple[int, int, int, list[str]]:
+    from playwright.sync_api import sync_playwright
+
+    updated = skipped = err = 0
+    notes: list[str] = []
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        page = browser.new_page()
+        with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+            for insp_id, fac_sf_id, sf_insp_id in tasks:
+                try:
+                    got, missed, batch_notes = _poc_for_inspection(
+                        page, conn, str(insp_id), fac_sf_id, sf_insp_id, dry_run
+                    )
+                    updated += got
+                    skipped += missed
+                    notes.extend(batch_notes)
+                except Exception as exc:
+                    err += 1
+                    print(
+                        f"  [worker {worker_id}] error insp={insp_id} sf={sf_insp_id}: {exc}",
+                        flush=True,
+                    )
+                    try:
+                        page.close()
+                    except Exception:
+                        pass
+                    page = browser.new_page()
+        browser.close()
+    return updated, skipped, err, notes
+
+
+def poc_mode(
+    dry_run: bool = False,
+    limit: int | None = None,
+    offset: int = 0,
+    workers: int = 3,
+) -> None:
+    """Replace the View label with the plan page text. Never deletes a finding."""
+    import math
+
+    print(
+        f"MODE: poc  offset={offset} limit={limit} workers={workers} dry_run={dry_run}",
+        flush=True,
+    )
+    with psycopg.connect(DATABASE_URL) as conn:
+        rows = conn.execute(
+            """
+            SELECT i.id, f.az_sf_account_id, i.raw_data->>'sf_inspection_id'
+            FROM inspections i
+            JOIN facilities f ON f.id = i.facility_id
+            WHERE f.state_code = 'AZ'
+              AND f.az_sf_account_id IS NOT NULL
+              AND i.raw_data->>'sf_inspection_id' IS NOT NULL
+              AND EXISTS (
+                  SELECT 1 FROM deficiencies d
+                  WHERE d.inspection_id = i.id
+                    AND btrim(d.plan_of_correction) = 'View'
+              )
+            ORDER BY i.inspection_date DESC NULLS LAST
+            OFFSET %s
+            """,
+            (offset,),
+        ).fetchall()
+    if limit:
+        rows = rows[:limit]
+    total = len(rows)
+    print(f"Inspections to process: {total}", flush=True)
+    if not total:
+        print("Nothing to do.")
+        return
+
+    batch_size = math.ceil(total / workers)
+    batches = [rows[i : i + batch_size] for i in range(0, total, batch_size)]
+    total_updated = total_skipped = total_err = 0
+    samples: list[str] = []
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(_process_poc_batch, batch, dry_run, wid): wid
+            for wid, batch in enumerate(batches)
+        }
+        for future in as_completed(futures):
+            wid = futures[future]
+            try:
+                updated, skipped, err, notes = future.result()
+            except Exception as exc:
+                print(f"  worker {wid} crashed: {exc}", flush=True)
+                continue
+            total_updated += updated
+            total_skipped += skipped
+            total_err += err
+            samples.extend(notes)
+            print(
+                f"  worker {wid} done  updated={updated} skipped={skipped} err={err}",
+                flush=True,
+            )
+    print(
+        f"\nDone.  updated={total_updated}  skipped={total_skipped}  err={total_err}",
+        flush=True,
+    )
+    for line in samples[:30]:
+        print(f"  {line}", flush=True)
+    if dry_run:
+        print("DRY RUN — no writes.")
+
+
 # ── Mode: publish ─────────────────────────────────────────────────────────────
 
 def publish_mode() -> None:
@@ -769,13 +1070,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="AZ Care Check inspection ingest")
     parser.add_argument(
         "--mode", required=True,
-        choices=["discover", "inspect", "deficiencies", "publish"],
+        choices=["discover", "inspect", "deficiencies", "poc", "publish"],
     )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--workers", type=int, default=3,
-                        help="Parallel Playwright workers (deficiencies mode only)")
+                        help="Parallel Playwright workers (deficiencies and poc modes)")
     args = parser.parse_args()
 
     if args.mode == "discover":
@@ -784,6 +1085,13 @@ def main() -> None:
         inspect_mode(dry_run=args.dry_run, limit=args.limit)
     elif args.mode == "deficiencies":
         deficiencies_mode(
+            dry_run=args.dry_run,
+            limit=args.limit,
+            offset=args.offset,
+            workers=args.workers,
+        )
+    elif args.mode == "poc":
+        poc_mode(
             dry_run=args.dry_run,
             limit=args.limit,
             offset=args.offset,
