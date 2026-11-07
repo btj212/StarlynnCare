@@ -566,6 +566,72 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
             ["Never", "Older", "Newer"],
         )
 
+    def test_a_watched_home_is_opened_even_when_its_state_row_matches(self) -> None:
+        """The person watching this home gets this home checked before the pending queue."""
+        from datetime import datetime, timezone
+
+        watched = {**FACILITY, "name": "Watched"}
+        pending = {
+            **FACILITY,
+            "id": "00000000-0000-0000-0000-000000000002",
+            "name": "Pending",
+            "license_number": "999000111",
+        }
+        bulk = {
+            watched["id"]: {"fingerprint": "same", "payload": {}},
+            pending["id"]: {"fingerprint": "new", "payload": {}},
+        }
+        previous = {
+            watched["id"]: {
+                "fingerprint": "same",
+                "scanned_at": datetime(2026, 11, 6, tzinfo=timezone.utc),
+            },
+            pending["id"]: {
+                "fingerprint": "old",
+                "scanned_at": datetime(2026, 11, 1, tzinfo=timezone.utc),
+            },
+        }
+
+        selected = ingest.select_reconciliation_targets(
+            [pending, watched],
+            bulk,
+            previous,
+            refetch=False,
+            watched_ids={watched["id"]},
+        )
+
+        self.assertEqual(
+            [facility["name"] for facility in selected["deep"]],
+            ["Watched", "Pending"],
+        )
+        self.assertEqual(selected["unchanged"], [])
+
+    def test_unread_watched_home_is_carried_over_only_when_its_row_is_unchanged(self) -> None:
+        """A dark index on one watched home does not fail the state when that file did not change."""
+        same = {"Last Visit Date": "10/30/2026"}
+        changed = {"Last Visit Date": "11/06/2026"}
+        same_bulk = {"fingerprint": ingest.fingerprint(same), "payload": same}
+        same_previous = {
+            "fingerprint": ingest.fingerprint(same),
+            "payload": {"bulk": same},
+        }
+        changed_previous = {
+            "fingerprint": ingest.fingerprint(same),
+            "payload": {"bulk": same},
+        }
+        changed_bulk = {"fingerprint": ingest.fingerprint(changed), "payload": changed}
+
+        self.assertTrue(
+            ingest.unread_home_is_carried_over(
+                FACILITY, same_previous, same_bulk, watched=True
+            )
+        )
+        self.assertFalse(
+            ingest.unread_home_is_carried_over(
+                FACILITY, changed_previous, changed_bulk, watched=True
+            )
+        )
+
     def test_new_bulk_change_without_a_new_report_stays_unresolved(self) -> None:
         """A statewide row that changed today still blocks a completed claim."""
         page = (

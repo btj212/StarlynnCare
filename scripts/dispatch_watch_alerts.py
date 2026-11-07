@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dispatch deduplicated area and facility alerts for a completed state scan."""
+"""Dispatch area alerts for a finished state scan, and facility alerts per watched home."""
 
 from __future__ import annotations
 
@@ -102,7 +102,36 @@ def _delivery_fingerprint(prefix: str, fingerprints: list[str]) -> str:
 
 
 def scan_is_dispatchable(status: str) -> bool:
+    """Area mail waits for a finished statewide scan."""
     return status == "completed"
+
+
+def facility_watch_is_sendable(status: str) -> bool:
+    """A watched home can be emailed when its own record was read.
+
+    A partial scan still counts. Another home's failure does not.
+    A failed or still-running scan has no finished per-home result.
+    """
+    return status in {"completed", "partial"}
+
+
+def facility_delta_has_new_record(delta: dict[str, Any]) -> bool:
+    """Email for a new inspection or a new citation, not a checksum flicker."""
+    if not delta.get("facility_id"):
+        return False
+    before = delta.get("before_payload") or {}
+    after = delta.get("after_payload") or {}
+
+    def count(payload: dict[str, Any], key: str) -> int:
+        try:
+            return int(payload.get(key) or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    return (
+        count(after, "inspection_count") > count(before, "inspection_count")
+        or count(after, "deficiency_count") > count(before, "deficiency_count")
+    )
 
 
 def family_alerts_allowed(
@@ -113,10 +142,12 @@ def family_alerts_allowed(
     layer5_outcome: str,
     skipped: bool,
 ) -> bool:
-    """Sunday is the only automatic family send, and only after the data check.
+    """Sunday is the only automatic full send, and only after the data check.
 
+    This is the area-and-facility step. A partial scan has its own facility-only
+    step, so one failed home does not block a watched home that was read.
     A hand-started run sends only when its alert box is checked. A push, a
-    skipped state, a failed scrape, or a failed data check sends nothing.
+    skipped state, or a failed data check still sends nothing.
     """
     if skipped or ingest_outcome != "success" or layer5_outcome != "success":
         return False
@@ -441,6 +472,11 @@ def main() -> int:
     parser.add_argument("--send-no-change-to")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
+        "--facility-changes-only",
+        action="store_true",
+        help="Email facility watches only, and only for a new inspection or citation.",
+    )
+    parser.add_argument(
         "--recipient-only",
         metavar="EMAIL",
         help="Only dispatch alerts to this one email address; all other watchers are skipped.",
@@ -465,29 +501,39 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    if not scan_is_dispatchable(run["status"]):
+    if not facility_watch_is_sendable(run["status"]):
         print(
-            f"Skipping alerts for {run['id']}: scan status is {run['status']}, not completed.",
+            f"Skipping alerts for {run['id']}: scan status is {run['status']}. "
+            "Facility notes go out only for a completed or partial scan.",
             file=sys.stderr,
         )
         return 0
 
+    facility_only = args.facility_changes_only or run["status"] == "partial"
     if recipient_only:
         print(f"[recipient-only] alerts scoped to: {recipient_only}")
 
     deltas = _load_deltas(conn, run["id"])
-    area_sent, area_failed = _send_area_alerts(
-        conn,
-        run,
-        deltas,
-        no_change_email=args.send_no_change_to,
-        dry_run=args.dry_run,
-        recipient_only=recipient_only,
-    )
+    facility_deltas = [delta for delta in deltas if facility_delta_has_new_record(delta)]
+    if facility_only:
+        print(
+            f"Facility watches only: {len(facility_deltas)} home(s) with a new inspection or citation.",
+            flush=True,
+        )
+        area_sent, area_failed = 0, 0
+    else:
+        area_sent, area_failed = _send_area_alerts(
+            conn,
+            run,
+            deltas,
+            no_change_email=args.send_no_change_to,
+            dry_run=args.dry_run,
+            recipient_only=recipient_only,
+        )
     facility_sent, facility_failed = _send_facility_alerts(
         conn,
         run,
-        deltas,
+        facility_deltas,
         dry_run=args.dry_run,
         recipient_only=recipient_only,
     )

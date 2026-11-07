@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Each watched home is checked, and that home's note does not wait for the rest of the state
+
+**Decided:** California opens the report index for every home a signed-up person is watching, even when the statewide file matches, and those homes go first. A watched home whose own record gained an inspection, including a visit with no new citation, or gained a citation, is emailed on Sunday after the data check. A partial statewide scan can send that note. A +0 inspections / +0 citations fingerprint change does not. Area watches still wait for a completed scan. A failed or running scan sends nothing. The same scan is not sent twice. The morning crawl itself still does not email. There is no one-recipient proof. `--send` sends to every matching watcher. `--recipient-only` is an optional manual limiter. An unread watched home whose statewide row did not change is carried over, so one dark index does not fail the state. An unread home whose row changed today still fails the run, and that failure does not block a different home that was read.
+
+**Rejected:** Emailing the moment the morning job finishes. Emailing area watches from a partial scan. Emailing a checksum flicker. Catching up the November 3 partial scan. Republishing the Loops templates.
+
+**Flag:** This reverses two sentences in "2026-10 — California notes wait for a finished scan, then go out on Sunday": the one-recipient proof, and "partial scans stay silent, including partial scans that already recorded visit changes." It also narrows "still does not email from a partial scan" in the 2026-11 batching entry. Sunday, the data check, weekday silence, and "the crawl itself does not email" stay. Other states' Sunday job now does the same for a watched home when their scan is partial and the data check passes. Area mail on those states still requires a finished scan.
+
+**Source:** Blake, 2026-11-07. The people enrolled that day watch six California homes plus homes in Arizona, Illinois, Minnesota, Pennsylvania, and Washington.
+
+---
+
 ## 2026-11 — California report checks run in batches, then look again
 
 **Decided:** The morning crawl still uses the statewide file as the change detector and still does not email from a partial scan. Homes that need a report index are checked eight at a time, least recently checked first. If two batches in a row cannot read the index, that wave stops. The run looks again on a fresh connection after 5, 10, 15, and 20 minutes, unless a wait would run past the 90-minute budget. A pending home whose stored statewide row still matches today, and whose index has no new document id, is not a new failure. The snapshot stays pending, and only its checked time moves, so the next morning tries the homes that were missed. An unread home is carried over, not failed, when that stored row still matches, or when it is Maple Manor or Desert Hills and already has a snapshot. A statewide row that changed today, and was not read, still fails the run.

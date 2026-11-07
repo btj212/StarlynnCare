@@ -1,6 +1,7 @@
 #!/bin/bash
 # Local California watch. The crawl itself does not email families.
-# On Sunday, after the crawl, finished scans can send. A partial crawl stays silent.
+# On Sunday, after the crawl, a watched home can be emailed when that home
+# gained an inspection, even if some other home was not checked.
 # Credentials come from Keychain at runtime and are not written to disk.
 
 set -euo pipefail

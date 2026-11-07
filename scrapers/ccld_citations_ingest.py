@@ -1147,6 +1147,32 @@ def get_already_ingested_urls(
         return {row[0] for row in cur.fetchall()}
 
 
+def load_watched_facility_ids(
+    conn: psycopg.Connection,
+    facility_ids: list[str],
+) -> set[str]:
+    """Homes a person asked to be emailed about. Each one is checked on its own."""
+    if not facility_ids:
+        return set()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT w.facility_id::text
+            FROM facility_watchers w
+            LEFT JOIN customer_preferences p ON p.email = w.email
+            WHERE w.facility_id = ANY(%s::uuid[])
+              AND w.confirmed_at IS NOT NULL
+              AND COALESCE(w.alerts_eligible, TRUE)
+              AND NOT COALESCE(p.unsubscribed_all, FALSE)
+              AND NOT (
+                'facility_watch' = ANY(COALESCE(p.unsubscribed_products, '{}'::text[]))
+              )
+            """,
+            (facility_ids,),
+        )
+        return {row[0] for row in cur.fetchall()}
+
+
 def load_ingested_urls(
     conn: psycopg.Connection,
     facility_ids: list[str],
@@ -1387,8 +1413,12 @@ def unread_home_is_carried_over(
     facility: dict[str, Any],
     previous_snapshot: dict[str, Any] | None,
     bulk_snapshot: dict[str, Any] | None,
+    *,
+    watched: bool = False,
 ) -> bool:
     """An unread home fails the run only when today's state file is new."""
+    if watched and not bulk_payload_changed(previous_snapshot, bulk_snapshot):
+        return True
     if (
         snapshot_is_pending(previous_snapshot)
         and not bulk_payload_changed(previous_snapshot, bulk_snapshot)
@@ -1406,23 +1436,34 @@ def select_reconciliation_targets(
     previous_snapshots: dict[str, dict[str, Any]],
     *,
     refetch: bool,
+    watched_ids: set[str] | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Bulk comparison decides deep work. Named fallbacks are always included."""
+    """Bulk comparison decides deep work. Watched homes are always checked first."""
+    watched_ids = watched_ids or set()
+    watched = [facility for facility in facilities if facility["id"] in watched_ids]
+    watched_seen = {facility["id"] for facility in watched}
     fallbacks = [
         facility
         for facility in facilities
         if license_key(facility) in BULK_FALLBACK_LICENSES
+        and facility["id"] not in watched_seen
     ]
     fallback_ids = {facility["id"] for facility in fallbacks}
     missing_bulk = [
         facility
         for facility in facilities
-        if facility["id"] not in bulk_by_id and facility["id"] not in fallback_ids
+        if facility["id"] not in bulk_by_id
+        and facility["id"] not in fallback_ids
+        and facility["id"] not in watched_seen
     ]
     unchanged: list[dict[str, Any]] = []
     pending: list[dict[str, Any]] = []
     for facility in facilities:
-        if facility["id"] not in bulk_by_id or facility["id"] in fallback_ids:
+        if (
+            facility["id"] not in bulk_by_id
+            or facility["id"] in fallback_ids
+            or facility["id"] in watched_seen
+        ):
             continue
         if (
             not refetch
@@ -1432,13 +1473,14 @@ def select_reconciliation_targets(
             unchanged.append(facility)
         else:
             pending.append(facility)
-    deep = pending + missing_bulk + fallbacks
-    deep.sort(key=lambda facility: deep_sort_key(facility, previous_snapshots))
+    rest = pending + missing_bulk + fallbacks
+    rest.sort(key=lambda facility: deep_sort_key(facility, previous_snapshots))
     return {
         "unchanged": unchanged,
         "missing_bulk": missing_bulk,
         "fallbacks": fallbacks,
-        "deep": deep,
+        "watched": watched,
+        "deep": watched + rest,
     }
 
 
@@ -1950,16 +1992,15 @@ def main() -> int:
     if args.limit is not None:
         facilities = facilities[: args.limit]
 
+    watched_ids: set[str] = set()
     if not args.dry_run and not args.refetch:
         print("Loading existing California report inventory...", flush=True)
         with psycopg.connect(dsn, connect_timeout=30) as conn:
             conn.execute("SET statement_timeout = '120s'")
-            ingested_urls = load_ingested_urls(
-                conn, [facility["id"] for facility in facilities]
-            )
-            previous_snapshots = load_bulk_snapshots(
-                conn, [facility["id"] for facility in facilities]
-            )
+            facility_ids = [facility["id"] for facility in facilities]
+            ingested_urls = load_ingested_urls(conn, facility_ids)
+            previous_snapshots = load_bulk_snapshots(conn, facility_ids)
+            watched_ids = load_watched_facility_ids(conn, facility_ids)
 
     print("Downloading statewide CDSS compliance data...", flush=True)
     bulk_by_license = fetch_bulk_compliance()
@@ -1973,6 +2014,7 @@ def main() -> int:
         bulk_snapshots,
         previous_snapshots,
         refetch=args.refetch,
+        watched_ids=watched_ids,
     )
     missing_bulk = selected["missing_bulk"]
     unchanged_facilities = selected["unchanged"]
@@ -1982,7 +2024,8 @@ def main() -> int:
         f"Bulk rows matched: {len(bulk_snapshots)}/{len(facilities)}; "
         f"unchanged: {len(unchanged_facilities)}; "
         f"report indexes to reconcile: {len(api_facilities)} "
-        f"({args.workers} concurrent workers)",
+        f"({len(selected['watched'])} watched, "
+        f"{args.workers} concurrent workers)",
         flush=True,
     )
     if selected["fallbacks"]:
@@ -2223,7 +2266,12 @@ def main() -> int:
     for fac in remaining:
         previous = previous_snapshots.get(fac["id"])
         bulk = bulk_snapshots.get(fac["id"])
-        if unread_home_is_carried_over(fac, previous, bulk):
+        if unread_home_is_carried_over(
+            fac,
+            previous,
+            bulk,
+            watched=fac["id"] in watched_ids,
+        ):
             totals["carried_over"] += 1
             print(
                 f"  Carried over (state file unchanged): {fac['name']}",

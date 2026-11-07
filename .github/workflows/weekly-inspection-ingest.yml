@@ -69,7 +69,7 @@ jobs:
 
       - name: Layer 5 post-ingest — ${{ matrix.state }}
         id: layer5
-        if: success() && steps.ingest.outputs.skip != 'true'
+        if: always() && steps.ingest.outcome != 'cancelled' && steps.ingest.outputs.skip != 'true'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python3 scripts/validate/post_ingest_check.py --state ${{ matrix.state }}
@@ -105,6 +105,21 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://www.starlynncare.com
         run: python3 scripts/dispatch_watch_alerts.py --scan-run-id "$(tr -d '\n' < /tmp/state-watch-run-id)"
 
+      - name: Dispatch facility watch notes after a partial scan — ${{ matrix.state }}
+        if: steps.ingest.outcome == 'failure' && steps.ingest.outputs.skip != 'true' && steps.layer5.outcome == 'success' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.dispatch_alerts))
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          LOOPS_AREA_WATCH_CHANGE_ID: ${{ secrets.LOOPS_AREA_WATCH_CHANGE_ID }}
+          LOOPS_WATCH_CHANGE_ID: ${{ secrets.LOOPS_WATCH_CHANGE_ID }}
+          NEXT_PUBLIC_SITE_URL: https://www.starlynncare.com
+        run: |
+          if [ -s /tmp/state-watch-run-id ]; then
+            python3 scripts/dispatch_watch_alerts.py --scan-run-id "$(tr -d '\n' < /tmp/state-watch-run-id)"
+          else
+            echo "No scan id was written. No facility watch notes were sent."
+          fi
+
       - name: Notify admin of failed scrape — ${{ matrix.state }}
         if: steps.ingest.outcome == 'failure' || steps.ingest.outcome == 'cancelled'
         env:
@@ -115,7 +130,7 @@ jobs:
           python3 scripts/notify_scan_failure.py
           --state ${{ matrix.state }}
           --workflow-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          --details "The scheduled source scan failed before it finished. No subscriber alerts were sent."
+          --details "The scheduled source scan did not finish. A watched home is still emailed when that home's own record gained an inspection. Area watches stay quiet."
 
       - name: Notify admin of failed data check — ${{ matrix.state }}
         if: steps.layer5.outcome == 'failure'

@@ -13,6 +13,8 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from dispatch_watch_alerts import (  # noqa: E402
     _delivery_fingerprint,
+    facility_delta_has_new_record,
+    facility_watch_is_sendable,
     family_alerts_allowed,
     scan_is_dispatchable,
 )
@@ -80,12 +82,55 @@ class StateWatchAutomationTests(unittest.TestCase):
         second = _delivery_fingerprint("area:watcher", ["run-2:verified-no-change"])
         self.assertNotEqual(first, second)
 
-    def test_partial_or_failed_scan_never_dispatches(self) -> None:
-        """A source failure must suppress every family-facing alert."""
+    def test_partial_or_failed_scan_never_dispatches_area_mail(self) -> None:
+        """Area mail waits for the whole state. A watched home does not."""
         self.assertTrue(scan_is_dispatchable("completed"))
         self.assertFalse(scan_is_dispatchable("partial"))
         self.assertFalse(scan_is_dispatchable("failed"))
         self.assertFalse(scan_is_dispatchable("running"))
+        self.assertTrue(facility_watch_is_sendable("completed"))
+        self.assertTrue(facility_watch_is_sendable("partial"))
+        self.assertFalse(facility_watch_is_sendable("failed"))
+        self.assertFalse(facility_watch_is_sendable("running"))
+
+    def test_a_watched_home_emails_only_when_its_own_record_grew(self) -> None:
+        """A new visit with no new citation still emails. A checksum flicker does not."""
+        self.assertTrue(
+            facility_delta_has_new_record(
+                {
+                    "facility_id": "home",
+                    "before_payload": {"inspection_count": 4, "deficiency_count": 2},
+                    "after_payload": {"inspection_count": 5, "deficiency_count": 2},
+                }
+            )
+        )
+        self.assertTrue(
+            facility_delta_has_new_record(
+                {
+                    "facility_id": "home",
+                    "before_payload": {"inspection_count": 4, "deficiency_count": 2},
+                    "after_payload": {"inspection_count": 4, "deficiency_count": 3},
+                }
+            )
+        )
+        self.assertFalse(
+            facility_delta_has_new_record(
+                {
+                    "facility_id": "home",
+                    "before_payload": {"inspection_count": 4, "deficiency_count": 2},
+                    "after_payload": {"inspection_count": 4, "deficiency_count": 2},
+                }
+            )
+        )
+        self.assertFalse(
+            facility_delta_has_new_record(
+                {
+                    "facility_id": None,
+                    "before_payload": {"inspection_count": 1, "deficiency_count": 0},
+                    "after_payload": {"inspection_count": 2, "deficiency_count": 0},
+                }
+            )
+        )
 
     def test_only_a_passed_sunday_scan_emails_families(self) -> None:
         """A weeknight push, a failed check, or an unchecked manual run stays silent."""
@@ -153,6 +198,14 @@ class StateWatchAutomationTests(unittest.TestCase):
         self.assertNotIn("CA,", workflow.split("matrix:", 1)[1].split("steps:", 1)[0])
         self.assertIn(
             "steps.ingest.outcome == 'success' "
+            "&& steps.ingest.outputs.skip != 'true' "
+            "&& steps.layer5.outcome == 'success' "
+            "&& (github.event_name == 'schedule' || "
+            "(github.event_name == 'workflow_dispatch' && inputs.dispatch_alerts))",
+            workflow,
+        )
+        self.assertIn(
+            "steps.ingest.outcome == 'failure' "
             "&& steps.ingest.outputs.skip != 'true' "
             "&& steps.layer5.outcome == 'success' "
             "&& (github.event_name == 'schedule' || "
