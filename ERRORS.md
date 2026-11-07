@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — The Arizona plan backfill sat still after a browser driver died
+
+**What went wrong:** Each worker printed only when its whole batch finished. One of the three Playwright drivers exited, the page call never returned, and the count of `View` rows stayed at 1,138 for 20 minutes.
+
+**What worked instead:** Stop that process and start `--mode poc` again. It only selects rows that are still `View`. Print one line per inspection, and give the page a 25-second timeout so a dead browser becomes an error instead of a wait.
+
+**Source:** `scrapers/az_adhs_inspections_ingest.py --mode poc`.
+
 ## 2026-11 — Arizona plan text was the word View
 
 **What went wrong:** The inspections ingest stored the button label `View`. The plan is a separate public page, not a file and not behind a login. Reading the button text, reading a detached copy of the page, and passing `page.wait_for_function` its argument in the wrong position all came back empty. The page also shows a "Sorry to interrupt CSS Error" dialog. That dialog is not the plan. `--mode deficiencies` deletes the findings and inserts them again, so it is the wrong way to fill in the text.

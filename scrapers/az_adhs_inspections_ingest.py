@@ -954,6 +954,8 @@ def _process_poc_batch(
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         page = browser.new_page()
+        page.set_default_timeout(25_000)
+        page.set_default_navigation_timeout(45_000)
         with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
             for insp_id, fac_sf_id, sf_insp_id in tasks:
                 try:
@@ -963,6 +965,10 @@ def _process_poc_batch(
                     updated += got
                     skipped += missed
                     notes.extend(batch_notes)
+                    print(
+                        f"  [worker {worker_id}] {insp_id} updated={got} skipped={missed}",
+                        flush=True,
+                    )
                 except Exception as exc:
                     err += 1
                     print(
@@ -974,6 +980,8 @@ def _process_poc_batch(
                     except Exception:
                         pass
                     page = browser.new_page()
+                    page.set_default_timeout(25_000)
+                    page.set_default_navigation_timeout(45_000)
         browser.close()
     return updated, skipped, err, notes
 
