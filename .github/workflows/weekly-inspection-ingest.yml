@@ -120,30 +120,26 @@ jobs:
             echo "No scan id was written. No facility watch notes were sent."
           fi
 
-      - name: Notify admin of failed scrape — ${{ matrix.state }}
-        if: steps.ingest.outcome == 'failure' || steps.ingest.outcome == 'cancelled'
+      - name: Email the operator a scan report — ${{ matrix.state }}
+        if: always() && steps.ingest.outputs.skip != 'true'
         env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
           LOOPS_ADMIN_ALERT_ID: ${{ secrets.LOOPS_ADMIN_ALERT_ID }}
           ADMIN_ALERT_EMAIL: ${{ secrets.ADMIN_ALERT_EMAIL }}
-        run: >-
-          python3 scripts/notify_scan_failure.py
-          --state ${{ matrix.state }}
-          --workflow-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          --details "The scheduled source scan did not finish. A watched home is still emailed when that home's own record gained an inspection. Area watches stay quiet."
-
-      - name: Notify admin of failed data check — ${{ matrix.state }}
-        if: steps.layer5.outcome == 'failure'
-        env:
-          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
-          LOOPS_ADMIN_ALERT_ID: ${{ secrets.LOOPS_ADMIN_ALERT_ID }}
-          ADMIN_ALERT_EMAIL: ${{ secrets.ADMIN_ALERT_EMAIL }}
-        run: >-
-          python3 scripts/notify_scan_failure.py
-          --state ${{ matrix.state }}
-          --summary "${{ matrix.state }} data check failed"
-          --workflow-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          --details "The source scan finished, but a data check this state can pass did not. No subscriber alerts were sent."
+        run: |
+          if [ -s /tmp/state-watch-run-id ]; then
+            python3 scripts/report_scan_run.py \
+              --scan-run-id "$(tr -d '\n' < /tmp/state-watch-run-id)" \
+              --data-check "${{ steps.layer5.outcome }}" \
+              --admin-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            python3 scripts/report_scan_run.py \
+              --state "${{ matrix.state }}" \
+              --missing \
+              --data-check "${{ steps.layer5.outcome }}" \
+              --admin-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
 
   validate:
     needs: ingest

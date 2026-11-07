@@ -113,6 +113,27 @@ def send_admin_notice(*, summary: str, details: str, admin_url: str) -> None:
     )
 
 
+def send_operator_scan_report(*, summary: str, details: str, admin_url: str) -> None:
+    """One note to the operator about a scan. This does not email families."""
+    admin_email = os.environ.get("ADMIN_ALERT_EMAIL", "").strip()
+    if not admin_email:
+        raise RuntimeError("ADMIN_ALERT_EMAIL must be set")
+    if admin_email.lower() == "nedberke@gmail.com":
+        raise RuntimeError("Ned is off every send.")
+    _send_transactional(
+        to=admin_email,
+        template_env="LOOPS_ADMIN_ALERT_ID",
+        data_variables={
+            "submissionType": "Scan report",
+            "email": admin_email,
+            "summary": summary,
+            "details": details[:1700],
+            "submittedAt": datetime.now(timezone.utc).isoformat(),
+            "adminUrl": admin_url,
+        },
+    )
+
+
 def send_scan_failure_alert(
     *,
     state_code: str,

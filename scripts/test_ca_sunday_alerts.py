@@ -106,13 +106,14 @@ class CaliforniaSundayAlertTests(unittest.TestCase):
         self.assertEqual(parse_sent_counts("Finished California scans waiting: 0\n"), (0, 0, 0))
 
     def test_the_morning_job_checks_sunday_without_emailing_from_the_crawl(self) -> None:
-        """The crawl command stays the same. Sunday mail is a later step."""
+        """The crawl command stays the same. Family mail is still a later Sunday step."""
         script = (SCRIPTS_DIR / "run_ca_watch_local.sh").read_text()
         self.assertIn('"--state"', script)
         self.assertIn('"CA"', script)
         self.assertIn('"--skip-validate"', script)
         self.assertIn("scripts/ca_sunday_alerts.py", script)
         self.assertIn('"--send"', script)
+        self.assertIn("scripts/report_scan_run.py", script)
         self.assertNotIn("dispatch_watch_alerts.py", script)
         workflow = (
             SCRIPTS_DIR.parent / ".github/workflows/weekly-inspection-ingest.yml"

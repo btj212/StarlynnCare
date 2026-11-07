@@ -3,6 +3,8 @@
 # On Sunday, after the crawl, a watched home can be emailed when that home
 # gained an inspection, even if some other home was not checked.
 # Credentials come from Keychain at runtime and are not written to disk.
+# The operator note reads starlynncare-loops-api-key and
+# starlynncare-loops-admin-alert-id when the local env file has no real token.
 
 set -euo pipefail
 
@@ -73,10 +75,36 @@ with open(log_path, "a", encoding="utf-8") as log:
         [python_bin, "-u", "scripts/ca_sunday_alerts.py", "--send"],
         cwd=root,
         env=os.environ.copy(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    log.write(alert.stdout or "")
+    if alert.returncode != 0:
+        log.write("California Sunday alert check failed. The crawl result is unchanged.\n")
+    sys.path.insert(0, os.path.join(root, "scripts"))
+    from report_scan_run import data_check_from_sunday_output
+
+    data_check = data_check_from_sunday_output(alert.stdout or "")
+    log.write("\n--- Operator scan note ---\n")
+    report = subprocess.run(
+        [
+            python_bin,
+            "-u",
+            "scripts/report_scan_run.py",
+            "--state",
+            "CA",
+            "--data-check",
+            data_check,
+            "--admin-url",
+            "https://www.starlynncare.com/california",
+        ],
+        cwd=root,
+        env=os.environ.copy(),
         stdout=log,
         stderr=subprocess.STDOUT,
     )
-    if alert.returncode != 0:
-        log.write("California Sunday alert check failed. The crawl result is unchanged.\n")
+    if report.returncode != 0:
+        log.write("Operator scan note was not sent.\n")
 sys.exit(result.returncode)
 PY

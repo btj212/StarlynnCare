@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Every scan emails the operator what it checked
+
+**Decided:** After each California morning crawl, and after each state in the Sunday GitHub scan, one note goes to `ADMIN_ALERT_EMAIL`. It says whether the scan finished, how the inspection and citation counts moved, which watched homes were opened, which homes gained an inspection or a citation, and how many family notes were sent. A partial scan still sends this note. A job that writes no scan row still sends this note. A weekday says family notes are waiting for Sunday. A failed data check says no family mail went out. The same Loops admin template is used. No new template. Ned is not the recipient. On the Mac, a short placeholder in `.env.local` is ignored. The real Loops key and template id are read from Keychain services `starlynncare-loops-api-key` and `starlynncare-loops-admin-alert-id`, account `starlynncare`. GitHub already has those values as actions secrets.
+
+**Rejected:** Emailing families from the morning crawl. A second failure-only email on top of this report. Putting family addresses in the operator note. Republishing the Loops template.
+
+**Flag:** This does not change "the morning crawl itself still does not email" in the 2026-11 per-home watch entry. That sentence is about families. The operator note is new, and it is why a partial California morning is no longer only a line in a local log.
+
+**Source:** Blake, 2026-11-07. The California launchd job had been exiting 1 with the result only in `~/Library/Logs/StarlynnCare/ca-watch.log`.
+
+---
+
 ## 2026-11 — Each watched home is checked, and that home's note does not wait for the rest of the state
 
 **Decided:** California opens the report index for every home a signed-up person is watching, even when the statewide file matches, and those homes go first. A watched home whose own record gained an inspection, including a visit with no new citation, or gained a citation, is emailed on Sunday after the data check. A partial statewide scan can send that note. A +0 inspections / +0 citations fingerprint change does not. Area watches still wait for a completed scan. A failed or running scan sends nothing. The same scan is not sent twice. The morning crawl itself still does not email. There is no one-recipient proof. `--send` sends to every matching watcher. `--recipient-only` is an optional manual limiter. An unread watched home whose statewide row did not change is carried over, so one dark index does not fail the state. An unread home whose row changed today still fails the run, and that failure does not block a different home that was read.

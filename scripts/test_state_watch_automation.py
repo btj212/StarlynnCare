@@ -212,7 +212,12 @@ class StateWatchAutomationTests(unittest.TestCase):
             "(github.event_name == 'workflow_dispatch' && inputs.dispatch_alerts))",
             workflow,
         )
-        self.assertIn("No subscriber alerts were sent.", workflow)
+        self.assertIn("always() && steps.ingest.outputs.skip != 'true'", workflow)
+        self.assertIn("scripts/report_scan_run.py", workflow)
+        report = (
+            Path(__file__).resolve().parents[1] / "scripts" / "report_scan_run.py"
+        ).read_text()
+        self.assertIn("No subscriber alerts were sent.", report)
         self.assertNotIn("Subscriber alerts still went out", workflow)
 
     def test_non_publishable_directory_churn_does_not_alert_families(self) -> None:
