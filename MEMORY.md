@@ -6,9 +6,21 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Colorado plans are shown with a break before each glued heading
+
+**Decided:** Colorado findings use "The home's plan of correction". `format_plan_text` inserts a blank line before a known heading when the workbook glued it to the previous character, and after it when the next word is glued on. It does not change any word, and a second run does nothing. The sentence "A plan of correction was not required for this citation" is not a plan and is not shown. Lookup excerpts include Colorado.
+
+**Rejected:** Leaving the cell as one line. Inserting a break before every "Monitoring", including the sentence "Monitoring will continue." Adding spaces inside words.
+
+**Reverses:** The Colorado exclusion in "A profile shows a plan of correction only when the stored text is the real follow-up" (2026-11). The cause was the workbook cell, not `join_parts`.
+
+**Source:** The 221 published plans. Glued headings include Plan of Correction, Corrective Action, Cross-reference, Monitoring, Identification of, Completion Date, Compliance Date, Date Survey Completed, and Addendum.
+
+---
+
 ## 2026-11 — AI assistants may fetch the facility API and look up one home
 
-**Decided:** `robots.txt` allows `/api/facilities/` for GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and CCBot. The longer allow wins over `Disallow: /api/`. Every other crawler still skips `/api/`, and the JSON stays `noindex`. `GET /api/facilities/{state}/lookup?q=` returns up to 5 publishable homes in that state by name or license number. `serious_findings` uses the report's rule: a Type A citation or severity 3 or higher in the last 24 months, and null when half or more of that home's findings have no class and no severity. A measured zero stays zero. A database error is HTTP 500, not an empty match list. Plan excerpts are included only for Pennsylvania, Oregon, and Utah, and only when the stored text is at least 40 characters.
+**Decided:** `robots.txt` allows `/api/facilities/` for GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and CCBot. The longer allow wins over `Disallow: /api/`. Every other crawler still skips `/api/`, and the JSON stays `noindex`. `GET /api/facilities/{state}/lookup?q=` returns up to 5 publishable homes in that state by name or license number. `serious_findings` uses the report's rule: a Type A citation or severity 3 or higher in the last 24 months, and null when half or more of that home's findings have no class and no severity. A measured zero stays zero. A database error is HTTP 500, not an empty match list. Plan excerpts are included only for Pennsylvania, Oregon, Utah, and Colorado, and only when the stored text is at least 40 characters. A sentence that says a plan was not required is left out.
 
 **Rejected:** Opening all of `/api/` to every crawler. Letting Google index the JSON. Treating a failed count as "no such home."
 
@@ -18,9 +30,9 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ## 2026-11 — A profile shows a plan of correction only when the stored text is the real follow-up
 
-**Decided:** On a facility profile, a finding can show the stored `plan_of_correction` when `StateProfileConfig.followUp.label` is set and the trimmed text is at least 40 characters. Pennsylvania and Oregon use "The home's plan of correction". Utah uses "The state's follow-up", because those notes are the licensor's or surveyor's check, not the home's own plan. Pennsylvania also shows "Marked corrected on the DHS report" or "Not marked corrected" from `status`, and a fine chip from `civil_money_penalty`. Illinois shows the fine only. Arizona, Colorado, and every other state show none of this.
+**Decided:** On a facility profile, a finding can show the stored `plan_of_correction` when `StateProfileConfig.followUp.label` is set and the trimmed text is at least 40 characters. Pennsylvania and Oregon use "The home's plan of correction". Utah uses "The state's follow-up", because those notes are the licensor's or surveyor's check, not the home's own plan. Pennsylvania also shows "Marked corrected on the DHS report" or "Not marked corrected" from `status`, and a fine chip from `civil_money_penalty`. Illinois shows the fine only. Arizona and every other state show none of this. Colorado was added the same day, in the entry above.
 
-**Rejected:** Showing Arizona's 11,973 rows. Each one is the stub `View`. Showing Colorado's 244 plans. The parser joins the headings onto the first word. Showing Illinois `status`. The backfill writes `open` on every row, so it is not a correction flag. Clearing those columns in place.
+**Rejected:** Showing Arizona's 11,973 rows. Each one is the stub `View`. Showing Illinois `status`. The backfill writes `open` on every row, so it is not a correction flag. Clearing those columns in place. The Colorado exclusion in the first draft of this entry was reversed the same day. The workbook cell itself has no line breaks. `join_parts` was not the cause.
 
 **Source:** Counts on 2026-11-07. Pennsylvania had 19,986 plans of at least 40 characters, 16,629 corrected and 665 not corrected, and 279 fines. Oregon had 1,804 plans. Utah had 347 follow-ups. Illinois had 439 fines.
 

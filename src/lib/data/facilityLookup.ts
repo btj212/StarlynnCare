@@ -18,8 +18,8 @@ const RECENT_FINDINGS = 3;
 const EXCERPT_CHARS = 500;
 const MIN_PLAN_CHARS = 40;
 
-/** States whose stored plan text is a real follow-up, not a stub or a parser join. */
-const PLAN_EXCERPT_STATES = new Set(["PA", "OR", "UT"]);
+/** States whose stored plan text is a real follow-up, not a stub. */
+const PLAN_EXCERPT_STATES = new Set(["PA", "OR", "UT", "CO"]);
 
 const UNMEASURED_NOTE =
   "A serious count is not shown. Half or more of this home's findings in the last 24 months have no citation class and no stored severity.";
@@ -82,6 +82,7 @@ function planExcerpt(stateCode: string, value: string | null): string | null {
   if (!PLAN_EXCERPT_STATES.has(stateCode)) return null;
   const text = value?.trim() ?? "";
   if (text.length < MIN_PLAN_CHARS) return null;
+  if (/^a plan of correction was not required\b/i.test(text)) return null;
   return excerpt(text);
 }
 

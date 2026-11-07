@@ -34,6 +34,7 @@ from scrapers.co_hfq_parse import (
     REASON_UNMATCHED,
     assemble,
     canonical_id,
+    format_plan_text,
     join_parts,
     map_severity,
     normalize_citation_code,
@@ -146,6 +147,36 @@ class ColoradoIdAndTextTests(unittest.TestCase):
         self.assertEqual(parsed["citation_text"], "Staff had no check.")
         self.assertEqual(parsed["plan_of_correction"], "Corrected the file.")
         self.assertEqual(join_parts("hello", None, "NULL", "world"), "helloworld")
+
+    def test_glued_plan_headings_gain_a_blank_line_and_no_new_words(self) -> None:
+        """A family should see the heading on its own line. The home's words stay the words."""
+        raw = (
+            "Brookdale Skyline State Review2/23/23Plan of Correction"
+            "(Cross-reference Q734)Corrective ActionOn 3/31/23 the home retrained staff. "
+            "Monitoring will continue."
+        )
+        once = format_plan_text(raw)
+        self.assertEqual(format_plan_text(once), once)
+        self.assertEqual(once.replace("\n", ""), raw)
+        self.assertIn("State Review\n\n2/23/23", once)
+        self.assertIn("\n\nPlan of Correction\n\n(Cross-reference Q734)", once)
+        self.assertIn("\n\nCorrective Action\n\nOn 3/31/23", once)
+        self.assertIn("Monitoring will continue.", once)
+        self.assertNotIn("\nMonitoring will", once)
+
+        taken = format_plan_text("done.Corrective Action Taken: retrained")
+        self.assertIn("\n\nCorrective Action Taken: retrained", taken)
+        self.assertNotIn("Corrective Action\n\nTaken", taken)
+
+        caps = "done.PLAN OF CORRECTIONThe home retrained staff."
+        broken = format_plan_text(caps)
+        self.assertIn("PLAN OF CORRECTION\n\nThe home retrained staff.", broken)
+        self.assertEqual(broken.replace("\n", ""), caps)
+        disclaimer = (
+            "The following plan of correction, for the deficiencies, "
+            "does not constitute an admission."
+        )
+        self.assertEqual(format_plan_text(disclaimer), disclaimer)
 
 
 class ColoradoSeverityTests(unittest.TestCase):
