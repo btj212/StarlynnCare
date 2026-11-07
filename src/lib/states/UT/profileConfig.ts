@@ -47,6 +47,8 @@ export const utProfileConfig: StateProfileConfig = {
   formatSeverityTag: utFormatSeverityTag,
   formNameForDeficiency: () => null,
   regulatorPortalUrl: "https://ccl.utah.gov",
+  // Every stored note is a licensor, surveyor, or office follow-up, not the home's plan.
+  followUp: { label: "The state's follow-up" },
   // Full R432-270 rule cards TBD. Statute: https://rules.utah.gov/publicat/code/r432/r432-270.htm
   rulebook: [],
 };

@@ -46,6 +46,8 @@ export const ilProfileConfig: StateProfileConfig = {
   formatSeverityTag: ilFormatSeverityTag,
   formNameForDeficiency: () => null,
   regulatorPortalUrl: "https://llcs.dph.illinois.gov/s/?language=en_US",
+  // Fines are real. `status` is "open" on every row because the backfill defaults it, so it stays hidden.
+  followUp: { showFine: true },
   deficiencyTextIsRuleOnly: true,
   // Part 295 rule cards TBD — ship empty array per OR/UT pattern.
   // Statute: https://www.ilga.gov/agencies/JCAR/Sections?PartID=07700295

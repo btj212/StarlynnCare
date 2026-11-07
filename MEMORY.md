@@ -6,6 +6,14 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — A profile shows a plan of correction only when the stored text is the real follow-up
+
+**Decided:** On a facility profile, a finding can show the stored `plan_of_correction` when `StateProfileConfig.followUp.label` is set and the trimmed text is at least 40 characters. Pennsylvania and Oregon use "The home's plan of correction". Utah uses "The state's follow-up", because those notes are the licensor's or surveyor's check, not the home's own plan. Pennsylvania also shows "Marked corrected on the DHS report" or "Not marked corrected" from `status`, and a fine chip from `civil_money_penalty`. Illinois shows the fine only. Arizona, Colorado, and every other state show none of this.
+
+**Rejected:** Showing Arizona's 11,973 rows. Each one is the stub `View`. Showing Colorado's 244 plans. The parser joins the headings onto the first word. Showing Illinois `status`. The backfill writes `open` on every row, so it is not a correction flag. Clearing those columns in place.
+
+**Source:** Counts on 2026-11-07. Pennsylvania had 19,986 plans of at least 40 characters, 16,629 corrected and 665 not corrected, and 279 fines. Oregon had 1,804 plans. Utah had 347 follow-ups. Illinois had 439 fines.
+
 ## 2026-11 — Facility Watch is free through the records request
 
 **Decided:** Ongoing Facility Watch is free. A records request shows a checked box, “Also email me when the state posts a new inspection of this home.” Leaving it checked sets `alerts_eligible` and a `facility_watch` commitment for that home only. Unchecking keeps the one-time record email. Texas, Missouri, and Colorado do not offer the box, because those scans are not dependable enough to promise an update. A later request never turns an existing watch off. The $9 Premium block is off the facility page. Stripe billing stays for anyone already paying until they cancel. Past records requesters in eligible states are enrolled by `scripts/enroll_records_watchers.py` with `baseline_at` set to now, no welcome email, and no Loops event. Tour-pack rows stay one-time.
