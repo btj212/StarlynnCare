@@ -975,10 +975,12 @@ def _process_poc_batch(
                         f"  [worker {worker_id}] error insp={insp_id} sf={sf_insp_id}: {exc}",
                         flush=True,
                     )
+                    # A dead browser keeps timing out. A new page on that browser does not.
                     try:
-                        page.close()
+                        browser.close()
                     except Exception:
                         pass
+                    browser = pw.chromium.launch(headless=True)
                     page = browser.new_page()
                     page.set_default_timeout(25_000)
                     page.set_default_navigation_timeout(45_000)
