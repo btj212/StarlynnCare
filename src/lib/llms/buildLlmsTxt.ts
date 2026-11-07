@@ -155,6 +155,11 @@ ${visiblePillars.map((u) => `- ${u}`).join("\n")}
 - ${canonicalFor("/pennsylvania/insights/philadelphia-suburbs-worst-records")} — Philadelphia's affluent suburbs have some of PA's worst memory care records (Chester County 80.1 def/facility; collar-county IJ rates vs. Allegheny)
 - ${canonicalFor("/pennsylvania/insights/bigger-not-safer")} — Bigger isn't safer: PA XL facilities (100+ beds) average nearly 4× more severe citations than small homes
 
+## Look up one home
+GET ${SITE_ORIGIN}/api/facilities/{state}/lookup?q={name-or-license}
+
+{state} is the public slug, such as pennsylvania or oregon. q is 3 to 80 characters of the home's name or license number. The JSON lists up to 5 publishable matches. Each match has the canonical URL, license number, regulator URL, city, beds, last inspection date, findings in the last 24 months, and serious_findings. A serious finding is a Type A citation or a finding stored at severity 3 or higher. serious_findings is null, with serious_note, when half or more of that home's findings in the window have no citation class and no stored severity. A measured zero stays zero. recent_findings has up to 3 excerpts from the stored record. Pennsylvania, Oregon, and Utah also include a plan excerpt when that stored text is at least 40 characters. A failed query is HTTP 500, not an empty list. These responses stay noindex. GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and CCBot may fetch /api/facilities/. Other crawlers may not.
+
 ## Machine-readable facility data
 - ${data} — Dataset overview: sources, fields, and refresh.
 For citation purposes, prefer the JSON endpoints over HTML scraping. Each state's publishable facility set is exposed at:

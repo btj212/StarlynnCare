@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — AI assistants may fetch the facility API and look up one home
+
+**Decided:** `robots.txt` allows `/api/facilities/` for GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and CCBot. The longer allow wins over `Disallow: /api/`. Every other crawler still skips `/api/`, and the JSON stays `noindex`. `GET /api/facilities/{state}/lookup?q=` returns up to 5 publishable homes in that state by name or license number. `serious_findings` uses the report's rule: a Type A citation or severity 3 or higher in the last 24 months, and null when half or more of that home's findings have no class and no severity. A measured zero stays zero. A database error is HTTP 500, not an empty match list. Plan excerpts are included only for Pennsylvania, Oregon, and Utah, and only when the stored text is at least 40 characters.
+
+**Rejected:** Opening all of `/api/` to every crawler. Letting Google index the JSON. Treating a failed count as "no such home."
+
+**Source:** `llms.txt` already sent assistants to `/api/facilities/{state}` while `robots.txt` blocked `/api/`.
+
+---
+
 ## 2026-11 — A profile shows a plan of correction only when the stored text is the real follow-up
 
 **Decided:** On a facility profile, a finding can show the stored `plan_of_correction` when `StateProfileConfig.followUp.label` is set and the trimmed text is at least 40 characters. Pennsylvania and Oregon use "The home's plan of correction". Utah uses "The state's follow-up", because those notes are the licensor's or surveyor's check, not the home's own plan. Pennsylvania also shows "Marked corrected on the DHS report" or "Not marked corrected" from `status`, and a fine chip from `civil_money_penalty`. Illinois shows the fine only. Arizona, Colorado, and every other state show none of this.
