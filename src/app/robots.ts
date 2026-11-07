@@ -2,38 +2,21 @@ import type { MetadataRoute } from "next";
 
 const DISALLOWED = ["/admin", "/admin/", "/api/", "/unlock", "/sign-in", "/preferences", "/unsubscribe"];
 
+/**
+ * These agents may read the facility JSON. `/api/facilities/` is the longer
+ * match, so it wins over `Disallow: /api/`. Every other crawler still skips
+ * `/api/`, and the responses stay noindex.
+ */
+const AI_AGENTS = ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended", "CCBot"];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      // Explicit opt-in for AI training/indexing crawlers so our inspection
-      // data surfaces in LLM knowledge bases. Keep Disallow matching the
-      // wildcard rule so auth surfaces are excluded from all crawlers.
-      {
-        userAgent: "GPTBot",
-        allow: "/",
+      ...AI_AGENTS.map((userAgent) => ({
+        userAgent,
+        allow: ["/", "/api/facilities/"],
         disallow: DISALLOWED,
-      },
-      {
-        userAgent: "ClaudeBot",
-        allow: "/",
-        disallow: DISALLOWED,
-      },
-      {
-        userAgent: "PerplexityBot",
-        allow: "/",
-        disallow: DISALLOWED,
-      },
-      {
-        userAgent: "Google-Extended",
-        allow: "/",
-        disallow: DISALLOWED,
-      },
-      {
-        userAgent: "CCBot",
-        allow: "/",
-        disallow: DISALLOWED,
-      },
-      // Default — all other crawlers
+      })),
       {
         userAgent: "*",
         allow: "/",

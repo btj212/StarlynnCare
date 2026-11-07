@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — AI assistants may fetch the facility API and look up one home
+
+**Decided:** `robots.txt` allows `/api/facilities/` for GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and CCBot. The longer allow wins over `Disallow: /api/`. Every other crawler still skips `/api/`, and the JSON stays `noindex`. `GET /api/facilities/{state}/lookup?q=` returns up to 5 publishable homes in that state by name or license number. `serious_findings` uses the report's rule: a Type A citation or severity 3 or higher in the last 24 months, and null when half or more of that home's findings have no class and no severity. A measured zero stays zero. A database error is HTTP 500, not an empty match list. Plan excerpts are included only for Pennsylvania, Oregon, and Utah, and only when the stored text is at least 40 characters.
+
+**Rejected:** Opening all of `/api/` to every crawler. Letting Google index the JSON. Treating a failed count as "no such home."
+
+**Source:** `llms.txt` already sent assistants to `/api/facilities/{state}` while `robots.txt` blocked `/api/`.
+
+---
+
 ## 2026-11 — Facility Watch is free through the records request
 
 **Decided:** Ongoing Facility Watch is free. A records request shows a checked box, “Also email me when the state posts a new inspection of this home.” Leaving it checked sets `alerts_eligible` and a `facility_watch` commitment for that home only. Unchecking keeps the one-time record email. Texas, Missouri, and Colorado do not offer the box, because those scans are not dependable enough to promise an update. A later request never turns an existing watch off. The $9 Premium block is off the facility page. Stripe billing stays for anyone already paying until they cancel. Past records requesters in eligible states are enrolled by `scripts/enroll_records_watchers.py` with `baseline_at` set to now, no welcome email, and no Loops event. Tour-pack rows stay one-time.
