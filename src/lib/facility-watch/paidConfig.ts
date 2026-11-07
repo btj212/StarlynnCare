@@ -5,8 +5,15 @@
  * price/secret env vars. Unsupported states never show the paid CTA.
  */
 
-/** States whose official-record weekly scan is not yet dependable enough for paid promises. */
+/** States whose official-record weekly scan is not yet dependable enough to promise updates. */
 export const PAID_WATCH_EXCLUDED_STATE_CODES = new Set(["TX", "MO", "CO"]);
+
+/** Shown checked on a records request. The server still decides whether alerts start. */
+export const FACILITY_WATCH_ALERTS_COPY =
+  "Also email me when the state posts a new inspection of this home.";
+
+export const FACILITY_WATCH_ALERTS_CONFIRM =
+  "We'll also email you when the state posts a new inspection of this home.";
 
 export const PAID_WATCH_MONTHLY_USD = 9;
 export const PAID_WATCH_ANNUAL_USD = 59;
@@ -18,7 +25,7 @@ export function isPaidFacilityWatchEnabled(): boolean {
   return process.env.FACILITY_WATCH_PAID_ENABLED === "1";
 }
 
-export function isPaidWatchStateEligible(
+export function isWatchStateEligible(
   stateCode: string | null | undefined,
 ): boolean {
   if (!stateCode) return false;
@@ -29,5 +36,5 @@ export function isPaidWatchStateEligible(
 export function shouldShowPaidFacilityWatch(
   stateCode: string | null | undefined,
 ): boolean {
-  return isPaidFacilityWatchEnabled() && isPaidWatchStateEligible(stateCode);
+  return isPaidFacilityWatchEnabled() && isWatchStateEligible(stateCode);
 }

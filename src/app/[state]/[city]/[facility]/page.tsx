@@ -23,13 +23,11 @@ import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
 import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
 import { FacilityFaq } from "@/components/facility/profile/FacilityFaq";
-import { FacilityWatchPremiumAnchor } from "@/components/facility/FacilityWatchPremiumAnchor";
 import { FacilityOfferBar } from "@/components/facility/FacilityOfferBar";
 import { FacilityOfferProvider } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityFullInspections } from "@/components/facility/profile/FacilityFullInspections";
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
 import { assignOffer } from "@/lib/facility/offers";
-import { shouldShowPaidFacilityWatch } from "@/lib/facility-watch/paidConfig";
 import { facilityMarkedNoindex } from "@/lib/seo/indexability";
 import { isArticleApproved } from "@/lib/content/articleReview";
 import { HOW_TO_CHECK } from "@/lib/content/howToCheckArticles";
@@ -246,7 +244,6 @@ export default async function FacilityPage({ params }: PageProps) {
   const profile = result as import("@/lib/facility/loadFacilityProfile").FacilityProfile;
   const { facility, state, county, backHref, backLabel } = profile;
   const offer = assignOffer(facility.id, facility.state_code);
-  const showPaidWatch = shouldShowPaidFacilityWatch(facility.state_code);
 
   return (
     <>
@@ -257,6 +254,7 @@ export default async function FacilityPage({ params }: PageProps) {
           offer={offer}
           facilityId={facility.id}
           facilityName={facility.name}
+          stateCode={facility.state_code}
         >
         <main className="bg-paper">
         <ComplianceFlagBanner flag={profile.complianceFlag} placement="top" />
@@ -274,10 +272,9 @@ export default async function FacilityPage({ params }: PageProps) {
           DOM order is unchanged, so SEO/E-E-A-T crawl order is preserved.
         */}
         <div className="flex flex-col">
-          {/* Quick facts strip + early Premium anchor (mobile-reachable) */}
+          {/* Quick facts strip */}
           <div className="order-1 md:order-none">
             <FacilityQuickFacts profile={profile} />
-            {showPaidWatch && <FacilityWatchPremiumAnchor />}
           </div>
 
           {/* § 01 · Snapshot — gallery + map (deferred below the facts on mobile) */}
@@ -290,11 +287,7 @@ export default async function FacilityPage({ params }: PageProps) {
             <FacilityPeerRank profile={profile} />
           </div>
 
-          {/* Facility Watch Premium checkout lives under the first inspection
-              summary in FacilityFullInspections (less mid-page CTA fatigue).
-              Early PremiumAnchor above still scrolls to that block. */}
-
-          {/* Shortlist save — shown alongside watch; both are conversion actions */}
+          {/* Shortlist save */}
           <div className="order-5 md:order-none border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
             <div className="mx-auto max-w-[1280px] px-4 md:px-8 py-4 flex items-center gap-4">
               <span className="text-sm text-ink-3">Save for comparison:</span>
@@ -332,8 +325,8 @@ export default async function FacilityPage({ params }: PageProps) {
 
         <FacilityFaq pairs={profile.faqPairs} />
 
-        {/* § 07 · Full inspection record (summary-first; Premium under first summary) */}
-        <FacilityFullInspections profile={profile} showPaidWatch={showPaidWatch} />
+        {/* § 07 · Full inspection record */}
+        <FacilityFullInspections profile={profile} />
 
         {/* Methodology credibility cap — RN reviewer, placed after the verbatim
             findings (the "View raw inspection records" target). Kept in DOM for

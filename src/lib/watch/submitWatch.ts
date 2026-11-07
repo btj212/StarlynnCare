@@ -5,6 +5,8 @@ export async function submitWatch(params: {
   source: string;
   /** Optional journey-stage intent: 'research' | 'touring' | 'resident'. */
   intent?: string;
+  /** Records requests only. True starts free inspection alerts for this home. */
+  alerts?: boolean;
   attribution?: Record<string, string>;
 }): Promise<{ ok: boolean; error?: string }> {
   try {

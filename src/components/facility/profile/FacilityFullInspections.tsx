@@ -517,6 +517,7 @@ export function FacilityFullInspections({
           <FullHistoryWaitlist
             facilityId={profile.facility.id}
             facilityName={profile.facility.name}
+            stateCode={profile.facility.state_code}
             hiddenCount={hiddenOlderCount}
             oldestYear={oldestHiddenYear}
           />

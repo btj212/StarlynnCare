@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Facility Watch is free through the records request
+
+**Decided:** Ongoing Facility Watch is free. A records request shows a checked box, “Also email me when the state posts a new inspection of this home.” Leaving it checked sets `alerts_eligible` and a `facility_watch` commitment for that home only. Unchecking keeps the one-time record email. Texas, Missouri, and Colorado do not offer the box, because those scans are not dependable enough to promise an update. A later request never turns an existing watch off. The $9 Premium block is off the facility page. Stripe billing stays for anyone already paying until they cancel. Past records requesters in eligible states are enrolled by `scripts/enroll_records_watchers.py` with `baseline_at` set to now, no welcome email, and no Loops event. Tour-pack rows stay one-time.
+
+**Rejected:** Automatic enrollment with no checkbox. Leaving the October records list out of alerts. Charging $9 a month for the same official-record email. Promising updates in TX, MO, or CO.
+
+**Reverses:** “Premium replaces free per-facility Facility Watch signup” (2026-07) and the “do not auto-enroll the current list” line in “Records offer won the facility-page test” (2026-10). Blake chose the enrollment on 2026-11-07.
+
+**Source:** `src/app/api/watch/route.ts`, `src/components/facility/offer/FacilityOfferProvider.tsx`, `scripts/enroll_records_watchers.py`.
+
+---
+
 ## 2026-11 — Inspection summaries say only what the public file supports
 
 **Decided:** A plain-English summary is stored on `inspections.narrative_summary` for every published visit. Illinois FOIA lines are rule numbers, violation classes, and fines. Those summaries name the 77 Ill. Adm. Code 295 section and say the file does not describe what the inspector saw. They are written in code, not by a model. A 295.4060 citation stays a citation of the dementia-program rule. It does not say the home has the Alzheimer's Special Care designation. Other states quote one sentence from the stored finding when that sentence exists, and say whether it is an account or a requirement. A real inspector narrative still goes to `summarize_inspections.py`, with a prompt for that state. Pennsylvania, Arizona, and Missouri do not fall through to the California Title 22 prompt. A visit with no citation text gets one sentence saying so. A model refusal is not a summary.

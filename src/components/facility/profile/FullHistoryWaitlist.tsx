@@ -3,19 +3,29 @@
 import { useState } from "react";
 import { submitWatch } from "@/lib/watch/submitWatch";
 import { SupportAsk } from "@/components/support/SupportAsk";
+import {
+  FACILITY_WATCH_ALERTS_CONFIRM,
+  FACILITY_WATCH_ALERTS_COPY,
+  isWatchStateEligible,
+} from "@/lib/facility-watch/paidConfig";
 
 export function FullHistoryWaitlist({
   facilityId,
   facilityName,
+  stateCode,
   hiddenCount,
   oldestYear,
 }: {
   facilityId: string;
   facilityName: string;
+  stateCode: string;
   hiddenCount: number;
   oldestYear: number;
 }) {
+  const alertsAvailable = isWatchStateEligible(stateCode);
   const [email, setEmail] = useState("");
+  const [alerts, setAlerts] = useState(true);
+  const [alertsRequested, setAlertsRequested] = useState(false);
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -23,13 +33,16 @@ export function FullHistoryWaitlist({
     e.preventDefault();
     if (!email.trim()) return;
     setStatus("submitting");
+    const requestAlerts = alertsAvailable && alerts;
     const result = await submitWatch({
       email: email.trim(),
       facilityId,
       facilityName,
       source: "records_pull_interest",
       intent: "research",
+      alerts: requestAlerts,
     });
+    if (result.ok) setAlertsRequested(requestAlerts);
     if (result.ok) {
       setStatus("done");
     } else {
@@ -54,27 +67,42 @@ export function FullHistoryWaitlist({
         </div>
 
         {status === "done" ? (
-          <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-wide text-teal-deep whitespace-nowrap shrink-0">
+          <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-wide text-teal-deep shrink-0">
             ✓ On the list — we&apos;ll send the full record to your inbox.
+            {alertsRequested ? ` ${FACILITY_WATCH_ALERTS_CONFIRM}` : ""}
           </span>
         ) : (
-          <form onSubmit={handleSubmit} className="flex items-center gap-2 shrink-0">
-            <input
-              type="email"
-              required
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={status === "submitting"}
-              className="font-[family-name:var(--font-mono)] text-[11px] border border-paper-rule bg-paper rounded px-2.5 py-1.5 w-44 placeholder:text-ink-4 focus:outline-none focus:border-teal disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={status === "submitting"}
-              className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.07em] bg-teal text-white px-3 py-1.5 rounded hover:bg-teal-deep transition-colors disabled:opacity-50 whitespace-nowrap"
-            >
-              {status === "submitting" ? "Sending…" : "Get full record"}
-            </button>
+          <form onSubmit={handleSubmit} className="flex flex-col items-stretch gap-2 shrink-0 sm:items-end">
+            <div className="flex items-center gap-2">
+              <input
+                type="email"
+                required
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={status === "submitting"}
+                className="font-[family-name:var(--font-mono)] text-[11px] border border-paper-rule bg-paper rounded px-2.5 py-1.5 w-44 placeholder:text-ink-4 focus:outline-none focus:border-teal disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={status === "submitting"}
+                className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.07em] bg-teal text-white px-3 py-1.5 rounded hover:bg-teal-deep transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                {status === "submitting" ? "Sending…" : "Get full record"}
+              </button>
+            </div>
+            {alertsAvailable ? (
+              <label className="flex max-w-[280px] items-start gap-2 font-[family-name:var(--font-mono)] text-[11px] leading-snug text-ink-3">
+                <input
+                  type="checkbox"
+                  checked={alerts}
+                  onChange={(e) => setAlerts(e.target.checked)}
+                  disabled={status === "submitting"}
+                  className="mt-0.5"
+                />
+                <span>{FACILITY_WATCH_ALERTS_COPY}</span>
+              </label>
+            ) : null}
           </form>
         )}
       </div>

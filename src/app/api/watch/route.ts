@@ -14,10 +14,11 @@ import { readAttribution } from "@/lib/customers/attribution";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { isValidEmail } from "@/lib/security/email";
+import { isWatchStateEligible } from "@/lib/facility-watch/paidConfig";
 
 /**
- * Retired free Facility Watch enrollment sources. New visitors cannot open an
- * ongoing official-alert watch this way — use paid Facility Watch instead.
+ * Retired free Facility Watch enrollment sources. Ongoing alerts now start
+ * from a records request when the family leaves the box checked.
  * Existing facility_watchers rows remain eligible for dispatch.
  */
 const RETIRED_FREE_WATCH_SOURCES = new Set([
@@ -37,6 +38,9 @@ const ONE_TIME_EMAIL_SOURCES = new Set([
   "report_waitlist",
 ]);
 
+/** A checked box on these sources can start free inspection alerts. */
+const RECORDS_ALERT_SOURCES = new Set(["offer_records", "records_pull_interest"]);
+
 export async function POST(req: NextRequest) {
   const limit = await rateLimit(`watch:${clientIp(req)}`, 5, 10 * 60);
   if (!limit.allowed) {
@@ -52,6 +56,7 @@ export async function POST(req: NextRequest) {
     facilityName?: string;
     source?: string;
     intent?: string;
+    alerts?: boolean;
     [HONEYPOT_FIELD]?: unknown;
     [HONEYPOT_TS_FIELD]?: unknown;
   };
@@ -82,7 +87,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Free Facility Watch signup is no longer available. Use Facility Watch Premium on the facility page.",
+          "That signup is closed. Request the full record on the facility page to get updates.",
       },
       { status: 410 },
     );
@@ -109,7 +114,28 @@ export async function POST(req: NextRequest) {
   const supabase = getServiceClient();
   const confirmedAt = new Date().toISOString();
 
-  // One-time leads are not eligible for ongoing official-record alert dispatch.
+  const { data: facilityRow } = await supabase
+    .from("facilities")
+    .select("state_code")
+    .eq("id", facilityId)
+    .maybeSingle();
+  const stateCode =
+    facilityRow && typeof facilityRow.state_code === "string" ? facilityRow.state_code : null;
+
+  const { data: existingWatcher } = await supabase
+    .from("facility_watchers")
+    .select("alerts_eligible")
+    .eq("email", normalizedEmail)
+    .eq("facility_id", facilityId)
+    .maybeSingle();
+  const alreadyEligible = existingWatcher?.alerts_eligible === true;
+  const grantAlerts =
+    body.alerts === true &&
+    RECORDS_ALERT_SOURCES.has(offerSource) &&
+    isWatchStateEligible(stateCode);
+  // A later one-time request must not turn an existing watch off.
+  const alertsEligible = alreadyEligible || grantAlerts;
+
   const { data, error } = await supabase
     .from("facility_watchers")
     .upsert(
@@ -118,9 +144,10 @@ export async function POST(req: NextRequest) {
         facility_id: facilityId,
         source: offerSource,
         confirmed_at: confirmedAt,
-        baseline_at: confirmedAt,
-        last_successful_scan_at: null,
-        alerts_eligible: false,
+        alerts_eligible: alertsEligible,
+        ...(alreadyEligible
+          ? {}
+          : { baseline_at: confirmedAt, last_successful_scan_at: null }),
         ...(safeIntent ? { intent: safeIntent } : {}),
       },
       { onConflict: "email,facility_id", ignoreDuplicates: false },
@@ -154,6 +181,26 @@ export async function POST(req: NextRequest) {
       ...(safeIntent ? { watchIntent: safeIntent } : {}),
     },
   });
+
+  if (grantAlerts) {
+    await registerCustomerCommitment({
+      email: normalizedEmail,
+      product: "facility_watch",
+      subjectKey: facilityId,
+      source: offerSource,
+      status: "active",
+      facilityId,
+      metadata: { alerts: true },
+      contact: {
+        email: normalizedEmail,
+        userGroup: "facility_watch",
+        source: offerSource,
+        facilityName,
+        facilityId,
+        journeyStage,
+      },
+    });
+  }
 
   let sent = false;
   try {
@@ -218,7 +265,7 @@ export async function POST(req: NextRequest) {
     payload: {
       facilityName,
       facilityId,
-      alertsEligible: false,
+      alertsEligible,
       ...(safeIntent ? { intent: safeIntent } : {}),
     },
   }).catch((err) => console.error("[watch] recordSubmission failed:", err));

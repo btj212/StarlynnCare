@@ -18,7 +18,11 @@ import {
 } from "@/lib/analytics/clarityEvents";
 import { submitWatch } from "@/lib/watch/submitWatch";
 import { captureAttribution } from "@/lib/customers/attribution";
-import { PAID_WATCH_ANCHOR } from "@/lib/facility-watch/paidConfig";
+import {
+  FACILITY_WATCH_ALERTS_CONFIRM,
+  FACILITY_WATCH_ALERTS_COPY,
+  isWatchStateEligible,
+} from "@/lib/facility-watch/paidConfig";
 import { SupportAsk } from "@/components/support/SupportAsk";
 
 /* ── Context ─────────────────────────────────────────────────── */
@@ -47,14 +51,19 @@ function OfferModal({
   offer,
   facilityId,
   facilityName,
+  stateCode,
   onClose,
 }: {
   offer: Offer;
   facilityId: string;
   facilityName: string;
+  stateCode: string;
   onClose: () => void;
 }) {
+  const alertsAvailable = offer.id === "records" && isWatchStateEligible(stateCode);
   const [email, setEmail] = useState("");
+  const [alerts, setAlerts] = useState(true);
+  const [alertsRequested, setAlertsRequested] = useState(false);
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [tourState, setTourState] = useState<FormState>("idle");
@@ -65,23 +74,18 @@ function OfferModal({
     setFormState("submitting");
     setErrorMsg("");
 
-    // Paid Facility Watch never uses this modal — only records/tour email offers.
-    if (offer.id === "watch") {
-      setErrorMsg("Facility Watch is available on the page below.");
-      setFormState("error");
-      return;
-    }
-
+    const requestAlerts = alertsAvailable && alerts;
     const result = await submitWatch({
       email: email.trim(),
       facilityId,
       facilityName,
       source: `offer_${offer.id}`,
       intent: offer.journeyStage === "search" ? "research" : "touring",
+      alerts: requestAlerts,
       attribution: captureAttribution(),
     });
-
     if (result.ok) {
+      setAlertsRequested(requestAlerts);
       emitOfferConvert(offer.id);
       setFormState("success");
     } else {
@@ -117,6 +121,11 @@ function OfferModal({
             <p className="font-[family-name:var(--font-display)] text-[20px] leading-[1.35] text-ink">
               Check your inbox in the next few minutes.
             </p>
+            {alertsRequested ? (
+              <p className="mt-3 font-[family-name:var(--font-mono)] text-[12px] leading-relaxed text-ink-2">
+                {FACILITY_WATCH_ALERTS_CONFIRM}
+              </p>
+            ) : null}
             <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
@@ -152,16 +161,6 @@ function OfferModal({
               >
                 About to sign? Decode the contract
               </a>
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  document.getElementById(PAID_WATCH_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="flex h-11 w-full items-center justify-center rounded-xl border border-clearing-rule-2 font-[family-name:var(--font-sans)] text-[14px] font-semibold text-ink"
-              >
-                Already living here? Facility Watch
-              </button>
             </div>
             <p className="mt-3 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-3">
               No spam. Unsubscribe any time.
@@ -192,6 +191,18 @@ function OfferModal({
                 disabled={formState === "submitting"}
                 className="h-12 w-full rounded-xl border border-clearing-rule-2 bg-clearing-bg px-3 font-[family-name:var(--font-sans)] text-[14px] text-ink placeholder:text-ink-4 transition-colors focus:border-teal focus:outline-none"
               />
+              {alertsAvailable ? (
+                <label className="flex items-start gap-2 font-[family-name:var(--font-mono)] text-[12px] leading-snug text-ink-2">
+                  <input
+                    type="checkbox"
+                    checked={alerts}
+                    onChange={(e) => setAlerts(e.target.checked)}
+                    disabled={formState === "submitting"}
+                    className="mt-0.5"
+                  />
+                  <span>{FACILITY_WATCH_ALERTS_COPY}</span>
+                </label>
+              ) : null}
               <button
                 type="submit"
                 disabled={formState === "submitting" || !email.trim()}
@@ -223,11 +234,13 @@ export function FacilityOfferProvider({
   offer,
   facilityId,
   facilityName,
+  stateCode,
   children,
 }: {
   offer: Offer;
   facilityId: string;
   facilityName: string;
+  stateCode: string;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -239,37 +252,28 @@ export function FacilityOfferProvider({
   }, [offer.id]);
 
   const openModal = useCallback(() => {
-    if (offer.id === "watch" || offer.kind === "anchor") return;
+    if (offer.kind !== "email") return;
     setModalOpen(true);
-  }, [offer.id, offer.kind]);
+  }, [offer.kind]);
 
   const triggerOffer = useCallback(() => {
     emitOfferClick(offer.id);
-    if (offer.kind === "anchor") {
-      const el = document.getElementById(PAID_WATCH_ANCHOR);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-        window.history.replaceState(null, "", `#${PAID_WATCH_ANCHOR}`);
-        window.dispatchEvent(new HashChangeEvent("hashchange"));
-      }
-      return;
-    }
     if (offer.kind === "route" && offer.href) {
       router.push(offer.href);
       return;
     }
-    if (offer.id === "watch") return;
     setModalOpen(true);
   }, [offer, router]);
 
   return (
     <Ctx.Provider value={{ offer, facilityId, facilityName, openModal, triggerOffer }}>
       {children}
-      {modalOpen && offer.kind === "email" && offer.id !== "watch" && (
+      {modalOpen && offer.kind === "email" && (
         <OfferModal
           offer={offer}
           facilityId={facilityId}
           facilityName={facilityName}
+          stateCode={stateCode}
           onClose={() => setModalOpen(false)}
         />
       )}

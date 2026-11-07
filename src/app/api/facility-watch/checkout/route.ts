@@ -4,7 +4,7 @@ import { getStripe, isStripeConfigured, priceIdForInterval } from "@/lib/stripe/
 import type { BillingInterval } from "@/lib/stripe/server";
 import {
   isPaidFacilityWatchEnabled,
-  isPaidWatchStateEligible,
+  isWatchStateEligible,
 } from "@/lib/facility-watch/paidConfig";
 import { upsertPendingCheckout } from "@/lib/facility-watch/subscriptions";
 import { canonicalFor } from "@/lib/seo/canonical";
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Facility not found" }, { status: 404 });
   }
 
-  if (!isPaidWatchStateEligible(facility.state_code)) {
+  if (!isWatchStateEligible(facility.state_code)) {
     return NextResponse.json(
       { error: "Paid Facility Watch is not available for this state yet." },
       { status: 400 },

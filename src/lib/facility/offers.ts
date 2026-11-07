@@ -2,17 +2,12 @@
  * Facility-page offer.
  *
  * The 2026 rotation test is over. Records requests were the only offer
- * families kept using, so every profile shows that offer. Premium still has
- * its own block lower on the page. Tour prep and contract review are offered
- * after someone asks for the record, not instead of it.
+ * families kept using, so every profile shows that offer. A checked box on
+ * that form starts free inspection alerts. Tour prep and contract review are
+ * offered after someone asks for the record, not instead of it.
  */
 
-import {
-  PAID_WATCH_ANCHOR,
-  PAID_WATCH_MONTHLY_USD,
-} from "@/lib/facility-watch/paidConfig";
-
-export type OfferId = "watch" | "records" | "contract" | "tour";
+export type OfferId = "records" | "contract" | "tour";
 
 export type Offer = {
   id: OfferId;
@@ -23,26 +18,15 @@ export type Offer = {
   ctaLabel: string;
   /** compact label for the sticky/bottom bar */
   ctaLabelCompact: string;
-  /** "email" = modal capture; "route" = navigate; "anchor" = scroll to on-page Premium */
-  kind: "email" | "route" | "anchor";
-  /** Set when kind is "route" or "anchor" */
+  /** "email" = modal capture; "route" = navigate */
+  kind: "email" | "route";
+  /** Set when kind is "route" */
   href?: string;
   /** journeyStage sent to /api/watch for email offers */
   journeyStage: string;
 };
 
 export const OFFERS: Offer[] = [
-  {
-    id: "watch",
-    eyebrow: "Facility Watch · Premium",
-    headline: "Does your loved one live here already?",
-    sub: `We monitor official inspection records plus news and public review mentions we can find across the web — $${PAID_WATCH_MONTHLY_USD}/month.`,
-    ctaLabel: "Start Facility Watch →",
-    ctaLabelCompact: "Watch →",
-    kind: "anchor",
-    href: `#${PAID_WATCH_ANCHOR}`,
-    journeyStage: "resident",
-  },
   {
     id: "records",
     eyebrow: "Full Inspection Record",
@@ -85,5 +69,5 @@ export function assignOffer(
 }
 
 export function getOfferById(id: OfferId): Offer {
-  return OFFERS.find((o) => o.id === id) ?? OFFERS[1];
+  return OFFERS.find((o) => o.id === id) ?? OFFERS[0];
 }
