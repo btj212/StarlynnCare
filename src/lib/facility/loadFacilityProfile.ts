@@ -150,6 +150,12 @@ export type DeficiencyRow = {
   inspector_narrative: string | null;
   state_severity_raw: string | null;
   is_repeat: boolean;
+  /** The home's plan, or the state's follow-up, when that state publishes one. */
+  plan_of_correction: string | null;
+  /** Dollars, when the state assessed a fine on this finding. Numeric columns arrive as strings. */
+  civil_money_penalty: string | number | null;
+  /** Pennsylvania uses this as the DHS corrected flag. Other states may store a default. */
+  status: string | null;
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -395,7 +401,7 @@ async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
   const { data: defData } = await supabase
     .from("deficiencies")
     .select(
-      "id, inspection_id, class, code, severity, scope, scope_severity_code, immediate_jeopardy, description, inspector_narrative, state_severity_raw, is_repeat",
+      "id, inspection_id, class, code, severity, scope, scope_severity_code, immediate_jeopardy, description, inspector_narrative, state_severity_raw, is_repeat, plan_of_correction, civil_money_penalty, status",
     )
     .in("inspection_id", inspIds);
 

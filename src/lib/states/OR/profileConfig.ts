@@ -32,5 +32,6 @@ export const orProfileConfig: StateProfileConfig = {
   formatSeverityTag: orFormatSeverityTag,
   formNameForDeficiency: () => null,
   regulatorPortalUrl: "https://ltclicensing.oregon.gov",
+  followUp: { label: "The home's plan of correction" },
   rulebook: [],
 };

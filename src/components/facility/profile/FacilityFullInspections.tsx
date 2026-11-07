@@ -27,6 +27,33 @@ function isPdfUrl(text: string | null | undefined): boolean {
   return !!text && URL_RE_UI.test(text.trim());
 }
 
+const MIN_FOLLOW_UP_CHARS = 40;
+
+/** A stored plan shorter than this is a stub such as Arizona's "View" link label. */
+function followUpText(value: string | null): string | null {
+  const text = value?.trim() ?? "";
+  return text.length >= MIN_FOLLOW_UP_CHARS ? text : null;
+}
+
+function formatFine(value: string | number | null): string | null {
+  if (value == null || value === "") return null;
+  const amount = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  const cents = Math.round(amount * 100) % 100;
+  return amount.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: cents === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function correctionLabel(status: string | null): string | null {
+  if (status === "corrected") return "Marked corrected on the DHS report";
+  if (status === "open") return "Not marked corrected";
+  return null;
+}
+
 function severityToneClass(tone: "danger" | "warn" | "info" | "ok" | "mute"): string {
   switch (tone) {
     case "danger": return "bg-rust text-white";
@@ -107,6 +134,58 @@ function DeficiencyBlock({
           </>
         );
       })()}
+      <FindingFollowUp def={def} cfg={cfg} />
+    </div>
+  );
+}
+
+function FindingFollowUp({
+  def,
+  cfg,
+}: {
+  def: DeficiencyRow;
+  cfg: FacilityProfile["cfg"];
+}) {
+  const followUp = cfg.followUp;
+  if (!followUp) return null;
+
+  const plan = followUp.label ? followUpText(def.plan_of_correction) : null;
+  const fine = followUp.showFine ? formatFine(def.civil_money_penalty) : null;
+  const correction = followUp.showStatus ? correctionLabel(def.status) : null;
+  if (!plan && !fine && !correction) return null;
+
+  return (
+    <div className="mt-3">
+      {(correction || fine) && (
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          {correction && (
+            <span
+              className={`font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wide px-1.5 py-0.5 ${
+                def.status === "corrected"
+                  ? "bg-teal-soft text-teal-deep"
+                  : "bg-gold-soft text-amber-700"
+              }`}
+            >
+              {correction}
+            </span>
+          )}
+          {fine && (
+            <span className="bg-paper px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wide text-ink-2">
+              Fine: {fine}
+            </span>
+          )}
+        </div>
+      )}
+      {plan && followUp.label && (
+        <details>
+          <summary className="cursor-pointer font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] text-ink-3">
+            {followUp.label}
+          </summary>
+          <p className="mt-2 whitespace-pre-wrap font-[family-name:var(--font-sans)] text-[15px] leading-relaxed text-ink-2">
+            {plan}
+          </p>
+        </details>
+      )}
     </div>
   );
 }

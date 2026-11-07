@@ -65,6 +65,11 @@ export const paProfileConfig: StateProfileConfig = {
   formNameForDeficiency: () => null,
   regulatorPortalUrl:
     "https://www.humanservices.dhs.pa.gov/HUMAN_SERVICE_PROVIDER_DIRECTORY/",
+  followUp: {
+    label: "The home's plan of correction",
+    showStatus: true,
+    showFine: true,
+  },
   // 55 Pa Code Part IV rule cards — ship empty array per OR/UT/IL pattern.
   // Statutes: 55 Pa Code Ch 2600 (PCH) and Ch 2800 (ALR)
   rulebook: [],
