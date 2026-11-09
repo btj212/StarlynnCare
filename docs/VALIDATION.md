@@ -153,3 +153,12 @@ Where `peers` = same `state_code + care_category`, `publishable = true`. This pr
 | Opal Care labeled "highly rated" despite top-10% repeat citations | L1 cross-metric contradiction + L3 regression | Fixed |
 | `peer_rank_pct` stddev = 0 (all facilities returned 100) | L1 peer-rank distribution | Fixed |
 | Chain scorecard WCS drift after new inspection ingest | L2 chain scorecard reconciliation | Ongoing monitor |
+
+
+## Layer 6 — Live end-to-end proof (California)
+
+`python3 scripts/validate/e2e_live_ca.py [--n 8] [--license 306005546] [--max-reports 10] [--site URL]`
+
+No mocks or fixtures. Pulls the live CDSS statewide CSV and FacilityReports index/HTML, runs the production `parse_report`, and compares field by field to Supabase (read-only REST) and to the live facility page. Exit 0 = pass, 1 = a FAIL, 2 = a live source unreachable (inconclusive, not a pass).
+
+Rules baked in: the CDSS index is positional, so rows are matched on (date, type, complaint id) from the live report, never on the stored `inx`. `facilities.last_inspection_date` is intentionally blank for CA; the CSV Last Visit Date is compared to the newest inspection row. Run it from a network that can reach ccld.dss.ca.gov; report pages hang intermittently (ERRORS.md 2026-11), so expect retries and slow runs. Covers CA only; other states are not yet covered.
