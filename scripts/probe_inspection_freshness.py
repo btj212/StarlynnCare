@@ -490,6 +490,12 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   MN still pending vs LAST_MN_INSERT_BASELINE 2026-10-23 — operator: workflow_dispatch MN only.
 #   All other states no new probe-layer signal (CA/TX/WA/UT/IL/PA/AZ/MO/CO).
 #   Ingest blocked in automation env (no DATABASE_URL; workflow_dispatch HTTP 403).
+# Cron probe 2026-11-10T23:01 UTC: OR source max=2026-11-06 — 0 rows after ingested baseline;
+#   MN insertDate max=2026-11-10 (+102 events vs LAST_MN_INSERT_BASELINE 2026-10-23, incl. 6 on
+#   11/10; resolved source max=2026-11-02, +21 rows vs ingested max 2026-10-28); OR probe-layer clear.
+#   MN insert posting-delay batch still pending — operator: workflow_dispatch MN only (no alerts).
+#   CA/TX/WA/UT/IL/PA/AZ/MO/CO no new probe-layer signal vs Sunday GHA 42490606983.
+#   Ingest blocked in automation env (no DATABASE_URL; workflow_dispatch HTTP 403).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
