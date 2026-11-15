@@ -479,6 +479,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   max 2026-10-28). CA/TX/WA/UT/IL/PA/AZ/MO/CO no new probe-layer signal (need DB or manual capture).
 #   Ingest blocked here (no DATABASE_URL; workflow_dispatch HTTP 403). Operator: workflow_dispatch OR then MN.
 #   production_page_spot_check.py 153/153 pass pre-ingest.
+# Cron probe 2026-11-15T23:04 UTC: OR source max=2026-11-10 (+7 rows after baseline 2026-11-06 — unchanged vs 11/14);
+#   MN insertDate max=2026-11-11 (+107 events vs LAST_MN_INSERT_BASELINE 2026-10-23); MN resolved source max=2026-11-03
+#   (+5 vs ingested max 2026-10-28). CA Mac launchd; CO static HFQ; CA/TX/WA/UT/IL/PA/AZ/MO no probe-layer signal.
+#   Sunday GHA 43727623295 (2026-11-15 schedule) completed failure — OR/MN still pending. Ingest blocked (no DATABASE_URL;
+#   workflow_dispatch HTTP 403). production_page_spot_check.py 150/151 (transient SSL /missouri); curl 200; 151/151 effective.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
