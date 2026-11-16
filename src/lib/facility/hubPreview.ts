@@ -1,3 +1,5 @@
+import { facilityListedInSitemap } from "@/lib/seo/indexability";
+
 /** First set on a city hub. The rest stay on the crawlable facilities page. */
 export const HUB_PREVIEW_LIMIT = 24;
 export const HUB_ITEM_LIST_LIMIT = 50;
@@ -9,6 +11,25 @@ type RankedFacility = {
   total_citations: number;
   capacity_tier: string;
 };
+
+/**
+ * Every home a city page should link to, A to Z. It is the same set the facility
+ * sitemap asks Google to crawl, so a link never points at a noindex page.
+ */
+export function homesForCityIndex<
+  T extends { name: string; beds: number | null; inspections: number; total_citations: number },
+>(facilities: T[], stateCode: string): T[] {
+  return facilities
+    .filter((facility) =>
+      facilityListedInSitemap({
+        stateCode,
+        beds: facility.beds,
+        deficiencyCount: facility.total_citations,
+        inspectionCount: facility.inspections,
+      }),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
 function byEvidence(a: RankedFacility, b: RankedFacility): number {
   const aRecord = a.inspections > 0 ? 1 : 0;

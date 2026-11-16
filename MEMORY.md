@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Every city page lists every home, and related homes are the nearest ones
+
+**Decided:** A city page lists every home in the sitemap, A to Z, under the first 24 cards. A county page still links to its cities. The related rail on a facility profile is the 12 nearest homes in the same city, and the nearby-city rail is the 8 nearest in the county. Both come from `related_facilities` (migration 0072), which returns only homes that have an inspection and are not Arizona homes of 10 or fewer beds with no citations. That is the same rule as `src/lib/seo/indexability.ts`; change both together. A home with no coordinates gets its city's homes by name.
+
+**Rejected:** Ordering related homes by `last_inspection_date`. The column is empty for 4,392 published homes, so every profile in a city linked to the same 8. Linking noindex homes.
+
+**Source:** Search Console and Ahrefs brief, 2026-11-15: 62 of 4,575 facility pages rank, and the Mesa page linked 31 of its 145 homes. Mesa now links all 145, and each of the 145 is in at least one other home's related rail.
+
+---
+
 ## 2026-11 — Arizona plans are the home's words from the plan page
 
 **Decided:** Arizona findings use "The home's plan of correction". The stored text is the public plan page: the temporary solution, the person responsible, the permanent solution, monitoring, and the completion dates. Lookup excerpts include Arizona. A row that is still the label `View` is shorter than 40 characters and is not shown. Some older inspection pages never draw the findings grid, and some rule text no longer matches the stored finding. Those rows stay `View`.
