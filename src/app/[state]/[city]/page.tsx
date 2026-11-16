@@ -35,7 +35,9 @@ import { displayCityName } from "@/lib/resolveListingRegion";
 import { parentCountyForCity } from "@/lib/regions";
 import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
 import { loadPublishedHubContent, sanitizeHubHtml } from "@/lib/content/loadHubContent";
-import { formatCostRange, getStateCostBand } from "@/lib/content/stateCostBands";
+import { formatCostRange, formatCurrency, getStateCostBand } from "@/lib/content/stateCostBands";
+import { cityMemoryCareBand } from "@/lib/cost/costBand";
+import { loadFacilityCosts } from "@/lib/cost/loadFacilityCosts";
 import { HubEligibility } from "@/components/hub/HubEligibility";
 import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/HubDifferentiators";
 
@@ -455,6 +457,11 @@ export default async function RegionPage({ params }: PageProps) {
   // Any deficiency (Type A or Type B) — matches the "§ Findings" label.
   // serious_citations is retained on each facility for card-level red/amber badging.
   const facilitiesWithSeriousDef = facilities.filter((f) => f.total_citations > 0).length;
+  // A city range from listed prices needs enough homes with a labeled memory care price.
+  const cityCost =
+    !isCounty && !fetchError && region.state.code !== "CO"
+      ? cityMemoryCareBand(await loadFacilityCosts(facilities.map((f) => f.id)))
+      : null;
   const severePct =
     totalCount > 0 ? Math.round((facilitiesWithSeriousDef / totalCount) * 100) : 0;
 
@@ -948,6 +955,19 @@ export default async function RegionPage({ params }: PageProps) {
                     CDPHE does not publish a monthly rate for assisted living in {region.name}.
                     The price on a tour is the home&apos;s quote. A nursing home is priced under a different program.
                   </>
+                ) : cityCost ? (
+                  <>
+                    Memory care homes in {region.name} that list a memory care price mostly fall between{" "}
+                    <strong className="font-semibold">
+                      {formatCurrency(cityCost.band.low)}&ndash;{formatCurrency(cityCost.band.high)}
+                    </strong>{" "}
+                    a month. That is the middle half of {cityCost.homes} homes with a listed price. A listed
+                    price is not a quote, so ask each home for its current rate.{" "}
+                    <Link href="/methodology" className="text-teal underline underline-offset-4">
+                      how we source data
+                    </Link>
+                    .
+                  </>
                 ) : (
                   <>
                     Median monthly cost in {region.name} ranges from approximately{" "}
@@ -975,7 +995,9 @@ export default async function RegionPage({ params }: PageProps) {
                 source={
                   region.state.code === "CO"
                     ? "CDPHE does not publish assisted-living rates"
-                    : `Regional estimate · ${getStateCostBand(region.state.code).source}`
+                    : cityCost
+                      ? "Listed prices on Caring.com and SeniorAdvisor"
+                      : `Regional estimate · ${getStateCostBand(region.state.code).source}`
                 }
                 note="Facility-specific quotes required before signing"
               />

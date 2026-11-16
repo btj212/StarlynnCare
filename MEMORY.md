@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Listed prices are published as bands, from Caring.com and SeniorAdvisor
+
+**Decided:** Homes show a price band from prices listed by Caring.com and SeniorAdvisor, read by `scrapers/cost_fetch.py` with plain HTTP (robots.txt checked, one request every 2.5 s, address and house number confirmed on each page). A band is at least $1,000 wide, sits on a $500 grid, and never has a read figure as an edge, so no site's exact number is printed. It is deterministic: the same input gives the same band. Memory care and assisted living are never mixed. A price counts as memory care only when the page labels it so. A home with only an assisted living price says so and says memory care is usually higher. A home with no price shows the state range with its Genworth source. A city range appears when 5 or more homes list a memory care price (the middle half of them), else the state range. Every profile title says "Costs".
+
+**Rejected:** Showing the price moved by a random amount within $1,000. A shifted number shown as a home's price is invented data on a page families use to decide. The band keeps the "not the exact figure" goal and stays true. Reading A Place for Mom for now (on hold, Blake 2026-11-16): its real prices are hidden in the page behind a lead form, and its compare table also carries neighbouring homes' prices. Seniorly is now CareScout with about 1,200 provider pages, so it is not read. Using Firecrawl's model extract: it took a neighbour's price from the compare table and hit the rate limit on 18 of 20 homes.
+
+**Reverses:** "Generic competitor-derived ranges = fluff = do not publish" (the cost data plane gate). Source: Blake's instruction on 2026-11-16 to take simple price data points from A Place for Mom and other sites, with Genworth as the backstop.
+
+**Source:** `pilot_pricing_sources` rows with `raw_extract.care_basis` (read through `facility_costs`, migration 0074). Older Firecrawl pilot rows stay out.
+
+---
+
 ## 2026-11 — Arizona plans are the home's words from the plan page
 
 **Decided:** Arizona findings use "The home's plan of correction". The stored text is the public plan page: the temporary solution, the person responsible, the permanent solution, monitoring, and the completion dates. Lookup excerpts include Arizona. A row that is still the label `View` is shorter than 40 characters and is not shown. Some older inspection pages never draw the findings grid, and some rule text no longer matches the stored finding. Those rows stay `View`.
