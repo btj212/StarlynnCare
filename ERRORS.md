@@ -8,6 +8,22 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — An unordered citation checksum looked like a new inspection
+
+**What went wrong:** The facility-watch checksum sorted deficiency rows by date, source URL, and code, and left ties unordered. Reading the same California record twice could produce a different checksum. Palm Villas, Campbell and Mountain View Center were then logged as “inspection record changed (+0 inspections, +0 citations)” on a run that stored nothing. A finished scan would have emailed that.
+
+**What worked instead:** Sort each checksum row by the full row text, then by inspection id and deficiency id, so the order is total. Two captures of the same state now match.
+
+**Source:** `scripts/state_watch_ledger.py`. Scan `1e6a2659-3cbb-49bd-abdf-f19eea185c30`.
+
+## 2026-11 — CDSS report index ignores a new request shape while it is hung
+
+**What went wrong:** The FacilityReports index and the per-report page accepted the connection and returned no bytes. Retrying with the official client header removed, with `Connection: close`, and with HTTP/1.0, HTTP/1.1, and HTTP/2 all timed out the same way. The query-string index route returned 404. A rewritten Lotus document URL returned 404. Guessed statewide report downloads returned 400. The public search page returned 503. The statewide elder-care file kept returning 200.
+
+**What worked instead:** Keep the statewide file as the change detector. Check the report index in batches of eight, stop a wave after two failed batches, and look twice more on a fresh connection later in the same run. Do not fail the run again when a pending home's stored statewide row is unchanged and the index has no new document id.
+
+**Source:** `scrapers/ccld_citations_ingest.py`. Live probes on 2026-11-07 against facility `306002915`.
+
 ## 2026-11 — A model refusal was stored as the family's summary
 
 **What went wrong:** Visits whose stored text is a cover sheet, an abbreviation list, or a form heading were sent to the summarizer. When the model answered "I cannot provide a summary," that sentence was saved on `narrative_summary` and shown on the profile. A few California cover pages also hid a real finding that lived on the deficiency row, not in `raw_data.narrative`.
