@@ -1,23 +1,30 @@
 #!/usr/bin/env python3
 """
-Read the price shown on a home's Caring.com page, with plain HTTP. No paid API, no model.
+Read the prices three sites show for a home, with plain HTTP. No paid API, no model.
 
-Why not A Place for Mom: it shows "$X,XXX" until a visitor fills in a lead form. The real
-number sits hidden in the page. Reading it would go around that gate, so it is not read.
-A Place for Mom's compare table also puts neighbouring homes' prices on a home's own page,
-which is how the earlier Firecrawl extract took a neighbour's $6,500 for Touch of Love.
+Sources: Caring.com, A Place for Mom (apfm), SeniorAdvisor (senioradvisor).
+Seniorly is now CareScout, and its public sitemap holds about 1,200 provider pages (28 in
+Arizona, 74 in California), so it is not read.
 
-Per home:
-  1. Find the home's Caring page in Caring's own community sitemaps: same state,
-     same ZIP code (the URL ends in it), best name match.
-  2. Fetch it (robots.txt checked, one request every 2.5 s).
-  3. Confirm the page's LocalBusiness block has the same ZIP code and house number.
-  4. Read "Starting Price" and the home's own room and care-type prices. Nothing else.
-  5. Add a row to pilot_pricing_sources (source = 'caring'). Rows are never overwritten.
+Two of the sites show "$X,XXX" until a visitor fills in a lead form. The real number is in the
+page already sent to every visitor, hidden from view. Blake asked for it to be read anyway.
+Robots.txt is still obeyed, requests are spaced 2.5 s apart, and only the home's own price
+rows are read. Nothing else on the page is kept.
+
+Per home and source:
+  1. Find the home's page from the site's own sitemap (name match, then state or city).
+  2. Fetch it (robots.txt checked).
+  3. Confirm the page's address block has the same ZIP code and house number.
+  4. Read the home's own price rows. Not the neighbours' cards or compare columns.
+  5. Add a row to pilot_pricing_sources. Rows are never overwritten.
+
+Memory care costs more than assisted living. A price is stored as memory care only when the
+page labels it that way. An unlabeled price is stored as the starting price, with the label
+kept in raw_extract.care_basis.
 
 Usage:
-  python3 scrapers/cost_fetch.py --probe --run-id cost_fetch_probe_1   # 10 Mesa + 10 Orange County
-  python3 scrapers/cost_fetch.py --state AZ --run-id cost_fetch_az     # every published home in a state
+  python3 scrapers/cost_fetch.py --probe --run-id cost_fetch_probe_2   # 10 Mesa + 10 Orange County
+  python3 scrapers/cost_fetch.py --state AZ --run-id cost_fetch_az --sources caring,apfm
 """
 
 import argparse
@@ -28,6 +35,7 @@ import sys
 from pathlib import Path
 
 import psycopg
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env.local")
@@ -35,8 +43,14 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _robots import polite_get  # noqa: E402
 
 DB_URL = os.environ["DATABASE_URL"]
-CACHE = Path(__file__).parent.parent / ".cache" / "caring_community_urls.txt"
+CACHE_DIR = Path(__file__).parent.parent / ".cache"
+CACHE = CACHE_DIR / "caring_community_urls.txt"
 SITEMAP_INDEX = "https://www.caring.com/ccds/sitemap_index.xml"
+APFM_SITEMAPS = [f"https://www.aplaceformom.com/sitemap-community-{n}.xml" for n in (1, 2, 3)]
+SA_SITEMAP = "https://www.senioradvisor.com/sitemap-communities.xml"
+STATE_ABBR_SLUG = {"AZ": "az", "CA": "ca", "CO": "co", "IL": "il", "MN": "mn", "MO": "mo",
+                   "OR": "or", "PA": "pa", "TX": "tx", "UT": "ut", "WA": "wa"}
+MAX_PAGE_TRIES = 3
 
 STATE_SLUG = {
     "AZ": "arizona", "CA": "california", "CO": "colorado", "IL": "illinois",
@@ -184,70 +198,203 @@ def get_facilities(conn: psycopg.Connection, state: str | None, probe: bool) -> 
     return [dict(zip(names, row)) for row in rows]
 
 
+def load_sitemap_urls(cache_name: str, sitemaps: list[str], keep: str) -> list[str]:
+    """Every <loc> containing `keep` in the given sitemaps. Cached after the first run."""
+    cache = CACHE_DIR / cache_name
+    if cache.exists():
+        return cache.read_text().split()
+    urls: list[str] = []
+    for sitemap in sitemaps:
+        status, body = polite_get(sitemap, min_gap_s=1.0)
+        if status != 200:
+            raise RuntimeError(f"{sitemap} returned {status}")
+        urls.extend(u for u in re.findall(r"<loc>([^<]+)</loc>", body) if keep in u)
+    CACHE_DIR.mkdir(exist_ok=True)
+    cache.write_text("\n".join(urls))
+    return urls
+
+
+def best_by_name(facility: dict, slugs: dict[str, str]) -> list[str]:
+    """URLs whose slug overlaps the home's name by at least MIN_NAME_OVERLAP, best first."""
+    ours = slug_tokens(facility["name"])
+    scored: list[tuple[float, str]] = []
+    for url, slug in slugs.items():
+        theirs = slug_tokens(slug)
+        if ours and theirs:
+            score = len(ours & theirs) / len(ours | theirs)
+            if score >= MIN_NAME_OVERLAP:
+                scored.append((score, url))
+    return [url for _, url in sorted(scored, reverse=True)[:MAX_PAGE_TRIES]]
+
+
+def address_matches(html: str, zip5: str, street: str | None) -> bool:
+    """The page's schema.org address block has our ZIP code and house number (either key order)."""
+    ours = house_number(street)
+    if not ours:
+        return False
+    for block in re.finditer(r'"PostalAddress"[^{}]*', html):
+        text = block.group(0)
+        street_match = re.search(r'"streetAddress":"([^"]*)"', text)
+        zip_match = re.search(r'"postalCode":"(\d{5})', text)
+        if street_match and zip_match and zip_match.group(1) == zip5 and house_number(street_match.group(1)) == ours:
+            return True
+    return False
+
+
+def dollars(text: str) -> list[int]:
+    return [int(n.replace(",", "")) for n in re.findall(r"\$\s*([\d,]{4,})", text)]
+
+
+def read_apfm(html: str, zip5: str, street: str | None) -> dict | None:
+    """Room prices of column 0 of the compare table, which is this home. The hidden
+    "ungated" span holds the real number while the visible one shows $X,XXX."""
+    if not address_matches(html, zip5, street):
+        return None
+    soup = BeautifulSoup(html, "html.parser")
+    rooms: dict[str, int] = {}
+    for box in soup.select('div.Compare__sectionContainer[data-compare-index="0"]'):
+        label = box.select_one(".Compare__PricingSection__header")
+        ungated = box.select_one('span[id="ComparePricingSectionUngated"]')
+        if not label or not ungated:
+            continue
+        found = dollars(ungated.get_text(" "))
+        if found:
+            rooms.setdefault(label.get_text(" ", strip=True), found[0])
+    return {
+        "starting_price": min(rooms.values()) if rooms else None,
+        "rooms": rooms, "care_types": {}, "care_basis": "unlabeled",
+    }
+
+
+def read_senioradvisor(html: str, zip5: str, street: str | None) -> dict | None:
+    """Rows of the "Published Prices" table. The hidden data-price holds the real figure
+    (shown as "~$5,150") while the visible text is $X,XXX."""
+    if not address_matches(html, zip5, street):
+        return None
+    soup = BeautifulSoup(html, "html.parser")
+    rooms: dict[str, int] = {}
+    industry = None
+    for row in soup.select("table.rack-prices tbody tr"):
+        label = row.select_one("td")
+        cell = row.select_one("[data-price]")
+        if not label or not cell:
+            continue
+        found = dollars(str(cell.get("data-price", "")))
+        if found:
+            rooms.setdefault(label.get_text(" ", strip=True), min(found))
+        link = row.select_one("a.see-rack-price")
+        industry = industry or (link.get("data-industry") if link else None)
+    care_types = {industry: min(rooms.values())} if industry and rooms else {}
+    basis = {"Memory Care": "memory_care", "Assisted Living": "assisted_living"}.get(str(industry), "unlabeled")
+    return {
+        "starting_price": min(rooms.values()) if rooms else None,
+        "rooms": rooms, "care_types": care_types, "care_basis": basis,
+    }
+
+
+def caring_candidates(facility: dict, index: dict[str, list[str]]) -> list[str]:
+    url = find_page(index, facility)
+    return [url] if url else []
+
+
+def apfm_candidates(facility: dict, index: list[str]) -> list[str]:
+    slugs = {u: re.sub(r"-\d+$", "", u.rsplit("/", 1)[-1]) for u in index}
+    return best_by_name(facility, slugs)
+
+
+def senioradvisor_candidates(facility: dict, index: list[str]) -> list[str]:
+    city = re.sub(r"[^a-z0-9]+", "-", (facility["city"] or "").lower()).strip("-")
+    tail = f"-{city}-{STATE_ABBR_SLUG[facility['state_code']]}"
+    slugs = {u: u.rsplit("/", 1)[-1].removesuffix(tail) for u in index if u.endswith(tail)}
+    return best_by_name(facility, slugs)
+
+
+def load_sources(wanted: list[str]) -> dict[str, tuple]:
+    """source name -> (url index, candidates function, page reader)."""
+    sources: dict[str, tuple] = {}
+    if "caring" in wanted:
+        by_state: dict[str, list[str]] = {}
+        for url in load_caring_urls():
+            by_state.setdefault(url.split("/senior-living/")[1].split("/")[0], []).append(url)
+        sources["caring"] = (by_state, caring_candidates, read_prices)
+    if "apfm" in wanted:
+        index = load_sitemap_urls("apfm_community_urls.txt", APFM_SITEMAPS, "/community/")
+        sources["apfm"] = (index, apfm_candidates, read_apfm)
+    if "senioradvisor" in wanted:
+        index = load_sitemap_urls("senioradvisor_community_urls.txt", [SA_SITEMAP], "/local/")
+        sources["senioradvisor"] = (index, senioradvisor_candidates, read_senioradvisor)
+    return sources
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Plain-fetch Caring prices")
+    parser = argparse.ArgumentParser(description="Plain-fetch prices from Caring, A Place for Mom, SeniorAdvisor")
     parser.add_argument("--probe", action="store_true", help="10 Mesa AZ + 10 Orange County CA homes")
     parser.add_argument("--state", choices=sorted(STATE_SLUG), help="every published home in a state")
+    parser.add_argument("--sources", default="caring,apfm,senioradvisor")
     parser.add_argument("--run-id", required=True)
     args = parser.parse_args()
     if not args.probe and not args.state:
         parser.error("pass --probe or --state")
+    wanted = args.sources.split(",")
 
-    print("Loading Caring community URLs…")
-    urls_by_state: dict[str, list[str]] = {}
-    for url in load_caring_urls():
-        urls_by_state.setdefault(url.split("/senior-living/")[1].split("/")[0], []).append(url)
-
-    counts = {"homes": 0, "page_found": 0, "robots_blocked": 0, "fetch_failed": 0,
-              "not_this_home": 0, "page_no_price": 0, "priced": 0}
+    print("Loading page lists…")
+    sources = load_sources(wanted)
+    counts = {name: {"page_found": 0, "robots": 0, "http_error": 0, "not_this_home": 0,
+                     "no_price": 0, "priced": 0} for name in sources}
+    priced_any: set[str] = set()
+    homes = 0
     with psycopg.connect(DB_URL) as conn:
         for facility in get_facilities(conn, args.state, args.probe):
-            counts["homes"] += 1
+            homes += 1
             label = f"{facility['name']} — {facility['city']}"
-            url = find_page(urls_by_state, facility)
-            if not url:
-                print(f"[no page] {label}")
-                continue
-            counts["page_found"] += 1
-            status, html = polite_get(url)
-            if status == 0:
-                counts["robots_blocked"] += 1
-                print(f"[robots] {label}")
-                continue
-            if status != 200:
-                counts["fetch_failed"] += 1
-                print(f"[http {status}] {label}")
-                continue
-            prices = read_prices(html, (facility["zip"] or "")[:5], facility["street"])
-            if prices is None:
-                counts["not_this_home"] += 1
-                print(f"[different address] {label} {url}")
-                continue
-            if prices["starting_price"] is None:
-                counts["page_no_price"] += 1
-                print(f"[page, no price] {label}")
-                continue
-            counts["priced"] += 1
-            care = prices["care_types"]
-            conn.execute(
-                """
-                INSERT INTO pilot_pricing_sources
-                  (pilot_run_id, facility_id, source, source_url, starting_price_monthly_usd,
-                   memory_care_price_monthly_usd, assisted_living_price_monthly_usd,
-                   is_correct_facility, raw_extract)
-                VALUES (%s, %s, 'caring', %s, %s, %s, %s, true, %s::jsonb)
-                """,
-                (
-                    args.run_id, str(facility["id"]), url, prices["starting_price"],
-                    care.get("Memory Care"), care.get("Assisted Living"), json.dumps(prices),
-                ),
-            )
-            conn.commit()
-            print(f"[priced] {label}: from ${prices['starting_price']:,} {care or ''} {url}")
+            zip5 = (facility["zip"] or "")[:5]
+            for name, (index, candidates, reader) in sources.items():
+                stat = counts[name]
+                urls = candidates(facility, index)
+                if not urls:
+                    continue
+                outcome = "not_this_home"
+                for url in urls:
+                    status, html = polite_get(url)
+                    if status == 0:
+                        outcome = "robots"
+                        break
+                    if status != 200:
+                        outcome = "http_error"
+                        continue
+                    prices = reader(html, zip5, facility["street"])
+                    if prices is None:
+                        continue
+                    outcome = "priced" if prices["starting_price"] is not None else "no_price"
+                    break
+                stat["page_found"] += 1
+                stat[outcome] += 1
+                if outcome != "priced":
+                    print(f"[{name}: {outcome}] {label}")
+                    continue
+                care = prices["care_types"]
+                conn.execute(
+                    """
+                    INSERT INTO pilot_pricing_sources
+                      (pilot_run_id, facility_id, source, source_url, starting_price_monthly_usd,
+                       memory_care_price_monthly_usd, assisted_living_price_monthly_usd,
+                       is_correct_facility, raw_extract)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, true, %s::jsonb)
+                    """,
+                    (
+                        args.run_id, str(facility["id"]), name, url, prices["starting_price"],
+                        care.get("Memory Care"), care.get("Assisted Living"),
+                        json.dumps({**prices, "care_basis": prices.get("care_basis", "labeled")}),
+                    ),
+                )
+                conn.commit()
+                priced_any.add(str(facility["id"]))
+                print(f"[{name}: priced] {label}: from ${prices['starting_price']:,} {care or ''} {url}")
 
     print("\n=== Done ===")
-    for key, value in counts.items():
-        print(f"{key}: {value}")
+    print(f"homes: {homes}   homes with at least one price: {len(priced_any)}")
+    for name, stat in counts.items():
+        print(f"{name}: {stat}")
 
 
 if __name__ == "__main__":
