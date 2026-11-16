@@ -61,3 +61,6 @@ data/*.csv
 
 # Illinois LLCS document attempts. These are operational notes, not source data.
 scrapers/data/il_llcs/
+
+# local scraper caches
+.cache/

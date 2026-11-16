@@ -30,8 +30,6 @@ import os
 import re
 import statistics
 import sys
-import urllib.request
-from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -41,6 +39,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env.local")
 sys.path.insert(0, str(Path(__file__).parent))
 from _firecrawl import current_spend_usd, fc_extract, fc_search  # noqa: E402
+from _robots import robots_allows  # noqa: E402
 
 DB_URL = os.environ["DATABASE_URL"]
 
@@ -122,58 +121,8 @@ PRICE_PROMPT = (
 )
 
 
-# Some of these sites answer 403 to a bare bot name but serve robots.txt to this form.
-ROBOTS_UA = "Mozilla/5.0 (compatible; StarlynnCareBot/1.0)"
 # Pages skipped because robots.txt disallows them, by source. Reported at the end of a run.
 robots_blocked: dict[str, int] = {}
-
-
-@lru_cache(maxsize=None)
-def _robots_rules(origin: str) -> tuple[tuple[str, bool], ...]:
-    """(pattern, allow) pairs for the `*` group of origin/robots.txt.
-
-    A site whose robots file cannot be read is treated as closed: no rules
-    would mean open, so return a single Disallow-all instead.
-    """
-    try:
-        req = urllib.request.Request(f"{origin}/robots.txt", headers={"User-Agent": ROBOTS_UA})
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            body = resp.read().decode("utf-8", "replace")
-    except Exception:  # noqa: BLE001
-        return (("/", False),)
-    rules: list[tuple[str, bool]] = []
-    in_star_group = False
-    last_was_agent = False
-    for raw in body.splitlines():
-        line = raw.split("#", 1)[0].strip()
-        if ":" not in line:
-            continue
-        field, _, value = line.partition(":")
-        field, value = field.strip().lower(), value.strip()
-        if field == "user-agent":
-            if not last_was_agent:
-                in_star_group = False
-            in_star_group = in_star_group or value == "*"
-            last_was_agent = True
-            continue
-        last_was_agent = False
-        if in_star_group and field in ("allow", "disallow") and value:
-            rules.append((value, field == "allow"))
-    return tuple(rules)
-
-
-def robots_allows(url: str) -> bool:
-    """Google-style match: * wildcard, $ anchor, longest rule wins, Allow wins a tie."""
-    parsed = urlparse(url)
-    target = parsed.path + (f"?{parsed.query}" if parsed.query else "")
-    best_len, allowed = -1, True
-    for pattern, allow in _robots_rules(f"{parsed.scheme}://{parsed.netloc}"):
-        regex = "^" + re.escape(pattern).replace(r"\*", ".*").replace(r"\$", "$")
-        if re.match(regex, target) and (
-            len(pattern) > best_len or (len(pattern) == best_len and allow)
-        ):
-            best_len, allowed = len(pattern), allow
-    return allowed
 
 
 def domain_of(url: str) -> str:
