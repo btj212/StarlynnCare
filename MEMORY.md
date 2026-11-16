@@ -6,6 +6,15 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — A severity rank is shown only when the state records a severity
+
+**Decided:** `facility_snapshot` sets the severity percentile to null, and with it the letter grade, when half or more of the peer group's findings in 36 months have no severity, no class, and no immediate-jeopardy flag. `severity_measured` is false. The profile says the state does not record a severity, and it hides the scope-and-severity grid. Oregon is entirely in that group, so its cached grades are cleared. Illinois, and Colorado assisted living, are in it too. Their cached grades were already blank. A peer group with no findings stays measured. The trajectory chart still counts findings.
+
+**Rejected:** Turning the rank off for Oregon only. Relabeling the Oregon bar as citations per bed and keeping a letter. Treating a missing severity as severity 1.
+
+**Source:** Counts on 2026-11-07. Oregon had 1,975 of 1,975 findings uncoded. Illinois had 1,688 of 1,921. Colorado assisted living had 353 of 528. Washington stayed under half in every care setting.
+---
+
 ## 2026-11 — Every scan emails the operator what it checked
 
 **Decided:** After each California morning crawl, and after each state in the Sunday GitHub scan, one note goes to `ADMIN_ALERT_EMAIL`. It says whether the scan finished, how the inspection and citation counts moved, which watched homes were opened, which homes gained an inspection or a citation, and how many family notes were sent. A partial scan still sends this note. A job that writes no scan row still sends this note. A weekday says family notes are waiting for Sunday. A failed data check says no family mail went out. The same Loops admin template is used. No new template. Ned is not the recipient. On the Mac, a short placeholder in `.env.local` is ignored. The real Loops key and template id are read from Keychain services `starlynncare-loops-api-key` and `starlynncare-loops-admin-alert-id`, account `starlynncare`. GitHub already has those values as actions secrets.
