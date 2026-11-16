@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — A home's profile shows summaries; the full citation text lives on its own page
+
+**Decided:** `/{state}/{city}/{home}/inspections` prints every visit of the last three years with the citation text in the inspector's words. The profile prints one plain-language summary per visit and links to that visit on the new page (`#inspection-{id}`). Jurgens Park fell from 37,866 words to 1,567 on the profile, so the title and the page now describe the same short page. The new page is noindex when the home is noindex or no visit has finding text, and it is in the sitemap only for homes with a finding in the last three years (`facilities_with_recent_findings`, migration 0073). Shared pieces are in `src/components/facility/profile/inspectionBlocks.tsx`.
+
+**Rejected:** Keeping the text on the profile behind `<details>` (still in the HTML, still counted as one 39,000-word page). Listing the page for every home (thin pages for homes with nothing cited).
+
+**Note:** The new page for a home with many findings is still long (Jurgens Park about 37,000 words). That is the record itself, and it is where the long page belongs.
+
+---
+
 ## 2026-11 — Arizona plans are the home's words from the plan page
 
 **Decided:** Arizona findings use "The home's plan of correction". The stored text is the public plan page: the temporary solution, the person responsible, the permanent solution, monitoring, and the completion dates. Lookup excerpts include Arizona. A row that is still the label `View` is shorter than 40 characters and is not shown. Some older inspection pages never draw the findings grid, and some rule text no longer matches the stored finding. Those rows stay `View`.
