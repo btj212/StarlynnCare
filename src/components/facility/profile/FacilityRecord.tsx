@@ -328,6 +328,7 @@ function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
 
 export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
   const { timeline, scopeSeverityGrid, totals, cfg } = profile;
+  const showSeverityGrid = profile.snapshot?.severity_measured !== false;
 
   return (
     <section id="record" className="scroll-mt-36 md:scroll-mt-28 border-b border-paper-rule py-16">
@@ -347,11 +348,13 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
         />
 
         {/* Top row: timeline rail (left) + scope×severity grid (right) */}
-        <div className="grid gap-7 md:grid-cols-[1.6fr_1fr]">
+        <div className={showSeverityGrid ? "grid gap-7 md:grid-cols-[1.6fr_1fr]" : ""}>
           <div className="border border-paper-rule bg-paper-2 p-8">
             <TimelineRail timeline={timeline} windowMonths={cfg.timelineWindowMonths} />
           </div>
-          <ScopeSeverityGrid grid={scopeSeverityGrid} agencyShort={cfg.agencyShort} />
+          {showSeverityGrid && (
+            <ScopeSeverityGrid grid={scopeSeverityGrid} agencyShort={cfg.agencyShort} />
+          )}
         </div>
 
         {/* Full-width inspection list below */}

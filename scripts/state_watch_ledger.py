@@ -113,12 +113,30 @@ def capture_facility_state(
                         d.status
                       ),
                       E'\\n' ORDER BY
-                        i.inspection_date,
-                        i.source_url,
-                        d.code,
-                        d.ftag,
-                        d.cited_date,
-                        d.description
+                        concat_ws(
+                          '|',
+                          i.inspection_date,
+                          i.inspection_type,
+                          i.is_complaint,
+                          i.source_url,
+                          i.source_agency,
+                          d.ftag,
+                          d.code,
+                          d.category,
+                          d.scope,
+                          d.severity,
+                          d.class,
+                          d.immediate_jeopardy,
+                          d.is_repeat,
+                          d.description,
+                          d.inspector_narrative,
+                          d.harm_description,
+                          d.residents_affected,
+                          d.corrected_date,
+                          d.status
+                        ),
+                        i.id,
+                        d.id
                     ),
                     ''
                   )

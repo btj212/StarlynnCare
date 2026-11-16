@@ -42,6 +42,7 @@ export const coAlrProfileConfig: StateProfileConfig = {
   formatSeverityTag: coAlrSeverity,
   formNameForDeficiency: () => null,
   regulatorPortalUrl: FIND_AND_COMPARE,
+  followUp: { label: "The home's plan of correction" },
   deficiencyTextIsRuleOnly: true,
   rulebook: [
     {
@@ -84,6 +85,7 @@ export const coNhProfileConfig: StateProfileConfig = {
   formatSeverityTag: coNhSeverity,
   formNameForDeficiency: () => null,
   regulatorPortalUrl: CARE_COMPARE,
+  followUp: { label: "The home's plan of correction" },
   deficiencyTextIsRuleOnly: true,
   rulebook: [
     {

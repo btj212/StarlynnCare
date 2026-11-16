@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Hold California watch notes until Sunday.
 
-The morning crawl does not email. On Sunday this sends notes only from scans
-that finished completely, and only after the California data check passes.
-A partial or failed crawl stays silent. One confirmed note to a single
-recipient has to succeed before a later Sunday may email every watcher.
+The morning crawl does not email. On Sunday, after the California data check,
+a watched home is emailed when that home's own record gained an inspection or
+a citation. Another home failing, or the statewide scan staying partial, does
+not block that note. A failed or still-running scan sends nothing.
 """
 
 from __future__ import annotations
@@ -23,7 +23,6 @@ from psycopg.rows import dict_row
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACIFIC = ZoneInfo("America/Los_Angeles")
-PROOF_PATH = Path.home() / "Library/Application Support/StarlynnCare/ca-sunday-alerts-proven"
 HOLD_DAYS = 8
 
 
@@ -48,19 +47,17 @@ def held_scan_is_sendable(
     layer5_passed: bool,
     is_sunday: bool,
 ) -> bool:
-    """A finished scan can email on Sunday, after the data check, once."""
-    return bool(is_sunday and layer5_passed and status == "completed" and not already_sent)
+    """Sunday can email a watched home from a finished or partial scan, once.
 
-
-def proof_exists(path: Path = PROOF_PATH) -> bool:
-    return path.is_file()
-
-
-def may_email_every_watcher(*, send: bool, recipient_only: str | None, proof_present: bool) -> bool:
-    """Everyone waits until one named recipient has already received a note."""
-    if not send or recipient_only:
-        return False
-    return proof_present
+    Area mail still waits for a completed scan. That split happens in dispatch.
+    A failed or running scan has no finished per-home result.
+    """
+    return bool(
+        is_sunday
+        and layer5_passed
+        and status in {"completed", "partial"}
+        and not already_sent
+    )
 
 
 def window_start(moment: datetime) -> datetime:
@@ -157,17 +154,12 @@ def mark_dispatched(conn: psycopg.Connection, scan_id: str) -> None:
               'alerts_dispatched_at', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
             )
             WHERE id = %s::uuid
-              AND status = 'completed'
+              AND status IN ('completed', 'partial')
               AND COALESCE(metadata->>'alerts_dispatched_at', '') = ''
             """,
             (scan_id,),
         )
     conn.commit()
-
-
-def write_proof(path: Path = PROOF_PATH) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("one California recipient confirmed\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -196,21 +188,10 @@ def main() -> int:
         return 0
 
     recipient = args.recipient_only.strip().lower() if args.recipient_only else None
-    email_everyone = may_email_every_watcher(
-        send=args.send,
-        recipient_only=recipient,
-        proof_present=proof_exists(),
-    )
-    dry_run = not (email_everyone or (args.send and recipient))
-    if args.send and dry_run:
-        print(
-            "A single-recipient California note has not been confirmed yet. "
-            "Printing who would be emailed. No subscriber alerts were sent."
-        )
+    dry_run = not args.send
 
     conn = psycopg.connect(url)
     failures = 0
-    confirmed_sends = 0
     try:
         scans = load_recent_scans(conn, window_start(moment))
         sendable = [
@@ -223,25 +204,21 @@ def main() -> int:
                 is_sunday=True,
             )
         ]
-        print(f"Finished California scans waiting: {len(sendable)}")
+        print(f"California scans that can email a watched home: {len(sendable)}")
         if not sendable:
-            print("No finished California scan is waiting. Partial scans stay silent.")
+            print("No California scan with a checked home is waiting.")
             return 0
         for scan in sendable:
             scan_id = str(scan["id"])
             print(f"Scan {scan_id} changes={scan['changes_detected']} {'dry-run' if dry_run else 'send'}")
             code, output = dispatch_scan(scan_id, dry_run=dry_run, recipient_only=recipient)
-            area_sent, facility_sent, failed = parse_sent_counts(output)
+            failed = parse_sent_counts(output)[2]
             if code != 0 or failed:
                 failures += 1
                 print(f"Scan {scan_id} did not finish sending.", file=sys.stderr)
                 continue
-            confirmed_sends += area_sent + facility_sent
             if not dry_run:
                 mark_dispatched(conn, scan_id)
-        if not dry_run and recipient and failures == 0 and confirmed_sends > 0:
-            write_proof()
-            print("One recipient was confirmed. Later Sundays can email every matching watcher.")
     finally:
         conn.close()
     return 1 if failures else 0

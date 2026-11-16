@@ -32,7 +32,10 @@ const MIN_FOLLOW_UP_CHARS = 40;
 /** A stored plan shorter than this is a stub such as Arizona's "View" link label. */
 function followUpText(value: string | null): string | null {
   const text = value?.trim() ?? "";
-  return text.length >= MIN_FOLLOW_UP_CHARS ? text : null;
+  if (text.length < MIN_FOLLOW_UP_CHARS) return null;
+  // Colorado stores this sentence on citations that have no plan.
+  if (/^a plan of correction was not required\b/i.test(text)) return null;
+  return text;
 }
 
 function formatFine(value: string | number | null): string | null {

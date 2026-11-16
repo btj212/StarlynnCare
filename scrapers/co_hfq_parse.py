@@ -11,6 +11,7 @@ Every input row becomes exactly one disposition: normalized or quarantined.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -95,6 +96,88 @@ def text_piece(value: Any) -> str:
 def join_parts(*values: Any) -> str:
     """Join CDPHE overflow columns with nothing added between the pieces."""
     return "".join(text_piece(value) for value in values).strip()
+
+
+# Headings in the published Colorado plans. format_plan_text tries the
+# longest first, so "Corrective Action Taken" is not also split at
+# "Corrective Action".
+_PLAN_HEADINGS = (
+    "Date Corrective Action Taken",
+    "Monitoring of Corrective Action",
+    "Date Survey Completed",
+    "Description of Correction",
+    "Description of correction",
+    "Monitoring Performance",
+    "Identification of Others",
+    "Corrective Action Taken",
+    "Systematic Measures",
+    "Preventive Measures",
+    "Corrective Actions",
+    "Date of Completion",
+    "Plan of Correction",
+    "Identification of",
+    "Corrective Action",
+    "Systemic Measures",
+    "Responsible Party",
+    "Completion Date",
+    "Compliance Date",
+    "Cross-Reference",
+    "Cross-reference",
+    "How the Facility",
+    "How the facility",
+    "Monitoring Plan",
+    "State Review",
+    "Monitoring",
+    "Addendum",
+    "POC Text",
+    "Tag",
+)
+
+
+def format_plan_text(value: str) -> str:
+    """Put a blank line around a heading the workbook glued to the next word.
+
+    The CDPHE cell has no line breaks. This inserts breaks only. It does not
+    add, drop, or rewrite a word, and a second call returns the same text.
+    A heading that already has a space before it, such as "Monitoring will",
+    is left alone.
+    """
+    text = value or ""
+    if not text:
+        return text
+    for heading in sorted(_PLAN_HEADINGS, key=len, reverse=True):
+        text = _break_around_heading(text, heading)
+    return text
+
+
+def _break_around_heading(text: str, heading: str) -> str:
+    pieces: list[str] = []
+    i = 0
+    # Case-insensitive so "PLAN OF CORRECTION" breaks the same way as
+    # "Plan of Correction". The matched letters are copied through unchanged.
+    for match in re.finditer(re.escape(heading), text, re.IGNORECASE):
+        j, end = match.span()
+        if j < i:
+            continue
+        nxt = text[end : end + 1]
+        # "Tags" and "Actions" are not the headings "Tag" and "Action".
+        if nxt.isalpha() and nxt.islower():
+            pieces.append(text[i:end])
+            i = end
+            continue
+        start = j - 1 if j > 0 and text[j - 1] == "(" else j
+        prefix = "\n\n" if start > 0 and not text[start - 1].isspace() else ""
+        suffix = ""
+        consume = end
+        if nxt.isalnum():
+            suffix = "\n\n"
+        elif nxt == ":" and end + 1 < len(text) and text[end + 1].isalnum():
+            suffix = ":\n\n"
+            consume = end + 1
+        pieces.append(text[i:start] + prefix + text[start:end] + suffix)
+        i = consume
+    pieces.append(text[i:])
+    return "".join(pieces)
 
 
 def parse_date(value: Any) -> date | None:
@@ -215,10 +298,12 @@ def survey_from_cells(source_key: str, cells: dict[str, Any]) -> dict[str, Any]:
         ),
         "scope": cells.get("Scope"),
         "severity_letter": cells.get("Ss"),
-        "plan_of_correction": join_parts(
-            cells.get("Facility Plan of Correction"),
-            cells.get("Facility Plan of Correction_Overflow1"),
-            cells.get("Facility Plan of Correction_Overflow2"),
+        "plan_of_correction": format_plan_text(
+            join_parts(
+                cells.get("Facility Plan of Correction"),
+                cells.get("Facility Plan of Correction_Overflow1"),
+                cells.get("Facility Plan of Correction_Overflow2"),
+            )
         ),
         "inspection_date": cells.get("Inspection Date"),
         "inspection_type": text_piece(cells.get("Inspection Type")).strip(),
