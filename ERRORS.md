@@ -8,6 +8,24 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — The Arizona plan backfill sat still after a browser driver died
+
+**What went wrong:** Each worker printed only when its whole batch finished. One of the three Playwright drivers exited, the page call never returned, and the count of `View` rows stayed at 1,138 for 20 minutes.
+
+**What worked instead:** Stop that process and start `--mode poc` again. It only selects rows that are still `View`. Print one line per inspection, and give the page a 25-second timeout so a dead browser becomes an error instead of a wait.
+
+**Source:** `scrapers/az_adhs_inspections_ingest.py --mode poc`.
+
+## 2026-11 — Arizona plan text was the word View
+
+**What went wrong:** The inspections ingest stored the button label `View`. The plan is a separate public page, not a file and not behind a login. Reading the button text, reading a detached copy of the page, and passing `page.wait_for_function` its argument in the wrong position all came back empty. The page also shows a "Sorry to interrupt CSS Error" dialog. That dialog is not the plan. `--mode deficiencies` deletes the findings and inserts them again, so it is the wrong way to fill in the text.
+
+**What worked instead:** Open `inspection-plan-of-corrections` for that finding. Read the connected element's text. Wait until a known label is followed by a line that is not another label. Update `plan_of_correction` only where it is still `View`, matched within the inspection by the rule text and the evidence. A finding that does not match stays `View`.
+
+**Source:** `scrapers/az_adhs_inspections_ingest.py --mode poc`.
+
+---
+
 ## 2026-11 — An unordered citation checksum looked like a new inspection
 
 **What went wrong:** The facility-watch checksum sorted deficiency rows by date, source URL, and code, and left ties unordered. Reading the same California record twice could produce a different checksum. Palm Villas, Campbell and Mountain View Center were then logged as “inspection record changed (+0 inspections, +0 citations)” on a run that stored nothing. A finished scan would have emailed that.
