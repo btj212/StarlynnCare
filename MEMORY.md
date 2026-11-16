@@ -13,6 +13,41 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 **Rejected:** Turning the rank off for Oregon only. Relabeling the Oregon bar as citations per bed and keeping a letter. Treating a missing severity as severity 1.
 
 **Source:** Counts on 2026-11-07. Oregon had 1,975 of 1,975 findings uncoded. Illinois had 1,688 of 1,921. Colorado assisted living had 353 of 528. Washington stayed under half in every care setting.
+---
+
+## 2026-11 — Every scan emails the operator what it checked
+
+**Decided:** After each California morning crawl, and after each state in the Sunday GitHub scan, one note goes to `ADMIN_ALERT_EMAIL`. It says whether the scan finished, how the inspection and citation counts moved, which watched homes were opened, which homes gained an inspection or a citation, and how many family notes were sent. A partial scan still sends this note. A job that writes no scan row still sends this note. A weekday says family notes are waiting for Sunday. A failed data check says no family mail went out. The same Loops admin template is used. No new template. Ned is not the recipient. On the Mac, a short placeholder in `.env.local` is ignored. The real Loops key and template id are read from Keychain services `starlynncare-loops-api-key` and `starlynncare-loops-admin-alert-id`, account `starlynncare`. GitHub already has those values as actions secrets.
+
+**Rejected:** Emailing families from the morning crawl. A second failure-only email on top of this report. Putting family addresses in the operator note. Republishing the Loops template.
+
+**Flag:** This does not change "the morning crawl itself still does not email" in the 2026-11 per-home watch entry. That sentence is about families. The operator note is new, and it is why a partial California morning is no longer only a line in a local log.
+
+**Source:** Blake, 2026-11-07. The California launchd job had been exiting 1 with the result only in `~/Library/Logs/StarlynnCare/ca-watch.log`.
+
+---
+
+## 2026-11 — Each watched home is checked, and that home's note does not wait for the rest of the state
+
+**Decided:** California opens the report index for every home a signed-up person is watching, even when the statewide file matches, and those homes go first. A watched home whose own record gained an inspection, including a visit with no new citation, or gained a citation, is emailed on Sunday after the data check. A partial statewide scan can send that note. A +0 inspections / +0 citations fingerprint change does not. Area watches still wait for a completed scan. A failed or running scan sends nothing. The same scan is not sent twice. The morning crawl itself still does not email. There is no one-recipient proof. `--send` sends to every matching watcher. `--recipient-only` is an optional manual limiter. An unread watched home whose statewide row did not change is carried over, so one dark index does not fail the state. An unread home whose row changed today still fails the run, and that failure does not block a different home that was read.
+
+**Rejected:** Emailing the moment the morning job finishes. Emailing area watches from a partial scan. Emailing a checksum flicker. Catching up the November 3 partial scan. Republishing the Loops templates.
+
+**Flag:** This reverses two sentences in "2026-10 — California notes wait for a finished scan, then go out on Sunday": the one-recipient proof, and "partial scans stay silent, including partial scans that already recorded visit changes." It also narrows "still does not email from a partial scan" in the 2026-11 batching entry. Sunday, the data check, weekday silence, and "the crawl itself does not email" stay. Other states' Sunday job now does the same for a watched home when their scan is partial and the data check passes. Area mail on those states still requires a finished scan.
+
+**Source:** Blake, 2026-11-07. The people enrolled that day watch six California homes plus homes in Arizona, Illinois, Minnesota, Pennsylvania, and Washington.
+
+---
+
+## 2026-11 — California report checks run in batches, then look again
+
+**Decided:** The morning crawl still uses the statewide file as the change detector and still does not email from a partial scan. Homes that need a report index are checked eight at a time, least recently checked first. If two batches in a row cannot read the index, that wave stops. The run looks again on a fresh connection after 5, 10, 15, and 20 minutes, unless a wait would run past the 90-minute budget. A pending home whose stored statewide row still matches today, and whose index has no new document id, is not a new failure. The snapshot stays pending, and only its checked time moves, so the next morning tries the homes that were missed. An unread home is carried over, not failed, when that stored row still matches, or when it is Maple Manor or Desert Hills and already has a snapshot. A statewide row that changed today, and was not read, still fails the run.
+
+**Rejected:** Treating a different HTTP version, a dropped client header, or the public search page as another source. Those were tried on 2026-11-07. The report index and the report page hung with no bytes on HTTP/1.0, HTTP/1.1, and HTTP/2. The search page returned 503. The statewide file returned 200. Calling the report API the same way for every home after the first batches fail. Failing the whole state because a pending home could not be re-read on a morning when its statewide row did not change.
+
+**Flag:** This narrows the October rule that any unread facility index makes the scan partial, and the same-day rule that any bulk change without a new report id fails the run every morning. The first day of a bulk change still fails. An unread home whose state row has not changed is carried over. Repeating an already stored gap does not fail the run.
+
+**Source:** `scrapers/ccld_citations_ingest.py`. Manual run `1e6a2659-3cbb-49bd-abdf-f19eea185c30` on 2026-11-07 read 22 of 42 homes, then the index went dark again.
 
 ---
 
@@ -33,6 +68,8 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 **Rejected:** Showing Arizona's 11,973 rows. Each one is the stub `View`. Showing Colorado's 244 plans. The parser joins the headings onto the first word. Showing Illinois `status`. The backfill writes `open` on every row, so it is not a correction flag. Clearing those columns in place.
 
 **Source:** Counts on 2026-11-07. Pennsylvania had 19,986 plans of at least 40 characters, 16,629 corrected and 665 not corrected, and 279 fines. Oregon had 1,804 plans. Utah had 347 follow-ups. Illinois had 439 fines.
+
+---
 
 ## 2026-11 — Facility Watch is free through the records request
 

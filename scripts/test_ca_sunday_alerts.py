@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""California mail waits for a finished scan and for Sunday."""
+"""California mail waits for Sunday. A watched home does not wait for every other home."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from ca_sunday_alerts import (  # noqa: E402
     held_scan_is_sendable,
-    may_email_every_watcher,
     pacific_is_sunday,
     parse_sent_counts,
     window_start,
@@ -25,8 +24,8 @@ PACIFIC = ZoneInfo("America/Los_Angeles")
 
 
 class CaliforniaSundayAlertTests(unittest.TestCase):
-    def test_only_a_finished_sunday_scan_can_email(self) -> None:
-        """A partial California crawl has new visits and still must not mail them."""
+    def test_a_watched_home_can_email_from_a_partial_sunday_scan(self) -> None:
+        """Another home failing does not drop the note for a home that was checked."""
         self.assertTrue(
             held_scan_is_sendable(
                 status="completed",
@@ -35,7 +34,15 @@ class CaliforniaSundayAlertTests(unittest.TestCase):
                 is_sunday=True,
             )
         )
-        for status in ("partial", "failed", "running"):
+        self.assertTrue(
+            held_scan_is_sendable(
+                status="partial",
+                already_sent=False,
+                layer5_passed=True,
+                is_sunday=True,
+            )
+        )
+        for status in ("failed", "running"):
             self.assertFalse(
                 held_scan_is_sendable(
                     status=status,
@@ -83,23 +90,15 @@ class CaliforniaSundayAlertTests(unittest.TestCase):
         moment = datetime(2026, 10, 25, 6, 15, tzinfo=PACIFIC)
         self.assertEqual(window_start(moment), datetime(2026, 10, 17, 0, 0, tzinfo=PACIFIC))
 
-    def test_every_watcher_waits_for_one_confirmed_recipient(self) -> None:
-        """Printing the list, or naming one person, does not open mail to everyone."""
-        self.assertFalse(
-            may_email_every_watcher(send=True, recipient_only=None, proof_present=False)
-        )
-        self.assertFalse(
-            may_email_every_watcher(send=False, recipient_only=None, proof_present=True)
-        )
-        self.assertFalse(
-            may_email_every_watcher(send=True, recipient_only="one@example.com", proof_present=False)
-        )
-        self.assertTrue(
-            may_email_every_watcher(send=True, recipient_only=None, proof_present=True)
-        )
+    def test_send_goes_to_every_matching_watcher(self) -> None:
+        """There is no one-recipient proof. Sunday --send is the send."""
+        script = (SCRIPTS_DIR / "ca_sunday_alerts.py").read_text()
+        self.assertNotIn("may_email_every_watcher", script)
+        self.assertNotIn("ca-sunday-alerts-proven", script)
+        self.assertIn("dry_run = not args.send", script)
 
-    def test_a_zero_send_does_not_count_as_confirmation(self) -> None:
-        """The gate opens only when the summary says a note actually went out."""
+    def test_a_failed_send_is_not_counted_as_mail_that_went_out(self) -> None:
+        """The summary is how a Sunday run knows whether the dispatch actually sent."""
         self.assertEqual(
             parse_sent_counts("Alerts: area sent=1, facility sent=0, failed=0\n"),
             (1, 0, 0),
@@ -107,13 +106,14 @@ class CaliforniaSundayAlertTests(unittest.TestCase):
         self.assertEqual(parse_sent_counts("Finished California scans waiting: 0\n"), (0, 0, 0))
 
     def test_the_morning_job_checks_sunday_without_emailing_from_the_crawl(self) -> None:
-        """The crawl command stays the same. Sunday mail is a later step."""
+        """The crawl command stays the same. Family mail is still a later Sunday step."""
         script = (SCRIPTS_DIR / "run_ca_watch_local.sh").read_text()
         self.assertIn('"--state"', script)
         self.assertIn('"CA"', script)
         self.assertIn('"--skip-validate"', script)
         self.assertIn("scripts/ca_sunday_alerts.py", script)
         self.assertIn('"--send"', script)
+        self.assertIn("scripts/report_scan_run.py", script)
         self.assertNotIn("dispatch_watch_alerts.py", script)
         workflow = (
             SCRIPTS_DIR.parent / ".github/workflows/weekly-inspection-ingest.yml"
