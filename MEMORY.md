@@ -15,6 +15,33 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 **Reverses:** "Generic competitor-derived ranges = fluff = do not publish" (the cost data plane gate). Source: Blake's instruction on 2026-11-16 to take simple price data points from A Place for Mom and other sites, with Genworth as the backstop.
 
 **Source:** `pilot_pricing_sources` rows with `raw_extract.care_basis` (read through `facility_costs`, migration 0074). Older Firecrawl pilot rows stay out.
+---
+
+## 2026-11 — The seven how-to-check pages are search pages named for what people type
+
+**Decided:** Each how-to-check page opens with a search box (`FacilityLookupBox`) that calls `/api/facilities/{state}/lookup`, then links to the home's StarlynnCare profile and the state's own record. The box says it searches the memory care homes we publish, and links to the state site for any other home. Titles use the searched words: Pennsylvania "personal care home inspection reports", Oregon "assisted living license lookup", Illinois "IDPH assisted living lookup", and similar for the other four. URLs do not change. Illinois says it holds assisted living establishments only (all 338 rows are license type ALE) and sends nursing home checks to IDPH.
+
+**Rejected:** Titles that promise every assisted living home in the state, because the box covers only published homes. A new URL per page, since these rank 13 to 20 today. Showing "no inspection date" when `last_inspection_date` is empty, because that column is empty for most homes that do have inspections.
+
+**Note:** Article approval is keyed by path, so a retitle shows without a new approval. The seven pages were approved before the retitle.
+---
+
+## 2026-11 — A home's profile shows summaries; the full citation text lives on its own page
+
+**Decided:** `/{state}/{city}/{home}/inspections` prints every visit of the last three years with the citation text in the inspector's words. The profile prints one plain-language summary per visit and links to that visit on the new page (`#inspection-{id}`). Jurgens Park fell from 37,866 words to 1,567 on the profile, so the title and the page now describe the same short page. The new page is noindex when the home is noindex or no visit has finding text, and it is in the sitemap only for homes with a finding in the last three years (`facilities_with_recent_findings`, migration 0073). Shared pieces are in `src/components/facility/profile/inspectionBlocks.tsx`.
+
+**Rejected:** Keeping the text on the profile behind `<details>` (still in the HTML, still counted as one 39,000-word page). Listing the page for every home (thin pages for homes with nothing cited).
+
+**Note:** The new page for a home with many findings is still long (Jurgens Park about 37,000 words). That is the record itself, and it is where the long page belongs.
+---
+
+## 2026-11 — Every city page lists every home, and related homes are the nearest ones
+
+**Decided:** A city page lists every home in the sitemap, A to Z, under the first 24 cards. A county page still links to its cities. The related rail on a facility profile is the 12 nearest homes in the same city, and the nearby-city rail is the 8 nearest in the county. Both come from `related_facilities` (migration 0072), which returns only homes that have an inspection and are not Arizona homes of 10 or fewer beds with no citations. That is the same rule as `src/lib/seo/indexability.ts`; change both together. A home with no coordinates gets its city's homes by name.
+
+**Rejected:** Ordering related homes by `last_inspection_date`. The column is empty for 4,392 published homes, so every profile in a city linked to the same 8. Linking noindex homes.
+
+**Source:** Search Console and Ahrefs brief, 2026-11-15: 62 of 4,575 facility pages rank, and the Mesa page linked 31 of its 145 homes. Mesa now links all 145, and each of the 145 is in at least one other home's related rail.
 
 ---
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { FacilityLookupBox } from "@/components/articles/FacilityLookupBox";
 import { GatedArticleFrame } from "@/components/articles/GatedArticleFrame";
 import { HOW_TO_CHECK, type HowToState } from "@/lib/content/howToCheckArticles";
 
@@ -11,7 +12,7 @@ export function HowToCheckPage({ code, children }: { code: HowToState; children:
       description={article.description}
       datePublished={article.datePublished}
       eyebrow={article.badge}
-      heading={<>How to check a {article.stateName} memory care <em>inspection record</em></>}
+      heading={<>{article.headingLead} <em>{article.headingEm}</em></>}
       image={article.image}
       crumbs={[
         { name: "Home", path: "/" },
@@ -27,6 +28,12 @@ export function HowToCheckPage({ code, children }: { code: HowToState; children:
       }}
       faq={article.faq}
     >
+      <FacilityLookupBox
+        stateSlug={article.statePath.slice(1)}
+        stateName={article.stateName}
+        regulatorName={article.regulatorName}
+        regulatorUrl={article.regulatorUrl}
+      />
       {children}
     </GatedArticleFrame>
   );

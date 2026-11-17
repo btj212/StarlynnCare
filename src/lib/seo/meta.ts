@@ -163,6 +163,24 @@ export function buildFacilityTitle(input: {
   return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? name);
 }
 
+/** Title of a home's full-report page. Longest candidate that fits wins. */
+export function buildFacilityReportsTitle(input: {
+  name: string;
+  stateName: string;
+  city: string;
+}): string {
+  const { name, stateName, city } = input;
+  const abbr = STATE_ABBR[stateName] ?? stateName;
+  const candidates = [
+    `${name}, ${city}, ${abbr}: Inspection Reports and Citations`,
+    `${name}, ${city}: Inspection Reports and Citations`,
+    `${name}: Inspection Reports and Citations`,
+    `${name}: Inspection Reports`,
+    name,
+  ];
+  return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? name);
+}
+
 function joinTitleFacts(facts: string[]): string {
   if (facts.length <= 1) return facts[0] ?? "";
   if (facts.length === 2) return `${facts[0]} and ${facts[1]}`;

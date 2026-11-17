@@ -30,7 +30,8 @@ import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
-import { rankHubFacilities } from "@/lib/facility/hubPreview";
+import { homesForCityIndex, rankHubFacilities } from "@/lib/facility/hubPreview";
+import { CityHomeIndex } from "@/components/facility/CityHomeIndex";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { parentCountyForCity } from "@/lib/regions";
 import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
@@ -897,6 +898,15 @@ export default async function RegionPage({ params }: PageProps) {
               initialShowSmall={hubRank.onlySmallHomes}
             />
           </div>
+        )}
+
+        {/* ── Every home, A to Z — city pages only; counties link to their cities ── */}
+        {!fetchError && !isCounty && (
+          <CityHomeIndex
+            homes={homesForCityIndex(facilities, region.state.code)}
+            stateSlug={region.state.slug}
+            regionName={region.name}
+          />
         )}
 
         {/* ── County editorial intro — below grid for UX; preserved for AEO/GEO ── */}

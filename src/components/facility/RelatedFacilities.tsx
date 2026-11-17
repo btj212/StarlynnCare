@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
-import { stateFromSlug } from "@/lib/states";
 import { formatFacilityName } from "@/lib/facility/displayName";
 
 interface RelatedFacilitiesProps {
@@ -20,41 +19,38 @@ type RelatedRow = {
   city_slug: string;
 };
 
+const RELATED_LIMIT = 12;
+
 async function loadRelated(
   facilityId: string,
   citySlug: string,
-  stateSlug: string,
 ): Promise<RelatedRow[]> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return [];
 
-  const stateInfo = stateFromSlug(stateSlug);
-  const stateCode = stateInfo?.code ?? "CA";
-
-  const { data: raw } = await supabase
-    .from("facilities")
-    .select("id, name, city, slug, city_slug")
-    .eq("state_code", stateCode)
-    .eq("city_slug", citySlug)
-    .eq("publishable", true)
-    .neq("id", facilityId)
-    .order("last_inspection_date", { ascending: false, nullsFirst: false })
-    .limit(8);
-
-  if (!raw || raw.length === 0) return [];
-  return raw as RelatedRow[];
+  const { data, error } = await supabase.rpc("related_facilities", {
+    p_facility_id: facilityId,
+    p_city_slugs: [citySlug],
+    p_limit: RELATED_LIMIT,
+  });
+  if (error) {
+    console.error("[related] related_facilities failed:", error.message);
+    return [];
+  }
+  return (data ?? []) as RelatedRow[];
 }
 
 /**
- * Server component. Renders a "Related in [city]" rail showing up to 8 sibling
- * facilities sorted by grade (highest first).
+ * Server component. Renders a "Related in [city]" rail of the 12 nearest homes in
+ * the same city that are in the sitemap. Nearest-first spreads inbound links across
+ * the whole city instead of the same 8 homes.
  */
 export async function RelatedFacilities({
   facilityId,
   citySlug,
   stateSlug,
 }: RelatedFacilitiesProps) {
-  const related = await loadRelated(facilityId, citySlug, stateSlug);
+  const related = await loadRelated(facilityId, citySlug);
   if (related.length === 0) return null;
 
   return (
