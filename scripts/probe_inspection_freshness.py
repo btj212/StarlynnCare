@@ -479,6 +479,9 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Cron probe 2026-11-16T23:04 UTC: OR source max=2026-11-10, 0 rows after ingested max; MN insertDate
 #   max=2026-11-11 unchanged, resolved max=2026-11-03 unchanged; 0 insertDate rows after 2026-11-11.
 #   CA Mac launchd; TX manual TULIP; CO static HFQ; all other states no new probe-layer signal.
+# Cron probe 2026-11-17T23:02 UTC: OR source max=2026-11-10, 0 rows after ingested max (unchanged vs 11/16);
+#   MN insertDate max=2026-11-11, resolved max=2026-11-03 unchanged; 0 insertDate rows after 2026-11-11.
+#   CA Mac launchd; TX manual TULIP; CO static HFQ; all other states no new probe-layer signal.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
