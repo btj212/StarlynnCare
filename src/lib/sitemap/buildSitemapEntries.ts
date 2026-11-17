@@ -449,16 +449,45 @@ export async function collectFacilityEntriesForState(
     }),
   );
 
-  return listed
-    .sort((a, b) =>
-      a.city_slug.localeCompare(b.city_slug) || a.slug.localeCompare(b.slug),
-    )
-    .map((f) => ({
-      loc: `${SITE_ORIGIN}/${stateSlug}/${f.city_slug}/${f.slug}`,
-      priority: "0.8",
-      changefreq: "monthly" as const,
-      ...(f.updated_at ? { lastmod: f.updated_at.split("T")[0] } : {}),
-    }));
+  const withFindings = await facilitiesWithRecentFindings(supabase, stateCode);
+  const sorted = listed.sort(
+    (a, b) => a.city_slug.localeCompare(b.city_slug) || a.slug.localeCompare(b.slug),
+  );
+  const entries: SitemapUrlRow[] = [];
+  for (const f of sorted) {
+    const base = `${SITE_ORIGIN}/${stateSlug}/${f.city_slug}/${f.slug}`;
+    const lastmod = f.updated_at ? { lastmod: f.updated_at.split("T")[0] } : {};
+    entries.push({ loc: base, priority: "0.8", changefreq: "monthly" as const, ...lastmod });
+    // The full-report page is listed only for homes that have findings to print.
+    if (withFindings.has(f.id)) {
+      entries.push({
+        loc: `${base}/inspections`,
+        priority: "0.5",
+        changefreq: "monthly" as const,
+        ...lastmod,
+      });
+    }
+  }
+  return entries;
+}
+
+async function facilitiesWithRecentFindings(
+  supabase: SupabaseClient,
+  stateCode: string,
+): Promise<Set<string>> {
+  const ids = new Set<string>();
+  for (let from = 0; ; from += SITEMAP_QUERY_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .rpc("facilities_with_recent_findings", { p_state_code: stateCode })
+      .range(from, from + SITEMAP_QUERY_PAGE_SIZE - 1);
+    if (error) {
+      throw new Error(`Failed to list ${stateCode} homes with findings: ${error.message}`);
+    }
+    const page = (data ?? []) as Array<{ id: string }>;
+    for (const row of page) ids.add(row.id);
+    if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
+  }
+  return ids;
 }
 
 export async function collectFacilityEntries(
