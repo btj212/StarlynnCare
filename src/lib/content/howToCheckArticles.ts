@@ -6,11 +6,17 @@ export type HowToArticle = {
   code: HowToState;
   path: string;
   title: string;
+  /** Page heading. `headingLead` is plain; `headingEm` is the italic tail. */
+  headingLead: string;
+  headingEm: string;
   description: string;
   datePublished: string;
   badge: string;
   stateName: string;
   statePath: string;
+  /** The state's own lookup, linked from the search box. */
+  regulatorName: string;
+  regulatorUrl: string;
   facilitiesPath: string;
   image: { src: string; alt: string };
   /** Direct answer to the title question, shown first. */
@@ -27,13 +33,17 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
   AZ: {
     code: "AZ",
     path: "/arizona/how-to-check-a-memory-care-record",
-    title: "How to check an Arizona memory care inspection record",
+    title: "Arizona assisted living inspection lookup",
+    headingLead: "Arizona assisted living",
+    headingEm: "inspection lookup",
     description:
-      "Where to look on AZ Care Check, what immediate jeopardy means on an Arizona profile, and how many published homes have an inspection on file.",
+      "Where Arizona assisted living inspection reports are kept on AZ Care Check, plus a search of the memory care homes we publish by name or license number.",
     datePublished: "2026-10-31",
     badge: "Arizona",
     stateName: "Arizona",
     statePath: "/arizona",
+    regulatorName: "AZ Care Check",
+    regulatorUrl: "https://azcarecheck.azdhs.gov",
     facilitiesPath: "/arizona/facilities",
     image: {
       src: "/illustrations/arizona-how-to-check.png",
@@ -64,13 +74,17 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
   CA: {
     code: "CA",
     path: "/california/how-to-check-a-memory-care-record",
-    title: "How to check a California memory care inspection record",
+    title: "California care facility inspection lookup",
+    headingLead: "California care facility",
+    headingEm: "inspection lookup",
     description:
-      "Where to look on the CDSS care facility search, what a Type A citation is, and how many published homes have an inspection on file.",
+      "Where California care facility inspection reports are kept on the CDSS search, plus a search of the memory care homes we publish by name or license number.",
     datePublished: "2026-10-31",
     badge: "California",
     stateName: "California",
     statePath: "/california",
+    regulatorName: "CDSS care facility search",
+    regulatorUrl: "https://www.ccld.dss.ca.gov/carefacilitysearch/",
     facilitiesPath: "/california/facilities",
     image: {
       src: "/illustrations/california-how-to-check.png",
@@ -105,13 +119,17 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
   PA: {
     code: "PA",
     path: "/pennsylvania/how-to-check-a-memory-care-record",
-    title: "How to check a Pennsylvania memory care inspection record",
+    title: "Pennsylvania personal care home inspection reports",
+    headingLead: "Pennsylvania personal care home",
+    headingEm: "inspection reports",
     description:
-      "Where to look in the Pennsylvania DHS provider directory, what immediate jeopardy and a provisional license mean, and how many published homes have an inspection on file.",
+      "Where Pennsylvania personal care home inspection reports are kept in the DHS directory, plus a search of the memory care homes we publish by name or license number.",
     datePublished: "2026-10-31",
     badge: "Pennsylvania",
     stateName: "Pennsylvania",
     statePath: "/pennsylvania",
+    regulatorName: "Pennsylvania DHS provider directory",
+    regulatorUrl: "https://www.humanservices.dhs.pa.gov/HUMAN_SERVICE_PROVIDER_DIRECTORY/",
     facilitiesPath: "/pennsylvania/facilities",
     image: {
       src: "/illustrations/pennsylvania-how-to-check.png",
@@ -142,13 +160,17 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
   WA: {
     code: "WA",
     path: "/washington/how-to-check-a-memory-care-record",
-    title: "How to check a Washington memory care inspection record",
+    title: "Washington assisted living inspection reports",
+    headingLead: "Washington assisted living",
+    headingEm: "inspection reports",
     description:
-      "Where to look on the DSHS lookup, what immediate jeopardy means on a Washington profile, and how many published homes have an inspection on file.",
+      "Where Washington assisted living inspection reports are kept on the DSHS lookup, plus a search of the memory care homes we publish by name or license number.",
     datePublished: "2026-10-31",
     badge: "Washington",
     stateName: "Washington",
     statePath: "/washington",
+    regulatorName: "DSHS assisted living facility locator",
+    regulatorUrl: "https://fortress.wa.gov/dshs/adsaapps/lookup/BHPubLookup.aspx",
     facilitiesPath: "/washington/facilities",
     image: {
       src: "/illustrations/washington-how-to-check.png",
@@ -179,13 +201,17 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
   OR: {
     code: "OR",
     path: "/oregon/how-to-check-a-memory-care-record",
-    title: "How to check an Oregon memory care inspection record",
+    title: "Oregon assisted living license lookup",
+    headingLead: "Oregon assisted living",
+    headingEm: "license lookup",
     description:
-      "Where to look on the Oregon long-term care licensing site, what a level 4 finding means, and how many published homes have an inspection on file.",
+      "How to look up an Oregon assisted living license and its inspections on the state site, plus a search of the memory care homes we publish by name or license number.",
     datePublished: "2026-10-31",
     badge: "Oregon",
     stateName: "Oregon",
     statePath: "/oregon",
+    regulatorName: "Oregon long-term care licensing site",
+    regulatorUrl: "https://ltclicensing.oregon.gov",
     facilitiesPath: "/oregon/facilities",
     image: {
       src: "/illustrations/oregon-how-to-check.png",
@@ -216,13 +242,17 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
   IL: {
     code: "IL",
     path: "/illinois/how-to-check-a-memory-care-record",
-    title: "How to check an Illinois memory care inspection record",
+    title: "IDPH assisted living lookup for Illinois",
+    headingLead: "IDPH assisted living",
+    headingEm: "lookup for Illinois",
     description:
-      "Where to look on the Illinois Department of Public Health facility lookup, what a Type 1 citation is, and how many published homes have an inspection on file.",
+      "How to find an Illinois assisted living home on the IDPH facility lookup, plus a search of the memory care homes we publish. We hold no Illinois nursing homes, only assisted living establishments.",
     datePublished: "2026-10-31",
     badge: "Illinois",
     stateName: "Illinois",
     statePath: "/illinois",
+    regulatorName: "IDPH facility lookup",
+    regulatorUrl: "https://llcs.dph.illinois.gov/s/facility-lookup?language=en_US",
     facilitiesPath: "/illinois/facilities",
     image: {
       src: "/illustrations/illinois-how-to-check.png",
@@ -249,13 +279,17 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
   MN: {
     code: "MN",
     path: "/minnesota/how-to-check-a-memory-care-record",
-    title: "How to check a Minnesota memory care inspection record",
+    title: "Minnesota assisted living license lookup",
+    headingLead: "Minnesota assisted living",
+    headingEm: "license lookup",
     description:
-      "Where to look in the Minnesota Department of Health provider directory, what an immediate-jeopardy flag means, and how many published homes have an inspection on file.",
+      "How to look up a Minnesota assisted living license on the MDH provider directory, plus a search of the memory care homes we publish by name or license number.",
     datePublished: "2026-10-31",
     badge: "Minnesota",
     stateName: "Minnesota",
     statePath: "/minnesota",
+    regulatorName: "MDH provider directory",
+    regulatorUrl: "https://www.health.state.mn.us/facilities/providers/index.html",
     facilitiesPath: "/minnesota/facilities",
     image: {
       src: "/illustrations/minnesota-how-to-check.png",

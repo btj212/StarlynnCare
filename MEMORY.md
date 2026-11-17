@@ -6,6 +6,15 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — The seven how-to-check pages are search pages named for what people type
+
+**Decided:** Each how-to-check page opens with a search box (`FacilityLookupBox`) that calls `/api/facilities/{state}/lookup`, then links to the home's StarlynnCare profile and the state's own record. The box says it searches the memory care homes we publish, and links to the state site for any other home. Titles use the searched words: Pennsylvania "personal care home inspection reports", Oregon "assisted living license lookup", Illinois "IDPH assisted living lookup", and similar for the other four. URLs do not change. Illinois says it holds assisted living establishments only (all 338 rows are license type ALE) and sends nursing home checks to IDPH.
+
+**Rejected:** Titles that promise every assisted living home in the state, because the box covers only published homes. A new URL per page, since these rank 13 to 20 today. Showing "no inspection date" when `last_inspection_date` is empty, because that column is empty for most homes that do have inspections.
+
+**Note:** Article approval is keyed by path, so a retitle shows without a new approval. The seven pages were approved before the retitle.
+---
+
 ## 2026-11 — A home's profile shows summaries; the full citation text lives on its own page
 
 **Decided:** `/{state}/{city}/{home}/inspections` prints every visit of the last three years with the citation text in the inspector's words. The profile prints one plain-language summary per visit and links to that visit on the new page (`#inspection-{id}`). Jurgens Park fell from 37,866 words to 1,567 on the profile, so the title and the page now describe the same short page. The new page is noindex when the home is noindex or no visit has finding text, and it is in the sitemap only for homes with a finding in the last three years (`facilities_with_recent_findings`, migration 0073). Shared pieces are in `src/components/facility/profile/inspectionBlocks.tsx`.

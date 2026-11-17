@@ -89,6 +89,9 @@ const STEPS: Record<HowToState, ReactNode> = {
         <External href="https://llcs.dph.illinois.gov/s/facility-lookup?language=en_US">Illinois Department of Public Health facility lookup</External> and open its record. This directory&apos;s page for the home lists the inspections we hold.
       </p>
       <p className={`mt-4 ${prose}`}>
+        StarlynnCare holds Illinois assisted living establishments only, and no nursing homes. To check a nursing home, use the IDPH facility lookup above.
+      </p>
+      <p className={`mt-4 ${prose}`}>
         Assisted living establishments follow 77 Ill. Adm. Code 295. When a citation names a rule, that names the rule. It does not describe what the inspector saw. A rule about a dementia program is not a designation that the home provides memory care.
       </p>
       <p className={`mt-4 ${prose}`}>
