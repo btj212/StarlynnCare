@@ -18,6 +18,8 @@ Cost: ~5 sources × (1 search + 1 extract @ 5 cr) ≈ ~30 credits per facility �
 
 Usage:
   python3 scrapers/pilot_pricing_triangulate.py --smoke           # 5 facilities
+  python3 scrapers/pilot_pricing_triangulate.py --probe --run-id cost_probe_1
+                                                                   # 10 Mesa AZ + 10 Orange County CA
   python3 scrapers/pilot_pricing_triangulate.py                    # all OC
   python3 scrapers/pilot_pricing_triangulate.py --run-id oc_p4_v2
 """
@@ -37,6 +39,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env.local")
 sys.path.insert(0, str(Path(__file__).parent))
 from _firecrawl import current_spend_usd, fc_extract, fc_search  # noqa: E402
+from _robots import robots_allows  # noqa: E402
 
 DB_URL = os.environ["DATABASE_URL"]
 
@@ -118,6 +121,10 @@ PRICE_PROMPT = (
 )
 
 
+# Pages skipped because robots.txt disallows them, by source. Reported at the end of a run.
+robots_blocked: dict[str, int] = {}
+
+
 def domain_of(url: str) -> str:
     try:
         host = urlparse(url).hostname or ""
@@ -165,6 +172,25 @@ def get_facilities(conn: psycopg.Connection, limit: int | None = None) -> list[d
         cur.execute(q, OC_CITIES)
         cols = [d[0] for d in cur.description]
         return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+def get_probe_facilities(conn: psycopg.Connection, per_group: int = 10) -> list[dict]:
+    """per_group Mesa AZ homes plus per_group Orange County CA homes, a fixed pseudo-random sample."""
+    placeholders = ", ".join(["%s"] * len(OC_CITIES))
+    queries = [
+        ("SELECT id, name, city, slug, state_code FROM facilities WHERE state_code='AZ' "
+         "AND publishable=true AND city='Mesa' ORDER BY md5(id::text) LIMIT %s", (per_group,)),
+        (f"SELECT id, name, city, slug, state_code FROM facilities WHERE state_code='CA' "
+         f"AND publishable=true AND city IN ({placeholders}) ORDER BY md5(id::text) LIMIT %s",
+         (*OC_CITIES, per_group)),
+    ]
+    out: list[dict] = []
+    with conn.cursor() as cur:
+        for sql, params in queries:
+            cur.execute(sql, params)
+            cols = [d[0] for d in cur.description]
+            out.extend(dict(zip(cols, row)) for row in cur.fetchall())
+    return out
 
 
 def get_already_processed(conn: psycopg.Connection, run_id: str) -> set:
@@ -223,7 +249,7 @@ def insert_source_row(
     conn.commit()
 
 
-def triangulate(rows: list[dict]) -> dict | None:
+def triangulate(rows: list[dict], state_code: str = "CA") -> dict | None:
     """Compute triangulated price stats from per-source rows for one facility."""
     valid_starting = [
         r["starting_price_monthly_usd"]
@@ -261,9 +287,11 @@ def triangulate(rows: list[dict]) -> dict | None:
         confidence = "low"
 
     median_mc = int(statistics.median(valid_mc)) if valid_mc else None
-    vs_median = round(
-        ((median - CA_STATE_MEDIAN_MEMORY_CARE_USD) / CA_STATE_MEDIAN_MEMORY_CARE_USD) * 100,
-        1,
+    # The anchor constant is California's. Other states get no comparison.
+    vs_median = (
+        round(((median - CA_STATE_MEDIAN_MEMORY_CARE_USD) / CA_STATE_MEDIAN_MEMORY_CARE_USD) * 100, 1)
+        if state_code == "CA"
+        else None
     )
 
     return {
@@ -363,6 +391,11 @@ def process_facility(
             print(f"  [{source_label}] URL/title sanity check failed: {hit_url[:80]}")
             continue
 
+        if not robots_allows(hit_url):
+            print(f"  [{source_label}] robots.txt disallows: {hit_url[:80]}")
+            robots_blocked[source_label] = robots_blocked.get(source_label, 0) + 1
+            continue
+
         try:
             res = fc_extract(hit_url, schema=PRICE_SCHEMA, prompt=PRICE_PROMPT)
         except RuntimeError:
@@ -382,7 +415,7 @@ def process_facility(
         sp = extract.get("starting_price_monthly_usd")
         print(f"  [{source_label}] correct={ic} start=${sp} url={hit_url[:60]}")
 
-    summary = triangulate(per_source_rows)
+    summary = triangulate(per_source_rows, facility.get("state_code", "CA"))
     if summary:
         upsert_triangulated(conn, run_id, fid, summary)
         print(
@@ -406,6 +439,11 @@ def process_facility(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Pilot 4: pricing triangulation")
     parser.add_argument("--smoke", action="store_true", help="First 5 facilities only")
+    parser.add_argument(
+        "--probe",
+        action="store_true",
+        help="10 Mesa AZ homes and 10 Orange County CA homes, to measure match rate and spend",
+    )
     parser.add_argument("--run-id", default="oc_p4", help="pilot_run_id tag (default: oc_p4)")
     parser.add_argument(
         "--skip-if-exists",
@@ -419,12 +457,12 @@ def main() -> None:
 
     print("=== Pilot 4: Pricing Triangulation (OC) ===")
     print(f"Run ID: {run_id}")
-    print(f"Mode: {'smoke (5)' if args.smoke else 'full'}")
+    print(f"Mode: {'probe (10 Mesa + 10 OC)' if args.probe else 'smoke (5)' if args.smoke else 'full'}")
     print(f"Sources: {[s for s, _ in PRICING_SOURCES]}")
     print(f"Spend so far: ${current_spend_usd():.3f}")
 
     with psycopg.connect(DB_URL) as conn:
-        facilities = get_facilities(conn, limit=limit)
+        facilities = get_probe_facilities(conn) if args.probe else get_facilities(conn, limit=limit)
         print(f"OC facilities found: {len(facilities)}")
 
         already_done: set = set()
@@ -470,6 +508,7 @@ def main() -> None:
         print(f"With ≥1 valid price: {agg['with_any_price']}")
         print(f"Triangulated (≥2 sources): {agg['triangulated_2plus']}")
         print(f"Triangulated (≥3 sources): {agg['triangulated_3plus']}")
+        print(f"Robots.txt skips by source: {robots_blocked or 'none'}")
         print(f"Total spend: ${current_spend_usd():.3f}")
 
 

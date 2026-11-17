@@ -10,6 +10,7 @@ import { displayCityName } from "@/lib/resolveListingRegion";
 import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
+import { loadFacilityCosts } from "@/lib/cost/loadFacilityCosts";
 import { ComplianceFlagBanner } from "@/components/facility/ComplianceFlag";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 
@@ -19,6 +20,7 @@ import { FacilityHero } from "@/components/facility/profile/FacilityHero";
 import { FacilityQuickFacts } from "@/components/facility/profile/FacilityQuickFacts";
 import { FacilitySnapshot } from "@/components/facility/profile/FacilitySnapshot";
 import { FacilityPeerRank } from "@/components/facility/profile/FacilityPeerRank";
+import { FacilityCost } from "@/components/facility/profile/FacilityCost";
 import { FacilityRecord } from "@/components/facility/profile/FacilityRecord";
 import { FacilityRules, type SerializableRuleCard } from "@/components/facility/profile/FacilityRules";
 import { FacilityTourPrep } from "@/components/facility/profile/FacilityTourPrep";
@@ -243,6 +245,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
   const profile = result as import("@/lib/facility/loadFacilityProfile").FacilityProfile;
   const { facility, state, county, backHref, backLabel } = profile;
+  const costRows = await loadFacilityCosts([facility.id]);
   const offer = assignOffer(facility.id, facility.state_code);
 
   return (
@@ -316,6 +319,8 @@ export default async function FacilityPage({ params }: PageProps) {
             <FacilityRecord profile={profile} />
           </div>
         </div>
+
+        <FacilityCost rows={costRows} stateCode={facility.state_code} stateName={state.name} />
 
         {/* § 04 · Rulebook accordion (hidden when state has no rules configured) */}
         <FacilityRules rulesCards={profile.rulesCards.map(({ id, icon, question, regCite, plain, ask, citedDate }) => ({ id, icon, question, regCite, plain, ask, citedDate } satisfies SerializableRuleCard))} />

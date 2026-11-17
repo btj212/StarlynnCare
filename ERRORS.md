@@ -8,6 +8,14 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — Firecrawl price extract: rate limit, and a neighbour's price
+
+**What went wrong:** The 20-home price probe through `fc_search` and `fc_extract` got rejected by the plan's rate limit on 18 homes. The two answers it did give had a problem: A Place for Mom's compare table puts neighbouring homes' prices on a home's own page, and the model took one (Touch of Love at $6,500, where its own column is empty).
+
+**What worked instead:** Plain HTTP with `scrapers/_robots.py`, the sites' own sitemaps to find each page, a check that the page's address block has our ZIP and house number, and a reader of the home's own price rows only. No model, no paid API.
+
+**Source:** `scrapers/cost_fetch.py`, probes `cost_fetch_probe_1` and `cost_fetch_probe_2`.
+
 ## 2026-11 — The Arizona plan backfill sat still after a browser driver died
 
 **What went wrong:** Each worker printed only when its whole batch finished. One of the three Playwright drivers exited, the page call never returned, and the count of `View` rows stayed at 1,138 for 20 minutes.

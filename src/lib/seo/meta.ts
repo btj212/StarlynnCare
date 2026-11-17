@@ -121,6 +121,7 @@ function countLabel(count: number, singular: string, plural: string): string {
  * Name and place first. A comparative rank stays in the description and on
  * the page, not in the title, because facility-name searches need the city.
  * "Reviews" appears only when a published review exists.
+ * "Costs" is in every title because the profile always has a cost section.
  */
 export function buildFacilityTitle(input: {
   name: string;
@@ -144,7 +145,14 @@ export function buildFacilityTitle(input: {
   }
   if (reviews > 0) facts.push("reviews");
 
+  // Every profile has a cost section: the home's listed price when we hold one, otherwise
+  // the state's typical range. A home with inspections also has an inspection record.
+  const costTitles =
+    inspections > 0
+      ? [`${place}: Costs and Inspection Record`, `${place}: Costs and Inspections`, `${place}: Costs`]
+      : [`${place}: Costs`];
   const candidates = [
+    ...costTitles,
     facts.length ? `${place}: ${joinTitleFacts(facts)}` : place,
     facts.length > 1 ? `${place}: ${joinTitleFacts(facts.slice(0, -1))}` : place,
     place,
