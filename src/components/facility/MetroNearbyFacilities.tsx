@@ -21,7 +21,8 @@ type Row = {
 const MAX_NEARBY = 8;
 
 /**
- * Publishable facilities in other cities within the same county region (cross-metro discovery).
+ * The nearest homes in other cities within the same county region (cross-metro discovery).
+ * Only homes that are in the sitemap are listed.
  */
 export async function MetroNearbyFacilities({ facilityId, citySlug, stateSlug }: Props) {
   const stateInfo = stateFromSlug(stateSlug);
@@ -35,16 +36,15 @@ export async function MetroNearbyFacilities({ facilityId, citySlug, stateSlug }:
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return null;
 
-  const { data: raw } = await supabase
-    .from("facilities")
-    .select("id, name, city, slug, city_slug")
-    .eq("state_code", stateInfo.code)
-    .eq("publishable", true)
-    .in("city_slug", siblingSlugs)
-    .neq("id", facilityId)
-    .order("last_inspection_date", { ascending: false, nullsFirst: false })
-    .limit(MAX_NEARBY);
-
+  const { data: raw, error } = await supabase.rpc("related_facilities", {
+    p_facility_id: facilityId,
+    p_city_slugs: siblingSlugs,
+    p_limit: MAX_NEARBY,
+  });
+  if (error) {
+    console.error("[metro-nearby] related_facilities failed:", error.message);
+    return null;
+  }
   if (!raw?.length) return null;
 
   const ranked = raw as Row[];
