@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { emitContractToolStart } from "@/lib/analytics/clarityEvents";
 
 type State = "idle" | "uploading" | "done" | "error";
 
@@ -15,6 +16,7 @@ export function ContractUploadForm() {
     e.preventDefault();
     if (!email.trim() || !file) return;
 
+    emitContractToolStart();
     setState("uploading");
     setErrorMsg("");
 

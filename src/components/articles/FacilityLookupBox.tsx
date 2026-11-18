@@ -85,7 +85,7 @@ export function FacilityLookupBox({ stateSlug, stateName, regulatorName, regulat
         htmlFor={inputId}
         className="mb-3 block font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust"
       >
-        Look up a {stateName} home
+        Look up {/^[AEIOU]/.test(stateName) ? "an" : "a"} {stateName} home
       </label>
       <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row">
         <input

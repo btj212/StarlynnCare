@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { emitInspectionAlertSignup } from "@/lib/analytics/clarityEvents";
 
 interface AreaWatchModalProps {
   areaName: string;
@@ -76,6 +77,7 @@ export function AreaWatchModal({
       });
 
       if (res.ok) {
+        emitInspectionAlertSignup(source);
         setFormState("success");
         setTimeout(() => setOpen(false), 3000);
       } else {

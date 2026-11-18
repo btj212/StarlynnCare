@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Every guide offers a next step; analytics runs on the production host only
+
+**Decided:** `GuideFacilityModule` sits under the byline on the 38 guide pages (not the profiles). State guides in a state with a how-to-check page get the lookup box; other state guides link to `/{state}/facilities`; national guides show a state picker. Reason: 88% of guide visitors (450 of 513) left without opening a home.
+
+**Analytics found while doing this:** the live instrument is Microsoft Clarity (`clarityEvents.ts`). The `gtag` helpers in `gtagEvents.ts` fire into nothing because no gtag script is loaded, so the plan's "add events through `gtagEvents.ts`" was changed to Clarity. New Clarity events: `checklist_submit`, `inspection_alert_signup`, `contract_tool_start`; `shortlist_add` already existed. The Ahrefs analytics script loaded on every host and on `/admin` (about 31% of its pageviews); it now loads only on `www.starlynncare.com` and never under `/admin`, and Clarity skips `/admin` too.
+
+**Rejected:** loading gtag now (a second tracker with no owner); changing the Vercel firewall from code (dashboard change, handed to Blake as a checklist).
+
+Source: DataForSEO / Ahrefs brief, 2026-11-18.
+
+---
+
 ## 2026-11 — Listed prices are published as bands, from Caring.com and SeniorAdvisor
 
 **Decided:** Homes show a price band from prices listed by Caring.com and SeniorAdvisor, read by `scrapers/cost_fetch.py` with plain HTTP (robots.txt checked, one request every 2.5 s, address and house number confirmed on each page). A band is at least $1,000 wide, sits on a $500 grid, and never has a read figure as an edge, so no site's exact number is printed. It is deterministic: the same input gives the same band. Memory care and assisted living are never mixed. A price counts as memory care only when the page labels it so. A home with only an assisted living price says so and says memory care is usually higher. A home with no price shows the state range with its Genworth source. A city range appears when 5 or more homes list a memory care price (the middle half of them), else the state range. Every profile title says "Costs".

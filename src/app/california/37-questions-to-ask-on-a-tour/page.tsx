@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { GuideFacilityModule } from "@/components/articles/GuideFacilityModule";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { buildArticleSchema, buildBreadcrumbList } from "@/lib/seo/schema";
@@ -132,6 +133,7 @@ export default function ThirtySevenQuestionsPage() {
             </p>
             <div className="mt-8">
               <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
+              <GuideFacilityModule stateSlug="california" />
             </div>
             <EditorialHero
               src="/illustrations/family-facility-tour-hallway.png"

@@ -8,6 +8,7 @@ import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
 import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { GuideFacilityModule } from "@/components/articles/GuideFacilityModule";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import {
   buildArticleSchema,
@@ -178,6 +179,7 @@ export default function CaliforniaCostGuidePage() {
             </p>
             <div className="mt-8">
               <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
+              <GuideFacilityModule stateSlug="california" />
             </div>
             <EditorialHero
               src="/illustrations/family-financial-planning-table.png"

@@ -80,11 +80,25 @@ export default function RootLayout({
           {children}
           <ShortlistBar />
         </ShortlistProvider>
-        <Script src="https://analytics.ahrefs.com/analytics.js" data-key="IjDNyQvSmnNGFMK02hdywA" strategy="afterInteractive" />
+        {/* Production host only, and never on /admin: local, preview and admin traffic was inflating pageviews. */}
+        <Script id="ahrefs-analytics" strategy="afterInteractive">
+          {`
+            (function() {
+              if (window.location.hostname !== 'www.starlynncare.com') return;
+              if (window.location.pathname.indexOf('/admin') === 0) return;
+              var s = document.createElement('script');
+              s.async = true;
+              s.src = 'https://analytics.ahrefs.com/analytics.js';
+              s.setAttribute('data-key', 'IjDNyQvSmnNGFMK02hdywA');
+              document.head.appendChild(s);
+            })();
+          `}
+        </Script>
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
             (function() {
               if (window.location.hostname !== 'www.starlynncare.com') return;
+              if (window.location.pathname.indexOf('/admin') === 0) return;
               // Skip obvious bots/crawlers to keep Clarity bounce/dwell metrics clean.
               // Dashboard filters (Clarity > Filters > IP / User Agent) handle the rest:
               //   - Add UA filters for: Googlebot, bingbot, AhrefsBot, SemrushBot, DataForSeo

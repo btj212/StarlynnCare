@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { GuideFacilityModule } from "@/components/articles/GuideFacilityModule";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import {
   buildArticleSchema,
@@ -123,6 +124,7 @@ export default function ColoradoLicensingPage() {
             <p className="text-[18px] leading-[1.6] text-ink-3 max-w-[62ch]">{DESC}</p>
             <div className="mt-8">
               <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
+              <GuideFacilityModule stateSlug="colorado" />
             </div>
           </div>
         </div>

@@ -85,6 +85,21 @@ export function emitPaidWatchActivated() {
   c("event", "paid_watch_activated");
 }
 
+/** Fire when a checklist or guide email form is submitted successfully. `source` names the form. */
+export function emitChecklistSubmit(source: string) {
+  c("event", "checklist_submit", { source });
+}
+
+/** Fire when an inspection-alert (area watch) signup succeeds. `source` names the form. */
+export function emitInspectionAlertSignup(source: string) {
+  c("event", "inspection_alert_signup", { source });
+}
+
+/** Fire when someone submits a contract to the contract-review tool. */
+export function emitContractToolStart() {
+  c("event", "contract_tool_start");
+}
+
 /**
  * Fire when the user clicks a Venmo amount (or "Other") on the post-email
  * support ask. `amount` is "5" | "10" | "25" | "other".

@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { GuideFacilityModule } from "@/components/articles/GuideFacilityModule";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { buildArticleSchema, buildBreadcrumbList, buildFaqSchemaFromPairs } from "@/lib/seo/schema";
 
@@ -124,7 +125,7 @@ export default function WaSnfPage() {
             </div>
             <h1 className="font-[family-name:var(--font-display)] font-normal text-[clamp(28px,4.5vw,48px)] leading-[1.08] tracking-[-0.02em] text-ink mt-3 mb-5">{ARTICLE_HEADLINE}</h1>
             <p className="text-[18px] leading-[1.6] text-ink-3 max-w-[62ch]">{DESC}</p>
-            <div className="mt-8"><AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" /></div>
+            <div className="mt-8"><AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" /> <GuideFacilityModule stateSlug="washington" /></div>
           </div>
         </div>
 
