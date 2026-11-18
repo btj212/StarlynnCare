@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — One rank phrase; stored tour-question counts are replaced with live ones
+
+**Decided:** `peerRankPhrase` (`src/lib/seo/rankPhrase.ts`) is the only place that turns a composite percentile into "top N%" or "bottom N%". A home at the 38th percentile is "bottom 38%" everywhere (mobile badge, FAQ, JSON-LD, snippet), never "Top 62%". A sub-metric claim always names its metric ("bottom 6% on citation frequency"). Alamo Care Home showed "bottom 6%", "Top 62%" and "bottom 38%" at once; the "Top 62%" badge was the bug.
+
+**Also:** stored AI tour questions carried the citation count from generation time ("has 6 serious citations"), while the page showed 8 Type A. 640 of 1,440 homes with stored questions embed a count. `freshenTourQuestions` swaps in the live serious or deficiency count at render and drops the question when the live count is zero. The stored text in `facilities.content` is untouched.
+
+**Labelled, not changed:** Aurora's "5.2 citations/facility" is the 36-month average from `region_hub_stats`; the home cards count all citations on file. The row now says "last 36 months" and says the cards count all citations on file.
+
+**Rejected:** rewriting `facilities.content.tour_questions` in the database (would drift again at the next ingest).
+
+Source: DataForSEO / Ahrefs brief, 2026-11-18. Checked 31 live profiles across 10 states: 0 rank or count mismatches after the change.
+
+---
+
 ## 2026-11 — Listed prices are published as bands, from Caring.com and SeniorAdvisor
 
 **Decided:** Homes show a price band from prices listed by Caring.com and SeniorAdvisor, read by `scrapers/cost_fetch.py` with plain HTTP (robots.txt checked, one request every 2.5 s, address and house number confirmed on each page). A band is at least $1,000 wide, sits on a $500 grid, and never has a read figure as an edge, so no site's exact number is printed. It is deterministic: the same input gives the same band. Memory care and assisted living are never mixed. A price counts as memory care only when the page labels it so. A home with only an assisted living price says so and says memory care is usually higher. A home with no price shows the state range with its Genworth source. A city range appears when 5 or more homes list a memory care price (the middle half of them), else the state range. Every profile title says "Costs".

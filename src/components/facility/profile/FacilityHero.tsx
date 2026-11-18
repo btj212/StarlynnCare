@@ -13,6 +13,7 @@ import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
 import { FacilityMemoryCareBasis } from "./FacilityMemoryCareBasis";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
+import { peerRankPhrase } from "@/lib/seo/rankPhrase";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityShareButton } from "./FacilityShareButton";
@@ -461,7 +462,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                     Peer rank
                   </div>
                   <div className="font-[family-name:var(--font-sans)] text-[15px] font-semibold text-ink-2">
-                    Top {Math.max(1, 100 - profile.snapshot.grade.composite_percentile)}% of {state.name} memory care
+                    {peerRankPhrase(profile.snapshot.grade.composite_percentile).text.replace(/^./, (c) => c.toUpperCase())} of {state.name} memory care
                   </div>
                   <a
                     href="#peer"
