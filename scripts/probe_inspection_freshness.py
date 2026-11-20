@@ -473,13 +473,36 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   MN insertDate max=2026-10-24 (unchanged vs Fri probe — same 4 survey PDFs; Sunday GHA MN +0);
 #   MN resolved max=2026-10-14 unchanged; all other states no new probe-layer signal (CA/TX/WA/IL/PA/AZ/MO
 #   refreshed or queued on Sunday GHA 40194733653; MO FOIA manual).
+# Cron probe 2026-11-07T23:03 UTC: OR source max=2026-11-06 (+18 rows vs ingested max 2026-10-23:
+#   Temesgen Helsabo and Tsega Kidanemariam AFH Monitoring 11/06; Adela Galgotiu AFH Re-Licensure 11/06;
+#   Bilal Hilowle AFH Monitoring 11/05; Anchor Care LLC AFH Monitoring 11/05; plus 14 rows 10/27–11/04);
+#   MN insertDate max=2026-11-07 (+91 events vs LAST_MN_INSERT_BASELINE 2026-10-23, incl. 30 on 11/07);
+#   MN resolved source max=2026-10-28 (+18 rows vs ingested max 2026-10-14); all other states no new
+#   probe-layer signal (CA/TX/WA/UT/IL/PA/AZ/MO/CO current per Sunday GHA 41316847867 + CA Mac watch).
+#   Ingest blocked in automation env (no DATABASE_URL; workflow_dispatch HTTP 403). Operator action:
+#   workflow_dispatch weekly-inspection-ingest.yml for OR then MN.
+# Sunday GHA 42490606983 (2026-11-08T14:36 UTC schedule): OR +32 inspections, max=2026-11-06
+#   (was 2026-10-29); MN +18 inspections, resolved max=2026-10-28 unchanged; UT/PA matrix jobs failed;
+#   other matrix states +0 at ingest step (CA excluded — Mac launchd watch).
+# Cron probe 2026-11-08T23:04 UTC: OR source max=2026-11-06 — 0 rows after Sunday GHA (+32 ingested);
+#   MN insertDate max=2026-11-08 (+5 events on 11/08 vs Sunday scrape; 15 on 11/07 posting-delay batch
+#   largely skipped in GHA); MN resolved source max=2026-10-28 (ingested Sunday). OR probe-layer clear.
+#   MN still pending vs LAST_MN_INSERT_BASELINE 2026-10-23 — operator: workflow_dispatch MN only.
+#   All other states no new probe-layer signal (CA/TX/WA/UT/IL/PA/AZ/MO/CO).
+#   Ingest blocked in automation env (no DATABASE_URL; workflow_dispatch HTTP 403).
+# Cron probe 2026-11-10T23:01 UTC: OR source max=2026-11-06 — 0 rows after ingested baseline;
+#   MN insertDate max=2026-11-10 (+102 events vs LAST_MN_INSERT_BASELINE 2026-10-23, incl. 6 on
+#   11/10; resolved source max=2026-11-02, +21 rows vs ingested max 2026-10-28); OR probe-layer clear.
+#   MN insert posting-delay batch still pending — operator: workflow_dispatch MN only (no alerts).
+#   CA/TX/WA/UT/IL/PA/AZ/MO/CO no new probe-layer signal vs Sunday GHA 42490606983.
+#   Ingest blocked in automation env (no DATABASE_URL; workflow_dispatch HTTP 403).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 10, 23),  # GHA 40194733653 +20
+    "OR": date(2026, 11, 6),  # GHA 42490606983 +32
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 10, 14),
+    "MN": date(2026, 10, 28),  # GHA 42490606983 +18 resolved max
     "UT": date(2026, 9, 15),
     "IL": date(2026, 5, 6),
     "PA": date(2026, 10, 16),  # GHA 40063182079 matrix
