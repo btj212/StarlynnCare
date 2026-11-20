@@ -57,13 +57,17 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     q,
     homes: query.homes,
   });
-  const canonical = canonicalFor(path);
+  const filtered = page > 1 || q.length > 0 || query.homes === "small";
+  // The unfiltered browse page duplicates the city hub (which lists every home),
+  // so it canonicals there; filtered and paged views stay noindex under their own URL.
+  const canonical = filtered
+    ? canonicalFor(path)
+    : canonicalFor(`/${region.state.slug}/${region.slug}`);
   const reg = REGULATOR_ABBR[region.state.code] ?? "state";
   const desc = clipMetaDescription(
     `Browse licensed memory care facilities in ${region.name}, ${region.state.name}. Search by name and filter by size. Independent ${reg} inspection records.`,
   );
   const title = `Memory care facilities in ${region.name}, ${region.state.code}`;
-  const filtered = page > 1 || q.length > 0 || query.homes === "small";
 
   return {
     title,

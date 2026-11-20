@@ -233,6 +233,7 @@ export default function MediCalMemoryCarePage() {
                 Browse facilities by ALW county
               </p>
               <div className="flex flex-wrap gap-2">
+                {/* Only counties with published homes: San Bernardino and Fresno hubs return 404 until homes are published there. */}
                 {[
                   { name: "Alameda County", href: "/california/alameda-county" },
                   { name: "Contra Costa County", href: "/california/contra-costa-county" },
@@ -240,12 +241,10 @@ export default function MediCalMemoryCarePage() {
                   { name: "Orange County", href: "/california/orange-county" },
                   { name: "Riverside County", href: "/california/riverside-county" },
                   { name: "Sacramento County", href: "/california/sacramento-county" },
-                  { name: "San Bernardino County", href: "/california/san-bernardino-county" },
                   { name: "San Diego County", href: "/california/san-diego-county" },
-                  { name: "San Francisco County", href: "/california/san-francisco-county" },
+                  { name: "San Francisco", href: "/california/san-francisco" },
                   { name: "San Mateo County", href: "/california/san-mateo-county" },
                   { name: "Santa Clara County", href: "/california/santa-clara-county" },
-                  { name: "Fresno County", href: "/california/fresno-county" },
                 ].map(({ name, href }) => (
                   <Link
                     key={href}

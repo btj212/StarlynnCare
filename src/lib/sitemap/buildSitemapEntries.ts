@@ -335,16 +335,9 @@ export async function collectHubEntriesForState(
         changefreq: "weekly",
         ...dated,
       };
-      // County hubs are not a city_slug. Their facilities page is linked from
-      // the hub. City browse pages are listed so the full directory is findable.
-      if (!countBySlug.has(slug)) return [hub];
-      const browse: SitemapUrlRow = {
-        loc: `${SITE_ORIGIN}/${stateSlug}/${slug}/facilities`,
-        priority: "0.5",
-        changefreq: "weekly",
-        ...dated,
-      };
-      return [hub, browse];
+      // The city browse page (/{city}/facilities) canonicals to the hub, which
+      // already lists every home A to Z, so only the hub is listed.
+      return [hub];
     });
 }
 

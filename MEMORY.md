@@ -17,6 +17,17 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 **Rejected:** rewriting `facilities.content.tour_questions` in the database (would drift again at the next ingest).
 
 Source: DataForSEO / Ahrefs brief, 2026-11-18. Checked 31 live profiles across 10 states: 0 rank or count mismatches after the change.
+---
+
+## 2026-11 — City browse pages canonical to the city page; other-city links on every city page
+
+**Decided:** `/{state}/{city}/facilities` (unfiltered) names `/{state}/{city}` as canonical and is not in the sitemap; the city page already lists every home A to Z, so the browse page was a duplicate (148 pages, 5,759 impressions, 2 clicks). The page stays for visitors and for the nav "Browse facilities" CTA; filtered and paged views stay `noindex,follow` under their own URL. Cities outside a seeded county (Colorado, Arizona, most states) now link to the state's 12 largest other cities (`loadStateCityCounts`, one-hour in-memory cache; Arizona homes of 10 beds or fewer are skipped because they are noindex without citations).
+
+**Fixed alongside:** the Medi-Cal guide linked `/california/san-francisco-county` (real hub is `/california/san-francisco`) and two hubs with no published homes (San Bernardino, Fresno), all 404. Those two links were removed, not redirected; add them back when homes are published there.
+
+**Rejected:** noindex on the browse pages (loses the page as a search surface); redirecting them to the city page (breaks the CTA and search box).
+
+Source: DataForSEO / Ahrefs brief, 2026-11-18.
 
 ---
 
