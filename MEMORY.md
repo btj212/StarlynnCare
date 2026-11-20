@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — City browse pages canonical to the city page; other-city links on every city page
+
+**Decided:** `/{state}/{city}/facilities` (unfiltered) names `/{state}/{city}` as canonical and is not in the sitemap; the city page already lists every home A to Z, so the browse page was a duplicate (148 pages, 5,759 impressions, 2 clicks). The page stays for visitors and for the nav "Browse facilities" CTA; filtered and paged views stay `noindex,follow` under their own URL. Cities outside a seeded county (Colorado, Arizona, most states) now link to the state's 12 largest other cities (`loadStateCityCounts`, one-hour in-memory cache; Arizona homes of 10 beds or fewer are skipped because they are noindex without citations).
+
+**Fixed alongside:** the Medi-Cal guide linked `/california/san-francisco-county` (real hub is `/california/san-francisco`) and two hubs with no published homes (San Bernardino, Fresno), all 404. Those two links were removed, not redirected; add them back when homes are published there.
+
+**Rejected:** noindex on the browse pages (loses the page as a search surface); redirecting them to the city page (breaks the CTA and search box).
+
+Source: DataForSEO / Ahrefs brief, 2026-11-18.
+
+---
+
 ## 2026-11 — Listed prices are published as bands, from Caring.com and SeniorAdvisor
 
 **Decided:** Homes show a price band from prices listed by Caring.com and SeniorAdvisor, read by `scrapers/cost_fetch.py` with plain HTTP (robots.txt checked, one request every 2.5 s, address and house number confirmed on each page). A band is at least $1,000 wide, sits on a $500 grid, and never has a read figure as an edge, so no site's exact number is printed. It is deterministic: the same input gives the same band. Memory care and assisted living are never mixed. A price counts as memory care only when the page labels it so. A home with only an assisted living price says so and says memory care is usually higher. A home with no price shows the state range with its Genworth source. A city range appears when 5 or more homes list a memory care price (the middle half of them), else the state range. Every profile title says "Costs".

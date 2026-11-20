@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { loadStateCityCounts } from "@/lib/facility/stateCityCounts";
 
 type Props = {
   stateSlug: string;
   stateCode: string;
+  stateName: string;
   currentCitySlug: string;
 };
 
@@ -19,11 +21,12 @@ function titleFromSlug(slug: string): string {
  * City listing hubs only: links to sibling city hubs in the same seeded county region.
  * Only cities with at least one publishable facility are linked.
  */
-export async function SiblingCityHubLinks({ stateSlug, stateCode, currentCitySlug }: Props) {
+export async function SiblingCityHubLinks({ stateSlug, stateCode, stateName, currentCitySlug }: Props) {
   const county = countyRegionContainingCitySlug(stateCode, currentCitySlug);
+  if (!county) return <StateCityLinks stateSlug={stateSlug} stateCode={stateCode} stateName={stateName} currentCitySlug={currentCitySlug} />;
   const siblings =
     county?.citySlugs.filter((s) => s.toLowerCase() !== currentCitySlug.toLowerCase()) ?? [];
-  if (!county || siblings.length === 0) return null;
+  if (siblings.length === 0) return null;
 
   // Filter to only cities that have at least one publishable facility.
   let publishableSlugs: Set<string> = new Set(siblings);
@@ -69,6 +72,47 @@ export async function SiblingCityHubLinks({ stateSlug, stateCode, currentCitySlu
         <p className="mt-5 text-[14px] text-ink-3 m-0">
           <Link href={`/${stateSlug}/${county.slug}`} className="text-teal font-medium hover:underline underline-offset-4">
             Full county directory: {county.name}
+          </Link>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Cities outside a seeded county (Colorado, Arizona, most other states) had no
+ * links to any other city. Link the state's largest cities by published homes.
+ */
+async function StateCityLinks({ stateSlug, stateCode, stateName, currentCitySlug }: Props) {
+  const others = (await loadStateCityCounts(stateCode))
+    .filter((c) => c.slug.toLowerCase() !== currentCitySlug.toLowerCase())
+    .slice(0, 12);
+  if (others.length === 0) return null;
+
+  return (
+    <section className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-10">
+        <div className="mb-2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust">
+          Other cities
+        </div>
+        <p className="font-[family-name:var(--font-display)] text-[20px] leading-snug text-ink mb-4 max-w-[62ch]">
+          Memory care in other {stateName} cities
+        </p>
+        <ul className="flex flex-wrap gap-2 list-none m-0 p-0">
+          {others.map((c) => (
+            <li key={c.slug}>
+              <Link
+                href={`/${stateSlug}/${c.slug}`}
+                className="inline-block rounded-full border border-paper-rule bg-paper px-3.5 py-1.5 text-[14px] text-teal no-underline hover:border-rust/40 hover:bg-paper transition-colors"
+              >
+                {c.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 text-[14px] text-ink-3 m-0">
+          <Link href={`/${stateSlug}`} className="text-teal font-medium hover:underline underline-offset-4">
+            All {stateName} cities
           </Link>
         </p>
       </div>
