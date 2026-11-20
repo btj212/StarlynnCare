@@ -8,6 +8,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { StatBlock, type StatItem } from "@/components/editorial/StatBlock";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { GuideFacilityModule } from "@/components/articles/GuideFacilityModule";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -126,6 +127,7 @@ export default function CaliforniaCostByCityPage() {
           </h1>
           <p className="mt-5 text-[17px] leading-relaxed text-ink-2 max-w-[62ch]">{DESC}</p>
           <AuthorByline lastReviewed={DATE_PUBLISHED} className="mt-8" />
+          <GuideFacilityModule stateSlug="california" />
 
           <div className="mt-10 space-y-5 text-[16.5px] leading-[1.75] text-ink-2 max-w-[72ch]">
             <p>

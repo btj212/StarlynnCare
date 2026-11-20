@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { emitChecklistSubmit } from "@/lib/analytics/clarityEvents";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
@@ -23,6 +24,7 @@ export function AlwEmailCapture() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: trimmed, source: "alw_article", stateCode: "CA", magnet: "alw_checklist" }),
       });
+      if (res.ok) emitChecklistSubmit("alw_article");
       setState(res.ok ? "success" : "error");
     } catch {
       setState("error");

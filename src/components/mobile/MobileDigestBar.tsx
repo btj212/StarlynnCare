@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { COVERED_STATES } from "@/lib/states";
+import { emitInspectionAlertSignup } from "@/lib/analytics/clarityEvents";
 
 const SCROLL_REVEAL_PX = 400;
 
@@ -41,6 +42,7 @@ export function MobileDigestBar() {
           source: "state_modal",
         }),
       });
+      if (res.ok) emitInspectionAlertSignup("state_modal");
       setStatus(res.ok ? "done" : "error");
     } catch {
       setStatus("error");

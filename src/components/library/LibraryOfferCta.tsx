@@ -6,6 +6,7 @@ import {
   emitOfferImpression,
   emitOfferClick,
   emitOfferConvert,
+  emitChecklistSubmit,
 } from "@/lib/analytics/clarityEvents";
 import { captureAttribution } from "@/lib/customers/attribution";
 
@@ -121,6 +122,7 @@ function LibraryEmailCapture({
       });
       if (res.ok) {
         emitOfferConvert(variant);
+        if (magnet) emitChecklistSubmit(variant);
         setFormState("success");
       } else {
         setFormState("error");

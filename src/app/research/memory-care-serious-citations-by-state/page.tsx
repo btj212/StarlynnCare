@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { GuideFacilityModule } from "@/components/articles/GuideFacilityModule";
 import { SeriousCitationsByState, SERIOUS_CITATIONS_ILLUSTRATION } from "@/components/articles/SeriousCitationsByState";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { SiteNav } from "@/components/site/SiteNav";
@@ -61,6 +62,7 @@ export default async function SeriousCitationsByStatePage() {
           </h1>
           <div className="mt-8">
             <AuthorByline bare />
+            <GuideFacilityModule />
           </div>
           <div className="mt-8">
             <EditorialHero

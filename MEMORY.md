@@ -6,6 +6,15 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Every guide offers a next step; analytics runs on the production host only
+
+**Decided:** `GuideFacilityModule` sits under the byline on the 38 guide pages (not the profiles). State guides in a state with a how-to-check page get the lookup box; other state guides link to `/{state}/facilities`; national guides show a state picker. Reason: 88% of guide visitors (450 of 513) left without opening a home.
+
+**Analytics found while doing this:** the live instrument is Microsoft Clarity (`clarityEvents.ts`). The `gtag` helpers in `gtagEvents.ts` fire into nothing because no gtag script is loaded, so the plan's "add events through `gtagEvents.ts`" was changed to Clarity. New Clarity events: `checklist_submit`, `inspection_alert_signup`, `contract_tool_start`; `shortlist_add` already existed. The Ahrefs analytics script loaded on every host and on `/admin` (about 31% of its pageviews); it now loads only on `www.starlynncare.com` and never under `/admin`, and Clarity skips `/admin` too.
+
+**Rejected:** loading gtag now (a second tracker with no owner); changing the Vercel firewall from code (dashboard change, handed to Blake as a checklist).
+---
+
 ## 2026-11 — One rank phrase; stored tour-question counts are replaced with live ones
 
 **Decided:** `peerRankPhrase` (`src/lib/seo/rankPhrase.ts`) is the only place that turns a composite percentile into "top N%" or "bottom N%". A home at the 38th percentile is "bottom 38%" everywhere (mobile badge, FAQ, JSON-LD, snippet), never "Top 62%". A sub-metric claim always names its metric ("bottom 6% on citation frequency"). Alamo Care Home showed "bottom 6%", "Top 62%" and "bottom 38%" at once; the "Top 62%" badge was the bug.

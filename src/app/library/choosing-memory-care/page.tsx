@@ -5,6 +5,7 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
+import { GuideFacilityModule } from "@/components/articles/GuideFacilityModule";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { buildBreadcrumbList, buildWebPageWithReviewer } from "@/lib/seo/schema";
 
@@ -100,6 +101,7 @@ export default function ChoosingMemoryCarePage() {
           </p>
           <div className="mt-8">
             <AuthorByline lastReviewed={DATE} />
+            <GuideFacilityModule />
           </div>
           <ol className="mt-4 space-y-8">
             {STEPS.map((step) => (
