@@ -6,6 +6,19 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — One rank phrase; stored tour-question counts are replaced with live ones
+
+**Decided:** `peerRankPhrase` (`src/lib/seo/rankPhrase.ts`) is the only place that turns a composite percentile into "top N%" or "bottom N%". A home at the 38th percentile is "bottom 38%" everywhere (mobile badge, FAQ, JSON-LD, snippet), never "Top 62%". A sub-metric claim always names its metric ("bottom 6% on citation frequency"). Alamo Care Home showed "bottom 6%", "Top 62%" and "bottom 38%" at once; the "Top 62%" badge was the bug.
+
+**Also:** stored AI tour questions carried the citation count from generation time ("has 6 serious citations"), while the page showed 8 Type A. 640 of 1,440 homes with stored questions embed a count. `freshenTourQuestions` swaps in the live serious or deficiency count at render and drops the question when the live count is zero. The stored text in `facilities.content` is untouched.
+
+**Labelled, not changed:** Aurora's "5.2 citations/facility" is the 36-month average from `region_hub_stats`; the home cards count all citations on file. The row now says "last 36 months" and says the cards count all citations on file.
+
+**Rejected:** rewriting `facilities.content.tour_questions` in the database (would drift again at the next ingest).
+
+Source: DataForSEO / Ahrefs brief, 2026-11-18. Checked 31 live profiles across 10 states: 0 rank or count mismatches after the change.
+---
+
 ## 2026-11 — City browse pages canonical to the city page; other-city links on every city page
 
 **Decided:** `/{state}/{city}/facilities` (unfiltered) names `/{state}/{city}` as canonical and is not in the sitemap; the city page already lists every home A to Z, so the browse page was a duplicate (148 pages, 5,759 impressions, 2 clicks). The page stays for visitors and for the nav "Browse facilities" CTA; filtered and paged views stay `noindex,follow` under their own URL. Cities outside a seeded county (Colorado, Arizona, most states) now link to the state's 12 largest other cities (`loadStateCityCounts`, one-hour in-memory cache; Arizona homes of 10 beds or fewer are skipped because they are noindex without citations).

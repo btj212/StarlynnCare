@@ -1,3 +1,5 @@
+import { peerRankPhrase } from "@/lib/seo/rankPhrase";
+
 /**
  * Clip meta descriptions for `<meta name="description">` and matching OG/Twitter fields.
  * Prefer sentence boundaries; otherwise word boundaries; keeps length ≤ `max` including ellipsis.
@@ -354,8 +356,7 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   let rankFrag: string | null = null;
   if (percentile != null) {
     if (percentile >= 50) {
-      const topPct = Math.max(1, 100 - percentile);
-      rankFrag = `Ranked in the top ${topPct}% of ${stateName} memory care`;
+      rankFrag = `Ranked in the ${peerRankPhrase(percentile).text} of ${stateName} memory care`;
     } else {
       // For bottom-half, prefer the worst sub-metric when the gap is ≥ 10 pts
       const worst = worstSubMetricFragment(
@@ -367,8 +368,7 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
       if (worst) {
         rankFrag = `Ranked in the bottom ${Math.max(1, Math.round(worst.percentile))}% on ${worst.label} among ${stateName} peers`;
       } else {
-        const bottomPct = Math.max(1, Math.round(percentile));
-        rankFrag = `Ranked in the bottom ${bottomPct}% of ${stateName} memory care`;
+        rankFrag = `Ranked in the ${peerRankPhrase(percentile).text} of ${stateName} memory care`;
       }
     }
   }

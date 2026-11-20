@@ -41,6 +41,7 @@ import {
 import { memoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import { seriousFindingCounts } from "@/lib/facility/seriousFindings";
+import { freshenTourQuestions } from "@/lib/facility/tourQuestions";
 import type { Facility, Deficiency, DataDepth, InspectionVisibilityTier } from "@/lib/types";
 import type { StateProfileConfig, Rule } from "@/lib/states/profileConfig";
 import type { Review } from "@/components/reviews/ReviewCard";
@@ -700,7 +701,13 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const timeline = deriveTimeline(degradedSnapshot);
   const scopeSeverityGrid = deriveScopeSeverityGrid(degradedSnapshot);
   const rulesCards = deriveRulesCards(cfg, deficiencies, inspections);
-  const tourQuestions = (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [];
+  const tourQuestions = freshenTourQuestions(
+    (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [],
+    {
+      serious: seriousFindingCounts(deficiencies, cfg.formatSeverityTag).reduce((sum, s) => sum + s.count, 0),
+      deficiencies: totalDeficiencies,
+    },
+  );
 
   // Photos — use the gallery array (photo_urls) when populated; fall back to legacy photo_url.
   // User-attributed Google Places photos ("© Google · {photographer}") are suppressed:
