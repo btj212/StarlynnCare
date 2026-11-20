@@ -157,13 +157,13 @@ export function HubDifferentiators({
           )}
 
           {city_cit_per_fac != null && state_cit_per_fac != null && (
-            <Row label={`${regionName} vs. ${stateName} avg`}>
+            <Row label="Citations per facility · last 36 months">
               <span className={city_cit_per_fac <= state_cit_per_fac ? "text-teal" : "text-rust"}>
                 {city_cit_per_fac}
               </span>
-              <span className="text-ink-4 ml-1">citations/facility here vs.</span>
+              <span className="text-ink-4 ml-1">in {regionName} vs.</span>
               <span className="text-ink ml-1">{state_cit_per_fac}</span>
-              <span className="text-ink-4 ml-1">statewide (36 months)</span>
+              <span className="text-ink-4 ml-1">across {stateName} (36-month window; the home cards on this page count all citations on file)</span>
             </Row>
           )}
 

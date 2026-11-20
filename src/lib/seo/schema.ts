@@ -21,6 +21,7 @@ import { formatFacilityName } from "@/lib/facility/displayName";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
+import { peerRankPhrase } from "@/lib/seo/rankPhrase";
 
 /**
  * Optional snapshot-derived extras the LocalBusiness/MedicalOrganization JSON-LD
@@ -1004,10 +1005,7 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
   }
 
   if (input.percentile != null) {
-    const rankStr =
-      input.percentile >= 50
-        ? `top ${Math.max(1, 100 - input.percentile)}%`
-        : `bottom ${Math.max(1, input.percentile)}%`;
+    const rankStr = peerRankPhrase(input.percentile).text;
     pairs.push({
       q: `How does ${name} compare to similar ${input.stateName} facilities?`,
       a: `Based on deficiency severity, repeat citations, and inspection frequency, ${name} ranks in the ${rankStr} of ${input.stateName} memory care facilities in peer comparison on StarlynnCare.`,

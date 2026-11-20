@@ -1101,6 +1101,7 @@ export default async function RegionPage({ params }: PageProps) {
           <SiblingCityHubLinks
             stateSlug={region.state.slug}
             stateCode={region.state.code}
+            stateName={region.state.name}
             currentCitySlug={region.slug}
           />
         )}
