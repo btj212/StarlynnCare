@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SectionHead } from "@/components/editorial/SectionHead";
+import { RelatedFacilities } from "@/components/facility/RelatedFacilities";
 import {
   InspectionFullText,
   inspectionFacts,
@@ -194,6 +195,16 @@ export default async function FacilityInspectionsPage({ params }: PageProps) {
               </div>
             </>
           )}
+          <aside className="mt-10 rounded-[18px] border border-clearing-rule-2 bg-clearing-card px-5 py-5 shadow-[var(--shadow-card)] md:px-7">
+            <p className="m-0 text-[16px] leading-relaxed text-ink-2">
+              This page is the record. The profile for {name} puts it in context: a summary of each
+              visit, how the home compares with its peers, listed costs, and questions to ask on a tour.{" "}
+              <Link href={profileHref} className="font-semibold text-teal underline underline-offset-4">
+                Open the {name} profile
+              </Link>
+              .
+            </p>
+          </aside>
           {cfg.regulatorPortalUrl && (
             <p className="mt-8 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
               Source: {cfg.agencyLong}.{" "}
@@ -207,6 +218,11 @@ export default async function FacilityInspectionsPage({ params }: PageProps) {
               </a>
             </p>
           )}
+          <RelatedFacilities
+            facilityId={facility.id}
+            citySlug={facility.city_slug}
+            stateSlug={state.slug}
+          />
         </div>
       </main>
       <SiteFooter />

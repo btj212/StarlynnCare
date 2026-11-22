@@ -32,6 +32,10 @@ import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
 import { homesForCityIndex, rankHubFacilities } from "@/lib/facility/hubPreview";
 import { CityHomeIndex } from "@/components/facility/CityHomeIndex";
+import {
+  RecentInspectionReports,
+  type RecentReport,
+} from "@/components/facility/RecentInspectionReports";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { parentCountyForCity } from "@/lib/regions";
 import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
@@ -165,6 +169,8 @@ export default async function RegionPage({ params }: PageProps) {
   let fetchError: string | null = null;
   // PA county IJ tracker — populated inside the supabase block, used outside.
   const ijCitByFac = new Map<string, number>();
+  // Newest cited visit per home, for the "Recent reports" block on city pages.
+  let recentReports: RecentReport[] = [];
 
   if (!supabase) {
     fetchError = "Supabase is not configured.";
@@ -268,6 +274,31 @@ export default async function RegionPage({ params }: PageProps) {
             ijCitByFac.set(fid, (ijCitByFac.get(fid) ?? 0) + 1);
           }
         }
+
+        // A home's latest visit in the last three years that cited something. Same
+        // window and same test as the sitemap rule for its /inspections page.
+        const findingsByInsp = new Map<string, number>();
+        for (const d of allDefs) {
+          findingsByInsp.set(d.inspection_id, (findingsByInsp.get(d.inspection_id) ?? 0) + 1);
+        }
+        const latestCited = new Map<string, { date: string; findings: number }>();
+        for (const i of allInspData) {
+          const findings = findingsByInsp.get(i.id) ?? 0;
+          if (findings === 0 || i.inspection_date < cutoff3yStr) continue;
+          const best = latestCited.get(i.facility_id);
+          if (!best || i.inspection_date > best.date || (i.inspection_date === best.date && findings > best.findings)) {
+            latestCited.set(i.facility_id, { date: i.inspection_date, findings });
+          }
+        }
+        recentReports = raw
+          .flatMap((f) => {
+            const latest = latestCited.get(f.id);
+            return latest
+              ? [{ id: f.id, name: f.name, slug: f.slug, city_slug: f.city_slug, ...latest }]
+              : [];
+          })
+          .sort((a, b) => b.date.localeCompare(a.date) || b.findings - a.findings)
+          .slice(0, 8);
 
         facilities = raw.map((f) => ({
           id: f.id,
@@ -898,6 +929,16 @@ export default async function RegionPage({ params }: PageProps) {
               initialShowSmall={hubRank.onlySmallHomes}
             />
           </div>
+        )}
+
+        {/* ── Newest cited visits — city pages only ── */}
+        {!fetchError && !isCounty && (
+          <RecentInspectionReports
+            reports={recentReports}
+            stateSlug={region.state.slug}
+            regionName={region.name}
+            agency={reg}
+          />
         )}
 
         {/* ── Every home, A to Z — city pages only; counties link to their cities ── */}
