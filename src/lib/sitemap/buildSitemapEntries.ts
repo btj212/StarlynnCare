@@ -17,6 +17,25 @@ export type SitemapUrlRow = {
 
 const SITEMAP_QUERY_PAGE_SIZE = 1000;
 
+/**
+ * Dates a page template changed in a way that shows on every page of that type.
+ * A page's `lastmod` is never older than this, because a row that has not been
+ * re-ingested since spring still prints new content. Google re-crawled only the
+ * pages it was told had changed; the rest stayed declined from the old version.
+ * Both dates are real release dates, not the day the sitemap was built.
+ */
+export const TEMPLATE_CHANGED = {
+  /** Profile slimmed to one summary per visit; full reports moved to /inspections. */
+  facility: "2026-11-17",
+  /** City pages gained the "other cities" block and the live home list. */
+  hub: "2026-11-19",
+} as const;
+
+/** The newer of a row's own update date and the template's release date. */
+export function withTemplateFloor(rowDate: string | undefined, floor: string): string {
+  return rowDate && rowDate > floor ? rowDate : floor;
+}
+
 function escapeXml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -316,13 +335,16 @@ export async function collectHubEntriesForState(
       },
       "",
     );
-    hubLastmod.set(region.slug, latest);
+    hubLastmod.set(region.slug, withTemplateFloor(latest || undefined, TEMPLATE_CHANGED.hub));
   }
 
   for (const slug of countBySlug.keys()) {
     // A city whose homes are all excluded Arizona pages cannot justify a hub URL.
     if ((indexableBySlug.get(slug) ?? 0) === 0) continue;
-    hubLastmod.set(slug, lastmodBySlug.get(slug) ?? "");
+    hubLastmod.set(
+      slug,
+      withTemplateFloor(lastmodBySlug.get(slug), TEMPLATE_CHANGED.hub),
+    );
   }
 
   return [...hubLastmod]
@@ -449,7 +471,9 @@ export async function collectFacilityEntriesForState(
   const entries: SitemapUrlRow[] = [];
   for (const f of sorted) {
     const base = `${SITE_ORIGIN}/${stateSlug}/${f.city_slug}/${f.slug}`;
-    const lastmod = f.updated_at ? { lastmod: f.updated_at.split("T")[0] } : {};
+    const lastmod = {
+      lastmod: withTemplateFloor(f.updated_at?.split("T")[0], TEMPLATE_CHANGED.facility),
+    };
     entries.push({ loc: base, priority: "0.8", changefreq: "monthly" as const, ...lastmod });
     // The full-report page is listed only for homes that have findings to print.
     if (withFindings.has(f.id)) {
