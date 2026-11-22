@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Full-report pages link to the profile and its neighbours; city pages list the newest cited visits
+
+**Decided:** `/{state}/{city}/{home}/inspections` ends with a card that opens the profile and the same 12-nearest "Other memory care options nearby" rail the profile uses (`RelatedFacilities`). A city page (not a county page) shows `RecentInspectionReports`: up to 8 homes ordered by the date of their newest visit that cited something in the last three years, each with the finding count at that visit, a link to the profile and a link to the full report. It is computed from the inspection and deficiency rows the page already loads, with the same three-year test as `facilities_with_recent_findings`, so it lists exactly the homes whose `/inspections` page is in the sitemap (checked on Aurora, CO: 4 homes in the block, 4 `/inspections` URLs in the sitemap, Chelsea Place excluded).
+
+**Why:** The URL Inspection sample on 2026-11-22 showed 650 of 650 `/inspections` pages indexed and only 36% of profiles. An indexed page that links to unindexed profiles is the cheapest way to hand Google a route to them; a page that already has impressions should not be a dead end.
+
+**Rejected:** A new RPC for the city block (the data is already on the page). Listing every cited home (the A-to-Z index below it already links every home). Showing the block on county pages.
+
+**Check:** Re-run the sample about 2026-11-29 and compare profile indexing for homes whose neighbours' `/inspections` pages link to them.
+
+---
+
 ## 2026-11 — Facility sitemaps are split by state, and a template change sets a floor on `lastmod`
 
 **Decided:** `/sitemap.xml` lists one facility file per state, `/sitemap-facilities-{state}.xml`, served by `src/app/sitemap-facilities/[state]/route.ts` through a rewrite in `next.config.ts`. Search Console's sitemap filter then shows indexed and not-indexed counts per state, under the 1,000-row export cap. `/sitemap-facilities.xml` still works but is no longer in the index. A profile or `/inspections` URL gets `lastmod` of its own `updated_at` or 2026-11-17 (the profile redesign), whichever is later. A city or county hub uses 2026-11-19 (other-city block). The dates are in `TEMPLATE_CHANGED` in `buildSitemapEntries.ts`; add one only when a template change shows on every page of that type.
