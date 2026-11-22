@@ -4,7 +4,69 @@ Running log of shipped work, research, QA, deployments, and infrastructure. Upda
 
 **Status values:** `Shipped` · `In progress` · `Blocked` · `Research complete` · `QA passed` · `Deployed`
 
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-22
+
+---
+
+## Week of 2026-11-16 → 2026-11-22
+
+| Date | Description | Category | Status |
+|------|-------------|----------|--------|
+| 2026-11-22 | Sunday work-database automation — triggered 13:04 UTC; **no** Nov 22 `Weekly state source scan` run in GHA yet (prior **schedule** scan **43727623295** Nov 15 **failure** ~6h50m) | Research | In progress |
+| 2026-11-20 | **PR #234 merged** — facility module on every guide; Microsoft Clarity conversion events; analytics on production host only | Development | Deployed |
+| 2026-11-20 | **PR #233 merged** — one rank phrase; live counts in tour questions; label hub averages (YMYL stat consistency) | Development | Shipped |
+| 2026-11-20 | **PR #232 merged** — city browse pages canonical to city hub; other-city links; Medi-Cal county link fixes | Development | Shipped |
+| 2026-11-19 | **`Customer promise audit` schedule** — **failure** **44826303955** | QA | Blocked |
+| 2026-11-17 | **PR #230 merged** — listed prices as bands (Caring.com, SeniorAdvisor); “Costs” in titles | Development | Shipped |
+| 2026-11-17 | **PR #229 merged** — lookup box on how-to-check pages; titles match searched words | Development | Deployed |
+| 2026-11-17 | **PR #228 merged** — full citation text on per-home `/inspections`; profiles show summaries only | Development | Deployed |
+| 2026-11-17 | **PR #227 merged** — link every home from its city page; related homes = geographically nearest | Development | Deployed |
+| 2026-11-16 | **PR #216 merged** — read Arizona plan pages instead of `View` stub | Development | Shipped |
+| 2026-11-16 | **PR #215 merged** — Colorado plans with break before each heading | Development | Shipped |
+| 2026-11-16 | **PR #214 merged** — stop grading homes when state records no severity | Development | Shipped |
+| 2026-11-16 | Nightly probe — sync baselines after Sunday GHA **43727623295** — **PR #231 open** (`validate.yml` **success** **43976682853**); **no** new OR/MN source delta | Infrastructure | In progress |
+| 2026-11-15 | Scheduled weekly scan GHA **43727623295** (`schedule`, workflow **failure** ~6h50m) — third consecutive Sunday **failure**; **#231** documents OR/MN/AZ/WA/PA/UT rows still ingested | Infrastructure | Blocked |
+| 2026-11-16–22 | **Discovery + AEO sprint** — **ten** `main` merges (**#214–#216**, **#227–#234**) after **nine-day** freeze (Nov 7→16); Vercel production deploy on each push | Development | Deployed |
+| 2026-11-16–22 | **`validate.yml` on `main`** — **success** on every product merge (**43818830201** … **44659606050**) | QA | QA passed |
+| 2026-11-16–22 | **`Customer promise audit` schedule** — nightly **failure** Nov 16–20 (**43981107322** … **44826303955**) | QA | Blocked |
+| 2026-11-16–22 | Ingest probes **#224–#226** still open; **#231** supersedes for post-Sunday baselines — operator merge optional until OR posts after **2026-11-10** or MN insertDate moves | Infrastructure | In progress |
+| 2026-11-16–22 | Weekly work database — **PR #225** open (Nov 9–15); superseded by this run on `cursor/work-database-nov-16-22` | Research | In progress |
+| 2026-11-16–22 | **Facility Watch Premium** — operator QA (controlled purchase + concierge fulfillment) still pending | QA | In progress |
+| 2026-11-16–22 | **Loops magnet templates** — 6 `LOOPS_MAGNET_*` env vars still needed | Deployment | Blocked |
+
+### Week patterns (2026-11-16 → 2026-11-22)
+
+**Dominant work types:** Development (~85%), QA (~8%), Infrastructure (~5%), Research (~2%).
+
+**Themes:**
+1. **Nine-day merge drought ended** — **#214–#216** landed Nov 16; **#227–#234** Nov 17–20 — largest product burst since Oct 26 AEO batch (**#198–#206**).
+2. **Discovery graph loop (new sub-pattern)** — city linkage (**#227**) → inspection depth page (**#228**) → how-to-check capture (**#229**) → cost-band titles (**#230**) → canonical city browse (**#232**) → stat consistency (**#233**) → guide facility module + Clarity (**#234**). Manual: Ahrefs/Clarity review. Automatable: post-deploy sitemap diff + conversion event contract tests.
+3. **Loop 4 green on `main`** — every merge triggers **`Data Validation` success**; **`Customer promise audit` still red** (five more nights) — Supabase `promises` vs Loops drift unchanged.
+4. **Loop 7 baseline-without-ingest-merge** — Sunday **43727623295** marks workflow **failure** but **#231** confirms matrix wrote OR/MN/AZ/WA/PA/UT; **#224–#226** stale pending deltas superseded by baseline-only **#231**.
+5. **YMYL grading fix** — **#214** + **#216** + **#215** close AZ/CO plan/severity gaps opened by **#212** transparency sprint.
+6. **Ingest attention deprioritized** — no OR/MN regulator movement; product shipping did not wait on probe merges (contrast Nov 9–15 freeze).
+
+**Emerging loops / sub-patterns:**
+- **Guide → facility conversion** — universal facility module on guides + Clarity events gated to production host (**#234**). Manual: verify events in Clarity dashboard. Automatable: Playwright smoke on guide pages with module + event payload fixtures.
+- **Reinforced:** Sunday **schedule** path can **fail** workflow while per-state ingest steps still land rows — baseline PR (**#231**) is correct response, not stacking **#224–#226**.
+
+**Resolved from prior week:**
+- **Nine-day `main` freeze** — broken Nov 16 (**#214–#216**).
+- Nov 15 Sunday scan **43727623295** — completed **failure** (~6h50m; was TBD Nov 15 automation).
+- Product **#214–#216** — shipped (were open entire Nov 9–15 week).
+
+**New blockers / escalations:**
+- Nov 22 Sunday scan outcome TBD at automation time.
+- **#224–#226** — stale ingest probe stack; merge **#231** + batch-close older nights to reduce queue noise.
+
+**Open / blocked (carried forward):**
+- Merge **#231**; close superseded **#224–#226**, **#217–#223**.
+- Merge docs (**#207**/**#218**/**#225** superseded by this PR).
+- Migration `0047_hub_content.sql`; Loops magnets; hidden AEO **#199–#200**; Facility Watch Premium QA; fix **Customer promise audit**; TMT **#208**; Layer 0 **`ee312af`**.
+
+### Month context (2026-10-23 → 2026-11-22)
+
+Oct 26 **#187** ended 22 weeks of red `validate.yml`. Late Oct–early Nov shipped state depth (**CO/IL/MO**), AEO guides (**#198–#206**), facility transparency + AI API (**#212–#213**), then a **nine-day** ops-only freeze. Nov 16–22 **proved** product velocity can resume without resolving Sunday scan workflow flags or stale probe stacks — **ten** merges while **#224–#226** age in the queue. Net learning: **ingest freshness decoupled from feature shipping** when regulators stall, but **baseline PRs** (**#231**) still track Sunday matrix reality. Progress vs Nov 15: **`main` merges +10**; open ingest PRs unchanged (**#224–#226** + **#231**); promise audit **+5** failures; dominant work **infrastructure → development**.
 
 ---
 
@@ -12,7 +74,7 @@ Running log of shipped work, research, QA, deployments, and infrastructure. Upda
 
 | Date | Description | Category | Status |
 |------|-------------|----------|--------|
-| 2026-11-15 | Sunday work-database automation — triggered 13:04 UTC; **no** new `Weekly state source scan` run in GHA yet today (prior **schedule** scan **42490606983** Nov 8 **failure** ~7h58m) | Research | In progress |
+| 2026-11-15 | Sunday work-database automation — triggered 13:04 UTC; **schedule** scan **43727623295** started ~15:02 UTC same day (**failure** ~6h50m; resolved in Nov 16–22 run) | Research | Research complete |
 | 2026-11-14 | Nightly probe — OR source max **2026-11-10** (32 rows) + MN insertDate **2026-11-11** — **PR #224 open** (`validate.yml` **success** **43651842758**) | Infrastructure | In progress |
 | 2026-11-13 | Nightly probe — OR +7 / MN insertDate batch — **PR #223 open** (validation green **43524461363**) | Infrastructure | In progress |
 | 2026-11-12 | Nightly probe — MN insertDate batch — **PR #222 open** | Infrastructure | In progress |
@@ -51,11 +113,11 @@ Running log of shipped work, research, QA, deployments, and infrastructure. Upda
 
 **New blockers / escalations:**
 - **Eight-day** `main` freeze risks family-facing stale OR/MN inspection data — longer than Oct 12–13 gap before **#165** recovery.
-- Nov 15 Sunday scan outcome TBD at automation time.
+- Nov 15 Sunday scan **43727623295** — completed **failure** (resolved Nov 22 run).
 
 **Open / blocked (carried forward):**
 - Merge latest probe **#224** (close **#219–#223**, **#217**); then operator matrix ingest + baseline.
-- Merge docs (**#207**/**#218** superseded) + product **#214–#216** when ingest unblocked.
+- Merge docs (**#207**/**#218** superseded) + product **#214–#216** when ingest unblocked (**#214–#216 shipped Nov 16** — see Nov 16–22 week).
 - Migration `0047_hub_content.sql`; Loops magnets; hidden AEO **#199–#200**; Facility Watch Premium QA; fix **Customer promise audit**; Layer 0 **`ee312af`**.
 
 ### Month context (2026-10-16 → 2026-11-15)
@@ -1407,7 +1469,7 @@ merge to main → Vercel production deploy → smoke_test.py → Ahrefs/Clarity 
 | L3 smoke tests | No | Partial | Chained in ingest workflow — green on recent runs |
 | External audit (Ahrefs/Clarity) | Yes | No | No new audit this week |
 
-**Last run:** Nov 9–15 — **`validate.yml` success** on probe PRs **#219–#224**; **`main` unchanged** since Nov 7. **`Customer promise audit` failure** nightly Nov 9–13 (and since Oct 26). Oct 26 **#187** ended **22-week** red streak on published-record gates. **Automation opportunity:** fix **Customer promise audit** workflow; post-deploy `smoke_test.py`; do not conflate green merge CI with green ingest/alert loops.
+**Last run:** Nov 16–22 — **`validate.yml` success** on **all ten** product merges to **`main`** (**#214–#216**, **#227–#234**). **`Customer promise audit` failure** nightly Nov 16–20 (continues since Oct 26). Vercel auto-deploys succeed on each merge. **Automation opportunity:** fix **Customer promise audit** workflow; post-deploy `smoke_test.py`; Clarity event contract tests after **#234**.
 
 ---
 
@@ -1424,7 +1486,7 @@ Ahrefs or Clarity audit → triage findings → fix → validate → deploy → 
 | Fix + PR | Yes | No | PR #41: A1–A6, B1–B8 |
 | Re-audit | Yes | No | |
 
-**Last run:** Oct 26–Nov 1 — **#183**, **#195**, **#206** (sitemap `lastmod`, drop empty AZ hubs, facility canonical / city hub slimming); Oct 23 **#176** pagination fix. **Automation opportunity:** scheduled sitemap/meta diff script (partially addressed by #176 pagination + #195 page-derived index dates).
+**Last run:** Nov 16–22 — **#227–#232** (city graph links, `/inspections` subpage, how-to-check titles + lookup, cost-band titles, city browse canonical); continues Oct **#183**/**#195**/**#206** canonical work. **Automation opportunity:** scheduled sitemap/meta diff after discovery sprint; canonical regression tests on city browse routes.
 
 ---
 
@@ -1461,7 +1523,7 @@ probe_inspection_freshness.py → weekly-inspection-ingest.yml (per-state matrix
 | Baseline commit | No | Partial | Auto-commit on delta |
 | Pooler-aware parallelism | No | Yes | `max-parallel: 1` (sequential) |
 
-**Last run:** Nov 9–15 — **#219–#224** open (OR through **2026-11-10**, MN insertDate **2026-11-11** on **#224**); **no** probe merge since **#184** (Oct 26) / **no** `main` code since Nov 7. Nov 8 **schedule** **42490606983** **failure**. Prior: Nov 2–8 **#209–#217** stack. Oct 26 green test **40270895803**. **Automation opportunity:** **auto-merge** newest green probe; auto-close superseded nights; baseline commit after green matrix; skip PR when probe reports zero delta.
+**Last run:** Nov 16–22 — Sunday **43727623295** workflow **failure** but matrix ingested OR/MN/AZ/WA/PA/UT per **#231**; OR max **2026-11-10**, MN insertDate **2026-11-11** unchanged (**no** new regulator delta). **#231** open (baseline sync); **#224–#226** stale pending-ingest stack. **No** probe merge to `main` this week. Prior: Nov 9–15 **#219–#224** freeze. **Automation opportunity:** merge baseline-only **#231** without operator matrix when Sunday GHA already wrote rows; auto-close **#224–#226**; skip PR when zero delta.
 
 ---
 
@@ -1484,7 +1546,7 @@ weekly-inspection-ingest.yml → state_scan_runs ledger → dispatch_watch_alert
 | Legacy free facility watch | No | Yes | `alerts_eligible=true` rows still dispatch |
 | Paid Premium path | Yes | Partial | See Loop 13 — concierge fulfillment manual |
 
-**Last run:** Nov 9–15 — **no** new CA commits on `main` (last **fa30b86** Nov 7). **Two** consecutive Sunday **schedule** failures: **41316847867** (Nov 1), **42490606983** (Nov 8). OR/MN ingest blocked — open **#224** + operator matrix. **`Customer promise audit` failure** through Nov 13. **Automation opportunity:** fix **schedule** path to match **40270895803** semantics; decouple family dispatch when ingest succeeded but workflow flags failure; fix promise audit; fail-soft TX.
+**Last run:** Nov 16–22 — Sunday **43727623295** (**failure** ~6h50m) — **third** consecutive **schedule** red after Nov 1 **41316847867** and Nov 8 **42490606983**; **#231** confirms OR/MN/AZ/WA/PA/UT rows ingested despite workflow flag. Family dispatch still ledger-gated. **`Customer promise audit` failure** through Nov 20. **Automation opportunity:** mark workflow **success** when ingest + L5 matrix complete even if notify step fails; fix promise audit; fail-soft TX.
 
 ---
 
@@ -1542,7 +1604,7 @@ identify high-dwell library article → contextual CTA (emotion-matched)
 | Shortlist share | No | Yes | PR #45: `?shortlist=` + `ShortlistSharePanel` |
 | A/B measurement | No | Partial | Clarity tags from Phase 1 instrumentation |
 
-**Last run:** Nov 7 **5364e8a** — free Facility Watch entitlement after records request (pairs with **#180** offer). Oct 24 **#178–#180** promise + resend + records offer. **Blocked:** 6 `LOOPS_MAGNET_*` env vars + Loops templates; **`Customer promise audit` nightly failure** Nov 2–6. **Automation opportunity:** reconcile `promises` vs Loops (fix audit workflow); dwell-time → CTA recommender.
+**Last run:** Nov 16–22 — **#234** Clarity conversion events + facility module on every guide; **#230** cost-band titles; **#229** how-to-check lookup. Nov 7 **5364e8a** free Watch via records request. **Blocked:** 6 `LOOPS_MAGNET_*` env vars + Loops templates; **`Customer promise audit` nightly failure** through Nov 20. **Automation opportunity:** reconcile `promises` vs Loops (fix audit workflow); guide→facility event contract tests.
 
 ---
 
@@ -1627,7 +1689,7 @@ draft article (published=false) → review UI → approve → public URL
 | Ship public guides + canonical SEO | Yes | Partial | **#206** publishes how-to guides |
 | Citation panel | Trigger | Partial | Blocked until articles public (**#202** note) |
 
-**Last run:** Oct 31 — **#198–#206** shipped; public how-to guides live via **#206**. Hidden **#199–#200** subset still awaiting approval. **#214–#216** open (no merge Nov 9–15). **Automation opportunity:** on approve → citation panel + sitemap ping; YMYL stat lint against live DB before merge.
+**Last run:** Nov 16–22 — **#214–#216** merged (AZ/CO plan text + no grading without severity); **#227–#229** deepen how-to-check + city discovery surfaces on live guides. Oct 31 **#198–#206** batch remains base. Hidden **#199–#200** subset still awaiting approval. **Automation opportunity:** on approve → citation panel + sitemap ping; YMYL stat lint against live DB before merge.
 
 ---
 
@@ -1635,13 +1697,13 @@ draft article (published=false) → review UI → approve → public URL
 
 | Priority | Loop | Gap | Effort |
 |----------|------|-----|--------|
-| P0 | Loop 7 | **Merge probe #224** (ingest OR/MN); close superseded **#217–#223** — **8-day** `main` freeze | Owner action |
-| P0 | Loop 8 | **Nov 8 `schedule` scan 42490606983 failure** (+ Nov 1 **41316847867**) — align **schedule** with **40270895803** post-**#187** gates | Small |
-| P0 | Loop 8 | Fix **`Customer promise audit`** nightly failures (through **Nov 13**) — reconcile Supabase promises vs Loops | Small |
+| P0 | Loop 7 | Merge baseline **#231**; batch-close superseded **#224–#226**, **#217–#223** — stale pending-ingest stack | Owner action |
+| P0 | Loop 8 | **Three** Sunday **schedule** failures (**43727623295** Nov 15 + prior) while ingest rows land — align workflow **success** with ingest completion | Small |
+| P0 | Loop 8 | Fix **`Customer promise audit`** nightly failures (through **Nov 20**) — reconcile Supabase promises vs Loops | Small |
 | P0 | Loop 13 | Operator QA — one controlled live $9 purchase → webhook → welcome → cancel/refund; first concierge fulfillment | Owner action |
 | P0 | Loop 3 | Apply migration 0047 in Supabase SQL editor | Owner action |
 | P0 | Loop 15 | Editorial approve hidden **#199–#200** articles → rerun citation panel | Owner action |
-| P1 | Loop 7 | **Skip or auto-close superseded probe PRs** (**#219–#223** when **#224** merges); auto-merge green delta probes | Small |
+| P1 | Loop 7 | **Skip or auto-close superseded probe PRs** (**#224–#226** when **#231** merges); auto-merge green baseline-only probes | Small |
 | P1 | Loop 7 | Auto-**merge** post-ingest baseline PRs after green GHA | Small |
 | P1 | Loop 4 | Merge Layer 0 source contract checks (`ee312af`) into `validate.yml` | Small |
 | P1 | Loop 11 | Create 6 Loops magnet templates + Vercel env vars | Owner + Small |
@@ -1659,7 +1721,7 @@ draft article (published=false) → review UI → approve → public URL
 | P2 | Loop 15 | Approve-triggered citation panel + sitemap ping | Medium |
 | P3 | Loop 5 | Scheduled sitemap/meta diff script | Medium |
 | — | Loop 4 | ~~Fix `validate.yml` 31/37~~ — **done Oct 26 #187** | — |
-| — | Loop 7 | ~~Batch-close stale probe PRs~~ — **Oct 26 cleared to 1 (#190); Nov 2–15 probe stack #209–#224 without merge** | — |
+| — | Loop 7 | ~~Nine-day `main` freeze~~ — **ended Nov 16** (**#214–#216**); probe stack **#224–#226** still open Nov 22 | — |
 
 ---
 
