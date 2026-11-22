@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { COVERED_STATES } from "@/lib/states";
 import {
   collectCoveredStateHubEntries,
-  collectFacilityEntries,
+  collectFacilityEntriesForState,
   collectStaticSitemapEntries,
   latestContentDate,
   renderSitemapIndex,
@@ -18,7 +19,7 @@ export async function GET() {
   let children: SitemapIndexEntry[] = [
     { path: "/sitemap-static.xml" },
     { path: "/sitemap-hubs.xml" },
-    { path: "/sitemap-facilities.xml" },
+    ...COVERED_STATES.map((s) => ({ path: `/sitemap-facilities-${s.slug}.xml` })),
   ];
   if (supabase) {
     const staticEntries = await stampCoveredStateHubLastmods(
@@ -26,11 +27,20 @@ export async function GET() {
       collectStaticSitemapEntries(),
     );
     const hubs = await collectCoveredStateHubEntries(supabase);
-    const facilities = await collectFacilityEntries(supabase);
+    // One file per state so Search Console's sitemap filter shows indexing per state.
+    const facilityChildren: SitemapIndexEntry[] = [];
+    for (const s of COVERED_STATES) {
+      const entries = await collectFacilityEntriesForState(supabase, s.code, s.slug);
+      if (entries.length === 0) continue;
+      facilityChildren.push({
+        path: `/sitemap-facilities-${s.slug}.xml`,
+        lastmod: latestContentDate(entries),
+      });
+    }
     children = [
       { path: "/sitemap-static.xml", lastmod: latestContentDate(staticEntries) },
       { path: "/sitemap-hubs.xml", lastmod: latestContentDate(hubs) },
-      { path: "/sitemap-facilities.xml", lastmod: latestContentDate(facilities) },
+      ...facilityChildren,
     ];
   }
   const xml = renderSitemapIndex(children);

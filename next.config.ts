@@ -67,6 +67,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Per-state facility sitemaps are served by one dynamic route.
+  async rewrites() {
+    return [
+      {
+        source: "/sitemap-facilities-:state.xml",
+        destination: "/sitemap-facilities/:state",
+      },
+    ];
+  },
   // Clerk + app use /sign-in; common mistype /signin would 404 without this.
   async redirects() {
     return [

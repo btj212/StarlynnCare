@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Facility sitemaps are split by state, and a template change sets a floor on `lastmod`
+
+**Decided:** `/sitemap.xml` lists one facility file per state, `/sitemap-facilities-{state}.xml`, served by `src/app/sitemap-facilities/[state]/route.ts` through a rewrite in `next.config.ts`. Search Console's sitemap filter then shows indexed and not-indexed counts per state, under the 1,000-row export cap. `/sitemap-facilities.xml` still works but is no longer in the index. A profile or `/inspections` URL gets `lastmod` of its own `updated_at` or 2026-11-17 (the profile redesign), whichever is later. A city or county hub uses 2026-11-19 (other-city block). The dates are in `TEMPLATE_CHANGED` in `buildSitemapEntries.ts`; add one only when a template change shows on every page of that type.
+
+**Why:** URL Inspection API on 1,922 URLs (2026-11-22, service account `btj212@starlynncare.iam.gserviceaccount.com`): all 650 `/inspections` pages indexed; profiles 36% indexed, 43% crawled and declined; 325 of about 330 profiles last crawled before October were declined, and 305 of about 355 crawled in October or November were indexed. Rows last ingested in spring still printed the redesigned page, but their sitemap date said June, so Google had no reason to come back.
+
+**Not contradicted:** the 2026-10 rule that `lastmod` is a real content date, never the generation day. Release dates are real content dates. Do not raise a floor to today to force a crawl.
+
+**Rejected:** Stamping every URL with the build date. One mixed file per state (would pass 50,000 URLs only if the state were far larger, but loses the per-type view). Re-submitting the old file name.
+
+**Check again:** Rerun the URL Inspection sample about 2026-11-29. If profiles that were re-crawled after the floor are still declined, the next lever is unique content per home, not dates. The key is at `~/.config/starlynncare/gsc-key.json`, outside the repo. Missouri rows have `updated_at` of 2026-11-22 for 490 of 492 homes; find out what touched them.
+
+---
+
 ## 2026-11 — Every guide offers a next step; analytics runs on the production host only
 
 **Decided:** `GuideFacilityModule` sits under the byline on the 38 guide pages (not the profiles). State guides in a state with a how-to-check page get the lookup box; other state guides link to `/{state}/facilities`; national guides show a state picker. Reason: 88% of guide visitors (450 of 513) left without opening a home.
