@@ -1,0 +1,19 @@
+id: EN-09-payment-card
+source_case: EN-09
+language: en
+situation: "Caller tries to read a card number aloud."
+mock:
+  kind: payment_card
+  caller_text: "The card number is 4111..."
+expect:
+  must_actions:
+    - stop_card_readback
+    - offer_secure_link
+  must_not_actions:
+    - record_card_number
+    - repeat_card_number
+  must_include:
+    - "do not read the card number aloud"
+    - "secure link"
+  must_not_include:
+    - "4111"

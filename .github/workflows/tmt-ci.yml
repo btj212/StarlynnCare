@@ -1,0 +1,81 @@
+name: TMT CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tmt/**"
+      - ".github/workflows/tmt-ci.yml"
+  pull_request:
+    paths:
+      - "tmt/**"
+      - ".github/workflows/tmt-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tmt-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: tmt
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.16.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: tmt/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start database-only Supabase stack
+        run: >-
+          pnpm dlx supabase@2.122.0 start
+          --workdir packages/db
+          --exclude
+          gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Reset and test database twice
+        run: |
+          pnpm dlx supabase@2.122.0 db reset --local --workdir packages/db
+          pnpm dlx supabase@2.122.0 test db --local --workdir packages/db
+          pnpm dlx supabase@2.122.0 db reset --local --workdir packages/db
+          pnpm dlx supabase@2.122.0 test db --local --workdir packages/db
+
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm dlx supabase@2.122.0 stop --no-backup --workdir packages/db || true
+
+      - name: Install Chromium
+        run: pnpm --filter @tmt/web exec playwright install --with-deps chromium
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
