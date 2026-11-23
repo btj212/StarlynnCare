@@ -363,7 +363,9 @@ async function fetchFacility(
 
   if (error) return { facility: null, error: error.message, configured: true };
   const row = (data ?? [])[0] as Facility | undefined;
-  return { facility: row ?? null, error: null, configured: true };
+  // State refreshes rewrite `phone`; a number the home gave us is kept apart.
+  const facility = row ? { ...row, phone: row.phone_override ?? row.phone } : null;
+  return { facility, error: null, configured: true };
 }
 
 async function fetchComplianceFlag(facilityId: string): Promise<ComplianceFlag | null> {

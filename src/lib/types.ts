@@ -75,6 +75,8 @@ export interface Facility {
   management_company: string | null;
   ownership_type: OwnershipType | null;
   phone: string | null;
+  /** Operator-supplied phone, shown instead of `phone`. Never written by ingest (migration 0075). */
+  phone_override?: string | null;
   website: string | null;
   cms_star_rating: number | null;
   last_inspection_date: string | null;

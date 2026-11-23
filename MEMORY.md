@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — A phone number a home gave us lives in `phone_override`, which no ingest writes
+
+**Decided:** `facilities.phone_override` (migration 0075, with `phone_override_note`) is shown instead of `facilities.phone`. `fetchFacility` in `loadFacilityProfile.ts` swaps it in, so the hero, quick facts, call links and the schema `telephone` all follow. Set it only when the operator wrote to us and the number matches the home's own website; record who, when and how it was checked in `phone_override_note`. First use: Casa Del Rey (AL12182H, Peoria AZ), `(602) 881-4039`, 2026-11-22. ADHS still lists `(623)266-4936`.
+
+**Why:** `scrapers/az_adhs_directory_ingest.py` rewrites `phone` from the ADHS directory on every run (`phone = EXCLUDED.phone`), and the ADHS layer for this home carries a 2025-02 run date. A correction typed into `phone` is lost on the next refresh.
+
+**Rejected:** Editing `phone` in place. Publishing the second number in the email, `(623) 266-4934`: it is one digit from the ADHS number and is not on the home's site. Overriding `website` in the same change (not asked for; the home's site is `casadelreyaz.com` if we want it later).
+
+**Open:** Other states' ingests write `phone` the same way; the override works for any state. There is no admin screen: set it with SQL and write the note.
+
+---
+
 ## 2026-11 — Full-report pages link to the profile and its neighbours; city pages list the newest cited visits
 
 **Decided:** `/{state}/{city}/{home}/inspections` ends with a card that opens the profile and the same 12-nearest "Other memory care options nearby" rail the profile uses (`RelatedFacilities`). A city page (not a county page) shows `RecentInspectionReports`: up to 8 homes ordered by the date of their newest visit that cited something in the last three years, each with the finding count at that visit, a link to the profile and a link to the full report. It is computed from the inspection and deficiency rows the page already loads, with the same three-year test as `facilities_with_recent_findings`, so it lists exactly the homes whose `/inspections` page is in the sitemap (checked on Aurora, CO: 4 homes in the block, 4 `/inspections` URLs in the sitemap, Chelsea Place excluded).
