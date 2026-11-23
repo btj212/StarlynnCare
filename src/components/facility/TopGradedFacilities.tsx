@@ -65,7 +65,8 @@ async function loadTopGraded(
         composite: snap?.composite_percentile ?? null,
       };
     })
-    .filter((f) => f.composite !== null)
+    // "Top-ranked" must never list a bottom-half home (same rule as seo/meta.ts).
+    .filter((f) => f.composite !== null && f.composite >= 50)
     .sort((a, b) => (b.composite ?? 0) - (a.composite ?? 0))
     .slice(0, 8);
 }

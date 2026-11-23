@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Sample cards carry no rank badge and follow the profile's hide rules
+
+**Decided:** The homepage and state-hub sample card shows the three peer bars and no "Top X%" badge and no care-type label. One loader, `loadSampleCardFacilities` in `src/lib/data/stateHub.ts`, feeds the homepage, `/california` and every `/[state]` hub. It skips a home whose snapshot has no inspections or fewer than 10 peers (the profile shows no peer comparison for those), blanks a repeat rank when the peer median is 0 and the percentile is 100, and skips a card that would show no bars. It pages through every published id. The profile's mobile "Top X%" line and the city "Top-ranked" rail show only homes at composite 50 or higher.
+
+**Rejected:** Keeping the badge for top-half homes only (ties at zero citations still print "Top 1%" for about a quarter of a state). Showing the care-type label (it printed "UNKNOWN" for 64% of homes). Three diverged copies of the snapshot-to-card mapping.
+
+**Measured 2026-11-22, live `facility_snapshot` over all 5,571 published homes:** 4,950 eligible for a card, 620 skipped for no inspections (617 Washington, 2 Minnesota, 1 Texas), 1 skipped for fewer than 10 peers (Colorado). 4,683 eligible homes have a blank repeat bar. Washington has only 423 of 1,040 homes eligible.
+
+**Flag:** "Top 1%" on tied homes still appears on profiles, search descriptions and the watch welcome email. That is a ranking-method change and was not made here.
+
+**Source:** Blake, 2026-11-22; screenshot of the Fountain Hills Care LLC card.
+
+---
+
 ## 2026-11 — Every scan emails the operator what it checked
 
 **Decided:** After each California morning crawl, and after each state in the Sunday GitHub scan, one note goes to `ADMIN_ALERT_EMAIL`. It says whether the scan finished, how the inspection and citation counts moved, which watched homes were opened, which homes gained an inspection or a citation, and how many family notes were sent. A partial scan still sends this note. A job that writes no scan row still sends this note. A weekday says family notes are waiting for Sunday. A failed data check says no family mail went out. The same Loops admin template is used. No new template. Ned is not the recipient. On the Mac, a short placeholder in `.env.local` is ignored. The real Loops key and template id are read from Keychain services `starlynncare-loops-api-key` and `starlynncare-loops-admin-alert-id`, account `starlynncare`. GitHub already has those values as actions secrets.

@@ -1,4 +1,3 @@
-import type { CareCategory } from "@/lib/types";
 import { TrackedProfileLink } from "@/components/analytics/TrackedProfileLink";
 import { peerRankBarFillCss } from "@/lib/peerRankBar";
 import { stateFromCode } from "@/lib/states";
@@ -12,9 +11,6 @@ export type MobileGradeFacility = {
   city_slug: string;
   license_number?: string | null;
   beds?: number | null;
-  care_category: CareCategory;
-  grade: string | null;
-  composite: number | null;
   sev_pct: number | null;
   rep_pct: number | null;
   freq_pct: number | null;
@@ -49,7 +45,6 @@ export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFac
           <div className="m-fc-meta">
             {facility.license_number && <span className="lic">LIC# {facility.license_number}</span>}
             {facility.beds != null && facility.beds > 0 && <span>Cap. {facility.beds}</span>}
-            <span>{facility.care_category.replace(/_/g, " ")}</span>
           </div>
         </div>
       </div>

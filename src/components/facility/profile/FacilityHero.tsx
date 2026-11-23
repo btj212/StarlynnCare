@@ -454,7 +454,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             ) : null}
 
             {/* Mobile-only percentile badge — rank summary visible without scrolling */}
-            {reportableRank != null && profile.snapshot?.grade && (
+            {reportableRank != null && reportableRank >= 50 && profile.snapshot?.grade && (
               <div className="mt-4 flex items-center gap-4 border-t border-clearing-rule pt-4 md:hidden">
                 <div>
                   <div className="mb-0.5 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-4">

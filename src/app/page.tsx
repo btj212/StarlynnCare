@@ -18,9 +18,8 @@ import { MobileNationalHomeView } from "@/components/mobile/MobileNationalHomeVi
 import { NationalHomeSections } from "@/components/national-home/NationalHomeSections";
 import { loadNationalHomeData } from "@/lib/data/nationalHome";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
-import { seededShuffle, SAMPLE_CARD_ROTATION_COUNT } from "@/lib/data/stateHub";
+import { loadSampleCardFacilities } from "@/lib/data/stateHub";
 import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
-import type { CareCategory } from "@/lib/types";
 
 export const revalidate = 3600;
 
@@ -49,57 +48,7 @@ export const metadata: Metadata = {
 async function loadGradeCardFacilities(): Promise<HomeSampleFacility[]> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return [];
-
-  // Paginate to cover all publishable facilities — PostgREST defaults to 1000
-  // rows which would cut off WA/MN facilities from the rotation pool.
-  const { data: idRows } = await supabase
-    .from("facilities")
-    .select("id")
-    .eq("publishable", true)
-    .range(0, 4999);
-
-  const allIds = (idRows ?? []).map((r: { id: string }) => r.id);
-  const hourSeed = Math.floor(Date.now() / 3600000);
-  const pickedIds = seededShuffle(allIds, hourSeed).slice(0, SAMPLE_CARD_ROTATION_COUNT);
-  if (pickedIds.length === 0) return [];
-
-  const { data: pickedRows } = await supabase
-    .from("facilities")
-    .select("id, name, city, state_code, slug, city_slug, license_number, beds, care_category")
-    .in("id", pickedIds);
-
-  const rowById = new Map((pickedRows ?? []).map((r) => [r.id as string, r]));
-  const ordered = pickedIds.map((id) => rowById.get(id)).filter((r): r is NonNullable<typeof r> => r != null);
-
-  return (
-    await Promise.all(
-      ordered.map(async (picked) => {
-        const { data: snap } = await supabase.rpc("facility_snapshot", { p_facility_id: picked.id });
-        const s = snap as null | {
-          grade?: { letter: string; composite_percentile: number } | null;
-          metrics?: {
-            severity:  { percentile: number | null };
-            repeats:   { percentile: number | null; peer_median?: number | null };
-            frequency: { percentile: number | null };
-          } | null;
-        };
-        const repPct     = s?.metrics?.repeats?.percentile ?? null;
-        const repMedian  = s?.metrics?.repeats?.peer_median ?? null;
-        // Suppress degenerate repeat rank (everyone ties at 100 because the
-        // peer median is 0 repeat citations — same logic as FacilityPeerRank).
-        const repPctFinal = (repMedian === 0 && repPct === 100) ? null : repPct;
-        return {
-          ...picked,
-          care_category: picked.care_category as CareCategory,
-          grade: s?.grade?.letter ?? null,
-          composite: s?.grade?.composite_percentile ?? null,
-          sev_pct:  s?.metrics?.severity?.percentile ?? null,
-          rep_pct:  repPctFinal,
-          freq_pct: s?.metrics?.frequency?.percentile ?? null,
-        } satisfies HomeSampleFacility;
-      }),
-    )
-  ).filter(Boolean);
+  return loadSampleCardFacilities(supabase);
 }
 
 export default async function Home() {

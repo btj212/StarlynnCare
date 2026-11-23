@@ -32,7 +32,6 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
   const stateSlug = stateInfo?.slug ?? facility.state_code.toLowerCase();
   const stateName = stateInfo?.name ?? facility.state_code;
   const profileUrl = `/${stateSlug}/${facility.city_slug}/${facility.slug}`;
-  const composite = facility.composite != null ? Math.round(facility.composite) : null;
 
   return (
     <div className="overflow-hidden rounded-[22px] border border-clearing-rule-2 bg-clearing-card shadow-[var(--shadow-feature)]">
@@ -48,18 +47,9 @@ export function HomeSampleFacilityCard({ facility }: { facility: HomeSampleFacil
             {facility.license_number && (
               <span className="font-medium text-teal">LIC# {facility.license_number}</span>
             )}
-            {facility.beds && <span>Capacity {facility.beds}</span>}
-            <span className="uppercase">{facility.care_category.replace(/_/g, " ")}</span>
+            {facility.beds != null && facility.beds > 0 && <span>Capacity {facility.beds}</span>}
           </div>
         </div>
-        {composite != null && (
-          <div
-            className="justify-self-start rounded-full px-2.5 py-1 font-[family-name:var(--font-sans)] text-[12px] font-semibold sm:justify-self-end"
-            style={{ background: "var(--color-clearing-chip)", color: "var(--color-teal)" }}
-          >
-            Top {Math.max(1, 100 - composite)}%
-          </div>
-        )}
       </div>
 
       <div className="flex flex-col gap-3 bg-clearing-bg p-4 sm:p-6">

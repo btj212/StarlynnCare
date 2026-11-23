@@ -1,11 +1,15 @@
 import { regionsForState } from "@/lib/regions";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
-import type { CareCategory } from "@/lib/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { stateFromCode } from "@/lib/states";
 
 /** §02 rotates through this many publishable facilities (hourly reshuffle). */
 export const SAMPLE_CARD_ROTATION_COUNT = 10;
+
+/** Most candidates we will rank-check while looking for SAMPLE_CARD_ROTATION_COUNT eligible homes. */
+const SAMPLE_CARD_MAX_CANDIDATES = 80;
+const ID_PAGE_SIZE = 1000;
 
 /** Deterministic shuffle — same cohort for the ~1h ISR window. */
 export function seededShuffle<T>(items: T[], seed: number): T[] {
@@ -21,6 +25,85 @@ export function seededShuffle<T>(items: T[], seed: number): T[] {
     [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
+}
+
+/** Every publishable facility id, paged because PostgREST caps a single response. */
+async function fetchPublishableIds(supabase: SupabaseClient, stateCode?: string): Promise<string[]> {
+  const ids: string[] = [];
+  for (let from = 0; ; from += ID_PAGE_SIZE) {
+    let query = supabase.from("facilities").select("id").eq("publishable", true);
+    if (stateCode) query = query.eq("state_code", stateCode);
+    const { data, error } = await query.order("id").range(from, from + ID_PAGE_SIZE - 1);
+    if (error) {
+      console.error("fetchPublishableIds failed", error.message);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    ids.push(...data.map((r: { id: string }) => r.id));
+  }
+  return ids;
+}
+
+type CardSnapshot = {
+  has_inspections?: boolean;
+  peer_set?: { n?: number } | null;
+  metrics?: {
+    severity?: { percentile: number | null } | null;
+    repeats?: { percentile: number | null; peer_median?: number | null } | null;
+    frequency?: { percentile: number | null } | null;
+  } | null;
+} | null;
+
+/**
+ * Homepage / state-hub sample cards. One loader so every page applies the same
+ * rules the facility profile uses (FacilityPeerRank): a home with no inspections
+ * or fewer than 10 peers has no peer comparison on its profile, so it is never
+ * shown on a card; a repeat rank where the peer median is 0 is blank.
+ * Walks the hourly shuffle until it has enough eligible homes.
+ */
+export async function loadSampleCardFacilities(
+  supabase: SupabaseClient,
+  stateCode?: string,
+): Promise<HomeSampleFacility[]> {
+  const allIds = await fetchPublishableIds(supabase, stateCode);
+  const hourSeed = Math.floor(Date.now() / 3600000);
+  const candidates = seededShuffle(allIds, hourSeed).slice(0, SAMPLE_CARD_MAX_CANDIDATES);
+
+  const cards: HomeSampleFacility[] = [];
+  for (let i = 0; i < candidates.length && cards.length < SAMPLE_CARD_ROTATION_COUNT; i += SAMPLE_CARD_ROTATION_COUNT) {
+    const batchIds = candidates.slice(i, i + SAMPLE_CARD_ROTATION_COUNT);
+    const { data: rows } = await supabase
+      .from("facilities")
+      .select("id, name, city, state_code, slug, city_slug, license_number, beds")
+      .in("id", batchIds);
+    const rowById = new Map((rows ?? []).map((r) => [r.id as string, r]));
+    const batch = await Promise.all(
+      batchIds.map(async (id) => {
+        const row = rowById.get(id);
+        if (!row) return null;
+        const { data } = await supabase.rpc("facility_snapshot", { p_facility_id: id });
+        const s = data as CardSnapshot;
+        if (!s?.has_inspections || (s.peer_set?.n ?? 0) < 10) return null;
+        const repPct = s.metrics?.repeats?.percentile ?? null;
+        const repMedian = s.metrics?.repeats?.peer_median ?? null;
+        const sevPct = s.metrics?.severity?.percentile ?? null;
+        const freqPct = s.metrics?.frequency?.percentile ?? null;
+        const repShown = repMedian === 0 && repPct === 100 ? null : repPct;
+        // A card with no bar to show would be three dashes.
+        if (sevPct == null && freqPct == null && repShown == null) return null;
+        return {
+          ...row,
+          sev_pct: sevPct,
+          rep_pct: repShown,
+          freq_pct: freqPct,
+        } satisfies HomeSampleFacility;
+      }),
+    );
+    for (const c of batch) {
+      if (c && cards.length < SAMPLE_CARD_ROTATION_COUNT) cards.push(c);
+    }
+  }
+  return cards;
 }
 
 export type CountyRow = {
@@ -97,59 +180,7 @@ export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubDa
   const firstCreated = firstRes.data?.created_at as string | null;
   const firstPublishedAt = firstCreated ? new Date(firstCreated).toISOString() : null;
 
-  const { data: idRows } = await supabase
-    .from("facilities")
-    .select("id")
-    .eq("publishable", true)
-    .eq("state_code", "CA");
-
-  const allIds = (idRows ?? []).map((r: { id: string }) => r.id);
-  const hourSeed = Math.floor(Date.now() / 3600000);
-  const pickedIds = seededShuffle(allIds, hourSeed).slice(0, SAMPLE_CARD_ROTATION_COUNT);
-
-  let gradeCardFacilities: HomeSampleFacility[] = [];
-  if (pickedIds.length > 0) {
-    const { data: pickedRows } = await supabase
-      .from("facilities")
-      .select(
-        "id, name, city, state_code, slug, city_slug, license_number, beds, care_category",
-      )
-      .in("id", pickedIds);
-
-    const rowById = new Map(
-      (pickedRows ?? []).map((r) => [r.id as string, r]),
-    );
-    const ordered = pickedIds
-      .map((id) => rowById.get(id))
-      .filter((r): r is NonNullable<typeof r> => r != null);
-
-    gradeCardFacilities = (
-      await Promise.all(
-        ordered.map(async (picked) => {
-          const { data: snap } = await supabase.rpc("facility_snapshot", {
-            p_facility_id: picked.id,
-          });
-          const s = snap as null | {
-            grade?: { letter: string; composite_percentile: number } | null;
-            metrics?: {
-              severity: { percentile: number };
-              repeats: { percentile: number };
-              frequency: { percentile: number };
-            } | null;
-          };
-          return {
-            ...picked,
-            care_category: picked.care_category as CareCategory,
-            grade: s?.grade?.letter ?? null,
-            composite: s?.grade?.composite_percentile ?? null,
-            sev_pct: s?.metrics?.severity?.percentile ?? null,
-            rep_pct: s?.metrics?.repeats?.percentile ?? null,
-            freq_pct: s?.metrics?.frequency?.percentile ?? null,
-          } satisfies HomeSampleFacility;
-        }),
-      )
-    ).filter(Boolean);
-  }
+  const gradeCardFacilities = await loadSampleCardFacilities(supabase, "CA");
 
   const { data: tierRows } = await supabase
     .from("facilities")
@@ -339,40 +370,7 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
     }
   }
 
-  const hourSeed = Math.floor(Date.now() / 3600000);
-  const pickedIds = seededShuffle(allIds, hourSeed).slice(0, SAMPLE_CARD_ROTATION_COUNT);
-
-  let gradeCardFacilities: HomeSampleFacility[] = [];
-  if (pickedIds.length > 0) {
-    const { data: pickedRows } = await supabase
-      .from("facilities")
-      .select("id, name, city, state_code, slug, city_slug, license_number, beds, care_category")
-      .in("id", pickedIds);
-
-    const rowById = new Map((pickedRows ?? []).map((r) => [r.id as string, r]));
-    const ordered = pickedIds.map((id) => rowById.get(id)).filter((r): r is NonNullable<typeof r> => r != null);
-
-    gradeCardFacilities = (
-      await Promise.all(
-        ordered.map(async (picked) => {
-          const { data: snap } = await supabase.rpc("facility_snapshot", { p_facility_id: picked.id });
-          const s = snap as null | {
-            grade?: { letter: string; composite_percentile: number } | null;
-            metrics?: { severity: { percentile: number }; repeats: { percentile: number }; frequency: { percentile: number } } | null;
-          };
-          return {
-            ...picked,
-            care_category: picked.care_category as CareCategory,
-            grade: s?.grade?.letter ?? null,
-            composite: s?.grade?.composite_percentile ?? null,
-            sev_pct: s?.metrics?.severity?.percentile ?? null,
-            rep_pct: s?.metrics?.repeats?.percentile ?? null,
-            freq_pct: s?.metrics?.frequency?.percentile ?? null,
-          } satisfies HomeSampleFacility;
-        }),
-      )
-    ).filter(Boolean);
-  }
+  const gradeCardFacilities = await loadSampleCardFacilities(supabase, stateCode);
 
   const { data: tierRows } = await supabase
     .from("facilities")
