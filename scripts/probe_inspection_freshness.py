@@ -473,22 +473,31 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   MN insertDate max=2026-10-24 (unchanged vs Fri probe — same 4 survey PDFs; Sunday GHA MN +0);
 #   MN resolved max=2026-10-14 unchanged; all other states no new probe-layer signal (CA/TX/WA/IL/PA/AZ/MO
 #   refreshed or queued on Sunday GHA 40194733653; MO FOIA manual).
+# Sunday GHA 45039897772 (2026-11-22T15:43 UTC): MN +87 max=2026-11-03; OR +4 max=2026-11-10;
+#   AZ +41 max=2026-11-19; UT +1 max=2026-10-26; PA +8 max=2026-11-02 (ingest job failed — scrape
+#   still ran); WA idempotent long PDF pipeline; IL/MO/TX +0; Layer 5 validate OK.
+# Cron probe 2026-11-23T23:03 UTC: OR source max=2026-11-10 (0 rows after 11/10 — matches ingested max
+#   from GHA 45039897772); MN insertDate max=2026-11-21 (+5 events with insert 11/20–11/21 vs
+#   LAST_MN_INSERT_BASELINE 2026-10-23, likely non-ALRC/posting-delay after Sun +87); MN resolved
+#   source max=2026-11-03 unchanged; CA/TX/WA/UT/IL/PA/AZ/MO/CO no new probe-layer signal (need DB
+#   or manual; last full source refresh was Sunday GHA <24h ago). Automation env has no DATABASE_URL;
+#   workflow_dispatch blocked (HTTP 403) — no ingest triggered this run.
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
-    "CA": date(2026, 9, 4),  # Sunday GHA +63; probe layer needs DB for CA max
+    "CA": date(2026, 9, 4),  # Mac ca-watch + manual cdss-weekly-ingest; probe layer needs DB
     "TX": date(2023, 2, 16),
-    "OR": date(2026, 10, 23),  # GHA 40194733653 +20
+    "OR": date(2026, 11, 10),  # GHA 45039897772
     "WA": date(2026, 12, 1),  # known data-quality outlier in source
-    "MN": date(2026, 10, 14),
-    "UT": date(2026, 9, 15),
+    "MN": date(2026, 11, 3),  # GHA 45039897772
+    "UT": date(2026, 10, 26),  # GHA 45039897772
     "IL": date(2026, 5, 6),
-    "PA": date(2026, 10, 16),  # GHA 40063182079 matrix
-    "AZ": date(2026, 10, 22),  # GHA 40037764267 +9
+    "PA": date(2026, 11, 2),  # GHA 45039897772
+    "AZ": date(2026, 11, 19),  # GHA 45039897772
     "MO": date(2026, 6, 11),  # FOIA Excel; no live regulator feed
     "CO": date(2026, 5, 18),  # one-time CDPHE HFQ workbook; not a live inspection feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 10, 23)
+LAST_MN_INSERT_BASELINE = date(2026, 11, 21)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
