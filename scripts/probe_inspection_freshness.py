@@ -476,6 +476,11 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 # Sunday GHA 45039897772 (2026-11-22T15:43 UTC): MN +87 max=2026-11-03; OR +4 max=2026-11-10;
 #   AZ +41 max=2026-11-19; UT +1 max=2026-10-26; PA +8 max=2026-11-02 (ingest job failed — scrape
 #   still ran); WA idempotent long PDF pipeline; IL/MO/TX +0; Layer 5 validate OK.
+# Cron probe 2026-11-24T23:00 UTC: OR source max=2026-11-10 (0 rows after 11/10 — matches ingested max
+#   from GHA 45039897772); MN insertDate max=2026-11-24 (+5 posting-delay events vs baseline 2026-11-21:
+#   SMC Ashton ×4, The James Inc — all resolved 10/05–11/02, already covered by Sun ingest max 11/03);
+#   MN resolved source max=2026-11-03 unchanged; CA/TX/WA/UT/IL/PA/AZ/MO/CO no new probe-layer signal (need DB
+#   or manual; Sunday GHA 45039897772 2026-11-22 still current). No ingest (no DATABASE_URL in automation).
 # Cron probe 2026-11-23T23:03 UTC: OR source max=2026-11-10 (0 rows after 11/10 — matches ingested max
 #   from GHA 45039897772); MN insertDate max=2026-11-21 (+5 events with insert 11/20–11/21 vs
 #   LAST_MN_INSERT_BASELINE 2026-10-23, likely non-ALRC/posting-delay after Sun +87); MN resolved
@@ -497,7 +502,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "CO": date(2026, 5, 18),  # one-time CDPHE HFQ workbook; not a live inspection feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 11, 21)
+LAST_MN_INSERT_BASELINE = date(2026, 11, 24)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
