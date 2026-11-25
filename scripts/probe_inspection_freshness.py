@@ -482,6 +482,12 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   source max=2026-11-03 unchanged; CA/TX/WA/UT/IL/PA/AZ/MO/CO no new probe-layer signal (need DB
 #   or manual; last full source refresh was Sunday GHA <24h ago). Automation env has no DATABASE_URL;
 #   workflow_dispatch blocked (HTTP 403) — no ingest triggered this run.
+# Cron probe 2026-11-25T23:02 UTC: OR source max=2026-11-10 (0 CSV rows after 11/10); MN resolved
+#   source max=2026-11-05 (+2 complaints: OLYDIA HOME CARE INC, MINNESOTA HEALTHCARE SERVICES —
+#   insert 11/25); MN insertDate max=2026-11-25 (+9 events, incl. SMC Ashton posting-delay batch);
+#   all other states no new probe-layer signal (Sunday GHA 45039897772 still current). Ingest not
+#   run — no DATABASE_URL; workflow_dispatch HTTP 403. Page spot-check 150/151 (transient SSL on
+#   /arizona/phoenix; curl retry 200).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Mac ca-watch + manual cdss-weekly-ingest; probe layer needs DB
@@ -497,7 +503,7 @@ LAST_INGEST_BASELINES: dict[str, date] = {
     "CO": date(2026, 5, 18),  # one-time CDPHE HFQ workbook; not a live inspection feed
 }
 # MN MDH posts events with insertDate later than resolvedDate; track separately.
-LAST_MN_INSERT_BASELINE = date(2026, 11, 21)
+LAST_MN_INSERT_BASELINE = date(2026, 11, 25)
 
 
 def _run(cmd: list[str], *, label: str) -> int:
