@@ -70,7 +70,7 @@ export function FacilityCost({
         {!cost && (
           <>
             <p className={prose}>
-              No price is listed for this home. Typical memory care in {stateName} runs{" "}
+              No price for this home is listed in the directories we read. Typical memory care in {stateName} runs{" "}
               <strong className="font-semibold">
                 {formatCurrency(state.cityLow)}&ndash;{formatCurrency(state.cityHigh)}
               </strong>{" "}

@@ -101,6 +101,7 @@ async function facilityEditorialLinks(
 // Kept components
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { RelatedFacilities } from "@/components/facility/RelatedFacilities";
+import { FacilityHomeReported } from "@/components/facility/profile/FacilityHomeReported";
 import { MetroNearbyFacilities } from "@/components/facility/MetroNearbyFacilities";
 import { SameOperatorFacilities } from "@/components/facility/SameOperatorFacilities";
 import { FacilityBrowseLinks } from "@/components/facility/FacilityBrowseLinks";
@@ -319,6 +320,9 @@ export default async function FacilityPage({ params }: PageProps) {
             <FacilityRecord profile={profile} />
           </div>
         </div>
+
+        {/* What the home itself told us, when it has answered. Renders nothing otherwise. */}
+        <FacilityHomeReported facilityId={facility.id} />
 
         <FacilityCost rows={costRows} stateCode={facility.state_code} stateName={state.name} />
 
