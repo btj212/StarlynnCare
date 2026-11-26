@@ -122,14 +122,15 @@ function countLabel(count: number, singular: string, plural: string): string {
 }
 
 /**
- * Name and city first so facility-name searches match the SERP.
- * The pattern under test is "{Facility Name}, {City}: Inspection Record & Citations ({Year})".
- * Year is the last inspection year on record — never the generate date.
- * A rank stays in the description, not the title.
+ * Name and city first so facility-name searches match the SERP, then a
+ * concrete hook (citation count and last inspection date) so the result
+ * looks like the home's page, not a generic reports dump.
  *
- * Conflicts with the 2026-11 "Costs" title decision: Costs remain on the
- * page and in the description; the title now leads with the inspection record
- * because that is the query families type.
+ * GSC (28 days ending 2026-11-24): name queries at ~position 11 with 0
+ * clicks ("fields of florissant", "st peters post acute"). The previous
+ * "{Name}, {City}: Inspection Record & Citations ({Year})" title tied the
+ * profile to its /inspections subpage. Year is still the last inspection
+ * year on record — never the generate date. Rank stays in the description.
  */
 export function buildFacilityTitle(input: {
   name: string;
@@ -150,6 +151,13 @@ export function buildFacilityTitle(input: {
   const inspections = inspectionCount ?? 0;
   const reviews = reviewCount ?? 0;
   const year = lastInspectionDate?.slice(0, 4) ?? null;
+  const inspected = shortMonthYear(lastInspectionDate);
+  const citationHook =
+    inspections > 0 && citationCount != null
+      ? citationCount === 0
+        ? "no citations"
+        : countLabel(citationCount, "citation", "citations")
+      : null;
   const facts: string[] = [];
   if (inspections > 0) facts.push(countLabel(inspections, "inspection", "inspections"));
   if (citationCount != null && inspections > 0) {
@@ -160,10 +168,12 @@ export function buildFacilityTitle(input: {
   const inspectionTitles =
     inspections > 0
       ? [
-          year ? `${place}: Inspection Record & Citations (${year})` : `${place}: Inspection Record & Citations`,
-          year ? `${place}: Inspection Record (${year})` : `${place}: Inspection Record`,
-          `${placeAbbr}: Inspection Record`,
-        ]
+          citationHook && inspected ? `${place} — ${citationHook}, inspected ${inspected}` : null,
+          citationHook ? `${place} — ${citationHook}${year ? ` (${year})` : ""}` : null,
+          inspected ? `${place} — last inspected ${inspected}` : null,
+          year ? `${place}: Inspection record (${year})` : `${place}: Inspection record`,
+          `${placeAbbr}: Inspection record`,
+        ].filter((candidate): candidate is string => candidate != null)
       : input.stateName === "Arizona"
         ? [`${place}: Directed Care Home`, `${placeAbbr}: Directed Care Home`]
         : [`${place}: Licensed Memory Care`, `${placeAbbr}: Licensed Memory Care`];
@@ -198,6 +208,8 @@ export function buildStateHubTitle(stateName: string, regulatorAbbr: string, sta
           ]
         : stateCode === "PA"
           ? [
+              `${stateName} Personal Care Home License Search | ${regulatorAbbr}`,
+              `${stateName} Assisted Living License Search | ${regulatorAbbr}`,
               `${stateName} Personal Care Inspection Reports | ${regulatorAbbr} Lookup`,
               `Personal Care Inspection Reports in ${stateName}`,
               `${topic} in ${stateName} - Inspection Data`,
@@ -210,7 +222,10 @@ export function buildStateHubTitle(stateName: string, regulatorAbbr: string, sta
   return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? candidates[candidates.length - 1]!);
 }
 
-/** Title of a home's full-report page. Longest candidate that fits wins. */
+/**
+ * Title of a home's full-report page. Must not look like the profile title
+ * (name + city + citation hook) so name queries stay on the profile.
+ */
 export function buildFacilityReportsTitle(input: {
   name: string;
   stateName: string;
@@ -219,10 +234,10 @@ export function buildFacilityReportsTitle(input: {
   const { name, stateName, city } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
   const candidates = [
-    `${name}, ${city}, ${abbr}: Inspection Reports and Citations`,
-    `${name}, ${city}: Inspection Reports and Citations`,
-    `${name}: Inspection Reports and Citations`,
-    `${name}: Inspection Reports`,
+    `${name}, ${city}: Full ${abbr} inspection reports`,
+    `${name}, ${city}: Full inspection reports`,
+    `${name}: Full inspection reports`,
+    `${name}: Inspection reports`,
     name,
   ];
   return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? name);

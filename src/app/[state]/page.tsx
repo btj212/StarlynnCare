@@ -60,6 +60,8 @@ export async function generateMetadata({
         ? `${facilityCount} Directed Care licensed homes across ${state.name} — Arizona authorizes these homes to provide memory care services (A.A.C. R9-10-816). ${severeCount} severe deficiencies in the last 24 months (${reg}). Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
         : state.code === "WA"
         ? `${facilityCount} Washington assisted living and adult family homes that serve people with dementia. ${severeCount} severe deficiencies in the last 24 months (${reg}). Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
+        : state.code === "PA"
+        ? `Pennsylvania personal care home license search and inspection records. ${facilityCount} licensed PCH and ALR homes on file. Official lookup is the DHS provider directory; we publish the inspection record. Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
         : `${facilityCount} licensed memory care facilities across ${state.name}. ${severeCount} severe deficiencies in the last 24 months (${reg}). Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
       : null;
 

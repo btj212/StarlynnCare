@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — City hub is canonical over /facilities; profile titles use citation hooks; Venmo gone
+
+**Decided:** Unfiltered `/{state}/{city}/facilities` **308-redirects to the city hub**. Search Console (28 days ending 2026-11-24) showed both URLs returning 200 and splitting impressions (San Diego browse 379 vs hub 43; Chicago 347 vs 8; LA 234 vs 0). The hub already lists every home A to Z (`#all-homes`). Filtered browse (`?q=`, `?page=2`, `?homes=small`) stays live, noindex, self-canonical, so search/pagination remain usable. Hub "Browse all N facilities" jumps to `#all-homes`; a search form on the hub posts to `/facilities?q=`. State-wide `/{state}/facilities` is unchanged.
+
+**Facility titles:** `{Name}, {City} — {N} citations, inspected {Mon YYYY}` so name searches click. This **replaces** the 2026-11 `{Name}, {City}: Inspection Record & Citations ({Year})` pattern, which tied the profile to its `/inspections` subpage (name queries were landing on reports). Reports titles are now `{Name}, {City}: Full {ST} inspection reports`. Sourced `content.marketing_name` / `name_aliases` appear in the title (display name), H1 "also known as / also listed as", and photo alt. Never invent aliases.
+
+**Venmo:** The post-email `SupportAsk` donation UI, QR, and `support_click` event are removed. No donation code in `src/` or `public/`.
+
+**Rejected:** Canonical-only (Google was already ignoring the browse-to-hub canonical). Redirecting filtered `/facilities` URLs. Canonicalizing `/inspections` onto the profile (those pages earn 2.75% CTR). Applying marketing-name columns.
+
+**Source:** GSC 2026-10-28–2026-11-24; engagement PR. `src/lib/seo/cityBrowse.ts`, `src/lib/seo/meta.ts`.
+
+---
+
 ## 2026-11 — City hub listed set includes large homes with no inspections; state-aware findings copy
 
 **Decided:** The city-hub listed set (`facilityListedOnHub` / `homesForCityIndex`) is the only count a city page may quote (headline, stats, A–Z, ItemList `numberOfItems`, nearby-hub counts). Arizona homes of 10 beds or fewer with no citations stay off it. Homes of 6 beds or fewer with no inspection row stay off it (Washington AFHs). A newly licensed home with **no inspections yet and more than 6 beds** is listed, with a "no inspections on file yet" card/A–Z state — Vista del Sol in San Diego (150 beds, license 374605041). **This contradicts the 2026-11 sitemap entry below**, which said city hubs still require an inspection on file so Mesa does not jump from 145 to 169. Mesa is unchanged because the Arizona small-no-citation rule still applies. Do not merge a closed prior license at the same address into the new row; show it as "previous license at this address" on the profile.

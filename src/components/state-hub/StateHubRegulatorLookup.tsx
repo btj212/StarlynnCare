@@ -34,14 +34,24 @@ export function StateHubRegulatorLookup({ stateCode, stateSlug, stateName }: Pro
     <section id="lookup" className="border-b border-clearing-rule bg-clearing-tint">
       <div className="mx-auto max-w-[1280px] px-4 py-16 sm:px-6 md:px-[60px] md:py-20">
         <p className="mb-3 inline-block font-[family-name:var(--font-sans)] text-[13px] font-semibold uppercase tracking-[0.14em] text-teal">
-          Official lookup
+          {stateCode === "PA" ? "Pennsylvania personal care home license search" : "Official lookup"}
         </p>
         <h2 className="m-0 mb-4 max-w-[22ch] font-[family-name:var(--font-display)] text-[clamp(28px,4vw,40px)] font-normal leading-[1.1] tracking-[-0.02em] text-ink">
-          Look up a {stateName} inspection report <em>on the state site.</em>
+          {stateCode === "PA" ? (
+            <>
+              Pennsylvania personal care home <em>license search.</em>
+            </>
+          ) : (
+            <>
+              Look up a {stateName} inspection report <em>on the state site.</em>
+            </>
+          )}
         </h2>
         <p className="mb-8 max-w-[62ch] text-[17px] leading-[1.55] text-ink-2">
-          {howTo?.answer ??
-            `Search the home by name or license number on ${regulator.long}. StarlynnCare publishes the memory care homes we hold from that record; the state site is the original.`}
+          {stateCode === "PA"
+            ? "Search a personal care home or assisted living residence by name or license number in the Pennsylvania Department of Human Services provider directory — the official license lookup. Choose the Office of Long-Term Living as the program office. StarlynnCare publishes the inspection record we hold; DHS is the original."
+            : (howTo?.answer ??
+              `Search the home by name or license number on ${regulator.long}. StarlynnCare publishes the memory care homes we hold from that record; the state site is the original.`)}
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <a

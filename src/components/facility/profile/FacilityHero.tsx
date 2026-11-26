@@ -170,7 +170,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
         <FacilityPhotoGrid
           photoUrls={photoUrls}
           photoSources={photoSources}
-          facilityName={facility.name}
+          facilityName={facilityDisplayName(facility)}
         />
       ) : null}
 
@@ -187,7 +187,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
               <FacilityPhotoGrid
                 photoUrls={photoUrls}
                 photoSources={photoSources}
-                facilityName={facility.name}
+                facilityName={facilityDisplayName(facility)}
               />
               <div className="font-[family-name:var(--font-mono)] text-[10px] leading-tight opacity-50">
                 <a
@@ -355,6 +355,11 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 Also known as {formatFacilityName(aliases.marketingName)}
               </p>
             )}
+            {aliases.aliases.length > 0 ? (
+              <p className="mt-1 font-[family-name:var(--font-sans)] text-[14px] leading-snug text-ink-3">
+                Also listed as {aliases.aliases.map((alias) => formatFacilityName(alias)).join(", ")}
+              </p>
+            ) : null}
 
             {/* 40–60 word answer for facility-name / inspection queries. */}
             {directAnswer && (
@@ -362,6 +367,26 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 {directAnswer}
               </p>
             )}
+            <nav aria-label="Next steps" className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              <a
+                href="#record"
+                className="font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4"
+              >
+                View inspection record
+              </a>
+              <Link
+                href={`/${state.slug}/${facility.city_slug}/${facility.slug}/inspections`}
+                className="font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4"
+              >
+                Full citation reports
+              </Link>
+              <Link
+                href={`/${state.slug}/${facility.city_slug}`}
+                className="font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4"
+              >
+                Compare homes in {cityName}
+              </Link>
+            </nav>
 
             {/* Editorial summary — same data points as the meta snippet so
                 Google has narrative prose above-the-fold to lift. */}

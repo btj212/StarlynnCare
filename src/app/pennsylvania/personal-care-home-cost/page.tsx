@@ -8,6 +8,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import { AuthorByline } from "@/components/editorial/AuthorByline";
 import { GuideFacilityModule } from "@/components/articles/GuideFacilityModule";
 import { DataFootnote } from "@/components/editorial/DataFootnote";
+import { GuideAnswer } from "@/components/editorial/GuideAnswer";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import {
   buildArticleSchema,
@@ -20,10 +21,13 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE =
   "What Does a Personal Care Home Cost in Pennsylvania?";
 const TITLE =
-  "Personal Care Home Cost in Pennsylvania — Monthly Ranges & Medicaid";
+  "How Much Does a Personal Care Home Cost in Pennsylvania?";
 const DESC =
-  "Pennsylvania personal care home (PCH) and memory care ALR costs range from $4,000–$8,500/month depending on location, care level, and Special Care designation. Here is what drives the price and what Medicaid does — and does not — cover.";
+  "Pennsylvania personal care homes typically cost $4,000–$8,500 a month. Medicaid does not pay room and board in a PCH or ALR. What drives the price, and how to compare it with the DHS inspection record.";
 const DATE_PUBLISHED = "2026-06-09";
+const DATE_UPDATED = "2026-11-26";
+const DIRECT_ANSWER =
+  "A licensed Pennsylvania personal care home or assisted living residence typically costs $4,000 to $8,500 a month, higher in Philadelphia suburbs. The base rate often excludes medication management and dementia programming. Pennsylvania Medicaid does not pay room and board in a PCH or ALR; it can fund personal care services for eligible residents. Cost is not a quality signal — read the DHS inspection record first.";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   {
@@ -92,6 +96,7 @@ export default function PersonalCareHomeCostPage() {
       description: DESC,
       url: canonicalUrl,
       datePublished: DATE_PUBLISHED,
+      dateModified: DATE_UPDATED,
     }),
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
@@ -129,8 +134,20 @@ export default function PersonalCareHomeCostPage() {
               {ARTICLE_HEADLINE}
             </h1>
             <p className="text-[18px] leading-[1.6] text-ink-3 max-w-[62ch]">{DESC}</p>
+            <GuideAnswer
+              q="How much does a personal care home cost in Pennsylvania?"
+              a={DIRECT_ANSWER}
+              jumps={[
+                { href: "#ranges", label: "Monthly ranges" },
+                { href: "#faq", label: "FAQ" },
+              ]}
+              action={{
+                href: "/pennsylvania/facilities",
+                label: "Compare Pennsylvania homes and inspection records",
+              }}
+            />
             <div className="mt-8">
-              <AuthorByline className="border-b-0 pb-0 mb-0" />
+              <AuthorByline lastReviewed={DATE_UPDATED} className="border-b-0 pb-0 mb-0" />
               <GuideFacilityModule stateSlug="pennsylvania" />
             </div>
             <EditorialHero

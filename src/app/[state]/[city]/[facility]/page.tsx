@@ -207,7 +207,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: desc,
       url: canonical,
       type: "website",
-      images: [{ url: facility.photo_url ?? "/og-default.png", alt: facility.name }],
+      images: [{ url: facility.photo_url ?? "/og-default.png", alt: displayName }],
     },
     twitter: {
       card: "summary_large_image",

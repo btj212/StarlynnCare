@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { submitWatch } from "@/lib/watch/submitWatch";
-import { SupportAsk } from "@/components/support/SupportAsk";
 import {
   FACILITY_WATCH_ALERTS_CONFIRM,
   FACILITY_WATCH_ALERTS_COPY,
@@ -108,9 +107,6 @@ export function FullHistoryWaitlist({
       </div>
       {status === "error" && (
         <p className="mt-1.5 font-[family-name:var(--font-mono)] text-[10px] text-rust">{errorMsg}</p>
-      )}
-      {status === "done" && (
-        <SupportAsk source="records_pull_interest" variant="inline" />
       )}
     </div>
   );

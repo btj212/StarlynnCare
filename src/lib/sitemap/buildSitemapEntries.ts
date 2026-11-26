@@ -354,8 +354,8 @@ export async function collectHubEntriesForState(
         changefreq: "weekly",
         ...dated,
       };
-      // The city browse page (/{city}/facilities) canonicals to the hub, which
-      // already lists every home A to Z, so only the hub is listed.
+      // Unfiltered /{city}/facilities 308s to the hub (which lists every home
+      // A to Z), so only the hub is listed. Filtered browse URLs stay noindex.
       return [hub];
     });
 }

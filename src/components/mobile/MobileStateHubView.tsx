@@ -117,7 +117,11 @@ export function MobileStateHubView({ data, config }: Props) {
               rel="noopener noreferrer"
               className="flex items-center justify-between w-full border border-clearing-rule-2 bg-clearing-card px-5 py-4 font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.1em] text-ink no-underline"
             >
-              <span>Official {regulator.short} lookup</span>
+              <span>
+                {config.stateCode === "PA"
+                  ? "Pennsylvania personal care home license search"
+                  : `Official ${regulator.short} lookup`}
+              </span>
               <span aria-hidden>↗</span>
             </a>
             {howTo ? (

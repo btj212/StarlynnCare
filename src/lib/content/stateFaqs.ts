@@ -235,6 +235,10 @@ export const PA_FAQS: FaqItem[] = [
     a: "In the Department of Human Services provider directory (humanservices.dhs.pa.gov). Choose the Office of Long-Term Living as the program office and type at least four characters of the home's name. The lookup section on this page links to that directory and to a step-by-step how-to for the memory care homes we publish.",
   },
   {
+    q: "How do I search for a Pennsylvania personal care home license?",
+    a: "Use the Pennsylvania Department of Human Services provider directory — the official license lookup. Choose the Office of Long-Term Living as the program office and type at least four characters of the home's name or its license number. The license search block on this page opens that directory. StarlynnCare is not the license office.",
+  },
+  {
     q: "What is the difference between a Personal Care Home and an Assisted Living Residence in Pennsylvania?",
     a: "Both are licensed by PA DHS OLTL and can serve residents with dementia, but they differ in scope. A Personal Care Home (PCH, Chapter 2600) provides room, board, and personal care services to adults who need assistance with activities of daily living. An Assisted Living Residence (ALR, Chapter 2800) offers a higher level of care, including nursing oversight, medication management, and more intensive personal care — appropriate for residents with greater care needs. Memory care programming can operate within either license type.",
   },

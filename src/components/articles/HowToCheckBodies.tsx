@@ -175,7 +175,6 @@ export async function HowToCheckBody({ code }: { code: HowToState }) {
 
   return (
     <>
-      <p className={prose}>{article.answer}</p>
       <h2 className={h2}>Where is the official record?</h2>
       <div className="mt-4">{STEPS[code]}</div>
       {showPennsylvaniaDesignation ? (

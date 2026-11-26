@@ -160,11 +160,11 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
   WA: {
     code: "WA",
     path: "/washington/how-to-check-a-memory-care-record",
-    title: "Washington assisted living inspection reports",
-    headingLead: "Washington assisted living",
-    headingEm: "inspection reports",
+    title: "How to check a Washington memory care inspection record",
+    headingLead: "How to check a Washington",
+    headingEm: "memory care inspection record",
     description:
-      "Where Washington assisted living inspection reports are kept on the DSHS lookup, plus a search of the memory care homes we publish by name or license number.",
+      "Look up a Washington assisted living or adult family home on the DSHS locator, open its ALF Reports page, and read the newest inspection and every investigation since.",
     datePublished: "2026-10-31",
     badge: "Washington",
     stateName: "Washington",
@@ -177,7 +177,7 @@ export const HOW_TO_CHECK: Record<HowToState, HowToArticle> = {
       alt: "Illustrated table by a rainy window, with a teapot and a closed folder — standing in for looking up a Washington inspection record",
     },
     answer:
-      "Find the home on the DSHS assisted living facility locator and open its ALF Reports page. That page lists routine inspections, complaint investigations, enforcement letters, and fire inspections. Read the newest inspection and every investigation since.",
+      "Find the home on the DSHS assisted living facility locator and open its ALF Reports page. That page lists routine inspections, complaint investigations, enforcement letters, and fire inspections. Read the newest inspection and every investigation since. StarlynnCare publishes the memory care homes we hold from that record; the state site is the original.",
     faq: [
       {
         q: "Where are Washington assisted living inspection reports?",

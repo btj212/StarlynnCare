@@ -8,21 +8,23 @@ import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
 import { buildBreadcrumbList, buildFaqSchemaFromPairs, buildWebPageWithReviewer } from "@/lib/seo/schema";
 import { loadStateMemoryCareStats, type StateMemoryCareStats } from "@/lib/data/stateMemoryCareStats";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { COVERED_STATES } from "@/lib/states";
 
 export const revalidate = 3600;
 
 const METHODOLOGY_PATH = "/methodology";
 const methodologyCanonical = canonicalFor(METHODOLOGY_PATH);
 const EFFECTIVE = "May 2026";
+const PAGE_TITLE = "How StarlynnCare scores inspection records";
 const methodologyDesc =
-  "Our methodology: primary data sources, how we compute each metric, tier thresholds, and why we do not publish a single composite score.";
+  "How StarlynnCare turns state inspection records into peer signals — data sources, formulas, and why we do not publish a star rating. This is not a license lookup; search a home from the state hub.";
 
 export const metadata: Metadata = {
-  title: "How We Rate Facilities | StarlynnCare",
+  title: `${PAGE_TITLE} | StarlynnCare`,
   description: methodologyDesc,
   alternates: { canonical: methodologyCanonical },
   openGraph: {
-    title: "How We Rate Facilities | StarlynnCare",
+    title: `${PAGE_TITLE} | StarlynnCare`,
     description: methodologyDesc,
     url: methodologyCanonical,
     type: "article",
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "How We Rate Facilities | StarlynnCare",
+    title: PAGE_TITLE,
     description: methodologyDesc,
     images: ["/og-default.png"],
   },
@@ -140,7 +142,11 @@ export default async function MethodologyPage() {
     },
     {
       q: "Where does the inspection data come from?",
-      a: "Data comes directly from official state licensing portals: CDSS Community Care Licensing (CA), Oregon DHS LTC Licensing (OR), DSHS ALTSA (WA), Minnesota MDH (MN), HHSC LTCR (TX), PA DHS OLTL (PA), ADHS BRFL (AZ), DLBC (UT), IDPH (IL), DHSS LTCR (MO), and CDPHE plus CMS Care Compare (CO). We ingest records on a regular automated schedule and publish only facilities with an active state license and at least one published inspection record.",
+      a: "The scores on this page are built from official state licensing portals (CDSS, Oregon DHS, DSHS, MDH, HHSC, PA DHS, ADHS, DLBC, IDPH, DHSS, CDPHE, and CMS Care Compare). This methodology page explains how we turn those records into peer signals. To look up a specific license or inspection report, start at that state's hub — for example Pennsylvania personal care home license search, or California, Washington, and the other covered states.",
+    },
+    {
+      q: "Can I look up a facility license on this page?",
+      a: "No. /methodology explains how we score the records we already hold. It is not a license search. Use the state hub for that state (Pennsylvania, California, Washington, and the others listed below) and the official regulator lookup linked from that hub.",
     },
   ];
   const methodologyJsonLd = [
@@ -149,7 +155,7 @@ export default async function MethodologyPage() {
       { name: "Methodology", url: methodologyCanonical },
     ]),
     buildWebPageWithReviewer({
-      name: "How We Rate Facilities | StarlynnCare",
+      name: PAGE_TITLE,
       url: methodologyCanonical,
       description: methodologyDesc,
     }),
@@ -170,16 +176,38 @@ export default async function MethodologyPage() {
           </p>
 
           <h1 className="mt-4 font-[family-name:var(--font-serif)] text-4xl font-semibold tracking-tight text-navy md:text-[2.75rem] md:leading-tight">
-            How we rate facilities
+            How we score inspection records
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-slate">
-            Every number on StarlynnCare comes directly from official state
-            inspection records. We do not invent data, accept paid placements,
-            or produce a single letter grade. Instead, we show four independent
-            signals and let families weigh them.
+            This page is the scoring method, not a license lookup. Every number
+            on StarlynnCare comes directly from official state inspection
+            records. We do not invent data, accept paid placements, or produce
+            a single letter grade. Instead, we show four independent signals
+            and let families weigh them.
           </p>
+          <aside className="mt-6 rounded-lg border border-paper-rule bg-paper-2 px-5 py-5">
+            <p className="font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.12em] text-teal">
+              Looking up a license or inspection?
+            </p>
+            <p className="mt-2 text-[16px] leading-relaxed text-ink-2">
+              Start on the state hub. That page links to the official regulator
+              search and to the homes we publish.
+            </p>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {COVERED_STATES.map((state) => (
+                <li key={state.code}>
+                  <Link
+                    href={`/${state.slug}`}
+                    className="inline-flex rounded-full border border-paper-rule bg-paper px-3 py-1.5 text-[13px] text-ink-2 hover:border-teal/40 hover:text-teal"
+                  >
+                    {state.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </aside>
           <p className="mt-3 text-sm text-muted">
-            Looking for a summary of how we rate facilities?{" "}
+            Looking for a summary of how we score facilities?{" "}
             <Link href="/memory-care-facility-ratings" className="text-teal underline underline-offset-4">
               Memory care facility ratings, explained →
             </Link>

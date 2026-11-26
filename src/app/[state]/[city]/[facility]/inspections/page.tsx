@@ -13,6 +13,7 @@ import {
 } from "@/components/facility/profile/inspectionBlocks";
 import { loadFacilityProfile, type FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
+import { facilityDisplayName } from "@/lib/facility/aliases";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { canonicalFor } from "@/lib/seo/canonical";
@@ -48,13 +49,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { facility } = result;
   const city = displayCityName(facility.city, facility.city_slug) || state.name;
-  const name = formatFacilityName(facility.name);
+  const name = facilityDisplayName(facility);
   const title = buildFacilityReportsTitle({ name, stateName: state.name, city });
   const canonical = canonicalFor(
     `/${state.slug}/${facility.city_slug}/${facility.slug}/inspections`,
   );
   const description = clipMetaDescription(
-    `Every citation ${result.cfg.agencyShort} wrote at ${name} in ${city} over the last three years, in the inspector's words, with the home's plan of correction where the state publishes one.`,
+    `Full ${result.cfg.agencyShort} inspection reports for ${name} in ${city} — every citation in the last three years, in the inspector's words. For the home's summary, costs, and nearby comparisons, open the profile.`,
   );
 
   const tourQs = (facility.content as { tour_questions?: string[] } | null)?.tour_questions;
@@ -91,7 +92,8 @@ export default async function FacilityInspectionsPage({ params }: PageProps) {
 
   const profile = result;
   const { facility, state, cfg, inspections, deficienciesByInspection } = profile;
-  const name = formatFacilityName(facility.name);
+  const name = facilityDisplayName(facility);
+  const legalName = formatFacilityName(facility.name);
   const city = displayCityName(facility.city, facility.city_slug) || state.name;
   const profileHref = `/${state.slug}/${facility.city_slug}/${facility.slug}`;
   const pageUrl = canonicalFor(`${profileHref}/inspections`);
@@ -138,15 +140,21 @@ export default async function FacilityInspectionsPage({ params }: PageProps) {
               className="mb-4 font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink"
               style={{ fontSize: "clamp(32px, 4.2vw, 52px)", lineHeight: 1.07 }}
             >
-              {name}: <em className="text-rust not-italic">inspection reports</em>
+              {name}: <em className="text-rust not-italic">full inspection reports</em>
             </h1>
+            {legalName !== name ? (
+              <p className="mb-3 font-[family-name:var(--font-sans)] text-[15px] text-ink-3">
+                Licensed as {legalName}
+              </p>
+            ) : null}
             <p className="max-w-[62ch] text-[17px] leading-relaxed text-ink-3">
-              The {cfg.agencyShort} record for {name} in {city}, {state.code}: every visit in the last
-              three years, with each citation in the inspector&rsquo;s own words.{" "}
+              This is the full {cfg.agencyShort} citation file for {name} in {city}, {state.code} —
+              every visit in the last three years, in the inspector&rsquo;s own words. It is not the
+              home&rsquo;s profile.{" "}
               <Link href={profileHref} className="font-semibold text-teal underline underline-offset-4">
-                Back to the profile and its summaries
-              </Link>
-              .
+                Open the {name} profile
+              </Link>{" "}
+              for the summary, costs, and nearby homes.
             </p>
           </div>
         </div>
