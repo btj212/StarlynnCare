@@ -6,6 +6,7 @@ import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { buildFacilityDescription, buildFacilityTitle, clipMetaDescription, reportablePercentile, shortMonthYear } from "@/lib/seo/meta";
+import { facilityDisplayName } from "@/lib/facility/aliases";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { stateFromSlug } from "@/lib/states";
 
@@ -132,22 +133,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { facility } = profile;
   const canonical = canonicalFor(`/${state.slug}/${facility.city_slug}/${facility.slug}`);
 
-  // Data-driven meta title + description.
+  // Data-driven meta title + description. Year is the last visit on file.
   const lastInspectionDate =
-    profile.inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
+    profile.inspections[0]?.inspection_date ??
+    profile.inspections.find((i) => !i.is_complaint)?.inspection_date ??
+    null;
   const compositePercentile = reportablePercentile(
     profile.snapshot?.grade?.composite_percentile,
     profile.snapshot?.peer_set.n,
   );
+  const displayName = facilityDisplayName(facility);
+  const cityLabel = displayCityName(facility.city, facility.city_slug) || state.name;
 
   const title = buildFacilityTitle({
-    name: facility.name,
+    name: displayName,
     stateName: state.name,
     percentile: compositePercentile,
-    city: displayCityName(facility.city, facility.city_slug) || state.name,
+    city: cityLabel,
     citationCount: profile.totals.deficiencies,
     inspectionCount: profile.totals.inspections,
     reviewCount: profile.reviews.length,
+    lastInspectionDate,
   });
 
   const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
@@ -159,12 +165,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     !profile.complianceFlag;
   const desc = clipMetaDescription(
     noReportsPosted
-      ? `${facility.name} has no DSHS reports posted as of ${checkedOn}.`
+      ? `${displayName} has no DSHS reports posted as of ${checkedOn}.`
       : buildFacilityDescription({
-          name: facility.name,
+          name: displayName,
           percentile: compositePercentile,
           stateName: state.name,
-          city: displayCityName(facility.city, facility.city_slug) || state.name,
+          city: cityLabel,
           citationCount: profile.totals.deficiencies,
           inspectionCount: profile.totals.inspections,
           reviewCount: profile.reviews.length,

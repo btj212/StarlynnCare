@@ -13,6 +13,8 @@ import { displayCityName, resolveListingRegion } from "@/lib/resolveListingRegio
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { CITY_BROWSE_PAGE_SIZE } from "@/lib/facility/hubPreview";
 import type { CareCategory } from "@/lib/types";
+import { contentAliasFields, nameMatchesQuery } from "@/lib/facility/aliases";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 export const revalidate = 3600;
 
@@ -100,7 +102,7 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
     const { data: rawFacilities, error } = await supabase
       .from("facilities")
       .select(
-        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier",
+        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content",
       )
       .eq("state_code", region.state.code)
       .eq("publishable", true)
@@ -125,6 +127,7 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
         memory_care_disclosure_filed: boolean;
         tx_alzheimer_certified: boolean | null;
         capacity_tier: "small" | "medium" | "large" | "unknown";
+        content: unknown;
       }>;
 
       if (raw.length > 0) {
@@ -136,6 +139,7 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
             .from("inspections")
             .select("id, facility_id")
             .in("facility_id", chunk)
+            .lte("inspection_date", todayIsoDate())
             .limit(5000);
           if (chunkError) {
             console.error("[city facilities] inspections chunk failed:", chunkError.message);
@@ -198,6 +202,7 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
           inspections: inspectionCount.get(facility.id) ?? 0,
           serious_citations: seriousCount.get(facility.id) ?? 0,
           total_citations: citationCount.get(facility.id) ?? 0,
+          ...contentAliasFields(facility.content),
         }));
       }
     }
@@ -212,9 +217,8 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
   let listed = facilities;
   if (q) {
     listed = facilities.filter((facility) => {
-      const name = facility.name.toLowerCase();
       const city = facility.city?.toLowerCase() ?? "";
-      return name.includes(q) || city.includes(q);
+      return nameMatchesQuery(facility, q) || city.includes(q);
     });
   } else if (smallOnly) {
     listed = facilities.filter((facility) => facility.capacity_tier === "small");

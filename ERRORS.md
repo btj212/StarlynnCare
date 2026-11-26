@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — Nested PostgREST counts blanked /data
+
+**What went wrong:** `loadStateMemoryCareStats` counted serious homes with a three-level `facilities → inspections → deficiencies` embed and `.or(..., { referencedTable: "inspections.deficiencies" })`. Any one state's error returned `null` for the whole table, so `/data` printed "The state counts could not be loaded."
+
+**What worked instead:** Walk publishable facility IDs in chunks, load inspections and deficiencies the same way state hubs do, skip a state that still fails, and return the rows that measured. Do not fail the page because one nested join timed out.
+
+**Source:** Read-only data audit, 2026-11-26.
+
+---
+
 ## 2026-11 — Firecrawl price extract: rate limit, and a neighbour's price
 
 **What went wrong:** The 20-home price probe through `fc_search` and `fc_extract` got rejected by the plan's rate limit on 18 homes. The two answers it did give had a problem: A Place for Mom's compare table puts neighbouring homes' prices on a home's own page, and the model took one (Touch of Love at $6,500, where its own column is empty).

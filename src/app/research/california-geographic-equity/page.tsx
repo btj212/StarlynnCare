@@ -16,6 +16,10 @@ import {
   AnalysisProse,
   AnalysisMethodNote,
 } from "@/components/research/AnalysisShell";
+import {
+  frozenCaStudyDisclaimer,
+  loadCaResearchCorpus,
+} from "@/lib/data/caResearchCorpus";
 
 const PAGE_PATH = "/research/california-geographic-equity";
 const canonicalUrl = canonicalFor(PAGE_PATH);
@@ -76,7 +80,9 @@ const HIGH_INCOME_OFFENDERS = [
   { zip: "94536", income: "$152,076", rate: 2.81, area: "Fremont" },
 ];
 
-export default function CAGeographicEquityPage() {
+export default async function CAGeographicEquityPage() {
+  const corpus = await loadCaResearchCorpus();
+  const frozenNote = frozenCaStudyDisclaimer(corpus?.homes ?? null);
   const maxRate = Math.max(...QUARTILES.map((q) => q.rate));
   return (
     <>
@@ -91,9 +97,9 @@ export default function CAGeographicEquityPage() {
       <AnalysisShell
         eyebrow="Geographic equity (CA)"
         title={TITLE}
-        dek="An income–quality cross-section across 484 California memory care facilities and 108 ZIP codes. The headline that families often hear — &lsquo;richer ZIP, better care&rsquo; — does not survive contact with the inspection record."
-        bylineDate="May 11, 2026"
-        scope="California · 108 ZIPs · 484 facilities"
+        dek="An income–quality cross-section from a May 2026 study of 484 California memory care facilities and 108 ZIP codes. The headline that families often hear — &lsquo;richer ZIP, better care&rsquo; — does not survive contact with the inspection record."
+        bylineDate="May 11, 2026 · frozen study"
+        scope="California · 108 ZIPs · 484 facilities (May 2026 study)"
         keyFindings={[
           {
             value: "r = 0.23",
@@ -115,7 +121,7 @@ export default function CAGeographicEquityPage() {
           },
         ]}
         methodologyDisclosure={
-          "Income data: U.S. Census Bureau ACS 5-year (2022) median household income, joined to facility ZIPs. 484 of 484 ZIPs matched directly; none required approximation.\n\nQuality measure: deficiency citations per inspection at each facility, averaged across all facilities in a ZIP. Restricted to ZIPs with ≥2 publishable facilities (n = 108).\n\nQuartile assignment is by ZIP-level income against the in-sample distribution, not against statewide household income."
+          `${frozenNote}\n\nIncome data: U.S. Census Bureau ACS 5-year (2022) median household income, joined to facility ZIPs. 484 of 484 ZIPs in that study matched directly; none required approximation.\n\nQuality measure: deficiency citations per inspection at each facility, averaged across all facilities in a ZIP. Restricted to ZIPs with ≥2 publishable facilities (n = 108).\n\nQuartile assignment is by ZIP-level income against the in-sample distribution, not against statewide household income.`
         }
         sources={[
           {

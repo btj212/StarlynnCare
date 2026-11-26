@@ -6,6 +6,41 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Live research counts, derived last inspection, display-layer county
+
+**Decided:** California research pages that state how many homes or deficiencies we publish now load those numbers from the database (`loadCaResearchCorpus`). The May 2026 papers (cost vs quality, geographic equity, seasonality, repeat-citations) stay dated as a frozen 484-home study and are not rewritten as if they were rerun. `/data` state counts walk facility IDs in chunks; one nested PostgREST failure no longer blanks the table.
+
+**Last inspection:** `facilities.last_inspection_date` is stale except MN. Public pages, lookup, the facilities API, and CSV export derive `max(inspection_date)` from inspection rows and drop future-dated visits (WA Aegis Living Kirkland, stored as 2026-12-01). No column backfill in this change.
+
+**Oregon:** the site reads `mce_endorsed`, never `or_memory_care_endorsed`.
+
+**PA county:** display uses `county ?? wa_county` and maps `Northumberlnd` → Northumberland. Copying `wa_county` into `county` for 73 PA homes is a migration for Blake, not a site write.
+
+**Citation copy:** a profile count is the last 3 years plus the regulator; a list/hub count is all years on file plus the regulator.
+
+**Rejected:** Writing last-inspection dates or PA counties from the Next app. Treating 716 as the N for r = 0.27.
+
+**Source:** Read-only data audit, 2026-11-26.
+
+---
+
+## 2026-11 — One coverage object, listed city counts, inspection-record titles, DBA hook unfilled
+
+**Decided:** `classifyCoverage()` in `src/lib/coverage.ts` is the only live-vs-pilot split. A state is live at 100+ publishable homes, otherwise pilot. Homepage hero, FAQ, stats label, and JSON-LD description all read it. Texas stays on the states grid as a pilot.
+
+**City counts:** A city page's stated count is `homesForCityIndex` (the same set as the A–Z list and the facility sitemap), not every publishable row. Mesa was 169 publishable / 145 listed because Arizona homes of 10 beds or fewer with no citations are noindex. Homepage top-city counts use that listed rule too. The national facility total stays publishable (the indexed set). Inspection card counts every parsed report, including unpublished homes.
+
+**Titles:** Facility `<title>` and the 40–60 word hero answer use `{Name}, {City}: Inspection Record & Citations ({Year})` with the last inspection year. This conflicts with the 2026-11 rule that every profile title said "Costs". Costs stay on the page and in the description. H1 is legal name + city; a sourced marketing name is "Also known as".
+
+**DBA / marketing names:** Do not invent aliases. `facilities.content.marketing_name` / `name_aliases` is the deploy-safe read. Migration `0077_facility_marketing_names.sql` adds real columns — **do not apply until Blake approves**. "Legacy House of Mesa" is not stored; the legal name is Legacy Retirement Residence.
+
+**Rejected:** Hardcoding 11 states in the FAQ. Counting publishable homes in the city lede. Putting every regulator acronym in the first stat card.
+
+**Source:** Accuracy / SEO hardening, 2026-11-26.
+
+---
+
+
 ## 2026-11 — A home's direct answers are stored apart and shown as "Home-confirmed", never as checked fact
 
 **Decided:** What a home tells us by email or phone goes in `facility_direct_responses` (migration 0076), one row per response: memory care yes/no, wanders or agitated (yes, yes after assessment, no), private-pay low and high, Medicaid yes/no and program, an `openings_note`, and a free `note` for how it was checked. The table is closed to the public API; the profile reads one row through `facility_home_response()`, which returns only the printed columns. `FacilityHomeReported` renders nothing until a home has answered. When it has, a "Home-confirmed · {date}" chip and a card say the answers came from the home by email or phone and that neither the state nor StarlynnCare checked them. Openings are stored and never printed. These answers do not change `serves_memory_care`, `care_category`, the cost bands or the schema.org output. First row: Casa Del Rey (AL12182H), reply of 2026-11-24 (date is the screenshot date; correct it if the email was sent earlier). The cost section no longer says "No price is listed for this home" outright; it says none is listed in the directories we read, so it cannot contradict the card above it.

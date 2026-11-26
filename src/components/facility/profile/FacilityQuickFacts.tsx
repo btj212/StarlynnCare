@@ -1,5 +1,6 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { latestInspectionDate } from "@/lib/data/inspectionDates";
 
 function fmt(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -30,7 +31,10 @@ function QfCell({ label, children }: { label: string; children: React.ReactNode 
 
 export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
   const { facility, totals, inspections } = profile;
-  const lastInspDate = inspections[0]?.inspection_date ?? facility.last_inspection_date ?? null;
+  const lastInspDate = latestInspectionDate([
+    inspections[0]?.inspection_date,
+    facility.last_inspection_date,
+  ]);
   const phone = formatPhone(facility.phone);
 
   return (
@@ -41,7 +45,7 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
             {facility.beds ?? "—"}
           </QfCell>
           <QfCell label="Last inspection">
-            <span className="text-[22px]">{fmt(lastInspDate ?? facility.last_inspection_date)}</span>
+            <span className="text-[22px]">{fmt(lastInspDate)}</span>
           </QfCell>
           <QfCell label="Last citation">
             <span className="text-[22px]">{totals.lastCitation ? fmt(totals.lastCitation) : "None on record"}</span>

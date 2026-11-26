@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import type { CareCategory } from "@/lib/types";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { facilityDisplayName, nameMatchesQuery } from "@/lib/facility/aliases";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -33,6 +34,9 @@ export type ListFacility = {
   total_citations: number;
   /** True when fewer than 4 inspections exist in the past 3 years. */
   limitedHistory?: boolean;
+  /** Sourced DBA. Null until filled — never invent. */
+  marketing_name?: string | null;
+  name_aliases?: string[] | null;
 };
 
 type FilterChip = "all" | "large" | "medium" | "has_citations" | "no_citations" | "small";
@@ -98,20 +102,20 @@ function TrustBadge({ signal }: { signal: TrustSignal }) {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#4a7a50]">
         <span className="h-1.5 w-1.5 rounded-full bg-[#6b8f71] shrink-0" />
-        No citations on file
+        No citations on file (all years)
       </span>
     );
   if (signal.type === "serious")
     return (
       <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 border border-red-200">
         <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
-        {signal.count} serious citation{signal.count !== 1 ? "s" : ""} on file
+        {signal.count} serious citation{signal.count !== 1 ? "s" : ""} on file (all years)
       </span>
     );
   return (
     <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200">
       <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-      {signal.count} citation{signal.count !== 1 ? "s" : ""} on file
+      {signal.count} citation{signal.count !== 1 ? "s" : ""} on file (all years)
     </span>
   );
 }
@@ -122,7 +126,7 @@ function TrustBadge({ signal }: { signal: TrustSignal }) {
 
 function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) {
   const href = `/${stateSlug}/${f.city_slug}/${f.slug}`;
-  const displayName = formatFacilityName(f.name);
+  const displayName = facilityDisplayName(f);
   const signal = trustSignal(f);
   const [g1, g2] = gradientFor(displayName);
   const typeLabel =
@@ -280,13 +284,7 @@ export function FacilityListClient({
     const q = query.toLowerCase().trim();
     const base = facilities.filter((f) => {
       // Search
-      const displayName = formatFacilityName(f.name).toLowerCase();
-      if (
-        q &&
-        !f.name.toLowerCase().includes(q) &&
-        !displayName.includes(q) &&
-        !f.city?.toLowerCase().includes(q)
-      ) {
+      if (q && !nameMatchesQuery(f, q) && !f.city?.toLowerCase().includes(q)) {
         return false;
       }
       // Small homes gate
@@ -509,6 +507,10 @@ export function FacilityListClient({
           )}
         </>
       )}
+      <p className="mt-10 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-ink-4">
+        Citation counts on these cards are all years on file in the state inspection record.
+        Facility profiles show the last 3 years.
+      </p>
     </div>
   );
 }

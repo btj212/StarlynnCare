@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 
 type IndexHome = {
   id: string;
@@ -9,6 +10,8 @@ type IndexHome = {
   city_slug: string;
   beds: number | null;
   total_citations: number;
+  marketing_name?: string | null;
+  name_aliases?: string[] | null;
 };
 
 type Props = {
@@ -18,7 +21,7 @@ type Props = {
 };
 
 function citationLabel(count: number): string {
-  return `${count} ${count === 1 ? "citation" : "citations"}`;
+  return `${count} ${count === 1 ? "citation" : "citations"} (all years)`;
 }
 
 /**
@@ -42,23 +45,31 @@ export function CityHomeIndex({ homes, stateSlug, regionName }: Props) {
               Every home in {regionName}, <em>A to Z.</em>
             </>
           }
-          deck="Each link opens that home's inspection record."
+          deck="Each link opens that home's inspection record. Citation counts are all years on file in the state inspection record."
         />
         <ul className="m-0 grid list-none gap-x-8 gap-y-2.5 p-0 sm:grid-cols-2 lg:grid-cols-3">
-          {homes.map((home) => (
+          {homes.map((home) => {
+            const aka = facilityAliases(home).marketingName;
+            return (
             <li key={home.id} className="min-w-0">
               <Link
                 href={`/${stateSlug}/${home.city_slug}/${home.slug}`}
                 className="block text-[15px] leading-snug text-teal underline-offset-4 hover:underline"
               >
-                {formatFacilityName(home.name)}
+                {facilityDisplayName(home)}
               </Link>
+              {aka ? (
+                <span className="block font-[family-name:var(--font-sans)] text-[12px] text-ink-3">
+                  Also known as {formatFacilityName(aka)}
+                </span>
+              ) : null}
               <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-3">
                 {home.beds != null ? `${home.beds} beds · ` : ""}
                 {citationLabel(home.total_citations)}
               </span>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
     </div>

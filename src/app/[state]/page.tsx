@@ -10,7 +10,7 @@ import { stateFromSlug } from "@/lib/states";
 import { regionsForState, type Region } from "@/lib/regions";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
+import { REGULATOR_ABBR, buildStateHubTitle, clipMetaDescription } from "@/lib/seo/meta";
 import {
   buildBreadcrumbList,
   buildFaqSchemaFromPairs,
@@ -55,7 +55,7 @@ export async function generateMetadata({
     facilityCount > 0
       ? state.code === "CO"
         ? `${facilityCount} memory care facilities across Colorado. Assisted living records are from CDPHE. Nursing homes are from CMS. The two are not ranked together.`
-        : `${facilityCount} licensed memory care facilities across ${state.name}. ${severeCount} severe deficiencies on record. Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
+        : `${facilityCount} licensed memory care facilities across ${state.name}. ${severeCount} severe deficiencies in the last 24 months (${reg}). Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
       : null;
 
   const fallbackByCode: Record<string, string> = {
@@ -71,7 +71,7 @@ export async function generateMetadata({
       fallbackByCode[state.code] ??
       `Inspection records and citation history for every licensed memory care facility in ${state.name}.`,
   );
-  const title = `Memory Care in ${state.name} - State Inspection Data`;
+  const title = buildStateHubTitle(state.name, reg);
   return {
     title,
     description: desc,
@@ -96,7 +96,7 @@ export default async function StatePage({ params }: PageProps) {
         { name: `${state.name} memory care`, url: canonicalFor(`/${state.slug}`) },
       ]),
       buildWebPageWithReviewer({
-        name: `Memory Care in ${state.name} - State Inspection Data`,
+        name: buildStateHubTitle(state.name, REGULATOR_ABBR[state.code] ?? "state"),
         url: canonicalFor(`/${state.slug}`),
         description: `Inspection-backed memory care facility profiles across ${state.name} — verified by real state inspection records.`,
         datePublished: data.stats.firstPublishedAt,
@@ -196,7 +196,7 @@ export default async function StatePage({ params }: PageProps) {
     region.citySlugs.reduce((n, s) => n + (smallCountsByCity.get(s) ?? 0), 0);
 
   const statePageUrl = canonicalFor(`/${state.slug}`);
-  const statePageTitle = `Memory Care in ${state.name} - State Inspection Data`;
+  const statePageTitle = buildStateHubTitle(state.name, REGULATOR_ABBR[state.code] ?? "state");
   const statePageDesc = `Memory care facility profiles in ${state.name}, built from state and federal primary sources.`;
 
   const STATE_FAQS: Record<string, FaqItem[]> = {

@@ -9,26 +9,29 @@ import { StateHubCta } from "@/components/state-hub/StateHubCta";
 import { StatesWeCoverGrid } from "./StatesWeCoverGrid";
 import { ZipSearch } from "@/components/site/ZipSearch";
 import { SyncedHomeSampleCardDesktop } from "@/components/home/SampleFacilityRotation";
-import { CA_FAQS } from "@/lib/content/stateFaqs";
+import { buildNationalFaqs } from "@/lib/content/stateFaqs";
+import { classifyCoverage, heroStateLine, regulatorAcronymList } from "@/lib/coverage";
 
 type Props = {
   data: NationalHomeData;
 };
 
-const MIN_LIVE_THRESHOLD = 100;
 const gutter = "mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px]";
 
 export function NationalHomeSections({ data }: Props) {
   const { totalFacilities, totalInspections, totalSevereCitations, states, topCities, sampleReviews } = data;
 
-  const liveStates = states.filter((s) => s.facilityCount >= MIN_LIVE_THRESHOLD);
-  const pilotStates = states.filter((s) => s.facilityCount > 0 && s.facilityCount < MIN_LIVE_THRESHOLD);
+  const coverage = classifyCoverage(states);
+  const nationalFaqs = buildNationalFaqs(coverage);
+  const regulatorList = regulatorAcronymList();
 
   const nationalStats = [
     {
       n: totalFacilities > 0 ? totalFacilities.toLocaleString() : "0",
-      label: `Licensed memory care facilities indexed across ${liveStates.length + pilotStates.length} states`,
-      src: "CDSS · DHS · DSHS · MDH · HHSC · PA DHS · ADHS · IDPH · DHSS · DLBC · CDPHE",
+      label: `Licensed memory care facilities indexed across ${coverage.indexedStateCount} states`,
+      src: `${coverage.indexedStateCount} state regulators`,
+      srcTitle: regulatorList,
+      srcHref: "/data#regulators",
     },
     {
       n: totalInspections > 0 ? totalInspections.toLocaleString() : "0",
@@ -61,8 +64,8 @@ export function NationalHomeSections({ data }: Props) {
             <span className="clearing-chip">
               <span className="live-dot" aria-hidden />
               {totalFacilities > 0
-                ? `${totalFacilities.toLocaleString()} facilities · ${liveStates.length + pilotStates.length} states`
-                : `${liveStates.length + pilotStates.length} States · Vol. 01 · 2026`}
+                ? `${totalFacilities.toLocaleString()} facilities · ${coverage.indexedStateCount} states`
+                : `${coverage.indexedStateCount} States · Vol. 01 · 2026`}
             </span>
           </div>
 
@@ -88,13 +91,8 @@ export function NationalHomeSections({ data }: Props) {
               <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] text-ink-3">
                 <span>✓ No sales calls</span>
                 <span>✓ No paid placement</span>
-                {liveStates.length > 0 && (
-                  <span className="text-ink-4">
-                    {liveStates.map((s) => s.stateCode).join(" · ")}
-                    {pilotStates.length > 0 && (
-                      <> · Pilot: {pilotStates.map((s) => `${s.stateCode} (${s.facilityCount})`).join(" · ")}</>
-                    )}
-                  </span>
+                {coverage.indexedStateCount > 0 && (
+                  <span className="text-ink-4">{heroStateLine(coverage)}</span>
                 )}
               </div>
             </div>
@@ -223,7 +221,7 @@ export function NationalHomeSections({ data }: Props) {
       <StateHubReviews reviews={sampleReviews} />
 
       {/* § 06 · FAQ */}
-      <StateHubFaq faqs={CA_FAQS} />
+      <StateHubFaq faqs={nationalFaqs} />
 
       {/* § 07 · CTA */}
       <StateHubCta facilityCount={totalFacilities} ctaHref="/states" />

@@ -5,10 +5,14 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
 import {
+  buildBreadcrumbList,
+  buildFaqSchemaFromPairs,
   buildHomeOrganizationGraph,
   buildPersonSchema,
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
+import { classifyCoverage, coverageStateNames } from "@/lib/coverage";
+import { buildNationalFaqs } from "@/lib/content/stateFaqs";
 import {
   SampleFacilityRotationProvider,
 } from "@/components/home/SampleFacilityRotation";
@@ -27,7 +31,7 @@ export const revalidate = 3600;
 const homeCanonical = canonicalFor("/");
 
 const _stateNameList = COVERED_STATES.map((s) => s.name).join(", ");
-const _homeDesc = `Memory care facilities ranked by state inspection records across ${COVERED_STATES.length} states — no commissions, no paid placement. Public regulator data, independent family resource.`;
+const _homeDesc = `Memory care facilities ranked by state inspection records across ${COVERED_STATES.length} states (${_stateNameList}) — no commissions, no paid placement. Public regulator data, independent family resource.`;
 
 export const metadata: Metadata = {
   title: "Memory care facilities, ranked by state inspectors | StarlynnCare",
@@ -110,6 +114,8 @@ export default async function Home() {
 
   // Single homepage @graph chains Organization ↔ WebSite ↔ founder ↔ reviewer Person
   // so search engines can read the editorial trust chain in one node graph.
+  const coverage = classifyCoverage(data.states);
+  const nationalFaqs = buildNationalFaqs(coverage);
   const founderPersonNode = buildPersonSchema({
     id: `${SITE_ORIGIN}/about#person-blake-jones`,
     name: "Blake Jones",
@@ -121,13 +127,15 @@ export default async function Home() {
   });
   const homeJsonLd = [
     buildHomeOrganizationGraph({ founderPersonNode }),
+    buildBreadcrumbList([{ name: "Home", url: homeCanonical }]),
     buildWebPageWithReviewer({
       name: "Memory care facilities, ranked by state inspectors | StarlynnCare",
       url: homeCanonical,
-      description: "No paid ads. No sales calls. Public inspection data from 11 states — California, Oregon, Washington, Minnesota, Arizona, Pennsylvania, Utah, Illinois, Missouri, Texas, and Colorado — analyzed and ranked for families.",
+      description: `No paid ads. No sales calls. Public inspection data from ${coverage.indexedStateCount} states — ${coverageStateNames(coverage)} — analyzed and ranked for families.`,
       datePublished: "2025-01-01T00:00:00Z",
       dateModified: data.lastRefreshed,
     }),
+    buildFaqSchemaFromPairs(nationalFaqs, homeCanonical),
   ];
 
   return (

@@ -19,9 +19,12 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { regionFromSlug } from "@/lib/regions";
-
-/** Free-tier display cap: show at most this many years of inspection history. */
-export const INSPECTION_DISPLAY_YEARS = 3;
+import { PROFILE_CITATION_WINDOW_YEARS } from "@/lib/facility/citationWindow";
+import {
+  isUsableInspectionDate,
+  latestInspectionDate,
+  todayIsoDate,
+} from "@/lib/data/inspectionDates";
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { stateFromSlug } from "@/lib/states";
 import { getStateProfileConfig } from "@/lib/states/profileConfig";
@@ -47,6 +50,9 @@ import type { StateProfileConfig, Rule } from "@/lib/states/profileConfig";
 import type { Review } from "@/components/reviews/ReviewCard";
 import type { Region } from "@/lib/regions";
 import type { StateInfo } from "@/lib/states";
+
+/** Free-tier display cap: show at most this many years of inspection history. */
+export const INSPECTION_DISPLAY_YEARS = PROFILE_CITATION_WINDOW_YEARS;
 
 // ─────────────────────────────────────────────────────────────────
 // Raw DB row types (narrower than full Inspection / Deficiency)
@@ -393,16 +399,20 @@ async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return { inspections: [], deficiencies: [] };
 
+  const today = todayIsoDate();
   const { data: inspData } = await supabase
     .from("inspections")
     .select(
       "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, source_agency, raw_data",
     )
     .eq("facility_id", facilityId)
+    .lte("inspection_date", today)
     .order("inspection_date", { ascending: false })
     .limit(50);
 
-  const inspections = (inspData ?? []) as InspectionRow[];
+  const inspections = ((inspData ?? []) as InspectionRow[]).filter((i) =>
+    isUsableInspectionDate(i.inspection_date, today),
+  );
   if (!inspections.length) return { inspections: [], deficiencies: [] };
 
   const inspIds = inspections.map((i) => i.id);
@@ -772,15 +782,22 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     { name: facility.name, url: canonicalUrl },
   ];
 
+  const derivedLastInspection = latestInspectionDate([
+    ...allInspections.map((i) => i.inspection_date),
+    facility.last_inspection_date,
+  ]);
+  facility.last_inspection_date = derivedLastInspection;
   const lastNonComplaintInspection =
-    inspections.find((i) => !i.is_complaint)?.inspection_date ?? null;
+    inspections.find((i) => !i.is_complaint)?.inspection_date ?? derivedLastInspection;
   const latestVisit = allInspections[0]
     ? {
         date: allInspections[0].inspection_date,
         type: allInspections[0].inspection_type,
         isComplaint: allInspections[0].is_complaint,
       }
-    : null;
+    : derivedLastInspection
+      ? { date: derivedLastInspection, type: null, isComplaint: false }
+      : null;
   const licenseRecordUrl = regulatorLicensePageFor(facility.state_code, facility.license_number);
   const careBasis = {
     ...memoryCareBasis(facility),

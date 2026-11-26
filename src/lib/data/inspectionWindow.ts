@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { seriousCitationCutoff } from "@/lib/data/stateMemoryCareStats";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 /**
  * Inspections held for one state's published homes. complaintFlagged is false
@@ -19,7 +20,8 @@ function inspectionsFor(supabase: SupabaseClient, code: string) {
     .from("inspections")
     .select("id, facilities!inner(state_code, publishable)", { count: "exact", head: true })
     .eq("facilities.state_code", code)
-    .eq("facilities.publishable", true);
+    .eq("facilities.publishable", true)
+    .lte("inspection_date", todayIsoDate());
 }
 
 export async function loadInspectionWindow(
@@ -40,6 +42,7 @@ export async function loadInspectionWindow(
       .eq("facilities.state_code", code)
       .eq("facilities.publishable", true)
       .not("inspection_date", "is", null)
+      .lte("inspection_date", todayIsoDate())
       .order("inspection_date", { ascending: true })
       .limit(1),
   ]);

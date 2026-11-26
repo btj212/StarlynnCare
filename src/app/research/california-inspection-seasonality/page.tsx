@@ -16,6 +16,10 @@ import {
   AnalysisProse,
   AnalysisMethodNote,
 } from "@/components/research/AnalysisShell";
+import {
+  frozenCaStudyDisclaimer,
+  loadCaResearchCorpus,
+} from "@/lib/data/caResearchCorpus";
 
 const PAGE_PATH = "/research/california-inspection-seasonality";
 const canonicalUrl = canonicalFor(PAGE_PATH);
@@ -88,7 +92,9 @@ const DAY_OF_WEEK = [
   { day: "Sun", rate: 0.86 },
 ];
 
-export default function CASeasonalityPage() {
+export default async function CASeasonalityPage() {
+  const corpus = await loadCaResearchCorpus();
+  const frozenNote = frozenCaStudyDisclaimer(corpus?.homes ?? null);
   const maxMonthly = Math.max(...MONTHLY.map((m) => m.citations));
   const maxDow = Math.max(...DAY_OF_WEEK.map((d) => d.rate));
 
@@ -106,8 +112,8 @@ export default function CASeasonalityPage() {
         eyebrow="Inspection seasonality (CA)"
         title={TITLE}
         dek="A calendar-level view of when CDSS actually inspects California memory care facilities — and when problems show up in the record. Two patterns dominate: a fall citation peak, and a weekend observation gap."
-        bylineDate="May 11, 2026"
-        scope="California · 2021–2025"
+        bylineDate="May 11, 2026 · frozen study"
+        scope="California · 2021–May 2025 · 484-home study"
         keyFindings={[
           {
             value: "Aug",
@@ -129,7 +135,7 @@ export default function CASeasonalityPage() {
           },
         ]}
         methodologyDisclosure={
-          "Source corpus: every CDSS deficiency citation issued at the 484 publishable California memory care facilities between 2021 and May 2025.\n\nMonthly counts: total citations bucketed by inspection-visit calendar month across the full window.\n\nDay-of-week rate: deficiencies divided by inspections-per-day, normalizing for the fact that CDSS schedules most inspections Tue–Thu. The Friday and weekend numbers represent fewer inspections each, which makes the per-inspection rate larger; do not read them as &lsquo;Friday is when violations happen,&rsquo; read them as &lsquo;the rare Friday inspection finds more.&rsquo;"
+          `${frozenNote}\n\nSource corpus: every CDSS deficiency citation issued at the 484 publishable California memory care facilities in that study between 2021 and May 2025.\n\nMonthly counts: total citations bucketed by inspection-visit calendar month across the full window.\n\nDay-of-week rate: deficiencies divided by inspections-per-day, normalizing for the fact that CDSS schedules most inspections Tue–Thu. The Friday and weekend numbers represent fewer inspections each, which makes the per-inspection rate larger; do not read them as &lsquo;Friday is when violations happen,&rsquo; read them as &lsquo;the rare Friday inspection finds more.&rsquo;`
         }
         sources={[
           {
@@ -191,7 +197,7 @@ export default function CASeasonalityPage() {
           })}
         </div>
         <p className="text-[12px] text-ink-4 mt-3 max-w-[60ch]">
-          Total deficiency citations issued, by month, across all 484 CA
+          Total deficiency citations issued, by month, across the 484 CA
           publishable facilities, 2021–2025. 2025 partial year.
         </p>
 

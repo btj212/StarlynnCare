@@ -1,6 +1,6 @@
 import type { Review } from "@/components/reviews/ReviewCard";
 import type { Facility } from "@/lib/types";
-import { stateFromCode, type StateInfo } from "@/lib/states";
+import { COVERED_STATES, stateFromCode, type StateInfo } from "@/lib/states";
 import type { Region } from "@/lib/regions";
 
 /**
@@ -18,6 +18,8 @@ import {
 import { SITE_ORIGIN, canonicalFor } from "@/lib/seo/canonical";
 import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
+import { regulatorFor } from "@/lib/states/regulators";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
@@ -74,36 +76,15 @@ export function regulatorLicensePageFor(
   switch (code) {
     case "CA":
       return cdssLicensePageFor(lic);
-    case "TX":
-      return `https://apps.hhs.texas.gov/LTCSearch/`;
-    case "OR":
-      return `https://ltclicensing.oregon.gov/Facilities`;
-    case "WA":
-      return `https://fortress.wa.gov/dshs/adsaapps/lookup/AlfPubLookup.aspx`;
-    case "MN":
-      return `https://www.health.state.mn.us/facilities/providers/index.html`;
     default:
-      return null;
+      return regulatorFor(code)?.portalUrl ?? null;
   }
 }
 
 /** Short label for the regulator portal a license link goes to. */
 export function regulatorLicensePageLabel(stateCode: string): string {
-  const code = stateCode.toUpperCase();
-  switch (code) {
-    case "CA":
-      return "Verify on CDSS";
-    case "TX":
-      return "Verify on HHSC";
-    case "OR":
-      return "Verify on OR DHS";
-    case "WA":
-      return "Verify on DSHS";
-    case "MN":
-      return "Verify on MDH";
-    default:
-      return "Verify with regulator";
-  }
+  const regulator = regulatorFor(stateCode);
+  return regulator ? `Verify on ${regulator.short}` : "Verify with regulator";
 }
 
 function reviewOverallRating(review: Review): number {
@@ -257,17 +238,44 @@ export function buildLocalBusinessForFacility(
         }
       : {};
 
+  const aliases = facilityAliases(facility);
+  const displayName = facilityDisplayName(facility);
+  const legalName = formatFacilityName(facility.name);
+  const isNursingHome =
+    facility.care_category === "snf_general" || facility.care_category === "snf_dementia_scu";
+  const alternateNames = [
+    ...(aliases.marketingName && legalName && aliases.marketingName !== legalName ? [legalName] : []),
+    ...aliases.aliases.map((alias) => formatFacilityName(alias)),
+  ].filter((name) => name && name !== displayName);
+
+  const licenseIdentifier = facility.license_number
+    ? {
+        identifier: {
+          "@type": "PropertyValue",
+          name: "State license number",
+          propertyID: "license",
+          value: facility.license_number,
+        },
+      }
+    : {};
+
   return {
     "@context": "https://schema.org",
-    "@type": ["LocalBusiness", "MedicalOrganization"],
+    "@type": isNursingHome ? ["NursingHome", "LocalBusiness"] : ["LocalBusiness", "MedicalOrganization"],
     "@id": businessId,
-    name: facility.name,
+    name: displayName,
+    ...(aliases.marketingName ? { legalName } : {}),
+    ...(alternateNames.length === 1
+      ? { alternateName: alternateNames[0] }
+      : alternateNames.length > 1
+        ? { alternateName: alternateNames }
+        : {}),
     url: opts.canonicalUrl,
     description: facilityDescription(facility, opts.extras),
     telephone: facility.phone ?? undefined,
     image: facility.photo_url ?? undefined,
-    priceRange: "$$",
     medicalSpecialty: "Geriatric",
+    ...licenseIdentifier,
     address: {
       "@type": "PostalAddress",
       streetAddress: facility.street ?? undefined,
@@ -658,19 +666,20 @@ export function buildDatasetSchema(input: {
   pageUrl: string;
   methodologyUrl: string;
 }): object {
+  const stateNames = COVERED_STATES.map((state) => state.name);
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name: "California Memory Care Inspection & Quality Records",
+    name: `Memory Care Inspection Records (${COVERED_STATES.length} States)`,
     description:
-      "Deficiency findings, complaint outcomes, and quality context for licensed memory care facilities in California, derived from CA CDSS Community Care Licensing inspection transparency data and CMS Care Compare where applicable.",
+      `Deficiency findings, complaint outcomes, and quality context for licensed memory care facilities in ${stateNames.join(", ")}, derived from each state's license office and CMS Care Compare where a home has a federal identifier.`,
     url: input.pageUrl,
     creator: { "@type": "Organization", name: "StarlynnCare" },
     isAccessibleForFree: true,
-    spatialCoverage: {
+    spatialCoverage: stateNames.map((name) => ({
       "@type": "Place",
-      name: "California, USA",
-    },
+      name: `${name}, USA`,
+    })),
     temporalCoverage: "2024-01-01/..",
     variableMeasured: [
       "Deficiency type and class",

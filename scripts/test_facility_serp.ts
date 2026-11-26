@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import {
   buildFacilityDescription,
+  buildFacilityDirectAnswer,
   buildFacilityRecordSentence,
   buildFacilityTitle,
+  buildStateHubTitle,
 } from "../src/lib/seo/meta.ts";
 import { buildFacilityFaqPairs } from "../src/lib/seo/schema.ts";
 import { displayCityName } from "../src/lib/resolveListingRegion.ts";
@@ -17,11 +19,11 @@ const titled = buildFacilityTitle({
   citationCount: 5,
   inspectionCount: 4,
   reviewCount: 0,
+  lastInspectionDate: "2024-09-12",
 });
-assert.equal(titled.startsWith("Brookdale Tanque Verde, Tucson, AZ"), true);
+assert.equal(titled, "Brookdale Tanque Verde, Tucson: Inspection Record & Citations (2024)");
 assert.equal(titled.includes("Top"), false);
-assert.equal(/review/i.test(titled), false);
-assert.ok(titled.length <= 60);
+assert.ok(titled.length <= 70);
 
 const withReviews = buildFacilityTitle({
   name: "Short Home",
@@ -31,11 +33,11 @@ const withReviews = buildFacilityTitle({
   citationCount: 1,
   inspectionCount: 2,
   reviewCount: 3,
+  lastInspectionDate: "2025-03-01",
 });
-assert.match(withReviews, /Short Home, Mesa, AZ/);
-assert.match(withReviews, /reviews/);
+assert.equal(withReviews, "Short Home, Mesa: Inspection Record & Citations (2025)");
 assert.equal(withReviews.includes("Top"), false);
-assert.ok(withReviews.length <= 60);
+assert.ok(withReviews.length <= 70);
 
 const noRecord = buildFacilityTitle({
   name: "Quiet Cottage",
@@ -46,8 +48,7 @@ const noRecord = buildFacilityTitle({
   inspectionCount: 0,
   reviewCount: 0,
 });
-assert.equal(noRecord, "Quiet Cottage, Portland, OR");
-assert.equal(/inspection|citation|review/i.test(noRecord), false);
+assert.equal(noRecord, "Quiet Cottage, Portland: Licensed Memory Care");
 
 const clipped = buildFacilityTitle({
   name: longName,
@@ -57,9 +58,10 @@ const clipped = buildFacilityTitle({
   citationCount: 12,
   inspectionCount: 8,
   reviewCount: 4,
+  lastInspectionDate: "2024-01-01",
 });
 assert.equal(clipped.startsWith("The Heritage at Brookdale"), true);
-assert.ok(clipped.length <= 60);
+assert.ok(clipped.length <= 70);
 assert.equal(clipped.includes("Top"), false);
 
 const sentence = buildFacilityRecordSentence({
@@ -71,7 +73,7 @@ const sentence = buildFacilityRecordSentence({
 });
 assert.equal(
   sentence,
-  "5 ADHS citations on record, last inspected Sep 2024, license AL11370C.",
+  "5 ADHS citations on record in the last 3 years, last inspected Sep 2024, license AL11370C.",
 );
 
 const none = buildFacilityRecordSentence({
@@ -96,6 +98,28 @@ const desc = buildFacilityDescription({
 });
 assert.equal(/review/i.test(desc), false);
 assert.match(desc, /no OR DHS inspection on record/);
+
+const answer = buildFacilityDirectAnswer({
+  name: "Brookdale Tanque Verde",
+  city: "Tucson",
+  stateName: "Arizona",
+  regulatorAbbr: "ADHS",
+  licenseNumber: "AL11370C",
+  inspectionCount: 4,
+  citationCount: 5,
+  lastInspected: "Sep 2024",
+  beds: 64,
+});
+assert.ok(answer);
+const words = answer.trim().split(/\s+/).length;
+assert.ok(words >= 40 && words <= 70, `direct answer was ${words} words: ${answer}`);
+assert.match(answer, /Brookdale Tanque Verde/);
+assert.match(answer, /Tucson/);
+
+assert.equal(
+  buildStateHubTitle("Pennsylvania", "PA DHS"),
+  "Pennsylvania Memory Care Inspection Reports | PA DHS Lookup",
+);
 
 const faq = buildFacilityFaqPairs({
   facilityName: "Brookdale Tanque Verde",

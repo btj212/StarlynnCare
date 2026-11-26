@@ -7,6 +7,10 @@ export interface StatItem {
   label: string;
   /** Source citation, e.g. "CDSS" */
   src: string;
+  /** Optional tooltip for a truncated or summarized src */
+  srcTitle?: string;
+  /** Optional link for the source label (e.g. /data#regulators) */
+  srcHref?: string;
   /** Optional change indicator, e.g. "+18 since March" */
   delta?: string;
 }
@@ -45,8 +49,17 @@ export function StatBlock({ stats, footnotes, compact = false }: StatBlockProps)
               stats.length === 3 && i === stats.length - 1 ? " sm:col-span-2 lg:col-span-1" : ""
             }`}
           >
-            <span className="absolute top-3.5 right-4 font-[family-name:var(--font-sans)] text-[11px] font-medium uppercase tracking-[0.08em] text-ink-4">
-              {s.src}
+            <span
+              className="mb-3 block max-w-full truncate font-[family-name:var(--font-sans)] text-[11px] font-medium uppercase tracking-[0.08em] text-ink-4"
+              title={s.srcTitle ?? s.src}
+            >
+              {s.srcHref ? (
+                <a href={s.srcHref} className="text-ink-4 no-underline hover:text-teal hover:underline">
+                  {s.src}
+                </a>
+              ) : (
+                s.src
+              )}
             </span>
 
             <div

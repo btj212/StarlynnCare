@@ -3,6 +3,7 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { loadLatestInspectionDates } from "@/lib/data/inspectionDates";
 
 type SiblingRow = {
   id: string;
@@ -59,7 +60,15 @@ async function loadSiblings(
     }
   }
 
-  return result.slice(0, 4);
+  const sliced = result.slice(0, 4);
+  const dates = await loadLatestInspectionDates(
+    supabase,
+    sliced.map((row) => row.id),
+  );
+  return sliced.map((row) => ({
+    ...row,
+    last_inspection_date: dates.get(row.id) ?? null,
+  }));
 }
 
 const GRADIENT_BG = [

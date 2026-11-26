@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { canonicalFor, SITE_ORIGIN } from "@/lib/seo/canonical";
 import { GOVERNANCE_24_WORDS } from "@/lib/seo/governance";
 import { STARLYNN_AUTHOR_DISPLAY_NAME, STARLYNN_AUTHOR_CREDENTIALS, STARLYNN_AUTHOR_LICENSE } from "@/lib/seo/editor";
+import { loadLatestInspectionDates, todayIsoDate } from "@/lib/data/inspectionDates";
 
 type FacilityExemplar = {
   id: string;
@@ -59,19 +60,42 @@ export async function buildLlmsFullTxtBody(
   // entries are maximally illustrative for LLM consumers.
   let exemplars: FacilityExemplar[] = [];
   if (supabase) {
-    const { data: fData } = await supabase
-      .from("facilities")
-      .select(
-        "id, name, slug, city_slug, city, license_number, care_category, " +
-        "beds, last_inspection_date, updated_at",
-      )
-      .eq("state_code", "CA")
-      .eq("publishable", true)
-      .not("last_inspection_date", "is", null)
-      .order("last_inspection_date", { ascending: false })
-      .limit(3);
+    const today = todayIsoDate();
+    const { data: recentInsp } = await supabase
+      .from("inspections")
+      .select("facility_id, inspection_date, facilities!inner(state_code, publishable)")
+      .eq("facilities.state_code", "CA")
+      .eq("facilities.publishable", true)
+      .lte("inspection_date", today)
+      .order("inspection_date", { ascending: false })
+      .limit(40);
+    const recentIds: string[] = [];
+    for (const row of (recentInsp ?? []) as Array<{ facility_id: string }>) {
+      if (!recentIds.includes(row.facility_id)) recentIds.push(row.facility_id);
+      if (recentIds.length >= 3) break;
+    }
+    const { data: fData } = recentIds.length
+      ? await supabase
+          .from("facilities")
+          .select(
+            "id, name, slug, city_slug, city, license_number, care_category, " +
+            "beds, last_inspection_date, updated_at",
+          )
+          .in("id", recentIds)
+      : { data: [] };
 
-    const baseRows = (fData ?? []) as unknown as Array<Omit<FacilityExemplar, "total_deficiency_count" | "serious_citations">>;
+    const candidateRows = (fData ?? []) as unknown as Array<
+      Omit<FacilityExemplar, "total_deficiency_count" | "serious_citations">
+    >;
+    const derivedDates = await loadLatestInspectionDates(
+      supabase,
+      candidateRows.map((f) => f.id),
+    );
+    const baseRows = candidateRows
+      .map((f) => ({ ...f, last_inspection_date: derivedDates.get(f.id) ?? null }))
+      .filter((f) => f.last_inspection_date)
+      .sort((a, b) => (b.last_inspection_date ?? "").localeCompare(a.last_inspection_date ?? ""))
+      .slice(0, 3);
 
     // Compute deficiency counts from inspections/deficiencies tables
     const totalByFac = new Map<string, number>();

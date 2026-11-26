@@ -40,7 +40,7 @@ export async function SameOperatorFacilities({ facilityId, operatorName, stateSl
     .eq("publishable", true)
     .eq("operator_name", trimmed)
     .neq("id", facilityId)
-    .order("last_inspection_date", { ascending: false, nullsFirst: false })
+    .order("name", { ascending: true })
     .limit(MAX_SAME_OPERATOR);
 
   if (!raw?.length) return null;

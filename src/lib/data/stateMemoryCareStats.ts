@@ -1,11 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { COVERED_STATES } from "@/lib/states";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 /**
  * Live counts for /data. A serious citation is the same rule the city hubs
  * use: a Type A finding, or a finding stored at severity 3 or higher.
- * The serious column counts homes, not findings. A query that errors returns
- * null so the page does not print a zero it did not measure.
+ * The serious column counts homes, not findings. Nested PostgREST joins
+ * used to fail the whole table; counts now walk facility IDs in chunks,
+ * the same way state hubs do. One state's failure no longer blanks /data.
  * findings and uncodedFindings are for the research report. /data does not show them.
  */
 
@@ -43,6 +45,9 @@ const OFFICES: Record<string, string> = {
   CO: "Colorado Department of Public Health and Environment",
 };
 
+const ID_PAGE = 1000;
+const ID_CHUNK = 150;
+
 export function seriousCitationCutoff(now = new Date()): string {
   const cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   cutoff.setUTCMonth(cutoff.getUTCMonth() - 24);
@@ -64,143 +69,190 @@ export function formatRecordDate(iso: string | null | undefined): string | null 
   }).format(date);
 }
 
-async function countPublished(supabase: SupabaseClient, code: string): Promise<number | null> {
-  const { count, error } = await supabase
-    .from("facilities")
-    .select("id", { count: "exact", head: true })
-    .eq("publishable", true)
-    .eq("state_code", code);
-  if (error || count == null) return null;
-  return count;
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
-async function countWithInspection(supabase: SupabaseClient, code: string): Promise<number | null> {
-  const { count, error } = await supabase
-    .from("facilities")
-    .select("id, inspections!inner(id)", { count: "exact", head: true })
-    .eq("publishable", true)
-    .eq("state_code", code);
-  if (error || count == null) return null;
-  return count;
-}
-
-async function countSeriousHomes(
+async function facilityIdsForState(
   supabase: SupabaseClient,
   code: string,
-  cutoff: string,
-): Promise<number | null> {
-  const { count, error } = await supabase
-    .from("facilities")
-    .select("id, inspections!inner(inspection_date, deficiencies!inner(id))", {
-      count: "exact",
-      head: true,
-    })
-    .eq("publishable", true)
-    .eq("state_code", code)
-    .gte("inspections.inspection_date", cutoff)
-    .or("class.eq.Type A,severity.gte.3", { referencedTable: "inspections.deficiencies" });
-  if (error || count == null) return null;
-  return count;
+): Promise<string[] | null> {
+  const ids: string[] = [];
+  for (let from = 0; ; from += ID_PAGE) {
+    const { data, error } = await supabase
+      .from("facilities")
+      .select("id")
+      .eq("publishable", true)
+      .eq("state_code", code)
+      .range(from, from + ID_PAGE - 1);
+    if (error) {
+      console.error(`[stateMemoryCareStats] facility ids ${code}:`, error.message);
+      return null;
+    }
+    const page = ((data ?? []) as Array<{ id: string }>).map((r) => r.id);
+    ids.push(...page);
+    if (page.length < ID_PAGE) break;
+  }
+  return ids;
 }
 
-function findingsQuery(supabase: SupabaseClient, code: string, cutoff: string) {
-  return supabase
-    .from("deficiencies")
-    .select("id, inspections!inner(inspection_date, facilities!inner(state_code, publishable))", {
-      count: "exact",
-      head: true,
-    })
-    .eq("inspections.facilities.state_code", code)
-    .eq("inspections.facilities.publishable", true)
-    .gte("inspections.inspection_date", cutoff);
-}
+type WindowFinding = {
+  facility_id: string;
+  class: string | null;
+  severity: number | null;
+};
 
-async function countFindings(
+async function windowFindings(
   supabase: SupabaseClient,
-  code: string,
+  facilityIds: string[],
   cutoff: string,
-): Promise<number | null> {
-  const { count, error } = await findingsQuery(supabase, code, cutoff);
-  if (error || count == null) return null;
-  return count;
+  today: string,
+): Promise<WindowFinding[] | null> {
+  const findings: WindowFinding[] = [];
+  for (const ids of chunk(facilityIds, ID_CHUNK)) {
+    let from = 0;
+    const inspRows: Array<{ id: string; facility_id: string }> = [];
+    for (;;) {
+      const { data, error } = await supabase
+        .from("inspections")
+        .select("id, facility_id")
+        .in("facility_id", ids)
+        .gte("inspection_date", cutoff)
+        .lte("inspection_date", today)
+        .range(from, from + ID_PAGE - 1);
+      if (error) {
+        console.error("[stateMemoryCareStats] window inspections:", error.message);
+        return null;
+      }
+      const page = (data ?? []) as Array<{ id: string; facility_id: string }>;
+      inspRows.push(...page);
+      if (page.length < ID_PAGE) break;
+      from += ID_PAGE;
+    }
+    if (inspRows.length === 0) continue;
+    const inspFac = new Map(inspRows.map((i) => [i.id, i.facility_id]));
+    for (const inspChunk of chunk(inspRows.map((i) => i.id), ID_CHUNK)) {
+      const { data, error } = await supabase
+        .from("deficiencies")
+        .select("inspection_id, class, severity")
+        .in("inspection_id", inspChunk)
+        .limit(5000);
+      if (error) {
+        console.error("[stateMemoryCareStats] window deficiencies:", error.message);
+        return null;
+      }
+      for (const d of (data ?? []) as Array<{
+        inspection_id: string;
+        class: string | null;
+        severity: number | null;
+      }>) {
+        const facility_id = inspFac.get(d.inspection_id);
+        if (!facility_id) continue;
+        findings.push({ facility_id, class: d.class, severity: d.severity });
+      }
+    }
+  }
+  return findings;
 }
 
-async function countUncodedFindings(
+async function countWithInspection(
   supabase: SupabaseClient,
-  code: string,
-  cutoff: string,
+  facilityIds: string[],
+  today: string,
 ): Promise<number | null> {
-  const { count, error } = await findingsQuery(supabase, code, cutoff)
-    .is("class", null)
-    .is("severity", null);
-  if (error || count == null) return null;
-  return count;
+  const seen = new Set<string>();
+  for (const ids of chunk(facilityIds, ID_CHUNK)) {
+    let from = 0;
+    for (;;) {
+      const { data, error } = await supabase
+        .from("inspections")
+        .select("facility_id")
+        .in("facility_id", ids)
+        .lte("inspection_date", today)
+        .not("inspection_date", "is", null)
+        .range(from, from + ID_PAGE - 1);
+      if (error) {
+        console.error("[stateMemoryCareStats] withInspection:", error.message);
+        return null;
+      }
+      const page = (data ?? []) as Array<{ facility_id: string }>;
+      for (const row of page) seen.add(row.facility_id);
+      if (page.length < ID_PAGE) break;
+      from += ID_PAGE;
+    }
+  }
+  return seen.size;
 }
 
 async function newestInspection(
   supabase: SupabaseClient,
   code: string,
+  today: string,
 ): Promise<string | null | undefined> {
   const { data, error } = await supabase
     .from("inspections")
     .select("inspection_date, facilities!inner(state_code, publishable)")
     .eq("facilities.state_code", code)
     .eq("facilities.publishable", true)
+    .lte("inspection_date", today)
     .order("inspection_date", { ascending: false })
     .limit(1);
-  if (error) return undefined;
+  if (error) {
+    console.error(`[stateMemoryCareStats] newest ${code}:`, error.message);
+    return undefined;
+  }
   const row = data?.[0] as { inspection_date?: string | null } | undefined;
   return row?.inspection_date ? row.inspection_date.slice(0, 10) : null;
+}
+
+function isSerious(d: WindowFinding): boolean {
+  return d.class === "Type A" || (d.severity ?? 0) >= 3;
 }
 
 export async function loadStateMemoryCareStats(
   supabase: SupabaseClient,
 ): Promise<StateMemoryCareStats | null> {
   const cutoff = seriousCitationCutoff();
+  const today = todayIsoDate();
   const rows: StateMemoryCareStat[] = [];
 
   for (const state of COVERED_STATES) {
-    const [published, withInspection, seriousHomes, newest, findings, uncodedFindings] =
-      await Promise.all([
-        countPublished(supabase, state.code),
-        countWithInspection(supabase, state.code),
-        countSeriousHomes(supabase, state.code, cutoff),
-        newestInspection(supabase, state.code),
-        countFindings(supabase, state.code, cutoff),
-        countUncodedFindings(supabase, state.code, cutoff),
-      ]);
-    if (
-      published == null ||
-      withInspection == null ||
-      seriousHomes == null ||
-      newest === undefined ||
-      findings == null ||
-      uncodedFindings == null
-    ) {
-      const failed = [
-        published == null ? "published" : "",
-        withInspection == null ? "withInspection" : "",
-        seriousHomes == null ? "seriousHomes" : "",
-        newest === undefined ? "newest" : "",
-        findings == null ? "findings" : "",
-        uncodedFindings == null ? "uncoded" : "",
-      ].filter(Boolean);
-      console.error(`[stateMemoryCareStats] count failed for ${state.code}: ${failed.join(", ")}`);
-      return null;
+    const facilityIds = await facilityIdsForState(supabase, state.code);
+    if (!facilityIds) {
+      console.error(`[stateMemoryCareStats] skipped ${state.code}: facility ids`);
+      continue;
     }
+    const [withInspection, newest, findings] = await Promise.all([
+      countWithInspection(supabase, facilityIds, today),
+      newestInspection(supabase, state.code, today),
+      windowFindings(supabase, facilityIds, cutoff, today),
+    ]);
+    if (withInspection == null || findings == null) {
+      const failed = [
+        withInspection == null ? "withInspection" : "",
+        findings == null ? "findings" : "",
+      ].filter(Boolean);
+      console.error(`[stateMemoryCareStats] skipped ${state.code}: ${failed.join(", ")}`);
+      continue;
+    }
+    const seriousHomes = new Set(findings.filter(isSerious).map((d) => d.facility_id)).size;
+    const uncodedFindings = findings.filter((d) => d.class == null && d.severity == null).length;
     rows.push({
       code: state.code,
       name: state.name,
       slug: state.slug,
       regulatorLong: OFFICES[state.code],
-      published,
+      published: facilityIds.length,
       withInspection,
       seriousHomes,
-      newestInspection: newest,
-      findings,
+      newestInspection: newest ?? null,
+      findings: findings.length,
       uncodedFindings,
     });
   }
 
+  if (rows.length === 0) return null;
   return { cutoff, rows };
 }

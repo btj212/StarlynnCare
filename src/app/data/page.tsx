@@ -13,6 +13,7 @@ import {
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import { COVERED_STATES } from "@/lib/states";
+import { regulatorAcronymList } from "@/lib/coverage";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
 const DATA_PATH = "/data";
@@ -116,9 +117,12 @@ export default async function DataPage() {
 
         <article className="mx-auto max-w-[760px] px-6 pb-14 md:px-8 md:pb-20">
           <section className="mt-10 space-y-4 text-base leading-relaxed text-slate">
-            <h2 className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
+            <h2 id="regulators" className="font-[family-name:var(--font-serif)] text-2xl font-semibold text-navy">
               Sources
             </h2>
+            <p className="font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-ink-4">
+              {regulatorAcronymList()}
+            </p>
             <p>
               Each row above names the state license office the count comes from.
               CMS Care Compare is used where a facility has a federal identifier.

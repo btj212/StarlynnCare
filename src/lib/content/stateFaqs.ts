@@ -1,6 +1,39 @@
+import type { Coverage } from "@/lib/coverage";
+import { coverageFaqAnswer } from "@/lib/coverage";
+
 export interface FaqItem {
   q: string;
   a: string;
+}
+
+/**
+ * National homepage FAQ. State-specific lists stay below; this one
+ * is the only FAQ set the homepage is allowed to render, so coverage
+ * cannot drift from the stats grid.
+ */
+export function buildNationalFaqs(coverage: Coverage): FaqItem[] {
+  return [
+    {
+      q: "Where does the data come from?",
+      a: "Primary sources only: the state license office in each covered state, CMS Care Compare where a home has a federal identifier, and verified family reviews submitted through our identity-checked review form. Every profile links to the regulator record we used.",
+    },
+    {
+      q: "Do you accept payments from facilities or operators?",
+      a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    },
+    {
+      q: "How often is the data updated?",
+      a: "Inspection records are pulled from each state's public portal on a regular automated schedule. Each facility profile shows when that home's record was last refreshed. National counts on the homepage revalidate hourly.",
+    },
+    {
+      q: "Which states do you cover?",
+      a: coverageFaqAnswer(coverage),
+    },
+    {
+      q: "Can a facility correct or respond to information on its profile?",
+      a: "Yes. Every profile includes a verified-operator response field, edited by us only for length. We do not remove citations at operator request, but we publish operator context and corrective actions alongside the original record.",
+    },
+  ];
 }
 
 /** California memory-care hub & homepage FAQ set (CDSS framing). */
@@ -19,7 +52,11 @@ export const CA_FAQS: FaqItem[] = [
   },
   {
     q: "Which states do you cover?",
-    a: "California, Oregon, Washington, Minnesota, and Texas are all live with publishable facility profiles. Each state's data comes from its respective state regulator — CDSS for California, Oregon DHS for Oregon, DSHS for Washington, MDH for Minnesota, and HHSC for Texas.",
+    a: "StarlynnCare publishes memory care homes in California, Oregon, Washington, Minnesota, Utah, Illinois, Pennsylvania, Arizona, Missouri, Texas, and Colorado. Texas and Colorado are pilots until their published sets grow. Each state's data comes from its regulator — CDSS, Oregon DHS, DSHS, MDH, HHSC, DLBC, IDPH, PA DHS, ADHS, DHSS, and CDPHE.",
+  },
+  {
+    q: "Where do I look up a California RCFE license?",
+    a: "On the CDSS Community Care Licensing facility search at ccld.dss.ca.gov/carefacilitysearch. Search by name or license number. The lookup section on this page links to that portal and to a step-by-step how-to for the memory care homes we publish.",
   },
   {
     q: "Can a facility correct or respond to information on its profile?",
@@ -58,6 +95,10 @@ export const OR_FAQS: FaqItem[] = [
     a: "Primary sources: Oregon Department of Human Services (DHS), Long-Term Care Licensing public portal — including licensing violations and abuse investigation records for ALFs and RCFs holding the Memory Care Endorsement. Inspection findings are sourced directly from ltclicensing.oregon.gov.",
   },
   {
+    q: "Where do I look up an Oregon assisted living license?",
+    a: "On the Oregon DHS Long-Term Care Licensing portal at ltclicensing.oregon.gov. Search the home by name or license number. The lookup section on this page links to that portal and to a step-by-step how-to for the memory care homes we publish.",
+  },
+  {
     q: "Do you accept payments from facilities or operators?",
     a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
   },
@@ -82,6 +123,10 @@ export const WA_FAQS: FaqItem[] = [
     a: "Primary sources: Washington State Department of Social and Health Services (DSHS), Aging and Disability Services Administration (ADSA), Residential Care Services — specifically the public ALF Reports portal (fortress.wa.gov). Inspection and investigation report links are sourced directly from that portal.",
   },
   {
+    q: "Where do I look up a Washington assisted living inspection report?",
+    a: "On the DSHS ALF public lookup at fortress.wa.gov/dshs/adsaapps/lookup/BHPubLookup.aspx. Search the home by name or license number. The lookup section on this page links to that portal and to a step-by-step how-to for the memory care homes we publish.",
+  },
+  {
     q: "Do you accept payments from facilities or operators?",
     a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
   },
@@ -104,6 +149,10 @@ export const MN_FAQS: FaqItem[] = [
   {
     q: "Where does Minnesota inspection data come from?",
     a: "Primary sources: Minnesota Department of Health (MDH), which regulates Assisted Living Facilities under Minn. Stat. ch. 144G. Complaint and survey findings are published publicly by MDH. StarlynnCare indexes MDH licensing records and inspection outcomes.",
+  },
+  {
+    q: "Where is the Minnesota assisted living report card?",
+    a: "The Minnesota Department of Health publishes assisted living licensing and inspection records in its provider directory at health.state.mn.us/facilities/providers. That directory is the official lookup. The lookup section on this page links to MDH and to a step-by-step how-to for the memory care homes we publish.",
   },
   {
     q: "Do you accept payments from facilities or operators?",
@@ -162,6 +211,10 @@ export const IL_FAQS: FaqItem[] = [
     a: "No. StarlynnCare indexes only facilities with a confirmed memory care or dementia care focus — either because their name includes 'memory care', 'dementia', or 'Alzheimer', or because the IDPH portal identifies them as operating a dementia special-care unit. Non-memory-care ALEs are excluded.",
   },
   {
+    q: "Where is the IDPH nursing home lookup — and does StarlynnCare include nursing homes?",
+    a: "The Illinois Department of Public Health facility lookup is at llcs.dph.illinois.gov. StarlynnCare holds Illinois assisted living establishments only, not nursing homes. To check a nursing home, use the IDPH lookup. The lookup section on this page links to IDPH and to a how-to for the assisted living homes we publish.",
+  },
+  {
     q: "Do you accept payments from facilities or operators?",
     a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Data is derived solely from state inspection records and verified family reviews.",
   },
@@ -176,6 +229,10 @@ export const PA_FAQS: FaqItem[] = [
   {
     q: "Where does Pennsylvania memory care inspection data come from?",
     a: "Primary source: the Pennsylvania Department of Human Services (DHS) Office of Long-Term Living (OLTL), which regulates Personal Care Homes (PCH) under 55 Pa Code Chapter 2600 and Assisted Living Residences (ALR) under 55 Pa Code Chapter 2800. DHS publishes inspection findings in PDF format on its provider directory portal. StarlynnCare downloads, parses, and indexes those PDFs for each facility profile.",
+  },
+  {
+    q: "Where do I find Pennsylvania personal care home inspection reports?",
+    a: "In the Department of Human Services provider directory (humanservices.dhs.pa.gov). Choose the Office of Long-Term Living as the program office and type at least four characters of the home's name. The lookup section on this page links to that directory and to a step-by-step how-to for the memory care homes we publish.",
   },
   {
     q: "What is the difference between a Personal Care Home and an Assisted Living Residence in Pennsylvania?",
