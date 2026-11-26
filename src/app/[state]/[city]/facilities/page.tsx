@@ -16,6 +16,9 @@ import type { CareCategory } from "@/lib/types";
 import { contentAliasFields, nameMatchesQuery } from "@/lib/facility/aliases";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
 import { careSettingCopy } from "@/lib/city-hub/careSetting";
+import { isSeriousCityFinding } from "@/lib/city-hub/stats";
+import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 export const revalidate = 3600;
 
@@ -112,7 +115,7 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
     const { data: rawFacilities, error } = await supabase
       .from("facilities")
       .select(
-        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content",
+        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, mo_level_of_care, mn_dementia_care_licensed",
       )
       .eq("state_code", region.state.code)
       .eq("publishable", true)
@@ -138,6 +141,9 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
         tx_alzheimer_certified: boolean | null;
         capacity_tier: "small" | "medium" | "large" | "unknown";
         content: unknown;
+        license_type: string | null;
+        mo_level_of_care: string | null;
+        mn_dementia_care_licensed: boolean | null;
       }>;
 
       if (raw.length > 0) {
@@ -190,13 +196,14 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
           const facilityId = inspectionFacility.get(deficiency.inspection_id);
           if (!facilityId) continue;
           citationCount.set(facilityId, (citationCount.get(facilityId) ?? 0) + 1);
-          const serious = deficiency.class === "Type A" || (deficiency.severity ?? 0) >= 3;
-          if (serious) seriousCount.set(facilityId, (seriousCount.get(facilityId) ?? 0) + 1);
+          if (isSeriousCityFinding(deficiency, region.state.code)) {
+            seriousCount.set(facilityId, (seriousCount.get(facilityId) ?? 0) + 1);
+          }
         }
 
         facilities = raw.map((facility) => ({
           id: facility.id,
-          name: facility.name,
+          name: formatFacilityName(facility.name),
           city: displayCityName(facility.city, facility.city_slug),
           street: facility.street,
           zip: facility.zip,
@@ -212,6 +219,16 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
           inspections: inspectionCount.get(facility.id) ?? 0,
           serious_citations: seriousCount.get(facility.id) ?? 0,
           total_citations: citationCount.get(facility.id) ?? 0,
+          license_type: facility.license_type,
+          mo_level_of_care: facility.mo_level_of_care,
+          mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+          licenseLabel: listLicenseLabel({
+            stateCode: region.state.code,
+            care_category: facility.care_category as CareCategory,
+            license_type: facility.license_type,
+            mo_level_of_care: facility.mo_level_of_care,
+            mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+          }),
           ...contentAliasFields(facility.content),
         }));
       }

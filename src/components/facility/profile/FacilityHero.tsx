@@ -27,6 +27,7 @@ import { azMcProgram } from "@/lib/facility/azMcProgram";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
 import { peerRankPhrase } from "@/lib/seo/rankPhrase";
 import { peerSetPhrase } from "@/lib/city-hub/careSetting";
+import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 import { formatLicenseStatus } from "@/lib/facility/licenseStatus";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
@@ -383,11 +384,13 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
             {/* Tags */}
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="fp-tag rounded-full bg-clearing-chip px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
-                {facility.state_code === "CO"
-                  ? facility.co_care_setting === "NH"
-                    ? "Nursing home"
-                    : "Assisted living"
-                  : SHORT_CATEGORY_LABEL[facility.care_category]}
+                {listLicenseLabel({
+                  stateCode: facility.state_code,
+                  care_category: facility.care_category,
+                  license_type: facility.license_type,
+                  mo_level_of_care: facility.mo_level_of_care,
+                  mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+                })}
               </span>
               {facility.state_code === "CO" && (
                 <span className="fp-tag rounded-full bg-clearing-chip px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">

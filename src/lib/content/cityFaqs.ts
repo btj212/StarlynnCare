@@ -40,8 +40,8 @@ function getStateStrings(stateCode: string): StateStrings {
     return {
       costRange: (city, isCounty) =>
         isCounty
-          ? `Memory care across ${city} typically runs ${formatCostRange("OR", "county")} for an ALF or RCF with an Oregon DHS Memory Care Endorsement. Rates vary by room type, level-of-care tier, and operator. Full monthly bills often exceed the advertised base rate.`
-          : `Memory care in ${city} typically runs ${formatCostRange("OR", "city")} for an Oregon-licensed ALF or RCF with a Memory Care Endorsement, depending on room type and care level. The full bill nearly always exceeds the advertised base rate.`,
+          ? `A regional benchmark for memory care across ${city} is ${formatCostRange("OR", "county")} for an ALF or RCF with an Oregon DHS Memory Care Endorsement. That is not a local median. Rates vary by room type, level-of-care tier, and operator.`
+          : `A regional benchmark for memory care in ${city} is ${formatCostRange("OR", "city")} for an Oregon-licensed ALF or RCF with a Memory Care Endorsement. That is not a ${city} median — ask each home for its current rate.`,
       licenseQ: `What makes a facility "memory care" in Oregon?`,
       licenseA: `Oregon has a specific Memory Care Endorsement issued by the Department of Human Services (DHS), Long-Term Care Licensing. Facilities here are licensed as Assisted Living Facilities (ALFs) or Residential Care Facilities (RCFs) under ORS ch. 443. To carry the endorsement, a facility must meet additional staff training standards, have secured environments where clinically appropriate, and provide individualized dementia programming. Endorsement status appears on every StarlynnCare profile and is sourced from the DHS public licensing portal.`,
       facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Oregon?`,
@@ -94,8 +94,8 @@ function getStateStrings(stateCode: string): StateStrings {
     return {
       costRange: (city, isCounty) =>
         isCounty
-          ? `Memory care across ${city} typically runs ${formatCostRange("MN", "county")} for a licensed Assisted Living Facility with Dementia Care under Minnesota Statutes ch. 144G. Rates vary by city, room type, and care level tier.`
-          : `Memory care in ${city} typically runs ${formatCostRange("MN", "city")} for a licensed ALF with Dementia Care under Minnesota ch. 144G, depending on room type and care level.`,
+          ? `A regional benchmark for memory care across ${city} is ${formatCostRange("MN", "county")} for a licensed Assisted Living Facility with Dementia Care under Minnesota Statutes ch. 144G. That is not a local median. Rates vary by city, room type, and care level tier.`
+          : `A regional benchmark for memory care in ${city} is ${formatCostRange("MN", "city")} for a licensed ALF with Dementia Care under Minnesota ch. 144G. That is not a ${city} median — ask each home for its current rate.`,
       licenseQ: `What makes a facility "memory care" in Minnesota?`,
       licenseA: `Minnesota's 2019 Assisted Living Licensure Reform (Minn. Stat. ch. 144G) created a specific <strong>Assisted Living Facility with Dementia Care</strong> license tier, regulated by the Minnesota Department of Health (MDH). Facilities at this tier must meet enhanced requirements: dementia-trained staff at all times, individualized dementia programming, and secured environments where clinically indicated. License tier appears on every StarlynnCare profile and is sourced from the MDH public licensing directory.`,
       facilityVsNursingQ: `What's the difference between an ALF with Dementia Care and a nursing home in Minnesota?`,
@@ -180,6 +180,24 @@ function getStateStrings(stateCode: string): StateStrings {
     };
   }
 
+  if (code === "MO") {
+    return {
+      costRange: (city, isCounty) =>
+        isCounty
+          ? `A regional benchmark for memory care across ${city} is ${formatCostRange("MO", "county")}. That is not a local median. DHSS does not publish facility rates.`
+          : `A regional benchmark for memory care in ${city} is ${formatCostRange("MO", "city")}. That is not a ${city} median — Missouri DHSS does not publish facility rates, so ask each home for its current quote.`,
+      licenseQ: `What makes a facility "memory care" in Missouri?`,
+      licenseA: `Missouri does not issue a separate memory-care license. Homes here are licensed as Assisted Living Facilities (ALF) or Residential Care Facilities (RCF) by the Department of Health and Senior Services (DHSS) under 19 CSR 30. A facility that specializes in, advertises, or represents itself as providing Alzheimer's or dementia care must file an Alzheimer's Special Care Services Disclosure (RSMo §198.510). License level of care appears on each StarlynnCare profile when it is on the DHSS row.`,
+      facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Missouri?`,
+      facilityVsNursingA: `Missouri ALFs and RCFs provide residential personal care under DHSS Section for Long-Term Care Regulation. Nursing facilities provide licensed nursing around the clock and are inspected under a different DHSS and CMS framework. If your family member needs IV medications, complex wound care, or continuous medical monitoring, a nursing facility may be more appropriate than an ALF or RCF.`,
+      deficiencyLabel: "DHSS citation (Class I, II, or III under 19 CSR 30)",
+      indexedNoun: "DHSS-licensed assisted living and residential care homes",
+      medicaidQ: (city) => `Does MO HealthNet pay for memory care in ${city}?`,
+      medicaidA: (city) =>
+        `MO HealthNet (Missouri Medicaid) can cover some services in a participating assisted living or residential care facility, but room and board are typically the family's responsibility and not every ${city} home holds a contract. Eligibility is through the Department of Social Services. Ask each home which programs it accepts, and contact your local Area Agency on Aging.`,
+    };
+  }
+
   if (code === "AZ") {
     const azLicenseUrl = canonicalFor("/arizona/memory-care-licensing");
     return {
@@ -257,7 +275,14 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
       a: s.facilityVsNursingA,
     },
     {
-      q: `How many ${cityName} facilities have a serious deficiency on file?`,
+      q:
+        stateCode === "OR"
+          ? `How many ${cityName} facilities have a citation on file?`
+          : stateCode === "MN"
+            ? `How many ${cityName} homes have an MDH finding on file?`
+            : stateCode === "MO"
+              ? `How many ${cityName} facilities have a DHSS citation on file?`
+              : `How many ${cityName} facilities have a serious deficiency on file?`,
       a:
         totalCount === 0
           ? `StarlynnCare has not yet indexed publishable facilities for ${cityName}.`
@@ -268,7 +293,9 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
       a:
         stateCode === "CO"
           ? `Assisted living residences are compared with other Colorado assisted living residences. A nursing home is compared only with other Colorado nursing homes, and only when at least 10 homes share that care setting. Level A–E is the CDPHE scale. CMS letters A–L are the nursing-home scale. A home with too few peers shows its inspection record and no rank. Methodology: <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">starlynncare.com/methodology</a>.`
-          : `StarlynnCare does not assign a single letter grade. Instead, each profile shows four independent signals derived from state inspection records: deficiency severity (Type-A vs. Type-B in California, equivalent classes in other states), repeat citation rate, inspection frequency relative to peers, and trajectory over time. Facilities with too few inspections on record show a "limited history" notice rather than a misleading score. All underlying data is sourced from mandatory public records — CDSS for California, HHSC LTCR for Texas, DHS for Oregon, and equivalent agencies for other states. Full methodology is at <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">starlynncare.com/methodology</a>.`,
+          : stateCode === "CA"
+            ? `StarlynnCare does not assign a single letter grade. Instead, each profile shows four independent signals derived from CDSS inspection records: Type-A vs. Type-B deficiency class, repeat citation rate, inspection frequency relative to peers, and trajectory over time. Facilities with too few inspections on record show a "limited history" notice rather than a misleading score. Full methodology is at <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">starlynncare.com/methodology</a>.`
+            : `StarlynnCare does not assign a single letter grade. Each profile shows the state's own inspection record — ${s.deficiencyLabel} — with dates and source links. Facilities with too few inspections on record show a "limited history" notice rather than a misleading score. Full methodology is at <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">starlynncare.com/methodology</a>.`,
     },
     {
       q: `What should I look for on a memory care tour in ${cityName}?`,
@@ -279,7 +306,19 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
       a:
         stateCode === "CO"
           ? `Assisted living profiles link to CDPHE Find and Compare Facilities. The citation text in this release comes from a CDPHE records file dated May 18, 2026. Nursing-home profiles link to Medicare Care Compare. Each profile's inspection record names which regulator wrote the finding.`
-          : `Every facility profile on StarlynnCare links directly to its state inspection records — the same documents regulators use to evaluate compliance. For California facilities, reports come from the CDSS Community Care Licensing portal; for Texas, from HHSC LTCR; for Oregon, DHS Long-Term Care Licensing; for Washington, DSHS. On each facility profile, navigate to the "Inspection record" section to see full verbatim citations with dates and regulatory citations. You can also access the <a href="${canonicalFor("/api/facilities/" + region.state.slug)}" class="text-teal underline underline-offset-4">underlying raw data</a> (open dataset).`,
+          : `Every facility profile on StarlynnCare links to its state inspection records — the same documents regulators use to evaluate compliance. ${
+              stateCode === "CA"
+                ? "California reports come from the CDSS Community Care Licensing portal."
+                : stateCode === "TX"
+                  ? "Texas reports come from HHSC Long-Term Care Regulation."
+                  : stateCode === "OR"
+                    ? "Oregon reports come from DHS Long-Term Care Licensing (ltclicensing.oregon.gov)."
+                    : stateCode === "MN"
+                      ? "Minnesota reports come from the Minnesota Department of Health under ch. 144G."
+                      : stateCode === "MO"
+                        ? "Missouri reports come from DHSS Section for Long-Term Care Regulation under 19 CSR 30."
+                        : "Each profile names the regulator that wrote the finding."
+            } On each facility profile, open the inspection record for verbatim citations with dates. You can also access the <a href="${canonicalFor("/api/facilities/" + region.state.slug)}" class="text-teal underline underline-offset-4">underlying raw data</a> (open dataset).`,
     },
     {
       q: isCounty
@@ -288,7 +327,9 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
       a:
         stateCode === "CO"
           ? `Profiles use the public inspection record, not a star rating and not a payment from the home. Assisted living severity is CDPHE Level A through E. Nursing-home severity is the CMS letter on the F-tag. You can sort ${cityName} facilities with the "By record" toggle. No referral commission changes the order.`
-          : `StarlynnCare uses state inspection data — not self-reported surveys or paid placements — to evaluate facilities. Each profile surfaces four signals: citation severity (e.g. Type-A vs. Type-B in California), citation frequency relative to peers, repeat-finding rate, and inspection recency. Facilities with too few inspections receive a "limited history" label rather than a misleading composite score. You can sort the list of ${cityName} facilities by inspection record using the "By record" sort toggle to see the cleanest inspection histories first. No referral commissions influence how facilities appear.`,
+          : stateCode === "CA"
+            ? `StarlynnCare uses CDSS inspection data — not self-reported surveys or paid placements. Each profile surfaces Type-A vs. Type-B class, citation frequency relative to peers, repeat-finding rate, and inspection recency. Facilities with too few inspections receive a "limited history" label. You can sort ${cityName} facilities with the "By record" toggle. No referral commissions change the order.`
+            : `StarlynnCare uses state inspection data — not self-reported surveys or paid placements. Each profile shows ${s.deficiencyLabel} with dates, not a star rating. Facilities with too few inspections receive a "limited history" label rather than a misleading composite score. You can sort ${cityName} facilities with the "By record" toggle. No referral commissions change the order.`,
     },
     {
       q: s.medicaidQ(cityName),

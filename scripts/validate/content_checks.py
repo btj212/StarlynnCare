@@ -210,6 +210,7 @@ def _check_repeat_offender_csv(cur) -> None:
     bad_count = []
     newer = []
     bad_rank = []
+    prior_license_matches = 0
 
     for row in rows:
         name = row["name"].strip()
@@ -217,39 +218,49 @@ def _check_repeat_offender_csv(cur) -> None:
         regulation = row.get("regulation_id", "").strip()
         expected_count = int(row.get("count", 0))
 
-        # Look up the facility in DB by name (case-insensitive) + state CA
+        # Frozen article sample. A later license at the same legal name is a
+        # separate row (Vista del Sol vs Stellar Care). Match any CA row with
+        # that name — including unpublished closed licenses — and pick the one
+        # whose visit count for this code is closest to the article.
         cur.execute(
             """
-            SELECT id, name, slug, beds
-            FROM facilities
-            WHERE state_code = 'CA'
-              AND publishable = true
-              AND LOWER(name) = LOWER(%s)
-            LIMIT 1
+            SELECT
+                f.id,
+                f.name,
+                f.slug,
+                f.beds,
+                f.publishable,
+                COUNT(DISTINCT i.id) FILTER (WHERE d.code = %s) AS distinct_visits
+            FROM facilities f
+            LEFT JOIN inspections i ON i.facility_id = f.id
+            LEFT JOIN deficiencies d ON d.inspection_id = i.id
+            WHERE f.state_code = 'CA'
+              AND LOWER(f.name) = LOWER(%s)
+              AND (%s = '' OR LOWER(COALESCE(f.city, '')) = LOWER(%s))
+            GROUP BY f.id, f.name, f.slug, f.beds, f.publishable
             """,
-            (name,),
+            (regulation, name, city, city),
         )
-        fac = cur.fetchone()
-        if not fac:
+        candidates = list(cur.fetchall())
+        if not candidates:
             not_found.append(f"{name} / {city}")
             continue
 
-        fac_id = str(fac["id"])
+        def _score(c: dict) -> tuple[int, int, int]:
+            visits = int(c["distinct_visits"] or 0)
+            # Prefer a row that still has the article's visits, then the
+            # closest count, then a currently published listing.
+            return (
+                0 if visits >= expected_count else 1,
+                abs(visits - expected_count),
+                0 if c["publishable"] else 1,
+            )
 
-        # Recompute repeat-citation count for this facility+regulation using
-        # the same methodology: COUNT(DISTINCT inspection_id) >= 3 per code
-        cur.execute(
-            """
-            SELECT COUNT(DISTINCT i.id) AS distinct_visits
-            FROM deficiencies d
-            JOIN inspections i ON i.id = d.inspection_id
-            WHERE i.facility_id = %s
-              AND d.code = %s
-            """,
-            (fac_id, regulation),
-        )
-        db_row = cur.fetchone()
-        db_count = db_row["distinct_visits"] if db_row else 0
+        fac = min(candidates, key=_score)
+        if not fac["publishable"]:
+            prior_license_matches += 1
+        fac_id = str(fac["id"])
+        db_count = int(fac["distinct_visits"] or 0)
 
         if db_count < expected_count:
             bad_count.append(
@@ -277,6 +288,11 @@ def _check_repeat_offender_csv(cur) -> None:
         len(bad_count) == 0,
         f"{len(bad_count)} dropped: {bad_count[:3]}" if bad_count else "",
     )
+    if prior_license_matches:
+        print(
+            f"  NOTE: {prior_license_matches} sample rows matched an unpublished prior "
+            "license at the same legal name. Successor listings are separate records."
+        )
     if newer:
         print(
             f"  NOTE: {len(newer)} sample rows now have more visits than the article file. "

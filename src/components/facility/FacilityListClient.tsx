@@ -7,6 +7,7 @@ import type { CareCategory } from "@/lib/types";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityDisplayName, nameMatchesQuery } from "@/lib/facility/aliases";
+import { listLicenseLabel, listSectionDeck, listSectionTitle } from "@/lib/city-hub/licenseLabel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -43,7 +44,11 @@ export type ListFacility = {
    * serves_memory_care.
    */
   careChip?: string | null;
+  /** State-accurate license label (RCF/ALF/ALDC/mo_level_of_care). */
+  licenseLabel?: string | null;
   license_type?: string | null;
+  mo_level_of_care?: string | null;
+  mn_dementia_care_licensed?: boolean | null;
   wa_dementia_care_contract?: boolean | null;
   wa_earc_sdc_contracted?: boolean | null;
   az_mc_subclass?: boolean | null;
@@ -54,7 +59,6 @@ export type ListFacility = {
   mce_endorsed?: boolean | null;
   wa_memory_care_certified?: boolean | null;
   wa_dementia_specialty?: boolean | null;
-  mn_dementia_care_licensed?: boolean | null;
   il_dementia_program_flag?: boolean | null;
   mo_alzheimer_scu?: boolean | null;
 };
@@ -64,16 +68,6 @@ type FilterChip = "all" | "large" | "medium" | "has_citations" | "no_citations" 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-const CATEGORY_SHORT: Partial<Record<CareCategory, string>> = {
-  rcfe_memory_care: "RCFE",
-  rcfe_general: "RCFE",
-  alf_memory_care: "ALF",
-  alf_general: "ALF",
-  snf_general: "Nursing home",
-  snf_dementia_scu: "Nursing home",
-  ccrc: "CCRC",
-};
 
 // Deterministic soft gradient from facility name
 const PALETTES: [string, string][] = [
@@ -115,7 +109,7 @@ function TrustBadge({ signal }: { signal: TrustSignal }) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted">
         <span className="h-1.5 w-1.5 rounded-full bg-muted/50 shrink-0" />
-        No inspection data yet
+        No inspections on file yet
       </span>
     );
   if (signal.type === "clean")
@@ -150,9 +144,25 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
   const signal = trustSignal(f);
   const [g1, g2] = gradientFor(displayName);
   const typeLabel =
-    stateSlug === "colorado" && f.care_category.startsWith("alf")
-      ? "Assisted living"
-      : CATEGORY_SHORT[f.care_category] ?? "Care facility";
+    f.licenseLabel ??
+    listLicenseLabel({
+      stateCode:
+        stateSlug === "california"
+          ? "CA"
+          : stateSlug === "oregon"
+            ? "OR"
+            : stateSlug === "minnesota"
+              ? "MN"
+              : stateSlug === "missouri"
+                ? "MO"
+                : stateSlug === "colorado"
+                  ? "CO"
+                  : "",
+      care_category: f.care_category,
+      license_type: f.license_type,
+      mo_level_of_care: f.mo_level_of_care,
+      mn_dementia_care_licensed: f.mn_dementia_care_licensed,
+    });
   const isMc =
     f.careChip !== undefined
       ? Boolean(f.careChip)
@@ -483,11 +493,11 @@ export function FacilityListClient({
           {mcLarge.length > 0 && (
             <section className="mt-10">
               <SectionHead
-                title={`${stateSlug === "washington" ? "Listed homes" : "Memory care"} · 50+ beds`}
+                title={listSectionTitle(stateSlug, "large")}
                 count={mcLarge.length}
               />
               <p className="mt-1.5 text-xs text-muted">
-                Community-style facilities (purpose-built buildings, common in regional chains).
+                {listSectionDeck(stateSlug, "large")}
               </p>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {mcLarge.map((f) => (
@@ -500,17 +510,11 @@ export function FacilityListClient({
           {mcMedium.length > 0 && (
             <section className="mt-12">
               <SectionHead
-                title={`${stateSlug === "washington" ? "Listed homes" : "Memory care"} · 7–49 beds`}
+                title={listSectionTitle(stateSlug, "medium")}
                 count={mcMedium.length}
               />
               <p className="mt-1.5 text-xs text-muted">
-                {stateSlug === "colorado"
-                  ? "Smaller assisted living residences with a memory-care program."
-                  : stateSlug === "arizona"
-                    ? "Small to medium Directed Care homes authorized for memory care services."
-                    : stateSlug === "washington"
-                      ? "Small to medium assisted living and adult family homes."
-                      : "Small to medium freestanding RCFEs with a memory-care program."}
+                {listSectionDeck(stateSlug, "medium")}
               </p>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {mcMedium.map((f) => (

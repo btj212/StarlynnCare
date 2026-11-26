@@ -39,8 +39,11 @@ export function facilityMarkedNoindex(_input: {
 }
 
 /**
- * City hub / A–Z listed set. Requires an inspection, then excludes Arizona
- * homes of 10 beds or fewer with no citations. Not the sitemap rule.
+ * City hub / A–Z listed set. Arizona homes of 10 beds or fewer with no
+ * citations stay off the lede (Mesa). Small homes (6 beds or fewer) with
+ * no inspection row stay off it (Washington AFHs). A newly licensed home
+ * with no inspections yet — Vista del Sol in San Diego, 150 beds — is
+ * listed so the headline, stats, and A–Z share one rendered set.
  */
 export function facilityListedOnHub(input: {
   stateCode: string;
@@ -48,12 +51,19 @@ export function facilityListedOnHub(input: {
   deficiencyCount: number;
   inspectionCount: number;
 }): boolean {
-  if (input.inspectionCount < 1) return false;
-  return !azSmallHomeWithoutCitations(
-    input.stateCode,
-    input.beds,
-    input.deficiencyCount,
-  );
+  if (
+    azSmallHomeWithoutCitations(
+      input.stateCode,
+      input.beds,
+      input.deficiencyCount,
+    )
+  ) {
+    return false;
+  }
+  if (input.inspectionCount < 1) {
+    return input.beds != null && input.beds > 6;
+  }
+  return true;
 }
 
 /** @deprecated Use facilityListedOnHub for city counts; sitemap includes every publishable profile. */
