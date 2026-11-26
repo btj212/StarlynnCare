@@ -404,6 +404,12 @@ def main() -> None:
         action="store_true",
         help="Only inspections on homes that are currently published.",
     )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Max inspections to summarize this run.",
+    )
     args = parser.parse_args()
 
     if not ANTHROPIC_API_KEY and not args.dry_run:
@@ -506,6 +512,9 @@ def main() -> None:
 
     if args.smoke:
         rows = rows[:3]
+    elif args.limit is not None:
+        rows = rows[: args.limit]
+        print(f"Capped to {len(rows)} (--limit {args.limit})")
 
     workers = max(1, args.workers)
     processed = 0

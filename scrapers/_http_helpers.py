@@ -117,3 +117,25 @@ def polite_sleep(min_sec: float = 1.0, jitter: float = 0.25) -> None:
     """Sleep between requests to state servers (random jitter reduces thundering herd)."""
     time.sleep(min_sec + random.uniform(0, jitter))
 
+
+def source_should_fail_job(
+    attempted: int,
+    failed: int,
+    records: int,
+    *,
+    max_fail_rate: float = 0.2,
+) -> bool:
+    """Fail the scan only when the source is substantially broken.
+
+    A handful of 403s or 500s from a GitHub runner IP is not a downed
+    portal. Exit 1 when nothing was stored, or when more than max_fail_rate
+    of the attempted pages/API calls stayed failed.
+    """
+    if attempted <= 0:
+        return True
+    if failed <= 0:
+        return False
+    if records <= 0:
+        return True
+    return (failed / attempted) > max_fail_rate
+

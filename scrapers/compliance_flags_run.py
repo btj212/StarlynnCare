@@ -91,6 +91,25 @@ def load_homes(
         return list(cur.fetchall())
 
 
+def load_new_inventory_facility_ids(
+    conn: psycopg.Connection,
+    created_after: str | None,
+) -> set[str] | None:
+    """Facility ids that gained a PDF this scan. None means 'do not skip'."""
+    if not created_after:
+        return None
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT facility_id::text
+            FROM wa_pdf_inventory
+            WHERE created_at >= %s::timestamptz
+            """,
+            (created_after,),
+        )
+        return {row[0] for row in cur.fetchall()}
+
+
 def load_previous(conn: psycopg.Connection, facility_ids: list[str]) -> dict[str, dict]:
     if not facility_ids:
         return {}
@@ -289,13 +308,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(f"{state}: {len(homes)} homes as of {as_of.isoformat()}")
     previous = load_previous(conn, [home["id"] for home in homes])
+    new_inventory_ids = load_new_inventory_facility_ids(
+        conn, os.environ.get("STATE_SCAN_STARTED_AT")
+    )
     session = make_session()
 
     current: dict[str, dict] = {}
     counts = {"0": 0, "1": 0, "2": 0, "3": 0}
     failures = 0
+    skipped_unchanged = 0
 
     for home in homes:
+        if (
+            new_inventory_ids is not None
+            and home["id"] in previous
+            and home["id"] not in new_inventory_ids
+        ):
+            skipped_unchanged += 1
+            continue
         try:
             _page, links, readable, unread = read_home(
                 session,
@@ -354,6 +384,8 @@ def main(argv: list[str] | None = None) -> int:
         if facility_id in current
     }
     diff = build_diff(previous_for_diff, current)
+    if skipped_unchanged:
+        print(f"Skipped {skipped_unchanged} homes with no new documents this scan")
     print(
         "Counts:",
         ", ".join(f"tier {tier}={counts[tier]}" for tier in ("1", "2", "3", "0")),

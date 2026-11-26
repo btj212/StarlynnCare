@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — Sunday PA/UT "source URL changed" was a false lead
+
+**What went wrong:** Four Sunday `weekly-inspection-ingest.yml` runs failed on PA and UT. The guess was that DHS / CCL endpoints had moved. They had not. PA `AzureInspVioltnReprtSearchResults` still returns the inspection table for ~356/363 homes; seven GitHub-runner requests got Azure Front Door 403 (the `StarlynnCare-bot/1.0` User-Agent made that worse) and the scraper exited 1 after one retry. UT `cclapi.dlbc.utah.gov` still works; 118/119 facilities stored 566 inspections and one API call failed after one retry, which also exited 1. WA finished, but took 5.5–6 hours because AFH discovery walked 6,429 licensed homes at 1 req/s, physical-city hit Census for every WA row (no cache on the runner), compliance flags re-fetched 1,040 publishable homes, and `wa_pdf_backfill.py --rescore` re-summarized 3,335 inspections.
+
+**What worked instead:** Browser-like PA headers, three backoffs plus a second pass on blocked pages, three UT API retries. Fail the job only when nothing was stored or >20% of attempts stayed failed; otherwise warn and keep the rows. WA: 4 AFH workers at 0.4s, physical-city `--created-since-days 14`, compliance skip when this scan added no new PDF for a home that already has a flag, drop `--rescore`, summarize at most 80 new NULL-summary visits. Per-state job/step timeouts.
+
+**Source:** Runs `41316847867`, `42490606983`, `43727623295`, `45039897772`.
+
+---
+
 ## 2026-11 — CA watch marked homes reconciled before the PDF existed
 
 **What went wrong:** `com.starlynncare.ca-watch` only opened `FacilityReports` when a snapshot was pending or the bulk fingerprint changed. Homes were stored as fully reconciled while CDSS **Last Visit Date** / **All Visit Dates** were already newer than both stored inspections and `REPORTARRAY` dates, so later-posted PDFs were never fetched. `ccld_citations_ingest.py` also skipped a listed Lotus `REPORTPAGE` id whenever it was in `previous_keys`, without checking that an `inspections` row existed; `snapshot_update_for` wrote the full index inventory; the pending path logged “pending gap unchanged; index has no new report id” and never retried. `inspections_facility_date_type_agency_unkeyed` blocked two complaints on the same day. GitHub Actions TLS/timeouts on `FacilityReports` were treated as “no new reports.” 317 reports across 211 published CA homes had to be backfilled by hand.

@@ -37,9 +37,16 @@ import psycopg
 import requests
 from dotenv import load_dotenv
 
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+
+from _http_helpers import source_should_fail_job  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CCL_BASE = "https://cclapi.dlbc.utah.gov/api/public"
 REQUEST_DELAY = 0.4  # polite; avoid Cloudflare throttle
+FETCH_BACKOFF_SEC = (1, 3, 8)
 
 
 def load_env() -> None:
@@ -79,24 +86,25 @@ def status_is_retryable(status_code: int) -> bool:
 def fetch_facility_detail(ccl_id: int) -> tuple[dict | None, str]:
     """GET one facility. Outcome is ok, missing, or failed."""
     url = f"{CCL_BASE}/facilities/{ccl_id}"
-    for attempt in range(2):
+    for attempt, wait in enumerate(FETCH_BACKOFF_SEC, start=1):
         try:
             response = _SESSION.get(url, timeout=20)
         except requests.RequestException as exc:
             print(f"  API ERROR {ccl_id}: {exc}", flush=True)
-            if attempt == 0:
-                time.sleep(1)
+            if attempt < len(FETCH_BACKOFF_SEC):
+                time.sleep(wait)
                 continue
             return None, "failed"
         if response.status_code == 404:
             return None, "missing"
         if status_is_retryable(response.status_code):
             print(
-                f"  API {response.status_code} {ccl_id} (attempt {attempt + 1})",
+                f"  API {response.status_code} {ccl_id} "
+                f"(attempt {attempt}/{len(FETCH_BACKOFF_SEC)})",
                 flush=True,
             )
-            if attempt == 0:
-                time.sleep(1)
+            if attempt < len(FETCH_BACKOFF_SEC):
+                time.sleep(wait)
                 continue
             return None, "failed"
         try:
@@ -392,16 +400,24 @@ def main() -> None:
     print(
         f"\nDone. {total_insp} inspections, {total_def} deficiency records. "
         f"({no_match} skipped — bad external_id format, {no_data} not found in CCL API, "
-        f"{api_errors} API errors after one retry)",
+        f"{api_errors} API errors after retries)",
         flush=True,
     )
-    if api_errors:
+    attempted = max(len(facilities) - no_match, 0)
+    if source_should_fail_job(attempted, api_errors, total_insp):
         print(
-            f"FAIL: {api_errors} Utah facility API calls stayed failed after one retry.",
+            f"FAIL: {api_errors}/{attempted} Utah facility API calls stayed failed.",
             file=sys.stderr,
             flush=True,
         )
         sys.exit(1)
+    if api_errors:
+        print(
+            f"WARN: {api_errors}/{attempted} Utah facility API calls stayed failed. "
+            "The rest of the scrape is stored.",
+            file=sys.stderr,
+            flush=True,
+        )
 
 
 if __name__ == "__main__":
