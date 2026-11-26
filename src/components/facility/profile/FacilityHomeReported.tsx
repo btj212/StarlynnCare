@@ -67,8 +67,9 @@ function rows(r: HomeResponse): Array<{ label: string; value: string }> {
       value: `${r.overnight_staff} ${r.overnight_staff === 1 ? "staff member" : "staff"} awake for ${r.overnight_residents} ${r.overnight_residents === 1 ? "resident" : "residents"}`,
     });
   }
-  const reasons = (r.move_out_reasons ?? [])
-    .flatMap((v) => MOVE_OUT_REASONS.filter((m) => m.value === v).map((m) => m.label as string));
+  const reasons = (r.move_out_reasons ?? []).flatMap((v) =>
+    MOVE_OUT_REASONS.filter((m) => m.value === v).map((m) => m.label as string),
+  );
   if (reasons.length > 0 || r.move_out_note) {
     const list = reasons.length > 0 ? `If residents ${reasons.join("; or ")}.` : "";
     out.push({
@@ -90,7 +91,11 @@ export async function FacilityHomeReported({ facilityId }: { facilityId: string 
   const items = rows(response);
   if (items.length === 0) return null;
   const how =
-    response.channel === "email" ? "by email" : response.channel === "phone" ? "by phone" : "through our online form";
+    response.channel === "email"
+      ? "by email"
+      : response.channel === "phone"
+        ? "by phone"
+        : "through our online form";
 
   return (
     <section id="home-reported" className="border-y border-clearing-rule bg-clearing-tint">

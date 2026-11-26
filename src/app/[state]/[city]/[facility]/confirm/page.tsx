@@ -9,26 +9,37 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { stateFromSlug } from "@/lib/states";
+import {
+  shownListingFacts,
+  verifyOutreachToken,
+  type ListingFacility,
+} from "@/lib/facility/homeOutreach";
 
 export const revalidate = 3600;
 
 type PageProps = {
   params: Promise<{ state: string; city: string; facility: string }>;
+  searchParams: Promise<{ t?: string }>;
 };
 
 async function loadHome(stateSlug: string, citySlug: string, facilitySlug: string) {
   const state = stateFromSlug(stateSlug);
   const supabase = tryPublicSupabaseClient();
   if (!state || !supabase) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("facilities")
-    .select("id, name, city, slug, city_slug, state_code")
+    .select("*")
     .eq("state_code", state.code)
     .eq("city_slug", citySlug)
     .eq("slug", facilitySlug)
     .eq("publishable", true)
     .maybeSingle();
-  return data ? { home: data as { id: string; name: string; city: string | null; slug: string; city_slug: string; state_code: string }, state } : null;
+  if (error) {
+    console.error("[confirm] loadHome failed:", error.message);
+    return null;
+  }
+  if (!data) return null;
+  return { home: data as ListingFacility & { id: string; name: string; slug: string; city_slug: string; state_code: string }, state };
 }
 
 // A form page for operators. It has nothing for a search engine to index.
@@ -43,13 +54,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function ConfirmHomePage({ params }: PageProps) {
+export default async function ConfirmHomePage({ params, searchParams }: PageProps) {
   const { state: stateSlug, city: citySlug, facility: facilitySlug } = await params;
+  const { t } = await searchParams;
   const found = await loadHome(stateSlug, citySlug, facilitySlug);
   if (!found) notFound();
   const { home, state } = found;
   const name = formatFacilityName(home.name);
   const profileHref = `/${state.slug}/${home.city_slug}/${home.slug}`;
+  const token = typeof t === "string" && t.trim() ? t.trim() : null;
+  const tokenOk = verifyOutreachToken(token, home.id);
 
   return (
     <>
@@ -71,26 +85,38 @@ export default async function ConfirmHomePage({ params }: PageProps) {
               className="mb-4 font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink"
               style={{ fontSize: "clamp(30px, 4vw, 46px)", lineHeight: 1.08 }}
             >
-              Tell families what the state record <em className="text-rust not-italic">cannot.</em>
+              Confirm this listing is <em className="text-rust not-italic">accurate.</em>
             </h1>
             <p className="m-0 max-w-[62ch] text-[17px] leading-relaxed text-ink-3">
               This is the listing for{" "}
               <Link href={profileHref} className="font-semibold text-teal underline underline-offset-4">
                 {name}
               </Link>
-              {home.city ? ` in ${home.city}` : ""}. Answer what you like, in about three minutes. We show your answers on
-              the profile as the home&rsquo;s own statements, marked &ldquo;Home-confirmed&rdquo; with the date.
+              {home.city ? ` in ${home.city}` : ""}. Check what we show today, then answer what you like. We show
+              published answers on the profile as the home&rsquo;s own statements, marked &ldquo;Home-confirmed&rdquo;
+              with the date.
             </p>
+            {token && tokenOk ? (
+              <p className="mb-0 mt-4 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-teal">
+                Opened from a signed outreach link for this home.
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="mx-auto max-w-[760px] px-4 py-12 sm:px-6">
           <ul className="mb-8 list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed text-ink-3">
             <li>It is free. Homes cannot pay for a listing or a better placement.</li>
             <li>We check each answer came from the home before it appears.</li>
+            <li>A secured memory-care program is never published automatically.</li>
             <li>We do not publish openings, and we do not publish your name or email.</li>
             <li>Inspection and citation records stay as the state published them.</li>
           </ul>
-          <HomeResponseForm facilityId={home.id} facilityName={name} />
+          <HomeResponseForm
+            facilityId={home.id}
+            facilityName={name}
+            shownFacts={shownListingFacts(home)}
+            outreachToken={tokenOk ? token : null}
+          />
         </div>
       </main>
       <SiteFooter />

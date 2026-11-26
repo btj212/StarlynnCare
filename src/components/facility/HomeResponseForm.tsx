@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Honeypot } from "@/components/security/Honeypot";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD } from "@/lib/security/honeypot";
 import {
@@ -10,6 +10,15 @@ import {
   PHOTO_PERMISSION_TEXT,
   WANDERING_OPTIONS,
 } from "@/lib/facility/homeResponse";
+import {
+  LISTING_FACT_KEYS,
+  type ListingFactKey,
+  type ShownListingFact,
+} from "@/lib/facility/homeOutreach";
+import {
+  ListingFactsSection,
+  type ListingFieldState,
+} from "@/components/facility/ListingFactsSection";
 
 const input =
   "w-full rounded-[10px] border border-clearing-rule-2 bg-clearing-card px-3 py-2.5 text-[15px] text-ink focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/20";
@@ -46,8 +55,31 @@ function Radio({
   );
 }
 
-export function HomeResponseForm({ facilityId, facilityName }: { facilityId: string; facilityName: string }) {
+function emptyListingFields(): Record<ListingFactKey, ListingFieldState> {
+  return Object.fromEntries(
+    LISTING_FACT_KEYS.map((key) => [key, { verdict: "", correction: "" }]),
+  ) as Record<ListingFactKey, ListingFieldState>;
+}
+
+type Props = {
+  facilityId: string;
+  facilityName: string;
+  shownFacts: ShownListingFact[];
+  outreachToken: string | null;
+};
+
+export function HomeResponseForm({
+  facilityId,
+  facilityName,
+  shownFacts,
+  outreachToken,
+}: Props) {
+  const [listingFields, setListingFields] = useState(emptyListingFields);
+  const [allCorrect, setAllCorrect] = useState(false);
   const [memoryCare, setMemoryCare] = useState("");
+  const [mcSecured, setMcSecured] = useState("");
+  const [mcProgramName, setMcProgramName] = useState("");
+  const [mcProgramUrl, setMcProgramUrl] = useState("");
   const [wandering, setWandering] = useState("");
   const [low, setLow] = useState("");
   const [high, setHigh] = useState("");
@@ -66,6 +98,44 @@ export function HomeResponseForm({ facilityId, facilityName }: { facilityId: str
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const listingComplete = useMemo(
+    () =>
+      shownFacts.every((fact) => {
+        const row = listingFields[fact.key];
+        if (row.verdict === "correct") return true;
+        if (row.verdict === "fix") return row.correction.trim().length >= 2;
+        return false;
+      }),
+    [listingFields, shownFacts],
+  );
+
+  function markAllCorrect() {
+    setAllCorrect(true);
+    setListingFields(
+      Object.fromEntries(
+        LISTING_FACT_KEYS.map((key) => [key, { verdict: "correct" as const, correction: "" }]),
+      ) as Record<ListingFactKey, ListingFieldState>,
+    );
+  }
+
+  function setVerdict(key: ListingFactKey, verdict: "correct" | "fix") {
+    setAllCorrect(false);
+    setListingFields((prev) => ({
+      ...prev,
+      [key]: {
+        verdict,
+        correction: verdict === "correct" ? "" : prev[key].correction,
+      },
+    }));
+  }
+
+  function setCorrection(key: ListingFactKey, correction: string) {
+    setListingFields((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], correction },
+    }));
+  }
+
   function toggleReason(value: string) {
     setReasons((prev) => (prev.includes(value) ? prev.filter((r) => r !== value) : [...prev, value]));
   }
@@ -81,9 +151,25 @@ export function HomeResponseForm({ facilityId, facilityName }: { facilityId: str
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           facilityId,
+          outreachToken,
+          listingChecks: {
+            allCorrectShortcut: allCorrect,
+            fields: Object.fromEntries(
+              LISTING_FACT_KEYS.map((key) => [
+                key,
+                {
+                  verdict: listingFields[key].verdict,
+                  correction: listingFields[key].correction,
+                },
+              ]),
+            ),
+          },
           respondentName: name,
           respondentEmail: email,
           memoryCare,
+          mcSecured,
+          mcProgramName,
+          mcProgramUrl,
           wandering,
           privatePayLow: low,
           privatePayHigh: high,
@@ -119,7 +205,8 @@ export function HomeResponseForm({ facilityId, facilityName }: { facilityId: str
         <p className="m-0 font-[family-name:var(--font-display)] text-[24px] text-ink">Thank you.</p>
         <p className="mb-0 mt-2 text-[15px] leading-relaxed text-ink-2">
           We received the answers for {facilityName}. A person checks that they came from the home before they
-          appear on the profile, usually within two business days. We will write to {email} if we have a question.
+          appear on the profile, usually within two business days. A secured memory-care program is not published
+          automatically. We will write to {email} if we have a question.
         </p>
       </div>
     );
@@ -129,10 +216,49 @@ export function HomeResponseForm({ facilityId, facilityName }: { facilityId: str
     <form onSubmit={submit} className="space-y-5">
       <Honeypot />
 
+      <ListingFactsSection
+        facts={shownFacts}
+        fields={listingFields}
+        allCorrect={allCorrect}
+        onAllCorrect={markAllCorrect}
+        onVerdict={setVerdict}
+        onCorrection={setCorrection}
+      />
+
       <fieldset className={card}>
         <legend className={legend}>Do you provide memory or dementia care at this address?</legend>
         <Radio name="mc" value="yes" label="Yes" checked={memoryCare === "yes"} onChange={setMemoryCare} />
         <Radio name="mc" value="no" label="No" checked={memoryCare === "no"} onChange={setMemoryCare} />
+        {memoryCare === "yes" ? (
+          <div className="mt-4 space-y-3 border-t border-paper-rule pt-4">
+            <p className={hint}>
+              These next answers are about a named or secured program at this exact address. They stay in review
+              until a person checks them. They do not change the listing on their own.
+            </p>
+            <p className="mb-2 font-[family-name:var(--font-sans)] text-[15px] font-semibold text-ink">
+              Is there a secured or locked memory-care area at this address?
+            </p>
+            <Radio name="secured" value="yes" label="Yes" checked={mcSecured === "yes"} onChange={setMcSecured} />
+            <Radio name="secured" value="no" label="No" checked={mcSecured === "no"} onChange={setMcSecured} />
+            <input
+              aria-label="Memory care program name"
+              placeholder="Program or neighborhood name, if you have one"
+              value={mcProgramName}
+              onChange={(e) => setMcProgramName(e.target.value)}
+              maxLength={120}
+              className={`${input} mt-2`}
+            />
+            <input
+              type="url"
+              aria-label="Link to the page on your site that describes this program"
+              placeholder="https:// — page on your site for this address"
+              value={mcProgramUrl}
+              onChange={(e) => setMcProgramUrl(e.target.value)}
+              maxLength={500}
+              className={input}
+            />
+          </div>
+        ) : null}
       </fieldset>
 
       <fieldset className={card}>
@@ -220,7 +346,7 @@ export function HomeResponseForm({ facilityId, facilityName }: { facilityId: str
       )}
       <button
         type="submit"
-        disabled={busy || !email.trim() || !authorized}
+        disabled={busy || !email.trim() || !authorized || !listingComplete}
         className="rounded-full bg-teal px-6 py-3 font-[family-name:var(--font-sans)] text-[15px] font-semibold text-paper transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {busy ? "Sending…" : "Send our answers"}
