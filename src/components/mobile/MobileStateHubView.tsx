@@ -13,6 +13,8 @@ import {
   SyncedHomeSampleCardMobile,
 } from "@/components/home/SampleFacilityRotation";
 import { getArticleThumbnail } from "@/lib/content/articleThumbnails";
+import { regulatorFor } from "@/lib/states/regulators";
+import { HOW_TO_CHECK } from "@/lib/content/howToCheckArticles";
 
 type Props = {
   data: StateHubData;
@@ -26,6 +28,17 @@ export function MobileStateHubView({ data, config }: Props) {
   const { counties, topCities, stats, sampleReviews } = data;
   const reviewsToShow = sampleReviews.slice(0, 3);
   const cityFirst = counties.length === 0 && config.comingCounties.length === 0;
+  const regulator = regulatorFor(stateCode);
+  const howTo =
+    stateCode === "AZ" ||
+    stateCode === "CA" ||
+    stateCode === "IL" ||
+    stateCode === "MN" ||
+    stateCode === "OR" ||
+    stateCode === "PA" ||
+    stateCode === "WA"
+      ? HOW_TO_CHECK[stateCode]
+      : undefined;
 
   return (
     <>
@@ -96,6 +109,27 @@ export function MobileStateHubView({ data, config }: Props) {
           <span aria-hidden>→</span>
         </Link>
       </div>
+      {regulator && (
+          <div className="px-[18px] mt-3 space-y-2">
+            <a
+              href={howTo?.regulatorUrl ?? regulator.portalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between w-full border border-clearing-rule-2 bg-clearing-card px-5 py-4 font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.1em] text-ink no-underline"
+            >
+              <span>Official {regulator.short} lookup</span>
+              <span aria-hidden>↗</span>
+            </a>
+            {howTo ? (
+              <Link
+                href={howTo.path}
+                className="block font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4"
+              >
+                How to check a {stateName} inspection record →
+              </Link>
+            ) : null}
+          </div>
+      )}
 
       {showZipSearch && (
         <section className="m-section">

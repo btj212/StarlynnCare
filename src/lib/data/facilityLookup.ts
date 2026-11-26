@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { regulatorLicensePageFor } from "@/lib/seo/schema";
 import { seriousCitationCutoff } from "@/lib/data/stateMemoryCareStats";
+import { loadLatestInspectionDates } from "@/lib/data/inspectionDates";
 
 /**
  * One-home lookup for the facility API.
@@ -59,10 +60,11 @@ type FacilityHit = {
   license_number: string | null;
   last_inspection_date: string | null;
   state_code: string;
+  content?: { marketing_name?: string | null; name_aliases?: string[] | null } | null;
 };
 
 const FACILITY_COLUMNS =
-  "id, name, slug, city_slug, city, beds, license_number, last_inspection_date, state_code";
+  "id, name, slug, city_slug, city, beds, license_number, last_inspection_date, state_code, content";
 
 /** Three to eighty characters, with SQL wildcards treated as spaces. */
 export function normalizeLookupQuery(raw: string): string | null {
@@ -113,9 +115,19 @@ async function searchHomes(
     return null;
   }
 
+  // Deploy-safe DBA hook. Ignore filter errors until marketing names exist.
+  const byMarketing = await base().filter("content->>marketing_name", "ilike", pattern);
+  if (byMarketing.error) {
+    console.error("[facility-lookup] marketing-name search skipped", byMarketing.error.message);
+  }
+
   const seen = new Set<string>();
   const matches: FacilityHit[] = [];
-  for (const row of [...(byName.data ?? []), ...(byLicense.data ?? [])] as FacilityHit[]) {
+  for (const row of [
+    ...(byName.data ?? []),
+    ...(byLicense.data ?? []),
+    ...(byMarketing.data ?? []),
+  ] as FacilityHit[]) {
     if (!row?.id || seen.has(row.id)) continue;
     seen.add(row.id);
     matches.push(row);
@@ -240,6 +252,10 @@ export async function lookupFacilities(
   const homes = await searchHomes(supabase, input.stateCode, input.query);
   if (!homes) return { ok: false };
 
+  const lastInspByFac = await loadLatestInspectionDates(
+    supabase,
+    homes.map((home) => home.id),
+  );
   const cutoff = seriousCitationCutoff();
   const matches: FacilityLookupMatch[] = [];
   for (const home of homes) {
@@ -250,15 +266,13 @@ export async function lookupFacilities(
 
     const unmeasured = counts.findings > 0 && counts.uncoded * 2 >= counts.findings;
     matches.push({
-      name: home.name,
+      name: home.content?.marketing_name?.trim() || home.name,
       url: canonicalFor(`/${input.stateSlug}/${home.city_slug}/${home.slug}`),
       license_number: home.license_number,
       regulator_url: regulatorLicensePageFor(input.stateCode, home.license_number),
       city: home.city,
       beds: home.beds != null ? Number(home.beds) : null,
-      last_inspection_date: home.last_inspection_date
-        ? home.last_inspection_date.slice(0, 10)
-        : null,
+      last_inspection_date: lastInspByFac.get(home.id) ?? null,
       findings_24_months: counts.findings,
       serious_findings: unmeasured ? null : counts.serious,
       serious_note: unmeasured ? UNMEASURED_NOTE : null,

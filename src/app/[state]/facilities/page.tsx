@@ -11,6 +11,8 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
 import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
+import { contentAliasFields } from "@/lib/facility/aliases";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 export const revalidate = 3600;
 
@@ -64,7 +66,7 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
     const { data: rawFacilities, error } = await supabase
       .from("facilities")
       .select(
-        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier",
+        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content",
       )
       .eq("state_code", state.code)
       .eq("publishable", true)
@@ -89,6 +91,7 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
         memory_care_disclosure_filed: boolean;
         tx_alzheimer_certified: boolean | null;
         capacity_tier: "small" | "medium" | "large" | "unknown";
+        content: unknown;
       }>;
 
       if (raw.length > 0) {
@@ -105,6 +108,7 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
             .from("inspections")
             .select("id, facility_id")
             .in("facility_id", chunk)
+            .lte("inspection_date", todayIsoDate())
             .limit(5000);
           if (chunkErr) {
             console.error("[facilities] inspections chunk failed:", chunkErr.message);
@@ -167,6 +171,7 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
           inspections: inspCountByFac.get(f.id) ?? 0,
           serious_citations: seriousCitByFac.get(f.id) ?? 0,
           total_citations: totalCitByFac.get(f.id) ?? 0,
+          ...contentAliasFields(f.content),
         }));
       }
     }

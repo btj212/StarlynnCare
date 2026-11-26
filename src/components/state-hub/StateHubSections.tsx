@@ -10,6 +10,7 @@ import { StateHubEditorial } from "./StateHubEditorial";
 import { StateHubReviews } from "./StateHubReviews";
 import { StateHubFaq } from "./StateHubFaq";
 import { StateHubCta } from "./StateHubCta";
+import { StateHubRegulatorLookup } from "./StateHubRegulatorLookup";
 
 type Props = {
   data: StateHubData;
@@ -57,6 +58,12 @@ export function StateHubSections({ data, config }: Props) {
         title={<>The {stateName} facility data you need, <em>curated + analyzed for you.</em></>}
         stats={statItems}
         footnotes={statFootnotes}
+      />
+
+      <StateHubRegulatorLookup
+        stateCode={stateCode}
+        stateSlug={stateSlug}
+        stateName={stateName}
       />
 
       <StateHubMethodology

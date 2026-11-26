@@ -36,12 +36,8 @@ const STATE_DESCRIPTIONS: Record<string, string> = {
   CO: "CDPHE assisted living · CMS nursing homes · no state memory-care roster",
 };
 
-// TX is temporarily hidden from the grid — only 1 facility live (pilot).
-// Remove this filter once the full HHSC dataset is ingested.
-const HIDDEN_STATE_CODES = ["TX"];
-
 export function StatesWeCoverGrid({ states }: Props) {
-  const visibleStates = states.filter((s) => !HIDDEN_STATE_CODES.includes(s.stateCode));
+  const visibleStates = states.filter((s) => s.facilityCount > 0);
   return (
     <ProximityGroup
       className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"

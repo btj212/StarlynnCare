@@ -1,6 +1,8 @@
 import { countSeriousDeficiencies } from "@/lib/data/seriousDeficiencyCount";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { COVERED_STATES, stateFromCode } from "@/lib/states";
+import { AZ_SMALL_BED_LIMIT, facilityListedInSitemap } from "@/lib/seo/indexability";
+import { loadLatestInspectionDates, todayIsoDate } from "@/lib/data/inspectionDates";
 
 export type NationalStateSummary = {
   stateSlug: string;
@@ -62,10 +64,11 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return fallback;
 
-  // Global counts — serious deficiencies via RPC (join + 6-month window in Postgres).
+  // Facilities = publishable (the indexed set). Inspections = every parsed
+  // report we hold, including unpublished homes — the card says "parsed and dated".
   const [facRes, inspRes, totalSevereCitations, refreshRes] = await Promise.all([
     supabase.from("facilities").select("*", { count: "exact", head: true }).eq("publishable", true),
-    supabase.from("inspections").select("*", { count: "exact", head: true }),
+    supabase.from("inspections").select("*", { count: "exact", head: true }).lte("inspection_date", todayIsoDate()),
     countSeriousDeficiencies(supabase),
     supabase.from("facilities").select("updated_at").eq("publishable", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
@@ -75,10 +78,10 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
   const lastUpdated = refreshRes.data?.updated_at as string | null;
   const lastRefreshed = lastUpdated ? new Date(lastUpdated).toISOString().split("T")[0] : null;
 
-  // Per-state counts via HEAD requests (bypass 1000-row PostgREST cap),
-  // plus paginated city-slug query covering up to 5000 rows.
+  // Per-state counts via HEAD requests (bypass 1000-row PostgREST cap).
+  // City rows are fully paginated — a 5,000-row cap would drop ~571 homes.
   const COVERED_STATE_CODES = COVERED_STATES.map((s) => s.code);
-  const [stateCountResults, citySlugResult] = await Promise.all([
+  const [stateCountResults, cityRows] = await Promise.all([
     Promise.all(
       COVERED_STATE_CODES.map((code) =>
         supabase
@@ -89,11 +92,7 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
           .then((r) => ({ code, count: r.count ?? 0 }))
       )
     ),
-    supabase
-      .from("facilities")
-      .select("state_code, city_slug")
-      .eq("publishable", true)
-      .range(0, 4999),
+    loadPublishableCityRows(supabase),
   ]);
 
   // Build per-state stats from exact HEAD counts
@@ -103,57 +102,56 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
 
   // Build city sets and leaderboard from paginated rows
   const stateCitySets = new Map<string, Set<string>>();
-  // city_slug -> { stateCode, count }
-  const cityBuckets = new Map<string, { name: string; count: number; stateCode: string }>();
+  const cityBuckets = new Map<string, { slug: string; name: string; count: number; stateCode: string }>();
+  const azSmallIds = cityRows
+    .filter(
+      (row) =>
+        row.state_code === "AZ" &&
+        row.beds != null &&
+        row.beds <= AZ_SMALL_BED_LIMIT,
+    )
+    .map((row) => row.id);
+  const azSmallCited = await azSmallCitationIds(supabase, azSmallIds);
+  const lastInspByFac = await loadLatestInspectionDates(
+    supabase,
+    cityRows.map((row) => row.id),
+  );
 
-  for (const row of citySlugResult.data ?? []) {
-    const code = (row as { state_code: string; city_slug: string | null }).state_code;
-    const citySlug = (row as { state_code: string; city_slug: string | null }).city_slug;
-    if (!code) continue;
+  for (const row of cityRows) {
+    const code = row.state_code;
+    const citySlug = row.city_slug;
+    if (!code || !citySlug) continue;
 
-    if (citySlug) {
-      if (!stateCitySets.has(code)) stateCitySets.set(code, new Set());
-      stateCitySets.get(code)!.add(citySlug);
+    if (!stateCitySets.has(code)) stateCitySets.set(code, new Set());
+    stateCitySets.get(code)!.add(citySlug);
 
-      // Track cities globally — first state encountered "owns" the city
-      const existing = cityBuckets.get(citySlug);
-      if (existing) {
-        existing.count++;
-      } else {
-        cityBuckets.set(citySlug, { name: citySlug, count: 1, stateCode: code });
-      }
+    // Same listed set as the city page (homesForCityIndex / sitemap).
+    const listed = facilityListedInSitemap({
+      stateCode: code,
+      beds: row.beds,
+      deficiencyCount: azSmallCited.has(row.id) ? 1 : 0,
+      inspectionCount: lastInspByFac.has(row.id) ? 1 : 0,
+    });
+    if (!listed) continue;
+
+    const cityKey = `${code}:${citySlug}`;
+    const existing = cityBuckets.get(cityKey);
+    if (existing) {
+      existing.count++;
+    } else {
+      cityBuckets.set(cityKey, {
+        slug: citySlug,
+        name: row.city?.trim() || citySlug,
+        count: 1,
+        stateCode: code,
+      });
     }
   }
 
-  // Resolve city names from a separate query (only top candidates to keep it fast)
-  const topCitySlugs = Array.from(cityBuckets.entries())
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 50)
-    .map(([slug]) => slug);
-
-  if (topCitySlugs.length > 0) {
-    const { data: nameRows } = await supabase
-      .from("facilities")
-      .select("city_slug, city, state_code")
-      .in("city_slug", topCitySlugs)
-      .eq("publishable", true);
-
-    for (const r of nameRows ?? []) {
-      const slug = (r as { city_slug: string; city: string | null; state_code: string }).city_slug;
-      const cityName = (r as { city_slug: string; city: string | null; state_code: string }).city;
-      if (slug && cityName) {
-        const bucket = cityBuckets.get(slug);
-        if (bucket && bucket.name === slug) {
-          bucket.name = cityName;
-        }
-      }
-    }
-  }
-
-  const topCities: NationalCityRow[] = Array.from(cityBuckets.entries())
-    .sort((a, b) => b[1].count - a[1].count)
+  const topCities: NationalCityRow[] = Array.from(cityBuckets.values())
+    .sort((a, b) => b.count - a.count)
     .slice(0, 24)
-    .map(([slug, { name, count, stateCode }]) => {
+    .map(({ slug, name, count, stateCode }) => {
       const stateInfo = stateFromCode(stateCode);
       return {
         name,
@@ -196,4 +194,61 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
   }
 
   return { totalFacilities, totalInspections, totalSevereCitations, lastRefreshed, states, topCities, sampleReviews };
+}
+
+type CityRow = {
+  id: string;
+  state_code: string;
+  city_slug: string | null;
+  city: string | null;
+  beds: number | null;
+};
+
+async function loadPublishableCityRows(
+  supabase: NonNullable<ReturnType<typeof tryPublicSupabaseClient>>,
+): Promise<CityRow[]> {
+  const pageSize = 1000;
+  const rows: CityRow[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("facilities")
+      .select("id, state_code, city_slug, city, beds")
+      .eq("publishable", true)
+      .range(from, from + pageSize - 1);
+    if (error) {
+      console.error("[nationalHome] city page failed:", error.message);
+      break;
+    }
+    const page = (data ?? []) as CityRow[];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return rows;
+}
+
+/** AZ small homes with at least one cited inspection — needed for sitemap-listed city counts. */
+async function azSmallCitationIds(
+  supabase: NonNullable<ReturnType<typeof tryPublicSupabaseClient>>,
+  facilityIds: string[],
+): Promise<Set<string>> {
+  const cited = new Set<string>();
+  const chunkSize = 150;
+  for (let i = 0; i < facilityIds.length; i += chunkSize) {
+    const chunk = facilityIds.slice(i, i + chunkSize);
+    const { data, error } = await supabase
+      .from("inspections")
+      .select("facility_id, total_deficiency_count")
+      .in("facility_id", chunk)
+      .gt("total_deficiency_count", 0)
+      .limit(5000);
+    if (error) {
+      console.error("[nationalHome] AZ citation probe failed:", error.message);
+      continue;
+    }
+    for (const row of data ?? []) {
+      const id = (row as { facility_id: string }).facility_id;
+      if (id) cited.add(id);
+    }
+  }
+  return cited;
 }

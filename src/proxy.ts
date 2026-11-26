@@ -66,37 +66,41 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-export default clerkMiddleware(
-  async (auth: ClerkMiddlewareAuth, req) => {
-    const { pathname } = req.nextUrl;
+export default process.env.CLERK_SECRET_KEY
+  ? clerkMiddleware(
+      async (auth: ClerkMiddlewareAuth, req) => {
+        const { pathname } = req.nextUrl;
 
-    // Site-wide password gate — runs before Clerk auth.
-    // Compares an HMAC of the password (constant-time) instead of the literal
-    // value to prevent leaked cookies from exposing the preview password
-    // (audit H8).
-    const sitePassword = process.env.SITE_UNLOCK_PASSWORD;
-    if (sitePassword && !isPublicPath(pathname)) {
-      const cookie = req.cookies.get(UNLOCK_COOKIE)?.value;
-      if (!(await unlockCookieMatches(cookie, sitePassword))) {
-        const url = req.nextUrl.clone();
-        url.pathname = "/unlock";
-        url.searchParams.set("from", pathname);
-        return NextResponse.redirect(url);
-      }
-    }
+        // Site-wide password gate — runs before Clerk auth.
+        // Compares an HMAC of the password (constant-time) instead of the literal
+        // value to prevent leaked cookies from exposing the preview password
+        // (audit H8).
+        const sitePassword = process.env.SITE_UNLOCK_PASSWORD;
+        if (sitePassword && !isPublicPath(pathname)) {
+          const cookie = req.cookies.get(UNLOCK_COOKIE)?.value;
+          if (!(await unlockCookieMatches(cookie, sitePassword))) {
+            const url = req.nextUrl.clone();
+            url.pathname = "/unlock";
+            url.searchParams.set("from", pathname);
+            return NextResponse.redirect(url);
+          }
+        }
 
-    // Clerk: protect admin UI + admin APIs; then ADMIN_EMAILS allowlist
-    if (isAdminRoute(req) || isAdminApiRoute(req)) {
-      await auth.protect();
-      const denied = await redirectIfNotAllowlisted(auth, req);
-      if (denied) return denied;
-    }
-  },
-  {
-    signInUrl: "/sign-in",
-    signUpUrl: "/sign-in",
-  },
-);
+        // Clerk: protect admin UI + admin APIs; then ADMIN_EMAILS allowlist
+        if (isAdminRoute(req) || isAdminApiRoute(req)) {
+          await auth.protect();
+          const denied = await redirectIfNotAllowlisted(auth, req);
+          if (denied) return denied;
+        }
+      },
+      {
+        signInUrl: "/sign-in",
+        signUpUrl: "/sign-in",
+      },
+    )
+  : function proxy() {
+      return NextResponse.next();
+    };
 
 export const config = {
   matcher: [

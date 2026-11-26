@@ -9,27 +9,19 @@ import {
 } from "@/components/home/SampleFacilityRotation";
 import { MobileHomeFaq } from "@/components/mobile/MobileHomeFaq";
 import { MobileFooter } from "@/components/mobile/MobileFooter";
-import { CA_FAQS } from "@/lib/content/stateFaqs";
+import { buildNationalFaqs } from "@/lib/content/stateFaqs";
+import { classifyCoverage, heroStateLine } from "@/lib/coverage";
 
 type Props = {
   data: NationalHomeData;
 };
 
-const STATE_REGULATORS: Record<string, string> = {
-  CA: "CDSS",
-  OR: "Oregon DHS",
-  WA: "DSHS",
-  MN: "MDH",
-  TX: "HHSC",
-};
-
-const MIN_LIVE_THRESHOLD = 100;
-
 export function MobileNationalHomeView({ data }: Props) {
   const { totalFacilities, totalInspections, totalSevereCitations, states, topCities, sampleReviews, lastRefreshed } = data;
-  const liveStates = states.filter((s) => s.facilityCount >= MIN_LIVE_THRESHOLD);
-  const pilotStates = states.filter((s) => s.facilityCount > 0 && s.facilityCount < MIN_LIVE_THRESHOLD);
-  const indexedStateCount = liveStates.length + pilotStates.length;
+  const coverage = classifyCoverage(states);
+  const liveStates = coverage.live;
+  const indexedStateCount = coverage.indexedStateCount;
+  const nationalFaqs = buildNationalFaqs(coverage);
   const reviewsToShow = sampleReviews.slice(0, 3);
 
   const statItems = [
@@ -100,8 +92,7 @@ export function MobileNationalHomeView({ data }: Props) {
         </h2>
       </section>
       <div className="m-chips">
-        {/* TX hidden until full HHSC dataset is ingested — remove filter to restore */}
-        {states.filter((s) => s.stateCode !== "TX").map((s) => (
+        {states.filter((s) => s.facilityCount > 0).map((s) => (
           <Link key={s.stateCode} href={`/${s.stateSlug}`} className="m-chip">
             <span>{s.stateName}</span>
             <span className="n">{s.facilityCount > 0 ? s.facilityCount : "—"}</span>
@@ -208,18 +199,15 @@ export function MobileNationalHomeView({ data }: Props) {
           What families <em>ask first.</em>
         </h2>
       </section>
-      <MobileHomeFaq faqs={CA_FAQS} />
+      <MobileHomeFaq faqs={nationalFaqs} />
 
       <div className="px-[18px] py-4 font-[family-name:var(--font-mono)] text-[11px] text-ink-3 tracking-[0.06em]">
         <span className="inline-flex items-center gap-1.5 text-grade-a">
           <span className="live-dot" aria-hidden />
           {totalFacilities > 0 ? `${totalFacilities.toLocaleString()} facilities live` : `Live across ${liveStates.length} states`}
         </span>
-        {liveStates.length > 0 && (
-          <span className="text-ink-4"> · {liveStates.map((s) => s.stateCode).join(" · ")}</span>
-        )}
-        {pilotStates.length > 0 && (
-          <span className="text-ink-4 text-[9px]"> · Pilot: {pilotStates.map((s) => `${s.stateCode} (${s.facilityCount})`).join(" · ")}</span>
+        {coverage.indexedStateCount > 0 && (
+          <span className="text-ink-4"> · {heroStateLine(coverage)}</span>
         )}
       </div>
 

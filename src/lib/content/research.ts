@@ -35,7 +35,7 @@ export const RESEARCH_INDEX: ResearchEntry[] = [
     kind: "flagship-report",
     title:
       "1 in 8 California senior care facilities has repeat regulatory citations",
-    dek: "Long-form report on 484 California RCFEs, including the chain operator scorecard, repeat-citation patterns, and the post-COVID severity trend.",
+    dek: "Long-form report on a May 2026 study of 484 California RCFEs, including the chain operator scorecard, repeat-citation patterns, and the post-COVID severity trend. The live directory is larger; findings were not rerun.",
     scope: "California",
     bylineDate: "May 2026",
     headlineFinding: "63 facilities cited for the same rule 3+ times",
@@ -44,7 +44,7 @@ export const RESEARCH_INDEX: ResearchEntry[] = [
     href: "/research/california-cost-vs-quality",
     kind: "analysis",
     title: "In California memory care, price is no guarantee of quality",
-    dek: "Pearson r = 0.27 between county-median monthly cost and citation severity across 484 California memory care facilities — essentially flat. The most expensive county is not the worst-cited county.",
+    dek: "Pearson r = 0.27 between county-median monthly cost and citation severity in a May 2026 study of 484 California memory care facilities — essentially flat. The most expensive county is not the worst-cited county.",
     scope: "California",
     bylineDate: "May 2026",
     headlineFinding: "r = 0.27 price–severity correlation",
@@ -54,7 +54,7 @@ export const RESEARCH_INDEX: ResearchEntry[] = [
     kind: "analysis",
     title:
       "What inspectors actually cite at California memory care facilities",
-    dek: "Of 7,748 California memory care deficiencies on record, only 6% fall under the dementia-specific statutes. The dominant harm category in inspector narratives is staffing inadequacy.",
+    dek: "Of every CDSS deficiency on file for publishable California memory care homes, only a small share falls under the dementia-specific statutes. Home, citation, and §87705/§87706 counts are live from the database.",
     scope: "California",
     bylineDate: "May 2026",
     headlineFinding: "1,069 staffing-inadequacy mentions",
@@ -64,7 +64,7 @@ export const RESEARCH_INDEX: ResearchEntry[] = [
     kind: "analysis",
     title:
       "High-income California ZIPs do not have better memory care records",
-    dek: "ZIP-level household income explains almost none of the variation in CA memory care deficiency rates (r = 0.23). Several of the highest-income ZIPs rank among the worst-cited.",
+    dek: "In a May 2026 study of 484 California homes, ZIP-level household income explained almost none of the variation in deficiency rates (r = 0.23). Several of the highest-income ZIPs ranked among the worst-cited.",
     scope: "California",
     bylineDate: "May 2026",
     headlineFinding: "r = 0.23 income–deficiency correlation",

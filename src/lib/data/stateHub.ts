@@ -3,6 +3,7 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
 import type { CareCategory } from "@/lib/types";
 import { stateFromCode } from "@/lib/states";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 /** §02 rotates through this many publishable facilities (hourly reshuffle). */
 export const SAMPLE_CARD_ROTATION_COUNT = 10;
@@ -301,6 +302,7 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
           .from("inspections")
           .select("*", { count: "exact", head: true })
           .in("facility_id", ids)
+          .lte("inspection_date", todayIsoDate())
           .then((r) => r.count ?? 0)
       )
     );
@@ -318,6 +320,7 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
           .select("id")
           .in("facility_id", ids)
           .gte("inspection_date", cutoff)
+          .lte("inspection_date", todayIsoDate())
           .then((r) => (r.data ?? []).map((row: { id: string }) => row.id))
       )
     );

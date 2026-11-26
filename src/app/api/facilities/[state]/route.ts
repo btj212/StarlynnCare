@@ -3,6 +3,10 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { stateFromSlug, COVERED_STATES } from "@/lib/states";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { regulatorLicensePageFor } from "@/lib/seo/schema";
+import {
+  latestInspectionByFacility,
+  todayIsoDate,
+} from "@/lib/data/inspectionDates";
 
 export const revalidate = 3600;
 
@@ -104,29 +108,46 @@ export async function GET(
 
   // total_deficiency_count lives on the inspections table, not facilities.
   // Sum across all non-complaint inspections per facility.
+  // last_inspection_date is derived from inspection rows — the column is stale
+  // except in Minnesota.
   const defByFac = new Map<string, number>();
+  const inspDateRows: Array<{ facility_id: string; inspection_date: string | null }> = [];
+  const today = todayIsoDate();
   if (rows.length > 0) {
     const facilityIds = rows.map((f) => f.id);
     // Chunk to avoid URL-length limits and PostgREST's 1000-row default cap.
     const INSP_CHUNK = 150;
     for (let ci = 0; ci < facilityIds.length; ci += INSP_CHUNK) {
       const chunk = facilityIds.slice(ci, ci + INSP_CHUNK);
-      const { data: inspData } = await supabase
-        .from("inspections")
-        .select("facility_id, total_deficiency_count")
-        .in("facility_id", chunk)
-        .limit(5000);
-      for (const insp of (inspData ?? []) as Array<{
-        facility_id: string;
-        total_deficiency_count: number | null;
-      }>) {
-        defByFac.set(
-          insp.facility_id,
-          (defByFac.get(insp.facility_id) ?? 0) + (insp.total_deficiency_count ?? 0),
-        );
+      let from = 0;
+      for (;;) {
+        const { data: inspData } = await supabase
+          .from("inspections")
+          .select("facility_id, inspection_date, total_deficiency_count")
+          .in("facility_id", chunk)
+          .lte("inspection_date", today)
+          .range(from, from + 999);
+        const page = (inspData ?? []) as Array<{
+          facility_id: string;
+          inspection_date: string | null;
+          total_deficiency_count: number | null;
+        }>;
+        for (const insp of page) {
+          inspDateRows.push({
+            facility_id: insp.facility_id,
+            inspection_date: insp.inspection_date,
+          });
+          defByFac.set(
+            insp.facility_id,
+            (defByFac.get(insp.facility_id) ?? 0) + (insp.total_deficiency_count ?? 0),
+          );
+        }
+        if (page.length < 1000) break;
+        from += 1000;
       }
     }
   }
+  const lastInspByFac = latestInspectionByFacility(inspDateRows, today);
 
   const facilities: StateFacility[] = rows.map((f) => ({
     id: f.id,
@@ -145,7 +166,7 @@ export async function GET(
     serves_memory_care: Boolean(f.serves_memory_care),
     capacity_tier: f.capacity_tier,
     regulator_url: regulatorLicensePageFor(f.state_code, f.license_number),
-    last_inspection_date: f.last_inspection_date,
+    last_inspection_date: lastInspByFac.get(f.id) ?? null,
     total_deficiency_count: defByFac.get(f.id) ?? 0,
     updated_at: f.updated_at,
   }));

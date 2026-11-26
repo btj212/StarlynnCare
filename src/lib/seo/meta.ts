@@ -61,6 +61,7 @@ export const REGULATOR_ABBR: Record<string, string> = {
   WA: "DSHS",
   MN: "MDH",
   UT: "DLBC",
+  IL: "IDPH",
   PA: "PA DHS",
   AZ: "ADHS",
   MO: "DHSS",
@@ -96,7 +97,7 @@ const STATE_ABBR: Record<string, string> = {
   Colorado: "CO",
 };
 
-const MAX_TITLE = 60;
+const MAX_TITLE = 70;
 
 /** Clip a title string to MAX_TITLE characters at a word boundary. */
 function clipTitle(s: string): string {
@@ -120,10 +121,14 @@ function countLabel(count: number, singular: string, plural: string): string {
 }
 
 /**
- * Name and place first. A comparative rank stays in the description and on
- * the page, not in the title, because facility-name searches need the city.
- * "Reviews" appears only when a published review exists.
- * "Costs" is in every title because the profile always has a cost section.
+ * Name and city first so facility-name searches match the SERP.
+ * The pattern under test is "{Facility Name}, {City}: Inspection Record & Citations ({Year})".
+ * Year is the last inspection year on record — never the generate date.
+ * A rank stays in the description, not the title.
+ *
+ * Conflicts with the 2026-11 "Costs" title decision: Costs remain on the
+ * page and in the description; the title now leads with the inspection record
+ * because that is the query families type.
  */
 export function buildFacilityTitle(input: {
   name: string;
@@ -134,12 +139,16 @@ export function buildFacilityTitle(input: {
   citationCount?: number | null;
   inspectionCount?: number | null;
   reviewCount?: number | null;
+  /** ISO yyyy-mm-dd of the latest inspection, used for the title year. */
+  lastInspectionDate?: string | null;
 }): string {
-  const { name, stateName, city, citationCount, inspectionCount, reviewCount } = input;
+  const { name, stateName, city, citationCount, inspectionCount, reviewCount, lastInspectionDate } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
-  const place = `${name}, ${city}, ${abbr}`;
+  const place = `${name}, ${city}`;
+  const placeAbbr = `${name}, ${city}, ${abbr}`;
   const inspections = inspectionCount ?? 0;
   const reviews = reviewCount ?? 0;
+  const year = lastInspectionDate?.slice(0, 4) ?? null;
   const facts: string[] = [];
   if (inspections > 0) facts.push(countLabel(inspections, "inspection", "inspections"));
   if (citationCount != null && inspections > 0) {
@@ -147,22 +156,34 @@ export function buildFacilityTitle(input: {
   }
   if (reviews > 0) facts.push("reviews");
 
-  // Every profile has a cost section: the home's listed price when we hold one, otherwise
-  // the state's typical range. A home with inspections also has an inspection record.
-  const costTitles =
+  const inspectionTitles =
     inspections > 0
-      ? [`${place}: Costs and Inspection Record`, `${place}: Costs and Inspections`, `${place}: Costs`]
-      : [`${place}: Costs`];
+      ? [
+          year ? `${place}: Inspection Record & Citations (${year})` : `${place}: Inspection Record & Citations`,
+          year ? `${place}: Inspection Record (${year})` : `${place}: Inspection Record`,
+          `${placeAbbr}: Inspection Record`,
+        ]
+      : [`${place}: Licensed Memory Care`, `${placeAbbr}: Licensed Memory Care`];
   const candidates = [
-    ...costTitles,
-    facts.length ? `${place}: ${joinTitleFacts(facts)}` : place,
+    ...inspectionTitles,
+    facts.length ? `${place}: ${joinTitleFacts(facts)}` : placeAbbr,
     facts.length > 1 ? `${place}: ${joinTitleFacts(facts.slice(0, -1))}` : place,
-    place,
+    placeAbbr,
     `${name}, ${city}`,
     `${name}, ${abbr}`,
     name,
   ];
   return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? name);
+}
+
+/** State hub title that answers regulator-lookup queries. */
+export function buildStateHubTitle(stateName: string, regulatorAbbr: string): string {
+  const candidates = [
+    `${stateName} Memory Care Inspection Reports | ${regulatorAbbr} Lookup`,
+    `Memory Care Inspection Reports in ${stateName}`,
+    `Memory Care in ${stateName} - Inspection Data`,
+  ];
+  return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? candidates[candidates.length - 1]!);
 }
 
 /** Title of a home's full-report page. Longest candidate that fits wins. */
@@ -204,8 +225,8 @@ export function buildFacilityRecordSentence(input: {
   }
   const cite =
     input.citationCount === 1
-      ? `1 ${input.regulatorAbbr} citation on record`
-      : `${input.citationCount} ${input.regulatorAbbr} citations on record`;
+      ? `1 ${input.regulatorAbbr} citation on record in the last 3 years`
+      : `${input.citationCount} ${input.regulatorAbbr} citations on record in the last 3 years`;
   const parts = [cite];
   if (input.lastInspected) parts.push(`last inspected ${input.lastInspected}`);
   if (input.licenseNumber) parts.push(`license ${input.licenseNumber}`);
@@ -242,10 +263,10 @@ export function buildFacilityDescription(f: {
     (f.inspectionCount ?? 1) < 1
       ? `no ${f.agency} inspection on record`
       : f.citationCount === 0
-        ? `no ${f.agency} citations on record`
+        ? `no ${f.agency} citations on record in the last 3 years`
         : f.citationCount === 1
-          ? `1 ${f.agency} citation on record`
-          : `${f.citationCount} ${f.agency} citations on record`;
+          ? `1 ${f.agency} citation on record in the last 3 years`
+          : `${f.citationCount} ${f.agency} citations on record in the last 3 years`;
   const inspPart = f.lastInspected ? ` · last inspected ${f.lastInspected}` : "";
   const ctaSuffix = `View the full inspection record on StarlynnCare — no referral fees.`;
   const reviewCta =
@@ -398,4 +419,51 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   }
   // No grade — lead with citations and inspection date.
   return `${citeFrag}${inspFrag ? ` · ${inspFrag}` : ""}. Independent public-record review on StarlynnCare.`;
+}
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * 40–60 word above-the-fold answer for facility-name and inspection queries.
+ * Returns null when the record is too thin to support a paragraph without padding.
+ */
+export function buildFacilityDirectAnswer(input: {
+  name: string;
+  city: string;
+  stateName: string;
+  regulatorAbbr: string;
+  licenseNumber: string | null;
+  inspectionCount: number;
+  citationCount: number;
+  lastInspected: string | null;
+  beds: number | null;
+}): string | null {
+  if (input.inspectionCount < 1 && !input.licenseNumber) return null;
+
+  const license = input.licenseNumber ? ` License ${input.licenseNumber}.` : "";
+  const beds = input.beds != null ? ` Licensed for ${input.beds} beds.` : "";
+  const inspected = input.lastInspected ? ` Last inspected ${input.lastInspected}.` : "";
+
+  let record: string;
+  if (input.inspectionCount < 1) {
+    record = `No ${input.regulatorAbbr} inspection is on file yet.`;
+  } else if (input.citationCount === 0) {
+    record = `${input.inspectionCount} ${input.regulatorAbbr} ${input.inspectionCount === 1 ? "inspection is" : "inspections are"} on file from the last 3 years, with no citations in that window.`;
+  } else {
+    record = `${input.inspectionCount} ${input.regulatorAbbr} ${input.inspectionCount === 1 ? "inspection" : "inspections"} and ${input.citationCount} ${input.citationCount === 1 ? "citation" : "citations"} are on file from the last 3 years.`;
+  }
+
+  const base = `${input.name} is a licensed memory care home in ${input.city}, ${input.stateName}.${license}${beds} ${record}${inspected} Read the dated inspection record on this page; StarlynnCare does not take referral fees.`;
+  const words = wordCount(base);
+  if (words < 40) {
+    const padded = `${base} Compare it with nearby homes using the same ${input.regulatorAbbr} source.`;
+    return wordCount(padded) <= 70 ? padded : base;
+  }
+  if (words > 60) {
+    const shorter = `${input.name} in ${input.city}, ${input.stateName}.${license} ${record}${inspected} The inspection record is on this page.`;
+    return shorter;
+  }
+  return base;
 }

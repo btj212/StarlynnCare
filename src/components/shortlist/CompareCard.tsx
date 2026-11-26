@@ -22,7 +22,7 @@ export function TrustBadge({ item }: { item: ShortlistItem }) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-xs font-semibold text-red-700">
         <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
-        {item.serious_citations} serious citation{item.serious_citations !== 1 ? "s" : ""} on file
+        {item.serious_citations} serious citation{item.serious_citations !== 1 ? "s" : ""} on file (all years)
       </span>
     );
   }
@@ -30,14 +30,14 @@ export function TrustBadge({ item }: { item: ShortlistItem }) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700">
         <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-        {item.total_citations} citation{item.total_citations !== 1 ? "s" : ""} on file
+        {item.total_citations} citation{item.total_citations !== 1 ? "s" : ""} on file (all years)
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4a7a50]">
       <span className="h-1.5 w-1.5 rounded-full bg-[#6b8f71] shrink-0" />
-      No citations on file
+      No citations on file (all years)
     </span>
   );
 }

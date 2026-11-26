@@ -18,6 +18,7 @@ import {
   METHODOLOGY_DISCLOSURE,
 } from "@/lib/content/reports/california-rcfe-repeat-citations-2026";
 import { ReportWatchCapture } from "./_WatchCapture";
+import { loadCaResearchCorpus } from "@/lib/data/caResearchCorpus";
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -117,7 +118,8 @@ function SeverityBadge({ level }: { level: number }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function CARCFERepeatCitationsPage() {
+export default async function CARCFERepeatCitationsPage() {
+  const corpus = await loadCaResearchCorpus();
   return (
     <>
       <JsonLd objects={jsonLd} />
@@ -157,8 +159,15 @@ export default function CARCFERepeatCitationsPage() {
             style={{ color: "var(--color-paper)" }}
           >
             An analysis of CDSS inspection records for 484 California residential care facilities
-            for the elderly finds a persistent pattern: the same regulatory rules broken, at
+            for the elderly, as of May 2026, finds a persistent pattern: the same regulatory rules broken, at
             the same facilities, across multiple separate inspections.
+            {corpus ? (
+              <>
+                {" "}
+                StarlynnCare now publishes {corpus.homes.toLocaleString("en-US")} California homes;
+                this report was not rerun on the live corpus.
+              </>
+            ) : null}
           </p>
 
           <p className="font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] opacity-55">
@@ -598,7 +607,7 @@ export default function CARCFERepeatCitationsPage() {
                   className="inline-block w-full text-center px-4 py-2.5 rounded text-white text-[13px] font-medium transition-colors"
                   style={{ background: "var(--color-teal)" }}
                 >
-                  Browse all 484 CA facilities →
+                  Browse {corpus ? `all ${corpus.homes.toLocaleString("en-US")} California` : "California"} facilities →
                 </Link>
               </div>
 

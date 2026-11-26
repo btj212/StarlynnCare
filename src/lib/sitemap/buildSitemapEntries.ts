@@ -25,8 +25,8 @@ const SITEMAP_QUERY_PAGE_SIZE = 1000;
  * Both dates are real release dates, not the day the sitemap was built.
  */
 export const TEMPLATE_CHANGED = {
-  /** Profile slimmed to one summary per visit; full reports moved to /inspections. */
-  facility: "2026-11-17",
+  /** Profile H1 is name + city; inspection-record title; 40–60 word answer. */
+  facility: "2026-11-26",
   /** City pages gained the "other cities" block and the live home list. */
   hub: "2026-11-19",
 } as const;

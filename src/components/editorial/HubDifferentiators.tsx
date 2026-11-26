@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { facilityProfilePath } from "@/lib/seo/paths";
+import { isUsableInspectionDate } from "@/lib/data/inspectionDates";
 
 export type RegionHubStats = {
   median_beds: number | null;
@@ -41,7 +42,8 @@ function trendDirection(
   return "stable";
 }
 
-function formatInspectionDate(iso: string): string {
+function formatInspectionDate(iso: string): string | null {
+  if (!isUsableInspectionDate(iso)) return null;
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
@@ -202,7 +204,7 @@ export function HubDifferentiators({
             </Row>
           )}
 
-          {last_inspection_date && (
+          {last_inspection_date && formatInspectionDate(last_inspection_date) && (
             <Row label="Last inspected (region)">
               <span className="text-ink">
                 {formatInspectionDate(last_inspection_date)}

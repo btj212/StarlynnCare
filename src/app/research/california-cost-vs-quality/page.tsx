@@ -16,6 +16,10 @@ import {
   AnalysisProse,
   AnalysisMethodNote,
 } from "@/components/research/AnalysisShell";
+import {
+  frozenCaStudyDisclaimer,
+  loadCaResearchCorpus,
+} from "@/lib/data/caResearchCorpus";
 
 const PAGE_PATH = "/research/california-cost-vs-quality";
 const canonicalUrl = canonicalFor(PAGE_PATH);
@@ -62,7 +66,9 @@ const jsonLd = [
   }),
 ];
 
-export default function CACostVsQualityPage() {
+export default async function CACostVsQualityPage() {
+  const corpus = await loadCaResearchCorpus();
+  const frozenNote = frozenCaStudyDisclaimer(corpus?.homes ?? null);
   return (
     <>
       <JsonLd objects={jsonLd} />
@@ -76,9 +82,9 @@ export default function CACostVsQualityPage() {
       <AnalysisShell
         eyebrow="Cost vs quality (CA)"
         title={TITLE}
-        dek="A 484-facility cross-sectional analysis of California memory care: county-median monthly price (Genworth 2024) vs. inspection-derived citation severity. The two are almost uncorrelated."
-        bylineDate="May 11, 2026"
-        scope="California · 484 RCFEs"
+        dek="A May 2026 cross-sectional analysis of 484 California memory care homes: county-median monthly price (Genworth 2024) vs. inspection-derived citation severity. The two are almost uncorrelated."
+        bylineDate="May 11, 2026 · frozen study"
+        scope="California · 484 RCFEs (May 2026 study)"
         keyFindings={[
           {
             value: "r = 0.27",
@@ -100,7 +106,7 @@ export default function CACostVsQualityPage() {
           },
         ]}
         methodologyDisclosure={
-          "Cost data: county-level median monthly cost from the Genworth 2024 Cost of Care Survey, joined to facility ZIPs.\n\nQuality measure: a per-facility severity index computed from CDSS deficiency citations (severity-weighted, normalized by inspection count).\n\nFacility-level price quotes are not used here; quotes vary too widely within a county to be comparable. Five direct facility-level price observations exist in the dataset but were null at run time and excluded."
+          `${frozenNote}\n\nCost data: county-level median monthly cost from the Genworth 2024 Cost of Care Survey, joined to facility ZIPs.\n\nQuality measure: a per-facility severity index computed from CDSS deficiency citations (severity-weighted, normalized by inspection count).\n\nFacility-level price quotes are not used here; quotes vary too widely within a county to be comparable. Five direct facility-level price observations exist in the dataset but were null at run time and excluded.`
         }
         sources={[
           {

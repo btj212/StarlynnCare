@@ -16,52 +16,45 @@ import {
   AnalysisProse,
   AnalysisMethodNote,
 } from "@/components/research/AnalysisShell";
+import { loadCaResearchCorpus } from "@/lib/data/caResearchCorpus";
 
 const PAGE_PATH = "/research/california-memory-care-violations";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 const TITLE =
   "What inspectors actually cite at California memory care facilities";
 const META_TITLE = `${TITLE} | StarlynnCare Research`;
-const DESC =
-  "Analysis of 7,748 California memory care deficiencies. Only 6% fall under the dementia-specific statutes (§§ 87705–87706). The dominant harm category in inspector narratives is staffing inadequacy.";
 const DATE_PUBLISHED = "2026-05-11";
+const FALLBACK_DESC =
+  "Analysis of CDSS deficiencies on file for publishable California memory care homes. A small share fall under the dementia-specific statutes (§§ 87705–87706). Home and citation counts are live from the database.";
 
-export const metadata: Metadata = {
-  title: META_TITLE,
-  description: DESC,
-  alternates: { canonical: canonicalUrl },
-  openGraph: {
-    title: META_TITLE,
-    description: DESC,
-    url: canonicalUrl,
-    type: "article",
-    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: META_TITLE,
-    description: DESC,
-    images: ["/og-default.png"],
-  },
-};
+function n(value: number): string {
+  return value.toLocaleString("en-US");
+}
 
-const jsonLd = [
-  buildArticleSchema({
-    headline: TITLE,
-    description: DESC,
-    url: canonicalUrl,
-    datePublished: DATE_PUBLISHED,
-  }),
-  buildBreadcrumbList([
-    { name: "Home", url: canonicalFor("/") },
-    { name: "Research", url: canonicalFor("/research") },
-    { name: "Memory care violations (CA)", url: canonicalUrl },
-  ]),
-  buildDatasetSchema({
-    pageUrl: canonicalUrl,
-    methodologyUrl: canonicalFor("/methodology"),
-  }),
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const corpus = await loadCaResearchCorpus();
+  const desc = corpus
+    ? `Analysis of ${n(corpus.deficiencies)} California memory care deficiencies (${corpus.window}, ${corpus.source}). ${corpus.sharePct}% fall under the dementia-specific statutes (§§ 87705–87706).`
+    : FALLBACK_DESC;
+  return {
+    title: META_TITLE,
+    description: desc,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title: META_TITLE,
+      description: desc,
+      url: canonicalUrl,
+      type: "article",
+      images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "StarlynnCare" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: META_TITLE,
+      description: desc,
+      images: ["/og-default.png"],
+    },
+  };
+}
 
 const TOP_REGULATIONS = [
   {
@@ -90,7 +83,31 @@ const KEYWORD_CATEGORIES = [
   { label: "Restraint", count: 0 },
 ];
 
-export default function CAMemoryCareViolationsPage() {
+export default async function CAMemoryCareViolationsPage() {
+  const corpus = await loadCaResearchCorpus();
+  const homes = corpus ? n(corpus.homes) : "the publishable";
+  const statute = corpus ? n(corpus.dementiaStatute) : null;
+  const share = corpus ? `${corpus.sharePct}%` : "a small share";
+  const desc = corpus
+    ? `Analysis of ${n(corpus.deficiencies)} California memory care deficiencies (${corpus.window}, ${corpus.source}). ${corpus.sharePct}% fall under the dementia-specific statutes (§§ 87705–87706).`
+    : FALLBACK_DESC;
+  const jsonLd = [
+    buildArticleSchema({
+      headline: TITLE,
+      description: desc,
+      url: canonicalUrl,
+      datePublished: DATE_PUBLISHED,
+    }),
+    buildBreadcrumbList([
+      { name: "Home", url: canonicalFor("/") },
+      { name: "Research", url: canonicalFor("/research") },
+      { name: "Memory care violations (CA)", url: canonicalUrl },
+    ]),
+    buildDatasetSchema({
+      pageUrl: canonicalUrl,
+      methodologyUrl: canonicalFor("/methodology"),
+    }),
+  ];
   return (
     <>
       <JsonLd objects={jsonLd} />
@@ -104,31 +121,48 @@ export default function CAMemoryCareViolationsPage() {
       <AnalysisShell
         eyebrow="Memory care violations (CA)"
         title={TITLE}
-        dek="A regulation-by-regulation breakdown of every CDSS deficiency on file across 484 publishable California memory care facilities — what inspectors are actually writing up, and what they are not."
-        bylineDate="May 11, 2026"
-        scope="California · 7,748 deficiencies"
+        dek={
+          corpus
+            ? `A regulation-by-regulation look at every CDSS deficiency on file across ${homes} publishable California memory care facilities — what inspectors are actually writing up, and what they are not.`
+            : "A regulation-by-regulation look at CDSS deficiencies on file for publishable California memory care facilities — what inspectors are actually writing up, and what they are not."
+        }
+        bylineDate="May 11, 2026 · live counts"
+        scope={
+          corpus
+            ? `California · ${n(corpus.deficiencies)} deficiencies · ${corpus.window} · ${corpus.source}`
+            : "California · CDSS deficiencies"
+        }
         keyFindings={[
           {
-            value: "7,748",
-            label: "total CDSS deficiencies analyzed",
-            caption: "All publishable CA RCFEs · all years",
+            value: corpus ? n(corpus.deficiencies) : "—",
+            label: "total CDSS deficiencies on file",
+            caption: corpus
+              ? `${n(corpus.homes)} publishable CA homes · ${corpus.window} · ${corpus.source}`
+              : "Could not be loaded",
             tone: "neutral",
           },
           {
-            value: "6%",
+            value: share,
             label: "citations under dementia-specific statutes",
-            caption: "470 under §87705 / §87706",
+            caption: statute
+              ? `${statute} under §87705 / §87706 · ${corpus?.window} · ${corpus?.source}`
+              : "§87705 / §87706",
             tone: "warn",
           },
           {
             value: "1,069",
             label: "staffing-inadequacy mentions",
-            caption: "Top harm category in narratives",
+            caption: "May 2026 narrative scan · not rerun",
             tone: "alarm",
           },
         ]}
         methodologyDisclosure={
-          "Source corpus: every CDSS deficiency citation on file for the 484 California facilities StarlynnCare publishes (all years available in CDSS Transparency Portal records).\n\nRegulation counts: exact CCR Title 22 code as recorded by the CDSS licensing agent.\n\nKeyword categories: case-insensitive substring scan of inspector narrative text, deduplicated per citation. A single citation can map to multiple categories.\n\nComparison group: all 484 publishable facilities serve memory care residents; no clean non–memory-care comparison group is available within this dataset."
+          (corpus
+            ? `Source corpus: every CDSS deficiency citation on file for the ${n(corpus.homes)} California facilities StarlynnCare publishes (${corpus.window} in CDSS Transparency Portal records), as of ${corpus.asOf}.\n\n`
+            : "Source corpus: every CDSS deficiency citation on file for publishable California facilities StarlynnCare publishes.\n\n") +
+          "Dementia-statute share: deficiency codes matching 87705 or 87706.\n\n" +
+          "Top-regulation table and keyword categories below are from a May 11, 2026 narrative scan and were not rerun on the live corpus.\n\n" +
+          "Comparison group: publishable facilities in this directory serve memory care residents; no clean non–memory-care comparison group is available within this dataset."
         }
         sources={[
           {
@@ -148,21 +182,27 @@ export default function CAMemoryCareViolationsPage() {
         <AnalysisH2 id="what-we-found">What we found</AnalysisH2>
         <AnalysisProse>
           <p>
-            Across <strong>7,748 CDSS deficiency citations</strong> on file
-            for the 484 California memory care facilities in StarlynnCare,
-            the most common single regulatory citation is{" "}
+            Across{" "}
+            <strong>
+              {corpus ? `${n(corpus.deficiencies)} CDSS deficiency citations` : "CDSS deficiency citations"}
+            </strong>{" "}
+            on file for the {corpus ? `${homes} California` : "California"} memory
+            care facilities in StarlynnCare ({corpus ? `${corpus.window}, ${corpus.source}` : "CDSS"}),
+            the most common single regulatory citation in a May 2026 scan was{" "}
             <strong>§87303(a) — &ldquo;general facility maintenance&rdquo;</strong>,
-            appearing in roughly one of every twenty-one deficiencies (363
-            citations). This is a basic compliance category covering whether a
-            facility is &ldquo;clean, safe, sanitary, and in good repair at
-            all times.&rdquo;
+            appearing in 363 citations in that scan. This is a basic compliance
+            category covering whether a facility is &ldquo;clean, safe, sanitary,
+            and in good repair at all times.&rdquo;
           </p>
           <p>
-            Only <strong>6% of citations</strong> (470 of 7,748) are written
-            under California&rsquo;s dementia-specific statutes — Title 22
-            §87705 and §87706, which govern programs serving residents with
-            dementia. Most regulatory enforcement in memory care is driven by
-            the same baseline RCFE rules that apply to any residential care
+            Only <strong>{share} of citations</strong>
+            {statute && corpus
+              ? ` (${statute} of ${n(corpus.deficiencies)})`
+              : ""}{" "}
+            are written under California&rsquo;s dementia-specific statutes —
+            Title 22 §87705 and §87706, which govern programs serving residents
+            with dementia. Most regulatory enforcement in memory care is driven
+            by the same baseline RCFE rules that apply to any residential care
             facility for the elderly.
           </p>
         </AnalysisProse>
@@ -206,8 +246,8 @@ export default function CAMemoryCareViolationsPage() {
           </table>
         </div>
         <p className="text-[12px] text-ink-4 mt-3 max-w-[60ch]">
-          Citations counted per occurrence, not per facility. Source: CDSS
-          inspection records in StarlynnCare database.
+          Top-code counts are from the May 11, 2026 scan and were not rerun.
+          Live totals above are all years on file from CDSS Community Care Licensing.
         </p>
 
         <AnalysisH2 id="harm-categories">What inspector narratives describe</AnalysisH2>

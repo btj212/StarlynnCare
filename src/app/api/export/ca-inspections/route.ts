@@ -1,6 +1,7 @@
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { regulatorLicensePageFor } from "@/lib/seo/schema";
+import { loadLatestInspectionDates } from "@/lib/data/inspectionDates";
 
 // Revalidate every 6 hours — inspection data refreshes weekly so hourly is wasteful
 export const revalidate = 21600;
@@ -128,6 +129,10 @@ export async function GET() {
       }
     }
   }
+  const lastInspByFac = await loadLatestInspectionDates(
+    supabase,
+    rows.map((f) => f.id),
+  );
   const generatedAt = new Date().toISOString().split("T")[0];
 
   const lines: string[] = [
@@ -151,7 +156,7 @@ export async function GET() {
         f.beds != null ? Number(f.beds) : null,
         f.latitude != null ? Number(f.latitude) : null,
         f.longitude != null ? Number(f.longitude) : null,
-        f.last_inspection_date,
+        lastInspByFac.get(f.id) ?? null,
         totalByFac.get(f.id) ?? 0,
         seriousByFac.get(f.id) ?? 0,
         canonicalFor(`/california/${f.city_slug}/${f.slug}`),

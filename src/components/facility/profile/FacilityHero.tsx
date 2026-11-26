@@ -5,10 +5,20 @@ import {
   regulatorLicensePageFor,
   regulatorLicensePageLabel,
 } from "@/lib/seo/schema";
-import { buildFacilityRecordSentence, buildFacilitySnippet, reportablePercentile, shortMonthYear } from "@/lib/seo/meta";
+import {
+  REGULATOR_ABBR,
+  buildFacilityDirectAnswer,
+  buildFacilityRecordSentence,
+  buildFacilitySnippet,
+  reportablePercentile,
+  shortMonthYear,
+} from "@/lib/seo/meta";
+import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
+import { formatFacilityName } from "@/lib/facility/displayName";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
+import { citationCountPhrase } from "@/lib/facility/citationWindow";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
 import { FacilityMemoryCareBasis } from "./FacilityMemoryCareBasis";
@@ -134,12 +144,11 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
           ? "CMS nursing home"
           : "CDPHE assisted living residence"
         : (SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility");
-    const citLabel =
-      totals.deficiencies === 0
-        ? "no citations on file"
-        : totals.deficiencies === 1
-          ? "one citation on file"
-          : `${totals.deficiencies} citations on file`;
+    const citLabel = citationCountPhrase({
+      count: totals.deficiencies,
+      agencyShort: cfg.agencyShort,
+      window: "profile",
+    });
     return `${beds} ${licType} with ${citLabel}.`;
   })();
 
@@ -185,13 +194,13 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
               </div>
             </div>
             <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
-              <span dangerouslySetInnerHTML={{ __html: copy.replace(/(no citations on file|citations|citation)/gi, "<em>$1</em>") }} />
+              <span dangerouslySetInnerHTML={{ __html: copy.replace(/(no citations|citations|citation)/gi, "<em>$1</em>") }} />
             </div>
           </div>
         ) : (
           /* When 4+ photos: full-width copy below the grid */
           <div className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] tracking-[-0.005em] text-gold-soft [&_em]:italic [&_em]:text-white">
-            <span dangerouslySetInnerHTML={{ __html: copy.replace(/(no citations on file|citations|citation)/gi, "<em>$1</em>") }} />
+            <span dangerouslySetInnerHTML={{ __html: copy.replace(/(no citations|citations|citation)/gi, "<em>$1</em>") }} />
           </div>
         )}
 
@@ -252,11 +261,10 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   const phone = facility.phone
     ? facility.phone.replace(/\D/g, "").replace(/^1?(\d{3})(\d{3})(\d{4})$/, "($1) $2-$3")
     : null;
-
-  // Split facility name into non-italic + last word italic
-  const words = facility.name.trim().split(/\s+/);
-  const lastWord = words.length > 1 ? words.pop() : null;
-  const mainPart = words.join(" ");
+  const legalName = formatFacilityName(facility.name);
+  const displayName = facilityDisplayName(facility);
+  const aliases = facilityAliases(facility);
+  const cityName = displayCityName(facility.city, facility.city_slug) || state.name;
 
   // Editorial prose summary — mirrors the meta description so Google has a
   // human-readable narrative line to lift even when it overrides our meta.
@@ -287,11 +295,11 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         licenseNumber: facility.license_number,
       });
   const snippet = noReportsPosted
-    ? `${facility.name} has no DSHS reports posted as of ${checkedOn}.`
+    ? `${displayName} has no DSHS reports posted as of ${checkedOn}.`
     : profile.totals.inspections < 1
       ? null
       : buildFacilitySnippet({
-        facilityName: facility.name,
+        facilityName: displayName,
         stateName: state.name,
         stateCode: state.code,
         grade: reportableRank == null ? null : profile.snapshot?.grade?.letter ?? null,
@@ -303,6 +311,19 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         lastInspectionDate,
         variant: "prose",
         regulatorAbbr: profile.cfg.agencyShort,
+      });
+  const directAnswer = noReportsPosted
+    ? null
+    : buildFacilityDirectAnswer({
+        name: displayName,
+        city: cityName,
+        stateName: state.name,
+        regulatorAbbr: profile.cfg.agencyShort ?? REGULATOR_ABBR[state.code] ?? "state",
+        licenseNumber: facility.license_number,
+        inspectionCount: profile.totals.inspections,
+        citationCount: profile.totals.deficiencies,
+        lastInspected: shortMonthYear(lastInspectionDate),
+        beds: facility.beds,
       });
 
   return (
@@ -319,25 +340,32 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         <div className="grid items-end gap-8 md:grid-cols-[1.5fr_1fr] md:gap-16">
           {/* Left */}
           <div>
-            <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(40px,6vw,84px)] font-normal leading-[0.95] tracking-[-0.025em] text-ink">
-              {lastWord ? (
-                <>
-                  {mainPart} <em className="not-italic text-teal">{lastWord}</em>
-                </>
-              ) : (
-                <em className="not-italic text-teal">{facility.name}</em>
-              )}
+            <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(36px,5.5vw,72px)] font-normal leading-[0.95] tracking-[-0.025em] text-ink">
+              {legalName},{" "}
+              <em className="not-italic text-teal">{cityName}</em>
             </h1>
+            {aliases.marketingName && (
+              <p className="mt-3 font-[family-name:var(--font-sans)] text-[15px] leading-snug text-ink-3">
+                Also known as {formatFacilityName(aliases.marketingName)}
+              </p>
+            )}
+
+            {/* 40–60 word answer for facility-name / inspection queries. */}
+            {directAnswer && (
+              <p className="mt-5 max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 sm:text-[18px]">
+                {directAnswer}
+              </p>
+            )}
 
             {/* Editorial summary — same data points as the meta snippet so
                 Google has narrative prose above-the-fold to lift. */}
-            {recordSentence && (
+            {!directAnswer && recordSentence && (
               <p className="mt-5 max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 sm:text-[18px]">
                 {recordSentence}
               </p>
             )}
             {snippet && (
-              <p className={`max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 sm:text-[18px] ${recordSentence ? "mt-3" : "mt-5"}`}>
+              <p className={`max-w-[58ch] font-[family-name:var(--font-sans)] text-[17px] leading-[1.55] text-ink-2 sm:text-[18px] ${directAnswer || recordSentence ? "mt-3" : "mt-5"}`}>
                 {snippet}{" "}
                 {formsUrl ? (
                   <a href={formsUrl} className="underline" rel="noopener noreferrer">

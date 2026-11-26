@@ -23,7 +23,7 @@ import { MobileStickyCtaBar } from "@/components/mobile/MobileStickyCtaBar";
 export const revalidate = 3600;
 
 const pageCanonical = canonicalFor("/california");
-const PAGE_TITLE = "Memory Care in California - State Inspection Data";
+const PAGE_TITLE = "California Memory Care Inspection Reports | CDSS Lookup";
 const PAGE_DESC =
   "State inspection records and peer rankings for California memory care facilities — CDSS citations, county benchmarks, and family-ready profiles. Refreshed weekly.";
 

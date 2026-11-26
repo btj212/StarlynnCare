@@ -66,6 +66,8 @@ export interface Facility {
   street: string | null;
   city: string | null;
   zip: string | null;
+  /** Generic county name. PA ingest left some homes null here with the name in wa_county. */
+  county?: string | null;
   city_slug: string;
   slug: string;
   beds: number | null;
@@ -77,8 +79,19 @@ export interface Facility {
   phone: string | null;
   /** Operator-supplied phone, shown instead of `phone`. Never written by ingest (migration 0075). */
   phone_override?: string | null;
+  /**
+   * DBA / consumer-facing name when different from the legal license name.
+   * Migration 0077. Null until a sourced alias is filled — never invent one.
+   */
+  marketing_name?: string | null;
+  /** Extra search aliases. Empty until sourced. Migration 0077. */
+  name_aliases?: string[] | null;
   website: string | null;
   cms_star_rating: number | null;
+  /**
+   * Stale for every state except MN. Public pages and the API derive
+   * max(inspection_date) from inspection rows instead of reading this column.
+   */
   last_inspection_date: string | null;
   latitude: string | null;
   longitude: string | null;
@@ -137,6 +150,9 @@ export interface Facility {
   wa_facility_type?: string | null;
   /** Colorado care setting. ALR is CDPHE assisted living. NH is a CMS nursing home. */
   co_care_setting?: "ALR" | "NH" | null;
+  /** WA directory county. PA ingest reused this column for 73 homes whose county is otherwise null. */
+  wa_county?: string | null;
+  tx_county?: string | null;
   wa_dementia_care_contract?: boolean | null;
   wa_memory_care_certified?: boolean | null;
   wa_earc_sdc_contracted?: boolean | null;
@@ -152,7 +168,11 @@ export interface Facility {
   detail_url_id?: string | null;
   /** Adult Foster Home class (1/2/3) from OR portal detail page. Null for non-AFH. */
   afh_class?: number | null;
-  /** ORS 443.886 Memory Care Endorsement. */
+  /**
+   * ORS 443.886 Memory Care Endorsement.
+   * The site reads this column only. `or_memory_care_endorsed` is a scraper
+   * leftover and is never selected in TypeScript.
+   */
   mce_endorsed?: boolean | null;
   /** Provenance for mce_endorsed: "CSS portal" | "PRA list" | "name match". */
   mce_evidence?: string | null;
@@ -176,6 +196,12 @@ export interface Facility {
     generated_at?: string;
     /** LLM model identifier used for generation. */
     model?: string;
+    /**
+     * Deploy-safe DBA hook until migration 0077 is applied.
+     * Same rule as facilities.marketing_name: never invent.
+     */
+    marketing_name?: string | null;
+    name_aliases?: string[] | null;
   } | null;
 }
 

@@ -37,8 +37,9 @@ assert.equal(
 
 // A row not re-ingested since June still prints the redesigned page, so its
 // date is the release date. A row updated after the release keeps its own date.
-assert.equal(withTemplateFloor("2026-06-15", TEMPLATE_CHANGED.facility), "2026-11-17");
-assert.equal(withTemplateFloor(undefined, TEMPLATE_CHANGED.facility), "2026-11-17");
-assert.equal(withTemplateFloor("2026-11-20", TEMPLATE_CHANGED.facility), "2026-11-20");
+assert.equal(withTemplateFloor("2026-06-15", TEMPLATE_CHANGED.facility), "2026-11-26");
+assert.equal(withTemplateFloor(undefined, TEMPLATE_CHANGED.facility), "2026-11-26");
+assert.equal(withTemplateFloor("2026-11-20", TEMPLATE_CHANGED.facility), "2026-11-26");
+assert.equal(withTemplateFloor("2026-11-27", TEMPLATE_CHANGED.facility), "2026-11-27");
 
 console.log("sitemap lastmod checks passed");

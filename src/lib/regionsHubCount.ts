@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Region } from "@/lib/regions";
 import { azSmallHomeWithoutCitations } from "@/lib/seo/indexability";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 /**
  * Exact publishable facility count for a listing region (matches hub page query).
@@ -112,6 +113,7 @@ export async function loadRegionHubSummary(
       .from("inspections")
       .select("id, facility_id")
       .in("facility_id", chunk)
+      .lte("inspection_date", todayIsoDate())
       .limit(5000);
     if (inspErr) {
       console.error("[loadRegionHubSummary] inspections:", inspErr.message);
