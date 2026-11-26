@@ -213,16 +213,23 @@ export function buildLocalBusinessForFacility(
   if (opts.memoryCare) {
     additionalProperty.push({
       "@type": "PropertyValue",
-      name: "Memory care basis",
+      name: opts.memoryCare.kind === "care-level" ? "Care level" : "Memory care basis",
       value: opts.memoryCare.label,
     });
     if (opts.memoryCare.sourceUrl) {
       additionalProperty.push({
         "@type": "PropertyValue",
-        name: "Memory care source",
+        name: opts.memoryCare.kind === "care-level" ? "License source" : "Memory care source",
         value: opts.memoryCare.sourceUrl,
       });
     }
+  }
+  if (facility.state_code === "AZ" && facility.mc_program_confirmed === true) {
+    additionalProperty.push({
+      "@type": "PropertyValue",
+      name: "Memory care program confirmed",
+      value: facility.mc_program_source_url?.trim() || "true",
+    });
   }
 
   const lat = parseCoord(facility.latitude);
@@ -289,12 +296,15 @@ export function buildLocalBusinessForFacility(
       : {}),
     ...(sameAs.length ? { sameAs } : {}),
     ...(additionalProperty.length ? { additionalProperty } : {}),
-    ...(opts.memoryCare?.recorded
+    ...(opts.memoryCare?.kind === "memory-care"
       ? {
           amenityFeature: [
             {
               "@type": "LocationFeatureSpecification",
-              name: "Memory care",
+              name:
+                facility.state_code === "AZ"
+                  ? "Memory care services (A.A.C. R9-10-816)"
+                  : "Memory care",
               value: true,
             },
           ],
@@ -940,6 +950,7 @@ function joinOr(items: string[]): string {
 function seriousTermWhenNone(stateCode: string): string {
   if (stateCode === "CA") return "Type A";
   if (stateCode === "IL") return "Type 1";
+  if (stateCode === "PA") return "a severe finding";
   return "immediate jeopardy";
 }
 

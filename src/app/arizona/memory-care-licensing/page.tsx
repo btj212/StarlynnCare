@@ -26,15 +26,15 @@ const DATE_PUBLISHED = "2026-06-15";
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   {
     q: "What is the difference between an Assisted Living Home (ALH) and an Assisted Living Center (ALC) in Arizona?",
-    a: "Both are licensed by ADHS Bureau of Residential Facilities Licensing (BRFL) under A.A.C. Title 9, Chapter 10. The key difference is size: an Assisted Living Home (ALH) serves up to 10 residents in a smaller, home-like setting; an Assisted Living Center (ALC) serves 11 or more residents in a facility setting. Both can hold a Directed Care license level or the new HB2764 Memory Care subclass. Families often prefer smaller ALH settings for a more residential feel, but larger ALCs may offer more on-site clinical services.",
+    a: "Both are licensed by ADHS Bureau of Residential Facilities Licensing (BRFL) under A.A.C. Title 9, Chapter 10. The key difference is size: an Assisted Living Home (ALH) serves up to 10 residents in a smaller, home-like setting; an Assisted Living Center (ALC) serves 11 or more residents in a facility setting. Both can hold a Directed Care license level. When they do, A.A.C. R9-10-816 authorizes memory care services. Families often prefer smaller ALH settings for a more residential feel, but larger ALCs may offer more on-site clinical services.",
   },
   {
     q: "What is the ADHS 'Directed Care' license level?",
     a: "Arizona assigns each assisted living license one of three care levels: Supervisory Care (least intensive), Personal Care (intermediate), and Directed Care (highest). A Directed Care license authorizes the facility to serve residents who require continuous supervision, protective oversight, or substantial assistance due to cognitive impairment — including Alzheimer's disease and other dementias. Only Directed Care facilities are indexed by StarlynnCare, because this is the ADHS-verified signal that the facility is equipped and authorized for dementia care.",
   },
   {
-    q: "What is the new Arizona Memory Care subclass (HB2764)?",
-    a: "House Bill 2764 created a formal Memory Care subclass within Arizona's assisted living licensing framework, effective July 1, 2025. Facilities that obtain this subclass must meet enhanced requirements specifically for residents with Alzheimer's disease or other dementias — including specialized staff training, physical environment standards, and structured programming. This subclass is intended to be the clearest Tier-1 signal of memory care capability. StarlynnCare will incorporate it as the primary signal once ADHS begins publishing it in the facility directory.",
+    q: "Did HB2764 create a separate Memory Care license subclass?",
+    a: "No. House Bill 2764 (Laws 2024, Chapter 100) added A.R.S. § 36-405.03, which told ADHS to write memory-care service standards and staff-training rules for assisted living facilities already licensed to provide directed care. ADHS did that in A.A.C. R9-10-816, effective June 30, 2025. In the final-rulemaking hearing, ADHS said memory care services are the same as directed care. There is no separate subclass to apply for.",
   },
   {
     q: "How does ADHS inspect Directed Care facilities?",
@@ -46,7 +46,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "How is Arizona's memory care licensing system different from California's?",
-    a: "California licenses memory care under a single RCFE (Residential Care Facility for the Elderly) category regulated by CDSS. California uses Type A / Type B deficiency severity labels. Arizona uses two license types (ALH, ALC) both regulated by ADHS, with care levels (Supervisory/Personal/Directed) rather than a separate endorsement. Arizona's HB2764 Memory Care subclass is newer and more specific than California's general disclosure requirement. Medicaid access also differs — California uses ALW (Assisted Living Waiver), Arizona uses ALTCS. When reading a StarlynnCare profile, always note the state.",
+    a: "California licenses memory care under a single RCFE (Residential Care Facility for the Elderly) category regulated by CDSS. California uses Type A / Type B deficiency severity labels. Arizona uses two license types (ALH, ALC) both regulated by ADHS, with care levels (Supervisory/Personal/Directed). Memory care services attach to Directed Care under A.A.C. R9-10-816; there is no separate Arizona Memory Care subclass. Medicaid access also differs — California uses ALW (Assisted Living Waiver), Arizona uses ALTCS. When reading a StarlynnCare profile, always note the state.",
   },
 ];
 
@@ -92,7 +92,7 @@ function LicenseComparisonTable() {
     { attr: "Regulator", alh: "ADHS BRFL", alc: "ADHS BRFL" },
     { attr: "Governing rule", alh: "A.A.C. R9-10-800 series", alc: "A.A.C. R9-10-800 series" },
     { attr: "Care level for MC", alh: "Directed Care required", alc: "Directed Care required" },
-    { attr: "HB2764 MC subclass", alh: "Available (eff. 2025-07-01)", alc: "Available (eff. 2025-07-01)" },
+    { attr: "Memory care services", alh: "A.A.C. R9-10-816 if Directed Care", alc: "A.A.C. R9-10-816 if Directed Care" },
     { attr: "ALTCS Medicaid?", alh: "Yes — contracted facilities", alc: "Yes — contracted facilities" },
     { attr: "Inspection source", alh: "AZ Care Check (ADHS BRFL)", alc: "AZ Care Check (ADHS BRFL)" },
   ];
@@ -188,7 +188,7 @@ export default function AzLicensingPage() {
                 The <strong className="font-medium text-ink">Directed Care license level</strong> is required for facilities serving residents with dementia or cognitive impairment — only Directed Care facilities are indexed on StarlynnCare.
               </li>
               <li>
-                <strong className="font-medium text-ink">HB2764 (2025)</strong> created a formal Memory Care subclass — an additional layer of dementia-specific requirements. StarlynnCare will incorporate it once ADHS publishes it in the directory.
+                <strong className="font-medium text-ink">A.A.C. R9-10-816</strong> (effective June 30, 2025) attaches memory-care service requirements to every Directed Care home. HB2764 told ADHS to write those rules; it did not create a separate Memory Care subclass.
               </li>
               <li>
                 Arizona Medicaid (ALTCS) can fund memory care in contracted Directed Care facilities — ask about contract status during your visit.
@@ -233,27 +233,45 @@ export default function AzLicensingPage() {
             </p>
           </Prose>
 
-          <H2 id="hb2764">HB2764: Arizona&apos;s new Memory Care subclass</H2>
+          <H2 id="hb2764">What HB2764 actually required</H2>
           <Prose>
             <p>
-              Arizona House Bill 2764, effective July 1, 2025, created a formal Memory Care subclass within the
-              Assisted Living licensing framework. Facilities must apply separately for this subclass — holding a
-              Directed Care license level alone does not confer Memory Care subclass status.
+              House Bill 2764 (Laws 2024, Chapter 100) added{" "}
+              <a
+                href="https://www.azleg.gov/ars/36/00405-03.htm"
+                className="text-teal underline underline-offset-4"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                A.R.S. § 36-405.03
+              </a>
+              . That statute tells ADHS to write memory-care service standards and staff-training rules{" "}
+              <em>for assisted living facilities that are licensed to provide directed care services</em>. It does
+              not create a separate Memory Care subclass, endorsement, or application. ADHS said the same in the{" "}
+              <a
+                href="https://www.azdhs.gov/documents/director/administrative-counsel-rules/rules/rulemaking/hci-and-memory-care/notice-of-final-rulemaking.pdf"
+                className="text-teal underline underline-offset-4"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                June 30, 2025 final rulemaking
+              </a>
+              : memory care services are the same as directed care.
             </p>
             <p>
-              The Memory Care subclass requires facilities to meet enhanced standards including:
+              The implementing rule is A.A.C. R9-10-816. If an assisted living facility is authorized to provide
+              directed care services, the manager must ensure:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>Specialized dementia care staff training and ongoing competency verification</li>
-              <li>Secured environments with appropriate exit controls for wandering prevention</li>
-              <li>Individualized dementia care plans with family involvement</li>
-              <li>Structured activity programming appropriate for cognitive impairment stages</li>
-              <li>Dining, environment, and sensory design standards specific to dementia populations</li>
+              <li>Written memory-care policies (behavior support, elopement, outdoor monitoring, and related items)</li>
+              <li>Wandering safeguards, including secure areas against unsafe exit-seeking</li>
+              <li>A medical-practitioner evaluation for a resident who requests or receives memory care services</li>
+              <li>Eight hours of initial memory-care staff training (plus four manager-specific hours)</li>
             </ul>
             <p>
-              StarlynnCare will incorporate the Memory Care subclass as the primary Tier-1 signal once ADHS begins
-              publishing it in the ArcGIS facility directory — expected in the coming months as facilities complete
-              applications.
+              Licensed for Directed Care therefore means Arizona authorizes the home to provide memory care
+              services. It is not, by itself, a claim that a given home runs a dedicated secured memory-care unit
+              with every resident in that unit. Ask on the tour how the home actually uses those policies.
             </p>
           </Prose>
 
@@ -279,7 +297,7 @@ export default function AzLicensingPage() {
             <p>Each Arizona facility profile on StarlynnCare shows:</p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>License type (ALH or ALC) and ADHS Directed Care license level status</li>
-              <li>HB2764 Memory Care subclass status (when published by ADHS)</li>
+              <li>The R9-10-816 memory-care-services basis for that Directed Care license</li>
               <li>ADHS inspection history with dates and finding summaries</li>
               <li>Complaint investigation outcomes</li>
               <li>Direct link to AZ Care Check for source verification</li>
@@ -297,7 +315,7 @@ export default function AzLicensingPage() {
           </div>
 
           <DataFootnote
-            source="Arizona ADHS Bureau of Residential Facilities Licensing (A.A.C. R9-10-800; HB2764 2025 session); AHCCCS Arizona Long Term Care System"
+            source="Arizona ADHS Bureau of Residential Facilities Licensing (A.A.C. R9-10-816; A.R.S. § 36-405.03; Laws 2024, Ch. 100); AHCCCS Arizona Long Term Care System"
             refreshed={DATE_PUBLISHED}
           />
 

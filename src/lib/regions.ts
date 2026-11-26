@@ -1947,6 +1947,8 @@ export const REGIONS: ReadonlyArray<Region> = [
     ["mechanicsburg", "Mechanicsburg"],
     ["wexford", "Wexford"],
     ["exton", "Exton"],
+    ["mt-lebanon", "Mt. Lebanon"],
+    ["bethel-park", "Bethel Park"],
   ] as [string, string][]).map<Region>(([slug, name]) => ({
     slug,
     name,

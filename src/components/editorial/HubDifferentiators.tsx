@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { facilityProfilePath } from "@/lib/seo/paths";
 import { isUsableInspectionDate } from "@/lib/data/inspectionDates";
+import { formatFacilityName } from "@/lib/facility/displayName";
 
 export type RegionHubStats = {
   median_beds: number | null;
@@ -182,7 +183,7 @@ export function HubDifferentiators({
                 href={facilityProfilePath(stateSlug, top_improved_city_slug, top_improved_slug)}
                 className="text-teal underline underline-offset-2 hover:opacity-80"
               >
-                {top_improved_name}
+                {formatFacilityName(top_improved_name)}
               </Link>
               <span className="text-teal ml-2">
                 {top_improved_delta} citations vs. prior year
@@ -196,7 +197,7 @@ export function HubDifferentiators({
                 href={facilityProfilePath(stateSlug, top_deteriorated_city_slug, top_deteriorated_slug)}
                 className="text-rust underline underline-offset-2 hover:opacity-80"
               >
-                {top_deteriorated_name}
+                {formatFacilityName(top_deteriorated_name)}
               </Link>
               <span className="text-rust ml-2">
                 +{top_deteriorated_delta} citations vs. prior year

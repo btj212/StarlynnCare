@@ -33,7 +33,7 @@ export const azStateConfig: StateHubConfig = {
     {
       slug: "memory-care-licensing",
       title: "Arizona memory care licensing — ALH, ALC & the Directed Care license level",
-      desc: "What ADHS requires for Directed Care authorization, the HB2764 Memory Care subclass, and how to read it on a profile.",
+      desc: "What ADHS requires for Directed Care and A.A.C. R9-10-816 memory care services, and how to read it on a profile.",
       tags: ["licensing", "inspection"],
       live: true,
     },

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
-import { tryPublicSupabaseClient } from "@/lib/supabase/server";
-import { loadStateCityCounts } from "@/lib/facility/stateCityCounts";
+import { loadListedCountsForSlugs, loadStateCityCounts } from "@/lib/facility/stateCityCounts";
 
 type Props = {
   stateSlug: string;
@@ -19,7 +18,7 @@ function titleFromSlug(slug: string): string {
 
 /**
  * City listing hubs only: links to sibling city hubs in the same seeded county region.
- * Only cities with at least one publishable facility are linked.
+ * Counts are listed homes (the same denominator the destination page quotes).
  */
 export async function SiblingCityHubLinks({ stateSlug, stateCode, stateName, currentCitySlug }: Props) {
   const county = countyRegionContainingCitySlug(stateCode, currentCitySlug);
@@ -28,22 +27,11 @@ export async function SiblingCityHubLinks({ stateSlug, stateCode, stateName, cur
     county?.citySlugs.filter((s) => s.toLowerCase() !== currentCitySlug.toLowerCase()) ?? [];
   if (siblings.length === 0) return null;
 
-  // Filter to only cities that have at least one publishable facility.
-  let publishableSlugs: Set<string> = new Set(siblings);
-  const supabase = tryPublicSupabaseClient();
-  if (supabase && siblings.length > 0) {
-    const { data } = await supabase
-      .from("facilities")
-      .select("city_slug")
-      .eq("state_code", stateCode)
-      .eq("publishable", true)
-      .in("city_slug", siblings);
-    if (data) {
-      publishableSlugs = new Set((data as Array<{ city_slug: string }>).map((r) => r.city_slug));
-    }
-  }
-
-  const filtered = siblings.filter((s) => publishableSlugs.has(s));
+  const counted = await loadListedCountsForSlugs(stateCode, siblings);
+  const filtered = siblings
+    .map((slug) => counted.get(slug) ?? { slug, name: titleFromSlug(slug), count: 0 })
+    .filter((c) => c.count > 0)
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   if (filtered.length === 0) return null;
 
   const shown = filtered.slice(0, 16);
@@ -55,16 +43,16 @@ export async function SiblingCityHubLinks({ stateSlug, stateCode, stateName, cur
           Nearby cities
         </div>
         <p className="font-[family-name:var(--font-display)] text-[20px] leading-snug text-ink mb-4 max-w-[62ch]">
-          Other memory care city hubs in <span className="font-medium">{county.name}</span>
+          Other city hubs in <span className="font-medium">{county.name}</span>
         </p>
         <ul className="flex flex-wrap gap-2 list-none m-0 p-0">
-          {shown.map((slug) => (
-            <li key={slug}>
+          {shown.map((c) => (
+            <li key={c.slug}>
               <Link
-                href={`/${stateSlug}/${slug}`}
+                href={`/${stateSlug}/${c.slug}`}
                 className="inline-block rounded-full border border-paper-rule bg-paper px-3.5 py-1.5 text-[14px] text-teal no-underline hover:border-rust/40 hover:bg-paper transition-colors"
               >
-                {titleFromSlug(slug)}
+                {c.name} ({c.count})
               </Link>
             </li>
           ))}
@@ -81,7 +69,7 @@ export async function SiblingCityHubLinks({ stateSlug, stateCode, stateName, cur
 
 /**
  * Cities outside a seeded county (Colorado, Arizona, most other states) had no
- * links to any other city. Link the state's largest cities by published homes.
+ * links to any other city. Link the state's largest cities by listed homes.
  */
 async function StateCityLinks({ stateSlug, stateCode, stateName, currentCitySlug }: Props) {
   const others = (await loadStateCityCounts(stateCode))
@@ -96,7 +84,7 @@ async function StateCityLinks({ stateSlug, stateCode, stateName, currentCitySlug
           Other cities
         </div>
         <p className="font-[family-name:var(--font-display)] text-[20px] leading-snug text-ink mb-4 max-w-[62ch]">
-          Memory care in other {stateName} cities
+          Listed homes in other {stateName} cities
         </p>
         <ul className="flex flex-wrap gap-2 list-none m-0 p-0">
           {others.map((c) => (
@@ -105,7 +93,7 @@ async function StateCityLinks({ stateSlug, stateCode, stateName, currentCitySlug
                 href={`/${stateSlug}/${c.slug}`}
                 className="inline-block rounded-full border border-paper-rule bg-paper px-3.5 py-1.5 text-[14px] text-teal no-underline hover:border-rust/40 hover:bg-paper transition-colors"
               >
-                {c.name}
+                {c.name} ({c.count})
               </Link>
             </li>
           ))}

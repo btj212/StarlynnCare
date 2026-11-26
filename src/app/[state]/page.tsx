@@ -19,6 +19,7 @@ import {
 } from "@/lib/seo/schema";
 import { OR_FAQS, WA_FAQS, MN_FAQS, TX_FAQS, CO_FAQS, type FaqItem } from "@/lib/content/stateFaqs";
 import { getStateHubConfig } from "@/lib/stateHubConfigs";
+import { careSettingCopy } from "@/lib/city-hub/careSetting";
 import { loadStateHubData } from "@/lib/data/stateHub";
 import { StateHubSections } from "@/components/state-hub/StateHubSections";
 import {
@@ -55,6 +56,10 @@ export async function generateMetadata({
     facilityCount > 0
       ? state.code === "CO"
         ? `${facilityCount} memory care facilities across Colorado. Assisted living records are from CDPHE. Nursing homes are from CMS. The two are not ranked together.`
+        : state.code === "AZ"
+        ? `${facilityCount} Directed Care licensed homes across ${state.name} — Arizona authorizes these homes to provide memory care services (A.A.C. R9-10-816). ${severeCount} severe deficiencies in the last 24 months (${reg}). Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
+        : state.code === "WA"
+        ? `${facilityCount} Washington assisted living and adult family homes that serve people with dementia. ${severeCount} severe deficiencies in the last 24 months (${reg}). Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
         : `${facilityCount} licensed memory care facilities across ${state.name}. ${severeCount} severe deficiencies in the last 24 months (${reg}). Independent ${reg} data, no commissions${refreshed ? `, refreshed ${refreshed}` : ""}.`
       : null;
 
@@ -62,7 +67,7 @@ export async function generateMetadata({
     CA: `Inspection records and citation history for every licensed memory care facility in ${state.name} — from primary CDSS data, updated weekly.`,
     TX: `HHSC-sourced inspection listings for Alzheimer-certified assisted living across Texas metro regions — scope and methodology on-site.`,
     OR: `Oregon DHS inspection records for every Memory Care Endorsed ALF and RCF across Oregon — sourced from the DHS LTC Licensing portal.`,
-    WA: `DSHS inspection and investigation records for every Specialized Dementia Care ALF across Washington — sourced from the DSHS ALF Reports portal.`,
+    WA: `DSHS inspection and investigation records for Washington assisted living facilities and adult family homes that serve people with dementia — sourced from the DSHS ALF Reports portal. A Specialized Dementia Care contract is labeled when DSHS records it.`,
     MN: `MDH inspection records for every licensed Assisted Living Facility with Dementia Care across Minnesota — sourced from the MN Department of Health.`,
     CO: `CDPHE assisted-living records and CMS nursing-home surveys for Colorado. The two care settings are not ranked together, and CDPHE does not publish a memory-care roster.`,
   };
@@ -71,7 +76,7 @@ export async function generateMetadata({
       fallbackByCode[state.code] ??
       `Inspection records and citation history for every licensed memory care facility in ${state.name}.`,
   );
-  const title = buildStateHubTitle(state.name, reg);
+  const title = buildStateHubTitle(state.name, reg, state.code);
   return {
     title,
     description: desc,
@@ -93,17 +98,17 @@ export default async function StatePage({ params }: PageProps) {
     const stateJsonLd = [
       buildBreadcrumbList([
         { name: "Home", url: canonicalFor("/") },
-        { name: `${state.name} memory care`, url: canonicalFor(`/${state.slug}`) },
+        { name: careSettingCopy(state.code).collectionName(state.name), url: canonicalFor(`/${state.slug}`) },
       ]),
       buildWebPageWithReviewer({
-        name: buildStateHubTitle(state.name, REGULATOR_ABBR[state.code] ?? "state"),
+        name: buildStateHubTitle(state.name, REGULATOR_ABBR[state.code] ?? "state", state.code),
         url: canonicalFor(`/${state.slug}`),
-        description: `Inspection-backed memory care facility profiles across ${state.name} — verified by real state inspection records.`,
+        description: `Inspection-backed ${careSettingCopy(state.code).hubNoun} across ${state.name} — verified by real state inspection records.`,
         datePublished: data.stats.firstPublishedAt,
         dateModified: data.stats.lastRefreshed,
       }),
       buildStateHubCollectionPage({
-        name: `Memory care in ${state.name}`,
+        name: careSettingCopy(state.code).collectionName(state.name),
         url: canonicalFor(`/${state.slug}`),
         state,
         datePublished: data.stats.firstPublishedAt,
@@ -196,8 +201,9 @@ export default async function StatePage({ params }: PageProps) {
     region.citySlugs.reduce((n, s) => n + (smallCountsByCity.get(s) ?? 0), 0);
 
   const statePageUrl = canonicalFor(`/${state.slug}`);
-  const statePageTitle = buildStateHubTitle(state.name, REGULATOR_ABBR[state.code] ?? "state");
-  const statePageDesc = `Memory care facility profiles in ${state.name}, built from state and federal primary sources.`;
+  const statePageTitle = buildStateHubTitle(state.name, REGULATOR_ABBR[state.code] ?? "state", state.code);
+  const stateSetting = careSettingCopy(state.code);
+  const statePageDesc = `${stateSetting.hubNoun.charAt(0).toUpperCase()}${stateSetting.hubNoun.slice(1)} in ${state.name}, built from state and federal primary sources.`;
 
   const STATE_FAQS: Record<string, FaqItem[]> = {
     OR: OR_FAQS,
@@ -211,7 +217,7 @@ export default async function StatePage({ params }: PageProps) {
   const stateJsonLd = [
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
-      { name: `${state.name} memory care`, url: statePageUrl },
+      { name: stateSetting.collectionName(state.name), url: statePageUrl },
     ]),
     buildWebPageWithReviewer({
       name: statePageTitle,
@@ -221,7 +227,7 @@ export default async function StatePage({ params }: PageProps) {
       dateModified: stateLastRefreshed,
     }),
     buildStateHubCollectionPage({
-      name: `Memory care in ${state.name}`,
+      name: stateSetting.collectionName(state.name),
       url: statePageUrl,
       state,
       datePublished: stateFirstPublishedAt,
@@ -243,13 +249,13 @@ export default async function StatePage({ params }: PageProps) {
         <div className="border-b border-paper-rule" style={{ background: "var(--color-paper-2)" }}>
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-12">
             <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.18em] text-rust mb-3">
-              {state.name} · Memory care transparency
+              {state.name} · {stateSetting.h1Topic} records
             </p>
             <h1
               className="font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink mb-4"
               style={{ fontSize: "clamp(40px, 5vw, 64px)", lineHeight: 1 }}
             >
-              Memory care in {state.name}
+              {stateSetting.h1Topic} in {state.name}
             </h1>
             <p className="font-[family-name:var(--font-display)] italic text-[20px] leading-[1.4] text-ink-3 max-w-[50ch]">
               StarlynnCare covers {state.name} county-by-county. Each region below

@@ -27,6 +27,8 @@ interface StateStrings {
   facilityVsNursingQ: string;
   facilityVsNursingA: string;
   deficiencyLabel: string;
+  /** Plural noun used in "Of the N ___ indexed in City". */
+  indexedNoun: string;
   medicaidQ: (cityName: string) => string;
   medicaidA: (cityName: string) => string;
 }
@@ -45,6 +47,7 @@ function getStateStrings(stateCode: string): StateStrings {
       facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Oregon?`,
       facilityVsNursingA: `Oregon ALFs and RCFs provide non-medical residential care — room, board, ADL assistance, medication management. Nursing facilities (NFs) provide skilled nursing care with licensed nurses on staff 24/7 for residents needing medical-level support. If your family member requires IV medications, wound care, or complex medical management, a nursing facility may be more appropriate than a memory-care ALF.`,
       deficiencyLabel: "licensing violation or abuse investigation",
+      indexedNoun: "memory care endorsed homes",
       medicaidQ: (city) => `Does Oregon Medicaid cover memory care in ${city}?`,
       medicaidA: (city) =>
         `Oregon Health Plan (Medicaid) can cover care in a DHS-contracted ALF or RCF through the Medicaid Long-Term Care program, but not all facilities hold Medicaid contracts. Eligibility, available beds, and waitlists vary. Each StarlynnCare profile notes Medicaid acceptance status where documented in the DHS roster. Contact Oregon DHS at 1-800-282-8096 for current contract and availability information in ${city}.`,
@@ -58,10 +61,11 @@ function getStateStrings(stateCode: string): StateStrings {
           ? `Memory care across ${city} typically runs ${formatCostRange("WA", "county")} for an ALF holding a Washington DSHS Specialized Dementia Care contract. Rates vary by region, room type, and level-of-care tier.`
           : `Memory care in ${city} typically runs ${formatCostRange("WA", "city")} for an ALF with a Washington DSHS Specialized Dementia Care contract. Full monthly costs often exceed the advertised base rate by $500–$2,000 depending on care level.`,
       licenseQ: `What makes a facility "memory care" in Washington?`,
-      licenseA: `Washington state licenses memory care communities as Assisted Living Facilities (ALFs) regulated by DSHS Aging and Disability Services Administration (ADSA), Residential Care Services. Facilities here hold a <strong>Specialized Dementia Care contract</strong> with DSHS — a contract tier requiring specialized staff training in dementia care techniques, behavioral support protocols, and enhanced supervision standards. Contract status appears on every StarlynnCare profile and is sourced from the DSHS public lookup.`,
+      licenseA: `Washington DSHS licenses assisted living facilities and adult family homes. A <strong>Specialized Dementia Care contract</strong> is a separate DSHS contract — not the default license — requiring dementia-specific staff training and enhanced supervision. Only homes with that contract (or a Memory Care Certified designation when DSHS publishes it) are labeled memory care on StarlynnCare. Most listed Washington homes do not hold the contract.`,
       facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Washington?`,
       facilityVsNursingA: `Washington ALFs provide residential care — room, board, personal assistance, and medication management — in a community setting. Nursing homes (Skilled Nursing Facilities) provide licensed medical nursing care 24/7 for residents needing IV therapy, wound care, or complex medication management. Dementia care ALFs are appropriate for residents who need memory-specific programming but not continuous skilled nursing.`,
       deficiencyLabel: "inspection or investigation finding",
+      indexedNoun: "homes that serve people with dementia",
       medicaidQ: (city) => `Does Apple Health (Medicaid) cover memory care in ${city}?`,
       medicaidA: (city) =>
         `Washington Apple Health (Medicaid) can cover care in contracted ALFs through the Community Options Program Entry System (COPES) and other waiver programs, but not all facilities hold Medicaid contracts and waitlists exist. Eligibility depends on functional and financial criteria. Each StarlynnCare profile notes contract status where documented. Contact DSHS at 1-800-422-3263 for current contract and availability information in ${city}.`,
@@ -79,6 +83,7 @@ function getStateStrings(stateCode: string): StateStrings {
       facilityVsNursingQ: `What's the difference between an ALF and a nursing facility in Texas?`,
       facilityVsNursingA: `Texas ALFs provide non-medical residential care — room, board, ADL assistance, medication administration by trained staff. Nursing facilities (NFs, also called nursing homes or skilled nursing facilities) provide licensed nursing care 24/7 for residents needing IV therapy, complex wound care, or continuous medical management. If your family member needs ongoing skilled medical care, a Texas NF or SNF may be more appropriate than a memory-care ALF.`,
       deficiencyLabel: "HHSC inspection or complaint finding",
+      indexedNoun: "Alzheimer-certified assisted living facilities",
       medicaidQ: (city) => `Does Texas Medicaid cover memory care in ${city}?`,
       medicaidA: (city) =>
         `Traditional Texas Medicaid does not pay ALF room and board. The <strong>STAR+PLUS</strong> waiver program — Texas Medicaid managed care for elderly and disabled adults — can cover certain personal care and HCBS services in a participating ALF, but room-and-board costs remain the family's responsibility and waitlists exist. Eligibility depends on functional and financial criteria. Each StarlynnCare profile notes Medicaid acceptance where documented in HHSC data. Contact 211 Texas (dial 2-1-1) or the Texas HHSC Aging and Disability Resource Center for current options in ${city}.`,
@@ -96,6 +101,7 @@ function getStateStrings(stateCode: string): StateStrings {
       facilityVsNursingQ: `What's the difference between an ALF with Dementia Care and a nursing home in Minnesota?`,
       facilityVsNursingA: `Minnesota ALFs with Dementia Care provide residential personal care and dementia programming in a community setting. Nursing homes (Skilled Nursing Facilities certified under Title 18/19) provide licensed medical nursing around the clock for residents needing medical-level care. If your family member requires complex wound care, IV therapy, or continuous medical monitoring, a nursing facility may be more appropriate.`,
       deficiencyLabel: "inspection or complaint finding",
+      indexedNoun: "licensed ALFs with dementia care",
       medicaidQ: (city) => `Does Minnesota Medicaid cover memory care in ${city}?`,
       medicaidA: (city) =>
         `Minnesota Medical Assistance (Medicaid) can cover care in a licensed ALF with Dementia Care through the Consumer Support Grant or the Elderly Waiver (EW) program, but not all facilities are Medicaid-enrolled and waitlists exist. Each StarlynnCare profile notes payment acceptance where known. Contact Minnesota Senior LinkAge Line at 1-800-333-2433 for guidance on options in ${city}.`,
@@ -109,10 +115,11 @@ function getStateStrings(stateCode: string): StateStrings {
           ? `Memory care across ${city} typically runs ${formatCostRange("PA", "county")} for a licensed Personal Care Home or Assisted Living Residence with a DHS Special Care designation. Rates vary by room type, care level, and operator.`
           : `Memory care in ${city} typically runs ${formatCostRange("PA", "city")} for a PA DHS OLTL-licensed PCH or ALR with Special Care programming, depending on room type and care level.`,
       licenseQ: `What makes a facility "memory care" in Pennsylvania?`,
-      licenseA: `Pennsylvania licenses memory care through DHS OLTL as Personal Care Homes (55 Pa Code Ch 2600) or Assisted Living Residences (Ch 2800). Facilities indexed here hold a DHS-recognized <strong>Special Care</strong> or <strong>Secure Dementia Care Unit</strong> designation — or an Assisted Living — Special Care license type. These are government-recorded designations, not marketing claims. License type appears on every StarlynnCare profile.`,
+      licenseA: `Pennsylvania licenses Personal Care Homes (55 Pa Code Ch 2600) and Assisted Living Residences (Ch 2800). A <strong>Special Care</strong> or <strong>Secure Dementia Care Unit</strong> designation is a DHS-recorded dementia signal — not a marketing claim — and appears on the profile only when it is on the state file. Many listed homes serve people with dementia under a standard PCH or ALR license.`,
       facilityVsNursingQ: `What's the difference between memory care and a nursing home in Pennsylvania?`,
       facilityVsNursingA: `PA DHS-licensed PCHs and ALRs provide residential personal care and dementia programming. Nursing homes (Skilled Nursing Facilities) are regulated by PA DOH and CMS, provide 24-hour licensed nursing, and operate under a separate inspection framework. If your family member needs continuous skilled nursing, wound care, or IV therapy, a nursing facility may be more appropriate.`,
-      deficiencyLabel: "severe finding (PA DHS severity ≥ 3) or Immediate Jeopardy",
+      deficiencyLabel: "severe finding (PA DHS severity ≥ 3)",
+      indexedNoun: "personal care and assisted living homes",
       medicaidQ: (city) => `Does Pennsylvania Medicaid cover memory care in ${city}?`,
       medicaidA: (city) =>
         `Pennsylvania Medicaid (Medical Assistance) does not pay room and board in a PCH or ALR. MA can fund personal care services through HealthChoices managed care organizations for eligible residents, but not the daily base rate. Nursing homes certified for Medicaid do accept MA for clinical care and room and board. Each StarlynnCare profile notes payment acceptance where documented. Contact your county Area Agency on Aging for options in ${city}.`,
@@ -130,6 +137,7 @@ function getStateStrings(stateCode: string): StateStrings {
       facilityVsNursingQ: `What's the difference between an ALE and a nursing home in Illinois?`,
       facilityVsNursingA: `Illinois ALEs and SHEs provide residential personal care in a community setting. Skilled nursing facilities are regulated by IDPH and CMS under a separate framework, with 24-hour licensed nursing for residents needing medical-level care. If your family member requires complex wound care, IV therapy, or continuous medical monitoring, a nursing facility may be more appropriate.`,
       deficiencyLabel: "Type 1, 2, or 3 violation",
+      indexedNoun: "assisted living establishments with a dementia focus",
       medicaidQ: (city) => `Does Illinois Medicaid cover memory care in ${city}?`,
       medicaidA: (city) =>
         `Illinois Medicaid can cover certain supportive services in participating assisted living settings through waiver programs, but room and board in an ALE are typically the family's responsibility. Not all facilities accept Medicaid-funded residents. Each StarlynnCare profile notes payment acceptance where documented. Contact the Illinois Department of Healthcare and Family Services or your county AAA for current options in ${city}.`,
@@ -147,6 +155,7 @@ function getStateStrings(stateCode: string): StateStrings {
       facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Utah?`,
       facilityVsNursingA: `Utah ALFs provide residential care — room, board, personal assistance, and medication management. Nursing facilities provide licensed nursing care 24/7 for residents needing IV therapy, wound care, or continuous medical management. CMS-regulated nursing facilities operate under a separate inspection record from DLBC-licensed ALFs.`,
       deficiencyLabel: "DLBC inspection or complaint finding",
+      indexedNoun: "licensed assisted living facilities",
       medicaidQ: (city) => `Does Utah Medicaid cover memory care in ${city}?`,
       medicaidA: (city) =>
         `Utah Medicaid can cover certain services in participating ALFs through Home and Community-Based Services waiver programs, but room and board are typically not covered. Not all facilities hold Medicaid contracts. Each StarlynnCare profile notes payment acceptance where documented. Contact the Utah Department of Health and Human Services for current options in ${city}.`,
@@ -164,9 +173,29 @@ function getStateStrings(stateCode: string): StateStrings {
       facilityVsNursingQ: `What's the difference between assisted living and a nursing home in Colorado?`,
       facilityVsNursingA: `An assisted living residence is licensed by CDPHE. Citations use Level A through E, and Level E is immediate jeopardy. A nursing home is certified by CMS. Its citations are F-tags with letters A through L. A letter E on a nursing home is not a Colorado Level E. StarlynnCare does not rank the two against each other.`,
       deficiencyLabel: "CDPHE Level C, D, or E citation, or a CMS deficiency at severity 3 or higher, depending on the care setting",
+      indexedNoun: "memory care facilities",
       medicaidQ: (city) => `Does Health First Colorado cover memory care in ${city}?`,
       medicaidA: (city) =>
         `Health First Colorado can pay for some services in a certified Alternative Care Facility. It does not automatically pay room and board in every assisted living residence. A nursing home that takes Medicaid is a different benefit. Ask the home which program it accepts in ${city}.`,
+    };
+  }
+
+  if (code === "AZ") {
+    const azLicenseUrl = canonicalFor("/arizona/memory-care-licensing");
+    return {
+      costRange: (city, isCounty) =>
+        isCounty
+          ? `Listed prices for Directed Care homes across ${city} typically run ${formatCostRange("AZ", "county")} a month where a price is published. That is a listed price, not a quote.`
+          : `Listed prices for Directed Care homes in ${city} typically run ${formatCostRange("AZ", "city")} a month where a price is published. Ask each home for its current rate.`,
+      licenseQ: `What is Directed Care in Arizona?`,
+      licenseA: `Arizona licenses assisted living as homes (ALH, up to 10 residents) or centers (ALC, 11 or more) at one of three care levels. Licensed for Directed Care means Arizona authorizes the home to provide memory care services under <strong>A.A.C. R9-10-816</strong> — policies, wandering safeguards, a medical-practitioner evaluation, and eight hours of staff training. HB2764 (Laws 2024, Ch. 100) told ADHS to write those standards for Directed Care homes; it did not create a separate Memory Care subclass. Authorization is not a claim that a given home runs a dedicated secured unit. See <a href="${azLicenseUrl}" class="text-teal underline underline-offset-4">Arizona memory care licensing</a>.`,
+      facilityVsNursingQ: `What's the difference between Directed Care and a nursing home in Arizona?`,
+      facilityVsNursingA: `Directed Care ALHs and ALCs provide residential personal care and supervision for people who need help with daily decisions, including many with dementia. Nursing homes are CMS-certified and provide 24-hour licensed nursing. If your family member needs IV medications, complex wound care, or continuous medical monitoring, a nursing facility may be more appropriate.`,
+      deficiencyLabel: "A.A.C. R9-10 deficiency finding",
+      indexedNoun: "Directed Care homes",
+      medicaidQ: (city) => `Does ALTCS cover Directed Care in ${city}?`,
+      medicaidA: (city) =>
+        `Arizona Long Term Care System (ALTCS) can fund residential care in a Directed Care ALH or ALC for eligible residents through contracted managed care organizations. Not every ${city} home accepts ALTCS. Ask the home about contract status, and contact AHCCCS for eligibility.`,
     };
   }
 
@@ -183,6 +212,7 @@ function getStateStrings(stateCode: string): StateStrings {
     facilityVsNursingQ: `What's the difference between an RCFE and a nursing home?`,
     facilityVsNursingA: `RCFEs provide non-medical care: room, board, supervision, ADL help, medication assistance. Nursing homes (SNFs) provide medical care: licensed nurses on staff 24/7, medication administration (not just assistance), wound care, rehab. Most California memory care indexed here lives in RCFEs. If your family member needs ongoing skilled nursing — feeding tubes, IV medications, complex wound care — an RCFE memory unit may not fit.`,
     deficiencyLabel: "Type-A or Type-B deficiency from CDSS",
+    indexedNoun: "licensed memory care facilities",
     medicaidQ: (city) => `Does Medi-Cal cover memory care in ${city}?`,
     medicaidA: (city) =>
       `Traditional Medi-Cal does not cover room and board in an RCFE memory care setting. The Assisted Living Waiver (ALW) can cover services in participating RCFEs for income-qualified residents, but waitlists are long and the program runs in a limited set of counties — whether ${city} is in an ALW service area depends on county (see <a href="${alwUrl}" class="text-teal underline underline-offset-4">CDSS ALW portal</a>). Medi-Cal does cover skilled nursing care in a Medi-Cal-certified SNF, including SNF dementia units, for residents meeting medical eligibility. Each facility profile documents payment acceptance when known.`,
@@ -231,7 +261,7 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
       a:
         totalCount === 0
           ? `StarlynnCare has not yet indexed publishable facilities for ${cityName}.`
-          : `Of the ${totalCount} licensed memory care facilities indexed in ${cityName}, ${facilitiesWithDeficiency} (${severePct}%) carry a documented ${s.deficiencyLabel} in the indexed inspection record. Specific findings appear on each profile with inspection date and source link. StarlynnCare sources all deficiency data directly from state regulator records — no facility-side surveys or paid submissions are used. See the <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">methodology</a> for how deficiency classes are mapped across states.`,
+          : `Of the ${totalCount} ${s.indexedNoun} listed in ${cityName}, ${facilitiesWithDeficiency} (${severePct}%) carry a documented ${s.deficiencyLabel} in the indexed inspection record. Specific findings appear on each profile with inspection date and source link. StarlynnCare sources all deficiency data directly from state regulator records — no facility-side surveys or paid submissions are used. See the <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">methodology</a> for how deficiency classes are mapped across states.`,
     },
     {
       q: `How does StarlynnCare rank memory care facilities in ${cityName}?`,

@@ -1,5 +1,6 @@
 import type { CaMemoryCareDesignationBasis } from "@/lib/types";
 import { regulatorFor } from "@/lib/states/regulators";
+import { AZ_MC_LEVEL1_LABEL } from "@/lib/facility/azMcProgram";
 
 /**
  * Why a published home is listed as memory care, using only a state file
@@ -7,8 +8,17 @@ import { regulatorFor } from "@/lib/states/regulators";
  * a state file. Oregon's `mce_evidence` is quoted only when it is a
  * sentence. Ingest tokens such as `providers_csv` are not printed.
  */
+export type MemoryCareBasisKind = "none" | "care-level" | "memory-care";
+
 export type MemoryCareBasis = {
   recorded: boolean;
+  /**
+   * `memory-care` is a recorded dementia-care designation (OR endorsement,
+   * WA SDC or AFH dementia specialty, CA dementia-care plan, AZ Directed
+   * Care under A.A.C. R9-10-816, …).
+   * `care-level` is a state file that is not that designation.
+   */
+  kind: MemoryCareBasisKind;
   label: string;
   /** Long office name for the source line. */
   regulator: string;
@@ -40,6 +50,9 @@ export type MemoryCareBasisInput = {
   mn_dementia_care_licensed?: boolean | null;
   mo_alzheimer_scu?: boolean | null;
   az_memory_care_endorsed?: boolean | null;
+  /** Unused column. HB2764 did not create a separate Memory Care subclass. */
+  az_mc_subclass?: boolean | null;
+  az_license_level?: string | null;
   state_records_checked_at?: string | null;
   /** Colorado care setting. Nursing homes are CMS-certified, not CDPHE-licensed. */
   co_care_setting?: "ALR" | "NH" | null;
@@ -50,8 +63,10 @@ export type MemoryCareBasisInput = {
 const CA_CITATION =
   "California CDSS cited this home under the dementia-care rules, sections 87705 or 87706.";
 
+export const AZ_DIRECTED_CARE_LABEL = AZ_MC_LEVEL1_LABEL;
+
 const SOURCE_LABELS: Record<string, string> = {
-  "ADHS Directed Care License": "Arizona lists this home under a Directed Care license.",
+  "ADHS Directed Care License": AZ_DIRECTED_CARE_LABEL,
   "MN ALRC ALDC": "Minnesota licenses this home for assisted living with dementia care.",
   "§87705/§87706 citation": CA_CITATION,
   "DHSS Alzheimer's SCU Disclosure §198.510":
@@ -101,6 +116,7 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   const office = regulatorFor(facility.state_code);
   const basis: MemoryCareBasis = {
     recorded: false,
+    kind: "none",
     label: MEMORY_CARE_BASIS_UNRECORDED,
     regulator: office?.long ?? "State regulator",
     regulatorShort: office?.short ?? "State",
@@ -109,9 +125,14 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
     checkedOn: facility.state_records_checked_at?.slice(0, 10) ?? null,
   };
 
-  const recorded = (label: string, quote?: string | null): MemoryCareBasis => ({
+  const recorded = (
+    label: string,
+    quote?: string | null,
+    kind: MemoryCareBasisKind = "memory-care",
+  ): MemoryCareBasis => ({
     ...basis,
     recorded: true,
+    kind,
     label,
     quote: quote ?? null,
   });
@@ -140,6 +161,9 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   if (source && !isManualReview(source) && source !== "PA DHS HSD bulk export") {
     if (source === "TX HHSC Alzheimer Certification") {
       return recorded(texasLabel(facility.tx_alzheimer_cert_no));
+    }
+    if (source === "ADHS Directed Care License") {
+      return recorded(AZ_DIRECTED_CARE_LABEL);
     }
     const known = SOURCE_LABELS[source];
     if (known) return recorded(known);
@@ -180,7 +204,7 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
     return recorded("Washington DSHS lists a specialized dementia care contract for this home.");
   }
   if (facility.wa_dementia_specialty) {
-    return recorded("Washington DSHS lists a dementia specialty for this home.");
+    return recorded("Washington DSHS lists a dementia specialty designation for this home.");
   }
 
   if (facility.tx_alzheimer_certified) {
@@ -197,8 +221,12 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   if (facility.mo_alzheimer_scu) {
     return recorded("Missouri DHSS lists an Alzheimer's special care unit for this home.");
   }
-  if (facility.az_memory_care_endorsed) {
-    return recorded("Arizona lists this home under a Directed Care license.");
+  if (facility.az_memory_care_endorsed || facility.az_license_level === "Directed Care") {
+    return recorded(AZ_DIRECTED_CARE_LABEL);
+  }
+
+  if (facility.state_code === "AZ") {
+    return recorded(AZ_DIRECTED_CARE_LABEL);
   }
 
   return basis;

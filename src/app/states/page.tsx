@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 const STATE_DESCRIPTIONS: Record<string, string> = {
   CA: "CDSS · RCFE Memory Care · Annual unannounced inspections",
   OR: "Oregon DHS · Memory Care Endorsed ALFs & RCFs",
-  WA: "DSHS · Specialized Dementia Care ALFs",
+  WA: "DSHS · Assisted living & adult family homes",
   MN: "MDH · ALF with Dementia Care license",
   TX: "HHSC · Alzheimer-certified assisted living",
   UT: "DLBC · Type I & II Assisted Living · R432-270",

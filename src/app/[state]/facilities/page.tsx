@@ -13,6 +13,7 @@ import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
 import { contentAliasFields } from "@/lib/facility/aliases";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
+import { careSettingCopy } from "@/lib/city-hub/careSetting";
 
 export const revalidate = 3600;
 
@@ -27,16 +28,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const canonical = canonicalFor(`/${state.slug}/facilities`);
   const reg = REGULATOR_ABBR[state.code] ?? "state";
+  const title =
+    state.code === "AZ"
+      ? `All Directed Care homes in ${state.name} | StarlynnCare`
+      : state.code === "WA"
+        ? `All dementia-serving homes in ${state.name} | StarlynnCare`
+        : `All memory care facilities in ${state.name} | StarlynnCare`;
   const desc = clipMetaDescription(
-    `Browse every licensed memory care facility in ${state.name} — searchable and filtered by size, citation history, and care type. Independent ${reg} data, no commissions.`,
+    state.code === "AZ"
+      ? `Browse Directed Care licensed homes in ${state.name}. Arizona authorizes these homes to provide memory care services (A.A.C. R9-10-816). Independent ${reg} data, no commissions.`
+      : state.code === "WA"
+        ? `Browse Washington assisted living and adult family homes that serve people with dementia. Independent ${reg} data, no commissions.`
+        : `Browse every licensed memory care facility in ${state.name} — searchable and filtered by size, citation history, and care type. Independent ${reg} data, no commissions.`,
   );
 
   return {
-    title: `All memory care facilities in ${state.name} | StarlynnCare`,
+    title,
     description: desc,
     alternates: { canonical },
     openGraph: {
-      title: `All memory care facilities in ${state.name} | StarlynnCare`,
+      title,
       description: desc,
       url: canonical,
       type: "website",
@@ -44,7 +55,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: "summary_large_image",
-      title: `All memory care facilities in ${state.name} | StarlynnCare`,
+      title,
       description: desc,
       images: ["/og-default.png"],
     },
@@ -192,24 +203,26 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
     postalCode: f.zip,
     addressRegion: state.name,
   }));
+  const setting = careSettingCopy(state.code);
+  const collectionName = setting.collectionName(state.name);
   const jsonLd = [
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
-      { name: `${state.name} memory care`, url: canonicalFor(`/${state.slug}`) },
+      { name: collectionName, url: canonicalFor(`/${state.slug}`) },
       { name: "All facilities", url: pageCanonical },
     ]),
     buildStateHubCollectionPage({
-      name: `Memory care facilities in ${state.name}`,
+      name: collectionName,
       url: pageCanonical,
       state,
     }),
     buildWebPageWithReviewer({
-      name: `All memory care facilities in ${state.name} | StarlynnCare`,
+      name: `All ${setting.hubNoun} in ${state.name} | StarlynnCare`,
       url: pageCanonical,
-      description: `Browse every licensed memory care facility in ${state.name}, searchable by name, city, and citation history.`,
+      description: `Browse ${setting.hubNoun} in ${state.name}, searchable by name, city, and citation history.`,
     }),
     ...(itemListFacilities.length > 0
-      ? [buildItemListSchema(`Memory care facilities in ${state.name}`, pageCanonical, itemListFacilities)]
+      ? [buildItemListSchema(collectionName, pageCanonical, itemListFacilities)]
       : []),
   ];
 
@@ -239,7 +252,7 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
               <br />documented in the public record.
             </h1>
             <p className="font-[family-name:var(--font-display)] italic text-[18px] leading-[1.5] text-ink-3 max-w-[52ch] mt-3">
-              Search, filter, and compare every publishable memory care facility in {state.name}.
+              Search, filter, and compare every publishable {careSettingCopy(state.code).facilityNoun} in {state.name}.
               Rankings built from state inspection data — no referral commissions, no paid placement.
             </p>
             <div className="mt-5 flex flex-wrap items-baseline gap-6 border-l-2 border-teal pl-5 font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-[0.04em]">

@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Region } from "@/lib/regions";
-import { azSmallHomeWithoutCitations } from "@/lib/seo/indexability";
+import { facilityListedInSitemap } from "@/lib/seo/indexability";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
+import { belongsOnCityPage, paOverrideOrFilter, paOverridePageSlugs } from "@/lib/city-hub/municipality";
 
 /**
  * Exact publishable facility count for a listing region (matches hub page query).
@@ -53,7 +54,7 @@ export async function loadRegionHubSummary(
 }> {
   const { data: facRows, error: facErr } = await supabase
     .from("facilities")
-    .select("id, updated_at, created_at, beds")
+    .select("id, updated_at, created_at, beds, name, zip, city_slug")
     .eq("state_code", region.state.code)
     .eq("publishable", true)
     .in("city_slug", region.citySlugs as unknown as string[]);
@@ -70,18 +71,47 @@ export async function loadRegionHubSummary(
     };
   }
 
-  const facilityIds = (facRows ?? []).map((r: { id: string }) => r.id);
+  type HubRow = {
+    id: string;
+    updated_at: string | null;
+    created_at: string | null;
+    beds: number | null;
+    name?: string;
+    zip?: string | null;
+    city_slug?: string;
+  };
+  const byId = new Map<string, HubRow>();
+  for (const row of (facRows ?? []) as HubRow[]) byId.set(row.id, row);
+
+  if (
+    region.kind === "city" &&
+    region.state.code === "PA" &&
+    paOverridePageSlugs().includes(region.slug)
+  ) {
+    const { data: extraRows } = await supabase
+      .from("facilities")
+      .select("id, updated_at, created_at, beds, name, zip, city_slug")
+      .eq("state_code", "PA")
+      .eq("publishable", true)
+      .or(paOverrideOrFilter());
+    for (const row of (extraRows ?? []) as HubRow[]) {
+      if (!byId.has(row.id)) byId.set(row.id, row);
+    }
+  }
+
+  const mergedRows = [...byId.values()];
+  const facilityIds = mergedRows.map((r) => r.id);
   const totalCount = facilityIds.length;
 
   let mostRecent: number = 0;
   let earliest: number = Infinity;
-  for (const r of facRows ?? []) {
-    const ts = (r as { updated_at: string | null }).updated_at;
+  for (const r of mergedRows) {
+    const ts = r.updated_at;
     if (ts) {
       const t = new Date(ts).getTime();
       if (t > mostRecent) mostRecent = t;
     }
-    const ca = (r as { created_at: string | null }).created_at;
+    const ca = r.created_at;
     if (ca) {
       const t = new Date(ca).getTime();
       if (t < earliest) earliest = t;
@@ -106,6 +136,7 @@ export async function loadRegionHubSummary(
   // Chunk to avoid URL-length limits and PostgREST's 1000-row default cap.
   const INSP_CHUNK = 150;
   const inspFacMap = new Map<string, string>();
+  const inspCountByFac = new Map<string, number>();
   let recordCheckIncomplete = false;
   for (let ci = 0; ci < facilityIds.length; ci += INSP_CHUNK) {
     const chunk = facilityIds.slice(ci, ci + INSP_CHUNK);
@@ -122,6 +153,7 @@ export async function loadRegionHubSummary(
     }
     for (const i of (inspRows ?? []) as Array<{ id: string; facility_id: string }>) {
       inspFacMap.set(i.id, i.facility_id);
+      inspCountByFac.set(i.facility_id, (inspCountByFac.get(i.facility_id) ?? 0) + 1);
     }
   }
   const inspIds = [...inspFacMap.keys()];
@@ -146,17 +178,38 @@ export async function loadRegionHubSummary(
     }
   }
 
-  const indexableFacilityCount = recordCheckIncomplete
-    ? totalCount
-    : (facRows ?? []).filter((row) => {
-        const beds = (row as { beds: number | null }).beds;
-        const deficiencyCount = facilitiesWithAnyDef.has(row.id) ? 1 : 0;
-        return !azSmallHomeWithoutCitations(region.state.code, beds, deficiencyCount);
-      }).length;
+  const listedRows = recordCheckIncomplete
+    ? mergedRows
+    : mergedRows.filter((row) => {
+        if (region.kind === "city" && region.state.code === "PA") {
+          if (
+            !belongsOnCityPage(
+              {
+                stateCode: "PA",
+                zip: row.zip ?? null,
+                name: row.name ?? "",
+                citySlug: row.city_slug ?? region.slug,
+              },
+              region.slug,
+            )
+          ) {
+            return false;
+          }
+        }
+        return facilityListedInSitemap({
+          stateCode: region.state.code,
+          beds: row.beds,
+          deficiencyCount: facilitiesWithAnyDef.has(row.id) ? 1 : 0,
+          inspectionCount: inspCountByFac.get(row.id) ?? 0,
+        });
+      });
+  const indexableFacilityCount = listedRows.length;
+  const listedIds = new Set(listedRows.map((row) => row.id));
+  const withDeficiencyListed = [...facilitiesWithAnyDef].filter((id) => listedIds.has(id)).length;
 
   return {
     totalCount,
-    withDeficiency: facilitiesWithAnyDef.size,
+    withDeficiency: withDeficiencyListed,
     findingsDate,
     firstPublishedAt,
     indexableFacilityCount,

@@ -115,6 +115,8 @@ const words = answer.trim().split(/\s+/).length;
 assert.ok(words >= 40 && words <= 70, `direct answer was ${words} words: ${answer}`);
 assert.match(answer, /Brookdale Tanque Verde/);
 assert.match(answer, /Tucson/);
+assert.match(answer, /Directed Care licensed home/);
+assert.doesNotMatch(answer, /licensed memory care home/);
 
 assert.equal(
   buildStateHubTitle("Pennsylvania", "PA DHS"),

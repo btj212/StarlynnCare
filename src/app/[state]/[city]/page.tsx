@@ -27,7 +27,30 @@ import {
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
-import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
+import { REGULATOR_ABBR } from "@/lib/seo/meta";
+import { formatFacilityName } from "@/lib/facility/displayName";
+import { memoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import { careSettingCopy, listCareChip } from "@/lib/city-hub/careSetting";
+import {
+  cityDirectAnswer,
+  cityFaqExtras,
+  cityGlanceStats,
+  cityHubH1,
+  cityHubMetaDescription,
+  cityHubTitle,
+} from "@/lib/city-hub/copy";
+import { computeCityHubGlance, recentSeriousHomes } from "@/lib/city-hub/stats";
+import { dedupeHomesByDisplayName } from "@/lib/city-hub/dedupe";
+import {
+  belongsOnCityPage,
+  displayMunicipality,
+  paOverrideOrFilter,
+  paOverridePageSlugs,
+} from "@/lib/city-hub/municipality";
+import { localHelpFor } from "@/lib/city-hub/localHelp";
+import { CityDirectAnswer } from "@/components/city-hub/CityDirectAnswer";
+import { CityLocalHelp } from "@/components/city-hub/CityLocalHelp";
+import { RecentSeriousCitations } from "@/components/city-hub/RecentSeriousCitations";
 import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
 import { homesForCityIndex, rankHubFacilities } from "@/lib/facility/hubPreview";
@@ -39,7 +62,6 @@ import {
 } from "@/components/facility/RecentInspectionReports";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { isUsableInspectionDate, todayIsoDate } from "@/lib/data/inspectionDates";
-import { allYearsCitationWindowPhrase } from "@/lib/facility/citationWindow";
 import { parentCountyForCity } from "@/lib/regions";
 import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
 import { loadPublishedHubContent, sanitizeHubHtml } from "@/lib/content/loadHubContent";
@@ -50,6 +72,41 @@ import { HubEligibility } from "@/components/hub/HubEligibility";
 import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/HubDifferentiators";
 
 export const revalidate = 3600;
+
+const HUB_FACILITY_SELECT =
+  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu";
+
+type HubFacilityRow = {
+  id: string;
+  name: string;
+  city: string | null;
+  street: string | null;
+  zip: string | null;
+  city_slug: string;
+  slug: string;
+  beds: number | null;
+  care_category: string;
+  photo_url: string | null;
+  serves_memory_care: boolean;
+  memory_care_disclosure_filed: boolean;
+  tx_alzheimer_certified: boolean | null;
+  capacity_tier: "small" | "medium" | "large" | "unknown";
+  content: unknown;
+  license_type: string | null;
+  wa_dementia_care_contract: boolean | null;
+  wa_earc_sdc_contracted: boolean | null;
+  wa_memory_care_certified: boolean | null;
+  wa_dementia_specialty: boolean | null;
+  az_mc_subclass: boolean | null;
+  az_license_level: string | null;
+  az_memory_care_endorsed: boolean | null;
+  mce_endorsed: boolean | null;
+  mc_designation_type: string | null;
+  memory_care_disclosure_source: string | null;
+  mn_dementia_care_licensed: boolean | null;
+  il_dementia_program_flag: boolean | null;
+  mo_alzheimer_scu: boolean | null;
+};
 
 type PageProps = {
   params: Promise<{ state: string; city: string }>;
@@ -66,8 +123,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // We also reuse the same query path to derive the data-driven SERP snippet.
   let totalCount = 0;
   let withDeficiency = 0;
-  let findingsDate: string | null = null;
-  let metaFirstPublishedAt: string | null = null;
   let hubNoindex = false;
   if (supabase) {
     const summary = await loadRegionHubSummary(supabase, region);
@@ -76,8 +131,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!summary.fetchError && summary.totalCount === 0) notFound();
     totalCount = summary.indexableFacilityCount;
     withDeficiency = summary.withDeficiency;
-    findingsDate = summary.findingsDate;
-    metaFirstPublishedAt = summary.firstPublishedAt;
     hubNoindex =
       !summary.fetchError &&
       summary.totalCount > 0 &&
@@ -86,51 +139,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const reg = REGULATOR_ABBR[region.state.code] ?? "state";
-  const facilityNoun = region.state.code === "TX" ? "ALFs" : "facilities";
-  const isCounty = region.kind === "county";
-
-  // Title: lead with the "Best X, ranked by inspection records" frame — this matches
-  // dominant search intent (comparison/selection) while keeping the watchdog differentiation
-  // in the subtitle and body. The citation hook becomes proof of rigor, not the headline.
-  const stateAbbr = region.state.code;
-  let metaTitle: string;
-  if (isCounty) {
-    const candidates = [
-      `Best Memory Care in ${region.name}, ${stateAbbr} — Ranked by Inspections`,
-      `Best Memory Care in ${region.name}, ${stateAbbr}`,
-      `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
-      `Memory Care in ${region.name}, ${region.state.name}`,
-    ];
-    metaTitle = candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
-  } else {
-    const candidates = [
-      `Best Memory Care in ${region.name}, ${stateAbbr} — Ranked by Inspections`,
-      `Best Memory Care in ${region.name}, ${stateAbbr}`,
-      `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`,
-      `Memory Care in ${region.name}, ${region.state.name}`,
-    ];
-    metaTitle = candidates.find((c) => c.length <= 60) ?? candidates.at(-1)!;
-  }
-
-  // Data-driven description: lead with ranking promise — count + record basis — then
-  // cite the citation stat as proof of rigor rather than the headline of doom.
-  const dataDriven =
-    totalCount > 0
-      ? `${totalCount} memory care ${facilityNoun} in ${region.name}, ranked by ${reg} inspection records. ${withDeficiency > 0 ? `${withDeficiency} have citations on file, ${allYearsCitationWindowPhrase(reg)}.` : "Includes full citation history."}`
-      : null;
-
-  const fallbackByState: Record<string, string> = {
-    CA: `State inspection records and citation history for every licensed memory care facility in ${region.name}, built from primary CDSS data.`,
-    TX: `HHSC-sourced inspection listings for Alzheimer-certified assisted living in ${region.name}, Texas — built from public LTCR records.`,
-    OR: `Oregon DHS inspection records for every Memory Care Endorsed ALF and RCF in ${region.name} — sourced directly from the DHS LTC Licensing portal.`,
-    WA: `DSHS inspection and investigation records for every Specialized Dementia Care ALF in ${region.name}, Washington — sourced from the DSHS ALF Reports portal.`,
-    MN: `MDH inspection records for every licensed Assisted Living Facility with Dementia Care in ${region.name}, Minnesota — sourced from the MN Department of Health.`,
-  };
-  const desc = clipMetaDescription(
-    dataDriven ??
-      fallbackByState[region.state.code] ??
-      `State inspection records for licensed memory care facilities in ${region.name}, ${region.state.name}.`,
-  );
+  const metaTitle = cityHubTitle(region, totalCount);
+  const desc = cityHubMetaDescription({
+    region,
+    listedCount: totalCount,
+    withCitation: withDeficiency,
+    regulatorAbbr: reg,
+  });
   return {
     title: metaTitle,
     description: desc,
@@ -174,6 +189,8 @@ export default async function RegionPage({ params }: PageProps) {
   const ijCitByFac = new Map<string, number>();
   // Newest cited visit per home, for the "Recent reports" block on city pages.
   let recentReports: RecentReport[] = [];
+  const allInspData: Array<{ id: string; facility_id: string; inspection_date: string }> = [];
+  const allDefs: Array<{ inspection_id: string; class: string | null; severity: number | null }> = [];
 
   if (!supabase) {
     fetchError = "Supabase is not configured.";
@@ -181,9 +198,7 @@ export default async function RegionPage({ params }: PageProps) {
     // 1. Facilities
     const { data: rawFacilities, error } = await supabase
       .from("facilities")
-      .select(
-        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content",
-      )
+      .select(HUB_FACILITY_SELECT)
       .eq("state_code", region.state.code)
       .eq("publishable", true)
       .in("city_slug", region.citySlugs as unknown as string[])
@@ -192,16 +207,26 @@ export default async function RegionPage({ params }: PageProps) {
     if (error) {
       fetchError = error.message;
     } else {
-      const raw = (rawFacilities ?? []) as Array<{
-        id: string; name: string; city: string | null; street: string | null;
-        zip: string | null; city_slug: string;
-        slug: string; beds: number | null; care_category: string;
-        photo_url: string | null; serves_memory_care: boolean;
-        memory_care_disclosure_filed: boolean;
-        tx_alzheimer_certified: boolean | null;
-        capacity_tier: "small" | "medium" | "large" | "unknown";
-        content: unknown;
-      }>;
+      const seen = new Map<string, HubFacilityRow>();
+      for (const row of (rawFacilities ?? []) as HubFacilityRow[]) seen.set(row.id, row);
+
+      if (
+        !isCounty &&
+        region.state.code === "PA" &&
+        paOverridePageSlugs().includes(region.slug)
+      ) {
+        const { data: extraRows } = await supabase
+          .from("facilities")
+          .select(HUB_FACILITY_SELECT)
+          .eq("state_code", "PA")
+          .eq("publishable", true)
+          .or(paOverrideOrFilter());
+        for (const row of (extraRows ?? []) as HubFacilityRow[]) {
+          if (!seen.has(row.id)) seen.set(row.id, row);
+        }
+      }
+
+      const raw = [...seen.values()];
 
       if (raw.length > 0) {
         const ids = raw.map((f) => f.id);
@@ -211,7 +236,6 @@ export default async function RegionPage({ params }: PageProps) {
         //    with hundreds of inspections each; without chunking the counts are
         //    silently truncated and citation badges show 0.
         const INSP_CHUNK = 150;
-        const allInspData: Array<{ id: string; facility_id: string; inspection_date: string }> = [];
         for (let ci = 0; ci < ids.length; ci += INSP_CHUNK) {
           const chunk = ids.slice(ci, ci + INSP_CHUNK);
           const { data: chunkData, error: chunkErr } = await supabase
@@ -250,7 +274,6 @@ export default async function RegionPage({ params }: PageProps) {
         //    default 1000-row cap, which otherwise silently truncates large cities.
         //    Serious = Type A class OR severity >= 3 (whichever is populated by the ingest).
         const DEF_CHUNK = 150;
-        const allDefs: Array<{ inspection_id: string; class: string | null; severity: number | null }> = [];
         for (let ci = 0; ci < inspIds.length; ci += DEF_CHUNK) {
           const chunk = inspIds.slice(ci, ci + DEF_CHUNK);
           const { data: chunkData, error: chunkErr } = await supabase
@@ -306,27 +329,61 @@ export default async function RegionPage({ params }: PageProps) {
           .sort((a, b) => b.date.localeCompare(a.date) || b.findings - a.findings)
           .slice(0, 8);
 
-        facilities = raw.map((f) => ({
-          id: f.id,
-          name: f.name,
-          city: f.city,
-          street: f.street,
-          zip: f.zip,
-          city_slug: f.city_slug,
-          slug: f.slug,
-          beds: f.beds,
-          care_category: f.care_category as CareCategory,
-          photo_url: f.photo_url,
-          capacity_tier: f.capacity_tier,
-          serves_memory_care: f.serves_memory_care,
-          memory_care_disclosure_filed: f.memory_care_disclosure_filed,
-          tx_alzheimer_certified: Boolean(f.tx_alzheimer_certified),
-          inspections: inspCountByFac.get(f.id) ?? 0,
-          total_citations: totalCitByFac.get(f.id) ?? 0,
-          serious_citations: seriousCitByFac.get(f.id) ?? 0,
-          limitedHistory: (recentInspCountByFac.get(f.id) ?? 0) < 4,
-          ...contentAliasFields(f.content),
-        }));
+        facilities = raw.map((f) => {
+          const basis = memoryCareBasis({
+            state_code: region.state.code,
+            memory_care_disclosure_source: f.memory_care_disclosure_source,
+            mc_designation_type: f.mc_designation_type,
+            mce_endorsed: f.mce_endorsed,
+            wa_memory_care_certified: f.wa_memory_care_certified,
+            wa_earc_sdc_contracted: f.wa_earc_sdc_contracted,
+            wa_dementia_care_contract: f.wa_dementia_care_contract,
+            wa_dementia_specialty: f.wa_dementia_specialty,
+            tx_alzheimer_certified: f.tx_alzheimer_certified,
+            il_dementia_program_flag: f.il_dementia_program_flag,
+            mn_dementia_care_licensed: f.mn_dementia_care_licensed,
+            mo_alzheimer_scu: f.mo_alzheimer_scu,
+            az_memory_care_endorsed: f.az_memory_care_endorsed,
+            az_mc_subclass: f.az_mc_subclass,
+            az_license_level: f.az_license_level,
+          });
+          const muni = displayMunicipality({
+            stateCode: region.state.code,
+            zip: f.zip,
+            name: f.name,
+            citySlug: f.city_slug,
+          });
+          return {
+            id: f.id,
+            name: formatFacilityName(f.name),
+            city: muni?.name ?? displayCityName(f.city, f.city_slug),
+            street: f.street,
+            zip: f.zip,
+            city_slug: f.city_slug,
+            slug: f.slug,
+            beds: f.beds,
+            care_category: f.care_category as CareCategory,
+            photo_url: f.photo_url,
+            capacity_tier: f.capacity_tier,
+            serves_memory_care: f.serves_memory_care,
+            memory_care_disclosure_filed: f.memory_care_disclosure_filed,
+            tx_alzheimer_certified: Boolean(f.tx_alzheimer_certified),
+            inspections: inspCountByFac.get(f.id) ?? 0,
+            total_citations: totalCitByFac.get(f.id) ?? 0,
+            serious_citations: seriousCitByFac.get(f.id) ?? 0,
+            limitedHistory: (recentInspCountByFac.get(f.id) ?? 0) < 4,
+            careChip: listCareChip({ stateCode: region.state.code, basis }),
+            license_type: f.license_type,
+            wa_dementia_care_contract: f.wa_dementia_care_contract,
+            wa_earc_sdc_contracted: f.wa_earc_sdc_contracted,
+            az_mc_subclass: f.az_mc_subclass,
+            az_license_level: f.az_license_level,
+            az_memory_care_endorsed: f.az_memory_care_endorsed,
+            mc_designation_type: f.mc_designation_type,
+            ...contentAliasFields(f.content),
+          };
+        });
+        recentReports = recentReports.map((r) => ({ ...r, name: formatFacilityName(r.name) }));
       }
     }
   }
@@ -344,11 +401,38 @@ export default async function RegionPage({ params }: PageProps) {
     hubStats = (hubStatsRows as RegionHubStats[] | null)?.[0] ?? null;
   }
 
+  if (!isCounty && region.state.code === "PA") {
+    facilities = facilities.filter((f) =>
+      belongsOnCityPage(
+        { stateCode: "PA", zip: f.zip, name: f.name, citySlug: f.city_slug },
+        region.slug,
+      ),
+    );
+    const kept = new Set(facilities.map((f) => f.id));
+    recentReports = recentReports.filter((r) => kept.has(r.id));
+  }
+
   const smallCount = facilities.filter((f) => f.capacity_tier === "small").length;
   const totalCount = facilities.length;
-  const listedHomes = homesForCityIndex(facilities, region.state.code);
+  const indexedHomes = homesForCityIndex(facilities, region.state.code);
+  const listedHomes =
+    region.state.code === "PA"
+      ? dedupeHomesByDisplayName(indexedHomes)
+      : indexedHomes;
   const listedCount = listedHomes.length;
   const excludedCount = Math.max(0, totalCount - listedCount);
+  const glance = computeCityHubGlance({
+    listed: listedHomes,
+    publishableCount: totalCount,
+    inspections: allInspData,
+    deficiencies: allDefs,
+  });
+  const recentSerious = !isCounty
+    ? recentSeriousHomes(listedHomes, allInspData, allDefs)
+    : [];
+  const setting = careSettingCopy(region.state.code);
+  const localHelp = !isCounty ? localHelpFor(region.state.code, region.slug) : null;
+  const answer = !isCounty ? cityDirectAnswer({ region, glance, regulatorAbbr: reg }) : null;
 
   // PA county record stats — derived from already-fetched data, no extra queries.
   const paTotalDeficiencies = facilities.reduce((s, f) => s + f.total_citations, 0);
@@ -443,28 +527,14 @@ export default async function RegionPage({ params }: PageProps) {
   }
 
   const pageUrl = canonicalFor(`/${region.state.slug}/${region.slug}`);
-  const pageTitleCandidates = isCounty
-    ? [
-        `Best Memory Care in ${region.name}, ${region.state.code} — Ranked by Inspections`,
-        `Best Memory Care in ${region.name}, ${region.state.code}`,
-        `Memory Care in ${region.name}, ${region.state.name} - Rankings`,
-        `Memory Care in ${region.name}, ${region.state.name}`,
-      ]
-    : [
-        `Best Memory Care in ${region.name}, ${region.state.code} — Ranked by Inspections`,
-        `Best Memory Care in ${region.name}, ${region.state.code}`,
-        `Memory Care in ${region.name}, ${region.state.name} - Inspection Records`,
-        `Memory Care in ${region.name}, ${region.state.name}`,
-      ];
-  const pageTitle = pageTitleCandidates.find((c) => c.length <= 60) ?? pageTitleCandidates.at(-1)!;
-  const pageDesc =
-    region.state.code === "TX"
-      ? `${listedCount} Alzheimer-certified assisted living facilities in ${region.name}, ranked by HHSC inspection records — public LTCR data where published.`
-      : region.state.code === "AZ"
-        ? `${listedCount} licensed memory care facilities in ${region.name}, ranked by ADHS inspection records. AZ Care Check inspection history for every listed facility.`
-        : region.state.code === "CO"
-          ? `${listedCount} memory care facilities in ${region.name}. Assisted living citations are CDPHE Level A–E. Nursing homes use CMS F-tags. The two are not ranked together.`
-          : `${listedCount} licensed memory care facilities in ${region.name}, ranked by state inspection records. Full citation history for every listed facility.`;
+  const pageTitle = cityHubTitle(region, listedCount);
+  const pageDesc = cityHubMetaDescription({
+    region,
+    listedCount,
+    withCitation: glance.withCitation,
+    homesWithSeriousLast12: glance.homesWithSeriousLast12,
+    regulatorAbbr: reg,
+  });
 
   // Data source label for stat blocks — state-specific regulator attribution.
   const stateDataSrc =
@@ -481,19 +551,19 @@ export default async function RegionPage({ params }: PageProps) {
 
   // States where we have row-level deficiency data (deficiencies table populated).
   const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA", "AZ", "MO", "CO"]);
-  const hubRank = rankHubFacilities(facilities);
-  const itemListFacilities = hubRank.itemList.map((f) => ({
+  const hubRank = rankHubFacilities(listedHomes);
+  const itemListFacilities = listedHomes.map((f) => ({
     name: f.name,
     url: canonicalFor(`/${region.state.slug}/${f.city_slug}/${f.slug}`),
     facilityId: f.id,
     street: f.street,
-    city: displayCityName(f.city, f.city_slug),
+    city: f.city ?? displayCityName(f.city, f.city_slug),
     postalCode: f.zip,
     addressRegion: region.state.name,
   }));
   const hubPreview = hubRank.preview.map((f) => ({
     ...f,
-    city: displayCityName(f.city, f.city_slug),
+    city: f.city ?? displayCityName(f.city, f.city_slug),
   }));
   // Any deficiency (Type A or Type B) — matches the "§ Findings" label.
   // serious_citations is retained on each facility for card-level red/amber badging.
@@ -542,16 +612,19 @@ export default async function RegionPage({ params }: PageProps) {
       : null;
   }
 
-  const faqPairs = buildCityFaqs(region, {
-    totalCount: listedCount,
-    facilitiesWithDeficiency: facilitiesWithSeriousDef,
-  });
+  const faqPairs = [
+    ...cityFaqExtras({ region, glance }),
+    ...buildCityFaqs(region, {
+      totalCount: listedCount,
+      facilitiesWithDeficiency: facilitiesWithSeriousDef,
+    }),
+  ];
 
   const regionJsonLd = [
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
       { name: region.state.name, url: canonicalFor(`/${region.state.slug}`) },
-      { name: `Memory care in ${region.name}`, url: pageUrl },
+      { name: setting.collectionName(region.name), url: pageUrl },
     ]),
     buildWebPageWithReviewer({
       name: pageTitle,
@@ -561,19 +634,19 @@ export default async function RegionPage({ params }: PageProps) {
       dateModified: findingsDate,
     }),
     buildCollectionPageSchema({
-      name: `Memory care in ${region.name}`,
+      name: setting.collectionName(region.name),
       url: pageUrl,
       region,
       datePublished: firstPublishedAt,
       dateModified: findingsDate,
     }),
     buildItemListSchema(
-      `Memory care facilities in ${region.name}`,
+      setting.collectionName(region.name),
       pageUrl,
       itemListFacilities,
     ),
     buildFaqSchemaFromPairs(faqPairs, pageUrl),
-    buildSpeakableSchema({ url: pageUrl, cssSelectors: ["#hub-lede", "#hub-stats"] }),
+    buildSpeakableSchema({ url: pageUrl, cssSelectors: ["#hub-lede", "#city-answer", "#hub-stats"] }),
   ];
 
   // ── Additional data for content blocks ────────────────────────────────────
@@ -581,8 +654,9 @@ export default async function RegionPage({ params }: PageProps) {
   // Regulator primer (CA-specific)
   const regulatorPrimer = getRegulatorPrimer(region.state.code);
 
-  const regionStatItems: StatItem[] =
-    region.state.code === "TX"
+  const regionStatItems: StatItem[] = !isCounty
+    ? cityGlanceStats(region, glance, stateDataSrc)
+    : region.state.code === "TX"
       ? [
           {
             n: String(listedCount),
@@ -628,14 +702,14 @@ export default async function RegionPage({ params }: PageProps) {
           },
           {
             n: String(paTotalIj),
-            label: "Immediate-jeopardy findings on record",
+            label: "Severity-4 findings on record (not CMS Immediate Jeopardy)",
             src: "PA DHS OLTL",
           },
         ]
       : [
           {
             n: String(listedCount),
-            label: `Licensed memory care facilities listed in ${region.name}`,
+            label: `${setting.hubNoun} listed in ${region.name}`,
             src: stateDataSrc,
           },
           ...(HAS_DEFICIENCY_TABLE.has(region.state.code)
@@ -717,25 +791,21 @@ export default async function RegionPage({ params }: PageProps) {
               className="mb-4 font-[family-name:var(--font-display)] font-normal tracking-[-0.02em] text-ink"
               style={{ fontSize: "clamp(36px, 5vw, 56px)", lineHeight: 1.05 }}
             >
-              Best memory care in {region.name}
+              {cityHubH1(region, listedCount)}
             </h1>
             <p
               id="hub-lede"
               className="max-w-[50ch] font-[family-name:var(--font-sans)] text-[18px] leading-[1.5] text-ink-3 sm:text-[19px]"
             >
-              {region.state.code === "TX" ? (
-                <>
-                  {listedCount} Alzheimer-certified facilities, ranked by HHSC inspection
-                  records — every finding drawn from Long-Term Care Regulation (LTCR).
-                </>
-              ) : (
-                <>
-                  {listedCount > 0 ? `${listedCount} licensed facilities, ` : ""}ranked by
-                  state inspection records — every citation from primary{" "}
-                  {reg} data, no referral fees.
-                </>
-              )}
+              {listedCount > 0 ? `${listedCount} ${setting.hubNoun}, ` : ""}
+              ranked by {reg} inspection records — every citation from primary data, no
+              referral fees.
             </p>
+            {answer && (
+              <div id="city-answer">
+                <CityDirectAnswer q={answer.q} a={answer.a} />
+              </div>
+            )}
             {findingsDate && <UpdatedStamp isoDate={findingsDate} />}
 
             {/* Mobile-only Browse CTA — visible in the header without scrolling */}
@@ -813,7 +883,7 @@ export default async function RegionPage({ params }: PageProps) {
                         <>
                           Of the{" "}
                           <strong className="font-normal text-rust">{listedCount}</strong>{" "}
-                          licensed memory care facilities indexed in {region.name},{" "}
+                          {setting.hubNoun} indexed in {region.name},{" "}
                           <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
                           ({severePct}%) have a Type-A or Type-B deficiency in their state record
                           from the past 24 months.
@@ -918,7 +988,7 @@ export default async function RegionPage({ params }: PageProps) {
               label={isCounty ? `§ ${region.name} — Facilities` : "§ Facilities"}
               title={
                 <>
-                  Memory care in {region.name}, <em>starting with the fullest public records.</em>
+                  {setting.h1Topic} in {region.name}, <em>starting with the fullest public records.</em>
                 </>
               }
             />
@@ -948,6 +1018,14 @@ export default async function RegionPage({ params }: PageProps) {
               initialShowSmall={hubRank.onlySmallHomes}
             />
           </div>
+        )}
+
+        {!fetchError && !isCounty && (
+          <RecentSeriousCitations
+            homes={recentSerious}
+            stateSlug={region.state.slug}
+            regionName={region.name}
+          />
         )}
 
         {/* ── Newest cited visits — city pages only ── */}
@@ -1001,7 +1079,7 @@ export default async function RegionPage({ params }: PageProps) {
         <div className="border-b border-clearing-rule" style={{ background: "var(--color-paper)" }}>
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-14">
             <SectionHead
-              label="How memory care is regulated here"
+              label="How these homes are regulated"
               title={<>The public record behind <em>every profile.</em></>}
             />
             <div
@@ -1017,7 +1095,7 @@ export default async function RegionPage({ params }: PageProps) {
             <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-[60px] py-14">
               <SectionHead
                 label="Cost"
-                title={<>What memory care costs <em>in this city.</em></>}
+                title={<>What listed prices look like <em>in this city.</em></>}
               />
               <p className="text-[16px] leading-[1.7] text-ink-2 max-w-[60ch]">
                 {region.state.code === "CO" ? (
@@ -1027,7 +1105,7 @@ export default async function RegionPage({ params }: PageProps) {
                   </>
                 ) : cityCost ? (
                   <>
-                    Memory care homes in {region.name} that list a memory care price mostly fall between{" "}
+                    Homes in {region.name} that list a price mostly fall between{" "}
                     <strong className="font-semibold">
                       {formatCurrency(cityCost.band.low)}&ndash;{formatCurrency(cityCost.band.high)}
                     </strong>{" "}
@@ -1080,11 +1158,10 @@ export default async function RegionPage({ params }: PageProps) {
           <HubEligibility stateCode={region.state.code} regionName={region.name} />
         )}
 
+        {!isCounty && !fetchError && localHelp && <CityLocalHelp help={localHelp} />}
+
         {/* ── FAQ: county after stats block; city after cost band ── */}
-        {isCounty && !fetchError && (
-          <HubFaqSection regionName={region.name} faqPairs={faqPairs} />
-        )}
-        {!isCounty && !fetchError && (
+        {!fetchError && (
           <HubFaqSection regionName={region.name} faqPairs={faqPairs} />
         )}
 

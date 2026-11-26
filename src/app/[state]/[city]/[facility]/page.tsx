@@ -171,6 +171,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           name: displayName,
           percentile: compositePercentile,
           stateName: state.name,
+          stateCode: facility.state_code,
           city: cityLabel,
           citationCount: profile.totals.deficiencies,
           inspectionCount: profile.totals.inspections,

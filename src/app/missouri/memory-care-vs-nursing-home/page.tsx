@@ -46,7 +46,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "How does Missouri's system compare to Arizona's or California's?",
-    a: "Arizona uses a Directed Care license level as the primary dementia signal plus a new HB2764 Memory Care subclass. California uses RCFE licensing with an annual Type A / Type B deficiency framework. Missouri uses disclosure-based signaling (§198.510 SCU disclosure) and ALF** authorization — there is no separate license tier for dementia care. Each state has a different inspection record format and regulatory citation system. When reading a StarlynnCare profile, always note the state to interpret regulatory context correctly.",
+    a: "Arizona uses a Directed Care license level, with memory-care services attached by A.A.C. R9-10-816. California uses RCFE licensing with an annual Type A / Type B deficiency framework. Missouri uses disclosure-based signaling (§198.510 SCU disclosure) and ALF** authorization — there is no separate license tier for dementia care. Each state has a different inspection record format and regulatory citation system. When reading a StarlynnCare profile, always note the state to interpret regulatory context correctly.",
   },
 ];
 

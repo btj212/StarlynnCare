@@ -1,4 +1,5 @@
 import { peerRankPhrase } from "@/lib/seo/rankPhrase";
+import { careSettingCopy, peerSetPhrase } from "@/lib/city-hub/careSetting";
 
 /**
  * Clip meta descriptions for `<meta name="description">` and matching OG/Twitter fields.
@@ -163,7 +164,9 @@ export function buildFacilityTitle(input: {
           year ? `${place}: Inspection Record (${year})` : `${place}: Inspection Record`,
           `${placeAbbr}: Inspection Record`,
         ]
-      : [`${place}: Licensed Memory Care`, `${placeAbbr}: Licensed Memory Care`];
+      : input.stateName === "Arizona"
+        ? [`${place}: Directed Care Home`, `${placeAbbr}: Directed Care Home`]
+        : [`${place}: Licensed Memory Care`, `${placeAbbr}: Licensed Memory Care`];
   const candidates = [
     ...inspectionTitles,
     facts.length ? `${place}: ${joinTitleFacts(facts)}` : placeAbbr,
@@ -177,12 +180,33 @@ export function buildFacilityTitle(input: {
 }
 
 /** State hub title that answers regulator-lookup queries. */
-export function buildStateHubTitle(stateName: string, regulatorAbbr: string): string {
-  const candidates = [
-    `${stateName} Memory Care Inspection Reports | ${regulatorAbbr} Lookup`,
-    `Memory Care Inspection Reports in ${stateName}`,
-    `Memory Care in ${stateName} - Inspection Data`,
-  ];
+export function buildStateHubTitle(stateName: string, regulatorAbbr: string, stateCode?: string): string {
+  const setting = stateCode ? careSettingCopy(stateCode) : null;
+  const topic = setting?.h1Topic ?? "Memory Care";
+  const candidates =
+    stateCode === "AZ"
+      ? [
+          `${stateName} Directed Care Inspection Reports | ${regulatorAbbr} Lookup`,
+          `Directed Care Inspection Reports in ${stateName}`,
+          `Directed Care in ${stateName} - Inspection Data`,
+        ]
+      : stateCode === "WA"
+        ? [
+            `${stateName} Dementia Care Inspection Reports | ${regulatorAbbr} Lookup`,
+            `Dementia Care Inspection Reports in ${stateName}`,
+            `Dementia Care in ${stateName} - Inspection Data`,
+          ]
+        : stateCode === "PA"
+          ? [
+              `${stateName} Personal Care Inspection Reports | ${regulatorAbbr} Lookup`,
+              `Personal Care Inspection Reports in ${stateName}`,
+              `${topic} in ${stateName} - Inspection Data`,
+            ]
+          : [
+              `${stateName} Memory Care Inspection Reports | ${regulatorAbbr} Lookup`,
+              `Memory Care Inspection Reports in ${stateName}`,
+              `Memory Care in ${stateName} - Inspection Data`,
+            ];
   return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? candidates[candidates.length - 1]!);
 }
 
@@ -250,6 +274,7 @@ export function buildFacilityDescription(f: {
   /** Composite percentile 0–100, higher = better. Null when peer set too thin. */
   percentile: number | null;
   stateName: string;
+  stateCode?: string;
   city: string;
   citationCount: number;
   inspectionCount?: number;
@@ -281,9 +306,11 @@ export function buildFacilityDescription(f: {
       topPct <= 10
         ? `View the full inspection record on StarlynnCare.`
         : `View inspection record — no referral commissions.`;
-    const base = `Top ${topPct}% of ${f.stateName} memory care · ${citations}${inspPart}.`;
+    const peers = f.stateCode ? peerSetPhrase(f.stateCode, f.stateName) : `${f.stateName} memory care`;
+    const padNoun = f.stateCode ? careSettingCopy(f.stateCode).facilityNoun : "licensed memory care facility";
+    const base = `Top ${topPct}% of ${peers} · ${citations}${inspPart}.`;
     const full = `${base} ${tail}`;
-    return full.length >= MIN_DESC ? full : `${base} Licensed memory care in ${f.city}, ${f.stateName}. ${tail}`;
+    return full.length >= MIN_DESC ? full : `${base} ${padNoun} in ${f.city}, ${f.stateName}. ${tail}`;
   }
 
   // Bottom-half or unrated — facts only, no ranking language.
@@ -291,8 +318,8 @@ export function buildFacilityDescription(f: {
   const cta = reviewCta;
   const core = base + cta;
   if (core.length >= MIN_DESC) return core;
-  // Pad to minimum with a useful phrase about memory care.
-  return `${base} Licensed memory care facility. ${ctaSuffix}`;
+  const padNoun = f.stateCode ? careSettingCopy(f.stateCode).facilityNoun : "licensed memory care facility";
+  return `${base} ${padNoun.charAt(0).toUpperCase()}${padNoun.slice(1)}. ${ctaSuffix}`;
 }
 
 export type FacilitySnippetVariant = "meta" | "prose";
@@ -377,7 +404,7 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   let rankFrag: string | null = null;
   if (percentile != null) {
     if (percentile >= 50) {
-      rankFrag = `Ranked in the ${peerRankPhrase(percentile).text} of ${stateName} memory care`;
+      rankFrag = `Ranked in the ${peerRankPhrase(percentile).text} of ${peerSetPhrase(stateCode, stateName)}`;
     } else {
       // For bottom-half, prefer the worst sub-metric when the gap is ≥ 10 pts
       const worst = worstSubMetricFragment(
@@ -389,7 +416,7 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
       if (worst) {
         rankFrag = `Ranked in the bottom ${Math.max(1, Math.round(worst.percentile))}% on ${worst.label} among ${stateName} peers`;
       } else {
-        rankFrag = `Ranked in the ${peerRankPhrase(percentile).text} of ${stateName} memory care`;
+        rankFrag = `Ranked in the ${peerRankPhrase(percentile).text} of ${peerSetPhrase(stateCode, stateName)}`;
       }
     }
   }
@@ -433,12 +460,15 @@ export function buildFacilityDirectAnswer(input: {
   name: string;
   city: string;
   stateName: string;
+  stateCode?: string;
   regulatorAbbr: string;
   licenseNumber: string | null;
   inspectionCount: number;
   citationCount: number;
   lastInspected: string | null;
   beds: number | null;
+  /** Override the "is a … home" noun. */
+  facilityNoun?: string;
 }): string | null {
   if (input.inspectionCount < 1 && !input.licenseNumber) return null;
 
@@ -455,7 +485,17 @@ export function buildFacilityDirectAnswer(input: {
     record = `${input.inspectionCount} ${input.regulatorAbbr} ${input.inspectionCount === 1 ? "inspection" : "inspections"} and ${input.citationCount} ${input.citationCount === 1 ? "citation" : "citations"} are on file from the last 3 years.`;
   }
 
-  const base = `${input.name} is a licensed memory care home in ${input.city}, ${input.stateName}.${license}${beds} ${record}${inspected} Read the dated inspection record on this page; StarlynnCare does not take referral fees.`;
+  const noun =
+    input.facilityNoun ??
+    (input.stateCode === "AZ" || input.stateName === "Arizona"
+      ? "Directed Care licensed home"
+      : input.stateCode === "WA" || input.stateName === "Washington"
+        ? "licensed home that may serve residents with dementia"
+        : input.stateCode === "PA" || input.stateName === "Pennsylvania"
+          ? "licensed personal care or assisted living home"
+          : "licensed memory care home");
+
+  const base = `${input.name} is a ${noun} in ${input.city}, ${input.stateName}.${license}${beds} ${record}${inspected} Read the dated inspection record on this page; StarlynnCare does not take referral fees.`;
   const words = wordCount(base);
   if (words < 40) {
     const padded = `${base} Compare it with nearby homes using the same ${input.regulatorAbbr} source.`;

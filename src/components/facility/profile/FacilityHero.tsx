@@ -22,8 +22,11 @@ import { citationCountPhrase } from "@/lib/facility/citationWindow";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
 import { FacilityMemoryCareBasis } from "./FacilityMemoryCareBasis";
+import { AzMemoryCareBadges } from "./AzMemoryCareBadges";
+import { azMcProgram } from "@/lib/facility/azMcProgram";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
 import { peerRankPhrase } from "@/lib/seo/rankPhrase";
+import { peerSetPhrase } from "@/lib/city-hub/careSetting";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityShareButton } from "./FacilityShareButton";
@@ -318,6 +321,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         name: displayName,
         city: cityName,
         stateName: state.name,
+        stateCode: state.code,
         regulatorAbbr: profile.cfg.agencyShort ?? REGULATOR_ABBR[state.code] ?? "state",
         licenseNumber: facility.license_number,
         inspectionCount: profile.totals.inspections,
@@ -394,7 +398,17 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                   {facility.beds} beds
                 </span>
               )}
-              {isMc && facility.state_code !== "CO" && (
+              {facility.state_code === "AZ" && (
+                <span className="fp-tag rounded-full border border-paper-rule bg-paper-2 px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-medium text-ink-3">
+                  Directed Care
+                </span>
+              )}
+              {facility.state_code === "AZ" && azMcProgram(facility).confirmed && (
+                <span className="fp-tag rounded-full border border-teal/35 bg-teal-soft px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal-deep">
+                  Memory care program confirmed
+                </span>
+              )}
+              {isMc && facility.state_code !== "CO" && facility.state_code !== "AZ" && facility.state_code !== "WA" && profile.memoryCareBasis.kind === "memory-care" && (
                 <span className="fp-tag rounded-full bg-clearing-chip px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
                   Dementia-trained staff
                 </span>
@@ -474,7 +488,15 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               <OrMcSignalBadges signals={profile.orMcSignals} />
             )}
 
-            <FacilityMemoryCareBasis basis={profile.memoryCareBasis} />
+            {facility.state_code === "AZ" ? (
+              <AzMemoryCareBadges
+                program={azMcProgram(facility)}
+                regulatorShort={profile.memoryCareBasis.regulatorShort}
+                regulatorUrl={profile.memoryCareBasis.sourceUrl}
+              />
+            ) : (
+              <FacilityMemoryCareBasis basis={profile.memoryCareBasis} />
+            )}
 
             {profile.latestVisit ? (
               <p className="mt-2 mb-0 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-ink-3">
@@ -490,7 +512,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                     Peer rank
                   </div>
                   <div className="font-[family-name:var(--font-sans)] text-[15px] font-semibold text-ink-2">
-                    {peerRankPhrase(profile.snapshot.grade.composite_percentile).text.replace(/^./, (c) => c.toUpperCase())} of {state.name} memory care
+                    {peerRankPhrase(profile.snapshot.grade.composite_percentile).text.replace(/^./, (c) => c.toUpperCase())} of {peerSetPhrase(facility.state_code, state.name)}
                   </div>
                   <a
                     href="#peer"
