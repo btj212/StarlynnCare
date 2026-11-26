@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — City hub counts drifted because CMS intros and CA FAQ fallback
+
+**What went wrong:** San Diego's live intro said 23 homes / 3,374 beds while the headline, stats, and A–Z said 22 / 3,224. The missing home (Vista del Sol) had no inspections, so `facilityListedOnHub` dropped it, and a published `hub_content` row still quoted 23. Kansas City FAQs were California (Medi-Cal, CDSS, RCFE, Type-A/B) because `getStateStrings` had no Missouri branch and fell through to the CA default. Findings footnotes defaulted to CA CDSS Type-A/Type-B for Minnesota and Oregon. Oregon "serious citations = 0" was `severity >= 3` on rows with no class or severity. Kansas City "Improving 135 → 100 → 17" used a 12-month window with only 5 inspections.
+
+**What worked instead:** One listed set for every count on the page; skip `hub_content` bodies on city hubs; add MO (and keep MN/OR) to `getStateStrings`; state-keyed `findingsCopy`; Oregon never counts as "serious"; Missouri Class I from `class` only; suppress the 12-month trend below 8 inspections in the window. Do not write publishable flags or merge licenses to close the remaining local-pack gaps.
+
+**Source:** Four-city hub specs, 2026-11-26.
+
+---
+
 ## 2026-11 — HB2764 is not a Memory Care subclass
 
 **What went wrong:** The Arizona licensing guide, FAQs, and regulator primer said HB2764 created a separate Memory Care subclass that facilities apply for, and that Directed Care alone does not confer that status. That contradicted A.R.S. § 36-405.03 and A.A.C. R9-10-816.

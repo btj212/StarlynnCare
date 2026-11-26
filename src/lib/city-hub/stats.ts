@@ -17,13 +17,24 @@ export type CityHubGlance = {
   withCitationPct: number;
   inspectionsLast12: number;
   citationsLast12: number;
+  citationsPrior12: number;
+  citationsLast36: number;
   seriousLast12: number;
   homesWithSeriousLast12: number;
+  typeALast12: number;
+  homesWithTypeALast12: number;
   newestInspection: string | null;
+  /** False when this state's stored findings have no class/severity we trust. */
+  severityMeasured: boolean;
   size: CitySizeSplit;
   sdcCount: number;
   pchCount: number;
   alrCount: number;
+  /** Minnesota ALDC licenses among listed homes. */
+  dementiaLicenseCount: number;
+  ccrcCount: number;
+  topCitedLast12Name: string | null;
+  topCitedLast12Count: number;
 };
 
 export type CityInspectionRow = {
@@ -40,12 +51,15 @@ export type CityDeficiencyRow = {
 
 type GlanceHome = {
   id: string;
+  name?: string;
   beds: number | null;
   zip: string | null;
   total_citations: number;
+  care_category?: string | null;
   wa_dementia_care_contract?: boolean | null;
   wa_earc_sdc_contracted?: boolean | null;
   license_type?: string | null;
+  mn_dementia_care_licensed?: boolean | null;
 };
 
 function monthsAgoIso(months: number, today = todayIsoDate()): string {
@@ -55,8 +69,42 @@ function monthsAgoIso(months: number, today = todayIsoDate()): string {
   return dt.toISOString().slice(0, 10);
 }
 
-export function isSeriousCityFinding(d: { class: string | null; severity: number | null }): boolean {
+function classLabel(raw: string | null): string {
+  return (raw ?? "").trim().toUpperCase().replace(/^CLASS\s+/, "");
+}
+
+/**
+ * "Serious" for city-hub stats and card badges.
+ * Oregon: never — citations have no class or severity in our data.
+ * Missouri: Class I only. Stored severity numbers are inverted (Class I as
+ * severity 2, some Class III as 4) and are not used until that mapping is audited.
+ * California and others: Type A class, or severity >= 3 when that is the ingest.
+ */
+export function isSeriousCityFinding(
+  d: { class: string | null; severity: number | null },
+  stateCode?: string,
+): boolean {
+  const code = (stateCode ?? "").toUpperCase();
+  if (code === "OR") return false;
+  if (code === "MO") {
+    const cls = classLabel(d.class);
+    return cls === "I" || cls === "1";
+  }
   return d.class === "Type A" || (d.severity ?? 0) >= 3;
+}
+
+export function isTypeAFinding(d: { class: string | null }): boolean {
+  return d.class === "Type A";
+}
+
+export function stateHasSeverityInData(
+  deficiencies: Array<{ class: string | null; severity: number | null }>,
+  stateCode: string,
+): boolean {
+  const code = stateCode.toUpperCase();
+  if (code === "OR") return false;
+  if (deficiencies.length === 0) return code !== "OR";
+  return deficiencies.some((d) => (d.class != null && d.class.trim() !== "") || d.severity != null);
 }
 
 export function computeCityHubGlance(input: {
@@ -64,10 +112,15 @@ export function computeCityHubGlance(input: {
   publishableCount: number;
   inspections: CityInspectionRow[];
   deficiencies: CityDeficiencyRow[];
+  stateCode: string;
 }): CityHubGlance {
   const listedIds = new Set(input.listed.map((h) => h.id));
+  const listedById = new Map(input.listed.map((h) => [h.id, h]));
   const listedCount = input.listed.length;
   const cutoff12 = monthsAgoIso(12);
+  const cutoff24 = monthsAgoIso(24);
+  const cutoff36 = monthsAgoIso(36);
+  const stateCode = input.stateCode;
 
   const inspDate = new Map<string, string>();
   let inspectionsLast12 = 0;
@@ -82,17 +135,41 @@ export function computeCityHubGlance(input: {
   }
 
   let citationsLast12 = 0;
+  let citationsPrior12 = 0;
+  let citationsLast36 = 0;
   let seriousLast12 = 0;
+  let typeALast12 = 0;
   const homesSerious12 = new Set<string>();
+  const homesTypeA12 = new Set<string>();
+  const citedLast12 = new Map<string, number>();
   const inspFac = new Map(input.inspections.map((i) => [i.id, i.facility_id]));
   for (const d of input.deficiencies) {
     const date = inspDate.get(d.inspection_id);
     const fid = inspFac.get(d.inspection_id);
-    if (!date || !fid || !listedIds.has(fid) || date < cutoff12) continue;
-    citationsLast12 += 1;
-    if (isSeriousCityFinding(d)) {
-      seriousLast12 += 1;
-      homesSerious12.add(fid);
+    if (!date || !fid || !listedIds.has(fid)) continue;
+    if (date >= cutoff36) citationsLast36 += 1;
+    if (date >= cutoff12) {
+      citationsLast12 += 1;
+      citedLast12.set(fid, (citedLast12.get(fid) ?? 0) + 1);
+      if (isSeriousCityFinding(d, stateCode)) {
+        seriousLast12 += 1;
+        homesSerious12.add(fid);
+      }
+      if (isTypeAFinding(d)) {
+        typeALast12 += 1;
+        homesTypeA12.add(fid);
+      }
+    } else if (date >= cutoff24) {
+      citationsPrior12 += 1;
+    }
+  }
+
+  let topCitedLast12Name: string | null = null;
+  let topCitedLast12Count = 0;
+  for (const [fid, n] of citedLast12) {
+    if (n > topCitedLast12Count) {
+      topCitedLast12Count = n;
+      topCitedLast12Name = listedById.get(fid)?.name ?? null;
     }
   }
 
@@ -103,6 +180,8 @@ export function computeCityHubGlance(input: {
   let sdcCount = 0;
   let pchCount = 0;
   let alrCount = 0;
+  let dementiaLicenseCount = 0;
+  let ccrcCount = 0;
   for (const h of input.listed) {
     const beds = h.beds;
     if (beds != null) {
@@ -117,6 +196,8 @@ export function computeCityHubGlance(input: {
     const lt = (h.license_type ?? "").toUpperCase();
     if (lt.includes("PERSONAL CARE")) pchCount += 1;
     else if (lt.includes("ASSISTED LIVING")) alrCount += 1;
+    if (h.mn_dementia_care_licensed) dementiaLicenseCount += 1;
+    if (h.care_category === "ccrc" || lt.includes("CCRC")) ccrcCount += 1;
   }
 
   return {
@@ -129,13 +210,22 @@ export function computeCityHubGlance(input: {
     withCitationPct: listedCount > 0 ? Math.round((withCitation / listedCount) * 100) : 0,
     inspectionsLast12,
     citationsLast12,
+    citationsPrior12,
+    citationsLast36,
     seriousLast12,
     homesWithSeriousLast12: homesSerious12.size,
+    typeALast12,
+    homesWithTypeALast12: homesTypeA12.size,
     newestInspection,
+    severityMeasured: stateHasSeverityInData(input.deficiencies, stateCode),
     size,
     sdcCount,
     pchCount,
     alrCount,
+    dementiaLicenseCount,
+    ccrcCount,
+    topCitedLast12Name,
+    topCitedLast12Count,
   };
 }
 
@@ -155,6 +245,7 @@ export function recentSeriousHomes<
   inspections: CityInspectionRow[],
   deficiencies: CityDeficiencyRow[],
   limit = 8,
+  stateCode?: string,
 ): RecentSeriousHome[] {
   const listedById = new Map(listed.map((h) => [h.id, h]));
   const cutoff12 = monthsAgoIso(12);
@@ -162,7 +253,7 @@ export function recentSeriousHomes<
   const seriousByFac = new Map<string, { date: string; count: number }>();
 
   for (const d of deficiencies) {
-    if (!isSeriousCityFinding(d)) continue;
+    if (!isSeriousCityFinding(d, stateCode)) continue;
     const insp = inspFac.get(d.inspection_id);
     if (!insp || !listedById.has(insp.facility_id)) continue;
     if (!isUsableInspectionDate(insp.inspection_date) || insp.inspection_date < cutoff12) continue;

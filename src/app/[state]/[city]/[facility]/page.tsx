@@ -108,6 +108,8 @@ import { MetroNearbyFacilities } from "@/components/facility/MetroNearbyFaciliti
 import { SameOperatorFacilities } from "@/components/facility/SameOperatorFacilities";
 import { FacilityBrowseLinks } from "@/components/facility/FacilityBrowseLinks";
 import { ReportListingForm } from "@/components/facility/ReportListingForm";
+import { loadPreviousLicensesAtAddress } from "@/lib/facility/previousLicense";
+import { PreviousLicenseNote } from "@/components/facility/profile/PreviousLicenseNote";
 
 export const revalidate = 3600;
 export const maxDuration = 60;
@@ -256,6 +258,13 @@ export default async function FacilityPage({ params }: PageProps) {
   const { facility, state, county, backHref, backLabel } = profile;
   const costRows = await loadFacilityCosts([facility.id]);
   const offer = assignOffer(facility.id, facility.state_code);
+  const previousLicenses = await loadPreviousLicensesAtAddress({
+    id: facility.id,
+    stateCode: facility.state_code,
+    street: facility.street,
+    zip: facility.zip,
+    stateSlug: state.slug,
+  });
 
   return (
     <>
@@ -275,6 +284,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
         {/* § 00 · Hero */}
         <FacilityHero profile={profile} />
+        <PreviousLicenseNote licenses={previousLicenses} />
 
         {/*
           Mobile-first ordering. High-intent mobile visitors must reach the hard

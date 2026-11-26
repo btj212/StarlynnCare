@@ -96,8 +96,44 @@ export function careSettingCopy(stateCode: string): CareSettingCopy {
       h1Topic: "Memory care",
       collectionName: (city) => `Memory care in ${city}`,
       licenseExplainer:
-        "Oregon homes here hold a DHS Memory Care Endorsement under ORS 443.886.",
+        "Oregon homes here hold a DHS Memory Care Endorsement under ORS 443.886. Most are licensed as residential care facilities (RCF); some are assisted living (ALF) or nursing facilities (NF).",
       peerSet: "Oregon memory care",
+    };
+  }
+
+  if (code === "MN") {
+    return {
+      hubNoun: "assisted living homes",
+      facilityNoun: "Minnesota assisted living home",
+      h1Topic: "Memory care",
+      collectionName: (city) => `Memory care in ${city}`,
+      licenseExplainer:
+        "Minnesota memory care requires an Assisted Living with Dementia Care (ALDC) license under Minn. Stat. ch. 144G. Homes licensed only as assisted living (AL) are listed and labeled separately.",
+      peerSet: "Minnesota assisted living",
+    };
+  }
+
+  if (code === "MO") {
+    return {
+      hubNoun: "DHSS-licensed assisted living and residential care homes",
+      facilityNoun: "Missouri ALF or RCF",
+      h1Topic: "Memory care",
+      collectionName: (city) => `Memory care in ${city}`,
+      licenseExplainer:
+        "Missouri homes here are licensed as assisted living or residential care facilities by DHSS under 19 CSR 30. There is no separate memory-care license.",
+      peerSet: "Missouri assisted living",
+    };
+  }
+
+  if (code === "CA") {
+    return {
+      hubNoun: "licensed memory care facilities",
+      facilityNoun: "CDSS-licensed RCFE",
+      h1Topic: "Memory care",
+      collectionName: (city) => `Memory care in ${city}`,
+      licenseExplainer:
+        "Memory care in California is provided by licensed Residential Care Facilities for the Elderly (RCFEs), inspected by CDSS Community Care Licensing.",
+      peerSet: "California memory care",
     };
   }
 

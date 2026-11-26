@@ -10,6 +10,7 @@ type IndexHome = {
   city_slug: string;
   beds: number | null;
   total_citations: number;
+  inspections?: number;
   marketing_name?: string | null;
   name_aliases?: string[] | null;
 };
@@ -20,7 +21,8 @@ type Props = {
   regionName: string;
 };
 
-function citationLabel(count: number): string {
+function citationLabel(count: number, inspections?: number): string {
+  if (inspections === 0) return "no inspections on file yet";
   return `${count} ${count === 1 ? "citation" : "citations"} (all years)`;
 }
 
@@ -65,7 +67,7 @@ export function CityHomeIndex({ homes, stateSlug, regionName }: Props) {
               ) : null}
               <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-3">
                 {home.beds != null ? `${home.beds} beds · ` : ""}
-                {citationLabel(home.total_citations)}
+                {citationLabel(home.total_citations, home.inspections)}
               </span>
             </li>
             );

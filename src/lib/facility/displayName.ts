@@ -29,6 +29,8 @@ const STOP_WORDS = new Set([
 ]);
 
 const ARTICLE_SUFFIX = /^(.+?),\s*(the|a|an)\s*$/i;
+/** "Madison Senior Living the" / "GARDENS AT BARRY ROAD THE" without a comma. */
+const ARTICLE_TRAILING = /^(.+?)\s+(the|a|an)$/i;
 
 const SUFFIX_FIXES: Array<[RegExp, string]> = [
   [/\bLlc\b/g, "LLC"],
@@ -77,10 +79,14 @@ export function formatFacilityName(
   let working = trimmed;
   let article: string | null = null;
 
-  const match = working.match(ARTICLE_SUFFIX);
+  const match = working.match(ARTICLE_SUFFIX) ?? working.match(ARTICLE_TRAILING);
   if (match) {
     working = match[1].trim();
     article = match[2].toLowerCase();
+  }
+  // Don't emit "The The Lakes" when the legal name already leads with the article.
+  if (article && working.toLowerCase().startsWith(`${article} `)) {
+    article = null;
   }
 
   // Collapse "L L C" / "L.L.C" before title-case so LLC stays an abbreviation.

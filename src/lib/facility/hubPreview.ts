@@ -14,8 +14,9 @@ type RankedFacility = {
 
 /**
  * Every home a city page should link to, A to Z. This is the listed set
- * (inspection on file; Arizona small homes with no citations stay off it).
- * The facility sitemap is every publishable profile, including those thin pages.
+ * (Arizona small homes with no citations stay off it; small homes with no
+ * inspection stay off it; a newly licensed home with no inspections yet is
+ * included). The facility sitemap is every publishable profile.
  */
 export function homesForCityIndex<
   T extends { name: string; beds: number | null; inspections: number; total_citations: number },

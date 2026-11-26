@@ -79,7 +79,7 @@ const cases: Case[] = [
     listed: true,
   },
   {
-    name: "a publishable page with no inspection is indexable and in the sitemap, but not on the city hub",
+    name: "a newly licensed home with no inspections yet is listed on the city hub",
     stateCode: "TX",
     beds: 80,
     deficiencyCount: 0,
@@ -88,7 +88,7 @@ const cases: Case[] = [
     tourQuestionCount: 0,
     photoCount: 0,
     noindex: false,
-    listed: false,
+    listed: true,
   },
   {
     name: "a Washington AFH with no inspection row stays indexable and off the city hub",
@@ -103,7 +103,7 @@ const cases: Case[] = [
     listed: false,
   },
   {
-    name: "a photo-only home stays indexable; the city hub still requires an inspection",
+    name: "a California home with no inspections yet (Vista del Sol analog) is listed",
     stateCode: "CA",
     beds: 20,
     deficiencyCount: 0,
@@ -112,7 +112,7 @@ const cases: Case[] = [
     tourQuestionCount: 0,
     photoCount: 2,
     noindex: false,
-    listed: false,
+    listed: true,
   },
 ];
 

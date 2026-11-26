@@ -50,6 +50,11 @@ import {
 import { localHelpFor } from "@/lib/city-hub/localHelp";
 import { CityDirectAnswer } from "@/components/city-hub/CityDirectAnswer";
 import { CityLocalHelp } from "@/components/city-hub/CityLocalHelp";
+import { CityAreasServed } from "@/components/city-hub/CityAreasServed";
+import { findingsCopy } from "@/lib/city-hub/findings";
+import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
+import { areasServedFor, displayCountyCrumb, nearbyHubsFor } from "@/lib/city-hub/areas";
+import { isSeriousCityFinding } from "@/lib/city-hub/stats";
 import { RecentSeriousCitations } from "@/components/city-hub/RecentSeriousCitations";
 import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
@@ -64,7 +69,6 @@ import { displayCityName } from "@/lib/resolveListingRegion";
 import { isUsableInspectionDate, todayIsoDate } from "@/lib/data/inspectionDates";
 import { parentCountyForCity } from "@/lib/regions";
 import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
-import { loadPublishedHubContent, sanitizeHubHtml } from "@/lib/content/loadHubContent";
 import { formatCostRange, formatCurrency, getStateCostBand } from "@/lib/content/stateCostBands";
 import { cityMemoryCareBand } from "@/lib/cost/costBand";
 import { loadFacilityCosts } from "@/lib/cost/loadFacilityCosts";
@@ -74,7 +78,7 @@ import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/
 export const revalidate = 3600;
 
 const HUB_FACILITY_SELECT =
-  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu";
+  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care";
 
 type HubFacilityRow = {
   id: string;
@@ -106,6 +110,7 @@ type HubFacilityRow = {
   mn_dementia_care_licensed: boolean | null;
   il_dementia_program_flag: boolean | null;
   mo_alzheimer_scu: boolean | null;
+  mo_level_of_care: string | null;
 };
 
 type PageProps = {
@@ -123,6 +128,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // We also reuse the same query path to derive the data-driven SERP snippet.
   let totalCount = 0;
   let withDeficiency = 0;
+  let dementiaLicenseCount = 0;
   let hubNoindex = false;
   if (supabase) {
     const summary = await loadRegionHubSummary(supabase, region);
@@ -131,6 +137,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!summary.fetchError && summary.totalCount === 0) notFound();
     totalCount = summary.indexableFacilityCount;
     withDeficiency = summary.withDeficiency;
+    dementiaLicenseCount = summary.dementiaLicenseCount;
     hubNoindex =
       !summary.fetchError &&
       summary.totalCount > 0 &&
@@ -139,7 +146,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const canonical = canonicalFor(`/${region.state.slug}/${region.slug}`);
   const reg = REGULATOR_ABBR[region.state.code] ?? "state";
-  const metaTitle = cityHubTitle(region, totalCount);
+  const metaTitle = cityHubTitle(region, totalCount, { dementiaLicenseCount });
   const desc = cityHubMetaDescription({
     region,
     listedCount: totalCount,
@@ -295,7 +302,7 @@ export default async function RegionPage({ params }: PageProps) {
           if (!fid) continue;
           totalCitByFac.set(fid, (totalCitByFac.get(fid) ?? 0) + 1);
           // Type A class OR severity >= 3 — handles whichever field the ingest populates.
-          const isSerious = d.class === "Type A" || (d.severity ?? 0) >= 3;
+          const isSerious = isSeriousCityFinding(d, region.state.code);
           if (isSerious) {
             seriousCitByFac.set(fid, (seriousCitByFac.get(fid) ?? 0) + 1);
           }
@@ -373,7 +380,16 @@ export default async function RegionPage({ params }: PageProps) {
             serious_citations: seriousCitByFac.get(f.id) ?? 0,
             limitedHistory: (recentInspCountByFac.get(f.id) ?? 0) < 4,
             careChip: listCareChip({ stateCode: region.state.code, basis }),
+            licenseLabel: listLicenseLabel({
+              stateCode: region.state.code,
+              care_category: f.care_category as CareCategory,
+              license_type: f.license_type,
+              mo_level_of_care: f.mo_level_of_care,
+              mn_dementia_care_licensed: f.mn_dementia_care_licensed,
+            }),
             license_type: f.license_type,
+            mo_level_of_care: f.mo_level_of_care,
+            mn_dementia_care_licensed: f.mn_dementia_care_licensed,
             wa_dementia_care_contract: f.wa_dementia_care_contract,
             wa_earc_sdc_contracted: f.wa_earc_sdc_contracted,
             az_mc_subclass: f.az_mc_subclass,
@@ -426,13 +442,31 @@ export default async function RegionPage({ params }: PageProps) {
     publishableCount: totalCount,
     inspections: allInspData,
     deficiencies: allDefs,
+    stateCode: region.state.code,
   });
   const recentSerious = !isCounty
-    ? recentSeriousHomes(listedHomes, allInspData, allDefs)
+    ? recentSeriousHomes(listedHomes, allInspData, allDefs, 8, region.state.code)
     : [];
   const setting = careSettingCopy(region.state.code);
   const localHelp = !isCounty ? localHelpFor(region.state.code, region.slug) : null;
-  const answer = !isCounty ? cityDirectAnswer({ region, glance, regulatorAbbr: reg }) : null;
+  const cityCostEarly =
+    !isCounty && !fetchError && region.state.code !== "CO"
+      ? cityMemoryCareBand(await loadFacilityCosts(facilities.map((f) => f.id)))
+      : null;
+  const answer = !isCounty
+    ? cityDirectAnswer({
+        region,
+        glance,
+        regulatorAbbr: reg,
+        listedPrice: cityCostEarly
+          ? {
+              low: formatCurrency(cityCostEarly.band.low),
+              high: formatCurrency(cityCostEarly.band.high),
+              homes: cityCostEarly.homes,
+            }
+          : null,
+      })
+    : null;
 
   // PA county record stats — derived from already-fetched data, no extra queries.
   const paTotalDeficiencies = facilities.reduce((s, f) => s + f.total_citations, 0);
@@ -527,21 +561,26 @@ export default async function RegionPage({ params }: PageProps) {
   }
 
   const pageUrl = canonicalFor(`/${region.state.slug}/${region.slug}`);
-  const pageTitle = cityHubTitle(region, listedCount);
+  const pageTitle = cityHubTitle(region, listedCount, {
+    dementiaLicenseCount: glance.dementiaLicenseCount,
+  });
   const pageDesc = cityHubMetaDescription({
     region,
     listedCount,
     withCitation: glance.withCitation,
-    homesWithSeriousLast12: glance.homesWithSeriousLast12,
+    homesWithSeriousLast12: glance.severityMeasured ? glance.homesWithSeriousLast12 : undefined,
+    homesWithTypeALast12: glance.homesWithTypeALast12,
     regulatorAbbr: reg,
   });
+
+  const findingsVocab = findingsCopy(region.state.code);
 
   // Data source label for stat blocks — state-specific regulator attribution.
   const stateDataSrc =
     region.state.code === "AZ" ? "ADHS / AZ Care Check"
     : region.state.code === "WA" ? "DSHS"
     : region.state.code === "MN" ? "MDH"
-    : region.state.code === "OR" ? "OHA"
+    : region.state.code === "OR" ? "OR DHS"
     : region.state.code === "UT" ? "DLBC"
     : region.state.code === "IL" ? "IDPH"
     : region.state.code === "PA" ? "PA DHS"
@@ -568,11 +607,7 @@ export default async function RegionPage({ params }: PageProps) {
   // Any deficiency (Type A or Type B) — matches the "§ Findings" label.
   // serious_citations is retained on each facility for card-level red/amber badging.
   const facilitiesWithSeriousDef = listedHomes.filter((f) => f.total_citations > 0).length;
-  // A city range from listed prices needs enough homes with a labeled memory care price.
-  const cityCost =
-    !isCounty && !fetchError && region.state.code !== "CO"
-      ? cityMemoryCareBand(await loadFacilityCosts(facilities.map((f) => f.id)))
-      : null;
+  const cityCost = cityCostEarly;
   const severePct =
     listedCount > 0 ? Math.round((facilitiesWithSeriousDef / listedCount) * 100) : 0;
 
@@ -603,13 +638,21 @@ export default async function RegionPage({ params }: PageProps) {
         .maybeSingle(),
     ]);
     const row = refreshRow.data as { updated_at: string } | null;
-    findingsDate = row?.updated_at
+    const updated = row?.updated_at
       ? new Date(row.updated_at).toISOString().split("T")[0]
       : null;
+    // Prefer the newest inspection on listed homes so a stale facilities.updated_at
+    // (St. Paul still said May 2026 while visits ran through October) does not win.
+    findingsDate =
+      glance.newestInspection && (!updated || glance.newestInspection > updated)
+        ? glance.newestInspection
+        : updated;
     const firstRow2 = firstRow.data as { created_at: string } | null;
     firstPublishedAt = firstRow2?.created_at
       ? new Date(firstRow2.created_at).toISOString()
       : null;
+  } else if (glance.newestInspection) {
+    findingsDate = glance.newestInspection;
   }
 
   const faqPairs = [
@@ -620,11 +663,20 @@ export default async function RegionPage({ params }: PageProps) {
     }),
   ];
 
+  const displayCounty = !parentCounty
+    ? displayCountyCrumb(region.state.code, region.slug)
+    : null;
+  const countyCrumb = parentCounty
+    ? { name: parentCounty.name, url: canonicalFor(`/${region.state.slug}/${parentCounty.slug}`) }
+    : displayCounty
+      ? { name: displayCounty.name, url: displayCounty.href ?? undefined }
+      : null;
   const regionJsonLd = [
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
       { name: region.state.name, url: canonicalFor(`/${region.state.slug}`) },
-      { name: setting.collectionName(region.name), url: pageUrl },
+      ...(countyCrumb ? [countyCrumb] : []),
+      { name: region.name, url: pageUrl },
     ]),
     buildWebPageWithReviewer({
       name: pageTitle,
@@ -716,14 +768,7 @@ export default async function RegionPage({ params }: PageProps) {
             ? [
                 {
                   n: String(facilitiesWithSeriousDef),
-                  label:
-                    region.state.code === "AZ"
-                      ? "Facilities with at least one A.A.C. R9-10 deficiency finding in the indexed inspection record (24 months where dated)"
-                      : region.state.code === "MO"
-                        ? "Facilities with at least one DHSS deficiency finding in the indexed inspection record (24 months where dated)"
-                        : region.state.code === "CO"
-                          ? "Facilities with at least one CDPHE Level C–E citation or CMS severity 3–4 deficiency in the indexed record"
-                          : "Facilities with at least one Type-A or Type-B deficiency finding in the indexed inspection record (24 months where dated)",
+                  label: findingsVocab.anyFindingLabel,
                   src: stateDataSrc,
                   delta: listedCount > 0 ? `${severePct}% of listed facilities` : undefined,
                 },
@@ -743,13 +788,9 @@ export default async function RegionPage({ params }: PageProps) {
 
   // Live, human-approved editorial body (city hubs). Falls back to the
   // hand-authored intro when no published/non-drifted row exists.
-  const dbCityHub = !isCounty
-    ? await loadPublishedHubContent(region.state.code, region.slug)
-    : null;
-  const cityIntro =
-    !isCounty && !dbCityHub
-      ? cityIntroForRegion(region.state.code, region.slug)
-      : null;
+  // Hand-authored intros only. Published hub_content rows have hardcoded
+  // counts that drift from the listed set (San Diego 23 vs 22).
+  const cityIntro = !isCounty ? cityIntroForRegion(region.state.code, region.slug) : null;
   const countyIntroParas = isCounty ? countyIntroParasForRegion(region.state.code, region.slug) : null;
 
   return (
@@ -781,6 +822,12 @@ export default async function RegionPage({ params }: PageProps) {
                   <Link href={`/${region.state.slug}/${parentCounty.slug}`} className="transition-colors hover:text-teal">
                     {parentCounty.name}
                   </Link>
+                </>
+              )}
+              {!parentCounty && displayCounty && (
+                <>
+                  <span aria-hidden>›</span>
+                  <span className="text-ink-4">{displayCounty.name}</span>
                 </>
               )}
               <span aria-hidden>›</span>
@@ -816,16 +863,18 @@ export default async function RegionPage({ params }: PageProps) {
               <span>Browse {region.state.name} facilities</span>
               <span aria-hidden>→</span>
             </Link>
-            {dbCityHub ? (
-              <div
-                className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch] [&_p]:mt-4 [&_p:first-child]:mt-0 [&_a]:text-teal [&_a]:underline"
-                dangerouslySetInnerHTML={{ __html: sanitizeHubHtml(dbCityHub.bodyHtml) }}
-              />
-            ) : cityIntro ? (
+            {cityIntro ? (
               <p className="mt-6 text-[17px] leading-relaxed text-ink-2 max-w-[62ch]">
                 {cityIntro}
               </p>
             ) : null}
+            {glance.ccrcCount > 0 && (
+              <p className="mt-4 max-w-[62ch] font-[family-name:var(--font-sans)] text-[14px] leading-relaxed text-ink-3">
+                Licensed-bed totals include {glance.ccrcCount} continuing-care campus
+                {glance.ccrcCount === 1 ? "" : "es"} whose published capacity is campus-wide, not
+                dementia-care beds only.
+              </p>
+            )}
           </div>
         </div>
 
@@ -851,15 +900,6 @@ export default async function RegionPage({ params }: PageProps) {
                           license — not the same as California&rsquo;s Type-A/Type-B{" "}
                           <em>deficiency</em> labels.
                         </>
-                      ) : region.state.code === "AZ" ? (
-                        <>
-                          Of the{" "}
-                          <strong className="font-normal text-rust">{listedCount}</strong>{" "}
-                          Directed Care licensed facilities indexed in {region.name},{" "}
-                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                          ({severePct}%) have at least one A.A.C. R9-10 deficiency cited in their
-                          ADHS inspection record from the past 24 months.
-                        </>
                       ) : region.state.code === "CO" ? (
                         <>
                           Of the{" "}
@@ -870,51 +910,24 @@ export default async function RegionPage({ params }: PageProps) {
                           Assisted living findings use CDPHE Levels A–E. Nursing-home findings use CMS letters.
                           Those scales are not combined into one rank.
                         </>
-                      ) : region.state.code === "MO" ? (
-                        <>
-                          Of the{" "}
-                          <strong className="font-normal text-rust">{listedCount}</strong>{" "}
-                          DHSS-licensed memory care facilities indexed in {region.name},{" "}
-                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                          ({severePct}%) have at least one deficiency cited in their
-                          DHSS inspection record from the past 24 months.
-                        </>
                       ) : (
                         <>
                           Of the{" "}
                           <strong className="font-normal text-rust">{listedCount}</strong>{" "}
                           {setting.hubNoun} indexed in {region.name},{" "}
                           <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                          ({severePct}%) have a Type-A or Type-B deficiency in their state record
-                          from the past 24 months.
+                          ({severePct}%) have a {findingsVocab.findingPhrase} on file.
+                          {region.state.code === "MN" && glance.citationsLast12 === 0
+                            ? " None of those findings is dated in the last 12 months."
+                            : ""}
                         </>
                       )}
                     </p>
                     {findingsDate && (
                       <DataFootnote
-                        source={
-                          region.state.code === "TX"
-                            ? "Texas HHSC Long-Term Care Regulation"
-                            : region.state.code === "AZ"
-                              ? "ADHS BRFL / AZ Care Check"
-                              : region.state.code === "MO"
-                                ? "Missouri DHSS Section for Long-Term Care Regulation"
-                                : region.state.code === "CO"
-                                  ? "CDPHE assisted living records and CMS nursing-home surveys"
-                                  : "CA CDSS Community Care Licensing"
-                        }
+                        source={findingsVocab.source}
                         refreshed={findingsDate}
-                        note={
-                          region.state.code === "TX"
-                            ? "Deficiency labels are shown as published by HHSC; see methodology for scope"
-                            : region.state.code === "AZ"
-                              ? "Deficiencies cited under A.A.C. Title 9, Chapter 10 (Health Care Institutions)"
-                              : region.state.code === "MO"
-                                ? "Deficiency tags cited under 19 CSR 30 (ALF/RCF); complaint investigations shown separately"
-                                : region.state.code === "CO"
-                                  ? "Level E is immediate jeopardy for assisted living. CMS J, K, and L are immediate jeopardy for nursing homes."
-                                  : "Type-A = immediate health/safety risk; Type-B = lesser violation"
-                        }
+                        note={findingsVocab.note}
                       />
                     )}
                   </>
@@ -941,6 +954,8 @@ export default async function RegionPage({ params }: PageProps) {
                 regionName={region.name}
                 stateSlug={region.state.slug}
                 stateName={region.state.name}
+                inspectionsLast12={glance.inspectionsLast12}
+                newestInspection={glance.newestInspection}
               />
             )}
 
@@ -1158,6 +1173,13 @@ export default async function RegionPage({ params }: PageProps) {
           <HubEligibility stateCode={region.state.code} regionName={region.name} />
         )}
 
+        {!isCounty && !fetchError && (() => {
+          const areas = areasServedFor(region.state.code, region.slug);
+          return areas ? (
+            <CityAreasServed spec={areas} zips={listedHomes.map((h) => h.zip)} />
+          ) : null;
+        })()}
+
         {!isCounty && !fetchError && localHelp && <CityLocalHelp help={localHelp} />}
 
         {/* ── FAQ: county after stats block; city after cost band ── */}
@@ -1240,6 +1262,7 @@ export default async function RegionPage({ params }: PageProps) {
             stateCode={region.state.code}
             stateName={region.state.name}
             currentCitySlug={region.slug}
+            preferredNearby={nearbyHubsFor(region.state.code, region.slug)}
           />
         )}
 

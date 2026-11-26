@@ -110,6 +110,81 @@ const HELP: Record<string, LocalHelp> = {
       },
     ],
   },
+  "CA:san-diego": {
+    heading: "Local help in San Diego County",
+    links: [
+      {
+        label: "County of San Diego Aging & Independence Services Call Center",
+        href: "https://www.sandiegocounty.gov/content/sdc/ais.html",
+        note: "(800) 339-4661 — published in the AIS-funded Caregiver Handbook",
+      },
+      {
+        label: "Choose Well San Diego",
+        href: "https://www.choosewellsandiego.org/",
+        note: "County-supported nursing home and residential care quality ratings",
+      },
+      {
+        label: "Southern Caregiver Resource Center",
+        href: "https://www.caregivercenter.org/",
+        note: "Family caregiver support for San Diego and Imperial counties",
+      },
+    ],
+  },
+  "MN:st-paul": {
+    heading: "Local help in Ramsey County",
+    links: [
+      {
+        label: "Minnesota Aging Pathways / Senior LinkAge Line",
+        href: "https://mn.gov/aging/",
+        note: "1-800-333-2433",
+      },
+      {
+        label: "Metropolitan Area Agency on Aging — Dementia Care Navigation",
+        href: "https://www.tcaging.org/",
+        note: "Twin Cities dementia-care navigation",
+      },
+      {
+        label: "Ramsey County resource directory",
+        href: "https://www.ramseycounty.us/residents/health-medical/clinics-services/older-adult-services",
+        note: "Including Meals on Wheels of Ramsey County",
+      },
+    ],
+  },
+  "MO:kansas-city": {
+    heading: "Local help in the Kansas City, MO metro",
+    links: [
+      {
+        label: "MARC Aging & Adult Services",
+        href: "https://www.marc.org/community/aging-adult-services",
+        note: "816-421-4980 — Cass, Clay, Jackson, and Platte counties",
+      },
+      {
+        label: "Sandwiched KC",
+        href: "https://www.sandwichedkc.org/",
+        note: "Caregiver resource portal for the Kansas City area",
+      },
+    ],
+  },
+  "OR:portland": {
+    heading: "Local help in Multnomah County",
+    links: [
+      {
+        label: "Multnomah County ADRC",
+        href: "https://www.multco.us/ads",
+        note: "503-988-3646 / adrc@multco.us",
+      },
+      {
+        label: "Oregon licensed-settings search",
+        href: "https://ltclicensing.oregon.gov",
+        note: "DHS Long-Term Care Licensing portal",
+      },
+      {
+        label: "Oregon Long-Term Care Ombudsman",
+        href: "https://www.oregon.gov/ltco/Pages/index.aspx",
+        note: "Independent advocate for residents in licensed settings",
+      },
+    ],
+  },
 };
 
 export function localHelpFor(stateCode: string, citySlug: string): LocalHelp | null {

@@ -99,6 +99,19 @@ const ELIGIBILITY: Record<string, StateEligibilityEntry> = {
       "https://www.hhs.texas.gov/providers/long-term-care-providers/assisted-living-facilities",
     sourceLabel: "Texas HHSC Assisted Living Facilities",
   },
+  MO: {
+    programName: "MO HealthNet",
+    programSummary:
+      "MO HealthNet (Missouri Medicaid) can cover some personal-care services in a participating assisted living or residential care facility. Room and board are typically the family's responsibility.",
+    paragraphs: [
+      "Missouri's Medicaid program, MO HealthNet, is administered by the Department of Social Services. Some DHSS-licensed assisted living and residential care facilities accept MO HealthNet for personal-care services, but not every home holds a contract, and room and board are not automatically covered.",
+      "Eligibility is functional and financial. Families should start with their local Area Agency on Aging and confirm with each home which programs it accepts. StarlynnCare does not verify payment-program participation.",
+    ],
+    privatePayNote:
+      "Veterans may be eligible for VA Aid and Attendance. Ask the Missouri Veterans Commission or an accredited claims agent.",
+    sourceUrl: "https://mydss.mo.gov/healthcare",
+    sourceLabel: "Missouri Department of Social Services · MO HealthNet",
+  },
 };
 
 export function getStateEligibility(

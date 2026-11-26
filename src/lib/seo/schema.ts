@@ -41,7 +41,7 @@ export type FacilitySchemaExtras = {
   regulatorAbbr?: string | null;
 };
 
-export type BreadcrumbItem = { name: string; url: string };
+export type BreadcrumbItem = { name: string; url?: string };
 
 /** CDSS Community Care Licensing public facility detail (FacDetail). */
 export function cdssLicensePageFor(
@@ -108,7 +108,7 @@ export function buildBreadcrumbList(items: BreadcrumbItem[]): object {
       "@type": "ListItem",
       position: i + 1,
       name: it.name,
-      item: it.url,
+      ...(it.url ? { item: it.url } : {}),
     })),
   };
 }

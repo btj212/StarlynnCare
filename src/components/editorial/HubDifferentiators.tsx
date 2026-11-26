@@ -2,6 +2,7 @@ import Link from "next/link";
 import { facilityProfilePath } from "@/lib/seo/paths";
 import { isUsableInspectionDate } from "@/lib/data/inspectionDates";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { hasReliable12MonthWindow } from "@/lib/city-hub/findings";
 
 export type RegionHubStats = {
   median_beds: number | null;
@@ -28,6 +29,9 @@ type Props = {
   regionName: string;
   stateSlug: string;
   stateName: string;
+  /** Suppress 12-month trend when too few inspections fall in the window. */
+  inspectionsLast12?: number;
+  newestInspection?: string | null;
 };
 
 // Trend direction: compare the most-recent 12m window to the oldest 12m window.
@@ -73,6 +77,8 @@ export function HubDifferentiators({
   regionName,
   stateSlug,
   stateName,
+  inspectionsLast12,
+  newestInspection,
 }: Props) {
   const {
     median_beds,
@@ -105,8 +111,17 @@ export function HubDifferentiators({
 
   if (dataPoints < 2) return null;
 
+  const trendReliable =
+    inspectionsLast12 == null || hasReliable12MonthWindow(inspectionsLast12);
   const hasTrend =
-    trend_recent != null && trend_mid != null && trend_prior != null;
+    trendReliable &&
+    trend_recent != null &&
+    trend_mid != null &&
+    trend_prior != null;
+  const recordsThrough =
+    !trendReliable && newestInspection && formatInspectionDate(newestInspection)
+      ? formatInspectionDate(newestInspection)
+      : null;
   const direction = hasTrend
     ? trendDirection(trend_recent!, trend_prior!)
     : null;
@@ -159,6 +174,15 @@ export function HubDifferentiators({
             </Row>
           )}
 
+          {recordsThrough && (
+            <Row label="Records on file through">
+              <span className="text-ink">{recordsThrough}</span>
+              <span className="text-ink-4 ml-2">
+                Too few inspections in the last 12 months to show a year-over-year trend
+              </span>
+            </Row>
+          )}
+
           {city_cit_per_fac != null && state_cit_per_fac != null && (
             <Row label="Citations per facility · last 36 months">
               <span className={city_cit_per_fac <= state_cit_per_fac ? "text-teal" : "text-rust"}>
@@ -177,7 +201,7 @@ export function HubDifferentiators({
             </Row>
           )}
 
-          {top_improved_name && top_improved_slug && top_improved_city_slug && top_improved_delta != null && (
+          {trendReliable && top_improved_name && top_improved_slug && top_improved_city_slug && top_improved_delta != null && (
             <Row label="Most improved · yr-over-yr">
               <Link
                 href={facilityProfilePath(stateSlug, top_improved_city_slug, top_improved_slug)}
@@ -191,7 +215,7 @@ export function HubDifferentiators({
             </Row>
           )}
 
-          {top_deteriorated_name && top_deteriorated_slug && top_deteriorated_city_slug && top_deteriorated_delta != null && (
+          {trendReliable && top_deteriorated_name && top_deteriorated_slug && top_deteriorated_city_slug && top_deteriorated_delta != null && (
             <Row label="Most citations added · yr-over-yr">
               <Link
                 href={facilityProfilePath(stateSlug, top_deteriorated_city_slug, top_deteriorated_slug)}

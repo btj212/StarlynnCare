@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — City hub listed set includes large homes with no inspections; state-aware findings copy
+
+**Decided:** The city-hub listed set (`facilityListedOnHub` / `homesForCityIndex`) is the only count a city page may quote (headline, stats, A–Z, ItemList `numberOfItems`, nearby-hub counts). Arizona homes of 10 beds or fewer with no citations stay off it. Homes of 6 beds or fewer with no inspection row stay off it (Washington AFHs). A newly licensed home with **no inspections yet and more than 6 beds** is listed, with a "no inspections on file yet" card/A–Z state — Vista del Sol in San Diego (150 beds, license 374605041). **This contradicts the 2026-11 sitemap entry below**, which said city hubs still require an inspection on file so Mesa does not jump from 145 to 169. Mesa is unchanged because the Arizona small-no-citation rule still applies. Do not merge a closed prior license at the same address into the new row; show it as "previous license at this address" on the profile.
+
+**State-aware boilerplate:** Findings source/note, FAQ `getStateStrings`, list-section headings, and "serious" stats are keyed by state. California Type-A/Type-B and CDSS language is CA-only. Minnesota = MDH ch. 144G, substantiated findings / correction orders; ALDC vs AL is labeled, and only `mn_dementia_care_licensed` counts as licensed memory care. Missouri = DHSS 19 CSR 30, Class I/II/III; stored severity numbers are inverted and are not used as "serious" (Class I only, from `class`). Oregon = DHS LTC Licensing, Memory Care Endorsement, RCF/ALF/NF from `license_type`; citations have no class/severity so the page must not print "serious citations = 0". A 12-month citation trend needs at least 8 inspections in the window (`TREND_MIN_INSPECTIONS_12M`); Kansas City had 5 (newest 2026-03-10) and a 135 → 100 → 17 "Improving" line that was an ingest gap.
+
+**Display:** Prefer `license_type` / `mo_level_of_care` over California-shaped `care_category` for list chips. Format inverted/trailing articles at display (`GARDENS AT BARRY ROAD, THE`, `Madison Senior Living the`). Use `marketing_name` from `content` when set. Last-updated on a city hub is `max(newest listed inspection, facilities.updated_at)`. Skip published `hub_content` bodies on city hubs — those HTML rows hardcode counts that drift.
+
+**Rejected:** Merging Vista del Sol with Stellar Care. Publishing Gardens at Barry Road / St Andrews Memory Care / Morningstar Memory Care from the app. Backfilling county. Deduping Marquis Centennial. Writing a Missouri severity mapping. Hand-typing spec statistics into copy.
+
+**Source:** City specs for San Diego, St. Paul, Kansas City, Portland; Blake review 2026-11-26. `src/lib/seo/indexability.ts`, `src/lib/city-hub/findings.ts`, `src/lib/city-hub/licenseLabel.ts`.
+
+---
+
 ## 2026-11 — Sitemap is every publishable profile; IJ is CMS-only; CA 87705 is a memory-care basis
 
 **Decided:** The facility sitemap is every `publishable` profile. An inner join on inspections had dropped 613 Washington adult family homes with no inspection row, and the Arizona small-home filter had dropped 369 Directed Care homes with no citations. City hubs still use `facilityListedOnHub` (inspection on file; Arizona ≤10 beds with no citations stay off the lede) so Mesa does not jump from 145 to 169. Pages are not noindexed for thinness. Hub copy continues to quote the listed count, not the sitemap count.

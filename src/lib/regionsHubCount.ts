@@ -49,12 +49,14 @@ export async function loadRegionHubSummary(
    * A failed record check leaves this equal to totalCount.
    */
   indexableFacilityCount: number;
+  /** Minnesota ALDC licenses among listed homes. */
+  dementiaLicenseCount: number;
   /** Set when the facilities query failed — callers must not treat this as an empty hub. */
   fetchError: string | null;
 }> {
   const { data: facRows, error: facErr } = await supabase
     .from("facilities")
-    .select("id, updated_at, created_at, beds, name, zip, city_slug")
+    .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed")
     .eq("state_code", region.state.code)
     .eq("publishable", true)
     .in("city_slug", region.citySlugs as unknown as string[]);
@@ -67,6 +69,7 @@ export async function loadRegionHubSummary(
       findingsDate: null,
       firstPublishedAt: null,
       indexableFacilityCount: 0,
+      dementiaLicenseCount: 0,
       fetchError: facErr.message,
     };
   }
@@ -79,6 +82,7 @@ export async function loadRegionHubSummary(
     name?: string;
     zip?: string | null;
     city_slug?: string;
+    mn_dementia_care_licensed?: boolean | null;
   };
   const byId = new Map<string, HubRow>();
   for (const row of (facRows ?? []) as HubRow[]) byId.set(row.id, row);
@@ -90,7 +94,7 @@ export async function loadRegionHubSummary(
   ) {
     const { data: extraRows } = await supabase
       .from("facilities")
-      .select("id, updated_at, created_at, beds, name, zip, city_slug")
+      .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed")
       .eq("state_code", "PA")
       .eq("publishable", true)
       .or(paOverrideOrFilter());
@@ -129,6 +133,7 @@ export async function loadRegionHubSummary(
       findingsDate,
       firstPublishedAt,
       indexableFacilityCount: 0,
+      dementiaLicenseCount: 0,
       fetchError: null,
     };
   }
@@ -206,6 +211,7 @@ export async function loadRegionHubSummary(
   const indexableFacilityCount = listedRows.length;
   const listedIds = new Set(listedRows.map((row) => row.id));
   const withDeficiencyListed = [...facilitiesWithAnyDef].filter((id) => listedIds.has(id)).length;
+  const dementiaLicenseCount = listedRows.filter((row) => row.mn_dementia_care_licensed).length;
 
   return {
     totalCount,
@@ -213,6 +219,7 @@ export async function loadRegionHubSummary(
     findingsDate,
     firstPublishedAt,
     indexableFacilityCount,
+    dementiaLicenseCount,
     fetchError: null,
   };
 }

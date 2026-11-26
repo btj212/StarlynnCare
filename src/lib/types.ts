@@ -140,6 +140,8 @@ export interface Facility {
   il_dementia_program_flag?: boolean | null;
   mn_dementia_care_licensed?: boolean | null;
   mo_alzheimer_scu?: boolean | null;
+  /** DHSS level of care (ALF, RCF, ALF**). Display only; never invent. */
+  mo_level_of_care?: string | null;
   az_memory_care_endorsed?: boolean | null;
   /**
    * Level-2 Arizona memory-care program confirmation for this exact address.
