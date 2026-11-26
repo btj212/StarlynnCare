@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect, permanentRedirect } from "next/navigation";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -404,6 +405,17 @@ export default async function FacilityPage({ params }: PageProps) {
               </a>
             ))}
           </div>
+
+          <p className="m-0 text-[14px] text-ink-3">
+            Run this home?{" "}
+            <Link
+              href={`/${state.slug}/${facility.city_slug}/${facility.slug}/confirm`}
+              rel="nofollow"
+              className="font-semibold text-teal underline underline-offset-4"
+            >
+              Confirm your details for families →
+            </Link>
+          </p>
 
           <ReportListingForm facilityId={facility.id} facilityName={facility.name} />
         </div>

@@ -41,6 +41,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 ---
 
 
+## 2026-11 — Homes answer through /confirm; answers wait for review, and photo permission is its own tick
+
+**Decided:** `/{state}/{city}/{home}/confirm` (noindex, nofollow, linked from each profile as "Run this home?") asks the six questions: memory care, wanders or becomes agitated, private-pay range, Medicaid, staff awake overnight with the resident count, and what would lead the home to ask a resident to move out (six tick boxes plus a 400-character note). It posts to `/api/home-response`, which stores a `facility_direct_responses` row as `status = 'pending'` (migrations 0077 and 0078). The public RPC returns only `published` rows, so nothing shows until someone has checked that the sender's address matches the home's own website and sets `status = 'published'` (SQL for now; the admin alert email from `recordSubmission` type `home_response` is the prompt). Two separate boxes: "authorized to answer, show these answers" (required) and "use photos, logo and a short description from the home's own site and social pages, credited" (optional), plus an optional photo-gallery link. `consent_version` records which wording was shown (`HOME_CONSENT_VERSION` in `src/lib/facility/homeResponse.ts`); change the wording, bump the version. Openings are not on the form.
+
+**Why:** The two added questions are things the inspection record cannot say, and each home's answer to the move-out question is different, which gives that profile text no other profile has. Email and phone reach only some homes (2,723 of 5,571 are 10 beds or fewer, and 1 of 20 small homes tested had a website), so the form is the one place any channel can send a home.
+
+**Not yet:** `photo_permission` and `photo_link` are recorded and nothing uses them. Photos still come from the existing sources and the `mailto:` "operator? submit a photo" link. A person decides which photos to use, from the home's own pages, when the box is ticked. The consent wording has not had a lawyer's review.
+
+**Rejected:** Publishing on submit (anyone could change another home's profile). Uploading photos through the form (needs storage, size limits and image checks for a pilot of 50). Showing the respondent's name or email.
+
+---
+
 ## 2026-11 — A home's direct answers are stored apart and shown as "Home-confirmed", never as checked fact
 
 **Decided:** What a home tells us by email or phone goes in `facility_direct_responses` (migration 0076), one row per response: memory care yes/no, wanders or agitated (yes, yes after assessment, no), private-pay low and high, Medicaid yes/no and program, an `openings_note`, and a free `note` for how it was checked. The table is closed to the public API; the profile reads one row through `facility_home_response()`, which returns only the printed columns. `FacilityHomeReported` renders nothing until a home has answered. When it has, a "Home-confirmed · {date}" chip and a card say the answers came from the home by email or phone and that neither the state nor StarlynnCare checked them. Openings are stored and never printed. These answers do not change `serves_memory_care`, `care_category`, the cost bands or the schema.org output. First row: Casa Del Rey (AL12182H), reply of 2026-11-24 (date is the screenshot date; correct it if the email was sent earlier). The cost section no longer says "No price is listed for this home" outright; it says none is listed in the directories we read, so it cannot contradict the card above it.
