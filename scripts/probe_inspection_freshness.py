@@ -482,6 +482,13 @@ PRODUCTION_API = "https://www.starlynncare.com/api/facilities"
 #   source max=2026-11-03 unchanged; CA/TX/WA/UT/IL/PA/AZ/MO/CO no new probe-layer signal (need DB
 #   or manual; last full source refresh was Sunday GHA <24h ago). Automation env has no DATABASE_URL;
 #   workflow_dispatch blocked (HTTP 403) — no ingest triggered this run.
+# Cron probe 2026-11-26T23:01 UTC: MN resolved max=2026-11-05 (+2 vs ingested 2026-11-03: OLYDIA HOME
+#   CARE INC, MINNESOTA HEALTHCARE SERVICES complaints); MN insertDate max=2026-11-26 (+10 vs
+#   LAST_MN_INSERT_BASELINE 2026-11-21: SMC Ashton ×4, James Inc, River Oaks, Daystar, Caring Hearts,
+#   …); OR source max=2026-11-10 unchanged; CA bulk reachable from cloud (newest Last Visit 2026-11-21 —
+#   Mac ca-watch handles FacilityReports, not this probe); all other states unchanged vs GHA 45039897772
+#   (2026-11-22). No DATABASE_URL; gh workflow_dispatch MN → HTTP 403 — dispatch Weekly state source scan
+#   manually. Page spot-check 138/143 (transient SSL on prod from this VM; curl /arizona/facilities 200).
 # Used when DATABASE_URL is unavailable.
 LAST_INGEST_BASELINES: dict[str, date] = {
     "CA": date(2026, 9, 4),  # Mac ca-watch + manual cdss-weekly-ingest; probe layer needs DB
