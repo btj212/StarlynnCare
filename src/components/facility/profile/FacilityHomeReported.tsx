@@ -1,15 +1,5 @@
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
-
-type HomeResponse = {
-  responded_on: string;
-  channel: "email" | "phone";
-  memory_care: "yes" | "no" | null;
-  wandering: "yes" | "yes_after_assessment" | "no" | null;
-  private_pay_low: number | null;
-  private_pay_high: number | null;
-  medicaid: "yes" | "no" | null;
-  medicaid_program: string | null;
-};
+import { MOVE_OUT_REASONS, type HomeResponse } from "@/lib/facility/homeResponse";
 
 async function loadHomeResponse(facilityId: string): Promise<HomeResponse | null> {
   const supabase = tryPublicSupabaseClient();
@@ -71,6 +61,21 @@ function rows(r: HomeResponse): Array<{ label: string; value: string }> {
           : "Not accepted",
     });
   }
+  if (r.overnight_staff != null && r.overnight_residents != null) {
+    out.push({
+      label: "Staff awake overnight",
+      value: `${r.overnight_staff} ${r.overnight_staff === 1 ? "staff member" : "staff"} awake for ${r.overnight_residents} ${r.overnight_residents === 1 ? "resident" : "residents"}`,
+    });
+  }
+  const reasons = (r.move_out_reasons ?? [])
+    .flatMap((v) => MOVE_OUT_REASONS.filter((m) => m.value === v).map((m) => m.label as string));
+  if (reasons.length > 0 || r.move_out_note) {
+    const list = reasons.length > 0 ? `If residents ${reasons.join("; or ")}.` : "";
+    out.push({
+      label: "When the home may ask a resident to move out",
+      value: [list, r.move_out_note].filter(Boolean).join(" "),
+    });
+  }
   return out;
 }
 
@@ -84,7 +89,8 @@ export async function FacilityHomeReported({ facilityId }: { facilityId: string 
   if (!response) return null;
   const items = rows(response);
   if (items.length === 0) return null;
-  const how = response.channel === "email" ? "by email" : "by phone";
+  const how =
+    response.channel === "email" ? "by email" : response.channel === "phone" ? "by phone" : "through our online form";
 
   return (
     <section id="home-reported" className="border-y border-clearing-rule bg-clearing-tint">
