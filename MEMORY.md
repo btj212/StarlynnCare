@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — A home's direct answers are stored apart and shown as "Home-confirmed", never as checked fact
+
+**Decided:** What a home tells us by email or phone goes in `facility_direct_responses` (migration 0076), one row per response: memory care yes/no, wanders or agitated (yes, yes after assessment, no), private-pay low and high, Medicaid yes/no and program, an `openings_note`, and a free `note` for how it was checked. The table is closed to the public API; the profile reads one row through `facility_home_response()`, which returns only the printed columns. `FacilityHomeReported` renders nothing until a home has answered. When it has, a "Home-confirmed · {date}" chip and a card say the answers came from the home by email or phone and that neither the state nor StarlynnCare checked them. Openings are stored and never printed. These answers do not change `serves_memory_care`, `care_category`, the cost bands or the schema.org output. First row: Casa Del Rey (AL12182H), reply of 2026-11-24 (date is the screenshot date; correct it if the email was sent earlier). The cost section no longer says "No price is listed for this home" outright; it says none is listed in the directories we read, so it cannot contradict the card above it.
+
+**Why:** The calling and email pilot will produce the same four answers for many homes. A shared table lets both channels fill the same card. "Confirmed" with a check mark reads as StarlynnCare verified it, so the chip names the home as the source and the card says it was not checked.
+
+**Rejected:** Writing the answers into `facilities` (state refreshes would overwrite them, and they are not regulator data). Printing the vacancy. Mixing the home's price range into the Genworth or Caring.com band. Letting a home's "yes" to memory care change how we classify or rank it.
+
+**Open:** No admin screen; rows are inserted by SQL. Rows from other homes' replies need the same check as Casa Del Rey: sender domain matches the home's own site.
+
 ## 2026-11 — A phone number a home gave us lives in `phone_override`, which no ingest writes
 
 **Decided:** `facilities.phone_override` (migration 0075, with `phone_override_note`) is shown instead of `facilities.phone`. `fetchFacility` in `loadFacilityProfile.ts` swaps it in, so the hero, quick facts, call links and the schema `telephone` all follow. Set it only when the operator wrote to us and the number matches the home's own website; record who, when and how it was checked in `phone_override_note`. First use: Casa Del Rey (AL12182H, Peoria AZ), `(602) 881-4039`, 2026-11-22. ADHS still lists `(623)266-4936`.
