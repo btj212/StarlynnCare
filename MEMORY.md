@@ -6,6 +6,24 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — City hub template, Directed Care vs memory care, PA IJ display
+
+**Decided:** City hubs share one template (`src/lib/city-hub/*` + the `[state]/[city]` page). Title, H1, meta, answer box, glance stats, FAQ, and JSON-LD all quote the **listed** count (`homesForCityIndex` / sitemap), never publishable. Nearby-city links show that same listed count.
+
+**Arizona:** published homes are Directed Care. HB2764 (Laws 2024, Ch. 100 / A.R.S. § 36-405.03) told ADHS to write memory-care standards for Directed Care homes; it did not create a separate Memory Care subclass. A.A.C. R9-10-816 (eff. June 30, 2025) attaches those duties. Two-level badge (Blake, 2026-11-26): Level 1 on every Directed Care home — “State-authorized for memory care: licensed for Directed Care (A.A.C. R9-10-816).” Level 2 only when `mc_program_confirmed` is true (migration 0078, not applied in this change) — “Memory care program confirmed,” from the operator’s own page for that address or a recorded phone confirmation. Level 2 does not change publishable / listed / sitemap. `az_mc_subclass` is an unused column, not a license type. `memoryCareBasis.kind` is `memory-care` for AZ Directed Care, WA SDC or AFH dementia specialty, OR endorsement, CA dementia-care plan, …
+
+**Washington:** show a memory-care label only when the row has an SDC contract or an AFH dementia specialty. Other listed homes stay visible with neutral wording. Do not unpublish from the app.
+
+**PA Immediate Jeopardy:** 55 Pa Code Ch 2600/2800 does not use CMS IJ. The PDF prompt offered IJ as a bucket, so abuse/neglect rows were stored with that label. Display remaps 55 Pa Code IJ to “Substantiated Abuse” or “Serious finding”; “Immediate Jeopardy (CMS)” prints only on an F-tag.
+
+**Pittsburgh municipalities:** Mt. Lebanon (ZIP 15228 / name) and Bethel Park (name or ZIP 15102) are shown on their own city hubs at display time. Duplicate legal names collapse to the richer listed row. No DB writes.
+
+**Rejected:** Five one-off city pages. Hardcoded Mesa 169 / Tacoma 39. Inventing “Class Act” / “Legacy House of Mesa” aliases. Treating Directed Care as if it were not authorized for memory care services. Inventing an HB2764 Memory Care subclass that facilities apply for separately.
+
+**Source:** City specs for Mesa, Chandler, Tucson, Tacoma, Pittsburgh; accuracy overrides 2026-11-26.
+
+---
+
 ## 2026-11 — Live research counts, derived last inspection, display-layer county
 
 **Decided:** California research pages that state how many homes or deficiencies we publish now load those numbers from the database (`loadCaResearchCorpus`). The May 2026 papers (cost vs quality, geographic equity, seasonality, repeat-citations) stay dated as a frozen 484-home study and are not rewritten as if they were rerun. `/data` state counts walk facility IDs in chunks; one nested PostgREST failure no longer blanks the table.

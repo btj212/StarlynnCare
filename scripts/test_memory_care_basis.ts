@@ -3,6 +3,7 @@ import {
   MEMORY_CARE_BASIS_UNRECORDED,
   memoryCareBasis,
 } from "../src/lib/facility/memoryCareBasis.ts";
+import { AZ_MC_LEVEL1_LABEL, azMcProgram } from "../src/lib/facility/azMcProgram.ts";
 import { buildFacilityFaqPairs } from "../src/lib/seo/schema.ts";
 import { formatRecordDate } from "../src/lib/format/formatRecordDate.ts";
 
@@ -14,9 +15,31 @@ const az = memoryCareBasis({
   memory_care_disclosure_source: "ADHS Directed Care License",
 });
 assert.equal(az.recorded, true);
-assert.equal(az.label, "Arizona lists this home under a Directed Care license.");
+assert.equal(az.kind, "memory-care");
+assert.equal(az.label, AZ_MC_LEVEL1_LABEL);
+assert.match(az.label, /R9-10-816/);
+assert.doesNotMatch(az.label, /Memory Care subclass/);
+assert.equal(azMcProgram({}).confirmed, false);
+assert.equal(azMcProgram({ mc_program_confirmed: false }).confirmed, false);
+const confirmed = azMcProgram({
+  mc_program_confirmed: true,
+  mc_program_source_url: "https://example.com/mesa-memory-care",
+  mc_program_quote: "Secure memory care neighborhood",
+  mc_program_checked_at: "2026-11-26T18:00:00Z",
+});
+assert.equal(confirmed.confirmed, true);
+assert.equal(confirmed.sourceUrl, "https://example.com/mesa-memory-care");
+assert.equal(confirmed.checkedOn, "2026-11-26");
 assert.equal(az.quote, null);
 assert.match(az.sourceUrl ?? "", /azcarecheck/);
+
+const azSubclassColumn = memoryCareBasis({
+  state_code: "AZ",
+  az_mc_subclass: true,
+});
+assert.equal(azSubclassColumn.kind, "memory-care");
+assert.match(azSubclassColumn.label, /R9-10-816/);
+assert.doesNotMatch(azSubclassColumn.label, /subclass/);
 
 const manual = memoryCareBasis({
   state_code: "CA",
@@ -108,7 +131,15 @@ const waContract = memoryCareBasis({
   state_code: "WA",
   memory_care_disclosure_source: "WA DSHS Dementia Care Contract",
 });
+assert.equal(waContract.kind, "memory-care");
 assert.match(waContract.label, /dementia care contract/);
+
+const waSpecialty = memoryCareBasis({
+  state_code: "WA",
+  wa_dementia_specialty: true,
+});
+assert.equal(waSpecialty.kind, "memory-care");
+assert.match(waSpecialty.label, /dementia specialty/);
 
 const pairs = buildFacilityFaqPairs({
   facilityName: "Example Home",

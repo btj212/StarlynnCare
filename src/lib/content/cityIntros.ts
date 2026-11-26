@@ -68,11 +68,11 @@ const INTROS: Record<string, string> = {
 
   // ── Washington ───────────────────────────────────────────────────────────────
   "WA:seattle":
-    "Seattle's memory care market is dense and expensive — ALFs here hold DSHS Specialized Dementia Care contracts as the minimum bar for appearing on StarlynnCare. Inspection and investigation report links on each profile go directly to the DSHS ALF Reports portal.",
+    "Seattle's dementia-care market is dense and expensive. StarlynnCare lists DSHS-licensed assisted living facilities and adult family homes that serve people with dementia; a Specialized Dementia Care contract is labeled when DSHS records it, and it is not the listing bar. Inspection and investigation report links on each profile go directly to the DSHS ALF Reports portal.",
   "WA:bellevue":
     "Bellevue families often compare Eastside operators against Seattle and south King County options simultaneously. DSHS investigation findings from complaint-driven visits are the most revealing part of the record — look for clusters of incident reports over time.",
   "WA:tacoma":
-    "Tacoma anchors Pierce County with a broader price range than Seattle. Focus on DSHS inspection frequency and investigation outcomes — facilities with more reports aren't automatically worse, but the content of findings matters.",
+    "Tacoma anchors Pierce County with a broader price range than Seattle. StarlynnCare lists DSHS-licensed assisted living and adult family homes that serve people with dementia; a Specialized Dementia Care contract is a separate, uncommon signal — not the listing bar. Focus on DSHS inspection frequency and investigation outcomes — facilities with more reports aren't automatically worse, but the content of findings matters.",
   "WA:spokane":
     "Spokane is the eastern Washington hub, with a distinct care market from Puget Sound. DSHS investigation records on each profile reflect complaint-driven reviews — compare these across similarly sized operators before touring.",
   "WA:kirkland":
@@ -90,13 +90,13 @@ const INTROS: Record<string, string> = {
 
   // ── Washington (expanded) ────────────────────────────────────────────────
   "WA:spokane-valley":
-    "Spokane Valley's suburban setting offers more facilities than downtown Spokane for families seeking space. DSHS Specialized Dementia Care contract holders are the only operators indexed here — compare investigation records before touring.",
+    "Spokane Valley's suburban setting offers more facilities than downtown Spokane for families seeking space. Homes here are DSHS-licensed assisted living and adult family homes that serve people with dementia; SDC contract status is labeled when DSHS records it. Compare investigation records before touring.",
   "WA:kennewick":
     "Kennewick anchors the Tri-Cities market alongside Richland and Pasco. DSHS inspection and complaint investigation history for each facility links directly to the state portal — read these as a set across the Tri-Cities before choosing.",
   "WA:bremerton":
     "Bremerton families often face ferry and bridge logistics when comparing options across Kitsap Peninsula. DSHS reports for each facility reflect both routine surveys and complaint-driven investigations.",
   "WA:puyallup":
-    "Puyallup serves Pierce County families east of Tacoma. DSHS Specialized Dementia Care contract status is the minimum bar for facilities indexed here — enforcement letters are the strongest signal of regulatory concern beyond routine surveys.",
+    "Puyallup serves Pierce County families east of Tacoma. Homes here are DSHS-licensed assisted living and adult family homes that serve people with dementia; a Specialized Dementia Care contract is not required for listing. Enforcement letters are the strongest signal of regulatory concern beyond routine surveys.",
   "WA:lacey":
     "Lacey sits in greater Olympia and offers options for south Sound families. DSHS investigation records and inspection history are publicly posted for each facility on the state ALF reports portal.",
   "WA:vancouver":

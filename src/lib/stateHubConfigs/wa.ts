@@ -15,12 +15,12 @@ export const waStateConfig: StateHubConfig = {
     {
       n: "Step 01",
       t: "Pull the public record",
-      p: "Inspection and investigation reports for Specialized Dementia Care ALFs are sourced directly from the DSHS ALF Reports portal (fortress.wa.gov) — Washington's public residential care reporting system.",
+      p: "Inspection and investigation reports for Washington assisted living facilities and adult family homes are sourced from the DSHS ALF Reports portal (fortress.wa.gov) — Washington's public residential care reporting system.",
     },
     {
       n: "Step 02",
-      t: "Specialized Dementia Care contract only",
-      p: "StarlynnCare indexes only facilities holding an active DSHS Specialized Dementia Care contract — a contract tier requiring dementia-specific staffing qualifications, behavioral support protocols, and enhanced supervision beyond a standard ALF license.",
+      t: "Dementia-serving homes; SDC labeled separately",
+      p: "StarlynnCare lists assisted living facilities and adult family homes that serve people with dementia. A Specialized Dementia Care contract is a separate DSHS Medicaid signal, not the listing bar. Only homes with that contract (or a Memory Care Certified designation when DSHS publishes it) are labeled memory care.",
     },
     {
       n: "Step 03",

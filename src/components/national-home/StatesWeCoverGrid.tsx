@@ -25,7 +25,7 @@ const STATE_REGULATORS: Record<string, string> = {
 const STATE_DESCRIPTIONS: Record<string, string> = {
   CA: "RCFE Memory Care · Annual unannounced inspections · CDSS public record",
   OR: "Memory Care Endorsed ALFs & RCFs · Oregon DHS LTC portal",
-  WA: "Specialized Dementia Care ALFs · DSHS ALF Reports portal",
+  WA: "Assisted living & adult family homes · DSHS ALF Reports portal",
   MN: "ALF with Dementia Care license · MN Dept. of Health",
   TX: "Alzheimer-certified assisted living · HHSC LTCR records",
   PA: "PCH & ALR Special Care designations · PA DHS OLTL portal",

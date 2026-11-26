@@ -32,9 +32,12 @@ const ARTICLE_SUFFIX = /^(.+?),\s*(the|a|an)\s*$/i;
 
 const SUFFIX_FIXES: Array<[RegExp, string]> = [
   [/\bLlc\b/g, "LLC"],
+  [/\bL\.l\.c\.?\b/g, "LLC"],
   [/\bLlp\b/g, "LLP"],
+  [/\bPllc\b/g, "PLLC"],
   [/\bInc\b\.?/g, "Inc."],
   [/\bLtd\b\.?/g, "Ltd."],
+  [/\bCo\b\.?$/g, "Co."],
   [/\bIi\b/g, "II"],
   [/\bIii\b/g, "III"],
   [/\bIv\b/g, "IV"],
@@ -79,6 +82,9 @@ export function formatFacilityName(
     working = match[1].trim();
     article = match[2].toLowerCase();
   }
+
+  // Collapse "L L C" / "L.L.C" before title-case so LLC stays an abbreviation.
+  working = working.replace(/\bL\.?\s*L\.?\s*C\.?\b/gi, "LLC");
 
   if (isAllUppercase(working) || (article && isAllUppercase(trimmed))) {
     working = titleize(working);

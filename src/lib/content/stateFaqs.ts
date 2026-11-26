@@ -136,7 +136,7 @@ export const WA_FAQS: FaqItem[] = [
   },
   {
     q: "What is Washington's Specialized Dementia Care contract?",
-    a: "The Specialized Dementia Care contract is a DSHS contract tier that ALFs holding this status must meet — it requires staff with specific dementia care training, behavioral support protocols, and enhanced supervision standards beyond a standard ALF license. Only Specialized Dementia Care contracted ALFs appear on StarlynnCare for Washington.",
+    a: "The Specialized Dementia Care contract is a DSHS contract tier that ALFs holding this status must meet — it requires staff with specific dementia care training, behavioral support protocols, and enhanced supervision standards beyond a standard ALF license. It is not the default license. StarlynnCare lists Washington assisted living facilities and adult family homes that serve people with dementia; only homes with an SDC contract (or a Memory Care Certified designation when DSHS publishes it) are labeled memory care.",
   },
   {
     q: "Can a facility correct or respond to information on its profile?",
@@ -264,11 +264,11 @@ export const AZ_FAQS: FaqItem[] = [
   },
   {
     q: "What is 'Directed Care' and why does it matter for memory care?",
-    a: "Arizona uses three license levels for assisted living facilities: Supervisory Care (least intensive), Personal Care, and Directed Care (most intensive). A Directed Care license authorizes the facility to serve residents who need continuous supervision, protective oversight, or assistance due to cognitive impairment — including dementia and Alzheimer's disease. StarlynnCare only indexes facilities with an active Directed Care license or the new HB2764 Memory Care subclass, because these are the state-verified signals that the facility is equipped for dementia care.",
+    a: "Arizona uses three license levels for assisted living facilities: Supervisory Care (least intensive), Personal Care, and Directed Care (most intensive). Licensed for Directed Care means Arizona authorizes the home to provide memory care services under A.A.C. R9-10-816 (effective June 30, 2025): policies, wandering safeguards, a medical-practitioner evaluation, and eight hours of staff training. StarlynnCare indexes Directed Care homes for that reason. Authorization is not a claim that a given home runs a dedicated secured memory-care unit.",
   },
   {
-    q: "What is the new Arizona Memory Care subclass (HB2764)?",
-    a: "Arizona House Bill 2764, signed into law and effective July 1, 2025, created a formal Memory Care subclass for Assisted Living Homes and Centers. Facilities obtaining this subclass must meet enhanced staffing, training, physical environment, and programming requirements specifically designed for residents with Alzheimer's disease or other dementias. StarlynnCare will incorporate this subclass as the primary Tier-1 signal once ADHS begins publishing it in the facility directory.",
+    q: "Did HB2764 create a separate Memory Care license subclass?",
+    a: "No. House Bill 2764 (Laws 2024, Chapter 100) added A.R.S. § 36-405.03, which told ADHS to write memory-care service standards and staff-training rules for assisted living facilities that are already licensed to provide directed care. ADHS did that in A.A.C. R9-10-816. In the final-rulemaking hearing, ADHS said memory care services are the same as directed care. There is no separate Memory Care subclass to apply for.",
   },
   {
     q: "How does ADHS inspect assisted living facilities?",

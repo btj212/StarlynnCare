@@ -3,6 +3,7 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { stateFromSlug } from "@/lib/states";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { careSettingCopy } from "@/lib/city-hub/careSetting";
 
 type Props = {
   facilityId: string;
@@ -48,6 +49,7 @@ export async function MetroNearbyFacilities({ facilityId, citySlug, stateSlug }:
   if (!raw?.length) return null;
 
   const ranked = raw as Row[];
+  const nearbyNoun = careSettingCopy(stateInfo.code).hubNoun;
 
   return (
     <section className="border-t border-paper-rule pt-12 mt-12">
@@ -58,7 +60,9 @@ export async function MetroNearbyFacilities({ facilityId, citySlug, stateSlug }:
         More options <em>in neighboring cities</em>
       </h2>
       <p className="text-[14px] text-ink-3 max-w-[72ch] leading-relaxed mb-8">
-        Licensed memory care in other cities within this county region — useful when your search radius crosses city limits.
+        {nearbyNoun.charAt(0).toUpperCase()}
+        {nearbyNoun.slice(1)} in other cities within this county region — useful when your
+        search radius crosses city limits.
       </p>
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">

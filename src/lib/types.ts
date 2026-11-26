@@ -141,6 +141,15 @@ export interface Facility {
   mn_dementia_care_licensed?: boolean | null;
   mo_alzheimer_scu?: boolean | null;
   az_memory_care_endorsed?: boolean | null;
+  /**
+   * Level-2 Arizona memory-care program confirmation for this exact address.
+   * Migration 0078. Null until checked. Never written by ingest. Does not
+   * change publishable / listed / sitemap state.
+   */
+  mc_program_confirmed?: boolean | null;
+  mc_program_source_url?: string | null;
+  mc_program_quote?: string | null;
+  mc_program_checked_at?: string | null;
 
   // Added in migration 0004_facility_photos.sql
   photo_url: string | null;

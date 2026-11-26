@@ -15,6 +15,7 @@ import { CITY_BROWSE_PAGE_SIZE } from "@/lib/facility/hubPreview";
 import type { CareCategory } from "@/lib/types";
 import { contentAliasFields, nameMatchesQuery } from "@/lib/facility/aliases";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
+import { careSettingCopy } from "@/lib/city-hub/careSetting";
 
 export const revalidate = 3600;
 
@@ -67,9 +68,18 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     : canonicalFor(`/${region.state.slug}/${region.slug}`);
   const reg = REGULATOR_ABBR[region.state.code] ?? "state";
   const desc = clipMetaDescription(
-    `Browse licensed memory care facilities in ${region.name}, ${region.state.name}. Search by name and filter by size. Independent ${reg} inspection records.`,
+    region.state.code === "AZ"
+      ? `Browse Directed Care homes in ${region.name}, ${region.state.name}. Search by name and filter by size. Independent ${reg} inspection records.`
+      : region.state.code === "WA"
+        ? `Browse ${region.name} assisted living and adult family homes that serve people with dementia. Independent ${reg} inspection records.`
+        : `Browse licensed memory care facilities in ${region.name}, ${region.state.name}. Search by name and filter by size. Independent ${reg} inspection records.`,
   );
-  const title = `Memory care facilities in ${region.name}, ${region.state.code}`;
+  const title =
+    region.state.code === "AZ"
+      ? `Directed Care homes in ${region.name}, ${region.state.code}`
+      : region.state.code === "WA"
+        ? `Dementia care homes in ${region.name}, ${region.state.code}`
+        : `Memory care facilities in ${region.name}, ${region.state.code}`;
 
   return {
     title,
@@ -250,12 +260,18 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
       { name: "All facilities", url: browseCanonical },
     ]),
     buildWebPageWithReviewer({
-      name: `Memory care facilities in ${region.name}`,
+      name: careSettingCopy(region.state.code).collectionName(region.name),
       url: browseCanonical,
-      description: `Licensed memory care facilities in ${region.name}, ${region.state.name}.`,
+      description: `${careSettingCopy(region.state.code).hubNoun} in ${region.name}, ${region.state.name}.`,
     }),
     ...(itemList.length > 0
-      ? [buildItemListSchema(`Memory care facilities in ${region.name}`, browseCanonical, itemList)]
+      ? [
+          buildItemListSchema(
+            careSettingCopy(region.state.code).collectionName(region.name),
+            browseCanonical,
+            itemList,
+          ),
+        ]
       : []),
   ];
 

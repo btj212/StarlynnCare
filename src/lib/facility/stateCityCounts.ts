@@ -1,53 +1,124 @@
-import { azSmallHomeWithoutCitations } from "@/lib/seo/indexability";
+import { facilityListedInSitemap } from "@/lib/seo/indexability";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 export type StateCityCount = { slug: string; name: string; count: number };
 
 const PAGE_SIZE = 1000;
+const INSP_CHUNK = 150;
 const TTL_MS = 60 * 60 * 1000;
 const memo = new Map<string, { at: number; cities: StateCityCount[] }>();
 
-/**
- * Cities in a state ranked by published homes, for "other cities" links.
- * Arizona homes of 10 beds or fewer are skipped: they are noindex unless they
- * have citations, and a city with only those has no indexable hub to link to.
- * Kept in memory for an hour so each city page does not re-read the state.
- */
-export async function loadStateCityCounts(stateCode: string): Promise<StateCityCount[]> {
-  const hit = memo.get(stateCode);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.cities;
+type FacRow = {
+  id: string;
+  city_slug: string | null;
+  city: string | null;
+  beds: number | null;
+};
 
+async function listedCountByCity(
+  stateCode: string,
+  slugs?: string[],
+): Promise<StateCityCount[]> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return [];
 
-  const byCity = new Map<string, StateCityCount>();
+  const rows: FacRow[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("facilities")
-      .select("city_slug, city, beds")
+      .select("id, city_slug, city, beds")
       .eq("state_code", stateCode)
       .eq("publishable", true)
       .order("id")
       .range(from, from + PAGE_SIZE - 1);
+    if (slugs && slugs.length > 0) q = q.in("city_slug", slugs);
+    const { data, error } = await q;
     if (error) return [];
-
-    const page = (data ?? []) as Array<{ city_slug: string | null; city: string | null; beds: number | null }>;
-    for (const row of page) {
-      if (!row.city_slug || azSmallHomeWithoutCitations(stateCode, row.beds, 0)) continue;
-      const existing = byCity.get(row.city_slug);
-      if (existing) existing.count += 1;
-      else
-        byCity.set(row.city_slug, {
-          slug: row.city_slug,
-          name: displayCityName(row.city, row.city_slug),
-          count: 1,
-        });
-    }
+    const page = (data ?? []) as FacRow[];
+    rows.push(...page);
     if (page.length < PAGE_SIZE) break;
   }
 
-  const cities = [...byCity.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  const ids = rows.map((r) => r.id);
+  const inspCount = new Map<string, number>();
+  const inspFac = new Map<string, string>();
+  for (let ci = 0; ci < ids.length; ci += INSP_CHUNK) {
+    const chunk = ids.slice(ci, ci + INSP_CHUNK);
+    const { data, error } = await supabase
+      .from("inspections")
+      .select("id, facility_id")
+      .in("facility_id", chunk)
+      .lte("inspection_date", todayIsoDate())
+      .limit(5000);
+    if (error) break;
+    for (const i of (data ?? []) as Array<{ id: string; facility_id: string }>) {
+      inspFac.set(i.id, i.facility_id);
+      inspCount.set(i.facility_id, (inspCount.get(i.facility_id) ?? 0) + 1);
+    }
+  }
+
+  const withDef = new Set<string>();
+  const inspIds = [...inspFac.keys()];
+  for (let ci = 0; ci < inspIds.length; ci += INSP_CHUNK) {
+    const chunk = inspIds.slice(ci, ci + INSP_CHUNK);
+    const { data, error } = await supabase
+      .from("deficiencies")
+      .select("inspection_id")
+      .in("inspection_id", chunk)
+      .limit(5000);
+    if (error) break;
+    for (const d of (data ?? []) as Array<{ inspection_id: string }>) {
+      const fid = inspFac.get(d.inspection_id);
+      if (fid) withDef.add(fid);
+    }
+  }
+
+  const byCity = new Map<string, StateCityCount>();
+  for (const row of rows) {
+    if (!row.city_slug) continue;
+    if (
+      !facilityListedInSitemap({
+        stateCode,
+        beds: row.beds,
+        deficiencyCount: withDef.has(row.id) ? 1 : 0,
+        inspectionCount: inspCount.get(row.id) ?? 0,
+      })
+    ) {
+      continue;
+    }
+    const existing = byCity.get(row.city_slug);
+    if (existing) existing.count += 1;
+    else
+      byCity.set(row.city_slug, {
+        slug: row.city_slug,
+        name: displayCityName(row.city, row.city_slug),
+        count: 1,
+      });
+  }
+
+  return [...byCity.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/**
+ * Cities in a state ranked by listed homes (the same set a city page quotes).
+ * Cached for an hour so nearby-city links do not re-read the whole state.
+ */
+export async function loadStateCityCounts(stateCode: string): Promise<StateCityCount[]> {
+  const hit = memo.get(stateCode);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.cities;
+  const cities = await listedCountByCity(stateCode);
   memo.set(stateCode, { at: Date.now(), cities });
   return cities;
+}
+
+/** Listed counts for a known set of city slugs (sibling hubs in one county). */
+export async function loadListedCountsForSlugs(
+  stateCode: string,
+  slugs: string[],
+): Promise<Map<string, StateCityCount>> {
+  if (slugs.length === 0) return new Map();
+  const cities = await listedCountByCity(stateCode, slugs);
+  return new Map(cities.map((c) => [c.slug, c]));
 }

@@ -42,11 +42,11 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "Does Arizona have special protections for memory care residents in ALHs and ALCs?",
-    a: "Yes. The Directed Care license level requires ADHS to verify that the facility is equipped and staffed to serve cognitively impaired residents — including secured environments, trained staff, and individualized care plans. HB2764 (effective 2025) adds an optional Memory Care subclass with enhanced dementia-specific standards. Arizona also operates a Long-Term Care Ombudsman program that advocates for residents in both residential care settings and nursing homes.",
+    a: "Yes. Licensed for Directed Care means Arizona authorizes the home to provide memory care services under A.A.C. R9-10-816 — policies, wandering safeguards, a medical-practitioner evaluation, and eight hours of staff training. That is the license level, not a claim that every home runs a dedicated secured unit. Arizona also operates a Long-Term Care Ombudsman program that advocates for residents in both residential care settings and nursing homes.",
   },
   {
     q: "How does Arizona's system compare to California's?",
-    a: "California uses a single RCFE (Residential Care Facility for the Elderly) license type regulated by CDSS, with Type A / Type B deficiency severity classification. Arizona uses two ALF license types (ALH and ALC) with care levels (Directed/Personal/Supervisory) and a newer HB2764 Memory Care subclass, all regulated by ADHS BRFL. Medicaid access differs: California uses the ALW (Assisted Living Waiver), Arizona uses ALTCS. The federal CMS inspection system for nursing homes is the same in both states. When reading a StarlynnCare profile, always note the state to interpret regulatory context correctly.",
+    a: "California uses a single RCFE (Residential Care Facility for the Elderly) license type regulated by CDSS, with Type A / Type B deficiency severity classification. Arizona uses two ALF license types (ALH and ALC) with care levels (Directed/Personal/Supervisory), all regulated by ADHS BRFL. Memory care services attach to Directed Care under A.A.C. R9-10-816; there is no separate Arizona Memory Care subclass. Medicaid access differs: California uses the ALW (Assisted Living Waiver), Arizona uses ALTCS. The federal CMS inspection system for nursing homes is the same in both states. When reading a StarlynnCare profile, always note the state to interpret regulatory context correctly.",
   },
 ];
 
@@ -91,7 +91,7 @@ function ComparisonTable() {
     { attr: "Regulator", mc: "ADHS BRFL (A.A.C. R9-10-800)", nh: "CMS + ADHS Health Facility Licensing" },
     { attr: "Clinical services", mc: "Personal care, medication mgmt, dementia programming", nh: "24/7 nursing, IV, wound care, ventilator, skilled therapy" },
     { attr: "Medicaid", mc: "ALTCS (contracted facilities)", nh: "ALTCS nursing facility benefit" },
-    { attr: "MC endorsement", mc: "Directed Care level required; HB2764 subclass optional", nh: "CMS Memory Care Program (voluntary)" },
+    { attr: "MC authorization", mc: "Directed Care + A.A.C. R9-10-816", nh: "CMS Memory Care Program (voluntary)" },
     { attr: "Inspection source", mc: "AZ Care Check (ADHS BRFL)", nh: "CMS Care Compare (federal)" },
     { attr: "StarlynnCare indexes?", mc: "Yes — Directed Care only", nh: "Not indexed (use Care Compare)" },
   ];

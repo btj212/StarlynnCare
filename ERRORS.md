@@ -8,6 +8,36 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — HB2764 is not a Memory Care subclass
+
+**What went wrong:** The Arizona licensing guide, FAQs, and regulator primer said HB2764 created a separate Memory Care subclass that facilities apply for, and that Directed Care alone does not confer that status. That contradicted A.R.S. § 36-405.03 and A.A.C. R9-10-816.
+
+**What worked instead:** HB2764 (Laws 2024, Ch. 100) told ADHS to write memory-care standards for homes already licensed for directed care. R9-10-816 (eff. June 30, 2025) is that rule. ADHS's final-rulemaking hearing said memory care services are the same as directed care. Copy now uses: “Licensed for Directed Care. Arizona authorizes these homes to provide memory care services (A.A.C. R9-10-816).” Do not imply a dedicated secured unit without other evidence.
+
+**Source:** ADHS notice of final rulemaking; A.R.S. § 36-405.03; user correction 2026-11-26.
+
+---
+
+## 2026-11 — City hub name-dedupe collapsed distinct Mesa homes
+
+**What went wrong:** Display-level name dedupe ran on every city. Mesa has five listed homes that share a legal-style name in different ZIPs, so the H1 dropped from 145 to 140 while title/meta still said 145.
+
+**What worked instead:** Dedupe by name + ZIP, and only on Pennsylvania city hubs (the Pittsburgh duplicate-license problem). Arizona homonymous names stay listed.
+
+**Source:** Local `/arizona/mesa` curl after the city-hub template, 2026-11-26.
+
+---
+
+## 2026-11 — PA “Immediate Jeopardy” on personal care homes
+
+**What went wrong:** `pa_pdf_parse.py` asked Haiku to classify 55 Pa Code findings into a vocabulary that included “Immediate Jeopardy.” Abuse/neglect citations (`§ 2600.42`) came back as IJ. Display then mapped `immediate_jeopardy=true` and `severity >= 4` to an IJ chip, so Substantiated Abuse and CMS F-tags on mixed SNF rows looked the same.
+
+**What worked instead:** Display-only remap in `paFormatSeverityTag`: 55 Pa Code IJ → Substantiated Abuse or Serious finding; CMS F-tag IJ → “Immediate Jeopardy (CMS).” Do not write the deficiency rows from the app. Re-parse is a future ingest job.
+
+**Source:** Pittsburgh city spec, 2026-11-26.
+
+---
+
 ## 2026-11 — Nested PostgREST counts blanked /data
 
 **What went wrong:** `loadStateMemoryCareStats` counted serious homes with a three-level `facilities → inspections → deficiencies` embed and `.or(..., { referencedTable: "inspections.deficiencies" })`. Any one state's error returned `null` for the whole table, so `/data` printed "The state counts could not be loaded."

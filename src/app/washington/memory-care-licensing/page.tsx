@@ -30,7 +30,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "What is the DSHS Specialized Dementia Care contract?",
-    a: "The Specialized Dementia Care contract is an additional agreement an ALF enters with Washington DSHS that enables the facility to serve residents with dementia as the primary diagnosis. Requirements include specialized staff training in dementia and challenging behaviors, a dementia-specific programming model, a safe wandering environment, and individualized care planning. StarlynnCare indexes only Washington ALFs with an active Specialized Dementia Care contract.",
+    a: "The Specialized Dementia Care contract is an additional agreement an ALF enters with Washington DSHS that enables the facility to serve residents with dementia as the primary diagnosis. Requirements include specialized staff training in dementia and challenging behaviors, a dementia-specific programming model, a safe wandering environment, and individualized care planning. StarlynnCare lists Washington assisted living facilities and adult family homes that serve people with dementia; only homes with an SDC contract (or a Memory Care Certified designation when DSHS publishes it) are labeled memory care.",
   },
   {
     q: "How does DSHS inspect memory care ALFs in Washington?",
@@ -124,7 +124,7 @@ export default function WaLicensingPage() {
             <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-rust mb-3">The short version</p>
             <ul className="list-disc pl-5 space-y-2.5">
               <li>Washington memory care facilities are licensed as <strong className="font-medium text-ink">Assisted Living Facilities (ALFs)</strong> under RCW 18.20, regulated by DSHS Residential Care Services.</li>
-              <li>An ALF serving dementia residents must hold a <strong className="font-medium text-ink">Specialized Dementia Care contract</strong> with DSHS — this is the memory care credential in Washington.</li>
+              <li>An ALF operating as a memory care community must hold a <strong className="font-medium text-ink">Specialized Dementia Care contract</strong> with DSHS. StarlynnCare also lists assisted living facilities and adult family homes that serve people with dementia without that contract; those homes are not labeled memory care.</li>
               <li>Washington does <strong className="font-medium text-ink">not</strong> use California&apos;s &ldquo;Type A / Type B&rdquo; deficiency labels — DSHS uses its own inspection terminology.</li>
               <li>Medicaid access is through the <strong className="font-medium text-ink">COPES waiver</strong> (Apple Health) at contracted facilities — not all ALFs participate.</li>
             </ul>
