@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — CA FacilityReports stay pending until the PDF is stored
+
+**Decided:** The Mac watch (`com.starlynncare.ca-watch`) still uses the statewide CDSS file as the change detector, but a matching bulk fingerprint is not enough to skip `FacilityReports`. A home stays in the deep queue, and its snapshot stays `pending`, while any bulk **Last Visit Date** / **All Visit Dates** is newer than both stored inspection dates and `REPORTARRAY` dates. Skip a listed Lotus id only when an `inspections` row exists (`report_key` in `raw_data`, or date + type + `complaint_id`). The snapshot inventory stores only ingested keys plus explicit `no_document` 404s. Same-day complaints get `source_event_id` = Lotus id, and migration `0084_inspections_unkeyed_complaint.sql` widens `inspections_facility_date_type_agency_unkeyed` with `complaint_id`. GitHub Actions must not fetch `FacilityReports`; TLS failures are errors, not “no new reports.”
+
+**Why:** 317 posted reports across 211 published CA homes were missing. CDSS often writes the visit date on the bulk file before the PDF is on the index, and the watch then marked the home fully reconciled. A later-posted PDF never ran. Index keys were also written onto the snapshot before the row existed, so the pending path logged “index has no new report id” and never retried. Two complaints on the same day hit the unkeyed unique index. GitHub TLS/timeouts looked like a quiet week.
+
+**Rejected:** Treating a bulk fingerprint match as “no new reports.” Skipping by snapshot `previous_keys` without an inspections row. Fetching `FacilityReports` from GitHub Actions (`cdss-weekly-ingest.yml` / Orange County watch). Applying migration 0084 from an agent session.
+
+**This updates** the 2026-10 “bulk-first report reconciliation” entry: fingerprint change is no longer the only deep-check trigger.
+
+**Source:** Hand backfill 2026-11-26; `scrapers/ccld_citations_ingest.py`; `scripts/test_ccld_citations_ingest.py`; `supabase/migrations/0084_inspections_unkeyed_complaint.sql`.
+
+---
+
 ## 2026-11 — City hub is canonical over /facilities; profile titles use citation hooks; Venmo gone
 
 **Decided:** Unfiltered `/{state}/{city}/facilities` **308-redirects to the city hub**. Search Console (28 days ending 2026-11-24) showed both URLs returning 200 and splitting impressions (San Diego browse 379 vs hub 43; Chicago 347 vs 8; LA 234 vs 0). The hub already lists every home A to Z (`#all-homes`). Filtered browse (`?q=`, `?page=2`, `?homes=small`) stays live, noindex, self-canonical, so search/pagination remain usable. Hub "Browse all N facilities" jumps to `#all-homes`; a search form on the hub posts to `/facilities?q=`. State-wide `/{state}/facilities` is unchanged.

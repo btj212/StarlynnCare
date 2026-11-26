@@ -19,10 +19,11 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r scrapers/requirements.txt
 
-      - name: Run ccld_citations_ingest (publishable facilities)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python scrapers/ccld_citations_ingest.py --publishable
+      - name: Refuse GitHub FacilityReports fetches
+        run: |
+          echo "California FacilityReports must be fetched by com.starlynncare.ca-watch on the Mac."
+          echo "A GitHub TLS/timeout here used to look like 'no new reports' and skipped later PDFs."
+          exit 1
 
       # Layer 5b — re-audit published hub content against the freshly ingested
       # data. Any city whose grounded numbers moved is flagged drift_detected,

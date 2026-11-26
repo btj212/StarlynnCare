@@ -350,7 +350,7 @@ VALUES (
     %(narrative_summary)s,
     %(raw_data)s::jsonb
 )
-ON CONFLICT (facility_id, inspection_date, inspection_type, COALESCE(source_agency, ''))
+ON CONFLICT (facility_id, inspection_date, inspection_type, COALESCE(source_agency, ''), COALESCE(complaint_id, ''))
 WHERE source_event_id IS NULL
 DO UPDATE SET
     total_deficiency_count = EXCLUDED.total_deficiency_count,

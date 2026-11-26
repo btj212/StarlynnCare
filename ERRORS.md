@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — CA watch marked homes reconciled before the PDF existed
+
+**What went wrong:** `com.starlynncare.ca-watch` only opened `FacilityReports` when a snapshot was pending or the bulk fingerprint changed. Homes were stored as fully reconciled while CDSS **Last Visit Date** / **All Visit Dates** were already newer than both stored inspections and `REPORTARRAY` dates, so later-posted PDFs were never fetched. `ccld_citations_ingest.py` also skipped a listed Lotus `REPORTPAGE` id whenever it was in `previous_keys`, without checking that an `inspections` row existed; `snapshot_update_for` wrote the full index inventory; the pending path logged “pending gap unchanged; index has no new report id” and never retried. `inspections_facility_date_type_agency_unkeyed` blocked two complaints on the same day. GitHub Actions TLS/timeouts on `FacilityReports` were treated as “no new reports.” 317 reports across 211 published CA homes had to be backfilled by hand.
+
+**What worked instead:** Keep the snapshot pending while any bulk visit date is newer than stored inspections and `REPORTARRAY` dates. Skip by key only when the inspections row exists (`report_key` in `raw_data`, or date + type + `complaint_id`); if the key is stored and the row is missing, refetch and insert. Write only ingested keys plus explicit `no_document` skips. Widen the unkeyed unique index with `complaint_id` (migration 0084, not applied here) and set CA `source_event_id` to the Lotus id. Refuse `FacilityReports` from GitHub Actions; TLS failures stay errors. Run the watch on the Mac.
+
+**Source:** Hand backfill 2026-11-26; `scrapers/ccld_citations_ingest.py`; `scripts/test_ccld_citations_ingest.py`.
+
+---
+
 ## 2026-11 — Repeat-offender CSV vs current publishable license
 
 **What went wrong:** Layer 2 `content_checks.py` looked up the frozen May 2026 repeat-offender CSV with `publishable = true LIMIT 1`. After a home is re-licensed, the visits live on the unpublished prior row (Opal Care, Beach Terrace 306005901, Lincoln Villa 019201025). Duplicate names (two publishable Merisol Care Home rows) made `LIMIT 1` pick the license with zero visits for that code. CI then failed "not found" / "lost visits" even though the inspection rows are still in the database.

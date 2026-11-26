@@ -33,16 +33,11 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r scrapers/requirements.txt
 
-      - name: Run Orange County ingest (roster + citations)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          PYTHONUNBUFFERED: "1"
+      - name: Refuse GitHub FacilityReports fetches
         run: |
-          python3 scripts/weekly_inspection_ingest.py \
-            --state CA \
-            --ca-county ORANGE \
-            --skip-validate \
-            --scan-run-output /tmp/oc-scan-run-id
+          echo "Orange County FacilityReports must be fetched by com.starlynncare.ca-watch on the Mac."
+          echo "GitHub TLS/timeouts must not be recorded as 'no new reports'."
+          exit 1
 
       - name: Layer 5 post-ingest — CA
         if: success()
