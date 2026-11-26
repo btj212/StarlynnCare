@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Confirm form for outreach: listing facts, pending Level 2, signed token
+
+**Decided:** `/{state}/{city}/{home}/confirm` is the form we email every home. The top of the form is “What we show today”: licensed name, marketing name, street/city/ZIP, displayed phone (`phone_override ?? phone`), website, beds, license number, and the memory-care label, each with Correct / Needs a fix plus a correction field, and an “Everything above is correct” shortcut. Existing questions (memory care yes/no, wandering, price, Medicaid, overnight staff, move-out), consent, honeypot and rate limit stay. Extra memory-care questions — secured/locked area at this address, program name, link to the home’s own page — store on the pending `facility_direct_responses` row (`mc_secured`, `mc_program_name`, `mc_program_url`). They never write `facilities.mc_program_confirmed`. A person reviews them before Level 2.
+
+Outreach emails use a signed per-facility token (`?t=`), minted by `scripts/generate_home_outreach_links.ts` with `HOME_OUTREACH_SECRET`. The row records `outreach_token_valid` and `email_domain_matches` (work email vs facility website host) for reviewer trust. Status stays `pending`. Profile “Is this listing wrong?” area links to `/confirm` as “Manage or confirm this listing” for operators.
+
+**Rejected:** Auto-publishing Level 2 from the form. Unique-per-send tokens stored in the database (HMAC of facility id is unique per home and does not need a table). Applying migration 0079 in this change.
+
+**Source:** Operator outreach brief, 2026-11-26.
+
+---
+
 ## 2026-11 — City hub template, Directed Care vs memory care, PA IJ display
 
 **Decided:** City hubs share one template (`src/lib/city-hub/*` + the `[state]/[city]` page). Title, H1, meta, answer box, glance stats, FAQ, and JSON-LD all quote the **listed** count (`homesForCityIndex` / sitemap), never publishable. Nearby-city links show that same listed count.

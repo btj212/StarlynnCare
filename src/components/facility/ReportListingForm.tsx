@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Honeypot } from "@/components/security/Honeypot";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD } from "@/lib/security/honeypot";
@@ -7,9 +8,10 @@ import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD } from "@/lib/security/honeypot";
 interface ReportListingFormProps {
   facilityId: string;
   facilityName: string;
+  confirmHref: string;
 }
 
-export function ReportListingForm({ facilityId, facilityName }: ReportListingFormProps) {
+export function ReportListingForm({ facilityId, facilityName, confirmHref }: ReportListingFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [email, setEmail] = useState("");
@@ -78,6 +80,16 @@ export function ReportListingForm({ facilityId, facilityName }: ReportListingFor
 
   return (
     <div className="mt-8 border-t border-gray-200 pt-8">
+      <p className="mb-3 text-sm text-gray-600">
+        <Link
+          href={confirmHref}
+          rel="nofollow"
+          className="font-medium text-teal underline underline-offset-4 hover:text-teal-deep"
+        >
+          Manage or confirm this listing
+        </Link>
+        <span> — for operators</span>
+      </p>
       <details 
         className="group"
         open={isOpen}

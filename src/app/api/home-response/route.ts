@@ -4,8 +4,16 @@ import { recordSubmission } from "@/lib/submissions/recordSubmission";
 import { rateLimit, clientIp } from "@/lib/security/rateLimit";
 import { HONEYPOT_FIELD, HONEYPOT_TS_FIELD, looksLikeBot } from "@/lib/security/honeypot";
 import { HOME_CONSENT_VERSION, MOVE_OUT_VALUES, WANDERING_VALUES } from "@/lib/facility/homeResponse";
+import {
+  emailDomainMatchesWebsite,
+  parseListingChecks,
+  shownListingFacts,
+  verifyOutreachToken,
+  type ListingFacility,
+} from "@/lib/facility/homeOutreach";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 
 function int(value: unknown, min: number, max: number): number | null {
   const n = typeof value === "number" ? value : typeof value === "string" && value.trim() !== "" ? Number(value) : NaN;
@@ -35,7 +43,8 @@ function fail(error: string, status = 400) {
 
 /**
  * A home answers our questions. The row is stored as 'pending' and is not shown
- * to anyone until a person has checked who sent it (see migration 0077).
+ * to anyone until a person has checked who sent it. Memory-care program fields
+ * never write facilities.mc_program_confirmed.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -53,7 +62,9 @@ export async function POST(request: NextRequest) {
     const facilityId = text(b.facilityId, 64);
     const email = text(b.respondentEmail, 255);
     if (!facilityId) return fail("Facility is required");
-    if (!email || !EMAIL.test(email)) return fail("A work email is required so we can check the answers came from the home.");
+    if (!email || !EMAIL.test(email)) {
+      return fail("A work email is required so we can check the answers came from the home.");
+    }
 
     if (b.authorized !== true) return fail("Please confirm you are authorized to answer for this home.");
     const photoPermission = b.photoPermission === true;
@@ -79,22 +90,35 @@ export async function POST(request: NextRequest) {
       : [];
     const moveOutNote = text(b.moveOutNote, 400);
 
-    const answered = [memoryCare, wandering, medicaid, low, staff, moveOutNote].some((v) => v !== null) || reasons.length > 0;
-    if (!answered) return fail("Answer at least one question.");
+    const mcSecured =
+      memoryCare === "yes" && (b.mcSecured === "yes" || b.mcSecured === "no") ? b.mcSecured : null;
+    const mcProgramName = memoryCare === "yes" ? text(b.mcProgramName, 120) : null;
+    const mcProgramUrl = memoryCare === "yes" ? httpUrl(b.mcProgramUrl) : null;
+    if (memoryCare === "yes" && text(b.mcProgramUrl, 500) && !mcProgramUrl) {
+      return fail("The program link must start with http:// or https://.");
+    }
 
     const supabase = getServiceClient();
     const { data: facility, error: facilityError } = await supabase
       .from("facilities")
-      .select("id, name")
+      .select("*")
       .eq("id", facilityId)
       .eq("publishable", true)
       .maybeSingle();
     if (facilityError || !facility) return fail("Facility not found", 404);
 
-    const { data: row, error } = await supabase
+    const row = facility as ListingFacility & { id: string; name: string; website: string | null };
+    const shown = shownListingFacts(row);
+    const parsed = parseListingChecks(b.listingChecks, shown);
+    if ("error" in parsed) return fail(parsed.error);
+
+    const outreachTokenValid = verifyOutreachToken(text(b.outreachToken, 500), row.id);
+    const emailDomainMatches = emailDomainMatchesWebsite(email, row.website);
+
+    const { data: saved, error } = await supabase
       .from("facility_direct_responses")
       .insert({
-        facility_id: facility.id,
+        facility_id: row.id,
         responded_on: new Date().toISOString().slice(0, 10),
         channel: "form",
         status: "pending",
@@ -114,10 +138,16 @@ export async function POST(request: NextRequest) {
         photo_permission: photoPermission,
         photo_link: photoLink,
         consent_version: HOME_CONSENT_VERSION,
+        listing_checks: parsed.checks,
+        mc_secured: mcSecured,
+        mc_program_name: mcProgramName,
+        mc_program_url: mcProgramUrl,
+        outreach_token_valid: outreachTokenValid,
+        email_domain_matches: emailDomainMatches,
       })
       .select("id")
       .single();
-    if (error || !row) {
+    if (error || !saved) {
       console.error("[home-response] insert failed:", error?.message);
       return fail("Could not save your answers. Please try again.", 500);
     }
@@ -125,10 +155,23 @@ export async function POST(request: NextRequest) {
     recordSubmission({
       type: "home_response",
       email: email.toLowerCase(),
-      facilityId: facility.id,
+      facilityId: row.id,
       source: "confirm_form",
-      summary: `${facility.name} · home response (pending review)`,
-      payload: { responseId: row.id, respondentName: text(b.respondentName, 100), photoPermission, photoLink },
+      summary: `${row.name} · home response (pending review)`,
+      payload: {
+        responseId: saved.id,
+        respondentName: text(b.respondentName, 100),
+        photoPermission,
+        photoLink,
+        outreachTokenValid,
+        emailDomainMatches,
+        listingAllCorrect: parsed.checks.allCorrectShortcut,
+        listingFixes: listingFixKeys(parsed.checks),
+        mcSecured,
+        mcProgramName,
+        mcProgramUrl,
+        doNotAutoPublishLevel2: true,
+      },
     }).catch((err) => console.error("[home-response] recordSubmission failed:", err));
 
     return NextResponse.json({ success: true });
@@ -136,4 +179,12 @@ export async function POST(request: NextRequest) {
     console.error("[home-response] error:", error);
     return fail("Internal server error", 500);
   }
+}
+
+function listingFixKeys(checks: {
+  fields: Record<string, { verdict: string; correction: string | null }>;
+}): string[] {
+  return Object.entries(checks.fields)
+    .filter(([, v]) => v.verdict === "fix")
+    .map(([k]) => k);
 }
