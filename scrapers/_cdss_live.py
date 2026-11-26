@@ -227,6 +227,24 @@ def detail_status(detail: dict[str, Any]) -> str:
     return ""
 
 
+CA_DEMENTIA_CLIENT_CODE = "983"  # "983 - RCFE / DEMENTIA"
+
+
+def client_served(detail: dict[str, Any]) -> list[str]:
+    """FacilityDetail CLIENTSERVED1..6, verbatim, blanks dropped, order kept."""
+    out: list[str] = []
+    for i in range(1, 7):
+        value = str(detail.get(f"CLIENTSERVED{i}") or "").strip()
+        if value and value not in out:
+            out.append(value)
+    return out
+
+
+def has_dementia_client_code(values: Iterable[str]) -> bool:
+    """True only for client type 983. 935 (ELDERLY) and 985 (HOSPICE) are not a dementia basis."""
+    return any(v.strip().split("-")[0].strip() == CA_DEMENTIA_CLIENT_CODE for v in values)
+
+
 def fetch_gis_open_rcfe_numbers(*, page_size: int = 1000) -> set[str]:
     """License numbers the CHHS GIS layer lists as open RCFEs (types 740/741)."""
     numbers: set[str] = set()

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import {
+  CA_DEMENTIA_CLIENT_LABEL,
   MEMORY_CARE_BASIS_UNRECORDED,
+  hasCaDementiaClientCode,
   memoryCareBasis,
 } from "../src/lib/facility/memoryCareBasis.ts";
 import { AZ_MC_LEVEL1_LABEL, azMcProgram } from "../src/lib/facility/azMcProgram.ts";
@@ -231,3 +233,30 @@ assert.equal(coloradoNursing.regulatorShort, "CMS");
 assert.match(coloradoNursing.sourceUrl ?? "", /medicare\.gov/);
 
 console.log("memory care basis checks passed");
+
+// CA: CDSS client type 983 (RCFE / DEMENTIA) is a recorded basis; 935 is not.
+const ca983 = memoryCareBasis({
+  state_code: "CA",
+  ca_cdss_client_served: ["935 - ELDERLY", "983 - RCFE / DEMENTIA", "985 - RCFE / HOSPICE"],
+  ca_cdss_client_served_checked_at: "2026-11-26T16:00:00Z",
+});
+assert.equal(ca983.recorded, true);
+assert.equal(ca983.kind, "memory-care");
+assert.equal(ca983.label, CA_DEMENTIA_CLIENT_LABEL);
+assert.equal(ca983.checkedOn, "2026-11-26");
+const ca935 = memoryCareBasis({ state_code: "CA", ca_cdss_client_served: ["935 - ELDERLY"] });
+assert.equal(ca935.recorded, false);
+assert.equal(ca935.label, MEMORY_CARE_BASIS_UNRECORDED);
+assert.equal(hasCaDementiaClientCode(["9830 - OTHER"]), false);
+assert.equal(hasCaDementiaClientCode(["985 - RCFE / HOSPICE"]), false);
+assert.equal(hasCaDementiaClientCode(null), false);
+// 983 on a non-CA row does not count.
+assert.equal(memoryCareBasis({ state_code: "TX", ca_cdss_client_served: ["983 - RCFE / DEMENTIA"] }).recorded, false);
+// A §87705 citation source still wins over the client code.
+const caCited = memoryCareBasis({
+  state_code: "CA",
+  memory_care_disclosure_source: "§87705/§87706 citation",
+  ca_cdss_client_served: ["983 - RCFE / DEMENTIA"],
+});
+assert.match(caCited.label, /87705/);
+console.log("ca client-served basis tests ok");

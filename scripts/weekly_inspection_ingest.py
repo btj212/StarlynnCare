@@ -181,6 +181,16 @@ def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
         label="CA live license status refresh",
         allow_fail=True,
     )
+    # CDSS client types (983 = RCFE / DEMENTIA) for the page's memory-care
+    # basis. Oldest-checked first, a few hundred a day. Never publishes.
+    if os.environ.get("CA_CLIENT_SERVED_REFRESH", "1") == "1":
+        _python(
+            str(SCRAPERS / "ca_client_served_refresh.py"),
+            "--apply",
+            "--limit", os.environ.get("CA_CLIENT_SERVED_LIMIT", "400"),
+            label="CA CDSS client-served refresh",
+            allow_fail=True,
+        )
     if county:
         # Roster refresh for one county
         roster_rc = _python(

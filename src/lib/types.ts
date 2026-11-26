@@ -115,6 +115,8 @@ export interface Facility {
    * Added in migration 0013_mc_designation_basis.sql
    */
   ca_memory_care_designation_basis: CaMemoryCareDesignationBasis | null;
+  ca_cdss_client_served?: string[] | null;
+  ca_cdss_client_served_checked_at?: string | null;
 
   /** TX HHSC scaffold — migration 0014_tx_scaffold_columns.sql */
   tx_license_class?: string | null;

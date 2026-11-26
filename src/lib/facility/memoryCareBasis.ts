@@ -40,6 +40,9 @@ export type MemoryCareBasisInput = {
   /** Deficiency codes/descriptions from the inspection record (e.g. 87705). */
   caCitationTexts?: string[] | null;
   ca_memory_care_designation_basis?: CaMemoryCareDesignationBasis | null;
+  /** CA: CDSS FacilityDetail CLIENTSERVED values, verbatim. Only 983 is a dementia basis. */
+  ca_cdss_client_served?: string[] | null;
+  ca_cdss_client_served_checked_at?: string | null;
   mc_designation_type?: string | null;
   mce_endorsed?: boolean | null;
   mce_evidence?: string | null;
@@ -106,6 +109,19 @@ function proseQuote(evidence: string | null | undefined): string | null {
   if (EVIDENCE_TOKENS.has(text.toLowerCase())) return null;
   if (text.length < 40 || !text.includes(" ")) return null;
   return text;
+}
+
+/** CDSS client type 983 is "RCFE / DEMENTIA". 935 (ELDERLY) is not a basis. */
+export const CA_DEMENTIA_CLIENT_CODE = "983";
+
+export const CA_DEMENTIA_CLIENT_LABEL =
+  "California CDSS lists this home's client type as 983 - RCFE / Dementia.";
+
+export function hasCaDementiaClientCode(values: string[] | null | undefined): boolean {
+  return (values ?? []).some((v) => {
+    const code = v?.trim().split(/\s*-\s*/)[0];
+    return code === CA_DEMENTIA_CLIENT_CODE;
+  });
 }
 
 function hasCaDementiaRule(value: string | null | undefined): boolean {
@@ -202,6 +218,13 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   // CDSS §1569.627 disclosure is a state file. The live column
   // ca_memory_care_designation_basis was never applied, so this boolean is
   // the stored basis when the 87705 source string is missing.
+  if (facility.state_code === "CA" && hasCaDementiaClientCode(facility.ca_cdss_client_served)) {
+    return {
+      ...recorded(CA_DEMENTIA_CLIENT_LABEL),
+      checkedOn:
+        facility.ca_cdss_client_served_checked_at?.slice(0, 10) ?? basis.checkedOn,
+    };
+  }
   if (facility.state_code === "CA" && facility.memory_care_disclosure_filed) {
     return recorded(
       "California CDSS has a dementia-care disclosure on file for this home under Health and Safety Code section 1569.627.",

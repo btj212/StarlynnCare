@@ -133,6 +133,21 @@ class IngestRowTests(unittest.TestCase):
         self.assertNotIn("publishable = true", ingest.UPDATE_SQL)
         self.assertIn("THEN false ELSE publishable END", ingest.UPDATE_SQL)
 
+    def test_client_served_only_983_is_dementia(self) -> None:
+        detail = {"CLIENTSERVED1": "935 - ELDERLY", "CLIENTSERVED2": "983 - RCFE / DEMENTIA",
+                  "CLIENTSERVED3": "", "CLIENTSERVED4": "985 - RCFE / HOSPICE"}
+        served = live.client_served(detail)
+        self.assertEqual(served, ["935 - ELDERLY", "983 - RCFE / DEMENTIA", "985 - RCFE / HOSPICE"])
+        self.assertTrue(live.has_dementia_client_code(served))
+        self.assertFalse(live.has_dementia_client_code(["935 - ELDERLY"]))
+        self.assertFalse(live.has_dementia_client_code(["985 - RCFE / HOSPICE", "9830 - X"]))
+        self.assertEqual(live.client_served({}), [])
+
+    def test_client_served_refresh_never_publishes(self) -> None:
+        import ca_client_served_refresh as ccs
+        self.assertNotIn("publishable =", ccs.UPDATE_SQL)
+        self.assertIn("NOT IN ('CLOSED', 'REVOKED')", ccs.SELECT_SQL)
+
 
 if __name__ == "__main__":
     unittest.main()

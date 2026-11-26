@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
+import { CA_SUCCESSOR_REDIRECTS } from "./src/lib/redirects/caSuccessorRedirects";
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -126,6 +127,12 @@ const nextConfig: NextConfig = {
       { source: "/mo/:path*", destination: "/missouri/:path*", permanent: true },
       { source: "/co", destination: "/colorado", permanent: true },
       { source: "/co/:path*", destination: "/colorado/:path*", permanent: true },
+      // CA change-of-ownership: closed license page → new license page (same address).
+      ...CA_SUCCESSOR_REDIRECTS.map(({ source, destination }) => ({
+        source,
+        destination,
+        permanent: true,
+      })),
     ];
   },
 };
