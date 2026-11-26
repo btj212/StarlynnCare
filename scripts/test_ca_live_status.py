@@ -60,7 +60,17 @@ class DetailStatusTests(unittest.TestCase):
         self.assertEqual(live.detail_status({"STATUS": "Closed, Change of Ownership"}), "CLOSED")
 
     def test_probation(self) -> None:
-        self.assertEqual(live.detail_status({"STATUS": "On Probation"}), "ON PROBATION")
+        self.assertEqual(live.detail_status({"STATUS": "Probationary License"}), "ON PROBATION")
+
+    def test_withdrawn_application_matches_bulk_closed(self) -> None:
+        self.assertEqual(live.detail_status({"STATUS": "Application Withdrawn"}), "CLOSED")
+        self.assertEqual(live.detail_status({"STATUS": "Application Denied"}), "CLOSED")
+
+    def test_pending_increase_is_licensed(self) -> None:
+        self.assertEqual(live.detail_status({"STATUS": "Licensed/Pending Increase"}), "LICENSED")
+
+    def test_blank_is_unknown(self) -> None:
+        self.assertEqual(live.detail_status({"STATUS": ""}), "")
 
     def test_licensed(self) -> None:
         self.assertEqual(live.detail_status({"STATUS": "Licensed"}), "LICENSED")

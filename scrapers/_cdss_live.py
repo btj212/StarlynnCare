@@ -205,13 +205,26 @@ def fetch_facility_detail(license_number: str, *, session: requests.Session | No
     return detail
 
 
+# FacilityDetail STATUS wording seen 2026-11-26 (1,209 homes) and the bulk-file
+# status it corresponds to.
+_DETAIL_STATUS_MAP = (
+    ("PROBATION", "ON PROBATION"),          # "Probationary License"
+    ("REVOK", "REVOKED"),
+    ("CLOSED", "CLOSED"),                   # "Closed, Change of Ownership" / "..., Licensee Initiated" / "..., Agency Initiated" / ...
+    ("APPLICATION WITHDRAWN", "CLOSED"),    # never licensed; bulk lists it as CLOSED
+    ("APPLICATION DENIED", "CLOSED"),
+    ("LICENSED", "LICENSED"),               # "Licensed", "Licensed/Pending Increase"
+    ("PENDING", "PENDING"),
+)
+
+
 def detail_status(detail: dict[str, Any]) -> str:
-    """Collapse FacilityDetail wording ("Closed, Change of Ownership") to bulk vocabulary."""
+    """Collapse FacilityDetail wording to the bulk-file vocabulary ('' if unknown)."""
     text = str(detail.get("STATUS") or "").strip().upper()
-    for status in ("ON PROBATION", "REVOKED", "CLOSED", "LICENSED", "PENDING"):
-        if text.startswith(status) or status in text.split(",")[0]:
+    for needle, status in _DETAIL_STATUS_MAP:
+        if needle in text:
             return status
-    return text
+    return ""
 
 
 def fetch_gis_open_rcfe_numbers(*, page_size: int = 1000) -> set[str]:
