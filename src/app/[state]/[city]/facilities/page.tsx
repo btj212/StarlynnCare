@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -19,6 +19,11 @@ import { careSettingCopy } from "@/lib/city-hub/careSetting";
 import { isSeriousCityFinding } from "@/lib/city-hub/stats";
 import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import {
+  cityBrowseHubPath,
+  cityBrowseIsFiltered,
+  cityBrowsePageNumber,
+} from "@/lib/seo/cityBrowse";
 
 export const revalidate = 3600;
 
@@ -32,8 +37,7 @@ function firstParam(value: string | undefined): string {
 }
 
 function pageNumber(value: string | undefined): number {
-  const parsed = Number.parseInt(value ?? "1", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  return cityBrowsePageNumber(value);
 }
 
 function browsePath(
@@ -63,12 +67,13 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     q,
     homes: query.homes,
   });
-  const filtered = page > 1 || q.length > 0 || query.homes === "small";
-  // The unfiltered browse page duplicates the city hub (which lists every home),
-  // so it canonicals there; filtered and paged views stay noindex under their own URL.
-  const canonical = filtered
-    ? canonicalFor(path)
-    : canonicalFor(`/${region.state.slug}/${region.slug}`);
+  const filtered = cityBrowseIsFiltered(query);
+  if (!filtered) {
+    permanentRedirect(cityBrowseHubPath(region.state.slug, region.slug));
+  }
+  // Filtered/paged views stay noindex under their own URL so search and
+  // pagination remain usable. Unfiltered /facilities 308s to the hub.
+  const canonical = canonicalFor(path);
   const reg = REGULATOR_ABBR[region.state.code] ?? "state";
   const desc = clipMetaDescription(
     region.state.code === "AZ"
@@ -88,7 +93,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     title,
     description: desc,
     alternates: { canonical },
-    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+    robots: { index: false, follow: true },
     openGraph: {
       title,
       description: desc,
@@ -105,6 +110,9 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
   const supabase = tryPublicSupabaseClient();
   const region = await resolveListingRegion(stateSlug, regionSlug, supabase);
   if (!region) notFound();
+  if (!cityBrowseIsFiltered(query)) {
+    permanentRedirect(cityBrowseHubPath(region.state.slug, region.slug));
+  }
 
   let facilities: ListFacility[] = [];
   let fetchError: string | null = null;

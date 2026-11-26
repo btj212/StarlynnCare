@@ -23,7 +23,6 @@ import {
   FACILITY_WATCH_ALERTS_COPY,
   isWatchStateEligible,
 } from "@/lib/facility-watch/paidConfig";
-import { SupportAsk } from "@/components/support/SupportAsk";
 
 /* ── Context ─────────────────────────────────────────────────── */
 
@@ -165,7 +164,6 @@ function OfferModal({
             <p className="mt-3 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-3">
               No spam. Unsubscribe any time.
             </p>
-            <SupportAsk source={`offer_${offer.id}`} variant="modal" />
           </div>
         ) : (
           <>

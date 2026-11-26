@@ -49,6 +49,7 @@ import {
 } from "@/lib/city-hub/municipality";
 import { localHelpFor } from "@/lib/city-hub/localHelp";
 import { CityDirectAnswer } from "@/components/city-hub/CityDirectAnswer";
+import { CityRelatedGuides } from "@/components/city-hub/CityRelatedGuides";
 import { CityLocalHelp } from "@/components/city-hub/CityLocalHelp";
 import { CityAreasServed } from "@/components/city-hub/CityAreasServed";
 import { findingsCopy } from "@/lib/city-hub/findings";
@@ -857,6 +858,48 @@ export default async function RegionPage({ params }: PageProps) {
             )}
             {findingsDate && <UpdatedStamp isoDate={findingsDate} />}
 
+            <nav
+              aria-label="On this page"
+              className="mt-6 flex flex-wrap gap-x-5 gap-y-2"
+            >
+              {!isCounty ? (
+                <a
+                  href="#all-homes"
+                  className="font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4"
+                >
+                  Compare homes
+                </a>
+              ) : null}
+              <a
+                href="#hub-stats"
+                className="font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4"
+              >
+                View inspection findings
+              </a>
+              <a
+                href="#hub-faq"
+                className="font-[family-name:var(--font-sans)] text-[14px] font-semibold text-teal underline underline-offset-4"
+              >
+                Questions
+              </a>
+            </nav>
+
+            <form
+              action={`/${region.state.slug}/${region.slug}/facilities`}
+              className="mt-5 max-w-md"
+            >
+              <label className="sr-only" htmlFor="city-hub-search">
+                Search homes in {region.name}
+              </label>
+              <input
+                id="city-hub-search"
+                type="search"
+                name="q"
+                placeholder={`Search homes in ${region.name}`}
+                className="w-full rounded-[14px] border border-clearing-rule-2 bg-clearing-card px-4 py-2.5 text-sm text-ink shadow-[var(--shadow-card)] placeholder:text-muted focus:border-teal focus:ring-2 focus:ring-teal/30 focus:outline-none"
+              />
+            </form>
+
             {/* Mobile-only Browse CTA — visible in the header without scrolling */}
             <Link
               href={`/${region.state.slug}/facilities`}
@@ -1015,12 +1058,12 @@ export default async function RegionPage({ params }: PageProps) {
                 ? `, leaving out ${smallCount} homes of 6 beds or fewer`
                 : ""}
               .{" "}
-              <Link
-                href={`/${region.state.slug}/${region.slug}/facilities`}
+              <a
+                href="#all-homes"
                 className="font-semibold text-teal underline underline-offset-4"
               >
                 Browse all {listedCount} facilities in {region.name}
-              </Link>
+              </a>
               .{" "}
               <Link href="/methodology" className="text-teal underline underline-offset-4">
                 See methodology
@@ -1183,6 +1226,10 @@ export default async function RegionPage({ params }: PageProps) {
         })()}
 
         {!isCounty && !fetchError && localHelp && <CityLocalHelp help={localHelp} />}
+
+        {!fetchError && (
+          <CityRelatedGuides stateCode={region.state.code} stateName={region.state.name} />
+        )}
 
         {/* ── FAQ: county after stats block; city after cost band ── */}
         {!fetchError && (

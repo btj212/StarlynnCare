@@ -11,7 +11,11 @@ export function HubFaqSection({
   if (faqPairs.length === 0) return null;
 
   return (
-    <div className="border-b border-paper-rule" style={{ background: "var(--color-paper)" }}>
+    <div
+      id="hub-faq"
+      className="border-b border-paper-rule"
+      style={{ background: "var(--color-paper)" }}
+    >
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-10 py-14">
         <SectionHead
           label="Frequently asked"

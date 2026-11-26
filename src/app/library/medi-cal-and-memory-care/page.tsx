@@ -12,6 +12,7 @@ import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
 import { AlwEmailCapture } from "@/components/editorial/AlwEmailCapture";
 import { LibraryOfferCta } from "@/components/library/LibraryOfferCta";
+import { GuideAnswer } from "@/components/editorial/GuideAnswer";
 import {
   buildArticleSchema,
   buildBreadcrumbList,
@@ -22,11 +23,14 @@ const PAGE_PATH = "/library/medi-cal-and-memory-care";
 const canonicalUrl = canonicalFor(PAGE_PATH);
 /** Display + JSON-LD headline */
 const ARTICLE_HEADLINE =
-  "Medi-Cal and memory care in California — what it actually covers, what it doesn't, and how the Assisted Living Waiver works";
-const TITLE = "Medi-Cal & Memory Care in California — ALW Guide";
+  "Does Medi-Cal pay for memory care in California?";
+const TITLE = "Does Medi-Cal Pay for Memory Care? Assisted Living Waiver";
 const DESC =
-  "Medi-Cal and RCFE memory care in California: how the Assisted Living Waiver works, participating counties, SSI room-and-board, and share of cost.";
+  "Medi-Cal does not pay RCFE room and board. The Assisted Living Waiver (ALW) can pay services in participating counties; SSI covers room and board. How DHCS ALW works.";
 const DATE_PUBLISHED = "2026-05-25";
+const DATE_UPDATED = "2026-11-26";
+const DIRECT_ANSWER =
+  "Medi-Cal does not pay RCFE room and board. The Assisted Living Waiver (ALW), a DHCS program under Welfare and Institutions Code §14132.26, can pay the services portion of memory care in participating counties. Residents pay room and board from SSI/SSP. Skilled nursing uses a different Medi-Cal benefit. Confirm counties on the DHCS ALW page.";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   {
@@ -100,6 +104,7 @@ export default function MediCalMemoryCarePage() {
       description: DESC,
       url: canonicalUrl,
       datePublished: DATE_PUBLISHED,
+      dateModified: DATE_UPDATED,
     }),
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
@@ -130,8 +135,21 @@ export default function MediCalMemoryCarePage() {
               {ARTICLE_HEADLINE}
             </h1>
             <p className="text-[18px] leading-[1.6] text-ink-3 max-w-[62ch]">{DESC}</p>
+            <GuideAnswer
+              q="Does Medi-Cal pay for memory care?"
+              a={DIRECT_ANSWER}
+              jumps={[
+                { href: "#what-medi-cal-covers", label: "What it covers" },
+                { href: "#alw-plain-language", label: "How ALW works" },
+                { href: "#faq", label: "FAQ" },
+              ]}
+              action={{
+                href: "/california/facilities",
+                label: "Find Medi-Cal / ALW homes near you",
+              }}
+            />
             <div className="mt-8">
-              <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
+              <AuthorByline lastReviewed={DATE_UPDATED} className="border-b-0 pb-0 mb-0" />
               <GuideFacilityModule />
             </div>
             <EditorialHero
@@ -256,11 +274,32 @@ export default function MediCalMemoryCarePage() {
                     {name} →
                   </Link>
                 ))}
+              </div>
+              <p className="mt-4 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-rust mb-3">
+                City pages
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { name: "Los Angeles", href: "/california/los-angeles" },
+                  { name: "San Diego", href: "/california/san-diego" },
+                  { name: "San Jose", href: "/california/san-jose" },
+                  { name: "San Francisco", href: "/california/san-francisco" },
+                  { name: "Sacramento", href: "/california/sacramento" },
+                  { name: "Oakland", href: "/california/oakland" },
+                ].map(({ name, href }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="rounded-full border border-paper-rule bg-paper px-3 py-1.5 text-[13px] text-ink-2 hover:border-teal/40 hover:text-teal transition-colors"
+                  >
+                    {name} →
+                  </Link>
+                ))}
                 <Link
                   href="/california/facilities"
                   className="rounded-full border border-teal/40 bg-teal/5 px-3 py-1.5 text-[13px] text-teal hover:bg-teal/10 transition-colors"
                 >
-                  All California facilities →
+                  Find Medi-Cal / ALW homes near you →
                 </Link>
               </div>
             </div>
@@ -431,7 +470,7 @@ export default function MediCalMemoryCarePage() {
             note="Policies and county participation change. Verify ALW county lists and rates on the official DHCS site before making financial decisions."
           />
 
-          <div className="mt-16 border-t border-paper-rule pt-12 space-y-6">
+          <div id="faq" className="mt-16 border-t border-paper-rule pt-12 space-y-6">
             <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust">
               Frequently asked
             </p>
@@ -494,7 +533,7 @@ export default function MediCalMemoryCarePage() {
               </li>
             </ul>
             <p className="mt-8 text-[14px] text-ink-3">
-              Last reviewed {DATE_PUBLISHED}. Author bio and credentials at{" "}
+              Last updated {DATE_UPDATED}. Inspection and DHCS facts on this page were last sourced {DATE_PUBLISHED}. Author bio and credentials at{" "}
               <Link href="/about" className="text-teal underline underline-offset-4">
                 About
               </Link>

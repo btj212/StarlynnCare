@@ -15,13 +15,17 @@ import {
 import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { LibraryCta } from "@/components/editorial/LibraryCta";
 import { LibraryOfferCta } from "@/components/library/LibraryOfferCta";
+import { GuideAnswer } from "@/components/editorial/GuideAnswer";
 
 const PAGE_PATH = "/library/type-a-vs-type-b-deficiencies-explained";
 const canonicalUrl = canonicalFor(PAGE_PATH);
-const TITLE = "Type A vs. Type B Deficiencies in California RCFEs";
+const TITLE = "Type A vs Type B Citations: Which Is Worse?";
 const DESC =
-  "What Type A and Type B citations mean in California RCFE inspections, how to read them on a facility profile, and why they matter when choosing memory care.";
+  "Type A is an immediate risk to residents (48-hour plan). Type B is every other CDSS RCFE violation. How to read both on a California memory care inspection record.";
 const DATE_PUBLISHED = "2026-05-02";
+const DATE_UPDATED = "2026-11-26";
+const DIRECT_ANSWER =
+  "A Type A citation means CDSS found an immediate risk to residents' health, safety, or personal rights (Health & Safety Code §1540.1). The home must submit a corrective plan within 48 hours. A Type B citation is every other California RCFE violation that did not meet that test. Type A is more severe; repeated Type B findings in the same area can still show a pattern.";
 
 export const metadata: Metadata = {
   title: `${TITLE} | StarlynnCare`,
@@ -63,6 +67,7 @@ const jsonLd = [
     description: DESC,
     url: canonicalUrl,
     datePublished: DATE_PUBLISHED,
+    dateModified: DATE_UPDATED,
   }),
   buildBreadcrumbList([
     { name: "Home", url: canonicalFor("/") },
@@ -127,14 +132,27 @@ export default function TypeATypeBPage() {
             <h1
               className="font-[family-name:var(--font-display)] font-normal text-[clamp(32px,5vw,56px)] leading-[1.04] tracking-[-0.02em] text-ink mt-3 mb-5"
             >
-              Type A vs. Type B deficiencies — <em>what they actually mean.</em>
+              Type A vs. Type B citations — <em>which is worse?</em>
             </h1>
             <p className="text-[18px] leading-[1.6] text-ink-3 max-w-[58ch]">
               Every California RCFE inspection report classifies violations as Type A or Type B.
               Here is what that difference means for a family evaluating a memory care facility.
             </p>
+            <GuideAnswer
+              q="Which is worse, Type A or Type B?"
+              a={DIRECT_ANSWER}
+              jumps={[
+                { href: "#type-a", label: "Type A" },
+                { href: "#type-b", label: "Type B" },
+                { href: "#faq", label: "FAQ" },
+              ]}
+              action={{
+                href: "/california/facilities",
+                label: "Read Type A / Type B on a home's record",
+              }}
+            />
             <div className="mt-8 max-w-[72ch]">
-              <AuthorByline lastReviewed={DATE_PUBLISHED} className="border-b-0 pb-0 mb-0" />
+              <AuthorByline lastReviewed={DATE_UPDATED} className="border-b-0 pb-0 mb-0" />
               <GuideFacilityModule />
             </div>
           </div>
@@ -300,6 +318,20 @@ export default function TypeATypeBPage() {
           </Prose>
 
           <LibraryCta stateSlug="california" stateName="California" />
+
+          <div id="faq" className="mt-16 border-t border-paper-rule pt-12 space-y-6">
+            <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-rust">
+              Frequently asked
+            </p>
+            <dl className="space-y-6">
+              {FAQ_PAIRS.map((f) => (
+                <div key={f.q}>
+                  <dt className="font-semibold text-ink">{f.q}</dt>
+                  <dd className="mt-2 text-[15px] leading-relaxed text-ink-2">{f.a}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
 
           <div className="mt-10 pt-8 border-t border-paper-rule flex flex-col gap-3 text-[14px] text-ink-3">
             <p>

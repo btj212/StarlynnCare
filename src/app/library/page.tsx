@@ -82,16 +82,16 @@ const SECTION_COSTS: ArticleCard[] = [
     href: "/california/cost-by-city",
   },
   {
-    title: "Medi-Cal & memory care",
-    desc: "Room & board vs services, ALW context, and how to pair payer literacy with inspection data.",
+    title: "Does Medi-Cal pay for memory care?",
+    desc: "Medi-Cal does not pay RCFE room and board. The Assisted Living Waiver can pay services in participating counties.",
     href: "/library/medi-cal-and-memory-care",
   },
 ];
 
 const SECTION_RECORD: ArticleCard[] = [
   {
-    title: "Type-A vs. Type-B deficiencies, explained",
-    desc: "How California cites immediate-risk findings vs lesser violations — read the public record with confidence.",
+    title: "Type A vs Type B citations: which is worse?",
+    desc: "Type A is an immediate risk (48-hour plan). Type B is every other CDSS RCFE violation.",
     href: "/library/type-a-vs-type-b-deficiencies-explained",
   },
   {

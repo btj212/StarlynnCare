@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { FacilityLookupBox } from "@/components/articles/FacilityLookupBox";
 import { GatedArticleFrame } from "@/components/articles/GatedArticleFrame";
+import { GuideAnswer } from "@/components/editorial/GuideAnswer";
 import { HOW_TO_CHECK, type HowToState } from "@/lib/content/howToCheckArticles";
 
 export function HowToCheckPage({ code, children }: { code: HowToState; children: ReactNode }) {
@@ -28,6 +29,15 @@ export function HowToCheckPage({ code, children }: { code: HowToState; children:
       }}
       faq={article.faq}
     >
+      <GuideAnswer
+        q={`How do I check a ${article.stateName} inspection record?`}
+        a={article.answer}
+        action={{
+          href: article.regulatorUrl,
+          label: `Open the ${article.regulatorName}`,
+          external: true,
+        }}
+      />
       <FacilityLookupBox
         stateSlug={article.statePath.slice(1)}
         stateName={article.stateName}

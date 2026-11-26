@@ -85,7 +85,7 @@ export async function GatedArticleFrame({
             {heading}
           </h1>
           <div className="mt-8">
-            <AuthorByline bare />
+            <AuthorByline lastReviewed={datePublished} bare />
           </div>
           <EditorialHero src={image.src} alt={image.alt} priority />
           <div className="mt-2">{children}</div>
