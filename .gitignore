@@ -58,6 +58,8 @@ scrapers/wa-skipped-pdfs/
 
 # Raw data exports (CSVs from OR/WA/CA portals — large, not committed)
 data/*.csv
+data/ca_status_refresh/
+data/.cache/
 
 # Illinois LLCS document attempts. These are operational notes, not source data.
 scrapers/data/il_llcs/

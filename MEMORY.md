@@ -92,7 +92,7 @@ Outreach emails use a signed per-facility token (`?t=`), minted by `scripts/gene
 
 **Titles:** Facility `<title>` and the 40–60 word hero answer use `{Name}, {City}: Inspection Record & Citations ({Year})` with the last inspection year. This conflicts with the 2026-11 rule that every profile title said "Costs". Costs stay on the page and in the description. H1 is legal name + city; a sourced marketing name is "Also known as".
 
-**DBA / marketing names:** Do not invent aliases. `facilities.content.marketing_name` / `name_aliases` is the deploy-safe read. Migration `0077_facility_marketing_names.sql` adds real columns — **do not apply until Blake approves**. "Legacy House of Mesa" is not stored; the legal name is Legacy Retirement Residence.
+**DBA / marketing names:** Do not invent aliases. `facilities.content.marketing_name` / `name_aliases` is the deploy-safe read. Migration `0079_facility_marketing_names.sql` (renumbered from a duplicate 0077) adds real columns — **do not apply until Blake approves**. "Legacy House of Mesa" is not stored; the legal name is Legacy Retirement Residence.
 
 **Rejected:** Hardcoding 11 states in the FAQ. Counting publishable homes in the city lede. Putting every regulator acronym in the first stat card.
 
@@ -1133,5 +1133,24 @@ disk, and 30,606 hydrated files were evicted back to iCloud.
 `~/Library/Logs/StarlynnCare`.
 
 ---
+
+## 2026-11 — California license status comes from the live CDSS file
+
+**Decided:** `license_status` for California comes from the CDSS statewide RCFE file
+(`DownloadStateData/ResidentialElderCareFacility`), with FacilityDetail confirming any change to or from
+CLOSED, ON PROBATION or REVOKED. The CHHS/CKAN roster is retired. Ingests never change `publishable` on an
+existing row. A status change needs a newer `license_status_checked_at` (migration 0082 trigger).
+
+**Why:** The CKAN roster has been frozen at file_date 05/25/2025. On 2026-11-26 the live file disagreed with
+1,087 of 9,062 CA rows; 60 published homes were LICENSED in our data but CLOSED (53) or ON PROBATION (7) at CDSS.
+Most closed homes changed owner and have a successor license at the same address that our data still called
+PENDING. The old ingest also keyed on a name-derived slug, so a CDSS rename would have forked a duplicate row,
+and it reset citation-promoted memory-care flags.
+
+**Rejected:** The CHHS GIS layer as the status source (open homes only; its numeric status codes mix
+probation and licensed). Per-home FacilityDetail as the sweep (one call per home; the bulk file is one call).
+
+**Source:** `scrapers/_cdss_live.py`, `scrapers/ca_status_refresh.py`, `scrapers/ccld_rcfe_ingest.py`,
+`supabase/migrations/0082_license_status_provenance.sql`.
 
 <!-- New session summaries go above this line -->

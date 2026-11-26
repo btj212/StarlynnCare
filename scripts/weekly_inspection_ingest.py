@@ -171,6 +171,16 @@ def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
         print("\n[CA] Skipped (--skip-ca)")
         return None
     citation_args = _ca_citation_args(county)
+    # Live license status first (CDSS bulk file, FacilityDetail confirmation).
+    # Writes license-status columns only; never publishable. A failure here
+    # (CDSS down) does not block the report scan.
+    status_args = ["--apply"] if os.environ.get("CA_STATUS_APPLY", "1") == "1" else []
+    _python(
+        str(SCRAPERS / "ca_status_refresh.py"),
+        *status_args,
+        label="CA live license status refresh",
+        allow_fail=True,
+    )
     if county:
         # Roster refresh for one county
         roster_rc = _python(
