@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import inspect
 import os
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -21,6 +23,15 @@ FACILITY = {
 
 
 class CaliforniaIncrementalScanTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._github_actions = os.environ.pop("GITHUB_ACTIONS", None)
+
+    def tearDown(self) -> None:
+        if self._github_actions is None:
+            os.environ.pop("GITHUB_ACTIONS", None)
+        else:
+            os.environ["GITHUB_ACTIONS"] = self._github_actions
+
     def test_preflight_waits_for_cold_report_api(self) -> None:
         """A cold CDSS service should warm before statewide concurrency starts."""
         with (
@@ -154,7 +165,10 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
             )
 
         self.assertEqual(result["errors"], 1)
-        self.assertNotIn("_snapshot_update", result)
+        snapshot = result["_snapshot_update"]
+        self.assertTrue(snapshot[1].startswith("pending:"))
+        self.assertEqual(snapshot[2]["reconciliation"], "pending")
+        self.assertEqual(snapshot[2]["reports"], [])
 
     def test_partial_progress_keeps_confirmed_reports_without_claiming_complete(self) -> None:
         """A saved baseline must not include a report the detail call never returned."""
@@ -474,6 +488,8 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
                 None,
                 "00000000-0000-0000-0000-000000000002",
                 already_ingested=set(),
+                ingested_keys={"1fde0d06ff9530ae88258e79000019de"},
+                ingested_dates={date(2026, 10, 30)},
                 dsn="unused",
                 previous_snapshot=previous,
                 bulk_snapshot=bulk,
@@ -481,8 +497,10 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
 
         self.assertEqual(result["index_checked"], 1)
         self.assertEqual(result["errors"], 0)
-        self.assertNotIn("_snapshot_update", result)
-        self.assertEqual(result["_touch_scanned_at"], FACILITY["id"])
+        self.assertEqual(result["reports_skipped"], 1)
+        snapshot = result["_snapshot_update"]
+        self.assertEqual(snapshot[1], bulk["fingerprint"])
+        self.assertNotEqual(snapshot[2].get("reconciliation"), "pending")
         fetch_html.assert_not_called()
 
     def test_unread_pending_home_with_unchanged_row_is_carried_over(self) -> None:
@@ -650,20 +668,27 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
         bulk = {"fingerprint": ingest.fingerprint(new_body), "payload": new_body}
         index = {"COUNT": 1, "REPORTARRAY": [{"REPORTPAGE": page}]}
 
-        with patch.object(ingest, "fetch_report_index", return_value=index):
+        with (
+            patch.object(ingest, "fetch_report_index", return_value=index),
+            patch.object(ingest, "fetch_report_html") as fetch_html,
+        ):
             result = ingest.process_facility(
                 FACILITY,
                 None,
                 "00000000-0000-0000-0000-000000000002",
                 already_ingested=set(),
+                ingested_keys={"1fde0d06ff9530ae88258e79000019de"},
+                ingested_dates={date(2026, 10, 1)},
                 dsn="unused",
                 previous_snapshot=previous,
                 bulk_snapshot=bulk,
             )
 
+        fetch_html.assert_not_called()
         self.assertEqual(result["errors"], 1)
         self.assertTrue(result["_snapshot_update"][1].startswith("pending:"))
         self.assertEqual(result["_snapshot_update"][2]["reconciliation"], "pending")
+        self.assertTrue(result["_snapshot_update"][2]["unresolved_bulk_visit_dates"])
 
     def test_pending_snapshot_still_opens_a_new_report_id(self) -> None:
         """A new document id is still fetched, even on a home that was pending."""
@@ -702,6 +727,8 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
                 None,
                 "00000000-0000-0000-0000-000000000002",
                 already_ingested=set(),
+                ingested_keys={"1fde0d06ff9530ae88258e79000019de"},
+                ingested_dates={date(2026, 10, 15)},
                 dsn="unused",
                 previous_snapshot=previous,
                 bulk_snapshot=bulk,
@@ -725,6 +752,253 @@ class CaliforniaIncrementalScanTests(unittest.TestCase):
             stored = (Path(tmp) / "ab" / "abcdef.html").read_text()
 
         self.assertEqual(stored, "<html>one</html>")
+
+    def test_bulk_visit_dates_keep_a_matching_fingerprint_pending(self) -> None:
+        """CDSS can list a visit before the PDF exists; that home must stay in the deep queue."""
+        stable = {
+            **FACILITY,
+            "license_number": "197608878",
+        }
+        bulk_body = {
+            "Last Visit Date": "11/01/2026",
+            "All Visit Dates": "11/01/2026, 10/01/2026",
+        }
+        bulk = {
+            stable["id"]: {
+                "fingerprint": "same",
+                "payload": bulk_body,
+            }
+        }
+        previous = {
+            stable["id"]: {
+                "fingerprint": "same",
+                "payload": {
+                    "bulk": bulk_body,
+                    "reports": [
+                        {
+                            "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                            "report_date": "10/01/2026",
+                            "status": "ingested",
+                        }
+                    ],
+                },
+            }
+        }
+        ingested = {
+            stable["id"]: {
+                "keys": {"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+                "dates": {date(2026, 10, 1)},
+            }
+        }
+
+        selected = ingest.select_reconciliation_targets(
+            [stable],
+            bulk,
+            previous,
+            refetch=False,
+            ingested_by_id=ingested,
+        )
+
+        self.assertEqual(selected["unchanged"], [])
+        self.assertEqual([facility["id"] for facility in selected["deep"]], [stable["id"]])
+        self.assertTrue(
+            ingest.bulk_visit_dates_unresolved(
+                bulk_body,
+                {date(2026, 10, 1)},
+                {date(2026, 10, 1)},
+            )
+        )
+        self.assertFalse(
+            ingest.bulk_visit_dates_unresolved(
+                bulk_body,
+                {date(2026, 11, 1)},
+                {date(2026, 10, 1)},
+            )
+        )
+
+    def test_snapshot_key_without_an_inspections_row_is_refetched(self) -> None:
+        """A Lotus id on the snapshot is not enough; the inspections row has to exist."""
+        page = (
+            "/WebReports/ABC.nsf/0/"
+            "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+        )
+        bulk_body = {"Last Visit Date": "10/15/2026"}
+        bulk = {"fingerprint": ingest.fingerprint(bulk_body), "payload": bulk_body}
+        previous = {
+            "fingerprint": bulk["fingerprint"],
+            "payload": {
+                "bulk": bulk_body,
+                "reports": [
+                    {
+                        "key": "1fde0d06ff9530ae88258e79000019de",
+                        "report_date": "10/15/2026",
+                    }
+                ],
+            },
+        }
+        index = {
+            "COUNT": 1,
+            "REPORTARRAY": [
+                {
+                    "REPORTPAGE": page,
+                    "REPORTDATE": "10/15/2026",
+                    "REPORTTYPE": "Complaint",
+                    "CONTROLNUMBER": "22-CA-111",
+                }
+            ],
+        }
+
+        with (
+            patch.object(ingest, "fetch_report_index", return_value=index),
+            patch.object(ingest, "fetch_report_html", return_value=None) as fetch_html,
+        ):
+            result = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                ingested_keys=set(),
+                ingested_identities=set(),
+                ingested_dates=set(),
+                dsn="unused",
+                previous_snapshot=previous,
+                bulk_snapshot=bulk,
+            )
+
+        fetch_html.assert_called_once()
+        self.assertEqual(result["reports_skipped"], 0)
+        snapshot = result["_snapshot_update"]
+        self.assertEqual(snapshot[2]["reconciliation"], "pending")
+        self.assertEqual(snapshot[2]["reports"], [])
+
+    def test_complete_snapshot_writes_only_ingested_or_no_document_keys(self) -> None:
+        """The saved inventory must not pretend a listed index slot was stored."""
+        page = (
+            "/WebReports/ABC.nsf/0/"
+            "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+        )
+        bulk_body = {"Last Visit Date": "10/15/2026"}
+        bulk = {"fingerprint": ingest.fingerprint(bulk_body), "payload": bulk_body}
+        index = {
+            "COUNT": 1,
+            "REPORTARRAY": [
+                {
+                    "REPORTPAGE": page,
+                    "REPORTDATE": "10/15/2026",
+                    "REPORTTYPE": "Inspection",
+                }
+            ],
+        }
+
+        with (
+            patch.object(ingest, "fetch_report_index", return_value=index),
+            patch.object(ingest, "fetch_report_html", return_value=""),
+        ):
+            result = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                ingested_dates={date(2026, 10, 15)},
+                dsn="unused",
+                bulk_snapshot=bulk,
+            )
+
+        snapshot = result["_snapshot_update"]
+        self.assertEqual(snapshot[1], bulk["fingerprint"])
+        self.assertEqual(
+            [report["status"] for report in snapshot[2]["reports"]],
+            ["no_document"],
+        )
+        self.assertEqual(
+            {report["key"] for report in snapshot[2]["reports"]},
+            {"1fde0d06ff9530ae88258e79000019de"},
+        )
+
+    def test_same_day_complaints_use_complaint_or_lotus_identity(self) -> None:
+        """The old date+type+agency key dropped the second complaint on that day."""
+        first = {
+            "complaint_id": "22-CA-111",
+            "report_index_metadata": {"report_key": "aaaabbbbccccddddeeeeffff00001111"},
+        }
+        second = {
+            "complaint_id": "22-CA-222",
+            "report_index_metadata": {"report_key": "11110000ffffeeeeddddccccbbbbaaaa"},
+        }
+        self.assertNotEqual(ingest.ca_source_event_id(first), ingest.ca_source_event_id(second))
+        sql = inspect.getsource(ingest.insert_inspection)
+        self.assertIn("source_event_id", sql)
+        migration = (
+            Path(__file__).resolve().parents[1]
+            / "supabase/migrations/0084_inspections_unkeyed_complaint.sql"
+        ).read_text()
+        self.assertIn("coalesce(complaint_id, '')", migration)
+        self.assertIn("drop index if exists public.inspections_facility_date_type_agency_unkeyed", migration)
+        self.assertIn("Do not apply this from an agent session", migration)
+        for path in (
+            Path(__file__).resolve().parents[1] / "scrapers/az_adhs_inspections_ingest.py",
+            Path(__file__).resolve().parents[1] / "scrapers/wa_inspections_ingest.py",
+            Path(__file__).resolve().parents[1] / "scrapers/mn_inspections_ingest.py",
+            Path(__file__).resolve().parents[1] / "scrapers/or_bulk_deficiency_insert.py",
+        ):
+            self.assertIn("COALESCE(complaint_id, '')", path.read_text())
+
+    def test_github_actions_must_not_fetch_facility_reports(self) -> None:
+        """A hosted TLS failure used to look like a quiet week with no new PDFs."""
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}):
+            self.assertFalse(ingest.facility_reports_host_allowed())
+            with self.assertRaises(ingest.CdssHostedFetchError):
+                ingest.fetch_report_index("000123456")
+            with self.assertRaises(ingest.CdssHostedFetchError):
+                ingest.fetch_report_html("000123456", 0)
+        weekly = (
+            Path(__file__).resolve().parents[1]
+            / ".github/workflows/cdss-weekly-ingest.yml"
+        ).read_text()
+        self.assertIn("exit 1", weekly)
+        self.assertNotIn(
+            "python scrapers/ccld_citations_ingest.py --publishable",
+            weekly,
+        )
+        orange = (
+            Path(__file__).resolve().parents[1]
+            / ".github/workflows/orange-county-watch.yml"
+        ).read_text()
+        self.assertIn("exit 1", orange)
+        self.assertNotIn("weekly_inspection_ingest.py", orange)
+
+    def test_ssl_failure_is_not_a_missing_document(self) -> None:
+        """A GitHub or Mac TLS error must retry later, not skip the PDF as unpublished."""
+        page = (
+            "/WebReports/ABC.nsf/0/"
+            "1FDE0D06FF9530AE88258E79000019DE?OpenDocument"
+        )
+        index = {"COUNT": 1, "REPORTARRAY": [{"REPORTPAGE": page}]}
+        bulk = {"fingerprint": "bulk-fp", "payload": {"Last Visit Date": "10/15/2026"}}
+
+        with (
+            patch.object(ingest, "fetch_report_index", return_value=index),
+            patch.object(
+                ingest,
+                "fetch_report_html",
+                side_effect=ingest.CdssSslError("certificate verify failed"),
+            ),
+        ):
+            result = ingest.process_facility(
+                FACILITY,
+                None,
+                "00000000-0000-0000-0000-000000000002",
+                already_ingested=set(),
+                dsn="unused",
+                bulk_snapshot=bulk,
+            )
+
+        self.assertEqual(result["ssl_error"], 1)
+        self.assertEqual(result["errors"], 1)
+        self.assertEqual(result["reports_skipped"], 0)
+        snapshot = result["_snapshot_update"]
+        self.assertEqual(snapshot[2]["reconciliation"], "pending")
+        self.assertEqual(snapshot[2]["reports"], [])
 
 
 if __name__ == "__main__":

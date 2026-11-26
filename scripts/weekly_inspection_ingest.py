@@ -12,7 +12,7 @@ Cron probe 2026-08-07: MN insertDate +7 (resolved dates through 7/22).
 Usage:
   python3 scripts/weekly_inspection_ingest.py
   python3 scripts/weekly_inspection_ingest.py --state CA
-  python3 scripts/weekly_inspection_ingest.py --skip-ca   # CA handled by cdss-weekly-ingest
+  python3 scripts/weekly_inspection_ingest.py --skip-ca   # CA is the Mac launchd job, not GitHub
 
 Requires DATABASE_URL in .env.local or environment.
 

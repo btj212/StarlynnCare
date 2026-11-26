@@ -286,6 +286,16 @@ class RequestPacer:
 
 PACER = RequestPacer()
 _PREFLIGHT_INDEX: dict[str, dict[str, Any]] = {}
+_DATE_TOKEN_RE = re.compile(r"\b(\d{1,2}/\d{1,2}/\d{2,4})\b")
+BULK_VISIT_DATE_FIELDS = ("Last Visit Date", "All Visit Dates")
+
+
+class CdssSslError(RuntimeError):
+    """TLS failed talking to FacilityReports. This is not 'no document'."""
+
+
+class CdssHostedFetchError(RuntimeError):
+    """FacilityReports must be fetched from the Mac watch, not GitHub Actions."""
 
 
 def retry_sleep_seconds(attempt: int, retry_after: str | None = None) -> float:
@@ -496,12 +506,16 @@ def _get_with_retries(
             return response
         except Exception as exc:  # noqa: BLE001 - intentional broad retry boundary
             last_exc = exc
+            ssl_failed = isinstance(exc, requests.exceptions.SSLError)
             if not isinstance(exc, requests.HTTPError):
                 PACER.record(
                     ok=False,
                     latency_ms=(time.monotonic() - started) * 1000,
-                    timed_out=isinstance(
-                        exc, (requests.Timeout, requests.ConnectionError)
+                    timed_out=(
+                        isinstance(
+                            exc, (requests.Timeout, requests.ConnectionError)
+                        )
+                        and not ssl_failed
                     ),
                 )
             if attempt == max_retries - 1:
@@ -515,6 +529,10 @@ def _get_with_retries(
                 file=sys.stderr,
             )
             time.sleep(sleep)
+    if isinstance(last_exc, requests.exceptions.SSLError):
+        raise CdssSslError(
+            f"FacilityReports TLS failed after {max_retries} attempts: {url}"
+        ) from last_exc
     raise RuntimeError(f"Request failed after {max_retries} attempts: {url}") from last_exc
 
 
@@ -730,12 +748,26 @@ def _fetch_report_index_network(
     return response.json()
 
 
+def facility_reports_host_allowed() -> bool:
+    """FacilityReports TLS only works from the Mac watch, not GitHub-hosted jobs."""
+    return os.environ.get("GITHUB_ACTIONS", "").lower() not in {"1", "true"}
+
+
+def assert_facility_reports_host_allowed() -> None:
+    if not facility_reports_host_allowed():
+        raise CdssHostedFetchError(
+            "FacilityReports cannot be fetched from GitHub Actions. "
+            "Run com.starlynncare.ca-watch on the Mac."
+        )
+
+
 def fetch_report_index(
     fac_num: str,
     *,
     max_retries: int = HTTP_MAX_RETRIES,
 ) -> dict[str, Any]:
     """Return {COUNT, REPORTARRAY}, reusing the startup probe when it matches."""
+    assert_facility_reports_host_allowed()
     key = str(fac_num).zfill(9)
     cached = _PREFLIGHT_INDEX.pop(key, None)
     if cached is not None:
@@ -766,6 +798,17 @@ def wait_for_report_api(
                 flush=True,
             )
             return True
+        except CdssHostedFetchError:
+            raise
+        except CdssSslError as exc:
+            print(
+                f"CDSS report API {label} probe {attempt}/{attempts} TLS failed: {exc}",
+                flush=True,
+            )
+            if attempt < attempts:
+                time.sleep(pause_seconds)
+                continue
+            raise
         except Exception as exc:
             print(
                 f"CDSS report API {label} probe {attempt}/{attempts} failed: {exc}",
@@ -814,6 +857,172 @@ def snapshot_is_pending(previous_snapshot: dict[str, Any] | None) -> bool:
     return str(previous_snapshot.get("fingerprint") or "").startswith("pending:")
 
 
+def parse_bulk_visit_dates(payload: dict[str, Any] | None) -> set[date]:
+    """Dates CDSS already published on the statewide file, even before the PDF."""
+    dates: set[date] = set()
+    if not isinstance(payload, dict):
+        return dates
+    for field in BULK_VISIT_DATE_FIELDS:
+        raw = payload.get(field)
+        if raw is None:
+            continue
+        text = str(raw)
+        parsed = parse_date_cdss(text)
+        if parsed is not None:
+            dates.add(parsed)
+        for token in _DATE_TOKEN_RE.findall(text):
+            token_date = parse_date_cdss(token)
+            if token_date is not None:
+                dates.add(token_date)
+    return dates
+
+
+def report_inventory_dates(reports: list[dict[str, Any]] | None) -> set[date]:
+    dates: set[date] = set()
+    for report in reports or []:
+        parsed = parse_date_cdss(str(report.get("report_date") or ""))
+        if parsed is not None:
+            dates.add(parsed)
+    return dates
+
+
+def bulk_visit_dates_unresolved(
+    bulk_payload: dict[str, Any] | None,
+    report_dates: set[date],
+    inspection_dates: set[date],
+) -> bool:
+    """Keep pending while a bulk visit is newer than stored rows and REPORTARRAY."""
+    known = set(report_dates) | set(inspection_dates)
+    for visit in parse_bulk_visit_dates(bulk_payload):
+        if not known or visit > max(known):
+            return True
+    return False
+
+
+def report_identity_tuple(
+    meta: dict[str, Any],
+) -> tuple[date | None, str, str | None]:
+    control = meta.get("CONTROLNUMBER")
+    if control is None:
+        control = meta.get("control_number")
+    if control == "":
+        control = None
+    report_type = str(
+        meta.get("REPORTTYPE") or meta.get("report_type") or ""
+    ).lower()
+    report_date = parse_date_cdss(
+        str(meta.get("REPORTDATE") or meta.get("report_date") or "")
+    )
+    return (
+        report_date,
+        report_type,
+        None if control is None else str(control),
+    )
+
+
+def listed_report_is_ingested(
+    meta: dict[str, Any],
+    *,
+    ingested_keys: set[str],
+    ingested_identities: set[tuple[date | None, str, str | None]],
+    source_url: str = "",
+    known_urls: set[str] | None = None,
+    previous_snapshot: dict[str, Any] | None = None,
+) -> bool:
+    """Skip a listed report only when an inspections row already exists."""
+    key = report_key(meta)
+    if key and key in ingested_keys:
+        return True
+    identity = report_identity_tuple(meta)
+    if identity[0] is not None and identity in ingested_identities:
+        return True
+    if (
+        previous_snapshot is None
+        and source_url
+        and known_urls is not None
+        and source_url in known_urls
+    ):
+        return True
+    return False
+
+
+def snapshot_has_missing_inspection_rows(
+    previous_snapshot: dict[str, Any] | None,
+    ingested_keys: set[str],
+) -> bool:
+    payload = (previous_snapshot or {}).get("payload") or {}
+    for report in payload.get("reports") or []:
+        key = str(report.get("key") or "")
+        if not key or report.get("status") == "no_document":
+            continue
+        if key not in ingested_keys:
+            return True
+    return False
+
+
+def confirmed_snapshot_reports(
+    inventory: list[dict[str, Any]],
+    confirmed_keys: set[str],
+    no_document_keys: set[str],
+) -> list[dict[str, Any]]:
+    """Snapshot inventory is ingested keys plus explicit 'no document' skips."""
+    confirmed: list[dict[str, Any]] = []
+    for report in inventory:
+        if report["key"] not in confirmed_keys:
+            continue
+        item = dict(report)
+        item["status"] = (
+            "no_document" if report["key"] in no_document_keys else "ingested"
+        )
+        confirmed.append(item)
+    return confirmed
+
+
+def ca_source_event_id(parsed: dict[str, Any]) -> str | None:
+    """Lotus document id, then complaint CONTROLNUMBER, so same-day visits coexist."""
+    meta = parsed.get("report_index_metadata") or {}
+    key = str(meta.get("report_key") or "").strip()
+    if key:
+        return key
+    complaint = parsed.get("complaint_id")
+    if complaint:
+        return str(complaint)
+    return None
+
+
+def next_snapshot_update(
+    facility: dict[str, Any],
+    *,
+    confirmed_reports: list[dict[str, Any]],
+    bulk_snapshot: dict[str, Any] | None,
+    errors: int,
+    unresolved_bulk: bool,
+    all_listed_confirmed: bool,
+) -> tuple[str, str, dict[str, Any]] | None:
+    """Complete only when every listed report is ingested or skipped as no document."""
+    is_fallback = license_key(facility) in BULK_FALLBACK_LICENSES
+    if bulk_snapshot is None and not is_fallback:
+        return None
+    complete = errors == 0 and not unresolved_bulk and all_listed_confirmed
+    if complete:
+        return snapshot_update_for(facility, confirmed_reports, bulk_snapshot)
+    bulk_payload = None if bulk_snapshot is None else bulk_snapshot["payload"]
+    return (
+        facility["id"],
+        "pending:" + fingerprint(
+            {"confirmed": [report["key"] for report in confirmed_reports]}
+        ),
+        {
+            "schema_version": 1,
+            "bulk": bulk_payload,
+            "reports": confirmed_reports,
+            "reconciliation": "pending",
+            "bulk_fallback": is_fallback,
+            "unresolved_bulk_visit_dates": unresolved_bulk,
+        },
+    )
+
+
 # ---------------------------------------------------------------------------
 # Individual report HTML fetch + parse
 # ---------------------------------------------------------------------------
@@ -821,6 +1030,7 @@ def snapshot_is_pending(previous_snapshot: dict[str, Any] | None) -> bool:
 
 def fetch_report_html(fac_num: str, inx: int) -> str | None:
     """Fetch HTML for report at position inx. Returns None on 4xx."""
+    assert_facility_reports_host_allowed()
     url = f"{TRANSPARENCY_BASE}/FacilityReports?facNum={fac_num}&inx={inx}"
     r = _get_with_retries(url, timeout=15, max_retries=1)
     if r.status_code == 404:
@@ -1178,22 +1388,71 @@ def load_ingested_urls(
     facility_ids: list[str],
 ) -> dict[str, set[str]]:
     """Load existing report URLs once instead of querying once per facility."""
-    by_facility = {facility_id: set() for facility_id in facility_ids}
+    return {
+        facility_id: set(bucket["urls"])
+        for facility_id, bucket in load_ingested_reports(conn, facility_ids).items()
+    }
+
+
+def load_ingested_reports(
+    conn: psycopg.Connection,
+    facility_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    """Load stored report keys, identities, and dates once per facility."""
+    by_facility: dict[str, dict[str, Any]] = {
+        facility_id: {
+            "urls": set(),
+            "keys": set(),
+            "identities": set(),
+            "dates": set(),
+        }
+        for facility_id in facility_ids
+    }
     if not facility_ids:
         return by_facility
 
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT facility_id::text, source_url
+            SELECT facility_id::text,
+                   source_url,
+                   inspection_date,
+                   inspection_type,
+                   complaint_id,
+                   source_event_id,
+                   COALESCE(
+                     raw_data->'report_index_metadata'->>'report_key',
+                     raw_data->>'report_key'
+                   )
             FROM inspections
             WHERE facility_id = ANY(%s::uuid[])
-              AND source_url IS NOT NULL
             """,
             (facility_ids,),
         )
-        for facility_id, source_url in cur.fetchall():
-            by_facility[facility_id].add(source_url)
+        for (
+            facility_id,
+            source_url,
+            inspection_date,
+            inspection_type,
+            complaint_id,
+            source_event_id,
+            stored_key,
+        ) in cur.fetchall():
+            bucket = by_facility[facility_id]
+            if source_url:
+                bucket["urls"].add(source_url)
+            key = str(stored_key or source_event_id or "").strip().lower()
+            if key:
+                bucket["keys"].add(key)
+            if inspection_date is not None:
+                bucket["dates"].add(inspection_date)
+            bucket["identities"].add(
+                (
+                    inspection_date,
+                    str(inspection_type or "").lower(),
+                    complaint_id or None,
+                )
+            )
     return by_facility
 
 
@@ -1287,13 +1546,13 @@ def insert_inspection(
                 facility_id, inspection_date, inspection_type,
                 is_complaint, complaint_id,
                 total_deficiency_count,
-                source_url, source_agency, scrape_run_id,
+                source_url, source_agency, source_event_id, scrape_run_id,
                 raw_data
             ) VALUES (
                 %s, %s, %s,
                 %s, %s,
                 %s,
-                %s, %s, %s::uuid,
+                %s, %s, %s, %s::uuid,
                 %s
             )
             RETURNING id::text
@@ -1307,6 +1566,7 @@ def insert_inspection(
                 len(parsed["deficiencies"]),
                 parsed["source_url"],
                 SOURCE_AGENCY,
+                ca_source_event_id(parsed),
                 scrape_run_id,
                 psycopg.types.json.Jsonb({
                     "outcome": parsed["outcome"],
@@ -1315,6 +1575,9 @@ def insert_inspection(
                     "narrative": parsed["narrative_text"][:10000],
                     "raw_html_len": parsed["raw_html_len"],
                     "report_index_metadata": parsed["report_index_metadata"],
+                    "report_key": (parsed.get("report_index_metadata") or {}).get(
+                        "report_key"
+                    ),
                 }),
             ),
         )
@@ -1437,9 +1700,11 @@ def select_reconciliation_targets(
     *,
     refetch: bool,
     watched_ids: set[str] | None = None,
+    ingested_by_id: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Bulk comparison decides deep work. Watched homes are always checked first."""
     watched_ids = watched_ids or set()
+    ingested_by_id = ingested_by_id or {}
     watched = [facility for facility in facilities if facility["id"] in watched_ids]
     watched_seen = {facility["id"] for facility in watched}
     fallbacks = [
@@ -1465,14 +1730,30 @@ def select_reconciliation_targets(
             or facility["id"] in watched_seen
         ):
             continue
-        if (
-            not refetch
-            and previous_snapshots.get(facility["id"], {}).get("fingerprint")
-            == bulk_by_id[facility["id"]]["fingerprint"]
-        ):
-            unchanged.append(facility)
-        else:
+        previous = previous_snapshots.get(facility["id"]) or {}
+        bulk = bulk_by_id[facility["id"]]
+        ingested = ingested_by_id.get(facility["id"]) or {}
+        ingested_keys = set(ingested.get("keys") or [])
+        ingested_dates = set(ingested.get("dates") or [])
+        previous_payload = previous.get("payload") or {}
+        report_dates = report_inventory_dates(
+            previous_payload.get("reports") if isinstance(previous_payload, dict) else []
+        )
+        needs_deep = (
+            refetch
+            or previous.get("fingerprint") != bulk["fingerprint"]
+            or snapshot_is_pending(previous)
+            or snapshot_has_missing_inspection_rows(previous, ingested_keys)
+            or bulk_visit_dates_unresolved(
+                bulk.get("payload") if isinstance(bulk, dict) else None,
+                report_dates,
+                ingested_dates,
+            )
+        )
+        if needs_deep:
             pending.append(facility)
+        else:
+            unchanged.append(facility)
     rest = pending + missing_bulk + fallbacks
     rest.sort(key=lambda facility: deep_sort_key(facility, previous_snapshots))
     return {
@@ -1489,7 +1770,7 @@ def snapshot_update_for(
     inventory: list[dict[str, Any]],
     bulk_snapshot: dict[str, Any] | None,
 ) -> tuple[str, str, dict[str, Any]] | None:
-    """Persist a baseline only after the facility's report list reconciled."""
+    """Persist a complete baseline of ingested keys, not the full CDSS index."""
     is_fallback = license_key(facility) in BULK_FALLBACK_LICENSES
     if bulk_snapshot is not None:
         snapshot_fingerprint = bulk_snapshot["fingerprint"]
@@ -1555,6 +1836,9 @@ def process_facility(
     dry_run: bool = False,
     refetch: bool = False,
     already_ingested: set[str] | None = None,
+    ingested_keys: set[str] | None = None,
+    ingested_identities: set[tuple[date | None, str, str | None]] | None = None,
+    ingested_dates: set[date] | None = None,
     dsn: str = "",
     index_breaker: IndexCircuitBreaker | None = None,
     deadline: float | None = None,
@@ -1574,6 +1858,8 @@ def process_facility(
         "dementia_citations": 0,
         "errors": 0,
         "index_checked": 0,
+        "ssl_error": 0,
+        "hosted_blocked": 0,
     }
 
     if not fac_num or fac_num == "000000000":
@@ -1594,6 +1880,18 @@ def process_facility(
 
     try:
         index_data = fetch_report_index(fac_num)
+    except CdssHostedFetchError as e:
+        print(f"  ERROR FacilityReports blocked for {fac_name}: {e}")
+        stats["errors"] += 1
+        stats["hosted_blocked"] = 1
+        return stats
+    except CdssSslError as e:
+        print(f"  ERROR FacilityReports TLS failed for {fac_name}: {e}")
+        if index_breaker is not None:
+            index_breaker.record_failure()
+        stats["errors"] += 1
+        stats["ssl_error"] = 1
+        return stats
     except Exception as e:
         print(f"  ERROR fetching report index for {fac_name}: {e}")
         if index_breaker is not None:
@@ -1623,10 +1921,24 @@ def process_facility(
         if report.get("key")
     }
 
+    stored_keys = set(ingested_keys or [])
+    stored_identities = set(ingested_identities or [])
+    stored_dates = set(ingested_dates or [])
+    bulk_payload = None if bulk_snapshot is None else bulk_snapshot.get("payload")
+
     if count == 0:
         print(f"  {fac_name}: no reports")
         if not dry_run:
-            snapshot_update = snapshot_update_for(facility, [], bulk_snapshot)
+            snapshot_update = next_snapshot_update(
+                facility,
+                confirmed_reports=[],
+                bulk_snapshot=bulk_snapshot,
+                errors=0,
+                unresolved_bulk=bulk_visit_dates_unresolved(
+                    bulk_payload, set(), stored_dates
+                ),
+                all_listed_confirmed=True,
+            )
             if snapshot_update is not None:
                 stats["_snapshot_update"] = snapshot_update
         return stats
@@ -1647,14 +1959,22 @@ def process_facility(
             conn.commit()
             print(f"  -- Cleared existing inspections for refetch")
             known_urls = set()
-        elif already_ingested is None:
+            stored_keys = set()
+            stored_identities = set()
+            stored_dates = set()
+        elif already_ingested is None and ingested_keys is None:
             if conn is None:
                 raise ValueError("database connection or preloaded URLs required")
-            known_urls = get_already_ingested_urls(conn, fac_id)
+            loaded = load_ingested_reports(conn, [fac_id]).get(fac_id) or {}
+            known_urls = set(loaded.get("urls") or [])
+            stored_keys = set(loaded.get("keys") or [])
+            stored_identities = set(loaded.get("identities") or [])
+            stored_dates = set(loaded.get("dates") or [])
 
     promoted = False
     parsed_reports: list[dict[str, Any]] = []
     confirmed_keys: set[str] = set()
+    no_document_keys: set[str] = set()
     for inx, meta in enumerate(report_array):
         if deadline is not None and time.monotonic() >= deadline:
             print(f"    Scan time budget exhausted during {fac_name}")
@@ -1665,8 +1985,13 @@ def process_facility(
         )
         stable_key = report_key(meta)
 
-        if stable_key in previous_keys or (
-            previous_snapshot is None and source_url in known_urls
+        if listed_report_is_ingested(
+            meta,
+            ingested_keys=stored_keys,
+            ingested_identities=stored_identities,
+            source_url=source_url,
+            known_urls=known_urls,
+            previous_snapshot=previous_snapshot,
         ):
             stats["reports_skipped"] += 1
             confirmed_keys.add(stable_key)
@@ -1676,6 +2001,16 @@ def process_facility(
 
         try:
             html = fetch_report_html(fac_num, inx)
+        except CdssHostedFetchError as e:
+            print(f"    inx={inx} FacilityReports blocked: {e}")
+            stats["errors"] += 1
+            stats["hosted_blocked"] = 1
+            break
+        except CdssSslError as e:
+            print(f"    inx={inx} FacilityReports TLS failed: {e}")
+            stats["errors"] += 1
+            stats["ssl_error"] = 1
+            continue
         except Exception as e:
             print(f"    inx={inx} fetch error: {e}")
             stats["errors"] += 1
@@ -1685,6 +2020,7 @@ def process_facility(
             print(f"    inx={inx} is no longer published")
             stats["reports_skipped"] += 1
             confirmed_keys.add(stable_key)
+            no_document_keys.add(stable_key)
             continue
 
         if html is None:
@@ -1722,18 +2058,18 @@ def process_facility(
 
     def store_reports(write_conn: psycopg.Connection) -> None:
         nonlocal promoted
+        nonlocal stored_dates
         for parsed in parsed_reports:
             n_def = len(parsed["deficiencies"])
             try:
                 report_identity = str(
                     parsed["report_index_metadata"]["report_key"]
                 )
-                if (
-                    previous_snapshot is None
-                    and inspection_already_exists(write_conn, fac_id, parsed)
-                ):
+                if inspection_already_exists(write_conn, fac_id, parsed):
                     stats["reports_skipped"] += 1
                     confirmed_keys.add(report_identity)
+                    if parsed.get("inspection_date") is not None:
+                        stored_dates.add(parsed["inspection_date"])
                     continue
                 inspection_id = insert_inspection(
                     write_conn, fac_id, parsed, scrape_run_id
@@ -1744,6 +2080,8 @@ def process_facility(
                 write_conn.commit()
                 stats["reports_ingested"] += 1
                 confirmed_keys.add(report_identity)
+                if parsed.get("inspection_date") is not None:
+                    stored_dates.add(parsed["inspection_date"])
                 stats["deficiencies"] += n_def
 
                 if parsed["has_dementia_citation"]:
@@ -1757,6 +2095,8 @@ def process_facility(
                 if is_duplicate_inspection(e):
                     stats["reports_skipped"] += 1
                     confirmed_keys.add(report_identity)
+                    if parsed.get("inspection_date") is not None:
+                        stored_dates.add(parsed["inspection_date"])
                     continue
                 print(f"    DB error: {e}")
                 stats["errors"] += 1
@@ -1782,51 +2122,53 @@ def process_facility(
         )
         stats["errors"] += 1
 
-    # The gap is already on the pending snapshot. Reading the same index
-    # again, with the same statewide row, is not a new failure. Leave the
-    # snapshot pending so the next morning looks again, and let the rest of
-    # the run finish.
+    unresolved_bulk = bulk_visit_dates_unresolved(
+        bulk_payload,
+        report_inventory_dates(inventory),
+        stored_dates,
+    )
+    all_listed_confirmed = all(
+        report["key"] in confirmed_keys for report in inventory
+    )
     if (
         snapshot_is_pending(previous_snapshot)
         and not bulk_payload_changed(previous_snapshot, bulk_snapshot)
         and not new_report_ids
         and not parsed_reports
         and not stats["errors"]
+        and not unresolved_bulk
+        and all_listed_confirmed
     ):
         print(
-            f"  {fac_name}: pending gap unchanged; index has no new report id",
+            f"  {fac_name}: pending gap closed; listed reports are stored",
             flush=True,
         )
-        stats["_touch_scanned_at"] = fac_id
-        return stats
+    elif (
+        snapshot_is_pending(previous_snapshot)
+        and not bulk_payload_changed(previous_snapshot, bulk_snapshot)
+        and not new_report_ids
+        and not parsed_reports
+        and not stats["errors"]
+        and unresolved_bulk
+    ):
+        print(
+            f"  {fac_name}: bulk visit date still newer than stored "
+            "inspections and REPORTARRAY; keeping pending",
+            flush=True,
+        )
 
-    if not stats["errors"]:
-        snapshot_update = snapshot_update_for(facility, inventory, bulk_snapshot)
-        if snapshot_update is not None:
-            stats["_snapshot_update"] = snapshot_update
-    else:
-        # Keep confirmed report ids so the next pass retries only the gaps.
-        # The fingerprint stays pending, so this cannot look like "no change".
-        confirmed = [
-            report for report in inventory if report["key"] in confirmed_keys
-        ]
-        if confirmed and (
-            bulk_snapshot is not None
-            or license_key(facility) in BULK_FALLBACK_LICENSES
-        ):
-            stats["_snapshot_update"] = (
-                fac_id,
-                "pending:" + fingerprint(
-                    {"confirmed": [report["key"] for report in confirmed]}
-                ),
-                {
-                    "schema_version": 1,
-                    "bulk": None if bulk_snapshot is None else bulk_snapshot["payload"],
-                    "reports": confirmed,
-                    "reconciliation": "pending",
-                    "bulk_fallback": license_key(facility) in BULK_FALLBACK_LICENSES,
-                },
-            )
+    snapshot_update = next_snapshot_update(
+        facility,
+        confirmed_reports=confirmed_snapshot_reports(
+            inventory, confirmed_keys, no_document_keys
+        ),
+        bulk_snapshot=bulk_snapshot,
+        errors=stats["errors"],
+        unresolved_bulk=unresolved_bulk,
+        all_listed_confirmed=all_listed_confirmed,
+    )
+    if snapshot_update is not None:
+        stats["_snapshot_update"] = snapshot_update
 
     return stats
 
@@ -1925,6 +2267,14 @@ def main() -> int:
         args.workers = 1
 
     load_env()
+    if not facility_reports_host_allowed():
+        print(
+            "FacilityReports fetches must run on the Mac "
+            "(com.starlynncare.ca-watch). GitHub Actions is not a source host "
+            "and SSL/timeouts there must not be recorded as 'no new reports'.",
+            file=sys.stderr,
+        )
+        return 1
     global WEATHER_RETRY_SCALE
     weather_samples = list(load_weather().get("samples") or [])
     if args.workers is None:
@@ -1955,6 +2305,7 @@ def main() -> int:
     # ── Load facilities ──────────────────────────────────────────────────
     print("Loading California facilities...", flush=True)
     ingested_urls: dict[str, set[str]] = {}
+    ingested_by_id: dict[str, dict[str, Any]] = {}
     previous_snapshots: dict[str, dict[str, Any]] = {}
     with psycopg.connect(dsn, connect_timeout=30) as conn:
         conn.execute("SET statement_timeout = '120s'")
@@ -1998,7 +2349,11 @@ def main() -> int:
         with psycopg.connect(dsn, connect_timeout=30) as conn:
             conn.execute("SET statement_timeout = '120s'")
             facility_ids = [facility["id"] for facility in facilities]
-            ingested_urls = load_ingested_urls(conn, facility_ids)
+            ingested_by_id = load_ingested_reports(conn, facility_ids)
+            ingested_urls = {
+                facility_id: set(bucket["urls"])
+                for facility_id, bucket in ingested_by_id.items()
+            }
             previous_snapshots = load_bulk_snapshots(conn, facility_ids)
             watched_ids = load_watched_facility_ids(conn, facility_ids)
 
@@ -2015,6 +2370,7 @@ def main() -> int:
         previous_snapshots,
         refetch=args.refetch,
         watched_ids=watched_ids,
+        ingested_by_id=ingested_by_id,
     )
     missing_bulk = selected["missing_bulk"]
     unchanged_facilities = selected["unchanged"]
@@ -2107,12 +2463,16 @@ def main() -> int:
                     deadline=deadline,
                     bulk_snapshot=bulk_snapshots.get(fac["id"]),
                 )
+        ingested = ingested_by_id.get(fac["id"]) or {}
         return process_facility(
             fac,
             None,
             scrape_run_id,
             dry_run=False,
             already_ingested=ingested_urls.get(fac["id"], set()),
+            ingested_keys=set(ingested.get("keys") or []),
+            ingested_identities=set(ingested.get("identities") or []),
+            ingested_dates=set(ingested.get("dates") or []),
             dsn=dsn,
             index_breaker=index_breaker,
             deadline=deadline,
@@ -2166,7 +2526,11 @@ def main() -> int:
         unchecked: list[dict[str, Any]] = []
 
         def accept(fac: dict[str, Any], stats: dict[str, Any]) -> None:
-            if stats.get("index_checked"):
+            if (
+                stats.get("index_checked")
+                or stats.get("ssl_error")
+                or stats.get("hosted_blocked")
+            ):
                 record_result(fac, stats)
                 return
             print(
@@ -2195,6 +2559,8 @@ def main() -> int:
                         "dementia_citations": 0,
                         "errors": 1,
                         "index_checked": 1,
+                        "ssl_error": int(isinstance(e, CdssSslError)),
+                        "hosted_blocked": int(isinstance(e, CdssHostedFetchError)),
                     }
                 accept(fac, stats)
         return unchecked
@@ -2233,13 +2599,32 @@ def main() -> int:
                 if facility.get("license_number")
             ]
             attempts = 2 if failed_batches == 0 else 1
-            ready = (not probe_targets) or wait_for_report_api(
-                probe_targets[0],
-                alternates=probe_targets[1:],
-                attempts=attempts,
-                deadline=deadline,
-                label=f"wave {wave}",
-            )
+            try:
+                ready = (not probe_targets) or wait_for_report_api(
+                    probe_targets[0],
+                    alternates=probe_targets[1:],
+                    attempts=attempts,
+                    deadline=deadline,
+                    label=f"wave {wave}",
+                )
+            except (CdssSslError, CdssHostedFetchError) as exc:
+                kind = (
+                    "TLS"
+                    if isinstance(exc, CdssSslError)
+                    else "GitHub Actions host"
+                )
+                print(
+                    f"FacilityReports {kind} failure is not 'no new reports': {exc}",
+                    flush=True,
+                )
+                for fac in [*batch, *remaining, *deferred]:
+                    totals["errors"] += 1
+                    error_log_parts.append(
+                        f"{fac['name']}: FacilityReports {kind} failure"
+                    )
+                remaining = []
+                deferred = []
+                break
             if not ready:
                 failed_batches += 1
                 deferred.extend(batch)

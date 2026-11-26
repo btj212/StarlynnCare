@@ -628,7 +628,7 @@ def probe_static(state: str, note: str) -> dict[str, Any]:
 
 
 STATE_PROBERS = {
-    "CA": lambda skip: probe_static("CA", "Requires DATABASE_URL for ccld_citations_ingest; use cdss-weekly-ingest.yml"),
+    "CA": lambda skip: probe_static("CA", "Requires the Mac launchd job com.starlynncare.ca-watch; GitHub must not fetch FacilityReports"),
     "TX": lambda skip: probe_static("TX", "TULIP Aura JSON requires manual browser capture"),
     "OR": probe_or,
     "WA": lambda skip: probe_static("WA", "Requires DATABASE_URL for facility list; use weekly_inspection_ingest.py"),
