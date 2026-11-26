@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — Repeat-offender CSV vs current publishable license
+
+**What went wrong:** Layer 2 `content_checks.py` looked up the frozen May 2026 repeat-offender CSV with `publishable = true LIMIT 1`. After a home is re-licensed, the visits live on the unpublished prior row (Opal Care, Beach Terrace 306005901, Lincoln Villa 019201025). Duplicate names (two publishable Merisol Care Home rows) made `LIMIT 1` pick the license with zero visits for that code. CI then failed "not found" / "lost visits" even though the inspection rows are still in the database.
+
+**What worked instead:** Match any CA row with that legal name and city, including unpublished, and pick the candidate whose visit count for the regulation is closest to the article. Do not merge licenses and do not republish closed rows from the app.
+
+**Source:** PR #251 validate job, 2026-11-26.
+
+---
+
 ## 2026-11 — City hub counts drifted because CMS intros and CA FAQ fallback
 
 **What went wrong:** San Diego's live intro said 23 homes / 3,374 beds while the headline, stats, and A–Z said 22 / 3,224. The missing home (Vista del Sol) had no inspections, so `facilityListedOnHub` dropped it, and a published `hub_content` row still quoted 23. Kansas City FAQs were California (Medi-Cal, CDSS, RCFE, Type-A/B) because `getStateStrings` had no Missouri branch and fell through to the CA default. Findings footnotes defaulted to CA CDSS Type-A/Type-B for Minnesota and Oregon. Oregon "serious citations = 0" was `severity >= 3` on rows with no class or severity. Kansas City "Improving 135 → 100 → 17" used a 12-month window with only 5 inspections.
