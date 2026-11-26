@@ -1138,8 +1138,9 @@ disk, and 30,606 hydrated files were evicted back to iCloud.
 
 **Decided:** `license_status` for California comes from the CDSS statewide RCFE file
 (`DownloadStateData/ResidentialElderCareFacility`), with FacilityDetail confirming any change to or from
-CLOSED, ON PROBATION or REVOKED. The CHHS/CKAN roster is retired. Ingests never change `publishable` on an
-existing row. A status change needs a newer `license_status_checked_at` (migration 0082 trigger).
+CLOSED, ON PROBATION or REVOKED. The CHHS/CKAN roster is retired. Closed or revoked homes (confirmed by both CDSS views) are unpublished
+and kept as rows; probation stays published with its status (Blake, 2026-11-26). The pipeline never
+publishes on its own. A status change needs a newer `license_status_checked_at` (migration 0082 trigger).
 
 **Why:** The CKAN roster has been frozen at file_date 05/25/2025. On 2026-11-26 the live file disagreed with
 1,087 of 9,062 CA rows; 60 published homes were LICENSED in our data but CLOSED (53) or ON PROBATION (7) at CDSS.

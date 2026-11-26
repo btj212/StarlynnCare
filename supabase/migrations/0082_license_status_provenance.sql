@@ -14,7 +14,10 @@
 -- exactly as before, so other states are unaffected until their own live
 -- refresh starts stamping these columns.
 --
--- This migration does not touch `publishable`.
+-- Second rule (Blake, 2026-11-26): a California row whose license_status is
+-- CLOSED or REVOKED cannot be publishable. The row and its history stay; the
+-- listing comes down. A reopened home gets a new CDSS license number (a new
+-- row) or flips back to LICENSED, and then nothing here blocks publishing it.
 
 ALTER TABLE facilities
   ADD COLUMN IF NOT EXISTS license_status_source     text,
@@ -59,3 +62,26 @@ CREATE TRIGGER trg_facilities_license_status_guard
 
 CREATE INDEX IF NOT EXISTS facilities_state_license_number_idx
   ON facilities (state_code, license_number);
+
+CREATE OR REPLACE FUNCTION facilities_closed_not_publishable()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.state_code = 'CA'
+     AND NEW.license_status IN ('CLOSED', 'REVOKED')
+     AND NEW.publishable
+  THEN
+    NEW.publishable := false;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_facilities_publish_closed_guard ON facilities;
+-- Postgres runs BEFORE triggers in name order; "publish_" sorts after
+-- "license_", so this sees the status the guard kept.
+CREATE TRIGGER trg_facilities_publish_closed_guard
+  BEFORE INSERT OR UPDATE OF publishable, license_status ON facilities
+  FOR EACH ROW
+  EXECUTE FUNCTION facilities_closed_not_publishable();

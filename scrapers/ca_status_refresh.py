@@ -7,7 +7,10 @@ Reads every CA facility row, compares it with the CDSS statewide RCFE file
 * writes license_status, license_status_source, license_status_checked_at,
   license_closed_date when CDSS differs (only with --apply);
 * stamps license_status_checked_at on rows that already match (--apply);
-* never reads or writes `publishable` -- publishing stays a human decision;
+* unpublishes a home only when CDSS (bulk file AND FacilityDetail) confirms
+  CLOSED or REVOKED -- Blake's rule of 2026-11-26. It never publishes
+  anything: a reopened or new license is left for recompute/review, and
+  nothing blocks it (the block is status-based, not sticky);
 * writes a CSV of every field mismatch (status, name, street, city, zip,
   beds, licensee) and a CSV of published homes that are no longer LICENSED,
   for review.
@@ -87,6 +90,11 @@ def needs_detail_confirmation(old: str | None, new: str) -> bool:
     return new in {"CLOSED", "ON PROBATION", "REVOKED"} or (old or "") in {"CLOSED", "ON PROBATION", "REVOKED"}
 
 
+def closes_listing(change: dict[str, Any]) -> bool:
+    """Unpublish only on a CLOSED/REVOKED change that FacilityDetail also confirmed."""
+    return change["new"] in {"CLOSED", "REVOKED"} and change.get("detail_status") == change["new"]
+
+
 def load_env() -> None:
     try:
         from dotenv import load_dotenv
@@ -100,7 +108,7 @@ def load_env() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--apply", action="store_true", help="Write license-status columns (never publishable).")
+    parser.add_argument("--apply", action="store_true", help="Write license-status columns; unpublish confirmed CLOSED/REVOKED homes (never publishes).")
     parser.add_argument("--no-confirm-detail", action="store_true", help="Skip the FacilityDetail second view.")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--published-only", action="store_true")
@@ -211,11 +219,13 @@ def main() -> int:
                         license_status_checked_at = %s,
                         license_status_detail     = %s,
                         license_closed_date       = %s,
+                        publishable               = CASE WHEN %s THEN false ELSE publishable END,
                         updated_at                = now()
                     WHERE id = %s::uuid AND state_code = 'CA'
                     """,
                     (c["new"], live.SOURCE_BULK, checked_at, c.get("detail_text") or None,
-                     live.parse_mdy(c["cdss"].get("Closed Date")), c["db"]["id"]),
+                     live.parse_mdy(c["cdss"].get("Closed Date")),
+                     closes_listing(c), c["db"]["id"]),
                 )
             if matched_ids:
                 cur.execute(
@@ -228,7 +238,9 @@ def main() -> int:
                     (live.SOURCE_BULK, checked_at, matched_ids),
                 )
         conn.commit()
-    print(f"Wrote {len(confirmed)} status changes; stamped {len(matched_ids)} unchanged rows.")
+    unpublished = [c for c in confirmed if closes_listing(c) and c["db"]["publishable"]]
+    print(f"Wrote {len(confirmed)} status changes ({len(unpublished)} published homes unpublished as closed); "
+          f"stamped {len(matched_ids)} unchanged rows.")
     return 0
 
 

@@ -18,8 +18,9 @@ Data sources
 
 Matching: existing rows are found by (state_code, license_number) and updated
     in place, so a CDSS rename or city fix never forks a second row. New
-    licenses are inserted with publishable = false. This script never changes
-    publishable on an existing row (recompute/review owns that), and
+    licenses are inserted with publishable = false. On an existing row this
+    script only ever turns publishable off, when CDSS newly reports CLOSED or
+    REVOKED (recompute/review owns publishing), and
     license_status only moves forward in time (migration 0082 guard).
 
 Run modes
@@ -596,7 +597,8 @@ ON CONFLICT (state_code, city_slug, slug) DO NOTHING
 RETURNING id
 """
 
-# Existing rows: matched by license number. Never touches publishable, slug,
+# Existing rows: matched by license number. Never sets publishable = true;
+# sets it false only when this run's newer CDSS status is CLOSED/REVOKED. Never touches slug,
 # city_slug, website, phone_override, marketing_name, or hand-set review state.
 # Memory-care signals only move up (a §87705 citation promotion survives).
 # license_status only changes when this run's check is newer than the stored
@@ -633,6 +635,12 @@ UPDATE facilities SET
         WHEN license_status_checked_at IS NULL
           OR license_status_checked_at < %(license_status_checked_at)s
         THEN %(license_status_source)s ELSE license_status_source END,
+    -- A newer CDSS CLOSED/REVOKED unpublishes; nothing here ever publishes.
+    publishable               = CASE
+        WHEN %(license_status)s IN ('CLOSED', 'REVOKED')
+         AND (license_status_checked_at IS NULL
+              OR license_status_checked_at < %(license_status_checked_at)s)
+        THEN false ELSE publishable END,
     license_status_checked_at = GREATEST(license_status_checked_at, %(license_status_checked_at)s),
     updated_at                = now()
 WHERE id = %(id)s::uuid

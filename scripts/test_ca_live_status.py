@@ -98,6 +98,19 @@ class CompareTests(unittest.TestCase):
         self.assertFalse(refresh.needs_detail_confirmation("PENDING", "LICENSED"))
 
 
+class ClosedUnpublishTests(unittest.TestCase):
+    def test_confirmed_closed_unpublishes(self) -> None:
+        self.assertTrue(refresh.closes_listing({"new": "CLOSED", "detail_status": "CLOSED"}))
+
+    def test_unconfirmed_closed_does_not_unpublish(self) -> None:
+        self.assertFalse(refresh.closes_listing({"new": "CLOSED"}))
+        self.assertFalse(refresh.closes_listing({"new": "CLOSED", "detail_status": "LICENSED"}))
+
+    def test_probation_and_reopen_do_not_unpublish(self) -> None:
+        self.assertFalse(refresh.closes_listing({"new": "ON PROBATION", "detail_status": "ON PROBATION"}))
+        self.assertFalse(refresh.closes_listing({"new": "LICENSED", "detail_status": "LICENSED"}))
+
+
 class IngestRowTests(unittest.TestCase):
     def test_new_rows_are_unpublished_and_carry_provenance(self) -> None:
         try:
@@ -117,7 +130,8 @@ class IngestRowTests(unittest.TestCase):
         self.assertEqual(row["zip"], "95831")
         self.assertEqual(row["license_status_source"], live.SOURCE_BULK)
         self.assertIn("publishable", ingest.INSERT_SQL)
-        self.assertNotIn("publishable", ingest.UPDATE_SQL)
+        self.assertNotIn("publishable = true", ingest.UPDATE_SQL)
+        self.assertIn("THEN false ELSE publishable END", ingest.UPDATE_SQL)
 
 
 if __name__ == "__main__":

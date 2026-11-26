@@ -189,9 +189,9 @@ def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
             label=f"CA {county.title()} County RCFE roster",
             allow_fail=True,
         )
-        # recompute_publishable gates on license_status = 'LICENSED', so with
-        # live statuses it would unpublish CLOSED and ON PROBATION homes.
-        # Publishing is a human decision: run it only when asked.
+        # recompute_publishable re-derives every CA publish flag (memory-care
+        # gates, review state). Closed homes are already unpublished by the
+        # status refresh; publishing is a human decision, so run it only when asked.
         recompute_rc = 0
         if os.environ.get("CA_RECOMPUTE_PUBLISHABLE") == "1":
             recompute_rc = _python(

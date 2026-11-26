@@ -33,8 +33,10 @@ Sources (see `scrapers/_cdss_live.py` for the evidence and measurements):
 **Retired:** the CHHS/CKAN roster (`744d1583`, frozen at file_date 05/25/2025) and data.ca.gov `6b2f5818`
 (datastore inactive, 404). Every re-ingest from them reverted newer statuses.
 
-**Rules:** existing rows are matched by license number; the ingest and the status refresh never change
-`publishable` on an existing row; new licenses are inserted unpublished. Once a row has
+**Rules:** existing rows are matched by license number. A home that CDSS (bulk file and FacilityDetail)
+confirms CLOSED or REVOKED is unpublished and kept as a row with its status; nothing in the pipeline ever
+publishes (new licenses insert unpublished; recompute/review publishes). ON PROBATION stays publishable with
+the status shown. A reopened home (new license, or status back to LICENSED) is not blocked. Once a row has
 `license_status_checked_at`, a status change needs a newer check (trigger from migration 0082).
 
 **Where it runs:** CDSS refuses or times out from GitHub runners, so the daily Mac launchd job
