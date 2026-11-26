@@ -189,12 +189,19 @@ def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
             label=f"CA {county.title()} County RCFE roster",
             allow_fail=True,
         )
-        recompute_rc = _python(
-            str(SCRAPERS / "recompute_publishable.py"),
-            "--state", "CA",
-            label="CA recompute publishable",
-            allow_fail=True,
-        )
+        # recompute_publishable gates on license_status = 'LICENSED', so with
+        # live statuses it would unpublish CLOSED and ON PROBATION homes.
+        # Publishing is a human decision: run it only when asked.
+        recompute_rc = 0
+        if os.environ.get("CA_RECOMPUTE_PUBLISHABLE") == "1":
+            recompute_rc = _python(
+                str(SCRAPERS / "recompute_publishable.py"),
+                "--state", "CA",
+                label="CA recompute publishable",
+                allow_fail=True,
+            )
+        else:
+            print("  [CA] recompute_publishable skipped (set CA_RECOMPUTE_PUBLISHABLE=1 to run it)")
         citations_rc = _python(
             str(SCRAPERS / "ccld_citations_ingest.py"),
             *citation_args,
