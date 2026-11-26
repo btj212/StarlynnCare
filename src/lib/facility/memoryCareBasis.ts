@@ -36,6 +36,9 @@ export type MemoryCareBasisInput = {
   state_code: string;
   memory_care_disclosure_source?: string | null;
   memory_care_designation?: string | null;
+  memory_care_disclosure_filed?: boolean | null;
+  /** Deficiency codes/descriptions from the inspection record (e.g. 87705). */
+  caCitationTexts?: string[] | null;
   ca_memory_care_designation_basis?: CaMemoryCareDesignationBasis | null;
   mc_designation_type?: string | null;
   mce_endorsed?: boolean | null;
@@ -103,6 +106,10 @@ function proseQuote(evidence: string | null | undefined): string | null {
   if (EVIDENCE_TOKENS.has(text.toLowerCase())) return null;
   if (text.length < 40 || !text.includes(" ")) return null;
   return text;
+}
+
+function hasCaDementiaRule(value: string | null | undefined): boolean {
+  return /87705|87706/.test(value ?? "");
 }
 
 function texasLabel(certNo: string | null | undefined): string {
@@ -186,8 +193,19 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   }
 
   const designation = facility.memory_care_designation ?? "";
-  if (designation.includes("87705") || designation.includes("87706")) {
+  if (hasCaDementiaRule(designation)) {
     return recorded(CA_CITATION);
+  }
+  if ((facility.caCitationTexts ?? []).some((text) => hasCaDementiaRule(text))) {
+    return recorded(CA_CITATION);
+  }
+  // CDSS §1569.627 disclosure is a state file. The live column
+  // ca_memory_care_designation_basis was never applied, so this boolean is
+  // the stored basis when the 87705 source string is missing.
+  if (facility.state_code === "CA" && facility.memory_care_disclosure_filed) {
+    return recorded(
+      "California CDSS has a dementia-care disclosure on file for this home under Health and Safety Code section 1569.627.",
+    );
   }
 
   if (facility.mce_endorsed) {

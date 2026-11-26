@@ -702,7 +702,7 @@ export default async function RegionPage({ params }: PageProps) {
           },
           {
             n: String(paTotalIj),
-            label: "Severity-4 findings on record (not CMS Immediate Jeopardy)",
+            label: "Severity-4 findings on record (includes substantiated abuse; not CMS Immediate Jeopardy)",
             src: "PA DHS OLTL",
           },
         ]
@@ -1206,7 +1206,7 @@ export default async function RegionPage({ params }: PageProps) {
                   .
                 </p>
                 <p className="text-[15px] text-ink-2 max-w-[72ch] leading-relaxed mb-8">
-                  Facilities below had at least one Type-A (or immediate jeopardy) deficiency tied to an inspection dated in the rolling year — sourced from published CDSS deficiency records.
+                  Facilities below had at least one Type A deficiency tied to an inspection dated in the rolling year — sourced from published CDSS deficiency records. Immediate Jeopardy is a CMS term and is not used for a CDSS Type A citation.
                 </p>
                 <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 list-none m-0 p-0">
                   {countyTrendRows.slice(0, 12).map((row) => (

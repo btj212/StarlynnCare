@@ -28,6 +28,7 @@ import { formatRecordDate } from "@/lib/format/formatRecordDate";
 import { peerRankPhrase } from "@/lib/seo/rankPhrase";
 import { peerSetPhrase } from "@/lib/city-hub/careSetting";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
+import { formatLicenseStatus } from "@/lib/facility/licenseStatus";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityShareButton } from "./FacilityShareButton";
 
@@ -413,6 +414,23 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                   Dementia-trained staff
                 </span>
               )}
+              {(() => {
+                const status = formatLicenseStatus(facility.license_status);
+                if (!status) return null;
+                const tone =
+                  status.tone === "danger"
+                    ? "border-rust/40 bg-rust/10 text-rust"
+                    : status.tone === "warn"
+                      ? "border-amber-300 bg-amber-50 text-amber-800"
+                      : "border-paper-rule bg-paper-2 text-ink-3";
+                return (
+                  <span
+                    className={`fp-tag rounded-full border px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-semibold ${tone}`}
+                  >
+                    {status.label}
+                  </span>
+                );
+              })()}
               {/* Phone — visible on mobile only; desktop shows in address line below */}
               {phone && (
                 <a

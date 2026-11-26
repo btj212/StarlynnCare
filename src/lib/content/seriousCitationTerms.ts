@@ -15,46 +15,46 @@ export const SERIOUS_COUNT_SENTENCE =
 export const SERIOUS_PROFILE_TAGS: Record<string, SeriousProfileTag> = {
   CA: {
     tag: "Type A",
-    note: "On a California profile, the red tag is Type A or immediate jeopardy. Type B is not that tag.",
+    note: "On a California profile, the red tag is Type A. Type B is not that tag. Immediate Jeopardy is a CMS nursing-home term and is not used for a CDSS Type A citation.",
   },
   TX: {
-    tag: "Immediate jeopardy",
-    note: "On a Texas profile, the red tag is immediate jeopardy.",
+    tag: "HHSC finding",
+    note: "On a Texas assisted living profile, the red tag is the HHSC finding as written. Immediate Jeopardy is a CMS nursing-home term.",
   },
   OR: {
-    tag: "Level 4 (IJ)",
-    note: "On an Oregon profile, level 4 is labeled IJ. Level 3 is not. This count still includes severity 3.",
+    tag: "Level 4",
+    note: "On an Oregon profile, the red tag is Level 4. Level 3 is not. Immediate Jeopardy is a CMS term. This count still includes severity 3.",
   },
   WA: {
-    tag: "Immediate jeopardy",
-    note: "On a Washington profile, the red tag is immediate jeopardy, including scope-and-severity rows J through L.",
+    tag: "DSHS finding",
+    note: "On a Washington assisted living profile, the red tag is the DSHS finding as written. Immediate Jeopardy (CMS) is reserved for nursing-home J, K, and L. This count still includes severity 3 or higher.",
   },
   MN: {
-    tag: "Immediate jeopardy",
-    note: "On a Minnesota profile, the red tag is an immediate-jeopardy flag.",
+    tag: "MDH finding",
+    note: "On a Minnesota assisted living profile, the red tag is the MDH finding as written. Immediate Jeopardy is a CMS term.",
   },
   UT: {
-    tag: "Immediate jeopardy",
-    note: "On a Utah profile, the red tag is immediate jeopardy, including a suspension or revocation stored at severity 4. This count still includes severity 3.",
+    tag: "Serious",
+    note: "On a Utah assisted living profile, the red tag is Serious, Suspension, or Revocation. Immediate Jeopardy (CMS) is reserved for nursing-home J, K, and L. This count still includes severity 3.",
   },
   IL: {
     tag: "Type 1",
     note: "On an Illinois profile, the red tag is Type 1.",
   },
   PA: {
-    tag: "Immediate jeopardy",
-    note: "On a Pennsylvania profile, immediate jeopardy and a provisional license at severity 3 are both red tags.",
+    tag: "Substantiated abuse",
+    note: "On a Pennsylvania profile, substantiated abuse, revocation, and a provisional license are red tags. Immediate Jeopardy is a CMS term; 55 Pa Code does not use it.",
   },
   AZ: {
-    tag: "Immediate jeopardy",
-    note: "On an Arizona profile, the red tag is immediate jeopardy. High risk and enforcement are not that label. This count still includes severity 3 or higher.",
+    tag: "High risk",
+    note: "On an Arizona profile, the red tag is High Risk or Enforcement. Immediate Jeopardy is a CMS term; Arizona assisted living citations use A.A.C. R9-10. This count still includes severity 3 or higher.",
   },
   MO: {
-    tag: "Immediate jeopardy",
-    note: "On a Missouri profile, the red tag is an immediate-jeopardy flag.",
+    tag: "High risk",
+    note: "On a Missouri profile, the red tag is High Risk or Complaint. Immediate Jeopardy is a CMS term.",
   },
   CO: {
     tag: "Level E",
-    note: "On a Colorado assisted living profile, the red tag is Level E, immediate jeopardy. On a Colorado nursing-home profile, the red tag is a CMS letter J, K, or L. Those are not the same scale. This count still includes severity 3 or higher.",
+    note: "On a Colorado assisted living profile, the red tag is Level E. On a Colorado nursing-home profile, the red tag is Immediate Jeopardy (CMS) for letters J, K, or L. Those are not the same scale. This count still includes severity 3 or higher.",
   },
 };

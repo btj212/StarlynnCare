@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  facilityListedInSitemap,
+  facilityListedOnHub,
   facilityMarkedNoindex,
 } from "../src/lib/seo/indexability.ts";
 
@@ -43,7 +43,7 @@ const cases: Case[] = [
     listed: true,
   },
   {
-    name: "a small Arizona home with no citations is excluded",
+    name: "a small Arizona home with no citations stays indexable but off the city hub",
     stateCode: "AZ",
     beds: 8,
     deficiencyCount: 0,
@@ -51,7 +51,7 @@ const cases: Case[] = [
     reviewCount: 0,
     tourQuestionCount: 0,
     photoCount: 1,
-    noindex: true,
+    noindex: false,
     listed: false,
   },
   {
@@ -79,7 +79,7 @@ const cases: Case[] = [
     listed: true,
   },
   {
-    name: "a page with no record at all is noindex and unlisted",
+    name: "a publishable page with no inspection is indexable and in the sitemap, but not on the city hub",
     stateCode: "TX",
     beds: 80,
     deficiencyCount: 0,
@@ -87,11 +87,23 @@ const cases: Case[] = [
     reviewCount: 0,
     tourQuestionCount: 0,
     photoCount: 0,
-    noindex: true,
+    noindex: false,
     listed: false,
   },
   {
-    name: "a photo-only home can be indexed but is not requested in the sitemap",
+    name: "a Washington AFH with no inspection row stays indexable and off the city hub",
+    stateCode: "WA",
+    beds: 6,
+    deficiencyCount: 0,
+    inspectionCount: 0,
+    reviewCount: 0,
+    tourQuestionCount: 0,
+    photoCount: 0,
+    noindex: false,
+    listed: false,
+  },
+  {
+    name: "a photo-only home stays indexable; the city hub still requires an inspection",
     stateCode: "CA",
     beds: 20,
     deficiencyCount: 0,
@@ -106,10 +118,10 @@ const cases: Case[] = [
 
 for (const item of cases) {
   const noindex = facilityMarkedNoindex(item);
-  const listed = facilityListedInSitemap(item);
+  const listed = facilityListedOnHub(item);
   assert.equal(noindex, item.noindex, `${item.name}: noindex`);
-  assert.equal(listed, item.listed, `${item.name}: sitemap`);
-  assert.equal(noindex && listed, false, `${item.name}: noindex must not be listed`);
+  assert.equal(listed, item.listed, `${item.name}: city hub`);
+  assert.equal(noindex, false, `${item.name}: publishable pages stay indexable`);
 }
 
 console.log("indexability checks passed");

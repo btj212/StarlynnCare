@@ -81,11 +81,6 @@ export function DeficiencyBlock({
             {tag.label}
           </span>
         )}
-        {def.immediate_jeopardy && (
-          <span className="font-[family-name:var(--font-mono)] text-[11px] font-bold uppercase text-rust tracking-wide">
-            Immediate jeopardy
-          </span>
-        )}
         {regCode && (
           <span className="font-[family-name:var(--font-mono)] text-[10px] text-ink-3 bg-paper px-1.5 py-0.5 tracking-[0.04em]">
             {regCode}

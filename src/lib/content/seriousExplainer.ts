@@ -2,7 +2,7 @@ export const SERIOUS_EXPLAINER = {
   path: "/library/what-a-serious-citation-means",
   title: "What a serious citation means in each state",
   description:
-    "The word serious is not one legal term. This page maps each state's red tag — Type A, Type 1, immediate jeopardy, and the labels that are not that tag — and says how the count on /data is wider.",
+    "The word serious is not one legal term. This page maps each state's red tag — Type A, Type 1, High Risk, Level E, and CMS Immediate Jeopardy — and says how the count on /data is wider.",
   datePublished: "2026-10-31",
   image: {
     src: "/illustrations/what-a-serious-citation-means.png",
@@ -11,11 +11,11 @@ export const SERIOUS_EXPLAINER = {
   faq: [
     {
       q: "Is a serious citation the same in every state?",
-      a: "No. Each state writes its own top label: Type A in California, Type 1 in Illinois, and immediate jeopardy in most other states we cover. Pennsylvania also treats revocation, substantiated abuse, and a provisional license as red tags on a profile.",
+      a: "No. Each state writes its own top label: Type A in California, Type 1 in Illinois, High Risk in Arizona, Level E in Colorado. Immediate Jeopardy is a CMS nursing-home term. Pennsylvania treats revocation, substantiated abuse, and a provisional license as red tags on a profile.",
     },
     {
       q: "What is the most serious citation in California memory care?",
-      a: "On a California profile, the red tag is Type A or immediate jeopardy. Type B is not that tag.",
+      a: "On a California profile, the red tag is Type A. Type B is not that tag. Immediate Jeopardy is a CMS nursing-home term.",
     },
     {
       q: "Does a serious citation mean the home is unsafe today?",

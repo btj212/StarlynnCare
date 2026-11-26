@@ -1,5 +1,6 @@
 import type { StateProfileConfig, SeverityTone } from "@/lib/states/profileConfig";
 import type { Deficiency } from "@/lib/types";
+import { CMS_IJ_LABEL, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
 
 /**
  * Utah severity taxonomy (§5.2 of UT methodology brief).
@@ -13,28 +14,30 @@ import type { Deficiency } from "@/lib/types";
  * NF records from CMS use the federal A-L scope-severity matrix stored as severity_int.
  */
 function utFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone } | null {
-  // Integer severity (populated by CMS overlay and CCL scraper)
+  if (isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
+  const raw = d.state_severity_raw ?? d.class;
+  const lower = (raw ?? "").toLowerCase();
+  if (lower.includes("revocation")) return { label: "Revocation", tone: "danger" };
+  if (lower.includes("suspension")) return { label: "Suspension", tone: "danger" };
   if (d.severity !== undefined && d.severity !== null) {
-    if (d.severity >= 4 || d.immediate_jeopardy) return { label: "IJ", tone: "danger" };
+    if (d.severity >= 4) return { label: "Serious", tone: "danger" };
     if (d.severity === 3) return { label: "Serious", tone: "warn" };
     if (d.severity === 2) return { label: "Moderate", tone: "info" };
     if (d.severity === 1) return { label: "Standard", tone: "mute" };
   }
-  // Fallback to raw string
-  if (d.immediate_jeopardy) return { label: "IJ", tone: "danger" };
-  const raw = d.state_severity_raw ?? d.class;
-  if (!raw) return null;
-  const lower = raw.toLowerCase();
-  if (lower.includes("immediate jeopardy") || lower.includes("revocation") || lower.includes("suspension")) {
-    return { label: "IJ", tone: "danger" };
+  if (raw) {
+    if (lower.includes("immediate jeopardy")) {
+      return { label: "Serious", tone: "danger" };
+    }
+    if (lower.includes("admission ban") || lower.includes("monitoring")) {
+      return { label: "Serious", tone: "warn" };
+    }
+    if (lower.includes("penalty") || lower.includes("fine")) {
+      return { label: "Moderate", tone: "info" };
+    }
+    return { label: raw, tone: "mute" };
   }
-  if (lower.includes("admission ban") || lower.includes("monitoring")) {
-    return { label: "Serious", tone: "warn" };
-  }
-  if (lower.includes("penalty") || lower.includes("fine")) {
-    return { label: "Moderate", tone: "info" };
-  }
-  return { label: raw, tone: "mute" };
+  return null;
 }
 
 export const utProfileConfig: StateProfileConfig = {

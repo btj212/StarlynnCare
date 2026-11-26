@@ -935,8 +935,9 @@ function visitPhrase(type: string | null, isComplaint: boolean): string {
 }
 
 function proseTag(label: string): string {
-  if (label === "IJ" || label.startsWith("IJ ")) return "immediate jeopardy";
-  if (label === "Immediate Jeopardy") return "immediate jeopardy";
+  if (label === "Immediate Jeopardy (CMS)" || label.startsWith("IJ ")) return "immediate jeopardy (CMS)";
+  if (label === "IJ") return "immediate jeopardy (CMS)";
+  if (label === "Immediate Jeopardy") return "immediate jeopardy (CMS)";
   if (label === "Type A" || label === "Type 1") return label;
   return label.toLowerCase();
 }
@@ -951,7 +952,9 @@ function seriousTermWhenNone(stateCode: string): string {
   if (stateCode === "CA") return "Type A";
   if (stateCode === "IL") return "Type 1";
   if (stateCode === "PA") return "a severe finding";
-  return "immediate jeopardy";
+  if (stateCode === "AZ") return "a high-risk finding";
+  if (stateCode === "CO") return "Level E";
+  return "a serious finding";
 }
 
 function seriousSentence(

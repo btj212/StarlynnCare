@@ -1,11 +1,12 @@
 import type { StateProfileConfig } from "@/lib/states/profileConfig";
 import type { Deficiency } from "@/lib/types";
 import type { SeverityTone } from "@/lib/states/profileConfig";
+import { CMS_IJ_LABEL, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
 
 // ─── ALF / AFH / ESF: DSHS-based severity ────────────────────────────────────
 
 function waFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone } | null {
-  if (d.immediate_jeopardy) return { label: "IJ", tone: "danger" };
+  if (isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
   const raw = d.state_severity_raw ?? d.class;
   if (!raw) return null;
   return { label: raw, tone: "info" };
@@ -21,17 +22,15 @@ function waFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone
  *   J–L: Immediate Jeopardy                             → danger
  */
 function nhFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone } | null {
-  if (d.immediate_jeopardy) return { label: "IJ", tone: "danger" };
+  if (isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
   const raw = (d.state_severity_raw ?? "").toString().trim();
   if (!raw) return null;
-  // If raw already has a friendly label from our ingest (e.g. "Actual Harm (Isolated)")
-  if (raw.startsWith("IJ")) return { label: raw, tone: "danger" };
+  if (raw.startsWith("IJ")) return { label: CMS_IJ_LABEL, tone: "danger" };
   if (raw.startsWith("Actual Harm")) return { label: raw, tone: "warn" };
   if (raw.startsWith("Potential Harm")) return { label: raw, tone: "info" };
   if (raw.startsWith("No Harm")) return { label: raw, tone: "ok" };
-  // Fallback: raw is a single letter (A–L)
   const letter = raw.charAt(0).toUpperCase();
-  if (["J", "K", "L"].includes(letter)) return { label: `IJ (${raw})`, tone: "danger" };
+  if (["J", "K", "L"].includes(letter)) return { label: CMS_IJ_LABEL, tone: "danger" };
   if (["G", "H", "I"].includes(letter)) return { label: `Harm (${raw})`, tone: "warn" };
   return { label: raw, tone: "info" };
 }

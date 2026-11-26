@@ -181,8 +181,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         }),
   );
 
-  // Noindex when the page has no record at all, or when it is a small Arizona
-  // home with no citations. The sitemap uses the same predicates.
+  // Publishable profiles stay indexable. City hubs still omit thin Arizona
+  // small homes from the listed count; the sitemap includes every publishable page.
   const tourQs = (facility.content as { tour_questions?: string[] } | null)
     ?.tour_questions;
   const isThin = facilityMarkedNoindex({

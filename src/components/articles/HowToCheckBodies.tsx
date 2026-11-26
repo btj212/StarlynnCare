@@ -133,13 +133,13 @@ const STEPS: Record<HowToState, ReactNode> = {
 };
 
 const TAG_NOTES: Record<HowToState, string> = {
-  AZ: "On an Arizona profile, the red tag is immediate jeopardy. High risk and enforcement are not that label. The count of homes with a serious citation still includes a finding stored at severity 3 or higher.",
+  AZ: "On an Arizona profile, the red tag is High Risk or Enforcement. Immediate Jeopardy is a CMS term. The count of homes with a serious citation still includes a finding stored at severity 3 or higher.",
   CA: SERIOUS_PROFILE_TAGS.CA.note,
   OR: SERIOUS_PROFILE_TAGS.OR.note,
   IL: `${SERIOUS_PROFILE_TAGS.IL.note} A Type 1 citation is not a memory care designation.`,
   MN: `${SERIOUS_PROFILE_TAGS.MN.note} The count of homes with a serious citation still includes a finding stored at severity 3 or higher.`,
-  PA: "On a Pennsylvania profile, immediate jeopardy, revocation, substantiated abuse, and a provisional license are red tags. A civil money penalty is not a red tag.",
-  WA: "On a Washington assisted living profile, the red tag is immediate jeopardy. The count of homes with a serious citation still includes a finding stored at severity 3 or higher.",
+  PA: "On a Pennsylvania profile, substantiated abuse, revocation, and a provisional license are red tags. Immediate Jeopardy is a CMS term; 55 Pa Code does not use it. A civil money penalty is not a red tag.",
+  WA: "On a Washington assisted living profile, the red tag is the DSHS finding as written. Immediate Jeopardy (CMS) is reserved for nursing-home J, K, and L. The count of homes with a serious citation still includes a finding stored at severity 3 or higher.",
 };
 
 const h2 = "mt-12 font-[family-name:var(--font-display)] text-2xl text-navy";

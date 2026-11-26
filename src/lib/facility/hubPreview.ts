@@ -1,4 +1,4 @@
-import { facilityListedInSitemap } from "@/lib/seo/indexability";
+import { facilityListedOnHub } from "@/lib/seo/indexability";
 
 /** First set on a city hub. The rest stay on the crawlable facilities page. */
 export const HUB_PREVIEW_LIMIT = 24;
@@ -13,15 +13,16 @@ type RankedFacility = {
 };
 
 /**
- * Every home a city page should link to, A to Z. It is the same set the facility
- * sitemap asks Google to crawl, so a link never points at a noindex page.
+ * Every home a city page should link to, A to Z. This is the listed set
+ * (inspection on file; Arizona small homes with no citations stay off it).
+ * The facility sitemap is every publishable profile, including those thin pages.
  */
 export function homesForCityIndex<
   T extends { name: string; beds: number | null; inspections: number; total_citations: number },
 >(facilities: T[], stateCode: string): T[] {
   return facilities
     .filter((facility) =>
-      facilityListedInSitemap({
+      facilityListedOnHub({
         stateCode,
         beds: facility.beds,
         deficiencyCount: facility.total_citations,
