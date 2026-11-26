@@ -171,6 +171,26 @@ def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
         print("\n[CA] Skipped (--skip-ca)")
         return None
     citation_args = _ca_citation_args(county)
+    # Live license status first (CDSS bulk file, FacilityDetail confirmation).
+    # Writes license-status columns only; never publishable. A failure here
+    # (CDSS down) does not block the report scan.
+    status_args = ["--apply"] if os.environ.get("CA_STATUS_APPLY", "1") == "1" else []
+    _python(
+        str(SCRAPERS / "ca_status_refresh.py"),
+        *status_args,
+        label="CA live license status refresh",
+        allow_fail=True,
+    )
+    # CDSS client types (983 = RCFE / DEMENTIA) for the page's memory-care
+    # basis. Oldest-checked first, a few hundred a day. Never publishes.
+    if os.environ.get("CA_CLIENT_SERVED_REFRESH", "1") == "1":
+        _python(
+            str(SCRAPERS / "ca_client_served_refresh.py"),
+            "--apply",
+            "--limit", os.environ.get("CA_CLIENT_SERVED_LIMIT", "400"),
+            label="CA CDSS client-served refresh",
+            allow_fail=True,
+        )
     if county:
         # Roster refresh for one county
         roster_rc = _python(
@@ -179,12 +199,19 @@ def ingest_ca(skip: bool, county: str | None = None) -> bool | None:
             label=f"CA {county.title()} County RCFE roster",
             allow_fail=True,
         )
-        recompute_rc = _python(
-            str(SCRAPERS / "recompute_publishable.py"),
-            "--state", "CA",
-            label="CA recompute publishable",
-            allow_fail=True,
-        )
+        # recompute_publishable re-derives every CA publish flag (memory-care
+        # gates, review state). Closed homes are already unpublished by the
+        # status refresh; publishing is a human decision, so run it only when asked.
+        recompute_rc = 0
+        if os.environ.get("CA_RECOMPUTE_PUBLISHABLE") == "1":
+            recompute_rc = _python(
+                str(SCRAPERS / "recompute_publishable.py"),
+                "--state", "CA",
+                label="CA recompute publishable",
+                allow_fail=True,
+            )
+        else:
+            print("  [CA] recompute_publishable skipped (set CA_RECOMPUTE_PUBLISHABLE=1 to run it)")
         citations_rc = _python(
             str(SCRAPERS / "ccld_citations_ingest.py"),
             *citation_args,

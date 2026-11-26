@@ -4,10 +4,11 @@ Ingest California RCFE roster for Alameda County into StarlynnCare facilities.
 
 Data sources
 ------------
-1.  CA Open Data CKAN — RCFE roster
-    https://data.ca.gov/dataset/community-care-licensing-facilities
-    resource id: 6b2f5818-f60d-40b5-bc2a-94f995f9f8b0
-    Filter: county_name = "ALAMEDA"
+1.  CDSS statewide RCFE file — roster, status, closed date, capacity, licensee
+    https://www.ccld.dss.ca.gov/transparencyapi/api/DownloadStateData/ResidentialElderCareFacility
+    Filter: "County Name" = --county (uppercase), or --statewide.
+    (Replaces the CHHS/CKAN roster, frozen at file_date 05/25/2025; data.ca.gov
+    resource 6b2f5818 is datastore-inactive/404. See scrapers/_cdss_live.py.)
 
 2.  CDSS Transparency API — per-facility visit metrics (once per run, statewide)
     https://www.ccld.dss.ca.gov/transparencyapi/api/Facility/<any>
@@ -15,9 +16,12 @@ Data sources
     Cached to /tmp/ccld_facility_all_cache.json (TTL: 24 h) to avoid hammering
     the server on repeated runs.
 
-Upsert conflict: (state_code, city_slug, slug)
-    License numbers are used to generate stable slugs. CDSS facilities have no
-    cms_id, so cms_id is left NULL.
+Matching: existing rows are found by (state_code, license_number) and updated
+    in place, so a CDSS rename or city fix never forks a second row. New
+    licenses are inserted with publishable = false. On an existing row this
+    script only ever turns publishable off, when CDSS newly reports CLOSED or
+    REVOKED (recompute/review owns publishing), and
+    license_status only moves forward in time (migration 0082 guard).
 
 Run modes
 ---------
@@ -86,8 +90,12 @@ STATE_CODE = "CA"
 SCRAPER_NAME = "cdss_ccld_rcfe_alameda"
 COUNTY_FILTER = "ALAMEDA"
 
-CKAN_RESOURCE_ID = "6b2f5818-f60d-40b5-bc2a-94f995f9f8b0"
-CKAN_DATASTORE_URL = "https://data.ca.gov/api/3/action/datastore_search"
+# Live CDSS source (see _cdss_live.py). The CKAN roster is retired: it was
+# frozen at 05/25/2025 and each re-ingest reverted newer live statuses.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _cdss_live as live  # noqa: E402
+
+CDSS_CACHE_DIR = REPO_ROOT / "data" / ".cache" / "cdss"
 
 TRANSPARENCY_ALL_URL = (
     "https://www.ccld.dss.ca.gov/transparencyapi/api/Facility/any"
@@ -270,48 +278,46 @@ def parse_date_cdss(val: str | None) -> date | None:
 # ---------------------------------------------------------------------------
 
 
+def bulk_row_to_roster(row: dict[str, str]) -> dict[str, Any]:
+    """Map a CDSS bulk-file row onto the roster keys build_facility_row expects."""
+    return {
+        "facility_type": row.get("Facility Type") or "",
+        "facility_number": row.get("Facility Number"),
+        "facility_name": row.get("Facility Name") or "",
+        "licensee": row.get("Licensee") or "",
+        "facility_administrator": row.get("Facility Administrator") or "",
+        "facility_telephone_number": row.get("Facility Telephone Number") or "",
+        "facility_address": row.get("Facility Address") or "",
+        "facility_city": row.get("Facility City") or "",
+        "facility_zip": row.get("Facility Zip") or None,
+        "county_name": row.get("County Name") or "",
+        "facility_capacity": row.get("Facility Capacity") or None,
+        "facility_status": (row.get("Facility Status") or "").upper(),
+        "closed_date": row.get("Closed Date") or "",
+        "license_first_date": row.get("License First Date") or "",
+        "last_visit_date": row.get("Last Visit Date") or "",
+    }
+
+
 def fetch_county_rcfe_roster(
-    county_filter: str,
+    county_filter: str | None,
     limit: int | None = None,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], datetime]:
     """
-    Pull all county RCFE records from the CA Open Data CKAN datastore.
-    CKAN's county_name values are UPPERCASE — the filter must match exactly.
+    Pull RCFE records from the live CDSS statewide file.
+    county_filter None means statewide. Returns (rows, fetched_at).
     """
-    page_size = 500
-    all_rows: list[dict[str, Any]] = []
-    offset = 0
-
-    while True:
-        params: dict[str, Any] = {
-            "resource_id": CKAN_RESOURCE_ID,
-            "filters": json.dumps({"county_name": county_filter}),
-            "limit": page_size,
-            "offset": offset,
-        }
-        resp = _get_with_retries(
-            CKAN_DATASTORE_URL,
-            params=params,
-            timeout=HTTP_TIMEOUT_SECS,
-            headers={"User-Agent": "StarlynnCare/RCFE-ingest (contact@starlynncare.com)"},
-        )
-        payload = resp.json()
-
-        if not payload.get("success"):
-            raise RuntimeError(f"CKAN returned error: {payload.get('error')}")
-
-        rows = payload["result"]["records"]
-        all_rows.extend(rows)
-
-        if limit and len(all_rows) >= limit:
-            all_rows = all_rows[:limit]
-            break
-
-        if len(rows) < page_size:
-            break  # last page
-        offset += page_size
-
-    return all_rows
+    snapshot = live.fetch_bulk_rcfe(cache_dir=CDSS_CACHE_DIR)
+    want = county_filter.replace("_", " ").strip().upper() if county_filter else None
+    rows = [
+        bulk_row_to_roster(r)
+        for r in snapshot.rows.values()
+        if want is None or (r.get("County Name") or "").strip().upper() == want
+    ]
+    rows.sort(key=lambda r: str(r["facility_number"]))
+    if limit:
+        rows = rows[:limit]
+    return rows, snapshot.fetched_at
 
 
 # ---------------------------------------------------------------------------
@@ -475,11 +481,13 @@ def build_facility_row(
     serves_mc = explicit_match or chain_match
 
     # publishable: LICENSED + memory-care confirmed (or force flag for testing)
-    publishable = bool(raw_status == "LICENSED" and (serves_mc or force_publish))
+    # New licenses are inserted unpublished unless --force-publish (testing).
+    # recompute_publishable.py / human review decide publication.
+    publishable = bool(force_publish and raw_status == "LICENSED")
 
     # last inspection date from Transparency API
-    last_inspection: date | None = None
-    if trans:
+    last_inspection: date | None = parse_date_cdss(ckan.get("last_visit_date"))
+    if last_inspection is None and trans:
         last_inspection = parse_date_cdss(trans.get("LastVisitDate"))
 
     # license_first_date → use as a rough proxy for license_expiration? No —
@@ -497,9 +505,9 @@ def build_facility_row(
     raw_phone = (ckan.get("facility_telephone_number") or "").strip()
     raw_zip = ckan.get("facility_zip")
     zip_str: str | None = None
-    if raw_zip is not None:
-        z = str(int(float(str(raw_zip)))).zfill(5)
-        zip_str = z if z != "00000" else None
+    if raw_zip:
+        digits = re.sub(r"[^0-9]", "", str(raw_zip))[:5]
+        zip_str = digits.zfill(5) if digits and digits != "00000" else None
 
     source_url = FACILITY_PROFILE_URL.format(license_num)
 
@@ -535,7 +543,11 @@ def build_facility_row(
         "memory_care_designation": designation,
         "license_status": ckan.get("facility_status") or None,
         "license_expiration": None,
+        # Only used on INSERT of a brand-new license. Existing rows keep theirs.
         "publishable": publishable,
+        "license_status_source": live.SOURCE_BULK,
+        "license_status_checked_at": None,  # set by main() to the fetch time
+        "license_closed_date": parse_date_cdss(ckan.get("closed_date")),
         # 0010_mc_signal_columns.sql — new tiered signal model
         "mc_signal_explicit_name": explicit_match,
         "mc_signal_chain_name": chain_match,
@@ -547,7 +559,7 @@ def build_facility_row(
 # DB upsert
 # ---------------------------------------------------------------------------
 
-UPSERT_SQL = """
+INSERT_SQL = """
 INSERT INTO facilities (
     state_code, name, cms_id,
     license_number, license_type,
@@ -561,6 +573,7 @@ INSERT INTO facilities (
     source_url,
     care_category, serves_memory_care, memory_care_designation,
     license_status, license_expiration, publishable,
+    license_status_source, license_status_checked_at, license_closed_date,
     mc_signal_explicit_name, mc_signal_chain_name, mc_review_status,
     updated_at
 ) VALUES (
@@ -576,38 +589,61 @@ INSERT INTO facilities (
     %(source_url)s,
     %(care_category)s, %(serves_memory_care)s, %(memory_care_designation)s,
     %(license_status)s, %(license_expiration)s, %(publishable)s,
+    %(license_status_source)s, %(license_status_checked_at)s, %(license_closed_date)s,
     %(mc_signal_explicit_name)s, %(mc_signal_chain_name)s, %(mc_review_status)s,
     now()
 )
-ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
-    name                    = EXCLUDED.name,
-    license_number          = EXCLUDED.license_number,
-    license_type            = EXCLUDED.license_type,
-    street                  = EXCLUDED.street,
-    city                    = EXCLUDED.city,
-    zip                     = EXCLUDED.zip,
-    beds                    = EXCLUDED.beds,
-    facility_type           = EXCLUDED.facility_type,
-    certification_type      = EXCLUDED.certification_type,
-    operator_name           = EXCLUDED.operator_name,
-    management_company      = EXCLUDED.management_company,
-    phone                   = EXCLUDED.phone,
-    last_inspection_date    = EXCLUDED.last_inspection_date,
-    source_url              = EXCLUDED.source_url,
-    care_category           = EXCLUDED.care_category,
-    serves_memory_care      = EXCLUDED.serves_memory_care,
-    memory_care_designation = EXCLUDED.memory_care_designation,
-    license_status          = EXCLUDED.license_status,
-    publishable             = EXCLUDED.publishable,
-    mc_signal_explicit_name = EXCLUDED.mc_signal_explicit_name,
-    mc_signal_chain_name    = EXCLUDED.mc_signal_chain_name,
-    mc_review_status        = CASE 
-        WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject') 
-        THEN facilities.mc_review_status 
-        ELSE EXCLUDED.mc_review_status 
-    END,
-    updated_at              = now()
-RETURNING (xmax = 0) AS is_insert
+ON CONFLICT (state_code, city_slug, slug) DO NOTHING
+RETURNING id
+"""
+
+# Existing rows: matched by license number. Never sets publishable = true;
+# sets it false only when this run's newer CDSS status is CLOSED/REVOKED. Never touches slug,
+# city_slug, website, phone_override, marketing_name, or hand-set review state.
+# Memory-care signals only move up (a §87705 citation promotion survives).
+# license_status only changes when this run's check is newer than the stored
+# one (also enforced by trg_facilities_license_status_guard, migration 0082).
+UPDATE_SQL = """
+UPDATE facilities SET
+    name                      = %(name)s,
+    license_type              = %(license_type)s,
+    street                    = %(street)s,
+    city                      = %(city)s,
+    zip                       = %(zip)s,
+    beds                      = %(beds)s,
+    operator_name             = %(operator_name)s,
+    management_company        = %(management_company)s,
+    phone                     = COALESCE(%(phone)s, phone),
+    last_inspection_date      = GREATEST(last_inspection_date, %(last_inspection_date)s),
+    source_url                = %(source_url)s,
+    serves_memory_care        = (COALESCE(serves_memory_care, false) OR %(serves_memory_care)s),
+    care_category             = CASE
+        WHEN care_category IN ('rcfe_memory_care', 'ccrc') THEN care_category
+        ELSE %(care_category)s END,
+    memory_care_designation   = COALESCE(memory_care_designation, %(memory_care_designation)s),
+    mc_signal_explicit_name   = %(mc_signal_explicit_name)s,
+    mc_signal_chain_name      = %(mc_signal_chain_name)s,
+    license_status            = CASE
+        WHEN license_status_checked_at IS NULL
+          OR license_status_checked_at < %(license_status_checked_at)s
+        THEN %(license_status)s ELSE license_status END,
+    license_closed_date       = CASE
+        WHEN license_status_checked_at IS NULL
+          OR license_status_checked_at < %(license_status_checked_at)s
+        THEN %(license_closed_date)s ELSE license_closed_date END,
+    license_status_source     = CASE
+        WHEN license_status_checked_at IS NULL
+          OR license_status_checked_at < %(license_status_checked_at)s
+        THEN %(license_status_source)s ELSE license_status_source END,
+    -- A newer CDSS CLOSED/REVOKED unpublishes; nothing here ever publishes.
+    publishable               = CASE
+        WHEN %(license_status)s IN ('CLOSED', 'REVOKED')
+         AND (license_status_checked_at IS NULL
+              OR license_status_checked_at < %(license_status_checked_at)s)
+        THEN false ELSE publishable END,
+    license_status_checked_at = GREATEST(license_status_checked_at, %(license_status_checked_at)s),
+    updated_at                = now()
+WHERE id = %(id)s::uuid
 """
 
 
@@ -615,17 +651,31 @@ def upsert_facilities(
     conn: psycopg.Connection,
     rows: list[dict[str, Any]],
 ) -> tuple[int, int]:
-    """Returns (new_count, updated_count)."""
+    """Returns (new_count, updated_count). Matches on (CA, license_number)."""
     new_count = 0
     updated_count = 0
     with conn.cursor() as cur:
+        cur.execute(
+            "SELECT license_number, id::text FROM facilities WHERE state_code = %s AND license_number = ANY(%s)",
+            (STATE_CODE, [r["license_number"] for r in rows]),
+        )
+        existing: dict[str, list[str]] = {}
+        for lic, fid in cur.fetchall():
+            existing.setdefault(lic, []).append(fid)
         for row in rows:
-            cur.execute(UPSERT_SQL, row)
-            result = cur.fetchone()
-            if result and result[0]:
-                new_count += 1
-            else:
+            ids = existing.get(row["license_number"])
+            if ids:
+                if len(ids) > 1:
+                    print(f"  ! {len(ids)} rows share license {row['license_number']}; updating all", file=sys.stderr)
+                for fid in ids:
+                    cur.execute(UPDATE_SQL, {**row, "id": fid})
                 updated_count += 1
+            else:
+                cur.execute(INSERT_SQL, row)
+                if cur.fetchone():
+                    new_count += 1
+                else:
+                    print(f"  ! slug collision for new license {row['license_number']} ({row['slug']}); skipped", file=sys.stderr)
     conn.commit()
     return new_count, updated_count
 
@@ -709,6 +759,11 @@ def main() -> None:
         help='County to ingest (CKAN county_name, uppercase recommended). Examples: "ALAMEDA", "CONTRA COSTA", "LOS_ANGELES", "ORANGE", "SAN_DIEGO", "SACRAMENTO", "RIVERSIDE".',
     )
     parser.add_argument(
+        "--statewide",
+        action="store_true",
+        help="Ingest every California RCFE in the CDSS file (ignores --county).",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Fetch CKAN data and print summary; do not write to Postgres.",
@@ -742,24 +797,22 @@ def main() -> None:
 
     # ── Step 1: CKAN roster ──────────────────────────────────────────────
     limit = 10 if args.smoke else None
-    county = str(args.county or COUNTY_FILTER).strip().upper()
-    print(f"Fetching {county.title()} County RCFE roster from CA Open Data …")
-    ckan_rows = fetch_county_rcfe_roster(county_filter=county, limit=limit)
-    print(f"CKAN rows received: {len(ckan_rows)}")
+    county = None if args.statewide else str(args.county or COUNTY_FILTER).strip().upper()
+    label = "statewide" if county is None else f"{county.title()} County"
+    print(f"Fetching {label} RCFE roster from the live CDSS file …")
+    ckan_rows, fetched_at = fetch_county_rcfe_roster(county_filter=county, limit=limit)
+    print(f"CDSS rows received: {len(ckan_rows)} (fetched {fetched_at.isoformat()})")
 
-    # ── Step 2: Transparency API metrics ────────────────────────────────
+    # ── Step 2: Transparency "Facility/any" dump ─────────────────────────
+    # Retired by default: verified 2026-04-26 it lists child-care facilities
+    # only, so it never matched an RCFE. Last Visit Date now comes from the
+    # CDSS bulk file itself. Kept behind --refresh-cache for diagnostics.
     trans_lookup: dict[str, dict[str, Any]] = {}
-    if not args.dry_run:
+    if args.refresh_cache and not args.dry_run:
         try:
-            trans_lookup = load_transparency_all(
-                force_refresh=args.refresh_cache
-            )
+            trans_lookup = load_transparency_all(force_refresh=True)
         except Exception as e:
-            print(
-                f"Warning: could not load Transparency API data ({e}). "
-                "last_inspection_date will be null for this run.",
-                file=sys.stderr,
-            )
+            print(f"Warning: Transparency dump unavailable ({e}).", file=sys.stderr)
 
     # ── Step 3: Build facility rows ──────────────────────────────────────
     facility_rows: list[dict[str, Any]] = []
@@ -769,8 +822,10 @@ def main() -> None:
         padded = pad_license(raw_num) if raw_num else None
         trans = trans_lookup.get(padded) if padded else None
         row = build_facility_row(
-            ckan, trans, force_publish=args.force_publish, ingest_county=county
+            ckan, trans, force_publish=args.force_publish, ingest_county=county or "STATEWIDE"
         )
+        if row is not None:
+            row["license_status_checked_at"] = fetched_at
         if row is None:
             skipped_geo += 1
         else:

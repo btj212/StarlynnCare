@@ -18,19 +18,37 @@ Add **`DATABASE_URL`** to the repo-root **`.env.local`** (same file Next.js uses
 - Supabase Dashboard → **Project Settings → Database** → copy the **URI** connection string.
 - Prefer **direct connection** (port `5432`) with `?sslmode=require`.
 
-## CDSS CCLD — Alameda County RCFE ingest ← active beachhead
+## CDSS CCLD — California RCFE roster + live license status ← active
 
-Loads California Residential Care Facilities for the Elderly (RCFEs) in Alameda
-County from two sources:
+Sources (see `scrapers/_cdss_live.py` for the evidence and measurements):
 
-1. **CA Open Data CKAN** (roster, status, capacity) — resource `6b2f5818-f60d-40b5-bc2a-94f995f9f8b0`
-2. **CDSS Transparency API** (last visit date) — `ccld.dss.ca.gov/transparencyapi`
+1. **CDSS statewide RCFE file (primary)** — `ccld.dss.ca.gov/transparencyapi/api/DownloadStateData/ResidentialElderCareFacility`.
+   One CSV, every RCFE CDSS lists, including CLOSED rows with `Closed Date`. On 2026-11-26: 13,354 rows,
+   newest Last Visit 11/21/2026, newest Closed Date 11/20/2026.
+2. **CDSS FacilityDetail (second view)** — `transparencyapi/api/FacilityDetail/{license}`. Confirms every change to or
+   from CLOSED / ON PROBATION / REVOKED before it is written. Gives finer wording ("Closed, Change of Ownership").
+3. **CHHS GIS layer (cloud-reachable fallback, presence only)** — `services.arcgis.com/.../CDSS_CCL_Facilities/FeatureServer/0`.
+   Open facilities only; never writes a status.
 
-   **Caveat (verified 2026-04-26):** `GET …/transparencyapi/api/Facility/any` returns a
-   **child-care–only** facility list (~24k rows) with **no RCFE / elderly** types.
-   RCFE license numbers (e.g. `415600900`) do not appear there, so `LastVisitDate`
-   from this endpoint is often **NULL** for RCFEs. See
-   [`scratch/MEMORY_CARE_SMOKE_415600900_REPORT.md`](scratch/MEMORY_CARE_SMOKE_415600900_REPORT.md).
+**Retired:** the CHHS/CKAN roster (`744d1583`, frozen at file_date 05/25/2025) and data.ca.gov `6b2f5818`
+(datastore inactive, 404). Every re-ingest from them reverted newer statuses.
+
+**Rules:** existing rows are matched by license number. A home that CDSS (bulk file and FacilityDetail)
+confirms CLOSED or REVOKED is unpublished and kept as a row with its status; nothing in the pipeline ever
+publishes (new licenses insert unpublished; recompute/review publishes). ON PROBATION stays publishable with
+the status shown. A reopened home (new license, or status back to LICENSED) is not blocked. Once a row has
+`license_status_checked_at`, a status change needs a newer check (trigger from migration 0082).
+
+**Where it runs:** CDSS refuses or times out from GitHub runners, so the daily Mac launchd job
+(`com.starlynncare.ca-watch`, 6:15 local) runs `ca_status_refresh.py --apply` before the report scan
+(`CA_STATUS_APPLY=0` to make it a dry run).
+
+```bash
+python scrapers/ca_status_refresh.py                     # dry run → data/ca_status_refresh/*.csv
+python scrapers/ca_status_refresh.py --apply             # write status columns only
+python scrapers/ccld_rcfe_ingest.py --county SACRAMENTO --dry-run
+python scrapers/ccld_rcfe_ingest.py --statewide          # add new licenses (unpublished), refresh fields
+```
 
 **Site SEO:** when the source provides coordinates, capacity, or license type, map them into `facilities.latitude`, `facilities.longitude`, `facilities.beds`, and `facilities.license_type` — facility pages emit JSON-LD `geo` / `additionalProperty` only from real columns (no invented values).
 

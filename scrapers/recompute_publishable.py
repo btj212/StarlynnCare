@@ -306,7 +306,9 @@ def recompute_publishable(
     sql = f"""
         UPDATE facilities
         SET publishable = (
-          license_status = 'LICENSED'
+          -- A probationary license is still a license: the page shows the
+          -- status. CLOSED / REVOKED / PENDING never publish.
+          license_status IN ('LICENSED', 'ON PROBATION')
           AND serves_memory_care = true
           AND mc_review_status <> 'reviewed_reject'
           {freshness_clause}{geocode_clause}

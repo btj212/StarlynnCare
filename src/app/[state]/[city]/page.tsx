@@ -78,7 +78,7 @@ import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/
 export const revalidate = 3600;
 
 const HUB_FACILITY_SELECT =
-  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care";
+  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served";
 
 type HubFacilityRow = {
   id: string;
@@ -107,6 +107,7 @@ type HubFacilityRow = {
   mce_endorsed: boolean | null;
   mc_designation_type: string | null;
   memory_care_disclosure_source: string | null;
+  ca_cdss_client_served?: string[] | null;
   mn_dementia_care_licensed: boolean | null;
   il_dementia_program_flag: boolean | null;
   mo_alzheimer_scu: boolean | null;
@@ -340,6 +341,7 @@ export default async function RegionPage({ params }: PageProps) {
           const basis = memoryCareBasis({
             state_code: region.state.code,
             memory_care_disclosure_source: f.memory_care_disclosure_source,
+            ca_cdss_client_served: f.ca_cdss_client_served ?? null,
             mc_designation_type: f.mc_designation_type,
             mce_endorsed: f.mce_endorsed,
             wa_memory_care_certified: f.wa_memory_care_certified,
