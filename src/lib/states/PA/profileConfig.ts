@@ -1,12 +1,12 @@
 import type { StateProfileConfig, SeverityTone } from "@/lib/states/profileConfig";
 import type { Deficiency } from "@/lib/types";
+import { CMS_IJ_LABEL, isCmsFTag, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
 
 /**
  * Pennsylvania DHS OLTL severity taxonomy.
  *
  * PA DHS inspects Personal Care Homes (55 Pa Code Ch 2600) and Assisted Living
  * Residences (55 Pa Code Ch 2800) under the Office of Long-Term Living (OLTL).
- * Inspection PDFs are parsed into the severity vocabulary below.
  *
  *   Citation              → standard finding, no monetary penalty.      severity=1
  *   Civil Money Penalty   → monetary penalty assessed.                   severity=2
@@ -24,10 +24,6 @@ import type { Deficiency } from "@/lib/types";
  * The `code` field holds a 55 Pa Code citation (e.g. "55 Pa Code § 2600.171")
  * or a CMS F-tag when a nursing-home survey was attached to the row.
  */
-function isCmsFTag(code: string | null | undefined): boolean {
-  const trimmed = code?.trim() ?? "";
-  return /^F\d{3,4}\b/i.test(trimmed);
-}
 
 function isPaCodeCitation(code: string | null | undefined): boolean {
   return /55\s*pa\s*code/i.test(code ?? "");
@@ -47,7 +43,7 @@ export function paFormatSeverityTag(d: Deficiency): { label: string; tone: Sever
   if (raw) {
     const lower = raw.toLowerCase().trim();
     if (lower === "immediate jeopardy" || lower === "ij") {
-      if (cms && !paCode) return { label: "Immediate Jeopardy (CMS)", tone: "danger" };
+      if (cms && !paCode) return { label: CMS_IJ_LABEL, tone: "danger" };
       if (looksLikeAbuseFinding(d)) return { label: "Substantiated Abuse", tone: "danger" };
       return { label: "Serious finding", tone: "danger" };
     }
@@ -65,7 +61,7 @@ export function paFormatSeverityTag(d: Deficiency): { label: string; tone: Sever
 
   // Do not promote the ingest boolean / severity=4 to Immediate Jeopardy.
   // That flag is also set for substantiated abuse and revocation.
-  if (cms && d.immediate_jeopardy) return { label: "Immediate Jeopardy (CMS)", tone: "danger" };
+  if (isCmsImmediateJeopardy(d) && !paCode) return { label: CMS_IJ_LABEL, tone: "danger" };
   if (d.severity !== undefined && d.severity !== null) {
     if (d.severity >= 4) {
       if (looksLikeAbuseFinding(d)) return { label: "Substantiated Abuse", tone: "danger" };

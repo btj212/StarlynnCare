@@ -42,12 +42,12 @@ def _facts(**overrides: object) -> FacilityFacts:
 
 
 class CoverageCohortTests(unittest.TestCase):
-    def test_a_small_arizona_home_without_citations_is_not_requested(self) -> None:
-        """Google already crawled these template pages and declined them. The page and the sitemap both drop them."""
+    def test_a_small_arizona_home_without_citations_is_still_requested(self) -> None:
+        """The 369 small Arizona Directed Care homes are live pages. Put them in the sitemap."""
         facts = _facts()
-        self.assertTrue(facility_marked_noindex(facts))
-        self.assertFalse(facility_listed_in_sitemap(facts))
-        self.assertEqual(facility_cohort(facts), "noindex")
+        self.assertFalse(facility_marked_noindex(facts))
+        self.assertTrue(facility_listed_in_sitemap(facts))
+        self.assertEqual(facility_cohort(facts), "enrich")
 
     def test_a_citation_keeps_the_arizona_page_even_when_the_prose_is_missing(self) -> None:
         """The citation is the record. Missing prose is a gap to fill, not a reason to hide the page."""
@@ -61,11 +61,11 @@ class CoverageCohortTests(unittest.TestCase):
         facts = _facts(state_code="CA", beds=80, deficiencies=1, has_narrative=True)
         self.assertEqual(facility_cohort(facts), "retain")
 
-    def test_a_photo_only_home_stays_off_the_request_list(self) -> None:
-        """The page can be indexed if found, but the sitemap does not ask Google to crawl another thin URL."""
+    def test_a_photo_only_home_is_requested(self) -> None:
+        """A publishable profile is in the sitemap even when the city hub does not list it."""
         facts = _facts(state_code="OR", beds=40, inspections=0, photos=1)
         self.assertFalse(facility_marked_noindex(facts))
-        self.assertFalse(facility_listed_in_sitemap(facts))
+        self.assertTrue(facility_listed_in_sitemap(facts))
         self.assertEqual(facility_cohort(facts), "enrich")
 
     def test_a_hub_of_only_excluded_homes_cannot_justify_a_listing(self) -> None:

@@ -1,14 +1,12 @@
 /**
  * What Google is asked to index.
  *
- * The facility page, the facility sitemap, and the listing-hub sitemap must
- * use these predicates. `scripts/validate/search_console_coverage.py` mirrors
- * them. A noindex page must not appear in the sitemap.
+ * Every publishable facility profile is in the sitemap and is indexable.
+ * City / A–Z hubs still use `facilityListedOnHub` so a thin Arizona small
+ * home or a Washington AFH with no inspection is not counted in the city
+ * lede — that listed set is separate from the crawl list.
  *
- * A home with no inspection can still be indexed when it has a review, a tour
- * question, or a photo. Those pages stay out of the sitemap on purpose: the
- * October 27 coverage export already had 3,684 crawled-but-not-indexed URLs,
- * and the sitemap is the list of pages we ask Google to crawl.
+ * `scripts/validate/search_console_coverage.py` mirrors these predicates.
  */
 
 export const AZ_SMALL_BED_LIMIT = 10;
@@ -26,7 +24,7 @@ export function azSmallHomeWithoutCitations(
   );
 }
 
-export function facilityMarkedNoindex(input: {
+export function facilityMarkedNoindex(_input: {
   stateCode: string;
   beds: number | null;
   deficiencyCount: number;
@@ -35,19 +33,16 @@ export function facilityMarkedNoindex(input: {
   tourQuestionCount: number;
   photoCount: number;
 }): boolean {
-  const noRecord =
-    input.inspectionCount === 0 &&
-    input.reviewCount === 0 &&
-    input.tourQuestionCount === 0 &&
-    input.photoCount === 0;
-  return (
-    azSmallHomeWithoutCitations(input.stateCode, input.beds, input.deficiencyCount) ||
-    noRecord
-  );
+  // Publishable profiles are in the sitemap (613 WA AFHs with no inspection
+  // row, 369 small Arizona homes with no citations). Do not noindex them.
+  return false;
 }
 
-/** Sitemap request list. Requires an inspection, then applies the same Arizona exclusion. */
-export function facilityListedInSitemap(input: {
+/**
+ * City hub / A–Z listed set. Requires an inspection, then excludes Arizona
+ * homes of 10 beds or fewer with no citations. Not the sitemap rule.
+ */
+export function facilityListedOnHub(input: {
   stateCode: string;
   beds: number | null;
   deficiencyCount: number;
@@ -59,6 +54,16 @@ export function facilityListedInSitemap(input: {
     input.beds,
     input.deficiencyCount,
   );
+}
+
+/** @deprecated Use facilityListedOnHub for city counts; sitemap includes every publishable profile. */
+export function facilityListedInSitemap(input: {
+  stateCode: string;
+  beds: number | null;
+  deficiencyCount: number;
+  inspectionCount: number;
+}): boolean {
+  return facilityListedOnHub(input);
 }
 
 /**

@@ -6,9 +6,9 @@ validation table) and compares them with the October 27 baseline. With a
 database connection it classifies facility and hub URLs the same way the site
 does: noindex, retain, or enrich.
 
-The predicates mirror src/lib/seo/indexability.ts. A noindex facility must not
-be in the sitemap. A photo-only home with no inspection may stay indexable if
-Google finds it, but the sitemap does not request it.
+The predicates mirror src/lib/seo/indexability.ts. Every publishable facility
+profile is in the sitemap and is indexable. City hubs still omit thin Arizona
+small homes from the listed count.
 
 Usage:
     python3 scripts/validate/search_console_coverage.py \
@@ -129,20 +129,17 @@ def az_small_home_without_citations(
 
 def facility_marked_noindex(facts: FacilityFacts) -> bool:
     """Same rule as facilityMarkedNoindex in src/lib/seo/indexability.ts."""
-    no_record = (
-        facts.inspections == 0
-        and facts.reviews == 0
-        and facts.tour_questions == 0
-        and facts.photos == 0
-    )
-    return az_small_home_without_citations(
-        facts.state_code, facts.beds, facts.deficiencies
-    ) or no_record
+    return False
 
 
 def facility_listed_in_sitemap(facts: FacilityFacts) -> bool:
-    """Sitemap request list. Photo-only homes with no inspection stay off it."""
-    if not facts.publishable or facts.inspections < 1:
+    """Every publishable profile is requested. Hub listing is a separate predicate."""
+    return facts.publishable
+
+
+def facility_listed_on_hub(facts: FacilityFacts) -> bool:
+    """City hub / A–Z listed set. Same as facilityListedOnHub."""
+    if facts.inspections < 1:
         return False
     return not az_small_home_without_citations(
         facts.state_code, facts.beds, facts.deficiencies
@@ -646,8 +643,7 @@ def render_report(
         lines.append(
             "- Indexable but unlisted: "
             f"{parity.get('indexable_but_unlisted', 0)}. "
-            "These are homes with no inspection that still have a review, tour question, or photo. "
-            "The page can be indexed if found. The sitemap does not request them, because the not-indexed pile is already the problem."
+            "Must be 0: every publishable profile is in the sitemap."
         )
     lines.extend(["", "## Hub notes", ""])
     lines.append(
@@ -831,17 +827,19 @@ def select_samples(validation: dict[str, Any], cohorts: dict[tuple[str, str, str
 
 
 def assert_index_policy() -> None:
-    """Same table as scripts/test_indexability.ts. Cited, unknown-bed, and non-Arizona homes stay in."""
+    """Publishable pages stay in the sitemap. City hubs still require an inspection."""
     cases = [
-        ("AZ", 6, 2, 3, 0, 0, 0, False, True),
-        ("IL", None, 0, 2, 0, 0, 0, False, True),
-        ("AZ", 8, 0, 1, 0, 0, 1, True, False),
-        ("OR", 6, 0, 2, 0, 0, 0, False, True),
-        ("WA", 40, 0, 4, 0, 0, 0, False, True),
-        ("TX", 80, 0, 0, 0, 0, 0, True, False),
-        ("CA", 20, 0, 0, 0, 0, 2, False, False),
+        # state, beds, defs, inspections, reviews, tours, photos, noindex, sitemap, hub
+        ("AZ", 6, 2, 3, 0, 0, 0, False, True, True),
+        ("IL", None, 0, 2, 0, 0, 0, False, True, True),
+        ("AZ", 8, 0, 1, 0, 0, 1, False, True, False),
+        ("OR", 6, 0, 2, 0, 0, 0, False, True, True),
+        ("WA", 40, 0, 4, 0, 0, 0, False, True, True),
+        ("TX", 80, 0, 0, 0, 0, 0, False, True, False),
+        ("CA", 20, 0, 0, 0, 0, 2, False, True, False),
+        ("WA", 6, 0, 0, 0, 0, 0, False, True, False),
     ]
-    for state, beds, deficiencies, inspections, reviews, tours, photos, noindex, listed in cases:
+    for state, beds, deficiencies, inspections, reviews, tours, photos, noindex, sitemap, hub in cases:
         facts = FacilityFacts(
             state_code=state,
             city_slug="city",
@@ -855,7 +853,8 @@ def assert_index_policy() -> None:
             has_narrative=inspections > 0,
         )
         assert facility_marked_noindex(facts) is noindex, state
-        assert facility_listed_in_sitemap(facts) is listed, state
+        assert facility_listed_in_sitemap(facts) is sitemap, state
+        assert facility_listed_on_hub(facts) is hub, state
         assert not (facility_marked_noindex(facts) and facility_listed_in_sitemap(facts))
 
 

@@ -800,7 +800,14 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
       : null;
   const licenseRecordUrl = regulatorLicensePageFor(facility.state_code, facility.license_number);
   const careBasis = {
-    ...memoryCareBasis(facility),
+    ...memoryCareBasis({
+      ...facility,
+      caCitationTexts: deficiencies.flatMap((d) =>
+        [d.code, d.description, d.inspector_narrative].filter(
+          (value): value is string => !!value?.trim(),
+        ),
+      ),
+    }),
     ...(licenseRecordUrl ? { sourceUrl: licenseRecordUrl } : {}),
   };
   const faqPairs = buildFacilityFaqPairs({

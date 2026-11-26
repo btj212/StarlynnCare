@@ -22,10 +22,10 @@ const STATES: Array<{ name: string; hub: string; tag: string; body: ReactNode }>
   {
     name: "California",
     hub: "/california",
-    tag: "Type A or immediate jeopardy",
+    tag: "Type A",
     body: (
       <>
-        On a California profile, the red tag is Type A or immediate jeopardy. Type B is not that tag.{" "}
+        On a California profile, the red tag is Type A. Type B is not that tag. Immediate Jeopardy is a CMS nursing-home term.{" "}
         <Link href="/library/type-a-vs-type-b-deficiencies-explained" className={linkCls}>
           Type A vs. Type B
         </Link>{" "}
@@ -47,20 +47,20 @@ const STATES: Array<{ name: string; hub: string; tag: string; body: ReactNode }>
   {
     name: "Pennsylvania",
     hub: "/pennsylvania",
-    tag: "Immediate jeopardy, revocation, substantiated abuse, or a provisional license",
+    tag: "Substantiated abuse, revocation, or a provisional license",
     body: (
       <>
-        On a Pennsylvania profile, immediate jeopardy, revocation, substantiated abuse, and a provisional license are red tags. A civil money penalty is not a red tag. Personal care homes follow 55 Pa. Code Chapter 2600. Assisted living residences follow Chapter 2800. The office is the Department of Human Services, not the Department of Health.
+        On a Pennsylvania profile, substantiated abuse, revocation, and a provisional license are red tags. Immediate Jeopardy is a CMS term; 55 Pa. Code does not use it. A civil money penalty is not a red tag. Personal care homes follow 55 Pa. Code Chapter 2600. Assisted living residences follow Chapter 2800. The office is the Department of Human Services, not the Department of Health.
       </>
     ),
   },
   {
     name: "Arizona",
     hub: "/arizona",
-    tag: "Immediate jeopardy",
+    tag: "High risk or enforcement",
     body: (
       <>
-        On an Arizona profile, the red tag is immediate jeopardy. High risk and enforcement are not that label. The count of homes with a serious citation still includes a finding stored at severity 3 or higher. Inspections are published on{" "}
+        On an Arizona profile, the red tag is High Risk or Enforcement. Immediate Jeopardy is a CMS term. The count of homes with a serious citation still includes a finding stored at severity 3 or higher. Inspections are published on{" "}
         <External href="https://azcarecheck.azdhs.gov">AZ Care Check</External>. The licensing rules are A.A.C. Title 9, Chapter 10.
       </>
     ),
@@ -68,10 +68,10 @@ const STATES: Array<{ name: string; hub: string; tag: string; body: ReactNode }>
   {
     name: "Oregon",
     hub: "/oregon",
-    tag: "Level 4, labeled IJ",
+    tag: "Level 4",
     body: (
       <>
-        On an Oregon profile, level 4 is labeled IJ. Level 3 is not. This count still includes severity 3. Assisted living surveys are under OAR 411-054. The license lookup is the{" "}
+        On an Oregon profile, the red tag is Level 4. Level 3 is not. Immediate Jeopardy is a CMS term. This count still includes severity 3. Assisted living surveys are under OAR 411-054. The license lookup is the{" "}
         <External href="https://ltclicensing.oregon.gov/">Oregon long-term care licensing site</External>.
       </>
     ),
@@ -79,30 +79,30 @@ const STATES: Array<{ name: string; hub: string; tag: string; body: ReactNode }>
   {
     name: "Washington",
     hub: "/washington",
-    tag: "Immediate jeopardy",
+    tag: "DSHS finding; Immediate Jeopardy (CMS) on a nursing home",
     body: (
       <>
-        On a Washington assisted living profile, the red tag is immediate jeopardy. On a nursing-home profile, scope-and-severity rows J through L are also labeled IJ. The count of homes with a serious citation still includes a finding stored at severity 3 or higher.
+        On a Washington assisted living profile, the red tag is the DSHS finding as written. On a nursing-home profile, scope-and-severity rows J through L are labeled Immediate Jeopardy (CMS). The count of homes with a serious citation still includes a finding stored at severity 3 or higher.
       </>
     ),
   },
   {
     name: "Minnesota",
     hub: "/minnesota",
-    tag: "Immediate-jeopardy flag",
+    tag: "MDH finding",
     body: (
       <>
-        On a Minnesota profile, the red tag is an immediate-jeopardy flag. Other inspection text is shown as written.
+        On a Minnesota profile, the red tag is the MDH finding as written. Immediate Jeopardy is a CMS term.
       </>
     ),
   },
   {
     name: "Missouri",
     hub: "/missouri",
-    tag: "Immediate-jeopardy flag",
+    tag: "High risk or complaint",
     body: (
       <>
-        On a Missouri profile, the red tag is an immediate-jeopardy flag. A finding stored at severity 4 without that flag is labeled Complaint or High Risk, not IJ. Citations use 19 CSR tags. The lookup is the{" "}
+        On a Missouri profile, the red tag is High Risk or Complaint. Immediate Jeopardy is a CMS term. Citations use 19 CSR tags. The lookup is the{" "}
         <External href="https://healthapps.dhss.mo.gov/showmeltc/">DHSS long-term care search</External>.
       </>
     ),
@@ -110,20 +110,20 @@ const STATES: Array<{ name: string; hub: string; tag: string; body: ReactNode }>
   {
     name: "Texas",
     hub: "/texas",
-    tag: "Immediate-jeopardy flag",
+    tag: "HHSC finding",
     body: (
       <>
-        On a Texas profile, an immediate-jeopardy flag is labeled IJ. Other words on the inspection are shown as written.
+        On a Texas assisted living profile, the red tag is the HHSC finding as written. Immediate Jeopardy is a CMS nursing-home term.
       </>
     ),
   },
   {
     name: "Utah",
     hub: "/utah",
-    tag: "Immediate jeopardy, a suspension, or a revocation",
+    tag: "Serious, a suspension, or a revocation",
     body: (
       <>
-        Utah does not publish a numerical severity scale. On a profile, immediate jeopardy, a suspension, or a revocation is labeled IJ. A finding stored at severity 3 is labeled Serious, not IJ. This count still includes severity 3. The license office is the Division of Licensing and Background Checks (DLBC), inside the Department of Health and Human Services.
+        Utah does not publish a numerical severity scale. On an assisted living profile, the red tag is Serious, Suspension, or Revocation. Immediate Jeopardy (CMS) is reserved for nursing-home J, K, and L. This count still includes severity 3. The license office is the Division of Licensing and Background Checks (DLBC), inside the Department of Health and Human Services.
       </>
     ),
   },
@@ -133,7 +133,7 @@ const STATES: Array<{ name: string; hub: string; tag: string; body: ReactNode }>
     tag: "Level E on assisted living; CMS J, K, or L on a nursing home",
     body: (
       <>
-        On a Colorado assisted living profile, the red tag is Level E, immediate jeopardy. On a Colorado nursing-home profile, the red tag is a CMS letter J, K, or L. Those are not the same scale. This count still includes severity 3 or higher. Assisted living is licensed by CDPHE under 6 CCR 1011-1 Chapter 7.{" "}
+        On a Colorado assisted living profile, the red tag is Level E. On a Colorado nursing-home profile, letters J, K, and L are Immediate Jeopardy (CMS). Those are not the same scale. This count still includes severity 3 or higher. Assisted living is licensed by CDPHE under 6 CCR 1011-1 Chapter 7.{" "}
         <Link href="/colorado/memory-care-vs-nursing-home" className={linkCls}>
           Assisted living and nursing homes
         </Link>{" "}
@@ -148,7 +148,7 @@ export async function SeriousCitationExplainer() {
   return (
     <>
       <p className={prose}>
-        A serious citation is a finding in the top severity class a state uses, and each state names that class differently: Type A in California, Type 1 in Illinois, and immediate jeopardy in most other states we cover.
+        A serious citation is a finding in the top severity class a state uses, and each state names that class differently: Type A in California, Type 1 in Illinois, High Risk in Arizona, Level E in Colorado. Immediate Jeopardy is reserved for CMS nursing-home findings.
       </p>
       <p className={`mt-4 ${prose}`}>
         &ldquo;Serious&rdquo; is not one legal term. Each state writes its own top label on an inspection, and the red tag on a profile uses that label.

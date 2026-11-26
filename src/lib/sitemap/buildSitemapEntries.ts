@@ -1,9 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SITE_ORIGIN } from "@/lib/seo/canonical";
-import {
-  azSmallHomeWithoutCitations,
-  facilityListedInSitemap,
-} from "@/lib/seo/indexability";
+import { azSmallHomeWithoutCitations } from "@/lib/seo/indexability";
 import { regionsForState } from "@/lib/regions";
 import { COVERED_STATES } from "@/lib/states";
 import { RESEARCH_INDEX } from "@/lib/content/research";
@@ -383,7 +380,7 @@ export async function collectCoveredStateHubEntries(
   return out;
 }
 
-/** Small Arizona homes with no citations are noindexed, so they stay out of the sitemap. */
+/** City-hub listed set still omits small Arizona homes with no citations. */
 async function azSmallHomesThatHaveCitations(
   supabase: SupabaseClient,
   facilityIds: string[],
@@ -418,9 +415,9 @@ export async function collectFacilityEntriesForState(
   stateCode: string,
   stateSlug: string,
 ): Promise<SitemapUrlRow[]> {
-  // Use an inner join on inspections so only facilities with at least one inspection
-  // are included. This prevents thin/noindex pages (publishable=true but 0 inspections)
-  // from appearing in the sitemap and causing "noindex page in sitemap" Ahrefs errors.
+  // Every publishable profile. An inner join on inspections dropped 613
+  // Washington adult family homes with no inspection row; the Arizona small-home
+  // filter dropped 369 Directed Care homes with no citations.
   type FacilitySitemapRow = {
     id: string;
     city_slug: string;
@@ -436,7 +433,7 @@ export async function collectFacilityEntriesForState(
   for (let from = 0; ; from += SITEMAP_QUERY_PAGE_SIZE) {
     const { data, error } = await supabase
       .from("facilities")
-      .select("id, city_slug, slug, updated_at, beds, inspections!facility_id!inner(id)")
+      .select("id, city_slug, slug, updated_at, beds")
       .eq("state_code", stateCode)
       .eq("publishable", true)
       .order("id")
@@ -451,21 +448,8 @@ export async function collectFacilityEntriesForState(
     if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
   }
 
-  const smallIds = facilities
-    .filter((facility) => azSmallHomeWithoutCitations(stateCode, facility.beds, 0))
-    .map((facility) => facility.id);
-  const withCitations = await azSmallHomesThatHaveCitations(supabase, smallIds);
-  const listed = facilities.filter((facility) =>
-    facilityListedInSitemap({
-      stateCode,
-      beds: facility.beds,
-      deficiencyCount: withCitations.has(facility.id) ? 1 : 0,
-      inspectionCount: 1,
-    }),
-  );
-
   const withFindings = await facilitiesWithRecentFindings(supabase, stateCode);
-  const sorted = listed.sort(
+  const sorted = [...facilities].sort(
     (a, b) => a.city_slug.localeCompare(b.city_slug) || a.slug.localeCompare(b.slug),
   );
   const entries: SitemapUrlRow[] = [];

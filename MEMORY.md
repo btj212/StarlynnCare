@@ -6,6 +6,22 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Sitemap is every publishable profile; IJ is CMS-only; CA 87705 is a memory-care basis
+
+**Decided:** The facility sitemap is every `publishable` profile. An inner join on inspections had dropped 613 Washington adult family homes with no inspection row, and the Arizona small-home filter had dropped 369 Directed Care homes with no citations. City hubs still use `facilityListedOnHub` (inspection on file; Arizona ≤10 beds with no citations stay off the lede) so Mesa does not jump from 145 to 169. Pages are not noindexed for thinness. Hub copy continues to quote the listed count, not the sitemap count.
+
+**Immediate Jeopardy:** Display reserves that phrase for CMS J/K/L (or an F-tag with the stored flag). California Type A/B, Pennsylvania 55 Pa Code (including substantiated abuse stored as IJ), and Arizona A.A.C. findings use the state's own words. The extra "Immediate jeopardy" span on every `immediate_jeopardy=true` row is gone.
+
+**Memory-care basis:** `ca_memory_care_designation_basis` is still not a live column. The mapper now also reads 87705/87706 on deficiency code/text (56 publishable CA homes had the citation on a deficiency but no disclosure-source string; 3 of those in Sacramento) and, for California only, `memory_care_disclosure_filed`. A Caring.com/APFM listing or a name match is still not a state file. Sixteen Sacramento publishable homes remain unrecorded because they have `serves_memory_care` from directory signals and no CDSS 87705 or disclosure.
+
+**License status:** The hero prints the regulator string, including Probationary license and Closed, when that column is on the row. All currently publishable rows are `LICENSED`. Display only; no migration.
+
+**Rejected:** Applying a migration. Treating `serves_memory_care` as a CDSS basis. Rewriting stored PA deficiency rows.
+
+**Source:** Display audit, 2026-11-26. `src/lib/sitemap/buildSitemapEntries.ts`, `src/lib/states/cmsImmediateJeopardy.ts`, `src/lib/facility/memoryCareBasis.ts`, `src/lib/facility/licenseStatus.ts`.
+
+---
+
 ## 2026-11 — Confirm form for outreach: listing facts, pending Level 2, signed token
 
 **Decided:** `/{state}/{city}/{home}/confirm` is the form we email every home. The top of the form is “What we show today”: licensed name, marketing name, street/city/ZIP, displayed phone (`phone_override ?? phone`), website, beds, license number, and the memory-care label, each with Correct / Needs a fix plus a correction field, and an “Everything above is correct” shortcut. Existing questions (memory care yes/no, wandering, price, Medicaid, overnight staff, move-out), consent, honeypot and rate limit stay. Extra memory-care questions — secured/locked area at this address, program name, link to the home’s own page — store on the pending `facility_direct_responses` row (`mc_secured`, `mc_program_name`, `mc_program_url`). They never write `facilities.mc_program_confirmed`. A person reviews them before Level 2.

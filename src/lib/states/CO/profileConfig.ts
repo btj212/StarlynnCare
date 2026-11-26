@@ -1,5 +1,6 @@
 import type { StateProfileConfig, SeverityTone } from "@/lib/states/profileConfig";
 import type { Deficiency } from "@/lib/types";
+import { CMS_IJ_LABEL, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
 
 const FIND_AND_COMPARE = "https://cdphe.colorado.gov/health-facilities/find-and-compare-facilities";
 const CARE_COMPARE = "https://www.medicare.gov/care-compare/";
@@ -21,11 +22,12 @@ function coAlrSeverity(d: Deficiency): { label: string; tone: SeverityTone } | n
   return null;
 }
 
-/** CMS scope-and-severity letters. J, K, and L are immediate jeopardy. */
+/** CMS scope-and-severity letters. J, K, and L are Immediate Jeopardy. */
 function coNhSeverity(d: Deficiency): { label: string; tone: SeverityTone } | null {
+  if (isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
   const letter = (d.scope_severity_code ?? "").trim().toUpperCase();
   if (!letter || letter.length !== 1) return null;
-  if ("JKL".includes(letter)) return { label: `CMS ${letter}`, tone: "danger" };
+  if ("JKL".includes(letter)) return { label: CMS_IJ_LABEL, tone: "danger" };
   if ("GHI".includes(letter)) return { label: `CMS ${letter}`, tone: "warn" };
   if ("DEF".includes(letter)) return { label: `CMS ${letter}`, tone: "info" };
   if ("ABC".includes(letter)) return { label: `CMS ${letter}`, tone: "mute" };

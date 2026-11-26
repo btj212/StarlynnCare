@@ -118,7 +118,7 @@ function getStateStrings(stateCode: string): StateStrings {
       licenseA: `Pennsylvania licenses Personal Care Homes (55 Pa Code Ch 2600) and Assisted Living Residences (Ch 2800). A <strong>Special Care</strong> or <strong>Secure Dementia Care Unit</strong> designation is a DHS-recorded dementia signal — not a marketing claim — and appears on the profile only when it is on the state file. Many listed homes serve people with dementia under a standard PCH or ALR license.`,
       facilityVsNursingQ: `What's the difference between memory care and a nursing home in Pennsylvania?`,
       facilityVsNursingA: `PA DHS-licensed PCHs and ALRs provide residential personal care and dementia programming. Nursing homes (Skilled Nursing Facilities) are regulated by PA DOH and CMS, provide 24-hour licensed nursing, and operate under a separate inspection framework. If your family member needs continuous skilled nursing, wound care, or IV therapy, a nursing facility may be more appropriate.`,
-      deficiencyLabel: "severe finding (PA DHS severity ≥ 3)",
+      deficiencyLabel: "severe finding (PA DHS severity ≥ 3, including substantiated abuse)",
       indexedNoun: "personal care and assisted living homes",
       medicaidQ: (city) => `Does Pennsylvania Medicaid cover memory care in ${city}?`,
       medicaidA: (city) =>

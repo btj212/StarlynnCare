@@ -1,7 +1,7 @@
 import { countSeriousDeficiencies } from "@/lib/data/seriousDeficiencyCount";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { COVERED_STATES, stateFromCode } from "@/lib/states";
-import { AZ_SMALL_BED_LIMIT, facilityListedInSitemap } from "@/lib/seo/indexability";
+import { AZ_SMALL_BED_LIMIT, facilityListedOnHub } from "@/lib/seo/indexability";
 import { loadLatestInspectionDates, todayIsoDate } from "@/lib/data/inspectionDates";
 
 export type NationalStateSummary = {
@@ -125,8 +125,8 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
     if (!stateCitySets.has(code)) stateCitySets.set(code, new Set());
     stateCitySets.get(code)!.add(citySlug);
 
-    // Same listed set as the city page (homesForCityIndex / sitemap).
-    const listed = facilityListedInSitemap({
+    // Same listed set as the city page (homesForCityIndex). Sitemap is every publishable profile.
+    const listed = facilityListedOnHub({
       stateCode: code,
       beds: row.beds,
       deficiencyCount: azSmallCited.has(row.id) ? 1 : 0,

@@ -54,6 +54,22 @@ const cited = memoryCareBasis({
 });
 assert.match(cited.label, /87705 or 87706/);
 
+const citedOnDeficiency = memoryCareBasis({
+  state_code: "CA",
+  memory_care_disclosure_source: null,
+  memory_care_designation: null,
+  caCitationTexts: ["87705(a)(1)", "Care staff did not complete dementia training."],
+});
+assert.equal(citedOnDeficiency.recorded, true);
+assert.match(citedOnDeficiency.label, /87705 or 87706/);
+
+const caDisclosureFiled = memoryCareBasis({
+  state_code: "CA",
+  memory_care_disclosure_filed: true,
+});
+assert.equal(caDisclosureFiled.recorded, true);
+assert.match(caDisclosureFiled.label, /1569\.627/);
+
 const nameOnly = memoryCareBasis({
   state_code: "IL",
   memory_care_designation: "name indicates memory care",
