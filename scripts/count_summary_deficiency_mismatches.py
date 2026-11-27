@@ -74,7 +74,7 @@ def main() -> None:
 
     total = sum(by_state.values())
     print(f"SQL net: {sql_hits} rows")
-    print(f"After Python filter (clean-visit claim + deficiency count > 0): {total}\n")
+    print(f"After Python filter (clean-visit claim + citation count > 0): {total}\n")
     print("state\tcount")
     for state, count in sorted(by_state.items(), key=lambda item: (-item[1], item[0])):
         print(f"{state}\t{count}")
@@ -87,7 +87,7 @@ def main() -> None:
             for license_number, name, insp_date, total_def, def_rows, summary in examples[state]:
                 print(
                     f"  {license_number} {name} {insp_date} "
-                    f"total_def={total_def} rows={def_rows}"
+                    f"total_def={total_def} citations={def_rows}"
                 )
                 print(f"    {summary}")
 
