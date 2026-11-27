@@ -1,0 +1,92 @@
+# Manual refetch of inspection summaries for named homes only.
+#
+# Does not run on a schedule or on push/PR. Empty facility_ids must fail:
+# `summarize_inspections.py --refetch` without --facility-id would rewrite
+# every inspection in the state.
+#
+# Requires secrets: DATABASE_URL, ANTHROPIC_API_KEY (same as weekly ingest).
+name: Refetch inspection summaries (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      state:
+        description: "Two-letter state code"
+        required: true
+        default: "WA"
+        type: string
+      facility_ids:
+        description: "Facility UUIDs (comma or space separated). Required — will not summarize a whole state."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Require facility IDs
+        env:
+          FACILITY_IDS: ${{ inputs.facility_ids }}
+        run: |
+          set -euo pipefail
+          RAW="$(printf '%s' "$FACILITY_IDS" | tr ',;' ' ' | tr -s '[:space:]' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          if [ -z "$RAW" ]; then
+            echo "facility_ids is empty. Pass one or more UUIDs so this cannot refetch a whole state."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install summarizer dependencies
+        run: pip install "psycopg[binary]" python-dotenv anthropic
+
+      - name: Refetch inspection summaries
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONUNBUFFERED: "1"
+          STATE: ${{ inputs.state }}
+          FACILITY_IDS: ${{ inputs.facility_ids }}
+        run: |
+          set -euo pipefail
+          STATE="$(printf '%s' "$STATE" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')"
+          if ! printf '%s' "$STATE" | grep -Eq '^[A-Z]{2}$'; then
+            echo "state must be a two-letter code."
+            exit 1
+          fi
+
+          IDS=()
+          while IFS= read -r id; do
+            [ -z "$id" ] && continue
+            if ! printf '%s' "$id" | grep -Eq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'; then
+              echo "Not a facility UUID: $id"
+              exit 1
+            fi
+            IDS+=("$id")
+          done < <(printf '%s\n' "$FACILITY_IDS" | tr ',;' ' ' | tr -s '[:space:]' '\n')
+
+          if [ "${#IDS[@]}" -eq 0 ]; then
+            echo "facility_ids is empty. Pass one or more UUIDs so this cannot refetch a whole state."
+            exit 1
+          fi
+
+          echo "Refetching summaries for ${#IDS[@]} home(s) in $STATE"
+          failed=0
+          for id in "${IDS[@]}"; do
+            echo "Refetching $id"
+            if ! python3 scrapers/summarize_inspections.py --state "$STATE" --refetch --facility-id "$id"; then
+              echo "Failed: $id" >&2
+              failed=1
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
