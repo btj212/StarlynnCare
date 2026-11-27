@@ -163,7 +163,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     inspectionCount: profile.totals.inspections,
     reviewCount: profile.reviews.length,
     lastInspectionDate,
-    year: new Date().getFullYear(),
   });
 
   const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
