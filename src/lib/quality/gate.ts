@@ -246,8 +246,9 @@ export type GateInspection = {
   /** Stored citation count. Zero is a real count. Missing stays unknown. */
   citationCount?: number | null;
   /**
-   * State visit or event id. Illinois FOIA visit id and Colorado CDPHE event
-   * id (for example M5T211) live in inspections.source_event_id.
+   * State visit or event id. Illinois stores the FOIA visit id. Colorado stores
+   * the event key (for example 23033N|035H13|AL18), because the bare event id
+   * is shared by each rule set on that visit.
    */
   visitId?: string | null;
   /**
@@ -257,25 +258,35 @@ export type GateInspection = {
   predecessor?: boolean;
 };
 
+function hasCitationCount(count: number | null | undefined): boolean {
+  return typeof count === "number" && Number.isFinite(count) && count >= 0;
+}
+
+function hasHttpSource(url: string | null | undefined): boolean {
+  return /^https?:\/\//i.test(url?.trim() ?? "");
+}
+
 /**
  * An inspection counts when it has a date and an http(s) source URL.
- * Illinois and Colorado have no per-visit document URL. For those two states
- * a date, a citation count (zero allowed), and the state visit or event id
- * are enough. Every other state still needs the URL. A previous operator's
- * visit does not count in any state.
+ * Illinois and Colorado usually have no per-visit document. For those two
+ * states a date and a citation count (zero allowed) are enough when either
+ * the state visit id or an http(s) source URL is present. A Colorado CMS
+ * nursing home with a link uses the URL route. Every other state still
+ * needs the URL and does not qualify on a visit id alone. A previous
+ * operator's visit does not count in any state.
  */
 export function inspectionQualifies(state: string, row: GateInspection): boolean {
   if (row.predecessor) return false;
   const date = row.date?.trim() ?? "";
   if (!date) return false;
   const code = state.trim().toUpperCase();
+  const urlOk = hasHttpSource(row.sourceUrl);
   if (code === "IL" || code === "CO") {
-    const count = row.citationCount;
+    if (!hasCitationCount(row.citationCount)) return false;
     const visit = row.visitId?.trim() ?? "";
-    return typeof count === "number" && Number.isFinite(count) && count >= 0 && visit.length > 0;
+    return visit.length > 0 || urlOk;
   }
-  const url = row.sourceUrl?.trim() ?? "";
-  return /^https?:\/\//i.test(url);
+  return urlOk;
 }
 
 export type GateHome = {
