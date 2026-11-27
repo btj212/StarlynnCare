@@ -1,6 +1,33 @@
 # Texas (HHSC) — data discovery notes
 
-Private research doc for Phase 5 ingest. **Do not treat URLs below as API contracts** — verify before production scrapers.
+Private research doc for Phase 5 ingest. **Do not treat the historical URLs below as API contracts.** The 2026-11-27 section is what a live fetch confirmed.
+
+## Verified public endpoints (2026-11-27)
+
+Per-facility inspections are not in the ALF directory spreadsheet and not in `alf-violations-data.pdf` (that PDF is statewide tag totals for 09/01/2020–02/28/2026, no license numbers). `data.texas.gov` HHSC CCL datasets are child-care licensing, not assisted living.
+
+The live source is TULIP's guest Aura API. The search page still loads reCAPTCHA, and these methods answer with `aura.token=null`:
+
+| Call | What it returns |
+|---|---|
+| `GET https://tulip.hhs.texas.gov/TULIP/s/ltc-provider-search` | HTML. Read `fwuid` and the `1919_p_…` communityApp hash from it. Do not hardcode them. |
+| `POST https://tulip.hhs.texas.gov/TULIP/s/sfsites/aura?r=1&aura.ApexAction.execute=1` | Aura. `aura.token=null`. |
+| `RS_LTCProviderController.searchAccounts` | Match key is `LIcense_Number__c` (capital I). `Id` is the Salesforce Account Id. It is not the license and it changes when HHSC re-keys the account. Params: `programType=Assisted Living Facilities`, `licenseNumber`, empty `serviceType` / `facilityName` / `postalCode` / `city` / `counties`, `pageNumber=1`, `isClosed=false`. |
+| `RS4_LTCSearchResultHandler.retrieveInspectionsInfo` `{accId}` | `visitType=yesData` plus optional `mostRecentExitDate` ("October 02, 2015") means a comprehensive visit with no violation rows. `noData` means the tab has no visit. The page still knows how to render `Health Visit` / `Life Safety Code` / `Life Safty Code` rows (`exitDate`, `correctedDate`, `stateViolationCited`) when HHSC sends them. On 2026-11-27 the ALF homes checked returned only the sentinel. |
+| `RS4_LTCSearchResultHandler.retrieveRSEventForEnfAction` `{accId}` | The citations the portal still publishes: `action`, `imposedDate` (`M/D/YYYY`), `imposedAmount`, `rsEventId`, `name`, `penaltyWrapperLst[].regulationCited`, `penaltyWrapperLst[].stateValCited`. |
+
+Detail URL stored on each row: `https://tulip.hhs.texas.gov/TULIP/s/ltc-provider-detail?c__accountidparam=<Account Id>`.
+
+Roster only (no inspections): `GET https://apps.hhs.texas.gov/providers/directories/al.xlsx` (sheet `ALF_Directory`, title row then header, column `License No`). File checked 2026-11-27 was "as of 11/24/2026".
+
+The Sunday job does not call any of this. `ingest_tx` in `scripts/weekly_inspection_ingest.py` looks for a local `.firecrawl/tulip*` folder and exits 0 when the folder is missing. Do not point the workflow at the new backfill until Blake approves a schedule change.
+
+Backfill (dry-run unless `--apply`):
+
+```bash
+python3 scrapers/tx_inspections_backfill.py
+python3 scrapers/tx_inspections_backfill.py --apply
+```
 
 ## Regulator
 

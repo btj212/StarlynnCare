@@ -5,10 +5,10 @@ Texas HHSC LTCR — inspection / deficiency ingest (Phase 2).
 Loads inspection rows from JSON bundles (exported Aura/PIA data or hand-captured samples)
 and upserts into `inspections` + `deficiencies` for **Alzheimer-certified** TX ALFs only.
 
-TULIP (Salesforce Experience Cloud) is reCAPTCHA + client-side Aura; server-side curl does not
-reliably obtain search JSON. This script is the production path for **import-json** and
-idempotent replays. Optional HTTP fetch (`--tulip-base-url`) is a best-effort placeholder
-only — use import-json for real data until a browser-based capture pipeline exists.
+Live fetch is `scrapers/tx_inspections_backfill.py` (dry-run unless `--apply`).
+It calls the public TULIP guest Aura methods and matches `LIcense_Number__c`
+to `facilities.license_number`. This script remains the import-json path for
+a bundle that is already on disk.
 
 Usage
 -----
@@ -203,14 +203,14 @@ def insert_inspection(
             INSERT INTO inspections (
                 facility_id, inspection_date, incident_date, inspection_type,
                 is_complaint, complaint_id,
-                total_deficiency_count,
-                source_url, source_agency, scrape_run_id,
+                total_deficiency_count, civil_money_penalty_total,
+                source_url, source_agency, source_event_id, scrape_run_id,
                 raw_data
             ) VALUES (
                 %s::uuid, %s, %s, %s,
                 %s, %s,
-                %s,
-                %s, %s, %s::uuid,
+                %s, %s,
+                %s, %s, %s, %s::uuid,
                 %s
             )
             RETURNING id::text
@@ -223,8 +223,10 @@ def insert_inspection(
                 bool(payload.get("is_complaint")),
                 payload.get("complaint_id"),
                 int(payload.get("total_deficiency_count") or 0),
+                payload.get("civil_money_penalty_total"),
                 payload["source_url"],
                 SOURCE_AGENCY,
+                payload.get("source_event_id"),
                 scrape_run_id,
                 psycopg.types.json.Jsonb(raw),
             ),

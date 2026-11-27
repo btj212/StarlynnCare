@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — Texas inspections never ran because the weekly job does not fetch, and the old TULIP account id is dead
+
+**What went wrong:** 546 of 547 Texas memory-care homes have no inspection row. The only rows are the May 2026 smoke capture for license 148715 (exit 2020-02-07 and a synthesized 2023-02-16). `scripts/weekly_inspection_ingest.py` `ingest_tx` looks for a local `.firecrawl/tulip*` directory and returns success when it is missing, so Sunday never called HHSC. The stored source URL uses Account Id `001cv00000RpEjOAAV`. That id now returns an empty general-info payload and `visitType: noData`. The same license's current Account Id is `001cv00000Rs8SAAAZ`. `alf-violations-data.pdf` is a 3-page statewide total, not a facility file. data.texas.gov HHSC CCL is child care.
+
+**What worked instead:** Guest Aura (`aura.token=null`) on `https://tulip.hhs.texas.gov/TULIP/s/sfsites/aura`. `RS_LTCProviderController.searchAccounts` by `licenseNumber` with `programType=Assisted Living Facilities`. Parse `LIcense_Number__c`. `retrieveInspectionsInfo` for the survey date. `retrieveRSEventForEnfAction` for the penalty citations (date, rule, narrative). Read `fwuid` from the search page each run.
+
+**Source:** `scrapers/tx_tulip_public.py`, `scrapers/fixtures/tx_tulip_public_sample.json`, project `fwvrupjgwvvzqiutwwdg` read-only SQL.
+
+---
+
 ## 2026-11-27 — Arizona city cards were a partial count
 
 **What went wrong:** `loadStateHubData` and the fallback state page selected publishable city rows with no `.order()` and no `.range()`. PostgREST stops at 1,000 rows. Arizona has 1,923 publishable homes, so Mesa's card showed 150. The city page itself said 145, which was the old listed set (169 publishable, minus 24 homes of 10 beds or fewer with no citations). An id-ordered first 1,000 contains 101 Mesa rows, so the number moved depending on which 1,000 came back.
