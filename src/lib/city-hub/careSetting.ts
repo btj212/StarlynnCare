@@ -161,14 +161,23 @@ export function showsMemoryCareLabel(basis: MemoryCareBasis): boolean {
 export function listCareChip(input: {
   stateCode: string;
   basis: MemoryCareBasis;
+  wa_memory_care_certified?: boolean | null;
+  wa_dementia_care_contract?: boolean | null;
+  wa_dementia_specialty?: boolean | null;
 }): string | null {
   const code = input.stateCode.toUpperCase();
-  if (input.basis.kind === "memory-care") {
-    if (code === "WA") {
-      return /specialty/i.test(input.basis.label)
-        ? "Dementia specialty"
-        : "Dementia care contract";
+  if (code === "WA") {
+    const parts: string[] = [];
+    if (input.wa_memory_care_certified === true) parts.push("Memory Care Certified");
+    if (input.wa_dementia_specialty === true) {
+      parts.push("Dementia specialty");
     }
+    if (input.wa_dementia_care_contract === true) {
+      parts.push("Specialized Dementia Care contract");
+    }
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }
+  if (input.basis.kind === "memory-care") {
     if (code === "PA") return "Special care";
     if (code === "AZ") return "Directed Care";
     return "Memory care";

@@ -87,6 +87,43 @@ const KANSAS_CITY_ZIPS: NeighborhoodZip[] = [
   { zip: "64158", name: "Shoal Creek / Liberty edge (Clay)" },
 ];
 
+const VANCOUVER_ZIPS: NeighborhoodZip[] = [
+  { zip: "98660", name: "Downtown / Waterfront" },
+  { zip: "98662", name: "Vancouver Mall area" },
+  { zip: "98663", name: "central Vancouver" },
+  { zip: "98682", name: "east Vancouver / Orchards side" },
+  { zip: "98683", name: "Cascade Park / Fisher's Landing" },
+  { zip: "98684", name: "east Vancouver" },
+];
+
+const DENVER_ZIPS: NeighborhoodZip[] = [
+  { zip: "80202", name: "Downtown / LoDo / Riverfront" },
+  { zip: "80238", name: "Central Park" },
+  { zip: "80246", name: "Cherry Creek / Glendale area" },
+  { zip: "80222", name: "southeast Denver" },
+  { zip: "80224", name: "southeast Denver" },
+  { zip: "80247", name: "southeast Denver" },
+];
+
+const COLORADO_SPRINGS_ZIPS: NeighborhoodZip[] = [
+  { zip: "80904", name: "westside" },
+  { zip: "80909", name: "central-east" },
+  { zip: "80918", name: "University Park" },
+  { zip: "80922", name: "northeast / Stetson Hills" },
+];
+
+const CHICAGO_ZIPS: NeighborhoodZip[] = [
+  { zip: "60611", name: "Streeterville / Gold Coast" },
+  { zip: "60614", name: "Lincoln Park" },
+  { zip: "60617", name: "South Chicago / South Shore" },
+  { zip: "60631", name: "Norwood Park" },
+  { zip: "60637", name: "Hyde Park" },
+  { zip: "60640", name: "Uptown / Edgewater" },
+  { zip: "60641", name: "Portage Park / Irving Park" },
+  { zip: "60655", name: "Mount Greenwood" },
+  { zip: "60657", name: "Lakeview" },
+];
+
 const AREAS: Record<string, AreasServed> = {
   "CA:san-diego": {
     heading: "Areas of San Diego on this page",
@@ -111,6 +148,30 @@ const AREAS: Record<string, AreasServed> = {
     intro:
       "Most Portland mailing addresses are in Multnomah County. A ZIP on the west side can be a Washington County mailing address even when the city line says Portland; we do not overwrite county from this page.",
     neighborhoods: PORTLAND_ZIPS,
+  },
+  "WA:vancouver": {
+    heading: "Areas of Vancouver on this page",
+    intro:
+      "Neighborhood names are the USPS ZIP of the licensed address for homes inside Vancouver city limits. Labels are general. Homes with a Vancouver mailing address in unincorporated Clark County are listed in their own section.",
+    neighborhoods: VANCOUVER_ZIPS,
+  },
+  "CO:denver": {
+    heading: "Areas of Denver on this page",
+    intro:
+      "These are the licensed ZIPs of the Denver homes on this page. Downtown / LoDo / Riverfront is 80202. Southeast Denver is 80222, 80224, and 80247.",
+    neighborhoods: DENVER_ZIPS,
+  },
+  "CO:colorado-springs": {
+    heading: "Areas of Colorado Springs on this page",
+    intro:
+      "Colorado Springs is in El Paso County. These are the licensed ZIPs of the homes on this page.",
+    neighborhoods: COLORADO_SPRINGS_ZIPS,
+  },
+  "IL:chicago": {
+    heading: "Areas of Chicago on this page",
+    intro:
+      "Chicago is in Cook County. These are the licensed ZIPs of the homes on this page. IDPH does not publish a bed count for these rows.",
+    neighborhoods: CHICAGO_ZIPS,
   },
 };
 
@@ -164,6 +225,48 @@ const NEARBY: Record<string, NearbyHubSpec[]> = {
     { slug: "kearney", name: "Kearney" },
     { slug: "belton", name: "Belton" },
     { slug: "raytown", name: "Raytown" },
+  ],
+  "WA:vancouver": [
+    { slug: "orchards", name: "Orchards" },
+    { slug: "mount-vista", name: "Mount Vista" },
+    { slug: "five-corners", name: "Five Corners" },
+    { slug: "battle-ground", name: "Battle Ground" },
+    { slug: "salmon-creek", name: "Salmon Creek" },
+    { slug: "hazel-dell", name: "Hazel Dell" },
+    { slug: "camas", name: "Camas" },
+    { slug: "washougal", name: "Washougal" },
+  ],
+  "CO:denver": [
+    { slug: "aurora", name: "Aurora" },
+    { slug: "lakewood", name: "Lakewood" },
+    { slug: "thornton", name: "Thornton" },
+    { slug: "broomfield", name: "Broomfield" },
+    { slug: "centennial", name: "Centennial" },
+    { slug: "littleton", name: "Littleton" },
+    { slug: "arvada", name: "Arvada" },
+    { slug: "westminster", name: "Westminster" },
+    { slug: "northglenn", name: "Northglenn" },
+    { slug: "wheat-ridge", name: "Wheat Ridge" },
+    { slug: "greenwood-village", name: "Greenwood Village" },
+    { slug: "golden", name: "Golden" },
+  ],
+  "CO:colorado-springs": [
+    { slug: "denver", name: "Denver" },
+    { slug: "aurora", name: "Aurora" },
+    { slug: "pueblo", name: "Pueblo" },
+  ],
+  "IL:chicago": [
+    { slug: "evanston", name: "Evanston" },
+    { slug: "park-ridge", name: "Park Ridge" },
+    { slug: "elmhurst", name: "Elmhurst" },
+    { slug: "naperville", name: "Naperville" },
+    { slug: "orland-park", name: "Orland Park" },
+    { slug: "oak-park", name: "Oak Park" },
+    { slug: "niles", name: "Niles" },
+    { slug: "morton-grove", name: "Morton Grove" },
+    { slug: "oak-lawn", name: "Oak Lawn" },
+    { slug: "wilmette", name: "Wilmette" },
+    { slug: "glenview", name: "Glenview" },
   ],
   "OR:portland": [
     { slug: "beaverton", name: "Beaverton" },
@@ -219,5 +322,7 @@ export function displayCountyCrumb(
 ): { name: string; href: string | null } | null {
   const k = key(stateCode, citySlug);
   if (k === "MO:kansas-city") return { name: "Jackson County", href: null };
+  if (k === "CO:colorado-springs") return { name: "El Paso County", href: null };
+  if (k === "IL:chicago") return { name: "Cook County", href: null };
   return null;
 }

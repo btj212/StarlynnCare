@@ -7,7 +7,8 @@ import type { CareCategory } from "@/lib/types";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityDisplayName, nameMatchesQuery } from "@/lib/facility/aliases";
-import { listLicenseLabel, listSectionDeck, listSectionTitle } from "@/lib/city-hub/licenseLabel";
+import { listLicenseLabel, listSectionDeck, listSectionTitle, hubSizeGroup } from "@/lib/city-hub/licenseLabel";
+import { cardCitationLines } from "@/lib/city-hub/cardCitation";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -59,6 +60,7 @@ export type ListFacility = {
   mce_endorsed?: boolean | null;
   wa_memory_care_certified?: boolean | null;
   wa_dementia_specialty?: boolean | null;
+  wa_contract_types?: string[] | null;
   il_dementia_program_flag?: boolean | null;
   mo_alzheimer_scu?: boolean | null;
 };
@@ -91,45 +93,39 @@ function gradientFor(name: string): [string, string] {
 // Trust signal
 // ─────────────────────────────────────────────────────────────────────────────
 
-type TrustSignal =
-  | { type: "no_data" }
-  | { type: "clean"; inspections: number }
-  | { type: "serious"; count: number }
-  | { type: "minor"; count: number };
-
-function trustSignal(f: ListFacility): TrustSignal {
-  if (f.inspections === 0) return { type: "no_data" };
-  if (f.serious_citations > 0) return { type: "serious", count: f.serious_citations };
-  if (f.total_citations > 0) return { type: "minor", count: f.total_citations };
-  return { type: "clean", inspections: f.inspections };
-}
-
-function TrustBadge({ signal }: { signal: TrustSignal }) {
-  if (signal.type === "no_data")
+function TrustBadge({ f }: { f: ListFacility }) {
+  const lines = cardCitationLines(f);
+  if (f.inspections === 0) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted">
         <span className="h-1.5 w-1.5 rounded-full bg-muted/50 shrink-0" />
-        No inspections on file yet
+        {lines.primary}
       </span>
     );
-  if (signal.type === "clean")
+  }
+  if (f.total_citations <= 0) {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#4a7a50]">
         <span className="h-1.5 w-1.5 rounded-full bg-[#6b8f71] shrink-0" />
-        No citations on file (all years)
+        {lines.primary}
       </span>
     );
-  if (signal.type === "serious")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 border border-red-200">
-        <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
-        {signal.count} serious citation{signal.count !== 1 ? "s" : ""} on file (all years)
-      </span>
-    );
+  }
+  const tone = lines.seriousBadge
+    ? "rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 border border-amber-200"
+    : "rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200";
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200">
-      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-      {signal.count} citation{signal.count !== 1 ? "s" : ""} on file (all years)
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <span className={`inline-flex items-center gap-1 ${tone}`}>
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+        {lines.primary}
+      </span>
+      {lines.seriousBadge ? (
+        <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+          {lines.seriousBadge}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -141,7 +137,7 @@ function TrustBadge({ signal }: { signal: TrustSignal }) {
 function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) {
   const href = `/${stateSlug}/${f.city_slug}/${f.slug}`;
   const displayName = facilityDisplayName(f);
-  const signal = trustSignal(f);
+  const lines = cardCitationLines(f);
   const [g1, g2] = gradientFor(displayName);
   const typeLabel =
     f.licenseLabel ??
@@ -197,7 +193,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
   return (
     <div
       className="group relative flex flex-col overflow-hidden rounded-[18px] border border-clearing-rule-2 bg-clearing-card shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)]"
-      style={signal.type === "serious" ? { borderColor: "#f5c6c6" } : undefined}
+      style={lines.seriousBadge ? { borderColor: "#f5c6c6" } : undefined}
     >
       {/* Photo / gradient */}
       <Link href={href} className="block shrink-0 h-32 relative overflow-hidden">
@@ -217,9 +213,9 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
             }}
           />
         )}
-        {signal.type === "serious" && (
+        {lines.seriousBadge && (
           <span className="absolute top-2 left-2 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold bg-red-600/90 text-white shadow-sm backdrop-blur-sm">
-            {signal.count} serious
+            {lines.seriousBadge}
           </span>
         )}
       </Link>
@@ -243,7 +239,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
         )}
 
         {/* Tier 2: trust signal */}
-        <TrustBadge signal={signal} />
+        <TrustBadge f={f} />
 
         {/* Tier 3: metadata */}
         <p className="mt-auto pt-1 text-[11px] leading-relaxed text-muted">
@@ -333,7 +329,7 @@ export function FacilityListClient({
       if (f.capacity_tier === "small" && !showSmall) return false;
       // Chip filters
       if (chip === "large") return f.capacity_tier === "large";
-      if (chip === "medium") return f.capacity_tier === "medium" || f.capacity_tier === "unknown";
+      if (chip === "medium") return hubSizeGroup(f) === "medium";
       if (chip === "has_citations") return f.total_citations > 0;
       if (chip === "no_citations") return f.total_citations === 0 && f.inspections > 0;
       if (chip === "small") return f.capacity_tier === "small";
@@ -358,15 +354,16 @@ export function FacilityListClient({
   const isFiltered = query.trim() !== "" || chip !== "all";
 
   // Groups for default sectioned view
+  const isMemoryCareCard = (f: ListFacility) =>
+    f.memory_care_disclosure_filed || f.serves_memory_care;
   const mcLarge = filtered.filter(
-    (f) =>
-      (f.memory_care_disclosure_filed || f.serves_memory_care) &&
-      f.capacity_tier === "large",
+    (f) => isMemoryCareCard(f) && hubSizeGroup(f) === "large",
   );
   const mcMedium = filtered.filter(
-    (f) =>
-      (f.memory_care_disclosure_filed || f.serves_memory_care) &&
-      (f.capacity_tier === "medium" || f.capacity_tier === "unknown"),
+    (f) => isMemoryCareCard(f) && hubSizeGroup(f) === "medium",
+  );
+  const mcUnspecified = filtered.filter(
+    (f) => isMemoryCareCard(f) && hubSizeGroup(f) === "unspecified",
   );
   const nonMc = filtered.filter(
     (f) =>
@@ -518,6 +515,23 @@ export function FacilityListClient({
               </p>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {mcMedium.map((f) => (
+                  <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {mcUnspecified.length > 0 && (
+            <section className="mt-12">
+              <SectionHead
+                title={listSectionTitle(stateSlug, "unspecified")}
+                count={mcUnspecified.length}
+              />
+              <p className="mt-1.5 text-xs text-muted">
+                {listSectionDeck(stateSlug, "unspecified")}
+              </p>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {mcUnspecified.map((f) => (
                   <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
                 ))}
               </div>

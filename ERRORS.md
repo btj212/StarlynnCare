@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — City hub "higher-severity" counted every citation; cards hid the total
+
+**What went wrong:** The Findings sentence and the serious-deficiency FAQ used `total_citations > 0`, so Denver said 5 of 6 higher-severity when only Springbrooke and Sunrise at Cherry Creek have a Level C, D, or E. Cards replaced the all-years total with "1 serious citation on file" (Sunrise at Cherry Creek: card 1, A-Z 6). The Ivy Mountain View and Highpointe do not have a Level C/D/E row; their deficiencies are unclassified, and the live "1" next to Ivy was the latest visit's finding count, not a serious badge. Washington printed "Dementia care contract" for every Memory Care Certified ALF. Vancouver's "leaving out" counted every `capacity_tier = small` row (23), including two 8-bed homes and the small homes that are actually rendered; 18 published rows are the ones not rendered. Chicago's 12 rows have `beds` null and were grouped as 7–49. Chicago and Denver printed "0 serious" or a serious 12-month stat while most last-36-month rows have no class, severity, or raw label (Chicago 36 of 37, Denver 36 of 51). Colorado Springs' Findings footnote says 2026-10-31 and Denver's says 2026-11-26 because the stamp is `max(newest listed inspection, facilities.updated_at)`: Springs inspections top out 2026-04-22 and the newest `updated_at` is 2026-10-31; Denver's newest `updated_at` is 2026-11-26. That is the same code path, not a stale render.
+
+**What worked instead:** `isSeriousCityFinding` requires a real grade (CO C/D/E, IL Type 1). `stateHasSeverityInData` is false when more than half of the listed last-36-month deficiencies are blank. Cards use `cardCitationLines` so the total always shows. The Washington chip reads the two flags separately. `omittedUnrenderedSmallHomes` counts unpublished-from-the-list small rows. `hubSizeGroup` puts null beds in "Homes, size not on file". Do not change the findings date formula.
+
+**Source:** City hubs batch 3, live pages and read-only SQL on 2026-11-27.
+
+---
+
 ## 2026-11 — --refetch generated summaries and wrote none; intro date lagged the PDF month
 
 **What went wrong:** The ID-gated refetch job summarized 99 inspections and saved 0. SELECT dropped the `narrative_summary IS NULL` filter under `--refetch`, but UPDATE still required `WHERE id=%s AND narrative_summary IS NULL`. Claude also said "no deficiencies" / "does not specify whether deficiencies were cited" for visits whose source cites WAC 388-78A-2120, 24701, 2600 (Fields 2669, Avamere 2460). WA profile intro used `inspections[0]` ("Last inspected Sep 2024") while the header used `wa_latest_posted_report` ("Last inspection Jun 2026").

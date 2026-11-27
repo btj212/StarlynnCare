@@ -98,3 +98,54 @@ export function waOverridePageSlugs(): string[] {
 export function waOverrideOrFilter(): string {
   return "city_slug.eq.fairwood";
 }
+
+/**
+ * Census places whose DSHS mailing city is Vancouver but whose city_slug is
+ * not vancouver. Display-only on /washington/vancouver. Not part of the
+ * Vancouver listed set.
+ */
+export const VANCOUVER_AREA_CITY_SLUGS = [
+  "five-corners",
+  "hazel-dell",
+  "mount-vista",
+  "orchards",
+  "salmon-creek",
+] as const;
+
+export function isVancouverAreaMemoryCareRow(row: {
+  city_slug: string | null | undefined;
+  wa_memory_care_certified?: boolean | null;
+}): boolean {
+  const slug = (row.city_slug ?? "").toLowerCase();
+  return (
+    row.wa_memory_care_certified === true &&
+    (VANCOUVER_AREA_CITY_SLUGS as readonly string[]).includes(slug)
+  );
+}
+
+/** Contract line for the Vancouver Medicaid section. Empty means no contract on file. */
+export function medicaidContractLabel(row: {
+  wa_contract_types?: string[] | null;
+  wa_dementia_care_contract?: boolean | null;
+  wa_earc_sdc_contracted?: boolean | null;
+}): string {
+  const types = (row.wa_contract_types ?? [])
+    .map((type) => type.trim())
+    .filter((type) => type.length > 0 && !/^no contract/i.test(type));
+  if (types.length > 0) return types.join(", ");
+  if (row.wa_dementia_care_contract === true) return "Specialized Dementia Care";
+  if (row.wa_earc_sdc_contracted === true) return "Enhanced Adult Residential Care";
+  return "No Medicaid contract on file";
+}
+
+/** Listed assisted living facilities DSHS marks Memory Care Certified. Adult family homes are not in this count. */
+export function isMemoryCareCertifiedAlf(row: {
+  wa_memory_care_certified?: boolean | null;
+  beds: number | null;
+  license_type?: string | null;
+}): boolean {
+  if (row.wa_memory_care_certified !== true) return false;
+  const license = (row.license_type ?? "").toUpperCase();
+  if (license === "BH" || license.includes("ASSISTED")) return true;
+  return row.beds != null && row.beds > 6;
+}

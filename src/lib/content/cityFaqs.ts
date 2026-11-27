@@ -1,11 +1,23 @@
 import type { Region } from "@/lib/regions";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { formatCostRange } from "@/lib/content/stateCostBands";
+import { formatCostRange, getStateCostBand } from "@/lib/content/stateCostBands";
+import { severityFloorSentence } from "@/lib/city-hub/findings";
 
 export interface CityFaqInputs {
   totalCount: number;
-  /** Facilities with at least one serious finding in indexed data */
+  /**
+   * Homes with at least one citation on file. Used for states whose FAQ asks
+   * about any citation (Oregon, Minnesota, Missouri).
+   */
   facilitiesWithDeficiency: number;
+  /**
+   * Homes with a finding isSeriousCityFinding classifies as serious.
+   * The "serious deficiency" FAQ uses this, not the any-citation count.
+   */
+  homesWithSerious?: number;
+  /** Most citations in the window have no class or severity. */
+  severityFloor?: boolean;
+  regulatorAbbr?: string;
 }
 
 export interface FaqPair {
@@ -56,10 +68,11 @@ function getStateStrings(stateCode: string): StateStrings {
 
   if (code === "WA") {
     return {
-      costRange: (city, isCounty) =>
-        isCounty
-          ? `Memory care across ${city} typically runs ${formatCostRange("WA", "county")} for an ALF holding a Washington DSHS Specialized Dementia Care contract. Rates vary by region, room type, and level-of-care tier.`
-          : `Memory care in ${city} typically runs ${formatCostRange("WA", "city")} for an ALF with a Washington DSHS Specialized Dementia Care contract. Full monthly costs often exceed the advertised base rate by $500–$2,000 depending on care level.`,
+      costRange: (city, isCounty) => {
+        const range = formatCostRange("WA", isCounty ? "county" : "city");
+        const source = getStateCostBand("WA").source;
+        return `A regional benchmark, not a DSHS figure, for memory care ${isCounty ? `across ${city}` : `in ${city}`} is ${range} (${source}). The price you hear on a tour is the home's own quote.`;
+      },
       licenseQ: `What makes a facility "memory care" in Washington?`,
       licenseA: `Washington DSHS licenses assisted living facilities and adult family homes. A <strong>Specialized Dementia Care contract</strong> is a separate DSHS contract — not the default license — requiring dementia-specific staff training and enhanced supervision. Only homes with that contract (or a Memory Care Certified designation when DSHS publishes it) are labeled memory care on StarlynnCare. Most listed Washington homes do not hold the contract.`,
       facilityVsNursingQ: `What's the difference between an ALF and a nursing home in Washington?`,
@@ -128,10 +141,11 @@ function getStateStrings(stateCode: string): StateStrings {
 
   if (code === "IL") {
     return {
-      costRange: (city, isCounty) =>
-        isCounty
-          ? `Memory care across ${city} typically runs ${formatCostRange("IL", "county")} for an IDPH-licensed Assisted Living Establishment with a confirmed dementia or memory care focus. Rates vary by room type and care level.`
-          : `Memory care in ${city} typically runs ${formatCostRange("IL", "city")} for an IDPH-regulated ALE or Shared Housing Establishment with dementia-specific programming.`,
+      costRange: (city, isCounty) => {
+        const range = formatCostRange("IL", isCounty ? "county" : "city");
+        const source = getStateCostBand("IL").source;
+        return `A regional benchmark, not an IDPH figure, for memory care ${isCounty ? `across ${city}` : `in ${city}`} is ${range} (${source}). The price you hear on a tour is the home's own quote.`;
+      },
       licenseQ: `What makes a facility "memory care" in Illinois?`,
       licenseA: `Illinois regulates Assisted Living Establishments (ALEs) and Shared Housing Establishments (SHEs) under IDPH 77 Ill. Adm. Code Part 295. StarlynnCare indexes only facilities with a confirmed memory care or dementia focus — identified by name keywords or a portal-confirmed dementia special-care unit. License type and violation history appear on every StarlynnCare profile.`,
       facilityVsNursingQ: `What's the difference between an ALE and a nursing home in Illinois?`,
@@ -245,7 +259,16 @@ function getStateStrings(stateCode: string): StateStrings {
  */
 export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] {
   const { totalCount, facilitiesWithDeficiency } = inputs;
-  const severePct = pct(facilitiesWithDeficiency, totalCount);
+  const asksSerious =
+    region.state.code !== "OR" && region.state.code !== "MN" && region.state.code !== "MO";
+  const seriousCount = asksSerious
+    ? (inputs.homesWithSerious ?? facilitiesWithDeficiency)
+    : facilitiesWithDeficiency;
+  const severePct = pct(seriousCount, totalCount);
+  const floor =
+    asksSerious && inputs.severityFloor && inputs.regulatorAbbr
+      ? ` ${severityFloorSentence(inputs.regulatorAbbr)}`
+      : "";
   const cityName = region.name;
   const isCounty = region.kind === "county";
   const stateCode = region.state.code;
@@ -286,7 +309,7 @@ export function buildCityFaqs(region: Region, inputs: CityFaqInputs): FaqPair[] 
       a:
         totalCount === 0
           ? `StarlynnCare has not yet indexed publishable facilities for ${cityName}.`
-          : `Of the ${totalCount} ${s.indexedNoun} listed in ${cityName}, ${facilitiesWithDeficiency} (${severePct}%) carry a documented ${s.deficiencyLabel} in the indexed inspection record. Specific findings appear on each profile with inspection date and source link. StarlynnCare sources all deficiency data directly from state regulator records — no facility-side surveys or paid submissions are used. See the <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">methodology</a> for how deficiency classes are mapped across states.`,
+          : `Of the ${totalCount} ${s.indexedNoun} listed in ${cityName}, ${seriousCount} (${severePct}%) carry a documented ${s.deficiencyLabel} in the indexed inspection record.${floor} Specific findings appear on each profile with inspection date and source link. StarlynnCare sources all deficiency data directly from state regulator records — no facility-side surveys or paid submissions are used. See the <a href="${canonicalFor("/methodology")}" class="text-teal underline underline-offset-4">methodology</a> for how deficiency classes are mapped across states.`,
     },
     {
       q: `How does StarlynnCare rank memory care facilities in ${cityName}?`,

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import "./test_city_hub_batch3.ts";
 import { formatFacilityName } from "../src/lib/facility/displayName.ts";
 import { dedupeHomesByDisplayName } from "../src/lib/city-hub/dedupe.ts";
 import {

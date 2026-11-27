@@ -39,13 +39,24 @@ import {
   cityHubMetaDescription,
   cityHubTitle,
 } from "@/lib/city-hub/copy";
-import { computeCityHubGlance, recentSeriousHomes } from "@/lib/city-hub/stats";
+import {
+  computeCityHubGlance,
+  countHomesWithSeriousFinding,
+  isSeriousCityFinding,
+  latestLevelEFinding,
+  monthsAgoIso,
+  recentSeriousHomes,
+  windowCitationLead,
+} from "@/lib/city-hub/stats";
 import { dedupeHomesByDisplayName } from "@/lib/city-hub/dedupe";
 import {
   belongsOnCityPage,
   displayMunicipality,
+  isMemoryCareCertifiedAlf,
+  isVancouverAreaMemoryCareRow,
   paOverrideOrFilter,
   paOverridePageSlugs,
+  VANCOUVER_AREA_CITY_SLUGS,
   waOverrideOrFilter,
   waOverridePageSlugs,
 } from "@/lib/city-hub/municipality";
@@ -54,14 +65,15 @@ import { CityDirectAnswer } from "@/components/city-hub/CityDirectAnswer";
 import { CityRelatedGuides } from "@/components/city-hub/CityRelatedGuides";
 import { CityLocalHelp } from "@/components/city-hub/CityLocalHelp";
 import { CityAreasServed } from "@/components/city-hub/CityAreasServed";
-import { findingsCopy } from "@/lib/city-hub/findings";
+import { CityAreaHomes, type AreaHomeLink } from "@/components/city-hub/CityAreaHomes";
+import { CityMedicaidContracts, type MedicaidHome } from "@/components/city-hub/CityMedicaidContracts";
+import { cityFindingsLead, findingsCopy } from "@/lib/city-hub/findings";
 import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
 import { areasServedFor, displayCountyCrumb, nearbyHubsFor } from "@/lib/city-hub/areas";
-import { isSeriousCityFinding } from "@/lib/city-hub/stats";
 import { RecentSeriousCitations } from "@/components/city-hub/RecentSeriousCitations";
 import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
-import { homesForCityIndex, rankHubFacilities } from "@/lib/facility/hubPreview";
+import { homesForCityIndex, omittedUnrenderedSmallHomes, rankHubFacilities } from "@/lib/facility/hubPreview";
 import { contentAliasFields } from "@/lib/facility/aliases";
 import { CityHomeIndex } from "@/components/facility/CityHomeIndex";
 import {
@@ -204,7 +216,14 @@ export default async function RegionPage({ params }: PageProps) {
   // Newest cited visit per home, for the "Recent reports" block on city pages.
   let recentReports: RecentReport[] = [];
   const allInspData: Array<{ id: string; facility_id: string; inspection_date: string }> = [];
-  const allDefs: Array<{ inspection_id: string; class: string | null; severity: number | null }> = [];
+  const allDefs: Array<{
+    inspection_id: string;
+    class: string | null;
+    severity: number | null;
+    state_severity_raw: string | null;
+  }> = [];
+  let areaHomes: AreaHomeLink[] = [];
+  let medicaidHomes: MedicaidHome[] = [];
 
   if (!supabase) {
     fetchError = "Supabase is not configured.";
@@ -322,7 +341,7 @@ export default async function RegionPage({ params }: PageProps) {
           const chunk = inspIds.slice(ci, ci + DEF_CHUNK);
           const { data: chunkData, error: chunkErr } = await supabase
             .from("deficiencies")
-            .select("inspection_id, class, severity")
+            .select("inspection_id, class, severity, state_severity_raw")
             .in("inspection_id", chunk)
             .limit(5000);
           if (chunkErr) {
@@ -418,7 +437,13 @@ export default async function RegionPage({ params }: PageProps) {
             total_citations: totalCitByFac.get(f.id) ?? 0,
             serious_citations: seriousCitByFac.get(f.id) ?? 0,
             limitedHistory: (recentInspCountByFac.get(f.id) ?? 0) < 4,
-            careChip: listCareChip({ stateCode: region.state.code, basis }),
+            careChip: listCareChip({
+              stateCode: region.state.code,
+              basis,
+              wa_memory_care_certified: f.wa_memory_care_certified,
+              wa_dementia_care_contract: f.wa_dementia_care_contract,
+              wa_dementia_specialty: f.wa_dementia_specialty,
+            }),
             licenseLabel: listLicenseLabel({
               stateCode: region.state.code,
               care_category: f.care_category as CareCategory,
@@ -429,8 +454,10 @@ export default async function RegionPage({ params }: PageProps) {
             license_type: f.license_type,
             mo_level_of_care: f.mo_level_of_care,
             mn_dementia_care_licensed: f.mn_dementia_care_licensed,
+            wa_memory_care_certified: f.wa_memory_care_certified,
             wa_dementia_care_contract: f.wa_dementia_care_contract,
             wa_earc_sdc_contracted: f.wa_earc_sdc_contracted,
+            wa_contract_types: f.wa_contract_types,
             az_mc_subclass: f.az_mc_subclass,
             az_license_level: f.az_license_level,
             az_memory_care_endorsed: f.az_memory_care_endorsed,
@@ -456,7 +483,53 @@ export default async function RegionPage({ params }: PageProps) {
     hubStats = (hubStatsRows as RegionHubStats[] | null)?.[0] ?? null;
   }
 
-  const smallCount = facilities.filter((f) => f.capacity_tier === "small").length;
+  if (
+    supabase &&
+    !isCounty &&
+    region.state.code === "WA" &&
+    region.slug === "vancouver"
+  ) {
+    const { data: areaRows } = await supabase
+      .from("facilities")
+      .select(
+        "id, name, slug, city_slug, beds, license_type, wa_memory_care_certified, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_contract_types",
+      )
+      .eq("state_code", "WA")
+      .eq("publishable", true)
+      .eq("wa_memory_care_certified", true)
+      .in("city_slug", [...VANCOUVER_AREA_CITY_SLUGS])
+      .order("name", { ascending: true });
+    const area = ((areaRows ?? []) as MedicaidHome[]).filter((row) =>
+      isVancouverAreaMemoryCareRow(row),
+    );
+    areaHomes = area.map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      city_slug: row.city_slug,
+    }));
+    const cityAlfs: MedicaidHome[] = facilities
+      .filter((home) =>
+        isMemoryCareCertifiedAlf({
+          wa_memory_care_certified: home.wa_memory_care_certified,
+          beds: home.beds,
+          license_type: home.license_type,
+        }),
+      )
+      .map((home) => ({
+        id: home.id,
+        name: home.name,
+        slug: home.slug,
+        city_slug: home.city_slug,
+        wa_contract_types: home.wa_contract_types,
+        wa_dementia_care_contract: home.wa_dementia_care_contract,
+        wa_earc_sdc_contracted: home.wa_earc_sdc_contracted,
+      }));
+    medicaidHomes = [...cityAlfs, ...area].sort((a, b) =>
+      formatFacilityName(a.name).localeCompare(formatFacilityName(b.name)),
+    );
+  }
+
   const totalCount = facilities.length;
   const indexedHomes = homesForCityIndex(facilities, region.state.code);
   const listedHomes =
@@ -481,6 +554,19 @@ export default async function RegionPage({ params }: PageProps) {
     !isCounty && !fetchError && region.state.code !== "CO"
       ? cityMemoryCareBand(await loadFacilityCosts(facilities.map((f) => f.id)))
       : null;
+  const lead12 = windowCitationLead(listedHomes, allInspData, allDefs, monthsAgoIso(12));
+  const lead36 = windowCitationLead(listedHomes, allInspData, allDefs, monthsAgoIso(36));
+  const levelE = latestLevelEFinding(listedHomes, allInspData, allDefs);
+  const cityMemoryCareCertified = listedHomes.filter((home) =>
+    isMemoryCareCertifiedAlf({
+      wa_memory_care_certified: home.wa_memory_care_certified,
+      beds: home.beds,
+      license_type: home.license_type,
+    }),
+  ).length;
+  const sdcAcrossLists = medicaidHomes.filter(
+    (home) => home.wa_dementia_care_contract === true,
+  ).length;
   const answer = !isCounty
     ? cityDirectAnswer({
         region,
@@ -493,6 +579,28 @@ export default async function RegionPage({ params }: PageProps) {
               homes: cityCostEarly.homes,
             }
           : null,
+        facts: {
+          cityMemoryCareCertified,
+          areaMemoryCareCount: areaHomes.length,
+          sdcAcrossLists,
+          halfVisit:
+            lead12.homeName && lead12.visitDate
+              ? {
+                  name: lead12.homeName,
+                  count: lead12.visitCount,
+                  dateIso: lead12.visitDate,
+                  windowTotal: lead12.windowTotal,
+                }
+              : null,
+          thirdHome: lead36.homeName
+            ? {
+                name: lead36.homeName,
+                count: lead36.homeCount,
+                windowTotal: lead36.windowTotal,
+              }
+            : null,
+          levelE: levelE ? { name: levelE.name, dateIso: levelE.date } : null,
+        },
       })
     : null;
 
@@ -617,8 +725,12 @@ export default async function RegionPage({ params }: PageProps) {
     : "CDSS";
 
   // States where we have row-level deficiency data (deficiencies table populated).
-  const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA", "AZ", "MO", "CO"]);
+  const HAS_DEFICIENCY_TABLE = new Set(["CA", "WA", "OR", "MN", "PA", "AZ", "MO", "CO", "IL"]);
   const hubRank = rankHubFacilities(listedHomes);
+  const omittedSmall = omittedUnrenderedSmallHomes(
+    facilities,
+    new Set(listedHomes.map((home) => home.id)),
+  );
   const itemListFacilities = listedHomes.map((f) => ({
     name: f.name,
     url: canonicalFor(`/${region.state.slug}/${f.city_slug}/${f.slug}`),
@@ -634,10 +746,11 @@ export default async function RegionPage({ params }: PageProps) {
   }));
   // Any deficiency (Type A or Type B) — matches the "§ Findings" label.
   // serious_citations is retained on each facility for card-level red/amber badging.
-  const facilitiesWithSeriousDef = listedHomes.filter((f) => f.total_citations > 0).length;
+  const homesWithAnyCitation = listedHomes.filter((f) => f.total_citations > 0).length;
+  const homesWithSerious = countHomesWithSeriousFinding(listedHomes);
   const cityCost = cityCostEarly;
-  const severePct =
-    listedCount > 0 ? Math.round((facilitiesWithSeriousDef / listedCount) * 100) : 0;
+  const anyCitationPct =
+    listedCount > 0 ? Math.round((homesWithAnyCitation / listedCount) * 100) : 0;
 
   // Real ingest-derived "as of" date — the latest `facilities.updated_at` for this region's
   // publishable rows. Falls back to null if Supabase is unreachable so the footnote omits
@@ -687,7 +800,10 @@ export default async function RegionPage({ params }: PageProps) {
     ...cityFaqExtras({ region, glance }),
     ...buildCityFaqs(region, {
       totalCount: listedCount,
-      facilitiesWithDeficiency: facilitiesWithSeriousDef,
+      facilitiesWithDeficiency: homesWithAnyCitation,
+      homesWithSerious,
+      severityFloor: !glance.severityMeasured,
+      regulatorAbbr: reg,
     }),
   ];
 
@@ -744,11 +860,11 @@ export default async function RegionPage({ params }: PageProps) {
             src: "HHSC ALF directory",
           },
           {
-            n: String(facilitiesWithSeriousDef),
+            n: String(homesWithAnyCitation),
             label:
               "Facilities with at least one cited deficiency in the indexed LTCR inspection record on file",
             src: "HHSC LTCR",
-            delta: listedCount > 0 ? `${severePct}% of listed facilities` : undefined,
+            delta: listedCount > 0 ? `${anyCitationPct}% of listed facilities` : undefined,
           },
           ...(excludedCount > 0
             ? [
@@ -795,10 +911,10 @@ export default async function RegionPage({ params }: PageProps) {
           ...(HAS_DEFICIENCY_TABLE.has(region.state.code)
             ? [
                 {
-                  n: String(facilitiesWithSeriousDef),
+                  n: String(homesWithAnyCitation),
                   label: findingsVocab.anyFindingLabel,
                   src: stateDataSrc,
-                  delta: listedCount > 0 ? `${severePct}% of listed facilities` : undefined,
+                  delta: listedCount > 0 ? `${anyCitationPct}% of listed facilities` : undefined,
                 },
               ]
             : []),
@@ -881,6 +997,16 @@ export default async function RegionPage({ params }: PageProps) {
                 <CityDirectAnswer q={answer.q} a={answer.a} />
               </div>
             )}
+            {!isCounty && region.state.code === "CO" && region.slug === "colorado-springs" && (
+              <h2 className="mt-8 font-[family-name:var(--font-display)] text-[28px] leading-tight text-ink">
+                Dementia care in Colorado Springs
+              </h2>
+            )}
+            {!isCounty && region.state.code === "IL" && region.slug === "chicago" && (
+              <h2 className="mt-8 font-[family-name:var(--font-display)] text-[28px] leading-tight text-ink">
+                Alzheimer&apos;s care in Chicago
+              </h2>
+            )}
             {findingsDate && <UpdatedStamp isoDate={findingsDate} />}
 
             <nav
@@ -959,39 +1085,18 @@ export default async function RegionPage({ params }: PageProps) {
                       § Findings
                     </div>
                     <p className="font-[family-name:var(--font-display)] text-[22px] leading-[1.3] text-ink mb-4">
-                      {region.state.code === "TX" ? (
-                        <>
-                          Of the{" "}
-                          <strong className="font-normal text-rust">{listedCount}</strong>{" "}
-                          Alzheimer-certified facilities indexed in {region.name},{" "}
-                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                          ({severePct}%) have at least one cited deficiency in the inspection data on
-                          file. Texas ALF license Type A/B/C is a <em>capacity</em> class on the
-                          license — not the same as California&rsquo;s Type-A/Type-B{" "}
-                          <em>deficiency</em> labels.
-                        </>
-                      ) : region.state.code === "CO" ? (
-                        <>
-                          Of the{" "}
-                          <strong className="font-normal text-rust">{listedCount}</strong>{" "}
-                          memory care facilities indexed in {region.name},{" "}
-                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                          ({severePct}%) have at least one higher-severity finding on file.
-                          Assisted living findings use CDPHE Levels A–E. Nursing-home findings use CMS letters.
-                          Those scales are not combined into one rank.
-                        </>
-                      ) : (
-                        <>
-                          Of the{" "}
-                          <strong className="font-normal text-rust">{listedCount}</strong>{" "}
-                          {setting.hubNoun} indexed in {region.name},{" "}
-                          <strong className="font-normal text-rust">{facilitiesWithSeriousDef}</strong>{" "}
-                          ({severePct}%) have a {findingsVocab.findingPhrase} on file.
-                          {region.state.code === "MN" && glance.citationsLast12 === 0
-                            ? " None of those findings is dated in the last 12 months."
-                            : ""}
-                        </>
-                      )}
+                      {cityFindingsLead({
+                        stateCode: region.state.code,
+                        city: region.name,
+                        listedCount,
+                        anyCitationHomes: homesWithAnyCitation,
+                        seriousHomes: homesWithSerious,
+                        hubNoun: setting.hubNoun,
+                        findingPhrase: findingsVocab.findingPhrase,
+                        citationsLast12: glance.citationsLast12,
+                        severityIsFloor: !glance.severityMeasured,
+                        regulator: reg,
+                      })}
                     </p>
                     {findingsDate && (
                       <DataFootnote
@@ -1079,8 +1184,8 @@ export default async function RegionPage({ params }: PageProps) {
             />
             <aside className="mb-6 font-[family-name:var(--font-sans)] text-[13px] text-ink-3">
               This first set is the homes with the most inspection history
-              {smallCount > 0 && !hubRank.onlySmallHomes
-                ? `, leaving out ${smallCount} homes of 6 beds or fewer`
+              {omittedSmall > 0 && !hubRank.onlySmallHomes
+                ? `, leaving out ${omittedSmall} homes of 6 beds or fewer`
                 : ""}
               .{" "}
               <a
@@ -1241,6 +1346,13 @@ export default async function RegionPage({ params }: PageProps) {
         {/* ── Eligibility section (all regions, state-specific Medicaid/waiver content) ── */}
         {!fetchError && (
           <HubEligibility stateCode={region.state.code} regionName={region.name} />
+        )}
+
+        {!isCounty && !fetchError && areaHomes.length > 0 && (
+          <CityAreaHomes stateSlug={region.state.slug} homes={areaHomes} />
+        )}
+        {!isCounty && !fetchError && medicaidHomes.length > 0 && (
+          <CityMedicaidContracts stateSlug={region.state.slug} homes={medicaidHomes} />
         )}
 
         {!isCounty && !fetchError && (() => {

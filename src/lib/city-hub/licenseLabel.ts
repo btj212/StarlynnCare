@@ -71,7 +71,26 @@ export function listLicenseLabel(input: {
   return CATEGORY_SHORT[input.care_category] ?? "Care facility";
 }
 
-export function listSectionDeck(stateSlug: string, size: "large" | "medium"): string {
+export type HubSizeGroup = "large" | "medium" | "small" | "unspecified";
+
+/**
+ * Bed groups for the city card grid. A null bed count is not "7–49".
+ * Chicago's assisted living rows have no bed count in the IDPH file.
+ */
+export function hubSizeGroup(input: {
+  beds: number | null;
+  capacity_tier?: string | null;
+}): HubSizeGroup {
+  if (input.beds == null) return "unspecified";
+  if (input.beds <= 6) return "small";
+  if (input.beds >= 50) return "large";
+  return "medium";
+}
+
+export function listSectionDeck(stateSlug: string, size: "large" | "medium" | "unspecified"): string {
+  if (size === "unspecified") {
+    return "Bed count is not in the state file for these homes.";
+  }
   const slug = stateSlug.toLowerCase();
   if (size === "large") {
     if (slug === "washington") return "Larger assisted living communities in this city.";
@@ -98,7 +117,11 @@ export function listSectionDeck(stateSlug: string, size: "large" | "medium"): st
   return "Small to medium licensed homes listed for this city.";
 }
 
-export function listSectionTitle(stateSlug: string, size: "large" | "medium"): string {
+export function listSectionTitle(
+  stateSlug: string,
+  size: "large" | "medium" | "unspecified",
+): string {
+  if (size === "unspecified") return "Homes, size not on file";
   const slug = stateSlug.toLowerCase();
   const beds = size === "large" ? "50+ beds" : "7–49 beds";
   if (slug === "washington") return `Listed homes · ${beds}`;

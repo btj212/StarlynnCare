@@ -18,6 +18,21 @@ type RankedFacility = {
  * inspection stay off it; a newly licensed home with no inspections yet is
  * included). The facility sitemap is every publishable profile.
  */
+/**
+ * Published rows that are not on the city page, and that are homes of 6 beds
+ * or fewer. This is the "leaving out" number. It is not every small home,
+ * because inspected adult family homes stay on the page.
+ */
+export function omittedUnrenderedSmallHomes<
+  T extends { id: string; beds: number | null; capacity_tier?: string | null },
+>(published: T[], listedIds: ReadonlySet<string>): number {
+  return published.filter((home) => {
+    if (listedIds.has(home.id)) return false;
+    if (home.beds == null) return home.capacity_tier === "small";
+    return home.beds <= 6;
+  }).length;
+}
+
 export function homesForCityIndex<
   T extends { name: string; beds: number | null; inspections: number; total_citations: number },
 >(facilities: T[], stateCode: string): T[] {
