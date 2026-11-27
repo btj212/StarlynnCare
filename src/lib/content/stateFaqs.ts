@@ -176,7 +176,7 @@ export const MN_FAQS: FaqItem[] = [
 export const UT_FAQS: FaqItem[] = [
   {
     q: "Where does Utah memory care inspection data come from?",
-    a: "Primary sources: the Utah Dept. of Health & Human Services Division of Licensing and Background Checks (DLBC), which regulates Assisted Living Facilities (Type I and Type II) under Utah Admin. Code R432-270. Inspection findings and complaint outcomes are published publicly via the Utah CCL portal at ccl.utah.gov. StarlynnCare also overlays CMS inspection data for nursing facilities.",
+    a: "Primary sources: the Utah Dept. of Health & Human Services Division of Licensing and Background Checks (DLBC), which regulates Assisted Living Facilities (Type I and Type II) under Utah Admin. Code R432-270. Inspection findings and complaint outcomes are published publicly via DLBC's public Find a Facility search at provider.dlbc.utah.gov. StarlynnCare also overlays CMS inspection data for nursing facilities.",
   },
   {
     q: "What is the difference between a Type I and Type II Assisted Living Facility in Utah?",

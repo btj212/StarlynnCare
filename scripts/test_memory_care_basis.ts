@@ -361,7 +361,7 @@ const pairs = buildFacilityFaqPairs({
   percentile: 80,
   memoryCareLabel: MEMORY_CARE_BASIS_UNRECORDED,
   licenseNumber: "F23",
-  licenseUrl: "https://ccl.utah.gov",
+  licenseUrl: "https://provider.dlbc.utah.gov/ccl/facilities",
   regulatorName: utah.regulator,
   regulatorAbbr: "DLBC",
 });

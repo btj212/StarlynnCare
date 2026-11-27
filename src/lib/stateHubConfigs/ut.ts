@@ -15,7 +15,7 @@ export const utStateConfig: StateHubConfig = {
     {
       n: "Step 01",
       t: "Pull the public record",
-      p: "Licensing inspection records for Type I and Type II Assisted Living Facilities are sourced directly from the Utah Division of Licensing and Background Checks (DLBC) public portal at ccl.utah.gov, supplemented by CMS data for nursing facilities.",
+      p: "Licensing inspection records for Type I and Type II Assisted Living Facilities are sourced directly from the Utah Division of Licensing and Background Checks (DLBC) public Find a Facility search at provider.dlbc.utah.gov, supplemented by CMS data for nursing facilities.",
     },
     {
       n: "Step 02",
