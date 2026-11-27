@@ -11,7 +11,6 @@ import {
   buildFacilityRecordSentence,
   buildFacilitySnippet,
   reportablePercentile,
-  shortMonthYear,
 } from "@/lib/seo/meta";
 import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { formatFacilityName } from "@/lib/facility/displayName";
@@ -197,11 +196,17 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
     return `${beds} ${licType} with ${citLabel}.`;
   })();
 
+  const lastVisit = profile.latestVisit;
   const lastInsp = inspections[0] ?? null;
-  const lastInspFormatted = lastInsp?.inspection_date
-    ? new Date(lastInsp.inspection_date + "T12:00:00").toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })
-    : null;
-  const lastInspCited = (lastInsp?.total_deficiency_count ?? 0) > 0;
+  const lastInspFormatted = lastVisit
+    ? formatRecordDate(lastVisit.date, lastVisit.precision)
+    : lastInsp?.inspection_date
+      ? formatRecordDate(lastInsp.inspection_date, lastInsp.datePrecision)
+      : null;
+  const lastInspCited =
+    lastVisit && lastInsp && lastVisit.date === lastInsp.inspection_date
+      ? (lastInsp.total_deficiency_count ?? 0) > 0
+      : null;
 
   return (
     <div className="fp-verdict relative overflow-hidden rounded-[22px] bg-ink text-paper shadow-[var(--shadow-feature)]">
@@ -288,7 +293,8 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
             ) : (
               <span className="text-white/60">
                 Last inspection · {lastInspFormatted}
-                {lastInsp?.is_complaint ? " (complaint)" : ""} · {lastInspCited ? "cited" : "no findings"}
+                {(lastVisit?.isComplaint || lastInsp?.is_complaint) ? " (complaint)" : ""}
+                {lastInspCited == null ? "" : lastInspCited ? " · cited" : " · no findings"}
               </span>
             )}
             <span className="text-white/60">Source · {lastInsp ? agencyLabelForInspection(lastInsp, cfg).short : cfg.agencyShort}</span>
@@ -314,9 +320,13 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
 
   // Editorial prose summary — mirrors the meta description so Google has a
   // human-readable narrative line to lift even when it overrides our meta.
-  // Use the most recent visit of any type for recency accuracy.
-  const lastInspectionDate =
-    profile.inspections[0]?.inspection_date ?? null;
+  // Same date as the "Last inspection" header: inspections rows plus, for WA,
+  // the latest posted PDF month.
+  const lastVisit = profile.latestVisit;
+  const lastInspectedLabel = lastVisit
+    ? formatRecordDate(lastVisit.date, lastVisit.precision)
+    : null;
+  const lastInspectionDate = lastVisit?.date ?? null;
   const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
   const noReportsPosted =
     facility.state_code === "WA" &&
@@ -337,7 +347,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
     : buildFacilityRecordSentence({
         citationCount: profile.totals.deficiencies,
         inspectionCount: profile.totals.inspections,
-        lastInspected: shortMonthYear(lastInspectionDate),
+        lastInspected: lastInspectedLabel,
         regulatorAbbr: profile.cfg.agencyShort,
         licenseNumber: facility.license_number,
       });
@@ -356,6 +366,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         repeatsPercentile: reportableRank == null ? null : profile.snapshot?.metrics.repeats.percentile ?? null,
         citationCount: profile.totals.deficiencies,
         lastInspectionDate,
+        lastInspected: lastInspectedLabel,
         variant: "prose",
         regulatorAbbr: profile.cfg.agencyShort,
       });
@@ -370,7 +381,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         licenseNumber: facility.license_number,
         inspectionCount: profile.totals.inspections,
         citationCount: profile.totals.deficiencies,
-        lastInspected: shortMonthYear(lastInspectionDate),
+        lastInspected: lastInspectedLabel,
         beds: facility.beds,
       });
 

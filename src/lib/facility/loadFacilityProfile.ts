@@ -906,7 +906,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
             ? degradedSnapshot?.grade?.composite_percentile ?? null
             : null,
         citationCount: totalDeficiencies,
-        lastInspectionDate: lastNonComplaintInspection,
+        lastInspectionDate: latestVisit?.date ?? lastNonComplaintInspection,
         regulatorAbbr: cfg.agencyShort,
       },
       memoryCare: careBasis,
@@ -916,12 +916,12 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     buildFacilityMedicalWebPage({
       name: `${facility.name} — StarlynnCare`,
       url: canonicalUrl,
-      lastReviewed: lastNonComplaintInspection,
+      lastReviewed: latestVisit?.date ?? lastNonComplaintInspection,
       datePublished: new Date(facility.created_at).toISOString(),
       dateModified: (() => {
         const updatedAt = new Date(facility.updated_at).getTime();
-        const inspectedAt = lastNonComplaintInspection
-          ? new Date(`${lastNonComplaintInspection}T12:00:00Z`).getTime()
+        const inspectedAt = (latestVisit?.date ?? lastNonComplaintInspection)
+          ? new Date(`${latestVisit?.date ?? lastNonComplaintInspection}T12:00:00Z`).getTime()
           : 0;
         return new Date(Math.max(updatedAt, inspectedAt)).toISOString();
       })(),

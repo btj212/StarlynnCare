@@ -353,8 +353,10 @@ export interface FacilitySnippetArgs {
   repeatsPercentile?: number | null;
   /** Total deficiencies on record. */
   citationCount: number;
-  /** Most recent non-complaint inspection date as ISO yyyy-mm-dd. */
+  /** Most recent inspection date as ISO yyyy-mm-dd. */
   lastInspectionDate: string | null;
+  /** Pre-formatted last-inspected label. When set, used instead of shortMonthYear. */
+  lastInspected?: string | null;
   /** "meta" emits the "What X's website won't show you:" prefix. "prose" emits a
    *  natural-prose sentence suitable for in-page rendering. Default "meta". */
   variant?: FacilitySnippetVariant;
@@ -441,7 +443,7 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
       ? `${citationCount} ${reg} citation${citationCount === 1 ? "" : "s"} on record`
       : `no ${reg} citations on record`;
 
-  const inspMo = shortMonthYear(lastInspectionDate);
+  const inspMo = args.lastInspected ?? shortMonthYear(lastInspectionDate);
   const inspFrag = inspMo ? `last inspected ${inspMo}` : null;
 
   if (variant === "prose") {
