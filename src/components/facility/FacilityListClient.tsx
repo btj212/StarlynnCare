@@ -8,7 +8,12 @@ import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityDisplayName, nameMatchesQuery } from "@/lib/facility/aliases";
 import { cityHubCardGroup, listedInMemoryCareGroup } from "@/lib/city-hub/careSetting";
-import { ACCEPTS_DEMENTIA_CHIP, ACCEPTS_DEMENTIA_SECTION } from "@/lib/facility/memoryCareBasis";
+import {
+  CONFIRMED_ACCEPTS_CHIP,
+  CONFIRMED_ACCEPTS_SECTION,
+  DEMENTIA_CREDENTIAL_CHIP,
+  DEMENTIA_CREDENTIAL_SECTION,
+} from "@/lib/facility/memoryCareBasis";
 import { listLicenseLabel, listSectionDeck, listSectionTitle } from "@/lib/city-hub/licenseLabel";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -331,13 +336,14 @@ export function FacilityListClient({
       if (q && !nameMatchesQuery(f, q) && !f.city?.toLowerCase().includes(q)) {
         return false;
       }
-      // Small homes stay off the first grid until the toggle. Tier 2 adult
-      // family homes are almost all ≤6 beds, so they have to stay visible
-      // or their section would be empty on any city that also has a larger home.
+      // Small homes stay off the first grid until the toggle. Both lower
+      // Washington tiers are mostly ≤6-bed adult family homes, so they stay
+      // visible or their sections would be empty on a city with a larger home.
       if (
         f.capacity_tier === "small" &&
         !showSmall &&
-        f.careChip !== ACCEPTS_DEMENTIA_CHIP
+        f.careChip !== CONFIRMED_ACCEPTS_CHIP &&
+        f.careChip !== DEMENTIA_CREDENTIAL_CHIP
       ) {
         return false;
       }
@@ -390,7 +396,8 @@ export function FacilityListClient({
       groupOf(f) === "memory-care" &&
       (f.capacity_tier === "medium" || f.capacity_tier === "unknown"),
   );
-  const acceptsDementia = filtered.filter((f) => groupOf(f) === "accepts-dementia");
+  const confirmedAccepts = filtered.filter((f) => groupOf(f) === "confirmed-accepts");
+  const credentialHomes = filtered.filter((f) => groupOf(f) === "credential");
   const nonMc = filtered.filter((f) => groupOf(f) === "other");
   const smallHomes = filtered.filter((f) => groupOf(f) === "small");
 
@@ -542,14 +549,28 @@ export function FacilityListClient({
             </section>
           )}
 
-          {acceptsDementia.length > 0 && (
+          {confirmedAccepts.length > 0 && (
             <section className="mt-12">
-              <SectionHead title={ACCEPTS_DEMENTIA_SECTION} count={acceptsDementia.length} />
+              <SectionHead title={CONFIRMED_ACCEPTS_SECTION} count={confirmedAccepts.length} />
               <p className="mt-1.5 text-xs text-muted">
-                These homes can take a resident with dementia. They do not have a secured or dedicated memory-care unit.
+                These homes told StarlynnCare they accept residents with dementia. They do not have a secured or dedicated memory-care unit.
               </p>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {acceptsDementia.map((f) => (
+                {confirmedAccepts.map((f) => (
+                  <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {credentialHomes.length > 0 && (
+            <section className="mt-12">
+              <SectionHead title={DEMENTIA_CREDENTIAL_SECTION} count={credentialHomes.length} />
+              <p className="mt-1.5 text-xs text-muted">
+                Staff at these adult family homes completed Washington dementia training. That is a credential, not a confirmation that the home accepts residents with dementia, and it is not a secured unit.
+              </p>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {credentialHomes.map((f) => (
                   <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
                 ))}
               </div>

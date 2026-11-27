@@ -29,7 +29,12 @@ import {
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import { REGULATOR_ABBR } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
-import { ACCEPTS_DEMENTIA_CHIP, dementiaAcceptanceTier, memoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import {
+  CONFIRMED_ACCEPTS_CHIP,
+  DEMENTIA_CREDENTIAL_CHIP,
+  dementiaAcceptanceTier,
+  memoryCareBasis,
+} from "@/lib/facility/memoryCareBasis";
 import { careSettingCopy, listCareChip } from "@/lib/city-hub/careSetting";
 import {
   cityDirectAnswer,
@@ -647,7 +652,8 @@ export default async function RegionPage({ params }: PageProps) {
     ...hubRank.preview,
     ...listedHomes.filter(
       (home) =>
-        home.careChip === ACCEPTS_DEMENTIA_CHIP &&
+        (home.careChip === CONFIRMED_ACCEPTS_CHIP ||
+          home.careChip === DEMENTIA_CREDENTIAL_CHIP) &&
         !hubRank.preview.some((row) => row.id === home.id),
     ),
   ].map((f) => ({

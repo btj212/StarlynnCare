@@ -6,6 +6,22 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Three Washington display labels
+
+**Decided:** Washington pages use three display levels, highest first. This does not change `serves_memory_care`, `publishable`, the sitemap, or `recompute_publishable.py`.
+
+1. Memory care, unchanged.
+2. Confirmed acceptance, no secured unit. Badge and chip: "Confirmed: accepts residents with dementia". Hub section: "Confirmed to accept residents with dementia (no secured unit)". Basis and FAQ stay the phone-call sentences. JSON-LD `Dementia care`: "Confirmed: accepts residents with dementia (no secured unit)". Title suffix: ", Accepts Dementia" when it fits.
+3. Dementia credential, the adult family home specialty only. Badge and chip: "Dementia credential". Hub section: "Homes with a dementia credential (no secured unit)". The basis line stays the staff-training sentence. FAQ: "Does {name} have a dementia credential?" JSON-LD `Dementia care`: "Dementia credential (staff training; no secured unit)". Title suffix: ", Dementia Credential" when it fits. A credential page does not say the home accepts residents with dementia.
+
+On a city hub the confirmed section is above the credential section. Both sit below memory care and above "Other licensed facilities".
+
+**This supersedes** the same-day labels that called the specialty "Accepts residents with dementia".
+
+**Source:** Blake, 2026-11-27, 9:53 AM PT.
+
+---
+
 ## 2026-11-27 — Washington tier 2b can be stored
 
 **Decided:** Migration `0087_mc_designation_accepts_dementia.sql` widens `facilities_mc_designation_type_check` so the column may be `accepts_dementia_no_secured_unit` as well as null, `Secure Dementia Care Unit`, and `Special Care`. The new value is display tier 2b. It is not memory care, not a secured unit, and not a `serves_memory_care` signal. Do not apply this migration from an agent session. Blake applies it after merge. Do not write the value onto Amber Hills or any other row from the app.

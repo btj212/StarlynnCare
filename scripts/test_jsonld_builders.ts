@@ -125,7 +125,7 @@ assert.equal(
 );
 assert.equal(
   (afhLd.additionalProperty ?? []).find((prop) => prop.name === "Dementia care")?.value,
-  "Accepts residents with dementia (no secured unit)",
+  "Dementia credential (staff training; no secured unit)",
 );
 
 const mccLd = buildLocalBusinessForFacility(waHome, waState, {
@@ -171,7 +171,7 @@ assert.equal(
 );
 assert.equal(
   (toldLd.additionalProperty ?? []).find((prop) => prop.name === "Dementia care")?.value,
-  "Accepts residents with dementia (no secured unit)",
+  "Confirmed: accepts residents with dementia (no secured unit)",
 );
 
 console.log("json-ld builder checks passed");

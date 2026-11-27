@@ -146,7 +146,7 @@ export function buildFacilityTitle(input: {
   /** When Washington and not memory care, replace the "Licensed Memory Care" fallback. */
   stateCode?: string;
   waFacilityType?: string | null;
-  dementiaTier?: "memory-care" | "accepts-dementia" | "neither";
+  dementiaTier?: "memory-care" | "confirmed-accepts" | "credential" | "neither";
 }): string {
   const { name, stateName, city, citationCount, inspectionCount, reviewCount, lastInspectionDate } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
@@ -178,7 +178,11 @@ export function buildFacilityTitle(input: {
       ? "Adult Family Home"
       : "Assisted Living";
   const waWithAccepts =
-    input.dementiaTier === "accepts-dementia" ? `${waKind}, Accepts Dementia` : waKind;
+    input.dementiaTier === "confirmed-accepts"
+      ? `${waKind}, Accepts Dementia`
+      : input.dementiaTier === "credential"
+        ? `${waKind}, Dementia Credential`
+        : waKind;
   const inspectionTitles =
     inspections > 0
       ? [
