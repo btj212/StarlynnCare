@@ -18,7 +18,7 @@ import { facilityDisplayName } from "@/lib/facility/aliases";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { facilityMarkedNoindex } from "@/lib/seo/indexability";
+import { profileRobotsNoindex } from "@/lib/quality/gate";
 import { buildFacilityReportsTitle, clipMetaDescription } from "@/lib/seo/meta";
 import { buildBreadcrumbList, buildWebPageWithReviewer } from "@/lib/seo/schema";
 import { stateFromSlug } from "@/lib/states";
@@ -61,14 +61,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const tourQs = (facility.content as { tour_questions?: string[] } | null)?.tour_questions;
   const noindex =
-    facilityMarkedNoindex({
-      stateCode: facility.state_code,
-      beds: facility.beds,
-      deficiencyCount: result.totals.allTimeDeficiencies,
-      inspectionCount: result.totals.inspections,
-      reviewCount: result.reviews.length,
-      tourQuestionCount: tourQs?.length ?? 0,
-      photoCount: result.photoUrls.length,
+    profileRobotsNoindex({
+      legacy: {
+        stateCode: facility.state_code,
+        beds: facility.beds,
+        deficiencyCount: result.totals.allTimeDeficiencies,
+        inspectionCount: result.totals.inspections,
+        reviewCount: result.reviews.length,
+        tourQuestionCount: tourQs?.length ?? 0,
+        photoCount: result.photoUrls.length,
+      },
+      home: {
+        ...facility,
+        title,
+        h1: name,
+        canonical,
+        inspections: result.gateInspections,
+        jsonLd: result.jsonLd,
+      },
     }) || !hasPrintableFindings(result);
 
   return {

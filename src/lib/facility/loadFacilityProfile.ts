@@ -53,6 +53,7 @@ import type { DatePrecision } from "@/lib/format/formatRecordDate";
 import { seriousFindingCounts } from "@/lib/facility/seriousFindings";
 import { freshenTourQuestions } from "@/lib/facility/tourQuestions";
 import type { Facility, Deficiency, DataDepth, InspectionVisibilityTier } from "@/lib/types";
+import { finalizeJsonLd } from "@/lib/quality/gate";
 import type { StateProfileConfig, Rule } from "@/lib/states/profileConfig";
 import type { Review } from "@/components/reviews/ReviewCard";
 import type { Region } from "@/lib/regions";
@@ -263,6 +264,11 @@ export interface FacilityProfile {
 
   /** Inspection rows within the 3-year display window, most-recent-first. */
   inspections: InspectionRow[];
+  /**
+   * Every stored inspection date and source URL, including rows outside the
+   * display window. The quality gate reads this. It is not rendered.
+   */
+  gateInspections: Array<{ date: string | null; sourceUrl: string | null }>;
   /** Deficiency rows keyed by inspection_id (only for visible inspections). */
   deficienciesByInspection: Map<string, DeficiencyRow[]>;
   totals: {
@@ -956,6 +962,10 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     cfg,
 
     inspections,
+    gateInspections: allInspections.map((row) => ({
+      date: row.inspection_date,
+      sourceUrl: row.source_url,
+    })),
     deficienciesByInspection,
     totals: {
       inspections: inspections.length,
@@ -991,7 +1001,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     backHref,
     backLabel,
     breadcrumbTrail,
-    jsonLd,
+    jsonLd: finalizeJsonLd(jsonLd),
 
     waMcSignals:
       facility.state_code === "WA"

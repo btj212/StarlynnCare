@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Quality gate is report-only until GATE_ENFORCED
+
+**Decided:** `src/lib/quality/gate.ts` is the only module that maps a raw license status to LICENSED / PROBATION / CLOSED / PENDING / OTHER, picks the approved headline sentence, and decides whether a home may be indexed. The city-hub listing predicates (`facilityListedOnHub`, `cityHubPageExists`, `facilityMarkedNoindex`, `listingHubMarkedNoindex`) live there too. `src/lib/seo/indexability.ts` re-exports them and does not decide. `GATE_ENFORCED` is false. While it is false, a publishable home is listed, a hub exists when at least one home is listed, and profile robots stay exactly as they are today. Profile robots, the sitemap, city-hub memory-care grouping, JSON-LD, and `EvidenceLabel` call the gate and then keep today's result. The profile `<title>` stays `buildFacilityTitle`: the citation hook, and `Licensed {license type}` from `listLicenseLabel` when there is no inspection outside Arizona and Washington. The gate does not write that title and does not add the words Memory Care. `mc_program_confirmed`, a directory listing, a name, or a chain never produce a headline. That is narrower than the live Washington display tier, which still treats an operator page as memory care. California has no §1569.627 disclosure column, so that Tier A sentence is not returned. Arizona has no separate memory-care designation: ADHS treats memory care as directed care, so `AZ_MC_SOURCE_AVAILABLE` stays false and those homes are Tier B.
+
+**Sync clock:** `scrape_runs.completed_at` where `status = 'success'`, else `states.last_successful_scrape`. If both are missing, the 30-day freshness check passes and the report says so. `states.last_successful_scrape` is null for every live state except CA, CO, and FL, and CA's column lags `scrape_runs`.
+
+**Rejected:** Turning the flag on in this change. Taking a live home off its city hub. Replacing the citation-hook title. Using "Memory Care" as a license fallback. Inventing a California disclosure column. Using `memory_care_disclosure_filed` as that disclosure. Treating Arizona Directed Care as a separate memory-care authorization. Editing `.github/workflows/validate.yml` (the new test is `npm run test:quality-gate`).
+
+**This does not change** the title decisions below, or the city-hub listing decision. Small homes stay in their section. The flag does not remove them.
+
+**Source:** Blake, wave 0 tasks 0.1 and 0.2. `scripts/gate_report.ts`.
+
+---
+
 ## 2026-11-27 — No-inspection titles name the license, not memory care
 
 **Decided:** When a profile has no inspections and it is not Arizona or a Washington non-memory-care home, the title is `{Name}, {City} — Licensed {license type}`. The type comes from `listLicenseLabel` (the chip already on city lists): Assisted Living, Residential Care Facility, Residential Care Facility for the Elderly, Personal Care, and the other chips that function already returns. The title does not add the words Memory Care. If those words are in the home's name, they stay because they are the name.

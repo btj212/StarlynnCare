@@ -36,7 +36,7 @@ import { FacilityFullInspections } from "@/components/facility/profile/FacilityF
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
 import { NearbyFacilities } from "@/components/facility/profile/NearbyFacilities";
 import { assignOffer } from "@/lib/facility/offers";
-import { facilityMarkedNoindex } from "@/lib/seo/indexability";
+import { profileRobotsNoindex } from "@/lib/quality/gate";
 import { isArticleApproved } from "@/lib/content/articleReview";
 import { HOW_TO_CHECK } from "@/lib/content/howToCheckArticles";
 
@@ -202,14 +202,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // small homes from the listed count; the sitemap includes every publishable page.
   const tourQs = (facility.content as { tour_questions?: string[] } | null)
     ?.tour_questions;
-  const isThin = facilityMarkedNoindex({
-    stateCode: facility.state_code,
-    beds: facility.beds,
-    deficiencyCount: profile.totals.allTimeDeficiencies,
-    inspectionCount: profile.totals.inspections,
-    reviewCount: profile.reviews.length,
-    tourQuestionCount: tourQs?.length ?? 0,
-    photoCount: profile.photoUrls.length,
+  const isThin = profileRobotsNoindex({
+    legacy: {
+      stateCode: facility.state_code,
+      beds: facility.beds,
+      deficiencyCount: profile.totals.allTimeDeficiencies,
+      inspectionCount: profile.totals.inspections,
+      reviewCount: profile.reviews.length,
+      tourQuestionCount: tourQs?.length ?? 0,
+      photoCount: profile.photoUrls.length,
+    },
+    home: {
+      ...facility,
+      title,
+      h1: displayName,
+      canonical,
+      inspections: profile.gateInspections,
+      jsonLd: profile.jsonLd,
+    },
   });
 
   return {

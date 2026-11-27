@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify-schema": "tsx scripts/verify-schema.ts"
+    "verify-schema": "tsx scripts/verify-schema.ts",
+    "test:quality-gate": "tsx scripts/test_quality_gate.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.7",
