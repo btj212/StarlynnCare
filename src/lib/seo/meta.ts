@@ -1,5 +1,6 @@
 import { peerRankPhrase } from "@/lib/seo/rankPhrase";
 import { careSettingCopy, peerSetPhrase } from "@/lib/city-hub/careSetting";
+import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
 
 /**
  * Clip meta descriptions for `<meta name="description">` and matching OG/Twitter fields.
@@ -195,10 +196,12 @@ export function buildFacilityTitle(input: {
   waFacilityType?: string | null;
   dementiaTier?: "memory-care" | "confirmed-accepts" | "credential" | "neither";
   /**
-   * License chip from listLicenseLabel. Used only when there is no inspection
-   * and the home is outside the Arizona and Washington fallbacks.
+   * License chip from listLicenseLabel. Used when there is no inspection,
+   * including an Arizona home that is not licensed for Directed Care.
    */
   licenseLabel?: string | null;
+  /** ADHS care level. Directed Care is the no-inspection Arizona title only when this says so. */
+  azLicenseLevel?: string | null;
 }): string {
   const { name, stateName, city, citationCount, inspectionCount, reviewCount, lastInspectionDate } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
@@ -235,6 +238,9 @@ export function buildFacilityTitle(input: {
       : input.dementiaTier === "credential"
         ? `${waKind}, Dementia Credential`
         : waKind;
+  const azDirected =
+    (input.stateCode === "AZ" || input.stateName === "Arizona") &&
+    azDirectedCareLicense(input.azLicenseLevel);
   const inspectionTitles =
     inspections > 0
       ? [
@@ -244,7 +250,7 @@ export function buildFacilityTitle(input: {
           year ? `${place}: Inspection record (${year})` : `${place}: Inspection record`,
           `${placeAbbr}: Inspection record`,
         ].filter((candidate): candidate is string => candidate != null)
-      : input.stateName === "Arizona"
+      : azDirected
         ? [`${place}: Directed Care Home`, `${placeAbbr}: Directed Care Home`]
         : waNotMemoryCare
           ? [`${place}: ${waWithAccepts}`, `${place}: ${waKind}`, `${placeAbbr}: ${waKind}`]
@@ -558,6 +564,8 @@ export function buildFacilityDirectAnswer(input: {
   beds: number | null;
   /** Override the "is a … home" noun. */
   facilityNoun?: string;
+  /** When set and not Directed Care, the Arizona sentence does not use that license level. */
+  azLicenseLevel?: string | null;
 }): string | null {
   if (input.inspectionCount < 1 && !input.licenseNumber) return null;
 
@@ -577,7 +585,9 @@ export function buildFacilityDirectAnswer(input: {
   const noun =
     input.facilityNoun ??
     (input.stateCode === "AZ" || input.stateName === "Arizona"
-      ? "Directed Care licensed home"
+      ? input.azLicenseLevel != null && !azDirectedCareLicense(input.azLicenseLevel)
+        ? "licensed home"
+        : "Directed Care licensed home"
       : input.stateCode === "WA" || input.stateName === "Washington"
         ? "licensed home that may serve residents with dementia"
         : input.stateCode === "PA" || input.stateName === "Pennsylvania"

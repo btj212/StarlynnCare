@@ -29,6 +29,7 @@ import { formatRecordDate } from "@/lib/format/formatRecordDate";
 import { peerRankPhrase } from "@/lib/seo/rankPhrase";
 import { peerSetPhrase } from "@/lib/city-hub/careSetting";
 import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
+import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 import { formatLicenseStatus } from "@/lib/facility/licenseStatus";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
@@ -373,6 +374,23 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         variant: "prose",
         regulatorAbbr: profile.cfg.agencyShort,
       });
+  const azDirected = azDirectedCareLicense(facility.az_license_level);
+  const azLicenseLabel =
+    facility.state_code === "AZ"
+      ? listLicenseLabel({
+          stateCode: "AZ",
+          care_category: facility.care_category,
+          license_type: facility.license_type,
+          az_license_level: facility.az_license_level,
+        })
+      : null;
+  const azNoun = azDirected
+    ? "Directed Care licensed home"
+    : azLicenseLabel
+      ? /home$/i.test(azLicenseLabel)
+        ? azLicenseLabel
+        : `${azLicenseLabel} home`
+      : undefined;
   const directAnswer = noReportsPosted
     ? null
     : buildFacilityDirectAnswer({
@@ -386,6 +404,8 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         citationCount: profile.totals.deficiencies,
         lastInspected: lastInspectedLabel,
         beds: facility.beds,
+        azLicenseLevel: facility.az_license_level,
+        facilityNoun: facility.state_code === "AZ" ? azNoun : undefined,
       });
 
   return (
@@ -422,6 +442,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 program={azMcProgram(facility)}
                 regulatorShort={profile.memoryCareBasis.regulatorShort}
                 regulatorUrl={profile.memoryCareBasis.sourceUrl}
+                directedCare={azDirected}
               />
             ) : null}
             <EvidenceLabel
@@ -495,6 +516,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                   license_type: facility.license_type,
                   mo_level_of_care: facility.mo_level_of_care,
                   mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+                  az_license_level: facility.az_license_level,
                 })}
               </span>
               {facility.state_code === "CO" && (
@@ -507,7 +529,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                   {facility.beds} beds
                 </span>
               )}
-              {facility.state_code === "AZ" && (
+              {azDirected && (
                 <span className="fp-tag rounded-full border border-paper-rule bg-paper-2 px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-medium text-ink-3">
                   Directed Care
                 </span>

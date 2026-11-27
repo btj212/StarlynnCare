@@ -11,6 +11,7 @@
  * an operator page as memory care until this flag is turned on.
  */
 
+import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
 import { hasCaDementiaClientCode, ACCEPTS_DEMENTIA_NO_SECURED_UNIT } from "@/lib/facility/memoryCareBasis";
 import { canonicalFor } from "@/lib/seo/canonical";
 import { stateFromCode } from "@/lib/states";
@@ -372,7 +373,7 @@ export function headlineLabel(home: GateHome): HeadlineLabel {
     return approved(HEADLINE_TABLE.AZ_A, ["az_memory_care_endorsed"]);
   }
 
-  if (state === "AZ" && home.az_license_level?.trim() === "Directed Care") {
+  if (state === "AZ" && azDirectedCareLicense(home.az_license_level)) {
     return approved(HEADLINE_TABLE.AZ_B, ["az_license_level"]);
   }
   if (state === "WA" && home.wa_dementia_specialty === true && isAdultFamilyHome(home)) {

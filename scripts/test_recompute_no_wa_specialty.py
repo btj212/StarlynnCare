@@ -18,11 +18,11 @@ SOURCE = ROOT / "scrapers" / "recompute_publishable.py"
 def serves_memory_care_sql() -> str:
     text = SOURCE.read_text()
     match = re.search(
-        r"def recompute_serves_memory_care\(.*?sql = \"\"\"(.*?)\"\"\"",
+        r"SERVES_MEMORY_CARE_EXPR = \"\"\"(.*?)\"\"\"",
         text,
         re.S,
     )
-    assert match, "recompute_serves_memory_care SQL not found"
+    assert match, "SERVES_MEMORY_CARE_EXPR not found"
     return match.group(1)
 
 

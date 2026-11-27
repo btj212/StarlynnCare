@@ -168,6 +168,18 @@ assert.equal(
   headlineLabel(home({ state_code: "AZ", az_memory_care_endorsed: true, az_license_level: "Directed Care" })).label,
   HEADLINE_TABLE.AZ_B.label,
 );
+const azPersonalHeadline = headlineLabel(
+  home({
+    state_code: "AZ",
+    az_memory_care_endorsed: true,
+    az_license_level: "Personal Care",
+    license_type: "Assisted Living Home",
+  }),
+);
+assert.equal(azPersonalHeadline.tier, "none");
+assert.notEqual(azPersonalHeadline.label, HEADLINE_TABLE.AZ_B.label);
+assert.doesNotMatch(azPersonalHeadline.label, /Directed Care/);
+assert.equal(GATE_ENFORCED, false);
 assert.equal(
   headlineLabel(home({ state_code: "WA", wa_dementia_specialty: true, wa_facility_type: "AFH", wa_memory_care_certified: false })).tier,
   "B",
