@@ -38,7 +38,7 @@ def _text(name: str) -> str:
 
 class WashingtonReportTests(unittest.TestCase):
     def test_statement_of_deficiencies_counts_cited_rules_and_matches_the_roster_license(self) -> None:
-        """Five 'not met' WAC blocks are five citations. The roster stores the same license with leading zeros."""
+        """Five distinct not-met WAC rules are five citations. The roster stores the same license with leading zeros."""
         report = parse_wa_report(_text("wa_blue_haven_sod.txt"))
         self.assertEqual(report.citation_count, 5)
         self.assertEqual(report.inspection_date, date(2025, 9, 4))
@@ -58,6 +58,29 @@ class WashingtonReportTests(unittest.TestCase):
             "inspections/2025/R%20Blue%20Haven.pdf"
         )
         self.assertTrue(same_license("0000754592", license_in_pdf_url(url)))
+
+    def test_asis_counts_distinct_rules_when_one_rule_has_two_not_met_lines(self) -> None:
+        """Asis on 2023-10-05 has 13 not-met lines and 12 stored WAC rows. The extra line sits inside 388-76-10165 because the next header is WAC 388-112A, which is not a separate captured requirement. The count matches the citation rows."""
+        report = parse_wa_report(_text("wa_asis_repeated_line.txt"))
+        self.assertEqual(report.inspection_date, date(2023, 10, 5))
+        self.assertTrue(same_license("0000754652", report.license_digits))
+        self.assertEqual(report.citation_count, 2)
+        self.assertEqual(
+            [code for code, _title in report.citations],
+            ["WAC 388-76-10165", "WAC 388-76-10161"],
+        )
+        self.assertEqual(len(report.citations), len({code for code, _title in report.citations}))
+
+    def test_blue_orchid_counts_a_restated_rule_once(self) -> None:
+        """Blue Orchid on 2025-05-20 stored 15 because 10135 and 10475 were each written twice. The citation rows are the 13 distinct codes. This excerpt is those two rules, and the count is 2."""
+        report = parse_wa_report(_text("wa_blue_orchid_repeated_rule.txt"))
+        self.assertEqual(report.inspection_date, date(2025, 5, 20))
+        self.assertTrue(same_license("0000757030", report.license_digits))
+        self.assertEqual(report.citation_count, 2)
+        self.assertEqual(
+            [code for code, _title in report.citations],
+            ["WAC 388-76-10135", "WAC 388-76-10475"],
+        )
 
     def test_consultation_that_was_not_cited_is_zero(self) -> None:
         """Anchor of Hope's letter names a WAC under Consultation and says it was not cited."""

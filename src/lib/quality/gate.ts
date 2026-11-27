@@ -243,12 +243,40 @@ export type SecondaryBadge = {
 export type GateInspection = {
   date?: string | null;
   sourceUrl?: string | null;
+  /** Stored citation count. Zero is a real count. Missing stays unknown. */
+  citationCount?: number | null;
+  /**
+   * State visit or event id. Illinois FOIA visit id and Colorado CDPHE event
+   * id (for example M5T211) live in inspections.source_event_id.
+   */
+  visitId?: string | null;
   /**
    * Visit of a previous facility at this address. It does not satisfy
    * this home's inspection requirement.
    */
   predecessor?: boolean;
 };
+
+/**
+ * An inspection counts when it has a date and an http(s) source URL.
+ * Illinois and Colorado have no per-visit document URL. For those two states
+ * a date, a citation count (zero allowed), and the state visit or event id
+ * are enough. Every other state still needs the URL. A previous operator's
+ * visit does not count in any state.
+ */
+export function inspectionQualifies(state: string, row: GateInspection): boolean {
+  if (row.predecessor) return false;
+  const date = row.date?.trim() ?? "";
+  if (!date) return false;
+  const code = state.trim().toUpperCase();
+  if (code === "IL" || code === "CO") {
+    const count = row.citationCount;
+    const visit = row.visitId?.trim() ?? "";
+    return typeof count === "number" && Number.isFinite(count) && count >= 0 && visit.length > 0;
+  }
+  const url = row.sourceUrl?.trim() ?? "";
+  return /^https?:\/\//i.test(url);
+}
 
 export type GateHome = {
   state_code: string;
@@ -485,12 +513,7 @@ export type IndexDecision = {
 };
 
 function hasQualifyingInspection(home: GateHome): boolean {
-  return (home.inspections ?? []).some((row) => {
-    if (row.predecessor) return false;
-    const date = row.date?.trim() ?? "";
-    const url = row.sourceUrl?.trim() ?? "";
-    return date.length > 0 && /^https?:\/\//i.test(url);
-  });
+  return (home.inspections ?? []).some((row) => inspectionQualifies(home.state_code, row));
 }
 
 function typesOf(node: Record<string, unknown>): string[] {

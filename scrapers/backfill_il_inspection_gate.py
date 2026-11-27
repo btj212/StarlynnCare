@@ -132,10 +132,14 @@ def summarize(rows: list[dict]) -> dict[str, dict]:
                 "would_pass_literal": False,
                 "would_pass_document": False,
                 "with_count": False,
+                "would_pass_visit": False,
                 "shell_only": False,
                 "newest": None,
             },
         )
+        visit = str(row.get("source_event_id") or "").strip()
+        if dated and known_after and visit:
+            current["would_pass_visit"] = True
         if dated and known_now and url:
             current["passes_now"] = True
         if dated and known_after and url:
@@ -175,12 +179,17 @@ def main() -> None:
     print(f"IL of those whose only URL is the LLCS lookup shell: {shells}")
     print(f"IL that would pass with a survey document URL: {document}")
     print(f"IL live pages that would have a known citation count: {counted}")
+    visit_pass = sum(1 for item in homes.values() if item["would_pass_visit"])
+    print(f"IL live pages that would pass with a date, a citation count, and a visit id: {visit_pass}")
     print(f"IL newest inspection date: {newest}")
+    missing_visit = sum(1 for row in rows if not str(row.get("source_event_id") or "").strip())
+    print(f"IL inspections missing a visit id: {missing_visit}")
     print(
         "IL source URL: not stored. "
         "The guest lookup returns the roster and licId, not a survey document. "
-        "Gate proposal: a page passes when the visit has a date, a citation count "
-        "(zero allowed), and the FOIA visit id, until IDPH publishes a document URL."
+        "The FOIA visit id is already stored in source_event_id. "
+        "The gate accepts an Illinois inspection when the date, the citation count "
+        "(zero allowed), and that visit id are present."
     )
     gained = [item for item in homes.values() if item["would_pass_literal"] and not item["passes_now"]]
     for item in sorted(gained, key=lambda row: str(row["license_number"] or "")):
@@ -213,7 +222,10 @@ def main() -> None:
                 updates,
             )
         conn.commit()
-    print(f"IL updated {len(updates)} inspection counts. Source URLs were left unchanged.")
+    print(
+        f"IL updated {len(updates)} inspection counts. "
+        "Visit ids already in source_event_id were left unchanged. No source URL was written."
+    )
 
 
 if __name__ == "__main__":

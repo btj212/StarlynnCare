@@ -9,10 +9,12 @@ tableau workbook, not as a stable link per event:
 
 The rows in this database came from the May 18, 2026 records workbooks.
 Each inspection already has a date, a citation count, and raw_data.co_event_id
-(for example 23Q180|ETHC11|AL20). There is no per-event URL in that file.
-This script does not invent one. --apply refuses to write.
+(for example M5T211). There is no per-event URL in that file. This script
+does not invent one. --apply copies that event id into source_event_id when
+the column is blank. It does not write a URL.
 
     python3 scrapers/backfill_co_inspection_gate.py
+    python3 scrapers/backfill_co_inspection_gate.py --apply
 """
 
 from __future__ import annotations
@@ -57,7 +59,11 @@ def database_url() -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Colorado inspection-gate report")
-    parser.add_argument("--apply", action="store_true", help="Refused. There is no public per-event URL to store.")
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Copy raw_data.co_event_id into source_event_id. Does not write a URL.",
+    )
     parser.add_argument("--rows", help="JSON object from the dry-run query, instead of the database")
     args = parser.parse_args()
     load_env()
@@ -71,21 +77,40 @@ def main() -> None:
     elif isinstance(newest, str):
         newest = newest[:10]
     print(f"CO live pages: {row['live_pages']}")
-    print(f"CO passing before: {row['passing']}")
-    print(f"CO that would pass after this backfill: {row['passing']}")
+    print(f"CO passing the URL rule before: {row['passing']}")
     print(
         "CO live pages with a date, a citation count, and a CDPHE event id, and no document URL: "
         f"{row['event_without_url']}"
     )
+    print(f"CO inspections whose event id would be copied into source_event_id: {row['event_ids_to_copy']}")
     print(f"CO newest CDPHE inspection date: {newest or 'none'}")
     print(
         "CO source URL: not stored. The public lookup is the Health Facility Search tableau. "
-        "It is not a per-event address. Gate proposal: accept a CO-CDPHE row when the date, "
-        "the citation count, and raw_data.co_event_id are present."
+        "It is not a per-event address. The gate accepts a Colorado inspection when the date, "
+        "the citation count, and the event id in source_event_id are present."
     )
-    if args.apply:
-        sys.exit("Refusing --apply. Writing a tableau search URL onto every event would invent a source.")
-    print("Dry-run only. No database writes.")
+    if args.apply and args.rows:
+        sys.exit("Refusing --apply with --rows. Writing uses the database, not a snapshot file.")
+    if not args.apply:
+        print("Dry-run only. No database writes. Re-run with --apply to copy the event ids.")
+        return
+
+    import psycopg
+
+    with psycopg.connect(database_url()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE inspections
+                SET source_event_id = raw_data->>'co_event_id'
+                WHERE source_agency = 'CO-CDPHE'
+                  AND coalesce(btrim(source_event_id), '') = ''
+                  AND coalesce(raw_data->>'co_event_id', '') <> ''
+                """
+            )
+            copied = cur.rowcount
+        conn.commit()
+    print(f"CO copied {copied} event ids into source_event_id. No source URL was written.")
 
 
 def _query() -> dict:
@@ -125,7 +150,14 @@ def _query() -> dict:
                     count(*) AS live_pages,
                     count(*) FILTER (WHERE passes) AS passing,
                     count(*) FILTER (WHERE NOT passes AND has_event) AS event_without_url,
-                    max(newest_cdphe) AS newest_cdphe
+                    max(newest_cdphe) AS newest_cdphe,
+                    (
+                        SELECT count(*)
+                        FROM inspections i
+                        WHERE i.source_agency = 'CO-CDPHE'
+                          AND coalesce(btrim(i.source_event_id), '') = ''
+                          AND coalesce(i.raw_data->>'co_event_id', '') <> ''
+                    ) AS event_ids_to_copy
                 FROM gate
                 """
             )

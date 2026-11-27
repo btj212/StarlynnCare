@@ -68,10 +68,10 @@ SOURCE_SQL = """
 INSERT_INSPECTION_SQL = """
     INSERT INTO inspections (
         id, facility_id, inspection_date, inspection_type, is_complaint,
-        complaint_id, total_deficiency_count, source_url, source_agency, raw_data
+        complaint_id, total_deficiency_count, source_url, source_agency, source_event_id, raw_data
     ) VALUES (
         %(id)s, %(facility_id)s, %(inspection_date)s, %(inspection_type)s, %(is_complaint)s,
-        %(complaint_id)s, %(total_deficiency_count)s, '', %(source_agency)s, %(raw_data)s
+        %(complaint_id)s, %(total_deficiency_count)s, '', %(source_agency)s, %(source_event_id)s, %(raw_data)s
     )
 """
 
@@ -83,6 +83,7 @@ UPDATE_INSPECTION_SQL = """
            complaint_id = %(complaint_id)s,
            total_deficiency_count = %(total_deficiency_count)s,
            source_agency = %(source_agency)s,
+           source_event_id = COALESCE(NULLIF(btrim(source_event_id), ''), %(source_event_id)s),
            raw_data = %(raw_data)s
      WHERE id = %(id)s
 """
@@ -206,6 +207,7 @@ def inspection_payload(inspection: InspectionRecord, facility_uuid: str) -> dict
         "complaint_id": inspection.complaint_ids,
         "total_deficiency_count": len(inspection.deficiencies),
         "source_agency": AGENCY,
+        "source_event_id": inspection.event_id or "",
         "raw_data": Json(
             {
                 "co_event_key": inspection.event_key,

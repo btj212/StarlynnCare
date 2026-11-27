@@ -58,7 +58,7 @@ import type { DatePrecision } from "@/lib/format/formatRecordDate";
 import { seriousFindingCounts } from "@/lib/facility/seriousFindings";
 import { freshenTourQuestions } from "@/lib/facility/tourQuestions";
 import type { Facility, Deficiency, DataDepth, InspectionVisibilityTier } from "@/lib/types";
-import { finalizeJsonLd } from "@/lib/quality/gate";
+import { finalizeJsonLd, type GateInspection } from "@/lib/quality/gate";
 import type { StateProfileConfig, Rule } from "@/lib/states/profileConfig";
 import type { Review } from "@/components/reviews/ReviewCard";
 import type { Region } from "@/lib/regions";
@@ -80,6 +80,7 @@ export type InspectionRow = {
   total_deficiency_count: number | null;
   narrative_summary: string | null;
   source_url: string | null;
+  source_event_id: string | null;
   /** Populated at ingest time: "CMS", "UT-CCL", "OR-DHS", "WA-DSHS", etc.
    *  Used to correctly label citations when a facility mixes CMS NF data with
    *  state ALF data (e.g. Utah). */
@@ -92,6 +93,7 @@ export type InspectionRow = {
     areas_examined?: string;
     washington?: boolean;
     posted_month?: string;
+    co_event_id?: string;
   } | null;
   /** Day vs month-only. WA DSHS Forms pages often give a posted month. */
   datePrecision: DatePrecision;
@@ -273,7 +275,7 @@ export interface FacilityProfile {
    * Every stored inspection date and source URL, including rows outside the
    * display window. The quality gate reads this. It is not rendered.
    */
-  gateInspections: Array<{ date: string | null; sourceUrl: string | null }>;
+  gateInspections: GateInspection[];
   /** Deficiency rows keyed by inspection_id (only for visible inspections). */
   deficienciesByInspection: Map<string, DeficiencyRow[]>;
   totals: {
@@ -440,7 +442,7 @@ async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
   const { data: inspData } = await supabase
     .from("inspections")
     .select(
-      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, source_agency, raw_data",
+      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, source_event_id, source_agency, raw_data",
     )
     .eq("facility_id", facilityId)
     .lte("inspection_date", today)
@@ -987,6 +989,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     gateInspections: allInspections.map((row) => ({
       date: row.inspection_date,
       sourceUrl: row.source_url,
+      citationCount: row.total_deficiency_count,
+      visitId: row.source_event_id?.trim() || row.raw_data?.co_event_id?.trim() || null,
     })),
     deficienciesByInspection,
     totals: {
