@@ -9,11 +9,15 @@
  * Specialized Dementia Care contract, or the operator's own page for that
  * address. An adult family home can qualify only from that operator page.
  * The DSHS dementia specialty is staff training. On an adult family home it
- * is a second label, "Accepts residents with dementia", not memory care.
+ * is a staff-training credential, not memory care and not a confirmation
+ * that the home accepts residents with dementia. A separate label,
+ * "Confirmed: accepts residents with dementia", is only for a home that
+ * told StarlynnCare it accepts residents and has no secured unit.
  */
 
 import {
-  ACCEPTS_DEMENTIA_CHIP,
+  CONFIRMED_ACCEPTS_CHIP,
+  DEMENTIA_CREDENTIAL_CHIP,
   type DementiaAcceptanceTier,
   type MemoryCareBasis,
 } from "@/lib/facility/memoryCareBasis";
@@ -180,7 +184,12 @@ export function listedInMemoryCareGroup(input: {
   txAlzheimerCertified?: boolean | null;
 }): boolean {
   if (input.stateSlug === "washington" && input.careChip !== undefined) {
-    if (input.careChip === ACCEPTS_DEMENTIA_CHIP) return false;
+    if (
+      input.careChip === CONFIRMED_ACCEPTS_CHIP ||
+      input.careChip === DEMENTIA_CREDENTIAL_CHIP
+    ) {
+      return false;
+    }
     return Boolean(input.careChip);
   }
   return (
@@ -195,7 +204,8 @@ export function listCareChip(input: {
   basis: MemoryCareBasis;
   tier?: DementiaAcceptanceTier;
 }): string | null {
-  if (input.tier === "accepts-dementia") return ACCEPTS_DEMENTIA_CHIP;
+  if (input.tier === "confirmed-accepts") return CONFIRMED_ACCEPTS_CHIP;
+  if (input.tier === "credential") return DEMENTIA_CREDENTIAL_CHIP;
   const code = input.stateCode.toUpperCase();
   if (input.basis.kind === "memory-care") {
     if (code === "WA") {
@@ -210,13 +220,21 @@ export function listCareChip(input: {
     return "Memory care";
   }
   if (code === "AZ" && input.basis.kind === "care-level") return "Directed Care";
+  if (code === "WA" && /no secured or dedicated memory-care unit/i.test(input.basis.label)) {
+    return CONFIRMED_ACCEPTS_CHIP;
+  }
   if (code === "WA" && /not a secured memory-care unit/i.test(input.basis.label)) {
-    return ACCEPTS_DEMENTIA_CHIP;
+    return DEMENTIA_CREDENTIAL_CHIP;
   }
   return null;
 }
 
-export type CityHubCardGroup = "memory-care" | "accepts-dementia" | "other" | "small";
+export type CityHubCardGroup =
+  | "memory-care"
+  | "confirmed-accepts"
+  | "credential"
+  | "other"
+  | "small";
 
 /** Which first-grid section a card belongs in. Tier 2 is its own section even when the home has 6 or fewer beds. */
 export function cityHubCardGroup(input: {
@@ -224,7 +242,8 @@ export function cityHubCardGroup(input: {
   capacityTier: "small" | "medium" | "large" | "unknown";
   inMemoryCareGroup: boolean;
 }): CityHubCardGroup {
-  if (input.careChip === ACCEPTS_DEMENTIA_CHIP) return "accepts-dementia";
+  if (input.careChip === CONFIRMED_ACCEPTS_CHIP) return "confirmed-accepts";
+  if (input.careChip === DEMENTIA_CREDENTIAL_CHIP) return "credential";
   if (input.capacityTier === "small") return "small";
   if (input.inMemoryCareGroup) return "memory-care";
   return "other";

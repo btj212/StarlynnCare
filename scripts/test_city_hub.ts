@@ -239,7 +239,27 @@ const afhBasisNone = memoryCareBasis({
 });
 assert.equal(
   listCareChip({ stateCode: "WA", basis: afhBasisNone }),
-  "Accepts residents with dementia",
+  "Dementia credential",
+);
+assert.equal(
+  listCareChip({
+    stateCode: "WA",
+    basis: memoryCareBasis({
+      state_code: "WA",
+      wa_facility_type: "ALF",
+      mc_designation_type: "accepts_dementia_no_secured_unit",
+      mc_program_quote: "We do have dementia residents.",
+    }),
+  }),
+  "Confirmed: accepts residents with dementia",
+);
+assert.equal(
+  cityHubCardGroup({
+    careChip: "Confirmed: accepts residents with dementia",
+    capacityTier: "medium",
+    inMemoryCareGroup: false,
+  }),
+  "confirmed-accepts",
 );
 const mccBasis = memoryCareBasis({
   state_code: "WA",
@@ -289,7 +309,7 @@ assert.equal(
 assert.equal(
   listedInMemoryCareGroup({
     stateSlug: "washington",
-    careChip: "Accepts residents with dementia",
+    careChip: "Dementia credential",
     servesMemoryCare: true,
     memoryCareDisclosureFiled: false,
   }),
@@ -305,11 +325,11 @@ assert.equal(
 );
 assert.equal(
   cityHubCardGroup({
-    careChip: "Accepts residents with dementia",
+    careChip: "Dementia credential",
     capacityTier: "small",
     inMemoryCareGroup: false,
   }),
-  "accepts-dementia",
+  "credential",
 );
 assert.equal(
   cityHubCardGroup({
@@ -332,7 +352,9 @@ const certifiedAnswer =
   vancouverFaqs.find((pair) => pair.q.startsWith("What does Memory Care Certified"))?.a ?? "";
 assert.doesNotMatch(certifiedAnswer, /adult family home dementia specialty/);
 assert.match(certifiedAnswer, /don't count it as memory care/);
-assert.match(certifiedAnswer, /Accepts residents with dementia/);
-assert.match(certifiedAnswer, /not a secured or dedicated unit/);
+assert.match(certifiedAnswer, /Confirmed: accepts residents with dementia/);
+assert.match(certifiedAnswer, /Dementia credential/);
+assert.match(certifiedAnswer, /does not confirm the home currently accepts/);
+assert.match(certifiedAnswer, /Neither label is a secured or dedicated unit/);
 
 console.log("city hub accuracy checks passed");

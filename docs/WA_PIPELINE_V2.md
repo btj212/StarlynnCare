@@ -54,7 +54,7 @@ parser → deficiencies
 | wa_facility_type | Beds | Inspector | Profile config | MC signal source |
 |-----------------|------|-----------|----------------|-----------------|
 | `ALF` | 7–200+ | DSHS RCS | `waProfileConfig` | Memory Care Certified, Specialized Dementia Care contract, or the operator's page for that address |
-| `AFH` | 2–6 | DSHS RCS | `waProfileConfig` | Memory care only from the operator's page for that address. The dementia specialty is a second display tier, "Accepts residents with dementia", not memory care and not an eligibility signal |
+| `AFH` | 2–6 | DSHS RCS | `waProfileConfig` | Memory care only from the operator's page for that address. The dementia specialty is a staff-training credential, not memory care, not an eligibility signal, and not a confirmation that the home accepts residents with dementia |
 | `ESF` | varies | DSHS RCS | `waProfileConfig` | Manual review only |
 | `NH` | 50–500 | CMS/Medicare | `waNhProfileConfig` | CMS star rating |
 | `ARC`/`EARC` | varies | DSHS RCS | `waProfileConfig` | EARC-SDC contract |
@@ -78,7 +78,7 @@ AFHs set `wa_afh_residential_flag = true` → no street view, no exterior photo.
 
 **W1c — Display:**
 - `waNhProfileConfig` in `src/lib/states/WA/profileConfig.ts` — F-tag citation prefix, CMS severity labels
-- `WaMcSignalBadges` component — Memory Care Certified, SDCP contract, CMS stars, and a neutral "Accepts residents with dementia" badge for an adult family home whose only signal is the specialty
+- `WaMcSignalBadges` component — Memory Care Certified, SDCP contract, CMS stars, "Confirmed: accepts residents with dementia" when the home told us so, and "Dementia credential" for an adult family home whose only signal is the specialty
 - `FacilityHero` wired to show WA MC signal badges
 
 ### Wave 2 — Universe expansion (shipped May 2026)
@@ -94,9 +94,16 @@ AFHs set `wa_afh_residential_flag = true` → no street view, no exterior photo.
 Families need homes that will take a relative with dementia, including homes with no secured unit. `dementiaAcceptanceTier` is display only. It does not change `serves_memory_care` or publishable.
 
 1. Memory care: Memory Care Certified, a Specialized Dementia Care contract, or the operator's page for that address. An adult family home qualifies only from that page.
-2. Accepts residents with dementia (no secured unit): an adult family home with `wa_dementia_specialty` and no tier-1 signal. The page must not call this memory care.
+2. Confirmed: accepts residents with dementia. The home told StarlynnCare it accepts residents with dementia and has no secured unit. Hub section: "Confirmed to accept residents with dementia (no secured unit)".
+3. Dementia credential: an adult family home with `wa_dementia_specialty` and no higher signal. Hub section: "Homes with a dementia credential (no secured unit)". The page must not say the home accepts residents with dementia, and it must not call this memory care.
 
-A phone or operator-page confirmation of "we accept residents with dementia and have no secured unit" was meant to use `mc_designation_type = 'accepts_dementia_no_secured_unit'` plus a non-empty `mc_program_quote` or `mc_review_notes`. Migration 0044 rejects that value (only null, `Secure Dementia Care Unit`, and `Special Care`). Do not write it until a migration allows it. Amber Hills Assisted Living, Prosser, license 0000002616, is the example and was not updated.
+The confirmed section is above the credential section. Both are below memory care and above other licensed facilities. The confirmed value can be stored once migration 0087 is applied. Do not apply that migration from an agent session, and do not write the row from the app.
+
+- `mc_designation_type` = `accepts_dementia_no_secured_unit`
+- `mc_program_quote` = the home's words, with the call date
+- `mc_review_notes` = the source: a phone call with the date and the staff member's first name, or the operator page URL
+
+The value is not memory care. Pennsylvania still reads only `Secure Dementia Care Unit` and `Special Care`. Amber Hills Assisted Living, Prosser, license 0000002616, is the example and is not updated here.
 
 ### Wave 3 — AFH + ESF (shipped May 2026)
 

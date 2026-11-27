@@ -6,6 +6,40 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Three Washington display labels
+
+**Decided:** Washington pages use three display levels, highest first. This does not change `serves_memory_care`, `publishable`, the sitemap, or `recompute_publishable.py`.
+
+1. Memory care, unchanged.
+2. Confirmed acceptance, no secured unit. Badge and chip: "Confirmed: accepts residents with dementia". Hub section: "Confirmed to accept residents with dementia (no secured unit)". Basis and FAQ stay the phone-call sentences. JSON-LD `Dementia care`: "Confirmed: accepts residents with dementia (no secured unit)". Title suffix: ", Accepts Dementia" when it fits.
+3. Dementia credential, the adult family home specialty only. Badge and chip: "Dementia credential". Hub section: "Homes with a dementia credential (no secured unit)". The basis line stays the staff-training sentence. FAQ: "Does {name} have a dementia credential?" JSON-LD `Dementia care`: "Dementia credential (staff training; no secured unit)". Title suffix: ", Dementia Credential" when it fits. A credential page does not say the home accepts residents with dementia.
+
+On a city hub the confirmed section is above the credential section. Both sit below memory care and above "Other licensed facilities".
+
+**This supersedes** the same-day labels that called the specialty "Accepts residents with dementia".
+
+**Source:** Blake, 2026-11-27, 9:53 AM PT.
+
+---
+
+## 2026-11-27 — Washington tier 2b can be stored
+
+**Decided:** Migration `0087_mc_designation_accepts_dementia.sql` widens `facilities_mc_designation_type_check` so the column may be `accepts_dementia_no_secured_unit` as well as null, `Secure Dementia Care Unit`, and `Special Care`. The new value is display tier 2b. It is not memory care, not a secured unit, and not a `serves_memory_care` signal. Do not apply this migration from an agent session. Blake applies it after merge. Do not write the value onto Amber Hills or any other row from the app.
+
+A Washington home that is not already memory care is tier 2b only when that value is set and `mc_program_quote` or `mc_review_notes` is non-empty.
+
+- `mc_designation_type`: `accepts_dementia_no_secured_unit`
+- `mc_program_quote`: the home's words, with the call date. Example: `We don't have a dementia unit. We're not a locked facility. We do have dementia residents. (2026-11-27)`
+- `mc_review_notes`: the source. A phone call with the date and the staff member's first name, or the operator page URL for that address.
+
+Pennsylvania readers keep using only `Secure Dementia Care Unit` and `Special Care`. `recompute_publishable.py` was not changed. Its `mc_designation_type IS NOT NULL` branch is `state_code = 'PA'` only, so a Washington 2b row does not flip `serves_memory_care`.
+
+**This supersedes** the same-day sentence that said 2b could not be stored.
+
+**Source:** Blake, 2026-11-27, after PR 263. Amber Hills Assisted Living, Prosser, license 0000002616.
+
+---
+
 ## 2026-11-27 — Two display tiers for Washington dementia
 
 **Decided:** Families are looking for a home that will take a relative who has dementia. A secured unit and a home that accepts those residents are different facts, so Washington pages use two display tiers. This does not change `serves_memory_care`, `publishable`, the sitemap, or `recompute_publishable.py`.

@@ -42,7 +42,7 @@ import {
   buildReviewSchema,
   regulatorLicensePageFor,
 } from "@/lib/seo/schema";
-import { memoryCareBasis, dementiaAcceptanceTier, waAcceptsDementiaFaqAnswer } from "@/lib/facility/memoryCareBasis";
+import { memoryCareBasis, dementiaAcceptanceTier, waCredentialFaqAnswer, waToldUsFaqAnswer } from "@/lib/facility/memoryCareBasis";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import {
   inspectionDatePrecision,
@@ -333,12 +333,13 @@ export interface FacilityProfile {
    * WA memory-care signal badges.
    * Non-null only for WA facilities; null for all other states.
    * Memory Care Certified, a Specialized Dementia Care contract, or the
-   * second-tier "accepts residents with dementia" badge.
+   * confirmed-accepts badge, or the dementia-credential badge.
    */
   waMcSignals: {
     memoryCare: boolean;
     sdcp: boolean;
     acceptsDementia: boolean;
+    dementiaCredential: boolean;
     cmsOverallRating: number | null;
   } | null;
 
@@ -888,9 +889,9 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         ? acceptanceTier === "memory-care"
         : facility.serves_memory_care,
     acceptsDementiaAnswer:
-      acceptanceTier === "accepts-dementia"
-        ? waAcceptsDementiaFaqAnswer(facility.name)
-        : null,
+      acceptanceTier === "confirmed-accepts" ? waToldUsFaqAnswer(facility.name) : null,
+    dementiaCredentialAnswer:
+      acceptanceTier === "credential" ? waCredentialFaqAnswer(facility.name) : null,
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
     previousLicenseUrl:
@@ -989,7 +990,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         ? {
             memoryCare: facility.wa_memory_care_certified ?? false,
             sdcp: Boolean(facility.wa_earc_sdc_contracted || facility.wa_dementia_care_contract),
-            acceptsDementia: acceptanceTier === "accepts-dementia",
+            acceptsDementia: acceptanceTier === "confirmed-accepts",
+            dementiaCredential: acceptanceTier === "credential",
             cmsOverallRating: facility.cms_overall_rating ?? null,
           }
         : null,

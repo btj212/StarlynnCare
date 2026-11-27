@@ -22,7 +22,8 @@ import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { regulatorFor } from "@/lib/states/regulators";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import {
-  ACCEPTS_DEMENTIA_JSONLD,
+  CONFIRMED_ACCEPTS_JSONLD,
+  DEMENTIA_CREDENTIAL_JSONLD,
   dementiaAcceptanceTier,
 } from "@/lib/facility/memoryCareBasis";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
@@ -230,14 +231,18 @@ export function buildLocalBusinessForFacility(
       });
     }
   }
+  const acceptanceTier = dementiaAcceptanceTier(facility);
   if (
     opts.memoryCare?.kind !== "memory-care" &&
-    dementiaAcceptanceTier(facility) === "accepts-dementia"
+    (acceptanceTier === "confirmed-accepts" || acceptanceTier === "credential")
   ) {
     additionalProperty.push({
       "@type": "PropertyValue",
       name: "Dementia care",
-      value: ACCEPTS_DEMENTIA_JSONLD,
+      value:
+        acceptanceTier === "confirmed-accepts"
+          ? CONFIRMED_ACCEPTS_JSONLD
+          : DEMENTIA_CREDENTIAL_JSONLD,
     });
   }
   if (facility.state_code === "AZ" && facility.mc_program_confirmed === true) {
@@ -941,10 +946,15 @@ export type FacilityFaqInput = {
    */
   servesMemoryCare?: boolean;
   /**
-   * Second-tier Washington answer. When set, ask "accept residents with
-   * dementia?" and do not also ask "provide memory care?".
+   * Confirmed Washington answer. When set, ask whether the home accepts
+   * residents with dementia, and do not also ask "provide memory care?".
    */
   acceptsDementiaAnswer?: string | null;
+  /**
+   * Staff-training credential. When set, ask whether the home has that
+   * credential. Do not ask whether it accepts residents or provides memory care.
+   */
+  dementiaCredentialAnswer?: string | null;
   licenseNumber: string | null;
   licenseUrl: string | null;
   /** DSHS Forms page for a prior license when the URL still uses the old number. */
@@ -1011,6 +1021,11 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
     pairs.push({
       q: `Does ${name} accept residents with dementia?`,
       a: input.acceptsDementiaAnswer.trim(),
+    });
+  } else if (input.dementiaCredentialAnswer?.trim()) {
+    pairs.push({
+      q: `Does ${name} have a dementia credential?`,
+      a: input.dementiaCredentialAnswer.trim(),
     });
   } else if (input.servesMemoryCare !== false) {
     pairs.push({

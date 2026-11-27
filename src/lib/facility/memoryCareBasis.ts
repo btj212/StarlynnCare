@@ -47,25 +47,47 @@ export const WA_AFH_NO_MC_BASIS =
   "Washington DSHS does not certify adult family homes for memory care, and StarlynnCare has not confirmed a memory-care program at this address.";
 
 /**
- * Second tier. Staff training means the home may take a resident with
- * dementia. It is not a secured or dedicated memory-care unit.
+ * Staff-training credential on an adult family home. It does not confirm
+ * the home accepts residents with dementia, and it is not a secured unit.
  */
 export const WA_AFH_ACCEPTS_DEMENTIA_BASIS =
   "Washington DSHS lists this adult family home as trained to care for residents with dementia. That is staff training, not a secured memory-care unit, and StarlynnCare has not confirmed a memory-care program at this address.";
 
-export const ACCEPTS_DEMENTIA_CHIP = "Accepts residents with dementia";
+export const CONFIRMED_ACCEPTS_CHIP = "Confirmed: accepts residents with dementia";
 
-export const ACCEPTS_DEMENTIA_SECTION =
-  "Homes that accept residents with dementia (no secured unit)";
+export const CONFIRMED_ACCEPTS_SECTION =
+  "Confirmed to accept residents with dementia (no secured unit)";
 
-export const ACCEPTS_DEMENTIA_JSONLD =
-  "Accepts residents with dementia (no secured unit)";
+export const CONFIRMED_ACCEPTS_JSONLD =
+  "Confirmed: accepts residents with dementia (no secured unit)";
 
-export function waAcceptsDementiaFaqAnswer(name: string): string {
-  return `Washington DSHS lists ${name} as an adult family home with a dementia specialty, which means its staff are trained to care for residents with dementia. It is not certified for memory care and has no confirmed secured unit, so ask the home about wandering, exit doors, and overnight staff.`;
+export const DEMENTIA_CREDENTIAL_CHIP = "Dementia credential";
+
+export const DEMENTIA_CREDENTIAL_SECTION =
+  "Homes with a dementia credential (no secured unit)";
+
+export const DEMENTIA_CREDENTIAL_JSONLD =
+  "Dementia credential (staff training; no secured unit)";
+
+export function waCredentialFaqAnswer(name: string): string {
+  return `Washington DSHS lists ${name} as an adult family home with a dementia specialty, a staff-training credential. That doesn't confirm it currently accepts residents with dementia, it isn't certified for memory care, and it has no confirmed secured unit, so ask the home directly about dementia care, wandering, exit doors, and overnight staff.`;
 }
 
-export type DementiaAcceptanceTier = "memory-care" | "accepts-dementia" | "neither";
+/** Stored value from migration 0087. Not a Pennsylvania designation and not memory care. */
+export const ACCEPTS_DEMENTIA_NO_SECURED_UNIT = "accepts_dementia_no_secured_unit";
+
+export const WA_TOLD_US_ACCEPTS_BASIS =
+  "The home told StarlynnCare it accepts residents with dementia but has no secured or dedicated memory-care unit.";
+
+export function waToldUsFaqAnswer(name: string): string {
+  return `Yes. ${name} told StarlynnCare it accepts residents with dementia, but it has no secured or dedicated memory-care unit, so ask the home about wandering, exit doors, and overnight staff.`;
+}
+
+export type DementiaAcceptanceTier =
+  | "memory-care"
+  | "confirmed-accepts"
+  | "credential"
+  | "neither";
 
 export const WA_OPERATOR_PROGRAM_LABEL =
   "The operator's own page for this address describes a memory-care program.";
@@ -98,6 +120,8 @@ export type MemoryCareBasisInput = {
   mc_program_confirmed?: boolean | null;
   mc_program_source_url?: string | null;
   mc_program_quote?: string | null;
+  /** Phone call or operator page that backs the Washington 2b designation. */
+  mc_review_notes?: string | null;
   /** DSHS contract strings from the ALF directory. */
   wa_contract_types?: string[] | null;
   tx_alzheimer_certified?: boolean | null;
@@ -194,6 +218,16 @@ function isWaAdultFamilyHome(facility: MemoryCareBasisInput): boolean {
   );
 }
 
+/**
+ * Washington tier 2b. The designation alone is not enough: a quote or a
+ * review note has to record what the home said. Never a memory-care basis.
+ */
+export function waToldUsAcceptsDementia(facility: MemoryCareBasisInput): boolean {
+  if (facility.state_code !== "WA") return false;
+  if (facility.mc_designation_type !== ACCEPTS_DEMENTIA_NO_SECURED_UNIT) return false;
+  return Boolean(facility.mc_program_quote?.trim() || facility.mc_review_notes?.trim());
+}
+
 /** Operator's own page for this address. The training specialty never qualifies. */
 function waOperatorConfirmed(facility: MemoryCareBasisInput): boolean {
   return (
@@ -242,6 +276,9 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   if (isWaAdultFamilyHome(facility)) {
     if (waOperatorConfirmed(facility)) {
       return recorded(WA_OPERATOR_PROGRAM_LABEL, facility.mc_program_quote ?? null);
+    }
+    if (waToldUsAcceptsDementia(facility)) {
+      return { ...basis, label: WA_TOLD_US_ACCEPTS_BASIS };
     }
     if (facility.wa_dementia_specialty === true) {
       return { ...basis, label: WA_AFH_ACCEPTS_DEMENTIA_BASIS };
@@ -337,6 +374,9 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   if (facility.state_code === "WA" && waOperatorConfirmed(facility)) {
     return recorded(WA_OPERATOR_PROGRAM_LABEL, facility.mc_program_quote ?? null);
   }
+  if (waToldUsAcceptsDementia(facility)) {
+    return { ...basis, label: WA_TOLD_US_ACCEPTS_BASIS };
+  }
 
   if (facility.tx_alzheimer_certified) {
     return recorded(texasLabel(facility.tx_alzheimer_cert_no));
@@ -368,22 +408,20 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
 }
 
 /**
- * Display tier for a Washington home. Memory care matches `memoryCareBasis`
- * after the specialty was removed as evidence. The second tier is an adult
- * family home with the DSHS dementia-specialty training flag and no
- * confirmed program. An assisted living facility is not in that tier from
- * the specialty alone.
- *
- * A phone-confirmed "accepts dementia, no secured unit" value cannot be
- * stored: `mc_designation_type` is text with a check that allows only
- * null, "Secure Dementia Care Unit", and "Special Care" (migration 0044).
+ * Display tier for a Washington home. Memory care matches `memoryCareBasis`.
+ * Below that, a home the operator confirmed accepts residents with dementia
+ * and has no secured unit. Below that, an adult family home whose only
+ * signal is the dementia-specialty training credential. The specialty
+ * never says the home accepts residents, and it never puts an assisted
+ * living facility in either lower tier.
  */
 export function dementiaAcceptanceTier(
   facility: MemoryCareBasisInput,
 ): DementiaAcceptanceTier {
   if (memoryCareBasis(facility).kind === "memory-care") return "memory-care";
+  if (waToldUsAcceptsDementia(facility)) return "confirmed-accepts";
   if (isWaAdultFamilyHome(facility) && facility.wa_dementia_specialty === true) {
-    return "accepts-dementia";
+    return "credential";
   }
   return "neither";
 }

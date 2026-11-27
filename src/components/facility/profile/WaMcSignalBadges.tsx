@@ -24,6 +24,9 @@ export type WaMcSignalInput = {
   wa_dementia_specialty?: boolean | null;
   mc_program_confirmed?: boolean | null;
   mc_program_source_url?: string | null;
+  mc_designation_type?: string | null;
+  mc_program_quote?: string | null;
+  mc_review_notes?: string | null;
   cms_overall_rating?: number | null;
 };
 
@@ -31,6 +34,7 @@ export type WaMcSignals = {
   memoryCare: boolean;
   sdcp: boolean;
   acceptsDementia: boolean;
+  dementiaCredential: boolean;
   cmsOverallRating: number | null;
 };
 
@@ -45,11 +49,15 @@ export function waMcSignalsFromRow(row: WaMcSignalInput): WaMcSignals {
     wa_dementia_specialty: row.wa_dementia_specialty,
     mc_program_confirmed: row.mc_program_confirmed,
     mc_program_source_url: row.mc_program_source_url,
+    mc_designation_type: row.mc_designation_type,
+    mc_program_quote: row.mc_program_quote,
+    mc_review_notes: row.mc_review_notes,
   });
   return {
     memoryCare: row.wa_memory_care_certified ?? false,
     sdcp: Boolean(row.wa_earc_sdc_contracted || row.wa_dementia_care_contract),
-    acceptsDementia: tier === "accepts-dementia",
+    acceptsDementia: tier === "confirmed-accepts",
+    dementiaCredential: tier === "credential",
     cmsOverallRating: row.cms_overall_rating ?? null,
   };
 }
@@ -59,6 +67,7 @@ export function waMcSignalsHaveAny(signals: WaMcSignals): boolean {
     signals.memoryCare ||
     signals.sdcp ||
     signals.acceptsDementia ||
+    signals.dementiaCredential ||
     signals.cmsOverallRating !== null
   );
 }
@@ -106,7 +115,7 @@ function Badge({ label, title, tone = "teal" }: BadgeProps) {
 }
 
 export function WaMcSignalBadges({ signals }: Props) {
-  const { memoryCare, sdcp, acceptsDementia, cmsOverallRating } = signals;
+  const { memoryCare, sdcp, acceptsDementia, dementiaCredential, cmsOverallRating } = signals;
   const hasAny = waMcSignalsHaveAny(signals);
 
   if (!hasAny) return null;
@@ -129,8 +138,15 @@ export function WaMcSignalBadges({ signals }: Props) {
       )}
       {acceptsDementia && (
         <Badge
-          label="Accepts residents with dementia"
-          title="Staff are trained to care for residents with dementia. This is not a secured or dedicated memory-care unit."
+          label="Confirmed: accepts residents with dementia"
+          title="The home told StarlynnCare it accepts residents with dementia. This is not a secured or dedicated memory-care unit."
+          tone="ink"
+        />
+      )}
+      {dementiaCredential && (
+        <Badge
+          label="Dementia credential"
+          title="Staff completed Washington dementia training. This does not confirm the home accepts residents with dementia, and it is not a secured unit."
           tone="ink"
         />
       )}
