@@ -4,7 +4,8 @@
 The API is GET https://cclapi.dlbc.utah.gov/api/public/facilities/{id}.
 The id is the numeric part of ArcGIS idNumber (external_id), for example
 F23-106488 → 106488. The public page is
-https://ccl.utah.gov/facility/106488. license_number is empty on these
+https://provider.dlbc.utah.gov/ccl/facilities#106488 (ccl.utah.gov/facility/{id}
+is the staff portal and shows "Page not found" to the public). license_number is empty on these
 rows; the join key is external_id. Dates and citation counts are already
 stored from findings[].
 

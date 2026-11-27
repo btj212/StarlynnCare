@@ -117,7 +117,7 @@ class UtahMatchTests(unittest.TestCase):
             self.assertIsNone(row["license_number"])
             ccl_id = external_id_to_ccl_id(row["external_id"])
             self.assertEqual(ccl_id, row["ccl_id"])
-            self.assertEqual(ccl_facility_url(ccl_id or 0), f"https://ccl.utah.gov/facility/{row['ccl_id']}")
+            self.assertEqual(ccl_facility_url(ccl_id or 0), f"https://provider.dlbc.utah.gov/ccl/facilities#{row['ccl_id']}")
 
 
 class ColoradoEventTests(unittest.TestCase):

@@ -35,7 +35,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "How does DLBC inspect Utah memory care facilities?",
-    a: "The Utah Division of Licensing and Background Checks conducts on-site inspections of all licensed ALFs — typically at least annually — and investigates complaints and reportable incidents. Inspections review staffing levels and credentials, resident rights, medication management, physical environment safety, care planning, and compliance with any dementia-specific requirements applicable to the unit. Inspection reports and any violations are public record and available through DLBC's licensing portal at ccl.utah.gov. StarlynnCare indexes these records for every published Utah facility profile.",
+    a: "The Utah Division of Licensing and Background Checks conducts on-site inspections of all licensed ALFs — typically at least annually — and investigates complaints and reportable incidents. Inspections review staffing levels and credentials, resident rights, medication management, physical environment safety, care planning, and compliance with any dementia-specific requirements applicable to the unit. Inspection reports and any violations are public record and available through DLBC's public Find a Facility search at provider.dlbc.utah.gov. StarlynnCare indexes these records for every published Utah facility profile.",
   },
   {
     q: "How are violations classified in Utah ALF inspections?",
@@ -94,7 +94,7 @@ function QuickReferenceTable() {
     { attr: "Licensing authority", value: "Utah Division of Licensing and Background Checks (DLBC)" },
     { attr: "Parent agency", value: "Utah Department of Health and Human Services (DHHS)" },
     { attr: "Governing rule", value: "Utah Admin. Code R432-270" },
-    { attr: "Inspection source (StarlynnCare)", value: "DLBC licensing portal — ccl.utah.gov" },
+    { attr: "Inspection source (StarlynnCare)", value: "DLBC Find a Facility — provider.dlbc.utah.gov" },
     { attr: "Medicaid program", value: "HCBS ALF waiver through Utah DHHS — not universally available" },
   ];
   return (
@@ -226,7 +226,7 @@ export default function UtLicensingPage() {
               <li>
                 DLBC conducts{" "}
                 <strong className="font-medium text-ink">annual inspections</strong> and investigates
-                complaints. Inspection records are public at ccl.utah.gov — StarlynnCare indexes
+                complaints. Inspection records are public at provider.dlbc.utah.gov — StarlynnCare indexes
                 them on every Utah facility profile.
               </li>
               <li>
@@ -280,12 +280,12 @@ export default function UtLicensingPage() {
             <p>
               Inspection findings and any violations are published by DLBC at{" "}
               <a
-                href="https://ccl.utah.gov"
+                href="https://provider.dlbc.utah.gov/ccl/facilities"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-teal underline underline-offset-4"
               >
-                ccl.utah.gov
+                DLBC Find a Facility
               </a>
               . StarlynnCare pulls these records and displays them on each Utah facility profile, with
               the inspection exit date and violation description.

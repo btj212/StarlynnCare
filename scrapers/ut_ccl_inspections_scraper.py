@@ -212,7 +212,7 @@ INSPECTION_SQL = """
 # The public page for one CCL id. The API returns the inspection list;
 # this is the page a family opens for that same id.
 def ccl_facility_url(ccl_id: int) -> str:
-    return f"https://ccl.utah.gov/facility/{ccl_id}"
+    return f"https://provider.dlbc.utah.gov/ccl/facilities#{ccl_id}"
 
 # Deficiency: guard against re-insert by checking existence first.
 # No unique index on (inspection_id, code) globally since other states

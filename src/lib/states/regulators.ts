@@ -70,7 +70,7 @@ export const STATE_REGULATORS: Record<string, StateRegulator> = {
   UT: {
     short: "DLBC",
     long: "Utah Dept. of Health & Human Services · Division of Licensing and Background Checks",
-    portalUrl: "https://ccl.utah.gov",
+    portalUrl: "https://provider.dlbc.utah.gov/ccl/facilities",
     cite: "DLBC (Utah)",
   },
   WA: {
