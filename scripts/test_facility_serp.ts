@@ -10,6 +10,8 @@ import {
 } from "../src/lib/seo/meta.ts";
 import { buildFacilityFaqPairs } from "../src/lib/seo/schema.ts";
 import { displayCityName } from "../src/lib/resolveListingRegion.ts";
+import { facilityDisplayName } from "../src/lib/facility/aliases.ts";
+import { pickNearbyFacilities, type NearbyHome } from "../src/lib/facility/nearbyFacilities.ts";
 
 const longName = "The Heritage at Brookdale Tanque Verde Estates";
 
@@ -22,11 +24,12 @@ const titled = buildFacilityTitle({
   inspectionCount: 4,
   reviewCount: 0,
   lastInspectionDate: "2024-09-12",
+  year: 2026,
 });
-assert.equal(titled, "Brookdale Tanque Verde, Tucson — 5 citations, inspected Sep 2024");
+assert.equal(titled, "Brookdale Tanque Verde, Tucson: Inspection Record & Citations (2026)");
 assert.equal(titled.includes("Top"), false);
+assert.equal(titled.includes("Memory Care"), false);
 assert.ok(titled.length <= 70);
-assert.equal(titled.includes("Inspection Record & Citations"), false);
 
 const withReviews = buildFacilityTitle({
   name: "Short Home",
@@ -37,8 +40,9 @@ const withReviews = buildFacilityTitle({
   inspectionCount: 2,
   reviewCount: 3,
   lastInspectionDate: "2025-03-01",
+  year: 2026,
 });
-assert.equal(withReviews, "Short Home, Mesa — 1 citation, inspected Mar 2025");
+assert.equal(withReviews, "Short Home, Mesa: Inspection Record & Citations (2026)");
 assert.equal(withReviews.includes("Top"), false);
 assert.ok(withReviews.length <= 70);
 
@@ -50,8 +54,33 @@ const noRecord = buildFacilityTitle({
   citationCount: 0,
   inspectionCount: 0,
   reviewCount: 0,
+  dementiaTier: "memory-care",
+  year: 2026,
 });
-assert.equal(noRecord, "Quiet Cottage, Portland: Licensed Memory Care");
+assert.equal(noRecord, "Quiet Cottage, Portland: Inspection Record & Citations (2026)");
+assert.equal(noRecord.includes("Memory Care"), false);
+
+const dropCitations = buildFacilityTitle({
+  name: "Brookdale Tanque Verde Estates",
+  stateName: "Arizona",
+  percentile: null,
+  city: "Tucson",
+  year: 2026,
+});
+assert.equal(dropCitations, "Brookdale Tanque Verde Estates, Tucson: Inspection Record (2026)");
+assert.equal(dropCitations.includes("& Citations"), false);
+assert.ok(dropCitations.length <= 70);
+
+const dropYear = buildFacilityTitle({
+  name: "The Heritage at Brookdale Tanque Verde",
+  stateName: "Arizona",
+  percentile: null,
+  city: "Phoenix",
+  year: 2026,
+});
+assert.equal(dropYear, "The Heritage at Brookdale Tanque Verde, Phoenix: Inspection Record");
+assert.equal(dropYear.includes("(2026)"), false);
+assert.ok(dropYear.length <= 70);
 
 const clipped = buildFacilityTitle({
   name: longName,
@@ -62,10 +91,59 @@ const clipped = buildFacilityTitle({
   inspectionCount: 8,
   reviewCount: 4,
   lastInspectionDate: "2024-01-01",
+  year: 2026,
 });
-assert.equal(clipped.startsWith("The Heritage at Brookdale"), true);
+assert.equal(clipped, "The Heritage at Brookdale Tanque Verde Estates, Tucson");
 assert.ok(clipped.length <= 70);
 assert.equal(clipped.includes("Top"), false);
+assert.equal(clipped.includes("Inspection Record"), false);
+
+const namedMemoryCare = buildFacilityTitle({
+  name: "Sunrise Memory Care",
+  stateName: "Arizona",
+  percentile: null,
+  city: "Mesa",
+  dementiaTier: "neither",
+  year: 2026,
+});
+assert.equal(namedMemoryCare, "Sunrise Memory Care, Mesa: Inspection Record & Citations (2026)");
+assert.equal(namedMemoryCare.includes("Licensed Memory Care"), false);
+
+const acceptsFits = buildFacilityTitle({
+  name: "Bo Home",
+  stateName: "Washington",
+  stateCode: "WA",
+  dementiaTier: "confirmed-accepts",
+  percentile: null,
+  city: "Kent",
+  year: 2026,
+});
+assert.equal(acceptsFits, "Bo Home, Kent: Inspection Record & Citations (2026), Accepts Dementia");
+assert.ok(acceptsFits.length <= 70);
+
+const credentialFits = buildFacilityTitle({
+  name: "Ada",
+  stateName: "Washington",
+  stateCode: "WA",
+  dementiaTier: "credential",
+  percentile: null,
+  city: "Kent",
+  year: 2026,
+});
+assert.equal(credentialFits, "Ada, Kent: Inspection Record & Citations (2026), Dementia Credential");
+assert.ok(credentialFits.length <= 70);
+
+const suffixDropped = buildFacilityTitle({
+  name: "Amber Hills",
+  stateName: "Washington",
+  stateCode: "WA",
+  dementiaTier: "confirmed-accepts",
+  percentile: null,
+  city: "Prosser",
+  year: 2026,
+});
+assert.equal(suffixDropped, "Amber Hills, Prosser: Inspection Record & Citations (2026)");
+assert.doesNotMatch(suffixDropped, /Accepts Dementia|Memory Care/);
 
 const sentence = buildFacilityRecordSentence({
   citationCount: 5,
@@ -185,4 +263,102 @@ assert.equal(displayCityName("PORTLAND", "portland"), "Portland");
 assert.equal(displayCityName("Tucson", "tucson"), "Tucson");
 assert.equal(displayCityName("ST. LOUIS", "st-louis"), "St. Louis");
 
+assert.equal(
+  faq.some((pair) => /Medicaid|Medi-Cal|secured memory-care/i.test(pair.q)),
+  false,
+);
+
+const medicaidYes = buildFacilityFaqPairs({
+  ...faqInput("Cedar Home", "OR"),
+  orAcceptsMedicaid: true,
+});
+assert.match(
+  medicaidYes.find((pair) => pair.q === "Does Cedar Home accept Medicaid?")?.a ?? "",
+  /Yes\. Oregon DHS lists Cedar Home as accepting Medicaid/,
+);
+const medicaidNull = buildFacilityFaqPairs({
+  ...faqInput("Cedar Home", "OR"),
+  orAcceptsMedicaid: null,
+});
+assert.equal(medicaidNull.some((pair) => /Medicaid/i.test(pair.q)), false);
+const mediCal = buildFacilityFaqPairs(faqInput("Cedar Home", "CA"));
+assert.equal(mediCal.some((pair) => /Medi-Cal|Medicaid/i.test(pair.q)), false);
+
+const securedYes = buildFacilityFaqPairs({
+  ...faqInput("Mercer Hill at Doylestown", "PA"),
+  mcDesignationType: "Secure Dementia Care Unit",
+});
+assert.match(
+  securedYes.find((pair) => /secured memory-care unit/.test(pair.q))?.a ?? "",
+  /Secure Dementia Care Unit/,
+);
+const securedNull = buildFacilityFaqPairs({
+  ...faqInput("Mercer Hill at Doylestown", "PA"),
+  mcDesignationType: null,
+});
+assert.equal(securedNull.some((pair) => /secured memory-care unit/.test(pair.q)), false);
+const credentialOnly = buildFacilityFaqPairs({
+  ...faqInput("Amazing Hearts AFH", "WA"),
+  waMemoryCareCertified: null,
+});
+assert.equal(credentialOnly.some((pair) => /secured memory-care unit/.test(pair.q)), false);
+const specialtyIsNotSecured = buildFacilityFaqPairs({
+  ...faqInput("Amazing Hearts AFH", "WA"),
+  waMemoryCareCertified: null,
+  mcDesignationType: null,
+});
+assert.equal(specialtyIsNotSecured.some((pair) => /secured memory-care unit/.test(pair.q)), false);
+
+assert.equal(
+  facilityDisplayName({ name: "LEGACY RETIREMENT RESIDENCE", marketing_name: "Legacy House of Mesa" }),
+  "Legacy House of Mesa",
+);
+assert.equal(facilityDisplayName({ name: "QUIET COTTAGE" }), "Quiet Cottage");
+
+const nearby: NearbyHome[] = [
+  { id: "self", name: "Self Home", slug: "self", city_slug: "mesa", city: "Mesa", publishable: true, latitude: "33.4", longitude: "-111.8" },
+  { id: "far", name: "Far Home", slug: "far", city_slug: "mesa", city: "Mesa", publishable: true, latitude: "33.9", longitude: "-111.2" },
+  { id: "near", name: "Near Home", slug: "near", city_slug: "mesa", city: "Mesa", publishable: true, latitude: "33.41", longitude: "-111.81" },
+  { id: "hidden", name: "Hidden Home", slug: "hidden", city_slug: "mesa", city: "Mesa", publishable: false, latitude: "33.40", longitude: "-111.80" },
+  { id: "alpha", name: "Alpha Home", slug: "alpha", city_slug: "tucson", city: "Tucson", publishable: true, latitude: "32.2", longitude: "-110.9" },
+];
+const picked = pickNearbyFacilities({
+  selfId: "self",
+  citySlug: "mesa",
+  latitude: "33.4",
+  longitude: "-111.8",
+  homes: nearby,
+});
+assert.deepEqual(picked.map((home) => home.id), ["near", "far", "alpha"]);
+assert.equal(picked.some((home) => home.id === "self" || home.id === "hidden"), false);
+const alphaOnly = pickNearbyFacilities({
+  selfId: "self",
+  citySlug: "mesa",
+  homes: nearby.map((home) => ({ ...home, latitude: null, longitude: null })),
+});
+assert.deepEqual(alphaOnly.map((home) => home.id), ["far", "near", "alpha"]);
+
 console.log("facility SERP checks passed");
+
+function faqInput(name: string, stateCode: string) {
+  const stateName = stateCode === "OR" ? "Oregon" : stateCode === "CA" ? "California" : stateCode === "PA" ? "Pennsylvania" : "Washington";
+  return {
+    facilityName: name,
+    stateName,
+    stateCode,
+    pageUrl: "https://www.starlynncare.com/example",
+    inspectionCount: 1,
+    deficiencyCount: 0,
+    countsCoverThreeYears: true,
+    lastInspectionDate: "2026-01-01",
+    lastInspectionType: "annual",
+    lastInspectionIsComplaint: false,
+    seriousFindings: [],
+    percentile: null,
+    memoryCareLabel: null,
+    licenseNumber: "1",
+    licenseUrl: null,
+    regulatorName: "State regulator",
+    regulatorAbbr: "DHS",
+  };
+}

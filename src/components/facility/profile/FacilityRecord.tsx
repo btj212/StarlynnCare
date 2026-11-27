@@ -326,11 +326,7 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
           label="The Record"
-          title={
-            <>
-              Citation history, <em>plotted month by month.</em>
-            </>
-          }
+          title="Reviews & inspection record"
           deck={
             totals.deficiencies === 0
               ? "No citations in the last 36 months."

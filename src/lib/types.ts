@@ -205,6 +205,10 @@ export interface Facility {
   mce_evidence?: string | null;
   /** APD Enhanced Oversight & Supervision program. */
   enhanced_oversight?: boolean | null;
+  /** Oregon roster flag. Null means the roster did not say. */
+  or_accepts_medicaid?: boolean | null;
+  /** Utah locked-unit beds. Pennsylvania also stores a count; the secured-unit FAQ uses the PA designation string. */
+  secure_beds?: number | null;
   /** ORS 443.886(6): facility markets as memory care without holding MCE endorsement. */
   unendorsed_mc_violation?: boolean | null;
   // facilities.has_inspection_text — migration 0026_facility_data_quality.sql

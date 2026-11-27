@@ -447,9 +447,11 @@ const toldTitle = buildFacilityTitle({
   citationCount: 0,
   inspectionCount: 0,
   reviewCount: 0,
+  year: 2026,
 });
 assert.equal(toldTitle.includes("Memory Care"), false);
-assert.equal(toldTitle, "Amber Hills, Prosser: Assisted Living, Accepts Dementia");
+assert.equal(toldTitle, "Amber Hills, Prosser: Inspection Record & Citations (2026)");
+assert.doesNotMatch(toldTitle, /Accepts Dementia/);
 const credentialFaq = afhFaq.find((pair) => pair.q === "Does Amazing Hearts AFH have a dementia credential?");
 assert.equal(credentialFaq?.a, waCredentialFaqAnswer("Amazing Hearts AFH"));
 assert.match(credentialFaq?.a ?? "", /staff-training credential/);
@@ -467,11 +469,13 @@ const afhTitle = buildFacilityTitle({
   citationCount: 0,
   inspectionCount: 0,
   reviewCount: 0,
+  year: 2026,
 });
 assert.equal(afhTitle.includes("Memory Care"), false);
-assert.match(afhTitle, /Adult Family Home/);
+assert.doesNotMatch(afhTitle, /Adult Family Home/);
 assert.doesNotMatch(afhTitle, /Accepts Dementia/);
 assert.doesNotMatch(afhTitle, /Dementia Credential/);
+assert.match(afhTitle, /Inspection Record/);
 const shortCredentialTitle = buildFacilityTitle({
   name: "Ada Home",
   stateName: "Washington",
@@ -483,8 +487,87 @@ const shortCredentialTitle = buildFacilityTitle({
   citationCount: 0,
   inspectionCount: 0,
   reviewCount: 0,
+  year: 2026,
 });
-assert.equal(shortCredentialTitle, "Ada Home, Vancouver: Adult Family Home, Dementia Credential");
+assert.equal(shortCredentialTitle.includes("Memory Care"), false);
+assert.doesNotMatch(shortCredentialTitle, /Adult Family Home|Dementia Credential/);
+assert.match(shortCredentialTitle, /Inspection Record/);
+
+const securedOmitted = buildFacilityFaqPairs({
+  facilityName: "Amazing Hearts AFH",
+  stateName: "Washington",
+  stateCode: "WA",
+  pageUrl: "https://www.starlynncare.com/washington/vancouver/amazing-hearts",
+  inspectionCount: 0,
+  deficiencyCount: 0,
+  countsCoverThreeYears: false,
+  lastInspectionDate: null,
+  lastInspectionType: null,
+  lastInspectionIsComplaint: false,
+  seriousFindings: [],
+  percentile: null,
+  memoryCareLabel: "No dementia designation on the DSHS roster.",
+  servesMemoryCare: false,
+  licenseNumber: "1",
+  licenseUrl: null,
+  regulatorName: "Washington DSHS",
+  regulatorAbbr: "DSHS",
+  waMemoryCareCertified: null,
+});
+assert.equal(securedOmitted.some((pair) => /secured memory-care unit/.test(pair.q)), false);
+const toldNoUnit = buildFacilityFaqPairs({
+  facilityName: "Amber Hills Assisted Living",
+  stateName: "Washington",
+  stateCode: "WA",
+  pageUrl: "https://www.starlynncare.com/washington/prosser/amber-hills",
+  inspectionCount: 0,
+  deficiencyCount: 0,
+  countsCoverThreeYears: false,
+  lastInspectionDate: null,
+  lastInspectionType: null,
+  lastInspectionIsComplaint: false,
+  seriousFindings: [],
+  percentile: null,
+  memoryCareLabel: "The home told StarlynnCare it accepts residents with dementia.",
+  servesMemoryCare: false,
+  licenseNumber: "2616",
+  licenseUrl: null,
+  regulatorName: "Washington DSHS",
+  regulatorAbbr: "DSHS",
+  mcDesignationType: "accepts_dementia_no_secured_unit",
+  mcProgramQuote: "We do have dementia residents.",
+});
+assert.equal(
+  toldNoUnit.find((pair) => /secured memory-care unit/.test(pair.q))?.a,
+  "No secured unit is on file.",
+);
+const mccYes = buildFacilityFaqPairs({
+  facilityName: "Cogir of Glenwood Place",
+  stateName: "Washington",
+  stateCode: "WA",
+  pageUrl: "https://www.starlynncare.com/washington/vancouver/cogir",
+  inspectionCount: 1,
+  deficiencyCount: 0,
+  countsCoverThreeYears: false,
+  lastInspectionDate: "2024-04-01",
+  lastInspectionType: "inspection",
+  lastInspectionIsComplaint: false,
+  seriousFindings: [],
+  percentile: null,
+  memoryCareLabel: "Memory Care Certified.",
+  servesMemoryCare: true,
+  licenseNumber: "2645",
+  licenseUrl: null,
+  regulatorName: "Washington DSHS",
+  regulatorAbbr: "DSHS",
+  waMemoryCareCertified: true,
+  mcDesignationType: null,
+  mcProgramQuote: null,
+});
+assert.match(
+  mccYes.find((pair) => /secured memory-care unit/.test(pair.q))?.a ?? "",
+  /Memory Care Certified/,
+);
 
 const sdcFaq = buildFacilityFaqPairs({
   facilityName: "Example SDC Home",

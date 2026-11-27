@@ -33,6 +33,7 @@ import { canonicalFor } from "@/lib/seo/canonical";
 import type { ComplianceFlag } from "@/lib/facility/complianceFlag";
 import { priorWaDshsFormsUrl } from "@/lib/facility/waPriorLicense";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { facilityDisplayName } from "@/lib/facility/aliases";
 import {
   buildBreadcrumbList,
   buildFacilityFaqPairs,
@@ -816,7 +817,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     { name: "Home", url: canonicalFor("/") },
     { name: state.name, url: canonicalFor(`/${state.slug}`) },
     { name: backLabel, url: canonicalFor(backHref) },
-    { name: facility.name, url: canonicalUrl },
+    { name: facilityDisplayName(facility), url: canonicalUrl },
   ];
 
   const pdfDay = postedMonthToIsoDay(waPostedReport?.posted_month);
@@ -866,8 +867,9 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     }),
     ...(licenseRecordUrl ? { sourceUrl: licenseRecordUrl } : {}),
   };
+  const faqName = facilityDisplayName(facility);
   const faqPairs = buildFacilityFaqPairs({
-    facilityName: facility.name,
+    facilityName: faqName,
     stateName: state.name,
     stateCode: state.code,
     pageUrl: canonicalUrl,
@@ -889,9 +891,15 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         ? acceptanceTier === "memory-care"
         : facility.serves_memory_care,
     acceptsDementiaAnswer:
-      acceptanceTier === "confirmed-accepts" ? waToldUsFaqAnswer(facility.name) : null,
+      acceptanceTier === "confirmed-accepts" ? waToldUsFaqAnswer(faqName) : null,
     dementiaCredentialAnswer:
-      acceptanceTier === "credential" ? waCredentialFaqAnswer(facility.name) : null,
+      acceptanceTier === "credential" ? waCredentialFaqAnswer(faqName) : null,
+    orAcceptsMedicaid: facility.or_accepts_medicaid,
+    mcDesignationType: facility.mc_designation_type,
+    secureBeds: facility.secure_beds,
+    waMemoryCareCertified: facility.wa_memory_care_certified,
+    mcProgramQuote: facility.mc_program_quote,
+    mcReviewNotes: facility.mc_review_notes,
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
     previousLicenseUrl:
