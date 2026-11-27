@@ -31,6 +31,7 @@ import { getStateProfileConfig } from "@/lib/states/profileConfig";
 import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import { canonicalFor } from "@/lib/seo/canonical";
 import type { ComplianceFlag } from "@/lib/facility/complianceFlag";
+import { priorWaDshsFormsUrl } from "@/lib/facility/waPriorLicense";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import {
   buildBreadcrumbList,
@@ -883,6 +884,14 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     servesMemoryCare: facility.serves_memory_care,
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
+    previousLicenseUrl:
+      facility.state_code === "WA"
+        ? priorWaDshsFormsUrl(
+            facility.slug,
+            facility.license_number,
+            facility.wa_facility_type,
+          )
+        : null,
     regulatorName: careBasis.regulator,
     regulatorAbbr: cfg.agencyShort,
   });

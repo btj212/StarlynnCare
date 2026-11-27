@@ -928,6 +928,8 @@ export type FacilityFaqInput = {
   servesMemoryCare?: boolean;
   licenseNumber: string | null;
   licenseUrl: string | null;
+  /** DSHS Forms page for a prior license when the URL still uses the old number. */
+  previousLicenseUrl?: string | null;
   regulatorName: string;
   /** Short name used in “cited by ADHS?” — same agency the page names. */
   regulatorAbbr: string;
@@ -1032,12 +1034,15 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
   if (input.licenseNumber?.trim()) {
     const license = input.licenseNumber.trim();
     const link = input.licenseUrl ? ` State record: ${input.licenseUrl}` : "";
+    const prior = input.previousLicenseUrl
+      ? ` Previous license: ${input.previousLicenseUrl}`
+      : "";
     const certifies = /medicare|cms/i.test(input.regulatorName);
     pairs.push({
       q: certifies ? `Who certifies ${name}?` : `Who licenses ${name}?`,
       a: certifies
-        ? `${input.regulatorName} certifies ${name}. The certification number is ${license}.${link}`
-        : `${input.regulatorName} licenses ${name}. The license number is ${license}.${link}`,
+        ? `${input.regulatorName} certifies ${name}. The certification number is ${license}.${link}${prior}`
+        : `${input.regulatorName} licenses ${name}. The license number is ${license}.${link}${prior}`,
     });
   }
 
