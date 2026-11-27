@@ -55,7 +55,84 @@ const noRecord = buildFacilityTitle({
   inspectionCount: 0,
   reviewCount: 0,
 });
-assert.equal(noRecord, "Quiet Cottage, Portland: Licensed Memory Care");
+assert.equal(noRecord, "Quiet Cottage, Portland — Licensed Care Facility");
+assert.equal(/memory care/i.test(noRecord), false);
+
+const licenseFallbacks: Array<{
+  name: string;
+  city: string;
+  stateName: string;
+  licenseLabel: string;
+  expect: string;
+}> = [
+  {
+    name: "Quiet Cottage",
+    city: "Portland",
+    stateName: "Oregon",
+    licenseLabel: "RCF",
+    expect: "Quiet Cottage, Portland — Licensed Residential Care Facility",
+  },
+  {
+    name: "Quiet Cottage",
+    city: "Eugene",
+    stateName: "Oregon",
+    licenseLabel: "ALF",
+    expect: "Quiet Cottage, Eugene — Licensed Assisted Living",
+  },
+  {
+    name: "Plain Home",
+    city: "Denver",
+    stateName: "Colorado",
+    licenseLabel: "Assisted living",
+    expect: "Plain Home, Denver — Licensed Assisted Living",
+  },
+  {
+    name: "Bo",
+    city: "Kent",
+    stateName: "California",
+    licenseLabel: "RCFE",
+    expect: "Bo, Kent — Licensed Residential Care Facility for the Elderly",
+  },
+  {
+    name: "Plain Home",
+    city: "Sacramento",
+    stateName: "California",
+    licenseLabel: "RCFE",
+    expect: "Plain Home, Sacramento — Licensed RCFE",
+  },
+  {
+    name: "Plain Home",
+    city: "Philadelphia",
+    stateName: "Pennsylvania",
+    licenseLabel: "Personal care",
+    expect: "Plain Home, Philadelphia — Licensed Personal Care",
+  },
+  {
+    name: "Sunrise Memory Care",
+    city: "Bend",
+    stateName: "Oregon",
+    licenseLabel: "Memory Care",
+    expect: "Sunrise Memory Care, Bend — Licensed Care Facility",
+  },
+];
+for (const row of licenseFallbacks) {
+  const title = buildFacilityTitle({
+    name: row.name,
+    stateName: row.stateName,
+    percentile: null,
+    city: row.city,
+    citationCount: 0,
+    inspectionCount: 0,
+    reviewCount: 0,
+    licenseLabel: row.licenseLabel,
+  });
+  assert.equal(title, row.expect);
+  assert.ok(title.length <= 70, title);
+  assert.equal(/memory care/i.test(title), /memory care/i.test(row.name), title);
+}
+const namedMc = licenseFallbacks.find((row) => row.name === "Sunrise Memory Care");
+assert.ok(namedMc);
+assert.equal(/memory care/i.test(namedMc.name), true);
 
 const clipped = buildFacilityTitle({
   name: longName,

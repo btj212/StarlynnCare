@@ -14,6 +14,7 @@ import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { dementiaAcceptanceTier } from "@/lib/facility/memoryCareBasis";
+import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
 import { loadFacilityCosts } from "@/lib/cost/loadFacilityCosts";
 import { ComplianceFlagBanner } from "@/components/facility/ComplianceFlag";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
@@ -163,6 +164,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     inspectionCount: profile.totals.inspections,
     reviewCount: profile.reviews.length,
     lastInspectionDate,
+    licenseLabel: listLicenseLabel({
+      stateCode: facility.state_code,
+      care_category: facility.care_category,
+      license_type: facility.license_type,
+      mo_level_of_care: facility.mo_level_of_care,
+      mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+    }),
   });
 
   const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;

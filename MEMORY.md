@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — No-inspection titles name the license, not memory care
+
+**Decided:** When a profile has no inspections and it is not Arizona or a Washington non-memory-care home, the title is `{Name}, {City} — Licensed {license type}`. The type comes from `listLicenseLabel` (the chip already on city lists): Assisted Living, Residential Care Facility, Residential Care Facility for the Elderly, Personal Care, and the other chips that function already returns. The title does not add the words Memory Care. If those words are in the home's name, they stay because they are the name.
+
+Arizona with no inspections stays `Directed Care Home`. Washington homes that are not memory care keep `Adult Family Home` or `Assisted Living`, plus `, Accepts Dementia` or `, Dementia Credential`.
+
+**This supersedes** the sentence in the citation-hook entry that left the zero-inspection fallback as `Licensed Memory Care`.
+
+**Source:** Blake, on PR 267, 2026-11-27.
+
+---
+
 ## 2026-11-27 — Facility profile title is the citation hook again
 
 **Decided:** The facility profile `<title>` is the citation hook from just before PR 265: `{Name}, {City} — {N} citations, inspected {Mon YYYY}`, with the same 70-character fallbacks and the same Washington suffix (`Adult Family Home` / `Assisted Living`, plus `, Accepts Dementia` or `, Dementia Credential` on the zero-inspection fallback). The year is the last inspection year. The name passed in is still the display name the page already used.

@@ -121,6 +121,53 @@ function countLabel(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+function stripMemoryCareWords(text: string): string {
+  return text
+    .replace(/\bmemory care\b/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s,./-]+|[\s,./-]+$/g, "")
+    .trim();
+}
+
+/**
+ * Prose for the no-inspection title. The short form is the chip already
+ * shown on city lists. Neither form adds the words "Memory Care".
+ */
+function licenseTitlePhrase(label: string | null | undefined): { prose: string; short: string } {
+  const raw = stripMemoryCareWords(label ?? "");
+  const known: Record<string, { prose: string; short: string }> = {
+    AL: { prose: "Assisted Living", short: "AL" },
+    ALF: { prose: "Assisted Living", short: "ALF" },
+    "ALF**": { prose: "Assisted Living", short: "ALF" },
+    "ASSISTED LIVING": { prose: "Assisted Living", short: "AL" },
+    "ASSISTED LIVING (NO DEMENTIA CARE LICENSE)": { prose: "Assisted Living", short: "AL" },
+    RCF: { prose: "Residential Care Facility", short: "RCF" },
+    "RESIDENTIAL CARE": { prose: "Residential Care Facility", short: "RCF" },
+    RCFE: { prose: "Residential Care Facility for the Elderly", short: "RCFE" },
+    "RCFE-CCRC": { prose: "Residential Care Facility for the Elderly", short: "RCFE" },
+    "PERSONAL CARE": { prose: "Personal Care", short: "Personal Care" },
+    NF: { prose: "Nursing Home", short: "NF" },
+    SNF: { prose: "Nursing Home", short: "SNF" },
+    "NURSING HOME": { prose: "Nursing Home", short: "Nursing Home" },
+    ALDC: { prose: "Assisted Living with Dementia Care", short: "ALDC" },
+    CCRC: { prose: "Continuing Care", short: "CCRC" },
+    "ALF/RCF": { prose: "Assisted Living or Residential Care", short: "ALF/RCF" },
+    "CARE FACILITY": { prose: "Care Facility", short: "Care Facility" },
+  };
+  const hit = known[raw.toUpperCase()];
+  if (hit) return hit;
+  if (!raw) return { prose: "Care Facility", short: "Care Facility" };
+  return { prose: raw, short: raw };
+}
+
+function licenseFallbackTitles(place: string, licenseLabel: string | null | undefined): string[] {
+  const { prose, short } = licenseTitlePhrase(licenseLabel);
+  const titles = [`${place} — Licensed ${prose}`];
+  if (short !== prose) titles.push(`${place} — Licensed ${short}`);
+  titles.push(`${place} — ${short}`);
+  return titles;
+}
+
 /**
  * Name and city first so facility-name searches match the SERP, then a
  * concrete hook (citation count and last inspection date) so the result
@@ -143,10 +190,15 @@ export function buildFacilityTitle(input: {
   reviewCount?: number | null;
   /** ISO yyyy-mm-dd of the latest inspection, used for the title year. */
   lastInspectionDate?: string | null;
-  /** When Washington and not memory care, replace the "Licensed Memory Care" fallback. */
+  /** When Washington and not memory care, use the Adult Family Home / Assisted Living suffix. */
   stateCode?: string;
   waFacilityType?: string | null;
   dementiaTier?: "memory-care" | "confirmed-accepts" | "credential" | "neither";
+  /**
+   * License chip from listLicenseLabel. Used only when there is no inspection
+   * and the home is outside the Arizona and Washington fallbacks.
+   */
+  licenseLabel?: string | null;
 }): string {
   const { name, stateName, city, citationCount, inspectionCount, reviewCount, lastInspectionDate } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
@@ -196,7 +248,7 @@ export function buildFacilityTitle(input: {
         ? [`${place}: Directed Care Home`, `${placeAbbr}: Directed Care Home`]
         : waNotMemoryCare
           ? [`${place}: ${waWithAccepts}`, `${place}: ${waKind}`, `${placeAbbr}: ${waKind}`]
-          : [`${place}: Licensed Memory Care`, `${placeAbbr}: Licensed Memory Care`];
+          : licenseFallbackTitles(place, input.licenseLabel);
   const candidates = [
     ...inspectionTitles,
     facts.length ? `${place}: ${joinTitleFacts(facts)}` : placeAbbr,
