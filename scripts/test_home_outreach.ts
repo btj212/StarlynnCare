@@ -38,6 +38,7 @@ const facts = shownListingFacts({
   beds: 170,
   license_number: "AL7495C",
   website: "https://example.com",
+  az_license_level: "Directed Care",
   memory_care_disclosure_source: "ADHS Directed Care License",
 });
 assert.equal(facts.find((f) => f.key === "licensed_name")?.shown, "Legacy Retirement Residence");

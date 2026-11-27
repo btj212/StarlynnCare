@@ -1,6 +1,8 @@
-import type { CaMemoryCareDesignationBasis } from "@/lib/types";
+import type { CaMemoryCareDesignationBasis, CareCategory } from "@/lib/types";
 import { regulatorFor } from "@/lib/states/regulators";
 import { AZ_MC_LEVEL1_LABEL } from "@/lib/facility/azMcProgram";
+import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
+import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
 
 /**
  * Why a published home is listed as memory care, using only a state file
@@ -133,6 +135,9 @@ export type MemoryCareBasisInput = {
   /** Unused column. HB2764 did not create a separate Memory Care subclass. */
   az_mc_subclass?: boolean | null;
   az_license_level?: string | null;
+  /** Used only for the Arizona fallback chip when the level is not Directed Care. */
+  license_type?: string | null;
+  care_category?: CareCategory | null;
   state_records_checked_at?: string | null;
   /** Colorado care setting. Nursing homes are CMS-certified, not CDPHE-licensed. */
   co_care_setting?: "ALR" | "NH" | null;
@@ -310,11 +315,14 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
       return recorded(texasLabel(facility.tx_alzheimer_cert_no));
     }
     if (source === "ADHS Directed Care License") {
-      return recorded(AZ_DIRECTED_CARE_LABEL);
+      if (azDirectedCareLicense(facility.az_license_level)) {
+        return recorded(AZ_DIRECTED_CARE_LABEL);
+      }
+    } else {
+      const known = SOURCE_LABELS[source];
+      if (known) return recorded(known);
+      return recorded(`The state file names this home's memory-care source as ${source}.`);
     }
-    const known = SOURCE_LABELS[source];
-    if (known) return recorded(known);
-    return recorded(`The state file names this home's memory-care source as ${source}.`);
   }
 
   if (facility.mc_designation_type === "Secure Dementia Care Unit") {
@@ -392,12 +400,20 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   if (facility.mo_alzheimer_scu) {
     return recorded("Missouri DHSS lists an Alzheimer's special care unit for this home.");
   }
-  if (facility.az_memory_care_endorsed || facility.az_license_level === "Directed Care") {
+  if (azDirectedCareLicense(facility.az_license_level)) {
     return recorded(AZ_DIRECTED_CARE_LABEL);
   }
 
   if (facility.state_code === "AZ") {
-    return recorded(AZ_DIRECTED_CARE_LABEL);
+    return {
+      ...basis,
+      label: listLicenseLabel({
+        stateCode: "AZ",
+        care_category: facility.care_category ?? "alf_general",
+        license_type: facility.license_type,
+        az_license_level: facility.az_license_level,
+      }),
+    };
   }
 
   if (facility.state_code === "WA" && facility.serves_memory_care === false) {

@@ -467,6 +467,61 @@ assert.equal(mesaListed.sections.get("medium-uncited"), "other");
 assert.equal(mesaListed.sections.get("small-uncited"), "small");
 assert.equal(mesaListed.sections.get("small-cited"), "small");
 assert.equal(mesaListed.sections.get("other"), "other");
+
+// Personal Care stays out of the memory-care section even when
+// serves_memory_care is still true. Directed Care stays in. California
+// still groups on that flag.
+assert.equal(
+  listedInMemoryCareGroup({
+    stateSlug: "arizona",
+    careChip: null,
+    servesMemoryCare: true,
+    memoryCareDisclosureFiled: false,
+    azLicenseLevel: "Personal Care",
+  }),
+  false,
+);
+assert.equal(
+  listedInMemoryCareGroup({
+    stateSlug: "arizona",
+    careChip: "Directed Care",
+    servesMemoryCare: true,
+    memoryCareDisclosureFiled: true,
+    azLicenseLevel: "Directed Care",
+  }),
+  true,
+);
+assert.equal(
+  listedInMemoryCareGroup({
+    stateSlug: "california",
+    servesMemoryCare: true,
+    memoryCareDisclosureFiled: false,
+  }),
+  true,
+);
+assert.equal(
+  listCareChip({
+    stateCode: "AZ",
+    basis: memoryCareBasis({
+      state_code: "AZ",
+      az_license_level: "Personal Care",
+      license_type: "Assisted Living Home",
+      serves_memory_care: true,
+    }),
+  }),
+  null,
+);
+assert.equal(
+  listCareChip({
+    stateCode: "AZ",
+    basis: memoryCareBasis({
+      state_code: "AZ",
+      az_license_level: "Directed Care",
+      license_type: "Assisted Living Home",
+    }),
+  }),
+  "Directed Care",
+);
 assert.equal(
   facilityListedOnHub({ stateCode: "AZ", beds: 8, deficiencyCount: 0, inspectionCount: 1 }),
   true,

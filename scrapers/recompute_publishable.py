@@ -113,39 +113,10 @@ def get_after_counts(conn: psycopg.Connection, state_code: str) -> dict[str, int
     }
 
 
-def recompute_serves_memory_care(
-    conn: psycopg.Connection,
-    state_code: str,
-    dry_run: bool = False,
-) -> int:
-    """
-    Recompute serves_memory_care using the unified Option C tier-1 signal model.
-
-    Core signals (all states except WA name keywords):
-      - mc_signal_explicit_name: name keywords ("memory care", "Alzheimer", "dementia")
-        WA excludes this. A name alone is never memory-care evidence (South Hill
-        Village 2480 is "… & Memory Care" with no DSHS dementia flag).
-      - memory_care_disclosure_filed: government regulatory confirmation filed
-      - mc_signal_chain_curated: hand-verified chain match (APFM, SH, Benchmark, etc.)
-      - mc_signal_apfm_listed AND mc_signal_caring_listed: both major directories agree
-      - mc_review_status = 'reviewed_publish': manually adjudicated by admin
-
-    Additional state-specific Tier-1 signals (override for each state):
-      - WA assisted living: wa_memory_care_certified, wa_dementia_care_contract,
-            wa_earc_sdc_contracted, or mc_program_confirmed with
-            mc_program_source_url (the operator's page for that address).
-            wa_dementia_specialty is raw DSHS staff-training data (RCW 70.128.230).
-            It is not a signal. An adult family home qualifies only from that
-            operator page.
-      - OR: mce_endorsed — ORS 443.886 Memory Care Endorsement (set by or_signal_mce.py)
-            unendorsed_mc_violation — ORS 443.886(6) "memory care name without endorsement"
-            bucket; surfaces these facilities as an editorial signal even without MCE.
-      - MN: mn_dementia_care_licensed — MDH ALDC license
-      - TX: tx_alzheimer_certified — HHSC Alzheimer Certification
-    """
-    sql = """
-        UPDATE facilities
-        SET serves_memory_care = COALESCE(
+# Same expression the UPDATE writes. Dry-run previews use it too, so a
+# preview does not depend on step 1 having already been committed.
+SERVES_MEMORY_CARE_EXPR = """
+COALESCE(
              -- A facility name is not a state file. WA must not flip
              -- serves_memory_care from "Memory Care" in the legal name.
              (state_code <> 'WA' AND COALESCE(mc_signal_explicit_name, false))
@@ -194,6 +165,65 @@ def recompute_serves_memory_care(
           OR (state_code = 'MO' AND COALESCE(mo_alzheimer_scu, false))
           OR (state_code = 'MO' AND mo_level_of_care = 'ALF**')
         , false)
+"""
+
+
+def publishable_from_signals(
+    *,
+    state_code: str,
+    license_status: str | None,
+    serves_memory_care: bool,
+    publishable: bool,
+    mc_review_status: str | None,
+    fresh: bool,
+) -> bool:
+    """Mirror of the publishable UPDATE.
+
+    Washington already stays listed after DSHS drops a dementia flag.
+    Arizona does the same when Directed Care is cleared: Blake publishes
+    and unpublishes. Losing that level only gets logged. A closed license
+    still comes down. Every other state keeps the old rule.
+    """
+    licensed = license_status in ("LICENSED", "ON PROBATION")
+    kept = (state_code == "WA" and publishable) or (state_code == "AZ" and publishable)
+    memory_care = serves_memory_care or kept
+    review_ok = mc_review_status != "reviewed_reject"
+    return bool(licensed and memory_care and review_ok and fresh)
+
+
+def recompute_serves_memory_care(
+    conn: psycopg.Connection,
+    state_code: str,
+    dry_run: bool = False,
+) -> int:
+    """
+    Recompute serves_memory_care using the unified Option C tier-1 signal model.
+
+    Core signals (all states except WA name keywords):
+      - mc_signal_explicit_name: name keywords ("memory care", "Alzheimer", "dementia")
+        WA excludes this. A name alone is never memory-care evidence (South Hill
+        Village 2480 is "… & Memory Care" with no DSHS dementia flag).
+      - memory_care_disclosure_filed: government regulatory confirmation filed
+      - mc_signal_chain_curated: hand-verified chain match (APFM, SH, Benchmark, etc.)
+      - mc_signal_apfm_listed AND mc_signal_caring_listed: both major directories agree
+      - mc_review_status = 'reviewed_publish': manually adjudicated by admin
+
+    Additional state-specific Tier-1 signals (override for each state):
+      - WA assisted living: wa_memory_care_certified, wa_dementia_care_contract,
+            wa_earc_sdc_contracted, or mc_program_confirmed with
+            mc_program_source_url (the operator's page for that address).
+            wa_dementia_specialty is raw DSHS staff-training data (RCW 70.128.230).
+            It is not a signal. An adult family home qualifies only from that
+            operator page.
+      - OR: mce_endorsed — ORS 443.886 Memory Care Endorsement (set by or_signal_mce.py)
+            unendorsed_mc_violation — ORS 443.886(6) "memory care name without endorsement"
+            bucket; surfaces these facilities as an editorial signal even without MCE.
+      - MN: mn_dementia_care_licensed — MDH ALDC license
+      - TX: tx_alzheimer_certified — HHSC Alzheimer Certification
+    """
+    sql = f"""
+        UPDATE facilities
+        SET serves_memory_care = {SERVES_MEMORY_CARE_EXPR}
         WHERE state_code = %s
     """
 
@@ -314,33 +344,98 @@ def recompute_publishable(
     # on the state's signal, not our own derived coordinates.
     geocode_clause = ""
 
-    sql = f"""
-        UPDATE facilities
-        SET publishable = (
-          -- A probationary license is still a license: the page shows the
-          -- status. CLOSED / REVOKED / PENDING never publish.
-          license_status IN ('LICENSED', 'ON PROBATION')
-          AND (
-            serves_memory_care = true
+    # The would-be serves_memory_care value, not the column step 1 has not
+    # written yet on a dry run. WA and AZ keep an already-published row when
+    # that value is false. Other states do not.
+    memory_clause = f"""(
+            ({SERVES_MEMORY_CARE_EXPR}) = true
             -- WA: keep a home that is already listed after DSHS shows no
             -- dementia flag. The page must not call it memory care. New
             -- inserts start publishable=false, so name-only campuses stay out.
             OR (state_code = 'WA' AND publishable = true)
-          )
+            -- AZ: clearing Directed Care does not unpublish. Publishing is
+            -- Blake's call. CLOSED still fails the license_status check.
+            OR (state_code = 'AZ' AND publishable = true)
+          )"""
+    predicate = f"""(
+          -- A probationary license is still a license: the page shows the
+          -- status. CLOSED / REVOKED / PENDING never publish.
+          license_status IN ('LICENSED', 'ON PROBATION')
+          AND {memory_clause}
           AND mc_review_status <> 'reviewed_reject'
           {freshness_clause}{geocode_clause}
-        )
+        )"""
+    sql = f"""
+        UPDATE facilities
+        SET publishable = {predicate}
         WHERE state_code = %s
     """
 
     if dry_run:
         gate = f"+ ≥1 inspection in {freshness_months} months" if freshness_months else "(no freshness gate)"
         print(f"  Step 2: Would recompute publishable from serves_memory_care + license + review_status {gate}")
+        _print_publishable_changes(conn, state_code, predicate)
+        _log_az_directed_care_kept(conn, state_code, freshness_clause)
         return 0
 
     with conn.cursor() as cur:
         cur.execute(sql, (state_code,))
-        return cur.rowcount
+        changed = cur.rowcount
+    _log_az_directed_care_kept(conn, state_code, freshness_clause)
+    return changed
+
+
+def _print_publishable_changes(
+    conn: psycopg.Connection,
+    state_code: str,
+    predicate: str,
+) -> None:
+    """List rows whose publishable flag would change. Does not write."""
+    preview = f"""
+        SELECT id, name, license_number, publishable, {predicate} AS publishable_next
+        FROM facilities
+        WHERE state_code = %s
+          AND publishable IS DISTINCT FROM {predicate}
+        ORDER BY name
+    """
+    with conn.cursor() as cur:
+        cur.execute(preview, (state_code,))
+        rows = cur.fetchall()
+    print(f"  Step 2 dry-run: {len(rows)} row(s) would change publishable")
+    for row in rows:
+        print(f"    {row[0]} | {row[1]} | license={row[2]} | {row[3]} -> {row[4]}")
+
+
+def _log_az_directed_care_kept(
+    conn: psycopg.Connection,
+    state_code: str,
+    freshness_clause: str,
+) -> None:
+    """Arizona rows that lost the memory-care signal and stay published.
+
+    The log is the report. publishable is not changed here.
+    """
+    if state_code.upper() != "AZ":
+        return
+    report = f"""
+        SELECT id, name, license_number, az_license_level
+        FROM facilities
+        WHERE state_code = 'AZ'
+          AND publishable = true
+          AND NOT ({SERVES_MEMORY_CARE_EXPR})
+          AND license_status IN ('LICENSED', 'ON PROBATION')
+          AND mc_review_status <> 'reviewed_reject'
+          {freshness_clause}
+        ORDER BY name
+    """
+    with conn.cursor() as cur:
+        cur.execute(report)
+        rows = cur.fetchall()
+    print(f"  AZ directed-care loss: {len(rows)} published row(s) stay published")
+    for row in rows:
+        print(
+            f"    {row[0]} | {row[1]} | license={row[2]} | level={row[3]} | publishable unchanged"
+        )
 
 
 def mark_chain_only_for_review(

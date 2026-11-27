@@ -77,7 +77,7 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
     const { data: rawFacilities, error } = await supabase
       .from("facilities")
       .select(
-        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content",
+        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, az_license_level, license_type",
       )
       .eq("state_code", state.code)
       .eq("publishable", true)
@@ -103,6 +103,8 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
         tx_alzheimer_certified: boolean | null;
         capacity_tier: "small" | "medium" | "large" | "unknown";
         content: unknown;
+        az_license_level: string | null;
+        license_type: string | null;
       }>;
 
       if (raw.length > 0) {
@@ -182,6 +184,8 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
           inspections: inspCountByFac.get(f.id) ?? 0,
           serious_citations: seriousCitByFac.get(f.id) ?? 0,
           total_citations: totalCitByFac.get(f.id) ?? 0,
+          az_license_level: f.az_license_level,
+          license_type: f.license_type,
           ...contentAliasFields(f.content),
         }));
       }

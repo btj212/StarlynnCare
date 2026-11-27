@@ -6,6 +6,24 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Arizona Directed Care is the license level, not the state
+
+**Decided:** A home is Directed Care only when `az_license_level` trims to `Directed Care`. `azDirectedCareLicense` in `src/lib/facility/azDirectedCare.ts` is that check. `headlineLabel` and `memoryCareBasis` both call it. Personal Care and Supervisory Care use `listLicenseLabel` (`Personal Care Home` / `Personal Care`). Those labels do not add the words Memory Care. City-hub grouping for Arizona follows the chip, then the level, and does not use `serves_memory_care` once either is present. The no-inspection title is `Directed Care Home` only for that level. `GATE_ENFORCED` stays false.
+
+**Publishable:** Losing Directed Care does not unpublish an Arizona home. `recompute_publishable.py` keeps `publishable = true` for AZ the same way it already does for WA, logs those rows, and still unpublishes CLOSED, `reviewed_reject`, and a stale inspection. Other states are unchanged. Dry-run lists rows whose flag would change.
+
+**ADHS map:** Layer 12 is as of 2025-02-03. The ingest does not overwrite license number, expiration, status, or the Directed Care fields when `license_status_source` is AZ Care Check or `license_status_checked_at` is after that date. A CLOSED row is not written. A null map expiration does not wipe a stored date. The license-status trigger in migration 0082 stays.
+
+**This supersedes** the sentence in the no-inspection title entry that every Arizona home with no inspections is `Directed Care Home`, and the blanket Arizona return that used to live in `memoryCareBasis`.
+
+**Rejected:** Copying the headline sentence out of `gate.ts`. Importing `gate.ts` from `memoryCareBasis` (that file already imports the basis). Treating `az_mc_subclass` or `serves_memory_care` as Directed Care. Unpublishing the 17 Personal Care homes because the flag dropped. Letting the Feb 2025 map rewrite the 2026-11-27 Care Check corrections.
+
+**Label count:** 17 publishable Arizona homes move off Directed Care. Other states: 0. Read-only count on 2026-11-27, project fwvrupjgwvvzqiutwwdg: 1,889 publishable AZ, 1,872 Directed Care, 17 not.
+
+**Source:** AZ Care Check corrections on 2026-11-27 (102 rows: 51 license numbers, 34 CLOSED, 17 Personal Care).
+
+---
+
 ## 2026-11 — Texas inspections come from TULIP guest Aura, matched by license
 
 **Decided:** The live fetch is `scrapers/tx_inspections_backfill.py`. It is a dry-run unless `--apply`. It reads licensed `serves_memory_care` Texas homes and matches `RS_LTCProviderController.searchAccounts` on `LIcense_Number__c`, never on the Salesforce Account Id. `retrieveInspectionsInfo` is the survey (`yesData` + `mostRecentExitDate` is one zero-citation comprehensive visit; `noData` stores nothing). `retrieveRSEventForEnfAction` is the citation HHSC still publishes (`action`, `imposedDate`, `regulationCited`, `stateValCited`). `inspection_type` for a penalty stays the portal's `action`. The script does not run `recompute_publishable.py`. The Sunday workflow is unchanged until Blake says to point it at this script.

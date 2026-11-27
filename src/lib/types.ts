@@ -149,6 +149,8 @@ export interface Facility {
   /** DHSS level of care (ALF, RCF, ALF**). Display only; never invent. */
   mo_level_of_care?: string | null;
   az_memory_care_endorsed?: boolean | null;
+  /** ADHS care level: Directed Care, Personal Care, or Supervisory Care. */
+  az_license_level?: string | null;
   /**
    * Level-2 Arizona memory-care program confirmation for this exact address.
    * Migration 0078. Null until checked. Never written by ingest. Does not

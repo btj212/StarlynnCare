@@ -10,6 +10,8 @@ type Props = {
   program: AzMcProgram;
   regulatorShort: string;
   regulatorUrl: string | null;
+  /** Level 1 is the Directed Care license. Omit it when the row is not that level. */
+  directedCare?: boolean;
 };
 
 /**
@@ -17,17 +19,25 @@ type Props = {
  * Level 1 is the Directed Care license (neutral). Level 2 is an operator-
  * sourced program confirmation (visually distinct). Neither changes listing.
  */
-export function AzMemoryCareBadges({ program, regulatorShort, regulatorUrl }: Props) {
+export function AzMemoryCareBadges({
+  program,
+  regulatorShort,
+  regulatorUrl,
+  directedCare = false,
+}: Props) {
   const checked = program.checkedOn ? formatRecordDate(program.checkedOn) : null;
+  if (!directedCare && !program.confirmed) return null;
 
   return (
     <div className="mt-4 max-w-[58ch] space-y-2.5 border-t border-clearing-rule pt-4">
-      <p
-        className="m-0 rounded-lg border border-paper-rule bg-paper-2 px-3 py-2 font-[family-name:var(--font-sans)] text-[13px] leading-[1.45] text-ink-3"
-        data-az-mc-level="1"
-      >
-        {AZ_MC_LEVEL1_LABEL}
-      </p>
+      {directedCare ? (
+        <p
+          className="m-0 rounded-lg border border-paper-rule bg-paper-2 px-3 py-2 font-[family-name:var(--font-sans)] text-[13px] leading-[1.45] text-ink-3"
+          data-az-mc-level="1"
+        >
+          {AZ_MC_LEVEL1_LABEL}
+        </p>
+      ) : null}
       {program.confirmed ? (
         <div
           className="rounded-lg border border-teal/35 bg-teal-soft px-3 py-2.5"

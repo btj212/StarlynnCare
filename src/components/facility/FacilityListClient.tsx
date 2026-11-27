@@ -21,6 +21,7 @@ import {
   DEMENTIA_CREDENTIAL_SECTION,
 } from "@/lib/facility/memoryCareBasis";
 import { listLicenseLabel, listSectionDeck, listSectionTitle } from "@/lib/city-hub/licenseLabel";
+import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -176,6 +177,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
       license_type: f.license_type,
       mo_level_of_care: f.mo_level_of_care,
       mn_dementia_care_licensed: f.mn_dementia_care_licensed,
+      az_license_level: f.az_license_level,
     });
   const inMemoryCareGroup = listedInMemoryCareGroup({
     stateSlug,
@@ -184,12 +186,15 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
     memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
     txAlzheimerCertified: f.tx_alzheimer_certified,
     gateTier: f.gateTier,
+    azLicenseLevel: f.az_license_level,
   });
   const careChip =
     f.careChip !== undefined
       ? f.careChip
       : stateSlug === "arizona"
-        ? "Directed Care"
+        ? azDirectedCareLicense(f.az_license_level)
+          ? "Directed Care"
+          : null
         : stateSlug === "washington"
           ? null
           : inMemoryCareGroup
@@ -400,6 +405,7 @@ export function FacilityListClient({
       memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
       txAlzheimerCertified: f.tx_alzheimer_certified,
       gateTier: f.gateTier,
+      azLicenseLevel: f.az_license_level,
     });
   const groupOf = (f: ListFacility) =>
     cityHubCardGroup({
