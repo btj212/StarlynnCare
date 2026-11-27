@@ -19,9 +19,14 @@ on:
   workflow_dispatch:
     inputs:
       state:
-        description: "Single state code (optional, e.g. OR). Leave blank for all. California is not in this workflow."
+        description: "State code(s), comma-separated (e.g. PA,UT,WA). Leave blank for all. California is not in this workflow."
         required: false
         type: string
+      sample:
+        description: "Limit Washington to a small slice (proof runs). Other states still run in full."
+        required: false
+        type: boolean
+        default: false
       dispatch_alerts:
         description: "On a manual run, also send facility and area watch emails"
         required: false
@@ -31,22 +36,69 @@ on:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: ${{ matrix.timeout_minutes }}
     strategy:
       fail-fast: false
       # Supabase session pooler is pool_size=15; even 3 parallel jobs exhaust it when
       # each state opens multiple connections (MN/IL/PA/UT failed 2026-06-25 run 28137781944).
       max-parallel: 1
       matrix:
-        state: [MN, OR, IL, UT, TX, AZ, MO, PA, WA]
+        include:
+          - state: MN
+            timeout_minutes: 25
+            ingest_timeout_minutes: 15
+          - state: OR
+            timeout_minutes: 60
+            ingest_timeout_minutes: 45
+          - state: IL
+            timeout_minutes: 15
+            ingest_timeout_minutes: 8
+          - state: UT
+            timeout_minutes: 20
+            ingest_timeout_minutes: 12
+          - state: TX
+            timeout_minutes: 15
+            ingest_timeout_minutes: 8
+          - state: AZ
+            timeout_minutes: 60
+            ingest_timeout_minutes: 45
+          - state: MO
+            timeout_minutes: 15
+            ingest_timeout_minutes: 8
+          - state: PA
+            timeout_minutes: 90
+            ingest_timeout_minutes: 70
+          - state: WA
+            timeout_minutes: 150
+            ingest_timeout_minutes: 130
     steps:
+      - name: Decide whether this state runs
+        id: gate
+        run: |
+          TARGET="$(echo "${{ inputs.state }}" | tr '[:lower:]' '[:upper:]' | tr -d ' ')"
+          if [ -n "$TARGET" ]; then
+            case ",$TARGET," in
+              *",${{ matrix.state }},"*) echo "skip=false" >> "$GITHUB_OUTPUT" ;;
+              *)
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+                echo "Skipping ${{ matrix.state }} (workflow_dispatch targeted $TARGET)"
+                ;;
+            esac
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.skip != 'true'
 
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.skip != 'true'
         with:
           python-version: "3.12"
 
       - name: Install Python dependencies
+        if: steps.gate.outputs.skip != 'true'
+        timeout-minutes: 10
         run: |
           sudo apt-get update
           sudo apt-get install -y poppler-utils tesseract-ocr
@@ -54,28 +106,28 @@ jobs:
 
       - name: Run weekly inspection ingest (${{ matrix.state }})
         id: ingest
+        if: steps.gate.outputs.skip != 'true'
+        timeout-minutes: ${{ matrix.ingest_timeout_minutes }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
+          WA_SAMPLE: ${{ inputs.sample == true && '1' || '0' }}
         run: |
-          if [ -n "${{ inputs.state }}" ] && [ "${{ inputs.state }}" != "${{ matrix.state }}" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Skipping ${{ matrix.state }} (workflow_dispatch targeted ${{ inputs.state }})"
-            exit 0
-          fi
           echo "skip=false" >> "$GITHUB_OUTPUT"
           python3 scripts/weekly_inspection_ingest.py --state "${{ matrix.state }}" --skip-validate --scan-run-output /tmp/state-watch-run-id
 
       - name: Layer 5 post-ingest — ${{ matrix.state }}
         id: layer5
-        if: always() && steps.ingest.outcome != 'cancelled' && steps.ingest.outputs.skip != 'true'
+        if: always() && steps.gate.outputs.skip != 'true' && steps.ingest.outcome != 'cancelled'
+        timeout-minutes: 10
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python3 scripts/validate/post_ingest_check.py --state ${{ matrix.state }}
 
       - name: Export State Watch scan report — ${{ matrix.state }}
-        if: always()
+        if: always() && steps.gate.outputs.skip != 'true'
+        timeout-minutes: 5
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
@@ -87,7 +139,7 @@ jobs:
           fi
 
       - name: Upload State Watch scan report — ${{ matrix.state }}
-        if: always()
+        if: always() && steps.gate.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: state-scan-${{ matrix.state }}-${{ github.run_id }}
@@ -96,7 +148,8 @@ jobs:
           retention-days: 30
 
       - name: Dispatch area and facility watch alerts — ${{ matrix.state }}
-        if: steps.ingest.outcome == 'success' && steps.ingest.outputs.skip != 'true' && steps.layer5.outcome == 'success' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.dispatch_alerts))
+        if: steps.ingest.outcome == 'success' && steps.gate.outputs.skip != 'true' && steps.layer5.outcome == 'success' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.dispatch_alerts))
+        timeout-minutes: 10
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
@@ -106,7 +159,8 @@ jobs:
         run: python3 scripts/dispatch_watch_alerts.py --scan-run-id "$(tr -d '\n' < /tmp/state-watch-run-id)"
 
       - name: Dispatch facility watch notes after a partial scan — ${{ matrix.state }}
-        if: steps.ingest.outcome == 'failure' && steps.ingest.outputs.skip != 'true' && steps.layer5.outcome == 'success' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.dispatch_alerts))
+        if: steps.ingest.outcome == 'failure' && steps.gate.outputs.skip != 'true' && steps.layer5.outcome == 'success' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.dispatch_alerts))
+        timeout-minutes: 10
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
@@ -121,7 +175,8 @@ jobs:
           fi
 
       - name: Email the operator a scan report — ${{ matrix.state }}
-        if: always() && steps.ingest.outputs.skip != 'true'
+        if: always() && steps.gate.outputs.skip != 'true'
+        timeout-minutes: 5
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
@@ -154,14 +209,17 @@ jobs:
           python-version: "3.12"
 
       - name: Install Python dependencies
+        timeout-minutes: 10
         run: pip install -r scrapers/requirements.txt
 
       - name: Layer 5b — hub content drift audit
+        timeout-minutes: 15
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python3 scripts/validate/hub_content_drift_check.py
 
       - name: Layer 3 — production smoke
+        timeout-minutes: 10
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python3 scripts/validate/smoke_test.py --env production || true

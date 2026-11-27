@@ -55,7 +55,13 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+
+from _http_helpers import source_should_fail_job  # noqa: E402
+
+REPO_ROOT = SCRAPERS_DIR.parent
 
 DHS_BASE = "https://www.humanservices.dhs.pa.gov"
 DHS_DIRECTORY_HOME = f"{DHS_BASE}/HUMAN_SERVICE_PROVIDER_DIRECTORY/"
@@ -64,6 +70,13 @@ SOURCE_AGENCY = "PA-DHS-OLTL"
 # Polite — DHS portal is fronted by Azure; 0.5s + jitter ≈ 3 min for 365 facilities
 REQUEST_DELAY = 0.5
 REQUEST_JITTER = 0.4
+# GitHub-hosted IPs get intermittent Azure WAF 403s. Three backoffs, then a
+# second pass, recovers most of them. A bot User-Agent made the WAF worse.
+FETCH_BACKOFF_SEC = (2, 5, 15)
+BROWSER_UA = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -169,8 +182,11 @@ def parse_inspection_table(html: str) -> list[dict[str, Any]]:
 
 def make_session() -> requests.Session:
     s = requests.Session()
-    s.headers["User-Agent"] = "StarlynnCare-bot/1.0 (+https://starlynn.care)"
-    s.headers["Accept"] = "text/html,application/xhtml+xml"
+    # Browser-like headers. The previous "StarlynnCare-bot/…" UA made Azure
+    # Front Door 403 a handful of facility pages on GitHub-hosted runners.
+    s.headers["User-Agent"] = BROWSER_UA
+    s.headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    s.headers["Accept-Language"] = "en-US,en;q=0.9"
     # Seed cookies
     try:
         s.get(DHS_DIRECTORY_HOME, timeout=30)
@@ -189,25 +205,27 @@ def status_is_retryable(status_code: int) -> bool:
 
 def fetch_inspection_page(session: requests.Session, url: str) -> tuple[str | None, bool]:
     """Return (html, blocked). A 404 is a missing page, not a block."""
-    for attempt in range(2):
+    last_status = None
+    for attempt, wait in enumerate(FETCH_BACKOFF_SEC, start=1):
         try:
             response = session.get(url, timeout=30)
         except requests.RequestException as exc:
             print(f"  HTTP ERROR {url}: {exc}", file=sys.stderr, flush=True)
-            if attempt == 0:
-                time.sleep(2)
+            if attempt < len(FETCH_BACKOFF_SEC):
+                time.sleep(wait)
                 continue
             return None, True
+        last_status = response.status_code
         if response.status_code == 404:
             return None, False
         if status_is_retryable(response.status_code):
             print(
-                f"  HTTP {response.status_code} {url} (attempt {attempt + 1})",
+                f"  HTTP {response.status_code} {url} (attempt {attempt}/{len(FETCH_BACKOFF_SEC)})",
                 file=sys.stderr,
                 flush=True,
             )
-            if attempt == 0:
-                time.sleep(2)
+            if attempt < len(FETCH_BACKOFF_SEC):
+                time.sleep(wait)
                 continue
             return None, True
         try:
@@ -216,6 +234,11 @@ def fetch_inspection_page(session: requests.Session, url: str) -> tuple[str | No
             print(f"  HTTP ERROR {url}: {exc}", file=sys.stderr, flush=True)
             return None, True
         return response.text, False
+    print(
+        f"  HTTP {last_status or 'error'} {url} stayed blocked after {len(FETCH_BACKOFF_SEC)} tries",
+        file=sys.stderr,
+        flush=True,
+    )
     return None, True
 
 
@@ -431,6 +454,31 @@ def main() -> None:
     no_data = 0
     no_table = 0
     blocked = 0
+    blocked_facilities: list[dict[str, Any]] = []
+
+    def persist_page(fac: dict[str, Any], url: str, html: str) -> None:
+        nonlocal total_insp, total_pdf, no_table
+        findings = parse_inspection_table(html)
+        if not findings:
+            if "Inspection/Violation Report" not in html:
+                no_table += 1
+            print("  0 inspections found", flush=True)
+            return
+        print(f"  {len(findings)} PDFs found", flush=True)
+        if args.dry_run:
+            for f in findings[:3]:
+                print(
+                    f"    {f['inspection_date']} → {f['pdf_url'][:90]}",
+                    flush=True,
+                )
+            total_insp += len(findings)
+            total_pdf += len(findings)
+            return
+        if conn is not None:
+            insp_c, pdf_c = persist_findings(conn, fac, url, findings)
+            conn.commit()
+            total_insp += insp_c
+            total_pdf += pdf_c
 
     try:
         for i, fac in enumerate(facilities, 1):
@@ -443,41 +491,44 @@ def main() -> None:
             )
             html, page_blocked = fetch_inspection_page(session, url)
             if page_blocked:
-                blocked += 1
+                blocked_facilities.append(fac)
                 polite_sleep()
                 continue
             if html is None:
                 no_data += 1
                 polite_sleep()
                 continue
-            findings = parse_inspection_table(html)
-            if not findings:
-                # Page returned 200 but had no inspection table (rare — newly licensed facility?)
-                if "Inspection/Violation Report" not in html:
-                    no_table += 1
-                else:
-                    # The header exists but tbody was empty — facility has never been inspected
-                    pass
-                print(f"  0 inspections found", flush=True)
-                polite_sleep()
-                continue
-
-            print(f"  {len(findings)} PDFs found", flush=True)
-            if args.dry_run:
-                for f in findings[:3]:
-                    print(
-                        f"    {f['inspection_date']} → {f['pdf_url'][:90]}",
-                        flush=True,
-                    )
-                total_insp += len(findings)
-                total_pdf += len(findings)
-            elif conn is not None:
-                insp_c, pdf_c = persist_findings(conn, fac, url, findings)
-                conn.commit()
-                total_insp += insp_c
-                total_pdf += pdf_c
-
+            persist_page(fac, url, html)
             polite_sleep()
+
+        if blocked_facilities:
+            print(
+                f"Retrying {len(blocked_facilities)} blocked pages after a pause…",
+                flush=True,
+            )
+            time.sleep(15)
+            still_blocked: list[dict[str, Any]] = []
+            for fac in blocked_facilities:
+                url = fac.get("inspection_index_url") or inspection_index_url(
+                    fac["external_id"], fac["name"]
+                )
+                print(
+                    f"  retry {fac['external_id']} {fac['name'][:50]}",
+                    flush=True,
+                )
+                html, page_blocked = fetch_inspection_page(session, url)
+                if page_blocked or html is None:
+                    if html is None and not page_blocked:
+                        no_data += 1
+                    else:
+                        still_blocked.append(fac)
+                    polite_sleep()
+                    continue
+                persist_page(fac, url, html)
+                polite_sleep()
+            blocked = len(still_blocked)
+        else:
+            blocked = 0
     finally:
         if conn:
             conn.close()
@@ -498,13 +549,20 @@ def main() -> None:
         )
         sys.exit(1)
 
-    if blocked:
+    if source_should_fail_job(len(facilities), blocked, total_pdf):
         print(
-            f"FAIL: {blocked} facility pages stayed blocked after one retry.",
+            f"FAIL: {blocked}/{len(facilities)} facility pages stayed blocked.",
             file=sys.stderr,
             flush=True,
         )
         sys.exit(1)
+    if blocked:
+        print(
+            f"WARN: {blocked}/{len(facilities)} facility pages stayed blocked "
+            "from this runner. The rest of the scrape is stored.",
+            file=sys.stderr,
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

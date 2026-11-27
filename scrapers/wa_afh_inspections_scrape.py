@@ -24,6 +24,8 @@ import argparse
 import os
 import re
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -133,6 +135,25 @@ def upsert_pdf_inventory(
     return inserted
 
 
+_THREAD = threading.local()
+
+
+def _worker_session():
+    session = getattr(_THREAD, "session", None)
+    if session is None:
+        session = make_session()
+        _THREAD.session = session
+    return session
+
+
+def _worker_conn() -> psycopg.Connection:
+    conn = getattr(_THREAD, "conn", None)
+    if conn is None or conn.closed:
+        conn = get_conn()
+        _THREAD.conn = conn
+    return conn
+
+
 def scrape_facility_pdfs(
     session: Any,
     facility: dict[str, Any],
@@ -166,10 +187,35 @@ def scrape_facility_pdfs(
     return n
 
 
+def _scrape_one(facility: dict[str, Any], *, dry_run: bool, delay: float) -> int:
+    try:
+        n = scrape_facility_pdfs(
+            _worker_session(),
+            facility,
+            _worker_conn(),
+            dry_run=dry_run,
+        )
+        return n
+    finally:
+        polite_sleep(delay, 0.1)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="WA AFH inspections scrape — Wave 3a")
     parser.add_argument("--license", help="Single license number")
     parser.add_argument("--limit", type=int)
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Parallel forms-page fetches (default 4). Use 1 to go sequential.",
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=0.4,
+        help="Seconds to wait after each facility fetch per worker (default 0.4).",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
@@ -177,20 +223,37 @@ def main(argv: list[str] | None = None) -> None:
     print("=== WA AFH Inspections Scrape ===")
 
     conn = get_conn()
-    session = make_session()
-
     facilities = fetch_afh_facilities(conn, args.license, args.limit)
-    print(f"  {len(facilities)} AFHs to scrape")
+    conn.close()
+    workers = max(1, args.workers)
+    print(f"  {len(facilities)} AFHs to scrape ({workers} workers, {args.delay:.1f}s delay)")
 
     total_pdfs = 0
-    for fac in facilities:
-        n = scrape_facility_pdfs(session, fac, conn, dry_run=args.dry_run)
-        total_pdfs += n
-        polite_sleep(1.0, 0.3)
+    if workers == 1:
+        session = make_session()
+        conn = get_conn()
+        try:
+            for fac in facilities:
+                total_pdfs += scrape_facility_pdfs(
+                    session, fac, conn, dry_run=args.dry_run
+                )
+                polite_sleep(args.delay, 0.1)
+        finally:
+            conn.close()
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [
+                pool.submit(_scrape_one, fac, dry_run=args.dry_run, delay=args.delay)
+                for fac in facilities
+            ]
+            for future in as_completed(futures):
+                try:
+                    total_pdfs += future.result()
+                except Exception as exc:  # noqa: BLE001
+                    print(f"  worker error: {exc}", file=sys.stderr)
 
     print(f"\nTotal PDF inventory rows inserted: {total_pdfs}")
     print("Run wa_pdf_download.py → wa_pdf_parse.py → wa_pdf_backfill.py to process.")
-    conn.close()
 
 
 if __name__ == "__main__":

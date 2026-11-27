@@ -254,78 +254,138 @@ def ingest_or(conn) -> bool:
     return rc == 0
 
 
+def _env_flag_args(*pairs: tuple[str, str]) -> list[str]:
+    args: list[str] = []
+    for env_name, flag in pairs:
+        value = os.environ.get(env_name)
+        if value:
+            args.extend([flag, value])
+    return args
+
+
 def ingest_wa(conn) -> bool:
+    sample = os.environ.get("WA_SAMPLE") == "1"
+    if sample:
+        os.environ.setdefault("WA_AFH_LIMIT", "25")
+        os.environ.setdefault("WA_BH_LIMIT", "10")
+        os.environ.setdefault("WA_COMPLIANCE_LIMIT", "5")
+        os.environ.setdefault("WA_PDF_LIMIT", "10")
+        os.environ.setdefault("WA_SUMMARY_LIMIT", "5")
+        os.environ.setdefault("WA_AFH_WORKERS", "2")
+    skip_physical_city = sample or os.environ.get("WA_SKIP_PHYSICAL_CITY") == "1"
+    physical_city_days = os.environ.get("WA_PHYSICAL_CITY_DAYS", "14")
+    afh_workers = os.environ.get("WA_AFH_WORKERS", "4")
+    afh_delay = os.environ.get("WA_AFH_DELAY", "0.4")
+    afh_extra = _env_flag_args(("WA_AFH_LIMIT", "--limit"))
+    bh_extra = _env_flag_args(("WA_BH_LIMIT", "--limit"))
+    compliance_extra = _env_flag_args(("WA_COMPLIANCE_LIMIT", "--limit"))
+    pdf_extra = _env_flag_args(("WA_PDF_LIMIT", "--limit"))
+
     steps = [
         _python(str(SCRAPERS / "wa_geo_directory_ingest.py"), label="WA Geo universe", allow_fail=True),
-        _python(
-            str(SCRAPERS / "recompute_physical_city.py"),
-            "--state", "WA", "--apply",
-            label="WA physical-city recompute",
-            allow_fail=True,
-        ),
-        _python(
-            str(SCRAPERS / "cms_nh_directory_ingest.py"),
-            "--state", "WA",
-            label="WA CMS nursing-home directory",
-            allow_fail=True,
-        ),
-        _python(
-            str(SCRAPERS / "cms_nh_deficiencies_ingest.py"),
-            "--state", "WA",
-            label="WA CMS nursing-home deficiencies",
-            allow_fail=True,
-        ),
-        _python(str(SCRAPERS / "wa_signal_sdcp.py"), label="WA SDCP signal", allow_fail=True),
-        _python(
-            str(SCRAPERS / "wa_signal_dementia_specialty.py"),
-            label="WA dementia-specialty signal",
-            allow_fail=True,
-        ),
-        _python(
-            str(SCRAPERS / "wa_afh_directory_ingest.py"),
-            "--skip-geo",
-            label="WA AFH directory",
-            allow_fail=True,
-        ),
-        _python(
-            str(SCRAPERS / "wa_afh_inspections_scrape.py"),
-            label="WA AFH inspection discovery",
-            allow_fail=True,
-        ),
-        _python(
-            str(SCRAPERS / "wa_bh_inspections_scrape.py"),
-            label="WA ALF/ESF inspection discovery",
-            allow_fail=True,
-        ),
-        _python(
-            str(SCRAPERS / "wa_esf_ingest.py"),
-            "--skip-geo",
-            label="WA ESF directory",
-            allow_fail=True,
-        ),
-        _python(str(SCRAPERS / "wa_pdf_download.py"), label="WA PDF download", allow_fail=True),
-        _python(
-            str(SCRAPERS / "compliance_flags_run.py"),
-            "--state",
-            "WA",
-            "--approved-only",
-            label="WA compliance flags",
-            allow_fail=True,
-        ),
-        _python(str(SCRAPERS / "wa_pdf_parse.py"), label="WA PDF parse", allow_fail=True),
-        _python(
-            str(SCRAPERS / "wa_pdf_backfill.py"),
-            "--rescore",
-            label="WA PDF backfill",
-            allow_fail=True,
-        ),
-        _python(
-            str(SCRAPERS / "recompute_publishable.py"),
-            "--state", "WA",
-            label="WA recompute publishable",
-            allow_fail=True,
-        ),
     ]
+    if skip_physical_city:
+        print("  [WA] physical-city recompute skipped (sample / WA_SKIP_PHYSICAL_CITY=1)")
+        _SOURCE_RESULTS.append(("WA physical-city recompute", 0))
+    else:
+        steps.append(
+            _python(
+                str(SCRAPERS / "recompute_physical_city.py"),
+                "--state", "WA", "--apply",
+                "--created-since-days", physical_city_days,
+                label="WA physical-city recompute",
+                allow_fail=True,
+            )
+        )
+    steps.extend(
+        [
+            _python(
+                str(SCRAPERS / "cms_nh_directory_ingest.py"),
+                "--state", "WA",
+                label="WA CMS nursing-home directory",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "cms_nh_deficiencies_ingest.py"),
+                "--state", "WA",
+                label="WA CMS nursing-home deficiencies",
+                allow_fail=True,
+            ),
+            _python(str(SCRAPERS / "wa_signal_sdcp.py"), label="WA SDCP signal", allow_fail=True),
+            _python(
+                str(SCRAPERS / "wa_signal_dementia_specialty.py"),
+                label="WA dementia-specialty signal",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "wa_afh_directory_ingest.py"),
+                "--skip-geo",
+                label="WA AFH directory",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "wa_afh_inspections_scrape.py"),
+                "--workers", afh_workers,
+                "--delay", afh_delay,
+                *afh_extra,
+                label="WA AFH inspection discovery",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "wa_bh_inspections_scrape.py"),
+                *bh_extra,
+                label="WA ALF/ESF inspection discovery",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "wa_esf_ingest.py"),
+                "--skip-geo",
+                label="WA ESF directory",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "wa_pdf_download.py"),
+                *pdf_extra,
+                label="WA PDF download",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "compliance_flags_run.py"),
+                "--state",
+                "WA",
+                "--approved-only",
+                *compliance_extra,
+                label="WA compliance flags",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "wa_pdf_parse.py"),
+                *pdf_extra,
+                label="WA PDF parse",
+                allow_fail=True,
+            ),
+            # Do not pass --rescore. That re-summarized every WA inspection
+            # (~3,300 Claude calls, ~85 minutes) even when 58 PDFs were new.
+            _python(
+                str(SCRAPERS / "wa_pdf_backfill.py"),
+                label="WA PDF backfill",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "summarize_inspections.py"),
+                "--state", "WA",
+                "--limit", os.environ.get("WA_SUMMARY_LIMIT", "80"),
+                label="WA new inspection summaries",
+                allow_fail=True,
+            ),
+            _python(
+                str(SCRAPERS / "recompute_publishable.py"),
+                "--state", "WA",
+                label="WA recompute publishable",
+                allow_fail=True,
+            ),
+        ]
+    )
     return all(rc == 0 for rc in steps)
 
 

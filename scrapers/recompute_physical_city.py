@@ -144,9 +144,20 @@ def slugify(text: str) -> str:
 def fetch_facilities(
     conn: psycopg.Connection,
     state_codes: list[str],
+    created_since_days: int | None = None,
 ) -> list[dict]:
-    """Return all facilities with lat/lon for the given states."""
+    """Return facilities with lat/lon for the given states.
+
+    When created_since_days is set, only rows inserted in that window are
+    geocoded. Physical city does not move week to week; the weekly scan only
+    needs new homes from the directory pull.
+    """
     placeholders = ", ".join(["%s"] * len(state_codes))
+    since_clause = ""
+    params: list = list(state_codes)
+    if created_since_days is not None:
+        since_clause = " AND created_at >= now() - (%s * interval '1 day')"
+        params.append(created_since_days)
     with conn.cursor() as cur:
         cur.execute(
             f"""
@@ -155,8 +166,9 @@ def fetch_facilities(
              WHERE state_code IN ({placeholders})
                AND latitude IS NOT NULL
                AND longitude IS NOT NULL
+               {since_clause}
             """,
-            state_codes,
+            params,
         )
         cols = [d.name for d in cur.description]
         return [dict(zip(cols, row)) for row in cur.fetchall()]
@@ -204,7 +216,11 @@ def apply_city_update(
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def run(state_codes: list[str], apply: bool) -> int:
+def run(
+    state_codes: list[str],
+    apply: bool,
+    created_since_days: int | None = None,
+) -> int:
     if not DATABASE_URL:
         print("ERROR: DATABASE_URL not set in .env.local", flush=True)
         sys.exit(1)
@@ -213,13 +229,24 @@ def run(state_codes: list[str], apply: bool) -> int:
     print(f"Cache loaded: {len(cache)} entries", flush=True)
 
     mode = "APPLY" if apply else "DRY-RUN"
-    print(f"Mode: {mode} | States: {', '.join(state_codes)}", flush=True)
+    window = (
+        f" | created in last {created_since_days} days"
+        if created_since_days is not None
+        else ""
+    )
+    print(f"Mode: {mode} | States: {', '.join(state_codes)}{window}", flush=True)
 
     with psycopg.connect(DATABASE_URL) as conn:
-        facilities = fetch_facilities(conn, state_codes)
+        facilities = fetch_facilities(conn, state_codes, created_since_days)
         print(f"Facilities to evaluate: {len(facilities)}", flush=True)
 
         if not facilities:
+            if created_since_days is not None:
+                print(
+                    "No facilities in the since-window. Physical city already applied.",
+                    flush=True,
+                )
+                return 0
             print("ERROR: no publishable facilities with lat/lon found — check state codes or geocode first", flush=True)
             sys.exit(1)
 
@@ -299,6 +326,13 @@ def main() -> int:
     group.add_argument("--state", metavar="XX", help="Two-letter state code(s), comma-separated (e.g. UT or CA,OR)")
     group.add_argument("--all", action="store_true", help="Run for all covered states")
     parser.add_argument("--apply", action="store_true", help="Write changes to DB (default: dry-run)")
+    parser.add_argument(
+        "--created-since-days",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Only geocode facilities inserted in the last N days (weekly incremental).",
+    )
     args = parser.parse_args()
 
     all_states = ["CA", "TX", "OR", "WA", "MN", "UT", "IL", "PA", "AZ", "MO", "CO"]
@@ -312,7 +346,11 @@ def main() -> int:
             print(f"ERROR: unknown state code(s): {', '.join(invalid)}", flush=True)
             sys.exit(1)
 
-    return run(state_codes, apply=args.apply)
+    return run(
+        state_codes,
+        apply=args.apply,
+        created_since_days=args.created_since_days,
+    )
 
 
 if __name__ == "__main__":

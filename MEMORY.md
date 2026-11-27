@@ -6,6 +6,24 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Sunday scan: sparse PA/UT blocks warn; WA is incremental
+
+**Decided:** Pennsylvania and Utah still retry a blocked page or a 500 (three backoffs, PA retries the blocked set once more). The Sunday job fails only when the source is substantially broken: nothing stored, or more than 20% of attempted pages/API calls stayed failed. A handful of GitHub-runner 403s or one Utah 500 is a warning on the admin email, not a red matrix cell. Family alerts can go out for the homes that did ingest.
+
+Washington weekly no longer re-geocodes the whole roster, no longer re-summarizes every inspection (`--rescore` / `--refetch`), and skips compliance re-reads when this scan added no new PDF for a home that already has a flag. AFH forms pages run 4 workers at 0.4s delay. Physical city geocodes only facilities created in the last 14 days.
+
+Per-state `timeout-minutes` cap each matrix job so a hang cannot burn six hours. `workflow_dispatch` `state` accepts a comma list; `sample` limits WA for proof runs.
+
+**Why:** Four straight Sundays (Nov 1–22) went red because 7/363 PA pages 403'd and 1/119 UT API calls failed after one retry, while the rest of those scrapes stored data. WA succeeded in 5.5–6 hours: 6,429 AFHs at 1 req/s (~2h25m), Census geocoding every WA home (~38m, cache not on the runner), compliance re-download of 1,040 homes (~55m), and Claude `--refetch` of 3,335 inspections (~85m) after 58 new PDFs.
+
+**This updates** the 2026-10 quality-gates line that said a Pennsylvania 403 or Utah 500 after one retry fails the scan. Fail-loud stays for a downed portal.
+
+**Rejected:** Treating those 403/500s as a changed URL. Fetching FacilityReports from GitHub. Raising `max-parallel` (Supabase pool_size=15). Caching `.firecrawl/wa-pdfs` on Actions (size unknown, compliance skip is enough).
+
+**Source:** Runs `41316847867`, `42490606983`, `43727623295`, `45039897772`.
+
+---
+
 ## 2026-11 — CA FacilityReports stay pending until the PDF is stored
 
 **Decided:** The Mac watch (`com.starlynncare.ca-watch`) still uses the statewide CDSS file as the change detector, but a matching bulk fingerprint is not enough to skip `FacilityReports`. A home stays in the deep queue, and its snapshot stays `pending`, while any bulk **Last Visit Date** / **All Visit Dates** is newer than both stored inspection dates and `REPORTARRAY` dates. Skip a listed Lotus id only when an `inspections` row exists (`report_key` in `raw_data`, or date + type + `complaint_id`). The snapshot inventory stores only ingested keys plus explicit `no_document` 404s. Same-day complaints get `source_event_id` = Lotus id, and migration `0084_inspections_unkeyed_complaint.sql` widens `inspections_facility_date_type_agency_unkeyed` with `complaint_id`. GitHub Actions must not fetch `FacilityReports`; TLS failures are errors, not “no new reports.”
