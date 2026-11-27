@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -168,6 +169,33 @@ COALESCE(
 """
 
 
+# Matches "StarlynnCare row {uuid}" on a closed row. It does not match
+# "previous StarlynnCare row(s): {uuid}", which is the new row naming the old ones.
+# TODO: a structured successor column would be better than this note.
+CLOSED_SUCCESSOR_HOLD_SQL = """
+upper(btrim(coalesce(license_status, ''))) = 'CLOSED'
+AND license_status_detail ~* 'StarlynnCare row [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+""".strip()
+
+_SUCCESSOR_ROW_RE = re.compile(
+    r"StarlynnCare row ([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})",
+    re.IGNORECASE,
+)
+
+
+def successor_row_id(detail: str | None) -> str | None:
+    if not detail:
+        return None
+    match = _SUCCESSOR_ROW_RE.search(detail)
+    return match.group(1).lower() if match else None
+
+
+def hold_closed_successor(license_status: str | None, detail: str | None) -> bool:
+    """CLOSED rows that name a successor keep whatever publishable they have."""
+    status = (license_status or "").strip().upper()
+    return status == "CLOSED" and successor_row_id(detail) is not None
+
+
 def publishable_from_signals(
     *,
     state_code: str,
@@ -176,14 +204,19 @@ def publishable_from_signals(
     publishable: bool,
     mc_review_status: str | None,
     fresh: bool,
+    license_status_detail: str | None = None,
 ) -> bool:
     """Mirror of the publishable UPDATE.
 
     Washington already stays listed after DSHS drops a dementia flag.
     Arizona does the same when Directed Care is cleared: Blake publishes
     and unpublishes. Losing that level only gets logged. A closed license
-    still comes down. Every other state keeps the old rule.
+    still comes down, except a CLOSED row whose status-detail note names a
+    successor: that row is left at its current publishable value. Every
+    other state keeps the old rule.
     """
+    if hold_closed_successor(license_status, license_status_detail):
+        return publishable
     licensed = license_status in ("LICENSED", "ON PROBATION")
     kept = (state_code == "WA" and publishable) or (state_code == "AZ" and publishable)
     memory_care = serves_memory_care or kept
@@ -354,35 +387,66 @@ def recompute_publishable(
             -- inserts start publishable=false, so name-only campuses stay out.
             OR (state_code = 'WA' AND publishable = true)
             -- AZ: clearing Directed Care does not unpublish. Publishing is
-            -- Blake's call. CLOSED still fails the license_status check.
+            -- Blake's call. A CLOSED row still fails this check. A CLOSED
+            -- row that names a successor is held by the CASE around it.
             OR (state_code = 'AZ' AND publishable = true)
           )"""
+    # A CLOSED row that names a successor keeps publishable. The CASE makes
+    # the dry-run preview agree. The WHERE keeps the UPDATE from writing it.
     predicate = f"""(
+          CASE
+            WHEN {CLOSED_SUCCESSOR_HOLD_SQL} THEN publishable
+            ELSE (
           -- A probationary license is still a license: the page shows the
           -- status. CLOSED / REVOKED / PENDING never publish.
           license_status IN ('LICENSED', 'ON PROBATION')
           AND {memory_clause}
           AND mc_review_status <> 'reviewed_reject'
           {freshness_clause}{geocode_clause}
+            )
+          END
         )"""
     sql = f"""
         UPDATE facilities
         SET publishable = {predicate}
         WHERE state_code = %s
+          AND NOT ({CLOSED_SUCCESSOR_HOLD_SQL})
     """
 
     if dry_run:
         gate = f"+ ≥1 inspection in {freshness_months} months" if freshness_months else "(no freshness gate)"
         print(f"  Step 2: Would recompute publishable from serves_memory_care + license + review_status {gate}")
+        _log_closed_successor_holds(conn, state_code)
         _print_publishable_changes(conn, state_code, predicate)
         _log_az_directed_care_kept(conn, state_code, freshness_clause)
         return 0
 
+    _log_closed_successor_holds(conn, state_code)
     with conn.cursor() as cur:
         cur.execute(sql, (state_code,))
         changed = cur.rowcount
     _log_az_directed_care_kept(conn, state_code, freshness_clause)
     return changed
+
+
+def _log_closed_successor_holds(conn: psycopg.Connection, state_code: str) -> int:
+    """CLOSED rows with a successor note. publishable is not changed here."""
+    report = f"""
+        SELECT id, name, license_number, publishable
+        FROM facilities
+        WHERE state_code = %s
+          AND {CLOSED_SUCCESSOR_HOLD_SQL}
+        ORDER BY name
+    """
+    with conn.cursor() as cur:
+        cur.execute(report, (state_code,))
+        rows = cur.fetchall()
+    print(f"  CLOSED successor note: {len(rows)} row(s) left at their current publishable")
+    for row in rows:
+        print(
+            f"    {row[0]} | {row[1]} | license={row[2]} | publishable={row[3]} | publishable left as-is"
+        )
+    return len(rows)
 
 
 def _print_publishable_changes(

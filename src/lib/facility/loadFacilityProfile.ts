@@ -32,6 +32,11 @@ import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import { canonicalFor } from "@/lib/seo/canonical";
 import type { ComplianceFlag } from "@/lib/facility/complianceFlag";
 import { priorWaDshsFormsUrl } from "@/lib/facility/waPriorLicense";
+import {
+  loadAddressHistory,
+  type AddressSuccessorLink,
+  type PreviousFacilityAtAddress,
+} from "@/lib/facility/addressSuccessor";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityDisplayName } from "@/lib/facility/aliases";
 import {
@@ -53,7 +58,7 @@ import type { DatePrecision } from "@/lib/format/formatRecordDate";
 import { seriousFindingCounts } from "@/lib/facility/seriousFindings";
 import { freshenTourQuestions } from "@/lib/facility/tourQuestions";
 import type { Facility, Deficiency, DataDepth, InspectionVisibilityTier } from "@/lib/types";
-import { finalizeJsonLd } from "@/lib/quality/gate";
+import { finalizeJsonLd, type GateInspection } from "@/lib/quality/gate";
 import type { StateProfileConfig, Rule } from "@/lib/states/profileConfig";
 import type { Review } from "@/components/reviews/ReviewCard";
 import type { Region } from "@/lib/regions";
@@ -270,7 +275,7 @@ export interface FacilityProfile {
    * Every stored inspection date and source URL, including rows outside the
    * display window. The quality gate reads this. It is not rendered.
    */
-  gateInspections: Array<{ date: string | null; sourceUrl: string | null }>;
+  gateInspections: GateInspection[];
   /** Deficiency rows keyed by inspection_id (only for visible inspections). */
   deficienciesByInspection: Map<string, DeficiencyRow[]>;
   totals: {
@@ -370,6 +375,14 @@ export interface FacilityProfile {
    * Privacy flag per wa_afh_residential_flag column.
    */
   isAfhResidential: boolean;
+
+  /**
+   * Closed homes that named this row as the new license at the same address.
+   * Their inspections are not part of `inspections`, `totals`, or JSON-LD.
+   */
+  previousFacilitiesAtAddress: PreviousFacilityAtAddress[];
+  /** Set on a closed row when the new home at this address is publishable. */
+  addressSuccessor: AddressSuccessorLink | null;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -678,12 +691,19 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const region = regionFromSlug(stateSlug, regionSlug);
   const countyHub = countyRegionContainingCitySlug(state.code, facility.city_slug);
 
-  const [{ inspections: allInspections, deficiencies: allDeficiencies }, snapshot, reviews, complianceFlag, waPostedReport] = await Promise.all([
+  const [{ inspections: allInspections, deficiencies: allDeficiencies }, snapshot, reviews, complianceFlag, waPostedReport, addressHistory] = await Promise.all([
     fetchInspectionsAndDeficiencies(facility.id),
     fetchSnapshot(facility.id),
     loadPublishedReviews(facility.id),
     fetchComplianceFlag(facility.id),
     facility.state_code === "WA" ? fetchWaLatestPostedReport(facility.id) : Promise.resolve(null),
+    loadAddressHistory({
+      facilityId: facility.id,
+      stateCode: facility.state_code,
+      stateSlug: state.slug,
+      licenseStatus: facility.license_status,
+      licenseStatusDetail: facility.license_status_detail ?? null,
+    }),
   ]);
 
   // ── Free-tier display cap ──────────────────────────────────────────────────
@@ -922,6 +942,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     regulatorAbbr: cfg.agencyShort,
   });
 
+  // Predecessor visits stay off this graph. citationCount and the last
+  // inspection are this license only.
   const jsonLd: object[] = [
     buildLocalBusinessForFacility(facility, state, {
       canonicalUrl,
@@ -1030,5 +1052,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         : null,
 
     isAfhResidential: facility.wa_afh_residential_flag === true,
+    previousFacilitiesAtAddress: addressHistory.previousFacilities,
+    addressSuccessor: addressHistory.successor,
   };
 });

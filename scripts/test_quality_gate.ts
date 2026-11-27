@@ -198,6 +198,56 @@ assert.equal(
   true,
 );
 
+const predecessorOnly = explainIndexability(
+  home({
+    state_code: "AZ",
+    az_license_level: "Directed Care",
+    inspections: [
+      { date: "2025-03-12", sourceUrl: "https://azcarecheck.azdhs.gov/old-a", predecessor: true },
+      { date: "2025-01-27", sourceUrl: "https://azcarecheck.azdhs.gov/old-b", predecessor: true },
+    ],
+  }),
+  NOW,
+);
+assert.equal(
+  predecessorOnly.failures.includes("inspection"),
+  true,
+  "inspections of a previous facility do not meet this home's inspection requirement",
+);
+
+const ownPlusPredecessor = explainIndexability(
+  home({
+    state_code: "AZ",
+    az_license_level: "Directed Care",
+    inspections: [
+      { date: "2026-08-01", sourceUrl: "https://azcarecheck.azdhs.gov/own" },
+      { date: "2025-03-12", sourceUrl: "https://azcarecheck.azdhs.gov/old-a", predecessor: true },
+    ],
+  }),
+  NOW,
+);
+assert.equal(ownPlusPredecessor.failures.includes("inspection"), false);
+
+const californiaOwnInspection = explainIndexability(
+  home({ state_code: "CA", license_type: "RCFE" }),
+  NOW,
+);
+assert.equal(
+  californiaOwnInspection.failures.includes("inspection"),
+  false,
+  "a non-Arizona home with its own inspection is unchanged",
+);
+assert.equal(
+  inspectionQualifies("IL", {
+    date: "2026-05-09",
+    citationCount: 0,
+    visitId: "00120001",
+    predecessor: true,
+  }),
+  false,
+  "a previous operator's visit does not satisfy this home, including in Illinois",
+);
+
 const approvedLabels = new Set(Object.values(HEADLINE_TABLE).map((row) => row.label));
 const approvedExplanations = new Set(Object.values(HEADLINE_TABLE).map((row) => row.explanation));
 

@@ -250,15 +250,22 @@ export type GateInspection = {
    * id (for example M5T211) live in inspections.source_event_id.
    */
   visitId?: string | null;
+  /**
+   * Visit of a previous facility at this address. It does not satisfy
+   * this home's inspection requirement.
+   */
+  predecessor?: boolean;
 };
 
 /**
  * An inspection counts when it has a date and an http(s) source URL.
  * Illinois and Colorado have no per-visit document URL. For those two states
  * a date, a citation count (zero allowed), and the state visit or event id
- * are enough. Every other state still needs the URL.
+ * are enough. Every other state still needs the URL. A previous operator's
+ * visit does not count in any state.
  */
 export function inspectionQualifies(state: string, row: GateInspection): boolean {
+  if (row.predecessor) return false;
   const date = row.date?.trim() ?? "";
   if (!date) return false;
   const code = state.trim().toUpperCase();

@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Previous operator's inspections stay on the new home's page, under the old name
+
+**Decided:** When a closed license and a new license share an address, the new profile lists the old inspections at the bottom under the heading "Inspection records of previous facilities at this address". The link is text in `facilities.license_status_detail`: the closed row says `StarlynnCare row {successor uuid}`, and the new row says `previous StarlynnCare row(s): {old uuid}`. A small parser reads that. A structured column would be better; this change does not add one. The new home's InspectionSummary, citation-hook title, quality-gate inspection check, and LocalBusiness use only its own inspections. A closed page keeps the Closed chip and, when the successor is publishable, links "Now operating at this address: {name}". No redirect.
+
+**Publishable:** `recompute_publishable.py` leaves a CLOSED row that names a successor at its current `publishable` and logs it. That is on top of the Directed Care rule: losing Directed Care still does not unpublish a licensed Arizona home, and a CLOSED row with no successor note still comes down. Other states are unchanged unless a row carries that same note.
+
+**This narrows** the same-day sentence that every closed license comes down. It does not change the California two-view unpublish.
+
+**Rejected:** Merging the old inspections onto the new row. Counting them toward the new home's inspection requirement. Putting them in the successor's JSON-LD. Redirecting the closed URL. Depending on the operator's map CSV.
+
+**Source:** Blake, 2026-11-27. Arizona Care Check notes on project fwvrupjgwvvzqiutwwdg: 47 CLOSED rows and 46 successor rows.
+
+---
+
 ## 2026-11-27 — Illinois and Colorado visit ids, and one Washington citation count
 
 **Decided:** Illinois and Colorado inspections qualify for the gate without a document URL when they have a date, a citation count (zero allowed), and a visit id in `source_event_id`. Illinois already stores the FOIA visit id there. Colorado's id is `raw_data.co_event_id` (for example `M5T211`); the backfill copies it into `source_event_id` and still does not invent a tableau URL. Every other state still needs a date and an http(s) URL. `GATE_ENFORCED` stays false.
@@ -14,7 +28,7 @@ Washington's citation count is the number of distinct cited WAC requirements, on
 
 **Rejected:** Requiring a source URL for Illinois or Colorado. Counting every not-met line. Setting a Washington count to zero because the citation rows were never stored. Turning the gate on.
 
-**Source:** Read-only SQL on project `fwvrupjgwvvzqiutwwdg` after the PA, UT, and WA writes. Live pages failing the date + URL + count test: WA 478 of 1,131, IL 300, CO 70, AZ 2. PA 429 and UT 118 pass.
+**Source:** Read-only SQL on project `fwvrupjgwvvzqiutwwdg` after the PA, UT, and WA writes. Live pages failing the date + URL + count test: WA 478 of 1,131, IL 300, CO 70, AZ 2. PA 429 and UT 118 pass. A previous operator's inspections, from the entry above, still do not satisfy this home.
 
 ---
 
