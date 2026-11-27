@@ -25,6 +25,10 @@ export type MunicipalityInput = {
   zip: string | null | undefined;
   name: string;
   citySlug: string;
+  /** WA directory county. Used to split Census places that share a slug. */
+  county?: string | null;
+  /** Prior city_slug values (DSHS LocationCity before the Census rewrite). */
+  historicalCitySlugs?: string[] | null;
 };
 
 export function displayMunicipality(input: MunicipalityInput): DisplayMunicipality | null {
@@ -36,11 +40,39 @@ export function displayMunicipality(input: MunicipalityInput): DisplayMunicipali
   return zip ? (PA_ZIP[zip] ?? null) : null;
 }
 
+/**
+ * Two Census CDPs named Fairwood (King / Renton vs Spokane). Facility URLs
+ * keep city_slug=fairwood. Hub membership follows the DSHS city: Spokane
+ * homes list on /washington/spokane, King homes stay on /washington/fairwood.
+ */
+const WA_FAIRWOOD_HUB: Record<string, string> = {
+  Spokane: "spokane",
+  King: "fairwood",
+};
+
+function waFairwoodHub(input: MunicipalityInput): string | null {
+  if (input.citySlug !== "fairwood") return null;
+  const county = (input.county ?? "").trim();
+  if (county && WA_FAIRWOOD_HUB[county]) return WA_FAIRWOOD_HUB[county];
+  const hist = input.historicalCitySlugs ?? [];
+  if (hist.includes("spokane")) return "spokane";
+  if (hist.includes("renton")) return "fairwood";
+  return null;
+}
+
 /** Keep a home on this city page only when its display municipality matches. */
 export function belongsOnCityPage(input: MunicipalityInput, pageSlug: string): boolean {
-  const override = displayMunicipality(input);
-  if (!override) return input.citySlug === pageSlug;
-  return override.slug === pageSlug;
+  const state = input.stateCode.toUpperCase();
+  if (state === "PA") {
+    const override = displayMunicipality(input);
+    if (!override) return input.citySlug === pageSlug;
+    return override.slug === pageSlug;
+  }
+  if (state === "WA") {
+    const fairwoodHub = waFairwoodHub(input);
+    if (fairwoodHub) return fairwoodHub === pageSlug;
+  }
+  return input.citySlug === pageSlug;
 }
 
 export function paOverridePageSlugs(): string[] {
@@ -56,4 +88,13 @@ export function paOverrideOrFilter(): string {
     "name.ilike.%Mount Lebanon%",
     "name.ilike.%Bethel Park%",
   ].join(",");
+}
+
+export function waOverridePageSlugs(): string[] {
+  return ["fairwood", "spokane"];
+}
+
+/** Extra query: Fairwood CDP homes that belong on the Spokane hub. */
+export function waOverrideOrFilter(): string {
+  return "city_slug.eq.fairwood";
 }

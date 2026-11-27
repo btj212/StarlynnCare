@@ -32,6 +32,10 @@ export type MemoryCareBasis = {
 export const MEMORY_CARE_BASIS_UNRECORDED =
   "Memory-care basis not yet recorded from the state file.";
 
+/** WA home with no DSHS dementia flag. Do not call this "not yet recorded." */
+export const WA_NO_DEMENTIA_DESIGNATION =
+  "Washington DSHS does not list a dementia specialty, Specialized Dementia Care contract, or Memory Care Certified flag for this home.";
+
 export type MemoryCareBasisInput = {
   state_code: string;
   memory_care_disclosure_source?: string | null;
@@ -50,6 +54,8 @@ export type MemoryCareBasisInput = {
   wa_earc_sdc_contracted?: boolean | null;
   wa_dementia_care_contract?: boolean | null;
   wa_dementia_specialty?: boolean | null;
+  /** DSHS contract strings from the ALF directory. AFH specialties use the boolean. */
+  wa_contract_types?: string[] | null;
   tx_alzheimer_certified?: boolean | null;
   tx_alzheimer_cert_no?: string | null;
   il_dementia_program_flag?: boolean | null;
@@ -64,6 +70,11 @@ export type MemoryCareBasisInput = {
   co_care_setting?: "ALR" | "NH" | null;
   /** Official facility record. Used for a Colorado nursing home's Care Compare link. */
   source_url?: string | null;
+  /**
+   * Listing flag. A name match must never set this for WA. When false, copy
+   * must not imply the home is memory care.
+   */
+  serves_memory_care?: boolean | null;
 };
 
 const CA_CITATION =
@@ -126,6 +137,10 @@ export function hasCaDementiaClientCode(values: string[] | null | undefined): bo
 
 function hasCaDementiaRule(value: string | null | undefined): boolean {
   return /87705|87706/.test(value ?? "");
+}
+
+function waContractImpliesDementia(types: string[] | null | undefined): boolean {
+  return (types ?? []).some((t) => /dementia|memory care|sdc/i.test(t));
 }
 
 function texasLabel(certNo: string | null | undefined): string {
@@ -244,6 +259,9 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   if (facility.wa_earc_sdc_contracted || facility.wa_dementia_care_contract) {
     return recorded("Washington DSHS lists a specialized dementia care contract for this home.");
   }
+  if (waContractImpliesDementia(facility.wa_contract_types)) {
+    return recorded("Washington DSHS lists a specialized dementia care contract for this home.");
+  }
   if (facility.wa_dementia_specialty) {
     return recorded("Washington DSHS lists a dementia specialty designation for this home.");
   }
@@ -268,6 +286,10 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
 
   if (facility.state_code === "AZ") {
     return recorded(AZ_DIRECTED_CARE_LABEL);
+  }
+
+  if (facility.state_code === "WA" && facility.serves_memory_care === false) {
+    return { ...basis, label: WA_NO_DEMENTIA_DESIGNATION };
   }
 
   return basis;

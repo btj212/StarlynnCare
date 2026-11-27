@@ -108,6 +108,12 @@ export interface StateProfileConfig {
     showStatus?: boolean;
     showFine?: boolean;
   };
+  /**
+   * Scope×severity heatmap on the profile. `cms` is the federal A–L grid
+   * (nursing homes only). `cdphe` is Colorado Level A–E. Omit it for
+   * state-licensed ALF / AFH pages — those systems do not use CMS A–L.
+   */
+  scopeSeverityScale?: "cms" | "cdphe";
 }
 
 /**

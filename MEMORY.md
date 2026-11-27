@@ -6,6 +6,26 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — WA display: licensed city, PDF dates, name is not MC evidence, successor licenses
+
+**Decided:** Washington facility pages print the DSHS licensed/mailing city in the address line and JSON-LD `PostalAddress.addressLocality`. Census neighborhood (Parkland, Fairwood, South Hill) stays on the URL/`city_slug` and as a secondary chip. This is an exception to the 2026-05 “URL, body, and JSON-LD city must agree” line: families need the licensed city; Search Console URLs stay on the Census slug. Two Census Fairwoods (King 98058 vs Spokane 99218) list on their DSHS city hub; URLs keep `city_slug=fairwood`.
+
+Last inspection on a WA profile is `max(inspections.inspection_date)` plus, when that table is empty, `wa_latest_posted_report` (migration 0085) so a PDF in `wa_pdf_inventory` is not shown as “—”. Month-only DSHS dates (`raw_data.washington` + day 01, or `posted_month`) print as “April 2026”, not “April 1, 2026”.
+
+A facility name containing “Memory Care” is never memory-care evidence. `recompute_publishable.py` excludes `mc_signal_explicit_name` for WA. When `serves_memory_care` is false the profile must not say “basis not yet recorded”, ask “Does … provide memory care?”, or rank the home among “Washington memory care facilities”. WA publishable may stay true for a home already listed after DSHS shows no dementia flag; new inserts still start unpublished.
+
+Inspection summaries must not mention a Specialized Dementia Care contract the home does not hold. The WA summarizer prompt now takes a yes/no contract field; a post-check strips leftover SDC sentences. Existing bad summaries: `inspections.narrative_summary ILIKE '%Specialized Dementia Care%' OR ILIKE '%SDC contract%'` joined to facilities where `wa_dementia_care_contract` is not true and `wa_contract_types` has no dementia/SDC label (Fields Spokane Valley 2669 is the example). Re-run `summarize_inspections.py --state WA --refetch --facility-id …` after this lands; do not rewrite rows from the app.
+
+When DSHS reissues a license for the same campus (same street/phone/beds), `wa_geo_directory_ingest.py` flags the new number onto `wa_license_successor_flags` (0086), `scrapers/out/wa_license_successor_review.jsonl`, and `mc_review_notes` on the old row. It does not insert a duplicate and does not delete or merge existing rows (licenses 2799/2800/2801 vs 2037/1947/2141). If a live row is later renumbered in place (slug still ends with 2141/2037/1947, `license_number` is 2801/2799/2800), the profile keeps that URL and adds a **Previous license** DSHS Forms link so families can still open reports filed under the old number. The current license remains the State record / LIC# target.
+
+CMS A–L grids render only when `scopeSeverityScale` is set (`cms` / `cdphe`). Operator `facilities.website` renders in the hero. AFH dementia specialty is ArcGIS `Speciality` / `SpecialityCode=SPDE`, not the ASP.NET specialty stamp.
+
+**Rejected:** Changing slugs or routes. Treating a name as a WA memory-care signal. Auto-merging successor licenses. Applying 0084 from an agent session. Showing “no DSHS reports posted” when a PDF month exists.
+
+**Source:** Town-by-town WA DSHS audit, 2026-11-27.
+
+---
+
 ## 2026-11 — Sunday scan: sparse PA/UT blocks warn; WA is incremental
 
 **Decided:** Pennsylvania and Utah still retry a blocked page or a 500 (three backoffs, PA retries the blocked set once more). The Sunday job fails only when the source is substantially broken: nothing stored, or more than 20% of attempted pages/API calls stayed failed. A handful of GitHub-runner 403s or one Utah 500 is a warning on the admin email, not a red matrix cell. Family alerts can go out for the homes that did ingest.

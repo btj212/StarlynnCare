@@ -66,3 +66,4 @@ scrapers/data/il_llcs/
 
 # local scraper caches
 .cache/
+scrapers/out/

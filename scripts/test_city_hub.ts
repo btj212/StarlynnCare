@@ -67,6 +67,48 @@ assert.equal(
   true,
 );
 
+assert.equal(
+  belongsOnCityPage(
+    {
+      stateCode: "WA",
+      zip: "99218",
+      name: "Fairwood Northridge",
+      citySlug: "fairwood",
+      county: "Spokane",
+      historicalCitySlugs: ["spokane"],
+    },
+    "fairwood",
+  ),
+  false,
+);
+assert.equal(
+  belongsOnCityPage(
+    {
+      stateCode: "WA",
+      zip: "99218",
+      name: "Fairwood Northridge",
+      citySlug: "fairwood",
+      county: "Spokane",
+      historicalCitySlugs: ["spokane"],
+    },
+    "spokane",
+  ),
+  true,
+);
+assert.equal(
+  belongsOnCityPage(
+    {
+      stateCode: "WA",
+      zip: "98058",
+      name: "Fairwood King Home",
+      citySlug: "fairwood",
+      county: "King",
+    },
+    "fairwood",
+  ),
+  true,
+);
+
 const mesa = {
   slug: "mesa",
   name: "Mesa",

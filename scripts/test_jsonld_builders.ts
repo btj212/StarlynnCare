@@ -78,4 +78,17 @@ const snf = buildLocalBusinessForFacility(
 const snfTypes = Array.isArray(snf["@type"]) ? snf["@type"] : [snf["@type"]];
 assert.equal(snfTypes.includes("NursingHome"), true);
 
+const parkland = buildLocalBusinessForFacility(
+  {
+    ...facility,
+    city: "Parkland",
+    city_slug: "parkland",
+    state_code: "WA",
+    historical_city_slugs: ["tacoma"],
+  } as unknown as Facility,
+  { code: "WA", slug: "washington", name: "Washington" },
+  { canonicalUrl: "https://www.starlynncare.com/washington/parkland/example" },
+) as { address: { addressLocality?: string } };
+assert.equal(parkland.address.addressLocality, "Tacoma");
+
 console.log("json-ld builder checks passed");

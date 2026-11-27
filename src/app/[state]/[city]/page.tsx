@@ -46,6 +46,8 @@ import {
   displayMunicipality,
   paOverrideOrFilter,
   paOverridePageSlugs,
+  waOverrideOrFilter,
+  waOverridePageSlugs,
 } from "@/lib/city-hub/municipality";
 import { localHelpFor } from "@/lib/city-hub/localHelp";
 import { CityDirectAnswer } from "@/components/city-hub/CityDirectAnswer";
@@ -79,7 +81,7 @@ import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/
 export const revalidate = 3600;
 
 const HUB_FACILITY_SELECT =
-  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served";
+  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, wa_contract_types, wa_county, historical_city_slugs, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served";
 
 type HubFacilityRow = {
   id: string;
@@ -102,6 +104,9 @@ type HubFacilityRow = {
   wa_earc_sdc_contracted: boolean | null;
   wa_memory_care_certified: boolean | null;
   wa_dementia_specialty: boolean | null;
+  wa_contract_types?: string[] | null;
+  wa_county?: string | null;
+  historical_city_slugs?: string[] | null;
   az_mc_subclass: boolean | null;
   az_license_level: string | null;
   az_memory_care_endorsed: boolean | null;
@@ -235,7 +240,37 @@ export default async function RegionPage({ params }: PageProps) {
         }
       }
 
-      const raw = [...seen.values()];
+      if (
+        !isCounty &&
+        region.state.code === "WA" &&
+        waOverridePageSlugs().includes(region.slug)
+      ) {
+        const { data: extraRows } = await supabase
+          .from("facilities")
+          .select(HUB_FACILITY_SELECT)
+          .eq("state_code", "WA")
+          .eq("publishable", true)
+          .or(waOverrideOrFilter());
+        for (const row of (extraRows ?? []) as HubFacilityRow[]) {
+          if (!seen.has(row.id)) seen.set(row.id, row);
+        }
+      }
+
+      const raw = [...seen.values()].filter((row) =>
+        isCounty
+          ? true
+          : belongsOnCityPage(
+              {
+                stateCode: region.state.code,
+                zip: row.zip,
+                name: row.name,
+                citySlug: row.city_slug,
+                county: row.wa_county,
+                historicalCitySlugs: row.historical_city_slugs,
+              },
+              region.slug,
+            ),
+      );
 
       if (raw.length > 0) {
         const ids = raw.map((f) => f.id);
@@ -349,6 +384,7 @@ export default async function RegionPage({ params }: PageProps) {
             wa_earc_sdc_contracted: f.wa_earc_sdc_contracted,
             wa_dementia_care_contract: f.wa_dementia_care_contract,
             wa_dementia_specialty: f.wa_dementia_specialty,
+            wa_contract_types: f.wa_contract_types,
             tx_alzheimer_certified: f.tx_alzheimer_certified,
             il_dementia_program_flag: f.il_dementia_program_flag,
             mn_dementia_care_licensed: f.mn_dementia_care_licensed,
@@ -418,17 +454,6 @@ export default async function RegionPage({ params }: PageProps) {
       })
       .limit(1);
     hubStats = (hubStatsRows as RegionHubStats[] | null)?.[0] ?? null;
-  }
-
-  if (!isCounty && region.state.code === "PA") {
-    facilities = facilities.filter((f) =>
-      belongsOnCityPage(
-        { stateCode: "PA", zip: f.zip, name: f.name, citySlug: f.city_slug },
-        region.slug,
-      ),
-    );
-    const kept = new Set(facilities.map((f) => f.id));
-    recentReports = recentReports.filter((r) => kept.has(r.id));
   }
 
   const smallCount = facilities.filter((f) => f.capacity_tier === "small").length;
