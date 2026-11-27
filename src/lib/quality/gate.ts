@@ -243,6 +243,11 @@ export type SecondaryBadge = {
 export type GateInspection = {
   date?: string | null;
   sourceUrl?: string | null;
+  /**
+   * Visit of a previous facility at this address. It does not satisfy
+   * this home's inspection requirement.
+   */
+  predecessor?: boolean;
 };
 
 export type GateHome = {
@@ -481,6 +486,7 @@ export type IndexDecision = {
 
 function hasQualifyingInspection(home: GateHome): boolean {
   return (home.inspections ?? []).some((row) => {
+    if (row.predecessor) return false;
     const date = row.date?.trim() ?? "";
     const url = row.sourceUrl?.trim() ?? "";
     return date.length > 0 && /^https?:\/\//i.test(url);

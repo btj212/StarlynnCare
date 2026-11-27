@@ -114,6 +114,7 @@ import { FacilityBrowseLinks } from "@/components/facility/FacilityBrowseLinks";
 import { ReportListingForm } from "@/components/facility/ReportListingForm";
 import { loadPreviousLicensesAtAddress } from "@/lib/facility/previousLicense";
 import { PreviousLicenseNote } from "@/components/facility/profile/PreviousLicenseNote";
+import { PreviousFacilityInspections } from "@/components/facility/profile/PreviousFacilityInspections";
 
 export const revalidate = 3600;
 export const maxDuration = 60;
@@ -451,6 +452,7 @@ export default async function FacilityPage({ params }: PageProps) {
             confirmHref={`/${state.slug}/${facility.city_slug}/${facility.slug}/confirm`}
           />
         </div>
+        <PreviousFacilityInspections facilities={profile.previousFacilitiesAtAddress} />
         </main>
         </FacilityOfferProvider>
         <div className="-order-1">

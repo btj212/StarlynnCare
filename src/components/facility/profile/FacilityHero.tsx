@@ -37,6 +37,7 @@ import { FacilityShareButton } from "./FacilityShareButton";
 import { evidenceLabelText } from "@/lib/quality/gate";
 import { EvidenceLabel } from "./EvidenceLabel";
 import { InspectionSummary } from "./InspectionSummary";
+import { ClosedSuccessorLink } from "./PreviousFacilityInspections";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -571,6 +572,10 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 </a>
               )}
             </div>
+
+            {facility.license_status?.trim().toUpperCase() === "CLOSED" ? (
+              <ClosedSuccessorLink successor={profile.addressSuccessor} />
+            ) : null}
 
             {addr.line && (
               <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-[family-name:var(--font-display)] text-[18px] italic leading-snug text-ink-2 sm:text-[20px]">
