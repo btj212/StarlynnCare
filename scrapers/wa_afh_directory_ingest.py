@@ -12,7 +12,10 @@ Note: The universe is pulled via wa_geo_directory_ingest.py with --type AFH.
 This script is a thin wrapper that:
   1. Calls wa_geo_directory_ingest with AFH filter
   2. Tags all AFHs with wa_afh_residential_flag = true (migration column)
-  3. Also reads dementia-specialty AFHs from AFHAdvLookup and marks them
+
+The ASP.NET AFHAdvLookup specialty stamp is not called. That script is
+type-blind and matched nothing. Geo ingest already stores ArcGIS Speciality
+as raw data, and that flag is not a memory-care signal.
 
 Usage:
   python3 scrapers/wa_afh_directory_ingest.py --dry-run
@@ -38,9 +41,6 @@ if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
 
 from wa_geo_directory_ingest import main as geo_main, get_conn, load_env as _geo_load_env
-from wa_signal_dementia_specialty import scrape_adv_lookup, stamp_dementia_specialty
-
-AFH_ADV_URL = "https://fortress.wa.gov/dshs/adsaapps/lookup/AFHAdvLookup.aspx"
 
 
 def load_env() -> None:
@@ -104,19 +104,6 @@ def main(argv: list[str] | None = None) -> None:
     conn = get_conn()
     n = tag_afh_residential_flag(conn, dry_run=args.dry_run)
     print(f"  Tagged {n} AFHs with residential flag")
-
-    # Step 3: Dementia specialty from AFHAdvLookup
-    print("\nStep 3: Stamping dementia-specialty AFHs from AFHAdvLookup…")
-    if not args.dry_run:
-        try:
-            licenses = scrape_adv_lookup(AFH_ADV_URL, "AFH")
-            if licenses:
-                n2 = stamp_dementia_specialty(conn, licenses)
-                print(f"  Stamped {n2} dementia-specialty AFHs")
-        except Exception as exc:
-            print(f"  Warning: could not scrape AFHAdvLookup: {exc}", file=sys.stderr)
-    else:
-        print("  DRY-RUN: skipping live scrape")
 
     conn.close()
     print("\nDone.")

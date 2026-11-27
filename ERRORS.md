@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-27 — AFH dementia specialty was treated as memory care
+
+**What went wrong:** `wa_dementia_specialty` was an OR branch of Washington `serves_memory_care`, a profile basis sentence, a "Dementia Specialty" badge, a city-hub chip, and a hub FAQ basis. It is a staff-training credential (RCW 70.128.230(5), WAC 388-112A-0490). About 98.5% of operating adult family homes hold it (6,199 of 6,296 in the 2026-11-27 DSHS pull), so it says nothing about a particular home. The ASP.NET stamp guessed `ddlSpecFocus=Dementia` and wrote 0 rows. ArcGIS `Speciality` / `SpecialityCode=SPDE` is the real field, and the weekly geo ingest stamps it. Reverting the column to null would be undone on the next Sunday scan.
+
+**What worked instead:** Keep the column as raw DSHS data. Do not read it for a badge, chip, FAQ, JSON-LD claim, content prompt, or eligibility. An assisted living facility is memory care from Memory Care Certified, a Specialized Dementia Care contract, or the operator's own page for that address. An adult family home is memory care only from that operator page. Leave the 858 published AFHs listed.
+
+**Source:** Owner, 2026-11-27. `src/lib/facility/memoryCareBasis.ts`.
+
+---
+
 ## 2026-11 — --refetch generated summaries and wrote none; intro date lagged the PDF month
 
 **What went wrong:** The ID-gated refetch job summarized 99 inspections and saved 0. SELECT dropped the `narrative_summary IS NULL` filter under `--refetch`, but UPDATE still required `WHERE id=%s AND narrative_summary IS NULL`. Claude also said "no deficiencies" / "does not specify whether deficiencies were cited" for visits whose source cites WAC 388-78A-2120, 24701, 2600 (Fields 2669, Avamere 2460). WA profile intro used `inspections[0]` ("Last inspected Sep 2024") while the header used `wa_latest_posted_report` ("Last inspection Jun 2026").

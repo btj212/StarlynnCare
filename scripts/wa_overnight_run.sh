@@ -47,9 +47,9 @@ step 4 "WA Signal: EARC-SDC / SDCP contract"
 python3 scrapers/wa_signal_sdcp.py || warn "wa_signal_sdcp failed (continuing)"
 ok "SDCP signal done"
 
-step 5 "WA Signal: Dementia specialty designation (BH + AFH lookup)"
-python3 scrapers/wa_signal_dementia_specialty.py || warn "wa_signal_dementia_specialty failed (continuing)"
-ok "Dementia specialty signal done"
+# Dementia specialty (RCW 70.128.230) is staff training on nearly every AFH.
+# wa_signal_dementia_specialty.py guessed an ASP.NET field and is not run.
+# ArcGIS Speciality stays on the row as raw data from step 1.
 
 # Note: wa_signal_memory_care_cert.py requires a CSV from DSHS — skip for now
 echo "  (wa_signal_memory_care_cert.py skipped — requires manual CSV from DSHS)"

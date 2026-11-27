@@ -312,11 +312,10 @@ def ingest_wa(conn) -> bool:
                 allow_fail=True,
             ),
             _python(str(SCRAPERS / "wa_signal_sdcp.py"), label="WA SDCP signal", allow_fail=True),
-            _python(
-                str(SCRAPERS / "wa_signal_dementia_specialty.py"),
-                label="WA dementia-specialty signal",
-                allow_fail=True,
-            ),
+            # wa_signal_dementia_specialty.py is not run. It guessed an ASP.NET
+            # form field, stamped nothing, and is type-blind. ArcGIS Speciality
+            # stays on the row as raw data via wa_geo_directory_ingest. The
+            # training flag is not a memory-care signal.
             _python(
                 str(SCRAPERS / "wa_afh_directory_ingest.py"),
                 "--skip-geo",

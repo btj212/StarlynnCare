@@ -6,6 +6,24 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — WA dementia specialty is raw DSHS data, not memory care
+
+**Decided:** `facilities.wa_dementia_specialty` stays on the row as the ArcGIS `Speciality` / `SpecialityCode=SPDE` value. It is not a badge, chip, FAQ, JSON-LD claim, content-prompt fact, or `serves_memory_care` signal. It is a staff-training credential (RCW 70.128.230(5), WAC 388-112A-0490) held by about 98.5% of operating adult family homes.
+
+A Washington home counts as memory care only when:
+- Assisted living: `wa_memory_care_certified`, or a Specialized Dementia Care contract (`wa_dementia_care_contract` / `wa_earc_sdc_contracted` / `wa_contract_types`), or `mc_program_confirmed` with `mc_program_source_url` (the operator's own page for that address).
+- Adult family home: only `mc_program_confirmed` with `mc_program_source_url`. DSHS does not certify AFHs for memory care.
+
+Published AFHs that were listed from the specialty stay listed. Do not flip `serves_memory_care` off for that October 2026 batch, and do not unpublish them. The page says DSHS does not certify adult family homes for memory care and StarlynnCare has not confirmed a program at the address.
+
+**Rejected:** Treating the specialty as one of three OR signals. Reverting the column to null (Sunday's geo ingest would stamp it again). A neutral "state records" line at 98.5% prevalence.
+
+**This supersedes** the 2026-05 "OR of three signals" entry and the 2026-11 city-hub line that labeled an AFH from the specialty.
+
+**Source:** Owner, 2026-11-27. `src/lib/facility/memoryCareBasis.ts`, `scrapers/recompute_publishable.py`.
+
+---
+
 ## 2026-11 — Summary refetch must overwrite; last-inspection date is one value
 
 **Decided:** `summarize_inspections.py --refetch` overwrites `narrative_summary` for the selected rows. The write used to keep `AND narrative_summary IS NULL`, so a 99-inspection refetch saved nothing. Do not generate a summary when source text is empty. A post-check refuses a summary that claims no deficiencies / in compliance / unspecified findings when the inspection has deficiency rows or the source cites a rule (Fields 2669 June 2025, Avamere 2460 May 2025). Count existing mismatches with `scripts/count_summary_deficiency_mismatches.py` (read-only).
@@ -40,7 +58,7 @@ Inspection summaries must not mention a Specialized Dementia Care contract the h
 
 When DSHS reissues a license for the same campus (same street/phone/beds), `wa_geo_directory_ingest.py` flags the new number onto `wa_license_successor_flags` (0086), `scrapers/out/wa_license_successor_review.jsonl`, and `mc_review_notes` on the old row. It does not insert a duplicate and does not delete or merge existing rows (licenses 2799/2800/2801 vs 2037/1947/2141). If a live row is later renumbered in place (slug still ends with 2141/2037/1947, `license_number` is 2801/2799/2800), the profile keeps that URL and adds a **Previous license** DSHS Forms link so families can still open reports filed under the old number. The current license remains the State record / LIC# target.
 
-CMS A–L grids render only when `scopeSeverityScale` is set (`cms` / `cdphe`). Operator `facilities.website` renders in the hero. AFH dementia specialty is ArcGIS `Speciality` / `SpecialityCode=SPDE`, not the ASP.NET specialty stamp.
+CMS A–L grids render only when `scopeSeverityScale` is set (`cms` / `cdphe`). Operator `facilities.website` renders in the hero. AFH dementia specialty is ArcGIS `Speciality` / `SpecialityCode=SPDE`, not the ASP.NET specialty stamp. That column is raw DSHS data only. It is not memory-care evidence. See the 2026-11-27 entry.
 
 **Rejected:** Changing slugs or routes. Treating a name as a WA memory-care signal. Auto-merging successor licenses. Applying 0084 from an agent session. Showing “no DSHS reports posted” when a PDF month exists.
 
@@ -140,9 +158,9 @@ Outreach emails use a signed per-facility token (`?t=`), minted by `scripts/gene
 
 **Decided:** City hubs share one template (`src/lib/city-hub/*` + the `[state]/[city]` page). Title, H1, meta, answer box, glance stats, FAQ, and JSON-LD all quote the **listed** count (`homesForCityIndex` / sitemap), never publishable. Nearby-city links show that same listed count.
 
-**Arizona:** published homes are Directed Care. HB2764 (Laws 2024, Ch. 100 / A.R.S. § 36-405.03) told ADHS to write memory-care standards for Directed Care homes; it did not create a separate Memory Care subclass. A.A.C. R9-10-816 (eff. June 30, 2025) attaches those duties. Two-level badge (Blake, 2026-11-26): Level 1 on every Directed Care home — “State-authorized for memory care: licensed for Directed Care (A.A.C. R9-10-816).” Level 2 only when `mc_program_confirmed` is true (migration 0078, not applied in this change) — “Memory care program confirmed,” from the operator’s own page for that address or a recorded phone confirmation. Level 2 does not change publishable / listed / sitemap. `az_mc_subclass` is an unused column, not a license type. `memoryCareBasis.kind` is `memory-care` for AZ Directed Care, WA SDC or AFH dementia specialty, OR endorsement, CA dementia-care plan, …
+**Arizona:** published homes are Directed Care. HB2764 (Laws 2024, Ch. 100 / A.R.S. § 36-405.03) told ADHS to write memory-care standards for Directed Care homes; it did not create a separate Memory Care subclass. A.A.C. R9-10-816 (eff. June 30, 2025) attaches those duties. Two-level badge (Blake, 2026-11-26): Level 1 on every Directed Care home — “State-authorized for memory care: licensed for Directed Care (A.A.C. R9-10-816).” Level 2 only when `mc_program_confirmed` is true (migration 0078, not applied in this change) — “Memory care program confirmed,” from the operator’s own page for that address or a recorded phone confirmation. Level 2 does not change publishable / listed / sitemap. `az_mc_subclass` is an unused column, not a license type. `memoryCareBasis.kind` is `memory-care` for AZ Directed Care, WA Memory Care Certified or a Specialized Dementia Care contract or an operator page for that address, OR endorsement, CA dementia-care plan, … The WA AFH dementia specialty is not a basis.
 
-**Washington:** show a memory-care label only when the row has an SDC contract or an AFH dementia specialty. Other listed homes stay visible with neutral wording. Do not unpublish from the app.
+**Washington:** an assisted living facility is memory care when DSHS lists Memory Care Certified status or a Specialized Dementia Care contract, or the operator's own page for that address describes a program. An adult family home counts only from that operator page. The dementia specialty is raw DSHS training data and never a label. Other listed homes stay visible with neutral wording. Do not unpublish from the app.
 
 **PA Immediate Jeopardy:** 55 Pa Code Ch 2600/2800 does not use CMS IJ. The PDF prompt offered IJ as a bucket, so abuse/neglect rows were stored with that label. Display remaps 55 Pa Code IJ to “Substantiated Abuse” or “Serious finding”; “Immediate Jeopardy (CMS)” prints only on an F-tag.
 
@@ -1059,13 +1077,15 @@ hours with zero reports stored.
 
 ## 2026-05 — WA `serves_memory_care` is OR of three independent signals
 
-**Decided:** `wa_memory_care_certified` OR `wa_earc_sdc_contracted` OR `wa_dementia_specialty`. Any one is sufficient.
+**Superseded 2026-11-27.** The dementia specialty is raw DSHS data, not a signal. See the entry at the top of this file.
 
-**Why:** WA fragments memory care credentials across three separate DSHS programs. Requiring all three would miss the majority of legitimately dementia-capable facilities.
+**Decided (historical, do not follow):** `wa_memory_care_certified` OR `wa_earc_sdc_contracted` OR `wa_dementia_specialty`. Any one was treated as sufficient. That third flag is staff training held by about 98.5% of adult family homes.
 
-**Rejected:** AND-ing the three signals. Picking one as primary.
+**Current rule:** assisted living qualifies from Memory Care Certified, a Specialized Dementia Care contract, or `mc_program_confirmed` with `mc_program_source_url`. An adult family home qualifies only from that operator page.
 
-**Source:** `docs/WA_PIPELINE_V2.md`, `docs/SCRAPER_MODEL.md`.
+**Rejected:** AND-ing the three old signals. Picking the specialty as primary. Keeping the specialty in `serves_memory_care`.
+
+**Source:** `docs/WA_PIPELINE_V2.md`. Superseded by the 2026-11-27 entry.
 
 ---
 

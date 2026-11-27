@@ -371,7 +371,11 @@ def upsert_facility_from_geo(
                     beds = COALESCE(%s, beds),
                     wa_facility_type = %s,
                     geo_archived_at = %s,
-                    wa_dementia_specialty = COALESCE(%s, wa_dementia_specialty),
+                    -- False clears a stale stamp. None keeps the stored value.
+                    wa_dementia_specialty = CASE
+                        WHEN %s IS NULL THEN wa_dementia_specialty
+                        ELSE %s
+                    END,
                     updated_at = now()
                 WHERE state_code = 'WA' AND license_number = %s
                 """,
@@ -379,7 +383,7 @@ def upsert_facility_from_geo(
                     name, address, zip_code, county,
                     phone, lat, lng,
                     beds, wa_facility_type, geo_archived_at,
-                    dementia_specialty,
+                    dementia_specialty, dementia_specialty,
                     license_num,
                 ),
             )

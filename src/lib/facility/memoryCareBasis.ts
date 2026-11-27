@@ -14,8 +14,11 @@ export type MemoryCareBasis = {
   recorded: boolean;
   /**
    * `memory-care` is a recorded dementia-care designation (OR endorsement,
-   * WA SDC or AFH dementia specialty, CA dementia-care plan, AZ Directed
+   * WA Memory Care Certified or Specialized Dementia Care contract, an
+   * operator page for that address, CA dementia-care plan, AZ Directed
    * Care under A.A.C. R9-10-816, …).
+   * The Washington adult family home dementia specialty is staff training
+   * (RCW 70.128.230(5), WAC 388-112A-0490). It is not this designation.
    * `care-level` is a state file that is not that designation.
    */
   kind: MemoryCareBasisKind;
@@ -32,9 +35,19 @@ export type MemoryCareBasis = {
 export const MEMORY_CARE_BASIS_UNRECORDED =
   "Memory-care basis not yet recorded from the state file.";
 
-/** WA home with no DSHS dementia flag. Do not call this "not yet recorded." */
+/** WA home with no DSHS dementia contract or certification. Do not call this "not yet recorded." */
 export const WA_NO_DEMENTIA_DESIGNATION =
-  "Washington DSHS does not list a dementia specialty, Specialized Dementia Care contract, or Memory Care Certified flag for this home.";
+  "Washington DSHS does not list a Specialized Dementia Care contract or Memory Care Certified status for this home.";
+
+/**
+ * Adult family homes have no DSHS memory-care certification or contract.
+ * The dementia specialty is a training credential and does not qualify.
+ */
+export const WA_AFH_NO_MC_BASIS =
+  "Washington DSHS does not certify adult family homes for memory care, and StarlynnCare has not confirmed a memory-care program at this address.";
+
+export const WA_OPERATOR_PROGRAM_LABEL =
+  "The operator's own page for this address describes a memory-care program.";
 
 export type MemoryCareBasisInput = {
   state_code: string;
@@ -53,8 +66,18 @@ export type MemoryCareBasisInput = {
   wa_memory_care_certified?: boolean | null;
   wa_earc_sdc_contracted?: boolean | null;
   wa_dementia_care_contract?: boolean | null;
+  /**
+   * Raw DSHS training flag (ArcGIS Speciality / SPDE). About 98.5% of
+   * operating adult family homes hold it. Never a memory-care basis.
+   */
   wa_dementia_specialty?: boolean | null;
-  /** DSHS contract strings from the ALF directory. AFH specialties use the boolean. */
+  /** DSHS facility type. Adult family homes are `AFH`. */
+  wa_facility_type?: string | null;
+  /** Operator page for this address. Counts only together with the source URL. */
+  mc_program_confirmed?: boolean | null;
+  mc_program_source_url?: string | null;
+  mc_program_quote?: string | null;
+  /** DSHS contract strings from the ALF directory. */
   wa_contract_types?: string[] | null;
   tx_alzheimer_certified?: boolean | null;
   tx_alzheimer_cert_no?: string | null;
@@ -143,6 +166,21 @@ function waContractImpliesDementia(types: string[] | null | undefined): boolean 
   return (types ?? []).some((t) => /dementia|memory care|sdc/i.test(t));
 }
 
+function isWaAdultFamilyHome(facility: MemoryCareBasisInput): boolean {
+  return (
+    facility.state_code === "WA" &&
+    (facility.wa_facility_type ?? "").trim().toUpperCase() === "AFH"
+  );
+}
+
+/** Operator's own page for this address. The training specialty never qualifies. */
+function waOperatorConfirmed(facility: MemoryCareBasisInput): boolean {
+  return (
+    facility.mc_program_confirmed === true &&
+    Boolean(facility.mc_program_source_url?.trim())
+  );
+}
+
 function texasLabel(certNo: string | null | undefined): string {
   const no = certNo?.trim();
   return no
@@ -176,6 +214,16 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   });
 
   const source = facility.memory_care_disclosure_source?.trim() || null;
+
+  // An adult family home has no DSHS memory-care certification or contract.
+  // Only the operator's own page for this address qualifies, whatever
+  // serves_memory_care says and whatever the dementia-specialty flag says.
+  if (isWaAdultFamilyHome(facility)) {
+    if (waOperatorConfirmed(facility)) {
+      return recorded(WA_OPERATOR_PROGRAM_LABEL, facility.mc_program_quote ?? null);
+    }
+    return { ...basis, label: WA_AFH_NO_MC_BASIS };
+  }
 
   // CDPHE licenses assisted living, but it does not publish a facility-level
   // Secure Environment roster. A name, a chain, or a directory listing is not
@@ -262,8 +310,8 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   if (waContractImpliesDementia(facility.wa_contract_types)) {
     return recorded("Washington DSHS lists a specialized dementia care contract for this home.");
   }
-  if (facility.wa_dementia_specialty) {
-    return recorded("Washington DSHS lists a dementia specialty designation for this home.");
+  if (facility.state_code === "WA" && waOperatorConfirmed(facility)) {
+    return recorded(WA_OPERATOR_PROGRAM_LABEL, facility.mc_program_quote ?? null);
   }
 
   if (facility.tx_alzheimer_certified) {

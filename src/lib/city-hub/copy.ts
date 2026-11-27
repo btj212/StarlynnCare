@@ -288,7 +288,7 @@ export function cityFaqExtras(input: {
       },
       {
         q: `What does Memory Care Certified mean in Washington?`,
-        a: `Washington is rolling a "Memory Care Certified" designation separately from the existing Specialized Dementia Care (SDC) contract. StarlynnCare labels a home memory care when DSHS records an SDC contract or an adult family home dementia specialty. ${glance.sdcCount} of ${glance.listedCount} listed ${city} homes have an SDC contract on file. Homes without that file stay listed with neutral wording.`,
+        a: `StarlynnCare calls a Washington home memory care only when DSHS lists a Specialized Dementia Care contract or Memory Care Certified status, or the operator's own page for that address describes a memory-care program. Adult family homes can't hold either DSHS designation. Their DSHS 'dementia specialty' means the provider completed state dementia training, and we don't count it as memory care.`,
       },
     );
   }

@@ -31,7 +31,8 @@ def test_campus_key() -> None:
 def test_specialty() -> None:
     assert dementia_specialty_from_attrs({"SpecialityCode": "SPDE"}) is True
     assert dementia_specialty_from_attrs({"Speciality": "Mental Health, Dementia"}) is True
-    assert dementia_specialty_from_attrs({"Speciality": "Mental Health"}) is None
+    assert dementia_specialty_from_attrs({"Speciality": "Mental Health"}) is False
+    assert dementia_specialty_from_attrs({}) is None
 
 
 def test_sdc_strip() -> None:
@@ -52,6 +53,53 @@ def test_sdc_strip() -> None:
         )
         is None
     )
+
+
+def test_afh_prompt_does_not_claim_a_contract() -> None:
+    from generate_content import (  # noqa: E402
+        build_source_context,
+        generation_human_template_for_state,
+        generation_system_for_state,
+        meta_for_facility,
+    )
+
+    fac = {
+        "state_code": "WA",
+        "wa_facility_type": "AFH",
+        "name": "Amazing Hearts AFH",
+        "street": "1 Main St",
+        "city": "Vancouver",
+        "zip": "98661",
+        "phone": None,
+        "beds": 6,
+        "operator_name": None,
+        "license_number": "756545",
+        "license_status": "LICENSED",
+        "license_expiration": None,
+        "serves_memory_care": True,
+        "wa_dementia_specialty": True,
+        "memory_care_designation": None,
+        "care_category": "alf_memory_care",
+        "inspection_count": 0,
+        "deficiency_count": 0,
+        "serious_citation_count": 0,
+        "dementia_citation_count": 0,
+        "complaint_count": 0,
+        "last_inspection_date": None,
+    }
+    meta = meta_for_facility("WA", fac)
+    ctx = build_source_context(fac)
+    prompt = generation_system_for_state("WA", meta) + "\n" + generation_human_template_for_state(
+        "WA", meta
+    ).format(**ctx)
+    note = (
+        "DSHS does not issue memory-care contracts or certification to adult family homes. "
+        "Do not claim one. Do not describe the dementia specialty as memory care."
+    )
+    assert note in prompt
+    assert "Adult Family Home (RCW 70.128)" in prompt
+    assert "Specialized Dementia Care contract" not in prompt
+    assert ctx["serves_mc"] == "No"
 
 
 def test_false_clean_visit() -> None:
@@ -104,5 +152,6 @@ if __name__ == "__main__":
     test_campus_key()
     test_specialty()
     test_sdc_strip()
+    test_afh_prompt_does_not_claim_a_contract()
     test_false_clean_visit()
     print("test_wa_successor_and_summaries: ok")

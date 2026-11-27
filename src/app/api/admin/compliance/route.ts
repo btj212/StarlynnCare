@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
     facility?.state_code === "WA" &&
     facility.wa_facility_type === "AFH"
   ) {
+    // Same gate as compliance_flags_run. serves_memory_care on an unpublished
+    // AFH is a real signal only. Do not treat the dementia specialty as one,
+    // and do not unpublish the homes already listed.
     const publishable =
       body.action === "approve" &&
       facility.license_status === "LICENSED" &&

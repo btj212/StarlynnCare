@@ -7,6 +7,7 @@ import type { CareCategory } from "@/lib/types";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityDisplayName, nameMatchesQuery } from "@/lib/facility/aliases";
+import { listedInMemoryCareGroup } from "@/lib/city-hub/careSetting";
 import { listLicenseLabel, listSectionDeck, listSectionTitle } from "@/lib/city-hub/licenseLabel";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -58,7 +59,6 @@ export type ListFacility = {
   memory_care_disclosure_source?: string | null;
   mce_endorsed?: boolean | null;
   wa_memory_care_certified?: boolean | null;
-  wa_dementia_specialty?: boolean | null;
   il_dementia_program_flag?: boolean | null;
   mo_alzheimer_scu?: boolean | null;
 };
@@ -163,12 +163,13 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
       mo_level_of_care: f.mo_level_of_care,
       mn_dementia_care_licensed: f.mn_dementia_care_licensed,
     });
-  const isMc =
-    f.careChip !== undefined
-      ? Boolean(f.careChip)
-      : f.memory_care_disclosure_filed ||
-        f.serves_memory_care ||
-        Boolean(f.tx_alzheimer_certified);
+  const inMemoryCareGroup = listedInMemoryCareGroup({
+    stateSlug,
+    careChip: f.careChip,
+    servesMemoryCare: f.serves_memory_care,
+    memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
+    txAlzheimerCertified: f.tx_alzheimer_certified,
+  });
   const careChip =
     f.careChip !== undefined
       ? f.careChip
@@ -176,7 +177,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
         ? "Directed Care"
         : stateSlug === "washington"
           ? null
-          : isMc
+          : inMemoryCareGroup
             ? "Memory care"
             : null;
 
@@ -358,21 +359,24 @@ export function FacilityListClient({
   const isFiltered = query.trim() !== "" || chip !== "all";
 
   // Groups for default sectioned view
+  const inMcGroup = (f: ListFacility) =>
+    listedInMemoryCareGroup({
+      stateSlug,
+      careChip: f.careChip,
+      servesMemoryCare: f.serves_memory_care,
+      memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
+      txAlzheimerCertified: f.tx_alzheimer_certified,
+    });
   const mcLarge = filtered.filter(
-    (f) =>
-      (f.memory_care_disclosure_filed || f.serves_memory_care) &&
-      f.capacity_tier === "large",
+    (f) => inMcGroup(f) && f.capacity_tier === "large",
   );
   const mcMedium = filtered.filter(
     (f) =>
-      (f.memory_care_disclosure_filed || f.serves_memory_care) &&
+      inMcGroup(f) &&
       (f.capacity_tier === "medium" || f.capacity_tier === "unknown"),
   );
   const nonMc = filtered.filter(
-    (f) =>
-      !f.memory_care_disclosure_filed &&
-      !f.serves_memory_care &&
-      f.capacity_tier !== "small",
+    (f) => !inMcGroup(f) && f.capacity_tier !== "small",
   );
   const smallHomes = filtered.filter((f) => f.capacity_tier === "small");
 

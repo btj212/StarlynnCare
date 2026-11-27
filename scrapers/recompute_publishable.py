@@ -131,9 +131,12 @@ def recompute_serves_memory_care(
       - mc_review_status = 'reviewed_publish': manually adjudicated by admin
 
     Additional state-specific Tier-1 signals (override for each state):
-      - WA: wa_dementia_care_contract — DSHS Dementia Care contract (already maps to
-             memory_care_disclosure_filed=true in wa_dshs_directory_ingest.py, kept here
-             as belt-and-suspenders)
+      - WA assisted living: wa_memory_care_certified, wa_dementia_care_contract,
+            wa_earc_sdc_contracted, or mc_program_confirmed with
+            mc_program_source_url (the operator's page for that address).
+            wa_dementia_specialty is raw DSHS staff-training data (RCW 70.128.230).
+            It is not a signal. An adult family home qualifies only from that
+            operator page.
       - OR: mce_endorsed — ORS 443.886 Memory Care Endorsement (set by or_signal_mce.py)
             unendorsed_mc_violation — ORS 443.886(6) "memory care name without endorsement"
             bucket; surfaces these facilities as an editorial signal even without MCE.
@@ -154,7 +157,11 @@ def recompute_serves_memory_care(
           OR (state_code = 'WA' AND COALESCE(wa_dementia_care_contract, false))
           OR (state_code = 'WA' AND COALESCE(wa_memory_care_certified, false))
           OR (state_code = 'WA' AND COALESCE(wa_earc_sdc_contracted, false))
-          OR (state_code = 'WA' AND COALESCE(wa_dementia_specialty, false))
+          OR (
+            state_code = 'WA'
+            AND COALESCE(mc_program_confirmed, false)
+            AND NULLIF(BTRIM(mc_program_source_url), '') IS NOT NULL
+          )
           -- OR: only the state-issued MCE endorsement qualifies as a Tier-1 signal.
           -- unendorsed_mc_violation is a warning flag — it must NOT set serves_memory_care.
           OR (state_code = 'OR' AND COALESCE(mce_endorsed, false))

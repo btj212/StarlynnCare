@@ -5,7 +5,10 @@ import {
   belongsOnCityPage,
   displayMunicipality,
 } from "../src/lib/city-hub/municipality.ts";
-import { cityHubTitle, cityHubH1, cityHubMetaDescription } from "../src/lib/city-hub/copy.ts";
+import { cityHubTitle, cityHubH1, cityHubMetaDescription, cityFaqExtras } from "../src/lib/city-hub/copy.ts";
+import { listCareChip, listedInMemoryCareGroup } from "../src/lib/city-hub/careSetting.ts";
+import { memoryCareBasis } from "../src/lib/facility/memoryCareBasis.ts";
+import type { CityHubGlance } from "../src/lib/city-hub/stats.ts";
 import { findingsCopy } from "../src/lib/city-hub/findings.ts";
 import { hasReliable12MonthWindow } from "../src/lib/city-hub/findings.ts";
 import { listLicenseLabel, listSectionDeck } from "../src/lib/city-hub/licenseLabel.ts";
@@ -227,5 +230,74 @@ assert.doesNotMatch(listSectionDeck("minnesota", "medium"), /RCFE/);
 assert.doesNotMatch(listSectionDeck("oregon", "medium"), /RCFE/);
 assert.doesNotMatch(listSectionDeck("missouri", "medium"), /RCFE/);
 assert.match(listSectionDeck("california", "medium"), /RCFE/);
+
+const afhBasisNone = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "AFH",
+  wa_dementia_specialty: true,
+  serves_memory_care: true,
+});
+assert.equal(
+  listCareChip({ stateCode: "WA", basis: afhBasisNone }),
+  null,
+);
+const mccBasis = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "ALF",
+  wa_memory_care_certified: true,
+  wa_dementia_specialty: true,
+});
+assert.equal(listCareChip({ stateCode: "WA", basis: mccBasis }), "Memory Care Certified");
+const sdcBasis = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "ALF",
+  wa_earc_sdc_contracted: true,
+});
+assert.equal(
+  listCareChip({ stateCode: "WA", basis: sdcBasis }),
+  "Specialized Dementia Care contract",
+);
+const operatorBasis = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "AFH",
+  mc_program_confirmed: true,
+  mc_program_source_url: "https://example.com/home",
+});
+assert.equal(
+  listCareChip({ stateCode: "WA", basis: operatorBasis }),
+  "Memory care program (operator)",
+);
+
+assert.equal(
+  listedInMemoryCareGroup({
+    stateSlug: "washington",
+    careChip: null,
+    servesMemoryCare: true,
+    memoryCareDisclosureFiled: false,
+  }),
+  false,
+);
+assert.equal(
+  listedInMemoryCareGroup({
+    stateSlug: "washington",
+    careChip: "Memory Care Certified",
+    servesMemoryCare: true,
+    memoryCareDisclosureFiled: false,
+  }),
+  true,
+);
+
+const vancouverFaqs = cityFaqExtras({
+  region: city("WA", "vancouver", "Vancouver", "washington", "Washington"),
+  glance: {
+    listedCount: 12,
+    sdcCount: 3,
+    size: { lte6: 8, from7to10: 1, gte11: 3 },
+  } as CityHubGlance,
+});
+const certifiedAnswer =
+  vancouverFaqs.find((pair) => pair.q.startsWith("What does Memory Care Certified"))?.a ?? "";
+assert.doesNotMatch(certifiedAnswer, /adult family home dementia specialty/);
+assert.match(certifiedAnswer, /don't count it as memory care/);
 
 console.log("city hub accuracy checks passed");

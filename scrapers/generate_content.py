@@ -521,9 +521,55 @@ NONCA_STATE_META: dict[str, dict[str, str]] = {
 }
 
 
+_WA_AFH_NO_MC_NOTE = (
+    "DSHS does not issue memory-care contracts or certification to adult family homes. "
+    "Do not claim one. Do not describe the dementia specialty as memory care."
+)
+
+
+def _is_wa_afh(fac: dict[str, Any]) -> bool:
+    return str(fac.get("wa_facility_type") or "").strip().upper() == "AFH"
+
+
+def _wa_operator_confirmed(fac: dict[str, Any]) -> bool:
+    url = str(fac.get("mc_program_source_url") or "").strip()
+    return fac.get("mc_program_confirmed") is True and bool(url)
+
+
+def _contract_text_is_dementia(types: Any) -> bool:
+    values = types if isinstance(types, (list, tuple)) else [types]
+    for raw in values:
+        if raw is None:
+            continue
+        text = str(raw).lower()
+        if "dementia" in text or "memory care" in text or "sdc" in text:
+            return True
+    return False
+
+
+def wa_prompt_serves_mc(fac: dict[str, Any]) -> bool:
+    """Same rule as memoryCareBasis for Washington. The specialty flag does not count."""
+    if _is_wa_afh(fac):
+        return _wa_operator_confirmed(fac)
+    if fac.get("wa_memory_care_certified") is True:
+        return True
+    if fac.get("wa_earc_sdc_contracted") is True or fac.get("wa_dementia_care_contract") is True:
+        return True
+    if _contract_text_is_dementia(fac.get("wa_contract_types")):
+        return True
+    return _wa_operator_confirmed(fac)
+
+
 def meta_for_facility(state_code: str, fac: dict[str, Any]) -> dict[str, str]:
     """State copy, with Colorado nursing homes kept on the CMS scale."""
     meta = NONCA_STATE_META[state_code.upper()]
+    if state_code.upper() == "WA" and _is_wa_afh(fac):
+        return {
+            **meta,
+            "facility_type": "Adult Family Home",
+            "license_law": "RCW 70.128",
+            "mc_designation_label": _WA_AFH_NO_MC_NOTE,
+        }
     if state_code.upper() == "CO" and str(fac.get("care_category") or "").startswith("snf"):
         return {
             **meta,
@@ -682,10 +728,16 @@ def _format_operator(raw: str | None) -> str:
 
 def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
     st = (fac.get("state_code") or "CA").upper()
+    # Washington follows the memory-care basis, not the stored serves_memory_care
+    # flag. Published AFHs can still have that flag from an old review note.
     mc_signal = (
-        fac.get("care_category") in ("rcfe_memory_care", "alf_memory_care")
-        or fac.get("serves_memory_care") is True
-        or fac.get("tx_alzheimer_certified") is True
+        wa_prompt_serves_mc(fac)
+        if st == "WA"
+        else (
+            fac.get("care_category") in ("rcfe_memory_care", "alf_memory_care")
+            or fac.get("serves_memory_care") is True
+            or fac.get("tx_alzheimer_certified") is True
+        )
     )
     if st == "TX":
         mc_note = fac["memory_care_designation"] or (
@@ -697,6 +749,8 @@ def build_source_context(fac: dict[str, Any]) -> dict[str, Any]:
         mc_note = fac["memory_care_designation"] or (
             "(DHS Memory Care Endorsement status from roster)"
         )
+    elif st == "WA" and _is_wa_afh(fac):
+        mc_note = _WA_AFH_NO_MC_NOTE
     elif st == "WA":
         mc_note = fac["memory_care_designation"] or (
             "(DSHS Specialized Dementia Care contract status from roster)"

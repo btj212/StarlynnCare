@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 """
+RETIRED from the weekly scan (2026-11-27). Do not call this script.
+
+It guessed ASP.NET ddlSpecFocus=Dementia and stamped 0 homes. It is
+type-blind: any license it matched, of any facility type, was set true.
+weekly_inspection_ingest, wa_afh_directory_ingest, and wa_overnight_run
+no longer run it.
+
+wa_dementia_specialty is raw DSHS data written by wa_geo_directory_ingest
+from ArcGIS Speciality / SpecialityCode=SPDE. It is staff training
+(RCW 70.128.230), not memory-care evidence.
+
 WA Signal: Dementia Specialty Designation — Wave 2b.
 
 Writes wa_dementia_specialty = true for AFHs and ALFs that carry the

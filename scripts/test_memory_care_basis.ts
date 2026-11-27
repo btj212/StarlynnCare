@@ -2,10 +2,16 @@ import assert from "node:assert/strict";
 import {
   CA_DEMENTIA_CLIENT_LABEL,
   MEMORY_CARE_BASIS_UNRECORDED,
+  WA_AFH_NO_MC_BASIS,
   WA_NO_DEMENTIA_DESIGNATION,
+  WA_OPERATOR_PROGRAM_LABEL,
   hasCaDementiaClientCode,
   memoryCareBasis,
 } from "../src/lib/facility/memoryCareBasis.ts";
+import {
+  waMcSignalsFromRow,
+  waMcSignalsHaveAny,
+} from "../src/components/facility/profile/WaMcSignalBadges.tsx";
 import { AZ_MC_LEVEL1_LABEL, azMcProgram } from "../src/lib/facility/azMcProgram.ts";
 import { buildFacilityFaqPairs } from "../src/lib/seo/schema.ts";
 import { formatRecordDate } from "../src/lib/format/formatRecordDate.ts";
@@ -153,12 +159,54 @@ const waContract = memoryCareBasis({
 assert.equal(waContract.kind, "memory-care");
 assert.match(waContract.label, /dementia care contract/);
 
-const waSpecialty = memoryCareBasis({
+const waAfhSpecialtyOnly = memoryCareBasis({
   state_code: "WA",
+  wa_facility_type: "AFH",
+  wa_dementia_specialty: true,
+  serves_memory_care: true,
+});
+assert.equal(waAfhSpecialtyOnly.kind, "none");
+assert.equal(waAfhSpecialtyOnly.label, WA_AFH_NO_MC_BASIS);
+assert.doesNotMatch(waAfhSpecialtyOnly.label, /specialty/);
+
+const waAfhOperator = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "AFH",
+  wa_dementia_specialty: true,
+  mc_program_confirmed: true,
+  mc_program_source_url: "https://x",
+});
+assert.equal(waAfhOperator.kind, "memory-care");
+assert.equal(waAfhOperator.label, WA_OPERATOR_PROGRAM_LABEL);
+
+const waAlfCertified = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "ALF",
+  wa_memory_care_certified: true,
   wa_dementia_specialty: true,
 });
-assert.equal(waSpecialty.kind, "memory-care");
-assert.match(waSpecialty.label, /dementia specialty/);
+assert.equal(waAlfCertified.kind, "memory-care");
+assert.match(waAlfCertified.label, /memory-care certified/);
+
+const regency = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "ALF",
+  wa_dementia_specialty: true,
+  serves_memory_care: false,
+});
+assert.equal(regency.kind, "none");
+assert.equal(regency.label, WA_NO_DEMENTIA_DESIGNATION);
+assert.doesNotMatch(regency.label, /dementia specialty/);
+
+const afhSignals = waMcSignalsFromRow({
+  wa_memory_care_certified: false,
+  wa_earc_sdc_contracted: false,
+  wa_dementia_care_contract: false,
+  cms_overall_rating: null,
+});
+assert.equal("dementiaSpecialty" in afhSignals, false);
+assert.equal(JSON.stringify(afhSignals).includes("Dementia Specialty"), false);
+assert.equal(waMcSignalsHaveAny(afhSignals), false);
 
 const waContractTypes = memoryCareBasis({
   state_code: "WA",
@@ -254,6 +302,50 @@ const noMcFaq = buildFacilityFaqPairs({
   regulatorAbbr: "DSHS",
 });
 assert.equal(noMcFaq.some((pair) => pair.q.includes("provide memory care")), false);
+
+const afhFaq = buildFacilityFaqPairs({
+  facilityName: "Amazing Hearts AFH",
+  stateName: "Washington",
+  stateCode: "WA",
+  pageUrl: "https://www.starlynncare.com/washington/vancouver/amazing-hearts-afh",
+  inspectionCount: 0,
+  deficiencyCount: 0,
+  countsCoverThreeYears: false,
+  lastInspectionDate: null,
+  lastInspectionType: null,
+  lastInspectionIsComplaint: false,
+  seriousFindings: [],
+  percentile: null,
+  memoryCareLabel: waAfhSpecialtyOnly.label,
+  servesMemoryCare: waAfhSpecialtyOnly.kind === "memory-care",
+  licenseNumber: "756545",
+  licenseUrl: null,
+  regulatorName: "Washington DSHS",
+  regulatorAbbr: "DSHS",
+});
+assert.equal(afhFaq.some((pair) => /provide memory care/i.test(pair.q)), false);
+
+const sdcFaq = buildFacilityFaqPairs({
+  facilityName: "Example SDC Home",
+  stateName: "Washington",
+  stateCode: "WA",
+  pageUrl: "https://www.starlynncare.com/washington/seattle/example-sdc",
+  inspectionCount: 2,
+  deficiencyCount: 1,
+  countsCoverThreeYears: false,
+  lastInspectionDate: "2026-04-01",
+  lastInspectionType: "inspection",
+  lastInspectionIsComplaint: false,
+  seriousFindings: [],
+  percentile: null,
+  memoryCareLabel: "Washington DSHS lists a specialized dementia care contract for this home.",
+  servesMemoryCare: true,
+  licenseNumber: "1739",
+  licenseUrl: null,
+  regulatorName: "Washington DSHS",
+  regulatorAbbr: "DSHS",
+});
+assert.equal(sdcFaq.some((pair) => /provide memory care/i.test(pair.q)), true);
 assert.match(
   noMcFaq.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
   /Washington assisted living/,
