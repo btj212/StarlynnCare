@@ -447,11 +447,9 @@ const toldTitle = buildFacilityTitle({
   citationCount: 0,
   inspectionCount: 0,
   reviewCount: 0,
-  year: 2026,
 });
 assert.equal(toldTitle.includes("Memory Care"), false);
-assert.equal(toldTitle, "Amber Hills, Prosser: Inspection Record & Citations (2026)");
-assert.doesNotMatch(toldTitle, /Accepts Dementia/);
+assert.equal(toldTitle, "Amber Hills, Prosser: Assisted Living, Accepts Dementia");
 const credentialFaq = afhFaq.find((pair) => pair.q === "Does Amazing Hearts AFH have a dementia credential?");
 assert.equal(credentialFaq?.a, waCredentialFaqAnswer("Amazing Hearts AFH"));
 assert.match(credentialFaq?.a ?? "", /staff-training credential/);
@@ -469,13 +467,11 @@ const afhTitle = buildFacilityTitle({
   citationCount: 0,
   inspectionCount: 0,
   reviewCount: 0,
-  year: 2026,
 });
 assert.equal(afhTitle.includes("Memory Care"), false);
-assert.doesNotMatch(afhTitle, /Adult Family Home/);
+assert.match(afhTitle, /Adult Family Home/);
 assert.doesNotMatch(afhTitle, /Accepts Dementia/);
 assert.doesNotMatch(afhTitle, /Dementia Credential/);
-assert.match(afhTitle, /Inspection Record/);
 const shortCredentialTitle = buildFacilityTitle({
   name: "Ada Home",
   stateName: "Washington",
@@ -487,11 +483,9 @@ const shortCredentialTitle = buildFacilityTitle({
   citationCount: 0,
   inspectionCount: 0,
   reviewCount: 0,
-  year: 2026,
 });
 assert.equal(shortCredentialTitle.includes("Memory Care"), false);
-assert.doesNotMatch(shortCredentialTitle, /Adult Family Home|Dementia Credential/);
-assert.match(shortCredentialTitle, /Inspection Record/);
+assert.equal(shortCredentialTitle, "Ada Home, Vancouver: Adult Family Home, Dementia Credential");
 
 const securedOmitted = buildFacilityFaqPairs({
   facilityName: "Amazing Hearts AFH",

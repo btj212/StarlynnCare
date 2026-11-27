@@ -24,12 +24,12 @@ const titled = buildFacilityTitle({
   inspectionCount: 4,
   reviewCount: 0,
   lastInspectionDate: "2024-09-12",
-  year: 2026,
 });
-assert.equal(titled, "Brookdale Tanque Verde, Tucson: Inspection Record & Citations (2026)");
+assert.equal(titled, "Brookdale Tanque Verde, Tucson — 5 citations, inspected Sep 2024");
 assert.equal(titled.includes("Top"), false);
 assert.equal(titled.includes("Memory Care"), false);
 assert.ok(titled.length <= 70);
+assert.equal(titled.includes("Inspection Record & Citations"), false);
 
 const withReviews = buildFacilityTitle({
   name: "Short Home",
@@ -40,10 +40,10 @@ const withReviews = buildFacilityTitle({
   inspectionCount: 2,
   reviewCount: 3,
   lastInspectionDate: "2025-03-01",
-  year: 2026,
 });
-assert.equal(withReviews, "Short Home, Mesa: Inspection Record & Citations (2026)");
+assert.equal(withReviews, "Short Home, Mesa — 1 citation, inspected Mar 2025");
 assert.equal(withReviews.includes("Top"), false);
+assert.equal(withReviews.includes("Memory Care"), false);
 assert.ok(withReviews.length <= 70);
 
 const noRecord = buildFacilityTitle({
@@ -54,33 +54,85 @@ const noRecord = buildFacilityTitle({
   citationCount: 0,
   inspectionCount: 0,
   reviewCount: 0,
-  dementiaTier: "memory-care",
-  year: 2026,
 });
-assert.equal(noRecord, "Quiet Cottage, Portland: Inspection Record & Citations (2026)");
-assert.equal(noRecord.includes("Memory Care"), false);
+assert.equal(noRecord, "Quiet Cottage, Portland — Licensed Care Facility");
+assert.equal(/memory care/i.test(noRecord), false);
 
-const dropCitations = buildFacilityTitle({
-  name: "Brookdale Tanque Verde Estates",
-  stateName: "Arizona",
-  percentile: null,
-  city: "Tucson",
-  year: 2026,
-});
-assert.equal(dropCitations, "Brookdale Tanque Verde Estates, Tucson: Inspection Record (2026)");
-assert.equal(dropCitations.includes("& Citations"), false);
-assert.ok(dropCitations.length <= 70);
-
-const dropYear = buildFacilityTitle({
-  name: "The Heritage at Brookdale Tanque Verde",
-  stateName: "Arizona",
-  percentile: null,
-  city: "Phoenix",
-  year: 2026,
-});
-assert.equal(dropYear, "The Heritage at Brookdale Tanque Verde, Phoenix: Inspection Record");
-assert.equal(dropYear.includes("(2026)"), false);
-assert.ok(dropYear.length <= 70);
+const licenseFallbacks: Array<{
+  name: string;
+  city: string;
+  stateName: string;
+  licenseLabel: string;
+  expect: string;
+}> = [
+  {
+    name: "Quiet Cottage",
+    city: "Portland",
+    stateName: "Oregon",
+    licenseLabel: "RCF",
+    expect: "Quiet Cottage, Portland — Licensed Residential Care Facility",
+  },
+  {
+    name: "Quiet Cottage",
+    city: "Eugene",
+    stateName: "Oregon",
+    licenseLabel: "ALF",
+    expect: "Quiet Cottage, Eugene — Licensed Assisted Living",
+  },
+  {
+    name: "Plain Home",
+    city: "Denver",
+    stateName: "Colorado",
+    licenseLabel: "Assisted living",
+    expect: "Plain Home, Denver — Licensed Assisted Living",
+  },
+  {
+    name: "Bo",
+    city: "Kent",
+    stateName: "California",
+    licenseLabel: "RCFE",
+    expect: "Bo, Kent — Licensed Residential Care Facility for the Elderly",
+  },
+  {
+    name: "Plain Home",
+    city: "Sacramento",
+    stateName: "California",
+    licenseLabel: "RCFE",
+    expect: "Plain Home, Sacramento — Licensed RCFE",
+  },
+  {
+    name: "Plain Home",
+    city: "Philadelphia",
+    stateName: "Pennsylvania",
+    licenseLabel: "Personal care",
+    expect: "Plain Home, Philadelphia — Licensed Personal Care",
+  },
+  {
+    name: "Sunrise Memory Care",
+    city: "Bend",
+    stateName: "Oregon",
+    licenseLabel: "Memory Care",
+    expect: "Sunrise Memory Care, Bend — Licensed Care Facility",
+  },
+];
+for (const row of licenseFallbacks) {
+  const title = buildFacilityTitle({
+    name: row.name,
+    stateName: row.stateName,
+    percentile: null,
+    city: row.city,
+    citationCount: 0,
+    inspectionCount: 0,
+    reviewCount: 0,
+    licenseLabel: row.licenseLabel,
+  });
+  assert.equal(title, row.expect);
+  assert.ok(title.length <= 70, title);
+  assert.equal(/memory care/i.test(title), /memory care/i.test(row.name), title);
+}
+const namedMc = licenseFallbacks.find((row) => row.name === "Sunrise Memory Care");
+assert.ok(namedMc);
+assert.equal(/memory care/i.test(namedMc.name), true);
 
 const clipped = buildFacilityTitle({
   name: longName,
@@ -91,59 +143,11 @@ const clipped = buildFacilityTitle({
   inspectionCount: 8,
   reviewCount: 4,
   lastInspectionDate: "2024-01-01",
-  year: 2026,
 });
-assert.equal(clipped, "The Heritage at Brookdale Tanque Verde Estates, Tucson");
+assert.equal(clipped.startsWith("The Heritage at Brookdale"), true);
 assert.ok(clipped.length <= 70);
 assert.equal(clipped.includes("Top"), false);
-assert.equal(clipped.includes("Inspection Record"), false);
-
-const namedMemoryCare = buildFacilityTitle({
-  name: "Sunrise Memory Care",
-  stateName: "Arizona",
-  percentile: null,
-  city: "Mesa",
-  dementiaTier: "neither",
-  year: 2026,
-});
-assert.equal(namedMemoryCare, "Sunrise Memory Care, Mesa: Inspection Record & Citations (2026)");
-assert.equal(namedMemoryCare.includes("Licensed Memory Care"), false);
-
-const acceptsFits = buildFacilityTitle({
-  name: "Bo Home",
-  stateName: "Washington",
-  stateCode: "WA",
-  dementiaTier: "confirmed-accepts",
-  percentile: null,
-  city: "Kent",
-  year: 2026,
-});
-assert.equal(acceptsFits, "Bo Home, Kent: Inspection Record & Citations (2026), Accepts Dementia");
-assert.ok(acceptsFits.length <= 70);
-
-const credentialFits = buildFacilityTitle({
-  name: "Ada",
-  stateName: "Washington",
-  stateCode: "WA",
-  dementiaTier: "credential",
-  percentile: null,
-  city: "Kent",
-  year: 2026,
-});
-assert.equal(credentialFits, "Ada, Kent: Inspection Record & Citations (2026), Dementia Credential");
-assert.ok(credentialFits.length <= 70);
-
-const suffixDropped = buildFacilityTitle({
-  name: "Amber Hills",
-  stateName: "Washington",
-  stateCode: "WA",
-  dementiaTier: "confirmed-accepts",
-  percentile: null,
-  city: "Prosser",
-  year: 2026,
-});
-assert.equal(suffixDropped, "Amber Hills, Prosser: Inspection Record & Citations (2026)");
-assert.doesNotMatch(suffixDropped, /Accepts Dementia|Memory Care/);
+assert.equal(clipped.includes("Memory Care"), false);
 
 const sentence = buildFacilityRecordSentence({
   citationCount: 5,

@@ -6,6 +6,28 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — No-inspection titles name the license, not memory care
+
+**Decided:** When a profile has no inspections and it is not Arizona or a Washington non-memory-care home, the title is `{Name}, {City} — Licensed {license type}`. The type comes from `listLicenseLabel` (the chip already on city lists): Assisted Living, Residential Care Facility, Residential Care Facility for the Elderly, Personal Care, and the other chips that function already returns. The title does not add the words Memory Care. If those words are in the home's name, they stay because they are the name.
+
+Arizona with no inspections stays `Directed Care Home`. Washington homes that are not memory care keep `Adult Family Home` or `Assisted Living`, plus `, Accepts Dementia` or `, Dementia Credential`.
+
+**This supersedes** the sentence in the citation-hook entry that left the zero-inspection fallback as `Licensed Memory Care`.
+
+**Source:** Blake, on PR 267, 2026-11-27.
+
+---
+
+## 2026-11-27 — Facility profile title is the citation hook again
+
+**Decided:** The facility profile `<title>` is the citation hook from just before PR 265: `{Name}, {City} — {N} citations, inspected {Mon YYYY}`, with the same 70-character fallbacks and the same Washington suffix (`Adult Family Home` / `Assisted Living`, plus `, Accepts Dementia` or `, Dementia Credential` on the zero-inspection fallback). The year is the last inspection year. The name passed in is still the display name the page already used.
+
+**This supersedes** the same-day inspection-record title (`Inspection Record & Citations ({Year})`) for the title only. The H1, the licensed-as line, the inspection summary, the evidence label, the FAQ, the JSON-LD identifier, nearby facilities, and the “Reviews & inspection record” heading stay as PR 265 shipped them.
+
+**Source:** Blake, after merging PR 265.
+
+---
+
 ## 2026-11-27 — City hubs list every publishable home, including small homes
 
 **Decided:** A city hub lists every publishable home in that city, each in exactly one section. Homes of 6 beds or fewer go in a "Small homes" section (deck: licensed homes with 6 or fewer residents; first 24, then "Show all N"), unless a Washington tier chip already placed them in "Confirmed to accept residents with dementia" or "Homes with a dementia credential". Those stay in that section and keep the chip. Arizona homes of 7–10 beds are not called small homes; they join memory care or other licensed facilities. The headline, the state-hub city card, nearby-city counts, and the homepage city count all quote that listed set. A city hub exists only when that set has at least one home (`cityHubPageExists`). The state hub and the sitemap do not link a city below that bar. Pennsylvania still collapses same-name rows at the same ZIP before the number is quoted.
