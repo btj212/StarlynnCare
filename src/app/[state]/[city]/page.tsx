@@ -418,6 +418,7 @@ export default async function RegionPage({ params }: PageProps) {
             az_memory_care_endorsed: f.az_memory_care_endorsed,
             az_mc_subclass: f.az_mc_subclass,
             az_license_level: f.az_license_level,
+            license_type: f.license_type,
           };
           const basis = memoryCareBasis(basisInput);
           const tier = dementiaAcceptanceTier(basisInput);
@@ -453,6 +454,7 @@ export default async function RegionPage({ params }: PageProps) {
               license_type: f.license_type,
               mo_level_of_care: f.mo_level_of_care,
               mn_dementia_care_licensed: f.mn_dementia_care_licensed,
+              az_license_level: f.az_license_level,
             }),
             license_type: f.license_type,
             mo_level_of_care: f.mo_level_of_care,
@@ -524,6 +526,7 @@ export default async function RegionPage({ params }: PageProps) {
           servesMemoryCare: f.serves_memory_care,
           memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
           txAlzheimerCertified: f.tx_alzheimer_certified,
+          azLicenseLevel: f.az_license_level,
         }),
       }) === "small",
   ).length;

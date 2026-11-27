@@ -27,6 +27,8 @@ assert.equal(formatRecordDate("2026-10-22T18:00:00Z"), "October 22, 2026");
 
 const az = memoryCareBasis({
   state_code: "AZ",
+  az_license_level: "Directed Care",
+  license_type: "Assisted Living Home",
   memory_care_disclosure_source: "ADHS Directed Care License",
 });
 assert.equal(az.recorded, true);
@@ -34,6 +36,40 @@ assert.equal(az.kind, "memory-care");
 assert.equal(az.label, AZ_MC_LEVEL1_LABEL);
 assert.match(az.label, /R9-10-816/);
 assert.doesNotMatch(az.label, /Memory Care subclass/);
+
+// The 17 corrected homes still have serves_memory_care true. The level is
+// the signal. A Personal Care row must not pick up Directed Care or the
+// words Memory Care from the state name.
+const azPersonal = memoryCareBasis({
+  state_code: "AZ",
+  az_license_level: "Personal Care",
+  license_type: "Assisted Living Home",
+  serves_memory_care: true,
+  az_memory_care_endorsed: null,
+  memory_care_disclosure_source: null,
+});
+assert.notEqual(azPersonal.kind, "memory-care");
+assert.equal(azPersonal.label, "Personal Care Home");
+assert.doesNotMatch(azPersonal.label, /Directed Care/);
+assert.doesNotMatch(azPersonal.label, /Memory Care/);
+
+const azStaleSource = memoryCareBasis({
+  state_code: "AZ",
+  az_license_level: "Personal Care",
+  license_type: "Assisted Living Home",
+  memory_care_disclosure_source: "ADHS Directed Care License",
+});
+assert.equal(azStaleSource.label, "Personal Care Home");
+assert.doesNotMatch(azStaleSource.label, /Directed Care/);
+
+const azPersonalCenter = memoryCareBasis({
+  state_code: "AZ",
+  az_license_level: "Personal Care",
+  license_type: "Assisted Living Center",
+});
+assert.equal(azPersonalCenter.label, "Personal Care");
+assert.doesNotMatch(azPersonalCenter.label, /Directed Care/);
+assert.doesNotMatch(azPersonalCenter.label, /Memory Care/);
 assert.equal(azMcProgram({}).confirmed, false);
 assert.equal(azMcProgram({ mc_program_confirmed: false }).confirmed, false);
 const confirmed = azMcProgram({
@@ -48,12 +84,15 @@ assert.equal(confirmed.checkedOn, "2026-11-26");
 assert.equal(az.quote, null);
 assert.match(az.sourceUrl ?? "", /azcarecheck/);
 
+// HB2764 did not create a subclass. The column alone is not Directed Care.
 const azSubclassColumn = memoryCareBasis({
   state_code: "AZ",
   az_mc_subclass: true,
+  license_type: "Assisted Living Home",
 });
-assert.equal(azSubclassColumn.kind, "memory-care");
-assert.match(azSubclassColumn.label, /R9-10-816/);
+assert.notEqual(azSubclassColumn.kind, "memory-care");
+assert.doesNotMatch(azSubclassColumn.label, /Directed Care/);
+assert.doesNotMatch(azSubclassColumn.label, /Memory Care/);
 assert.doesNotMatch(azSubclassColumn.label, /subclass/);
 
 const manual = memoryCareBasis({

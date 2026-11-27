@@ -38,8 +38,17 @@ export function listLicenseLabel(input: {
   license_type?: string | null;
   mo_level_of_care?: string | null;
   mn_dementia_care_licensed?: boolean | null;
+  /** ADHS care level. Personal and Supervisory replace the Directed Care chip. */
+  az_license_level?: string | null;
 }): string {
   const code = input.stateCode.toUpperCase();
+
+  if (code === "AZ") {
+    const level = input.az_license_level?.trim() ?? "";
+    const home = /home/i.test(input.license_type ?? "");
+    if (level === "Personal Care") return home ? "Personal Care Home" : "Personal Care";
+    if (level === "Supervisory Care") return home ? "Supervisory Care Home" : "Supervisory Care";
+  }
 
   if (code === "MO") {
     const level = compactLicense(input.mo_level_of_care ?? "");

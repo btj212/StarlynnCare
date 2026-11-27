@@ -123,7 +123,7 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
     const { data: rawFacilities, error } = await supabase
       .from("facilities")
       .select(
-        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, mo_level_of_care, mn_dementia_care_licensed",
+        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, mo_level_of_care, mn_dementia_care_licensed, az_license_level",
       )
       .eq("state_code", region.state.code)
       .eq("publishable", true)
@@ -152,6 +152,7 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
         license_type: string | null;
         mo_level_of_care: string | null;
         mn_dementia_care_licensed: boolean | null;
+        az_license_level: string | null;
       }>;
 
       if (raw.length > 0) {
@@ -230,12 +231,14 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
           license_type: facility.license_type,
           mo_level_of_care: facility.mo_level_of_care,
           mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+          az_license_level: facility.az_license_level,
           licenseLabel: listLicenseLabel({
             stateCode: region.state.code,
             care_category: facility.care_category as CareCategory,
             license_type: facility.license_type,
             mo_level_of_care: facility.mo_level_of_care,
             mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+            az_license_level: facility.az_license_level,
           }),
           ...contentAliasFields(facility.content),
         }));

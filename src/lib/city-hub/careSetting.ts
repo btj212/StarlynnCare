@@ -15,6 +15,7 @@
  * told StarlynnCare it accepts residents and has no secured unit.
  */
 
+import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
 import {
   CONFIRMED_ACCEPTS_CHIP,
   DEMENTIA_CREDENTIAL_CHIP,
@@ -185,9 +186,15 @@ export function listedInMemoryCareGroup(input: {
   txAlzheimerCertified?: boolean | null;
   /** Set only when the quality gate is enforced. Tier A is the memory-care section. */
   gateTier?: "A" | "B" | "none";
+  /** Arizona license level. Used when the card has not been given a chip. */
+  azLicenseLevel?: string | null;
 }): boolean {
   if (GATE_ENFORCED && input.gateTier) {
     return input.gateTier === "A";
+  }
+  if (input.stateSlug === "arizona") {
+    if (input.careChip !== undefined) return input.careChip === "Directed Care";
+    if (input.azLicenseLevel !== undefined) return azDirectedCareLicense(input.azLicenseLevel);
   }
   if (input.stateSlug === "washington" && input.careChip !== undefined) {
     if (
@@ -225,7 +232,6 @@ export function listCareChip(input: {
     if (code === "AZ") return "Directed Care";
     return "Memory care";
   }
-  if (code === "AZ" && input.basis.kind === "care-level") return "Directed Care";
   if (code === "WA" && /no secured or dedicated memory-care unit/i.test(input.basis.label)) {
     return CONFIRMED_ACCEPTS_CHIP;
   }

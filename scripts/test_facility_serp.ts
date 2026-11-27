@@ -130,6 +130,53 @@ for (const row of licenseFallbacks) {
   assert.ok(title.length <= 70, title);
   assert.equal(/memory care/i.test(title), /memory care/i.test(row.name), title);
 }
+const azDirectedNoInspection = buildFacilityTitle({
+  name: "Desert Home",
+  stateName: "Arizona",
+  stateCode: "AZ",
+  percentile: null,
+  city: "Mesa",
+  citationCount: 0,
+  inspectionCount: 0,
+  reviewCount: 0,
+  azLicenseLevel: "Directed Care",
+  licenseLabel: "Assisted Living Home",
+});
+assert.equal(azDirectedNoInspection, "Desert Home, Mesa: Directed Care Home");
+assert.doesNotMatch(azDirectedNoInspection, /Memory Care/);
+
+const azPersonalNoInspection = buildFacilityTitle({
+  name: "Desert Home",
+  stateName: "Arizona",
+  stateCode: "AZ",
+  percentile: null,
+  city: "Mesa",
+  citationCount: 0,
+  inspectionCount: 0,
+  reviewCount: 0,
+  azLicenseLevel: "Personal Care",
+  licenseLabel: "Personal Care Home",
+});
+assert.equal(azPersonalNoInspection, "Desert Home, Mesa — Licensed Personal Care Home");
+assert.doesNotMatch(azPersonalNoInspection, /Directed Care/);
+assert.doesNotMatch(azPersonalNoInspection, /Memory Care/);
+
+const azPersonalWithCitations = buildFacilityTitle({
+  name: "Desert Home",
+  stateName: "Arizona",
+  stateCode: "AZ",
+  percentile: null,
+  city: "Mesa",
+  citationCount: 2,
+  inspectionCount: 1,
+  reviewCount: 0,
+  lastInspectionDate: "2026-03-01",
+  azLicenseLevel: "Personal Care",
+  licenseLabel: "Personal Care Home",
+});
+assert.equal(azPersonalWithCitations, "Desert Home, Mesa — 2 citations, inspected Mar 2026");
+assert.doesNotMatch(azPersonalWithCitations, /Directed Care/);
+
 const namedMc = licenseFallbacks.find((row) => row.name === "Sunrise Memory Care");
 assert.ok(namedMc);
 assert.equal(/memory care/i.test(namedMc.name), true);

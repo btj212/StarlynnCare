@@ -164,12 +164,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     inspectionCount: profile.totals.inspections,
     reviewCount: profile.reviews.length,
     lastInspectionDate,
+    azLicenseLevel: facility.az_license_level,
     licenseLabel: listLicenseLabel({
       stateCode: facility.state_code,
       care_category: facility.care_category,
       license_type: facility.license_type,
       mo_level_of_care: facility.mo_level_of_care,
       mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+      az_license_level: facility.az_license_level,
     }),
   });
 

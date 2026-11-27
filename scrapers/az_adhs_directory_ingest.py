@@ -29,6 +29,7 @@ import argparse
 import os
 import re
 import sys
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -58,7 +59,94 @@ _MC_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+# Layer 12 RUN_DATE 1738540800000 is 2025-02-03 UTC. A Care Check row
+# checked after that date, or sourced from azcarecheck, is newer than this file.
+ADHS_MAP_AS_OF = date(2025, 2, 3)
+
+# The Feb 2025 map must not replace these when Care Check is the newer source.
+PROTECTED_FIELDS = (
+    "license_number",
+    "license_expiration",
+    "license_status",
+    "az_license_level",
+    "az_mc_subclass",
+    "az_memory_care_endorsed",
+    "serves_memory_care",
+    "memory_care_disclosure_filed",
+    "memory_care_disclosure_source",
+)
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _as_date(value: Any) -> date | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    return date.fromisoformat(text[:10])
+
+
+def parse_arcgis_date(value: Any) -> str | None:
+    """ArcGIS dates are epoch milliseconds. Null stays null so a stored date survives."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, (int, float)):
+        seconds = value / 1000 if abs(value) > 10_000_000_000 else value
+        return datetime.fromtimestamp(seconds, timezone.utc).date().isoformat()
+    text = str(value).strip()
+    return text[:10] if text else None
+
+
+def azcc_row_is_newer(existing: dict[str, Any]) -> bool:
+    """True when Care Check, or a check date after the map, owns this row."""
+    source = str(existing.get("license_status_source") or "").lower()
+    if "azcarecheck" in source or "az care check" in source:
+        return True
+    checked = _as_date(existing.get("license_status_checked_at"))
+    return checked is not None and checked > ADHS_MAP_AS_OF
+
+
+def apply_adhs_map_guard(
+    incoming: dict[str, Any],
+    existing: dict[str, Any] | None,
+) -> tuple[dict[str, Any] | None, list[str]]:
+    """Decide what the Feb 2025 map may write.
+
+    Returns (row, skipped field names). A CLOSED row returns (None, ...) so
+    the upsert does not run. The database trigger still blocks a status
+    change that is not strictly newer; this guard is stricter and leaves
+    the whole row alone.
+    """
+    if existing is None:
+        return dict(incoming), []
+    if str(existing.get("license_status") or "").strip().upper() == "CLOSED":
+        return None, ["CLOSED"]
+
+    out = dict(incoming)
+    if not azcc_row_is_newer(existing):
+        if out.get("license_expiration") is None and existing.get("license_expiration") is not None:
+            out["license_expiration"] = existing["license_expiration"]
+        return out, []
+
+    skipped: list[str] = []
+    for field in PROTECTED_FIELDS:
+        old = existing.get(field)
+        new = out.get(field)
+        differs = (
+            _as_date(old) != _as_date(new)
+            if field == "license_expiration"
+            else old != new
+        )
+        if differs:
+            skipped.append(field)
+        out[field] = old
+    return out, skipped
 
 
 def load_env() -> None:
@@ -227,6 +315,10 @@ def transform_feature(feature: dict[str, Any]) -> dict[str, Any] | None:
         "license_type": fac_type.title() if fac_type else None,
         "license_subtype": subtype_raw,
         "license_status": "LICENSED",  # we filter to OPERATION_STATUS='ACTIVE'
+        "license_expiration": parse_arcgis_date(
+            attrs.get("license_expiration") if attrs.get("license_expiration") is not None
+            else attrs.get("LICENSE_EXPIRATION")
+        ),
         "beds": beds,
         "street": address_line1,
         "city": city,
@@ -260,7 +352,7 @@ def transform_feature(feature: dict[str, Any]) -> dict[str, Any] | None:
 UPSERT_SQL = """
     INSERT INTO facilities (
         state_code, external_id, license_number,
-        name, license_type, license_subtype, license_status,
+        name, license_type, license_subtype, license_status, license_expiration,
         beds,
         street, city, city_slug, slug, county, zip, phone,
         latitude, longitude,
@@ -270,7 +362,7 @@ UPSERT_SQL = """
         source_url
     ) VALUES (
         %(state_code)s, %(external_id)s, %(license_number)s,
-        %(name)s, %(license_type)s, %(license_subtype)s, %(license_status)s,
+        %(name)s, %(license_type)s, %(license_subtype)s, %(license_status)s, %(license_expiration)s,
         %(beds)s,
         %(street)s, %(city)s, %(city_slug)s, %(slug)s, %(county)s, %(zip)s, %(phone)s,
         %(latitude)s, %(longitude)s,
@@ -285,6 +377,7 @@ UPSERT_SQL = """
         license_type               = EXCLUDED.license_type,
         license_subtype            = EXCLUDED.license_subtype,
         license_status             = EXCLUDED.license_status,
+        license_expiration         = COALESCE(EXCLUDED.license_expiration, facilities.license_expiration),
         beds                       = EXCLUDED.beds,
         street                     = EXCLUDED.street,
         city                       = EXCLUDED.city,
@@ -305,15 +398,57 @@ UPSERT_SQL = """
 """
 
 
+def load_existing_license_rows(
+    conn: psycopg.Connection,
+    external_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    """Read the columns the map is not allowed to clobber. No writes."""
+    if not external_ids:
+        return {}
+    sql = """
+        SELECT external_id, license_number, license_expiration, license_status,
+               license_status_source, license_status_checked_at,
+               az_license_level, az_mc_subclass, az_memory_care_endorsed,
+               serves_memory_care, memory_care_disclosure_filed,
+               memory_care_disclosure_source
+        FROM facilities
+        WHERE state_code = 'AZ' AND external_id = ANY(%s)
+    """
+    with conn.cursor() as cur:
+        cur.execute(sql, (external_ids,))
+        cols = [desc.name for desc in cur.description]
+        return {row[0]: dict(zip(cols, row)) for row in cur.fetchall()}
+
+
 def upsert_batch(
     conn: psycopg.Connection,
     records: list[dict[str, Any]],
 ) -> tuple[int, int]:
     """Upsert records with per-row savepoints; return (success_count, error_count)."""
+    existing = load_existing_license_rows(
+        conn,
+        [rec["external_id"] for rec in records if rec.get("external_id")],
+    )
     success = 0
     errors = 0
     with conn.cursor() as cur:
         for rec in records:
+            guarded, skipped_fields = apply_adhs_map_guard(
+                rec, existing.get(rec.get("external_id"))
+            )
+            if guarded is None:
+                print(
+                    f"  skip CLOSED {rec.get('external_id')}: row untouched",
+                    flush=True,
+                )
+                continue
+            if skipped_fields:
+                print(
+                    f"  kept newer license fields on {rec.get('external_id')}: "
+                    f"{', '.join(skipped_fields)}",
+                    flush=True,
+                )
+            rec = guarded
             sp = f"sp_{re.sub(r'[^a-z0-9]', '_', (rec.get('external_id') or 'unknown').lower())}"
             try:
                 cur.execute(f"SAVEPOINT {sp}")
