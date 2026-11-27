@@ -102,6 +102,8 @@ const waHome = {
   state_code: "WA",
   license_number: "756545",
   care_category: "alf_general",
+  wa_facility_type: "AFH",
+  wa_dementia_specialty: true,
 } as unknown as Facility;
 const afhOnly = memoryCareBasis({
   state_code: "WA",
@@ -114,12 +116,16 @@ const afhLd = buildLocalBusinessForFacility(waHome, waState, {
   memoryCare: afhOnly,
 }) as {
   amenityFeature?: Array<{ name: string }>;
-  additionalProperty?: Array<{ name: string }>;
+  additionalProperty?: Array<{ name: string; value?: string }>;
 };
 assert.equal(afhLd.amenityFeature, undefined);
 assert.equal(
   (afhLd.additionalProperty ?? []).some((prop) => prop.name === "Memory care basis"),
   false,
+);
+assert.equal(
+  (afhLd.additionalProperty ?? []).find((prop) => prop.name === "Dementia care")?.value,
+  "Accepts residents with dementia (no secured unit)",
 );
 
 const mccLd = buildLocalBusinessForFacility(waHome, waState, {

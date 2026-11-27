@@ -29,7 +29,7 @@ import {
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import { REGULATOR_ABBR } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
-import { memoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import { ACCEPTS_DEMENTIA_CHIP, dementiaAcceptanceTier, memoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import { careSettingCopy, listCareChip } from "@/lib/city-hub/careSetting";
 import {
   cityDirectAnswer,
@@ -81,7 +81,7 @@ import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/
 export const revalidate = 3600;
 
 const HUB_FACILITY_SELECT =
-  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_facility_type, wa_contract_types, mc_program_confirmed, mc_program_source_url, wa_county, historical_city_slugs, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served";
+  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, wa_facility_type, wa_contract_types, mc_program_confirmed, mc_program_source_url, wa_county, historical_city_slugs, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served";
 
 type HubFacilityRow = {
   id: string;
@@ -103,6 +103,7 @@ type HubFacilityRow = {
   wa_dementia_care_contract: boolean | null;
   wa_earc_sdc_contracted: boolean | null;
   wa_memory_care_certified: boolean | null;
+  wa_dementia_specialty: boolean | null;
   wa_facility_type: string | null;
   wa_contract_types?: string[] | null;
   mc_program_confirmed?: boolean | null;
@@ -376,7 +377,7 @@ export default async function RegionPage({ params }: PageProps) {
           .slice(0, 8);
 
         facilities = raw.map((f) => {
-          const basis = memoryCareBasis({
+          const basisInput = {
             state_code: region.state.code,
             memory_care_disclosure_source: f.memory_care_disclosure_source,
             ca_cdss_client_served: f.ca_cdss_client_served ?? null,
@@ -385,6 +386,7 @@ export default async function RegionPage({ params }: PageProps) {
             wa_memory_care_certified: f.wa_memory_care_certified,
             wa_earc_sdc_contracted: f.wa_earc_sdc_contracted,
             wa_dementia_care_contract: f.wa_dementia_care_contract,
+            wa_dementia_specialty: f.wa_dementia_specialty,
             wa_facility_type: f.wa_facility_type,
             wa_contract_types: f.wa_contract_types,
             mc_program_confirmed: f.mc_program_confirmed,
@@ -396,7 +398,9 @@ export default async function RegionPage({ params }: PageProps) {
             az_memory_care_endorsed: f.az_memory_care_endorsed,
             az_mc_subclass: f.az_mc_subclass,
             az_license_level: f.az_license_level,
-          });
+          };
+          const basis = memoryCareBasis(basisInput);
+          const tier = dementiaAcceptanceTier(basisInput);
           const muni = displayMunicipality({
             stateCode: region.state.code,
             zip: f.zip,
@@ -422,7 +426,7 @@ export default async function RegionPage({ params }: PageProps) {
             total_citations: totalCitByFac.get(f.id) ?? 0,
             serious_citations: seriousCitByFac.get(f.id) ?? 0,
             limitedHistory: (recentInspCountByFac.get(f.id) ?? 0) < 4,
-            careChip: listCareChip({ stateCode: region.state.code, basis }),
+            careChip: listCareChip({ stateCode: region.state.code, basis, tier }),
             licenseLabel: listLicenseLabel({
               stateCode: region.state.code,
               care_category: f.care_category as CareCategory,
@@ -632,7 +636,17 @@ export default async function RegionPage({ params }: PageProps) {
     postalCode: f.zip,
     addressRegion: region.state.name,
   }));
-  const hubPreview = hubRank.preview.map((f) => ({
+  // Adult family homes are ≤6 beds, and the first grid otherwise drops
+  // every small home when a city also has a larger one. Tier 2 would then
+  // have no section. Keep those homes on the grid; other small homes stay off it.
+  const hubPreview = [
+    ...hubRank.preview,
+    ...listedHomes.filter(
+      (home) =>
+        home.careChip === ACCEPTS_DEMENTIA_CHIP &&
+        !hubRank.preview.some((row) => row.id === home.id),
+    ),
+  ].map((f) => ({
     ...f,
     city: f.city ?? displayCityName(f.city, f.city_slug),
   }));

@@ -7,7 +7,8 @@ import type { CareCategory } from "@/lib/types";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityDisplayName, nameMatchesQuery } from "@/lib/facility/aliases";
-import { listedInMemoryCareGroup } from "@/lib/city-hub/careSetting";
+import { cityHubCardGroup, listedInMemoryCareGroup } from "@/lib/city-hub/careSetting";
+import { ACCEPTS_DEMENTIA_CHIP, ACCEPTS_DEMENTIA_SECTION } from "@/lib/facility/memoryCareBasis";
 import { listLicenseLabel, listSectionDeck, listSectionTitle } from "@/lib/city-hub/licenseLabel";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -330,8 +331,16 @@ export function FacilityListClient({
       if (q && !nameMatchesQuery(f, q) && !f.city?.toLowerCase().includes(q)) {
         return false;
       }
-      // Small homes gate
-      if (f.capacity_tier === "small" && !showSmall) return false;
+      // Small homes stay off the first grid until the toggle. Tier 2 adult
+      // family homes are almost all ≤6 beds, so they have to stay visible
+      // or their section would be empty on any city that also has a larger home.
+      if (
+        f.capacity_tier === "small" &&
+        !showSmall &&
+        f.careChip !== ACCEPTS_DEMENTIA_CHIP
+      ) {
+        return false;
+      }
       // Chip filters
       if (chip === "large") return f.capacity_tier === "large";
       if (chip === "medium") return f.capacity_tier === "medium" || f.capacity_tier === "unknown";
@@ -367,18 +376,23 @@ export function FacilityListClient({
       memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
       txAlzheimerCertified: f.tx_alzheimer_certified,
     });
+  const groupOf = (f: ListFacility) =>
+    cityHubCardGroup({
+      careChip: f.careChip,
+      capacityTier: f.capacity_tier,
+      inMemoryCareGroup: inMcGroup(f),
+    });
   const mcLarge = filtered.filter(
-    (f) => inMcGroup(f) && f.capacity_tier === "large",
+    (f) => groupOf(f) === "memory-care" && f.capacity_tier === "large",
   );
   const mcMedium = filtered.filter(
     (f) =>
-      inMcGroup(f) &&
+      groupOf(f) === "memory-care" &&
       (f.capacity_tier === "medium" || f.capacity_tier === "unknown"),
   );
-  const nonMc = filtered.filter(
-    (f) => !inMcGroup(f) && f.capacity_tier !== "small",
-  );
-  const smallHomes = filtered.filter((f) => f.capacity_tier === "small");
+  const acceptsDementia = filtered.filter((f) => groupOf(f) === "accepts-dementia");
+  const nonMc = filtered.filter((f) => groupOf(f) === "other");
+  const smallHomes = filtered.filter((f) => groupOf(f) === "small");
 
   if (resultsOnly) {
     return (
@@ -522,6 +536,20 @@ export function FacilityListClient({
               </p>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {mcMedium.map((f) => (
+                  <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {acceptsDementia.length > 0 && (
+            <section className="mt-12">
+              <SectionHead title={ACCEPTS_DEMENTIA_SECTION} count={acceptsDementia.length} />
+              <p className="mt-1.5 text-xs text-muted">
+                These homes can take a resident with dementia. They do not have a secured or dedicated memory-care unit.
+              </p>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {acceptsDementia.map((f) => (
                   <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
                 ))}
               </div>

@@ -143,6 +143,10 @@ export function buildFacilityTitle(input: {
   reviewCount?: number | null;
   /** ISO yyyy-mm-dd of the latest inspection, used for the title year. */
   lastInspectionDate?: string | null;
+  /** When Washington and not memory care, replace the "Licensed Memory Care" fallback. */
+  stateCode?: string;
+  waFacilityType?: string | null;
+  dementiaTier?: "memory-care" | "accepts-dementia" | "neither";
 }): string {
   const { name, stateName, city, citationCount, inspectionCount, reviewCount, lastInspectionDate } = input;
   const abbr = STATE_ABBR[stateName] ?? stateName;
@@ -165,6 +169,16 @@ export function buildFacilityTitle(input: {
   }
   if (reviews > 0) facts.push("reviews");
 
+  const waNotMemoryCare =
+    (input.stateCode === "WA" || input.stateName === "Washington") &&
+    input.dementiaTier != null &&
+    input.dementiaTier !== "memory-care";
+  const waKind =
+    (input.waFacilityType ?? "").trim().toUpperCase() === "AFH"
+      ? "Adult Family Home"
+      : "Assisted Living";
+  const waWithAccepts =
+    input.dementiaTier === "accepts-dementia" ? `${waKind}, Accepts Dementia` : waKind;
   const inspectionTitles =
     inspections > 0
       ? [
@@ -176,7 +190,9 @@ export function buildFacilityTitle(input: {
         ].filter((candidate): candidate is string => candidate != null)
       : input.stateName === "Arizona"
         ? [`${place}: Directed Care Home`, `${placeAbbr}: Directed Care Home`]
-        : [`${place}: Licensed Memory Care`, `${placeAbbr}: Licensed Memory Care`];
+        : waNotMemoryCare
+          ? [`${place}: ${waWithAccepts}`, `${place}: ${waKind}`, `${placeAbbr}: ${waKind}`]
+          : [`${place}: Licensed Memory Care`, `${placeAbbr}: Licensed Memory Care`];
   const candidates = [
     ...inspectionTitles,
     facts.length ? `${place}: ${joinTitleFacts(facts)}` : placeAbbr,

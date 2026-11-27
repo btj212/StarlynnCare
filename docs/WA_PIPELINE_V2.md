@@ -54,7 +54,7 @@ parser → deficiencies
 | wa_facility_type | Beds | Inspector | Profile config | MC signal source |
 |-----------------|------|-----------|----------------|-----------------|
 | `ALF` | 7–200+ | DSHS RCS | `waProfileConfig` | Memory Care Certified, Specialized Dementia Care contract, or the operator's page for that address |
-| `AFH` | 2–6 | DSHS RCS | `waProfileConfig` | Operator's own page for that address only. The dementia specialty is staff training, not a signal |
+| `AFH` | 2–6 | DSHS RCS | `waProfileConfig` | Memory care only from the operator's page for that address. The dementia specialty is a second display tier, "Accepts residents with dementia", not memory care and not an eligibility signal |
 | `ESF` | varies | DSHS RCS | `waProfileConfig` | Manual review only |
 | `NH` | 50–500 | CMS/Medicare | `waNhProfileConfig` | CMS star rating |
 | `ARC`/`EARC` | varies | DSHS RCS | `waProfileConfig` | EARC-SDC contract |
@@ -78,7 +78,7 @@ AFHs set `wa_afh_residential_flag = true` → no street view, no exterior photo.
 
 **W1c — Display:**
 - `waNhProfileConfig` in `src/lib/states/WA/profileConfig.ts` — F-tag citation prefix, CMS severity labels
-- `WaMcSignalBadges` component — Memory Care Certified, SDCP contract, and CMS star rating. Not the dementia-specialty training flag
+- `WaMcSignalBadges` component — Memory Care Certified, SDCP contract, CMS stars, and a neutral "Accepts residents with dementia" badge for an adult family home whose only signal is the specialty
 - `FacilityHero` wired to show WA MC signal badges
 
 ### Wave 2 — Universe expansion (shipped May 2026)
@@ -88,6 +88,15 @@ AFHs set `wa_afh_residential_flag = true` → no street view, no exterior photo.
 - `wa_signal_sdcp.py` — writes `wa_earc_sdc_contracted`
 - `wa_signal_dementia_specialty.py` — retired. Do not run. ArcGIS `Speciality` is raw data on `wa_dementia_specialty` and is not a memory-care signal
 - `recompute_publishable.py` — Washington `serves_memory_care` is Memory Care Certified, a Specialized Dementia Care contract, or `mc_program_confirmed`. Not the dementia specialty
+
+### Display tiers (2026-11-27)
+
+Families need homes that will take a relative with dementia, including homes with no secured unit. `dementiaAcceptanceTier` is display only. It does not change `serves_memory_care` or publishable.
+
+1. Memory care: Memory Care Certified, a Specialized Dementia Care contract, or the operator's page for that address. An adult family home qualifies only from that page.
+2. Accepts residents with dementia (no secured unit): an adult family home with `wa_dementia_specialty` and no tier-1 signal. The page must not call this memory care.
+
+A phone or operator-page confirmation of "we accept residents with dementia and have no secured unit" was meant to use `mc_designation_type = 'accepts_dementia_no_secured_unit'` plus a non-empty `mc_program_quote` or `mc_review_notes`. Migration 0044 rejects that value (only null, `Secure Dementia Care Unit`, and `Special Care`). Do not write it until a migration allows it. Amber Hills Assisted Living, Prosser, license 0000002616, is the example and was not updated.
 
 ### Wave 3 — AFH + ESF (shipped May 2026)
 

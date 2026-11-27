@@ -1,4 +1,5 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
+import { dementiaAcceptanceTier } from "@/lib/facility/memoryCareBasis";
 
 /**
  * WA Memory-Care Signal Badges
@@ -8,8 +9,8 @@ import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
  *   2. EARC-SDC Contract      — DSHS Specialized Dementia Care Program contract
  *   3. CMS ★ Rating           — Medicare overall 1–5 star rating (NH only)
  *
- * The adult family home dementia specialty is staff training held by almost
- * every AFH. It is raw DSHS data and is not a badge.
+ * An adult family home with the DSHS dementia specialty shows a separate
+ * neutral badge. That is staff training, not a secured unit.
  *
  * Appears directly below the facility name in FacilityHero for WA facilities.
  * Returns null when no signals are active AND cmsOverallRating is null.
@@ -19,26 +20,47 @@ export type WaMcSignalInput = {
   wa_memory_care_certified?: boolean | null;
   wa_earc_sdc_contracted?: boolean | null;
   wa_dementia_care_contract?: boolean | null;
+  wa_facility_type?: string | null;
+  wa_dementia_specialty?: boolean | null;
+  mc_program_confirmed?: boolean | null;
+  mc_program_source_url?: string | null;
   cms_overall_rating?: number | null;
 };
 
 export type WaMcSignals = {
   memoryCare: boolean;
   sdcp: boolean;
+  acceptsDementia: boolean;
   cmsOverallRating: number | null;
 };
 
-/** Badges for a Washington row. The dementia-specialty column is not read. */
+/** Badges for a Washington row. Specialty is the second tier, never memory care. */
 export function waMcSignalsFromRow(row: WaMcSignalInput): WaMcSignals {
+  const tier = dementiaAcceptanceTier({
+    state_code: "WA",
+    wa_memory_care_certified: row.wa_memory_care_certified,
+    wa_earc_sdc_contracted: row.wa_earc_sdc_contracted,
+    wa_dementia_care_contract: row.wa_dementia_care_contract,
+    wa_facility_type: row.wa_facility_type,
+    wa_dementia_specialty: row.wa_dementia_specialty,
+    mc_program_confirmed: row.mc_program_confirmed,
+    mc_program_source_url: row.mc_program_source_url,
+  });
   return {
     memoryCare: row.wa_memory_care_certified ?? false,
     sdcp: Boolean(row.wa_earc_sdc_contracted || row.wa_dementia_care_contract),
+    acceptsDementia: tier === "accepts-dementia",
     cmsOverallRating: row.cms_overall_rating ?? null,
   };
 }
 
 export function waMcSignalsHaveAny(signals: WaMcSignals): boolean {
-  return signals.memoryCare || signals.sdcp || signals.cmsOverallRating !== null;
+  return (
+    signals.memoryCare ||
+    signals.sdcp ||
+    signals.acceptsDementia ||
+    signals.cmsOverallRating !== null
+  );
 }
 
 interface Props {
@@ -84,7 +106,7 @@ function Badge({ label, title, tone = "teal" }: BadgeProps) {
 }
 
 export function WaMcSignalBadges({ signals }: Props) {
-  const { memoryCare, sdcp, cmsOverallRating } = signals;
+  const { memoryCare, sdcp, acceptsDementia, cmsOverallRating } = signals;
   const hasAny = waMcSignalsHaveAny(signals);
 
   if (!hasAny) return null;
@@ -103,6 +125,13 @@ export function WaMcSignalBadges({ signals }: Props) {
           label="DSHS SDCP"
           title="DSHS Specialized Dementia Care Program contract (EARC-SDC)"
           tone="teal"
+        />
+      )}
+      {acceptsDementia && (
+        <Badge
+          label="Accepts residents with dementia"
+          title="Staff are trained to care for residents with dementia. This is not a secured or dedicated memory-care unit."
+          tone="ink"
         />
       )}
       {cmsOverallRating !== null && (

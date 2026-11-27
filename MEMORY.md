@@ -6,6 +6,23 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Two display tiers for Washington dementia
+
+**Decided:** Families are looking for a home that will take a relative who has dementia. A secured unit and a home that accepts those residents are different facts, so Washington pages use two display tiers. This does not change `serves_memory_care`, `publishable`, the sitemap, or `recompute_publishable.py`.
+
+1. Memory care, unchanged from the same-day specialty decision: an assisted living facility with Memory Care Certified, a Specialized Dementia Care contract, or `mc_program_confirmed` plus `mc_program_source_url`; an adult family home only from that operator page.
+2. "Accepts residents with dementia (no secured unit)" when the home is not tier 1 and it is an adult family home with `wa_dementia_specialty` true. Badge: "Accepts residents with dementia". Never call this memory care.
+
+**Why:** Blake, 2026-11-27. Amber Hills Assisted Living in Prosser (license 0000002616) told him they have no dementia unit and are not a locked facility, but they do have residents with dementia. Homes like that should be findable as a second, honest tier. The adult family home specialty is the same kind of fact: staff are trained, and there is no secured unit.
+
+**2b, not shipped:** The intended convention for a phone call or operator page that says the home accepts residents with dementia and has no secured unit is `mc_designation_type = 'accepts_dementia_no_secured_unit'` plus a non-empty `mc_program_quote` or `mc_review_notes` that records the source. Do not write that value. Migration 0044 checks the column to null, `Secure Dementia Care Unit`, or `Special Care` only. A migration is required before 2b can be stored. No row was updated in this change, including Amber Hills.
+
+**This supersedes** the same-day sentence that said the specialty is not a badge, chip, or FAQ. It is still not memory care, and it is still not an eligibility signal.
+
+**Source:** Blake, 2026-11-27. `dementiaAcceptanceTier` in `src/lib/facility/memoryCareBasis.ts`.
+
+---
+
 ## 2026-11-27 — WA dementia specialty is raw DSHS data, not memory care
 
 **Decided:** `facilities.wa_dementia_specialty` stays on the row as the ArcGIS `Speciality` / `SpecialityCode=SPDE` value. It is not a badge, chip, FAQ, JSON-LD claim, content-prompt fact, or `serves_memory_care` signal. It is a staff-training credential (RCW 70.128.230(5), WAC 388-112A-0490) held by about 98.5% of operating adult family homes.

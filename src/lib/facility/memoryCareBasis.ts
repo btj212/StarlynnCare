@@ -46,6 +46,27 @@ export const WA_NO_DEMENTIA_DESIGNATION =
 export const WA_AFH_NO_MC_BASIS =
   "Washington DSHS does not certify adult family homes for memory care, and StarlynnCare has not confirmed a memory-care program at this address.";
 
+/**
+ * Second tier. Staff training means the home may take a resident with
+ * dementia. It is not a secured or dedicated memory-care unit.
+ */
+export const WA_AFH_ACCEPTS_DEMENTIA_BASIS =
+  "Washington DSHS lists this adult family home as trained to care for residents with dementia. That is staff training, not a secured memory-care unit, and StarlynnCare has not confirmed a memory-care program at this address.";
+
+export const ACCEPTS_DEMENTIA_CHIP = "Accepts residents with dementia";
+
+export const ACCEPTS_DEMENTIA_SECTION =
+  "Homes that accept residents with dementia (no secured unit)";
+
+export const ACCEPTS_DEMENTIA_JSONLD =
+  "Accepts residents with dementia (no secured unit)";
+
+export function waAcceptsDementiaFaqAnswer(name: string): string {
+  return `Washington DSHS lists ${name} as an adult family home with a dementia specialty, which means its staff are trained to care for residents with dementia. It is not certified for memory care and has no confirmed secured unit, so ask the home about wandering, exit doors, and overnight staff.`;
+}
+
+export type DementiaAcceptanceTier = "memory-care" | "accepts-dementia" | "neither";
+
 export const WA_OPERATOR_PROGRAM_LABEL =
   "The operator's own page for this address describes a memory-care program.";
 
@@ -222,6 +243,9 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
     if (waOperatorConfirmed(facility)) {
       return recorded(WA_OPERATOR_PROGRAM_LABEL, facility.mc_program_quote ?? null);
     }
+    if (facility.wa_dementia_specialty === true) {
+      return { ...basis, label: WA_AFH_ACCEPTS_DEMENTIA_BASIS };
+    }
     return { ...basis, label: WA_AFH_NO_MC_BASIS };
   }
 
@@ -341,4 +365,25 @@ export function memoryCareBasis(facility: MemoryCareBasisInput): MemoryCareBasis
   }
 
   return basis;
+}
+
+/**
+ * Display tier for a Washington home. Memory care matches `memoryCareBasis`
+ * after the specialty was removed as evidence. The second tier is an adult
+ * family home with the DSHS dementia-specialty training flag and no
+ * confirmed program. An assisted living facility is not in that tier from
+ * the specialty alone.
+ *
+ * A phone-confirmed "accepts dementia, no secured unit" value cannot be
+ * stored: `mc_designation_type` is text with a check that allows only
+ * null, "Secure Dementia Care Unit", and "Special Care" (migration 0044).
+ */
+export function dementiaAcceptanceTier(
+  facility: MemoryCareBasisInput,
+): DementiaAcceptanceTier {
+  if (memoryCareBasis(facility).kind === "memory-care") return "memory-care";
+  if (isWaAdultFamilyHome(facility) && facility.wa_dementia_specialty === true) {
+    return "accepts-dementia";
+  }
+  return "neither";
 }
