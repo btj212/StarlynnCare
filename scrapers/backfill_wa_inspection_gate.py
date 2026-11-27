@@ -4,7 +4,8 @@
 A live page fails the inspection gate when it has no row with a date, a
 source URL, and a citation count. DSHS posts those reports on the forms
 page. This script reads the PDF, keeps the row only when the license on
-the report matches the roster, and stores the cited-WAC count. A scanned
+the report matches the roster, and stores one citation row per distinct
+WAC requirement. The citation count is that number of rows. A scanned
 file with no text is skipped. It is not stored as zero.
 
 Dry-run is the default. It does not write the database.

@@ -504,7 +504,7 @@ async function indexableFacilityIds(
     for (;;) {
       let query = supabase
         .from("inspections")
-        .select("id, facility_id, inspection_date, source_url")
+        .select("id, facility_id, inspection_date, source_url, total_deficiency_count, source_event_id, raw_data")
         .in("facility_id", chunk)
         .order("id")
         .limit(1000);
@@ -516,10 +516,19 @@ async function indexableFacilityIds(
         facility_id: string;
         inspection_date: string | null;
         source_url: string | null;
+        total_deficiency_count: number | null;
+        source_event_id: string | null;
+        raw_data: { co_event_id?: string } | null;
       }>;
       for (const row of page) {
         const list = inspections.get(row.facility_id) ?? [];
-        list.push({ date: row.inspection_date, sourceUrl: row.source_url });
+        const eventId = row.raw_data?.co_event_id?.trim() ?? "";
+        list.push({
+          date: row.inspection_date,
+          sourceUrl: row.source_url,
+          citationCount: row.total_deficiency_count,
+          visitId: row.source_event_id?.trim() || eventId || null,
+        });
         inspections.set(row.facility_id, list);
       }
       if (page.length < 1000) break;

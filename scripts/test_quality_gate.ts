@@ -33,6 +33,7 @@ import {
   evidenceLabelText,
   explainIndexability,
   headlineLabel,
+  inspectionQualifies,
   isIndexable,
   jsonLdIsValid,
   memoryCareHubHomes,
@@ -116,6 +117,86 @@ const closedWithInspection = explainIndexability(
 );
 assert.equal(closedWithInspection.failures.includes("license_status"), false);
 assert.equal(closedWithInspection.failures.includes("inspection"), false);
+
+assert.equal(
+  inspectionQualifies("IL", { date: "2026-05-09", citationCount: 0, visitId: "00120001" }),
+  true,
+  "Illinois counts a visit with a date, a zero citation count, and the FOIA visit id",
+);
+assert.equal(
+  inspectionQualifies("IL", { date: "2026-05-09", citationCount: 0 }),
+  false,
+  "Illinois does not count a visit that has no visit id",
+);
+assert.equal(
+  explainIndexability(
+    home({
+      state_code: "IL",
+      canonical: "https://www.starlynncare.com/illinois/chicago/example-home",
+      inspections: [{ date: "2026-05-09", citationCount: 4, visitId: "00120001" }],
+    }),
+    NOW,
+  ).failures.includes("inspection"),
+  false,
+);
+assert.equal(
+  explainIndexability(
+    home({
+      state_code: "IL",
+      canonical: "https://www.starlynncare.com/illinois/chicago/example-home",
+      inspections: [{ date: "2026-05-09", citationCount: 4 }],
+    }),
+    NOW,
+  ).failures.includes("inspection"),
+  true,
+);
+
+assert.equal(
+  inspectionQualifies("CO", { date: "2026-05-13", citationCount: 2, visitId: "M5T211" }),
+  true,
+  "Colorado counts an event with a date, a citation count, and the CDPHE event id",
+);
+assert.equal(
+  inspectionQualifies("CO", { date: "2026-05-13", citationCount: 2, sourceUrl: "https://example.gov/missing" }),
+  false,
+  "Colorado does not count an event that has no event id",
+);
+assert.equal(
+  explainIndexability(
+    home({
+      state_code: "CO",
+      canonical: "https://www.starlynncare.com/colorado/denver/example-home",
+      inspections: [{ date: "2026-05-13", citationCount: 0, visitId: "M5T211" }],
+    }),
+    NOW,
+  ).failures.includes("inspection"),
+  false,
+);
+
+assert.equal(
+  inspectionQualifies("WA", { date: "2025-09-04", citationCount: 5 }),
+  false,
+  "Washington still needs an http source URL",
+);
+assert.equal(
+  inspectionQualifies("WA", {
+    date: "2025-09-04",
+    citationCount: 5,
+    sourceUrl: "https://fortress.wa.gov/dshs/adsaapps/lookup/report.pdf",
+  }),
+  true,
+);
+assert.equal(
+  explainIndexability(
+    home({
+      state_code: "WA",
+      canonical: "https://www.starlynncare.com/washington/seattle/example-home",
+      inspections: [{ date: "2025-09-04", citationCount: 5 }],
+    }),
+    NOW,
+  ).failures.includes("inspection"),
+  true,
+);
 
 const approvedLabels = new Set(Object.values(HEADLINE_TABLE).map((row) => row.label));
 const approvedExplanations = new Set(Object.values(HEADLINE_TABLE).map((row) => row.explanation));

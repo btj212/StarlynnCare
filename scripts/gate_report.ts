@@ -17,6 +17,7 @@ import {
   GATE_ENFORCED,
   canonicalLicenseStatus,
   explainIndexability,
+  inspectionQualifies,
   type CanonicalLicenseStatus,
   type GateCondition,
   type GateHome,
@@ -206,13 +207,13 @@ async function main(): Promise<void> {
       })),
   );
 
-  const goodInspections = new Set<string>();
+  const stateByFacility = new Map(facilities.map((row) => [row.id, row.state_code]));
+  const qualifying = new Map<string, GateInspection>();
   const inspectionRows = await eachPage<{ id: string; facility_id: string }>((from) =>
     client
       .from("inspections")
-      .select("id, facility_id, inspection_date, source_url")
+      .select("id, facility_id, inspection_date, source_url, total_deficiency_count, source_event_id, raw_data")
       .not("inspection_date", "is", null)
-      .not("source_url", "is", null)
       .order("id")
       .range(from, from + PAGE - 1)
       .then((result) => ({
@@ -221,6 +222,9 @@ async function main(): Promise<void> {
           facility_id: string;
           inspection_date: string | null;
           source_url: string | null;
+          total_deficiency_count: number | null;
+          source_event_id: string | null;
+          raw_data: { co_event_id?: string } | null;
         }> | null,
         error: result.error,
       })),
@@ -229,10 +233,20 @@ async function main(): Promise<void> {
     facility_id: string;
     inspection_date: string | null;
     source_url: string | null;
+    total_deficiency_count: number | null;
+    source_event_id: string | null;
+    raw_data: { co_event_id?: string } | null;
   }>) {
-    const date = row.inspection_date?.trim() ?? "";
-    const source = row.source_url?.trim() ?? "";
-    if (date && /^https?:\/\//i.test(source)) goodInspections.add(row.facility_id);
+    const state = stateByFacility.get(row.facility_id);
+    if (!state || qualifying.has(row.facility_id)) continue;
+    const eventId = row.raw_data?.co_event_id?.trim() ?? "";
+    const gateRow: GateInspection = {
+      date: row.inspection_date,
+      sourceUrl: row.source_url,
+      citationCount: row.total_deficiency_count,
+      visitId: row.source_event_id?.trim() || eventId || null,
+    };
+    if (inspectionQualifies(state, gateRow)) qualifying.set(row.facility_id, gateRow);
   }
 
   const sync = await loadSync(client, service);
@@ -256,9 +270,8 @@ async function main(): Promise<void> {
     else if (status === "PENDING") report.pending += 1;
     else report.other += 1;
 
-    const inspections: GateInspection[] = goodInspections.has(row.id)
-      ? [{ date: "on-file", sourceUrl: "https://regulator.example/on-file" }]
-      : [];
+    const kept = qualifying.get(row.id);
+    const inspections: GateInspection[] = kept ? [kept] : [];
     const slug = stateSlug(code);
     const name = row.name?.trim() || "";
     const city = row.city?.trim() || "";

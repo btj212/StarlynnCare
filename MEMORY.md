@@ -6,17 +6,29 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Illinois and Colorado visit ids, and one Washington citation count
+
+**Decided:** Illinois and Colorado inspections qualify for the gate without a document URL when they have a date, a citation count (zero allowed), and a visit id in `source_event_id`. Illinois already stores the FOIA visit id there. Colorado's id is `raw_data.co_event_id` (for example `M5T211`); the backfill copies it into `source_event_id` and still does not invent a tableau URL. Every other state still needs a date and an http(s) URL. `GATE_ENFORCED` stays false.
+
+Washington's citation count is the number of distinct cited WAC requirements, one citation row per code. A second "This requirement was not met" line inside one rule, or the same rule restated later in the letter, is still one. Asis (license 754652, 2023-10-05) stays 12. Blue Orchid (license 757030, 2025-05-20) is 13, not the 15 lines the parser used to emit. A stored count with no citation rows is left alone.
+
+**Rejected:** Requiring a source URL for Illinois or Colorado. Counting every not-met line. Setting a Washington count to zero because the citation rows were never stored. Turning the gate on.
+
+**Source:** Read-only SQL on project `fwvrupjgwvvzqiutwwdg` after the PA, UT, and WA writes. Live pages failing the date + URL + count test: WA 478 of 1,131, IL 300, CO 70, AZ 2. PA 429 and UT 118 pass.
+
+---
+
 ## 2026-11-27 — Inspection gate fields for WA, IL, UT, CO, and PA
 
 **Decided:** A stored inspection can carry a date, a source URL, and a citation count only when each value comes from the regulator's file. Zero is a real count. A blank or unreadable file stays null.
 
-Washington adult family homes: the forms page `https://fortress.wa.gov/dshs/adsaapps/lookup/AFHForms.aspx?Lic=` links to the PDF. The citation count is the number of WAC blocks that say "This requirement was not met". A consultation letter that says the WAC was not cited is zero. A scan with no text layer is not zero. The license on the report must match the roster after stripping leading zeros (`0000754592` and `754592`). The stored URL is the PDF. The day is the "completed an inspection on" date, then the licensee line, then "During a visit on". Month-only dates stay the first of `posted_month`, which the profile already prints as a month.
+Washington adult family homes: the forms page `https://fortress.wa.gov/dshs/adsaapps/lookup/AFHForms.aspx?Lic=` links to the PDF. The citation count below was first described as the number of WAC blocks that say "This requirement was not met". That description is superseded the same day by the entry above: the count is the number of distinct WAC codes. A consultation letter that says the WAC was not cited is zero. A scan with no text layer is not zero. The license on the report must match the roster after stripping leading zeros (`0000754592` and `754592`). The stored URL is the PDF. The day is the "completed an inspection on" date, then the licensee line, then "During a visit on". Month-only dates stay the first of `posted_month`, which the profile already prints as a month.
 
-Illinois: guest `FacilitySearchLookupHomePage.getFaciliyResult` and `LLCS_LicensePageUnauth.getLicenseResult` return the roster and `licId`. They do not return a survey PDF. The FOIA `tags` cell is the citation count. "none", "No Violations", and "NONE" are zero. A blank cell is unknown. A "no violations" line does not erase a 295 line in the same cell. `source_url` stays empty. The 30 rows already set to `https://llcs.dph.illinois.gov/s/?language=en_US#license=` are the lookup shell, which `il_llcs_documents.py` already refuses. This does not change the 2026-11 roster decision. Gate proposal, not implemented: accept a visit when it has a date, a count, and the FOIA visit id in `source_event_id`.
+Illinois: guest `FacilitySearchLookupHomePage.getFaciliyResult` and `LLCS_LicensePageUnauth.getLicenseResult` return the roster and `licId`. They do not return a survey PDF. The FOIA `tags` cell is the citation count. "none", "No Violations", and "NONE" are zero. A blank cell is unknown. A "no violations" line does not erase a 295 line in the same cell. `source_url` stays empty. The 30 rows already set to `https://llcs.dph.illinois.gov/s/?language=en_US#license=` are the lookup shell, which `il_llcs_documents.py` already refuses. This does not change the 2026-11 roster decision. Gate proposal, implemented the same day (see the entry above): accept a visit when it has a date, a count, and the FOIA visit id in `source_event_id`.
 
 Utah: `license_number` is empty. The join is ArcGIS `external_id` `F23-106488` to `GET https://cclapi.dlbc.utah.gov/api/public/facilities/106488`. The public page is `https://ccl.utah.gov/facility/106488`. Dates and `findings[]` counts were already stored. The insert had been writing an empty `source_url`.
 
-Colorado: the May 18, 2026 HFQ workbooks identify an event (`raw_data.co_event_id`, for example `M5T211`, key `23T231|M5T211|complaint`) and already store the date and the citation count. CDPHE's public lookup is the Health Facility Search tableau, one search for every home, not an address for that event. Do not stamp it onto the row. Gate proposal, not implemented: accept a `CO-CDPHE` row when the date, the count, and `co_event_id` are present. This does not turn on weekly Colorado inspection alerts.
+Colorado: the May 18, 2026 HFQ workbooks identify an event (`raw_data.co_event_id`, for example `M5T211`, key `23T231|M5T211|complaint`) and already store the date and the citation count. CDPHE's public lookup is the Health Facility Search tableau, one search for every home, not an address for that event. Do not stamp it onto the row. Gate proposal, implemented the same day (see the entry above): accept a `CO-CDPHE` row when the date, the count, and `co_event_id` are present. This does not turn on weekly Colorado inspection alerts.
 
 Pennsylvania: the 73 live pages missing a count are nursing homes. They have `cms_ccn` and no DHS license id. The count is the number of F-tag rows already stored. The URL is the existing `data.cms.gov` dataset link (`r5ix-sfxw`). The personal-care portal is not their source.
 

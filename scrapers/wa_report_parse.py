@@ -1,9 +1,12 @@
 """Read a Washington DSHS inspection report that already has a text layer.
 
 The forms page (AFHForms / BHForms) posts the month and the PDF address.
-The citation count and the day are inside the PDF. A scanned page with no
-text is left unknown. A consultation that the letter says was not cited is
-a count of zero. A guessed zero is not used for a file we could not read.
+The citation count is the number of distinct WAC requirements the letter
+cites. One requirement is one citation row, even when "This requirement was
+not met" appears twice under that rule or the same rule is restated later
+in the report. The day is inside the PDF. A scanned page with no text is
+left unknown. A consultation that the letter says was not cited is a count
+of zero. A guessed zero is not used for a file we could not read.
 """
 
 from __future__ import annotations
@@ -78,11 +81,16 @@ def _cited_wacs(text: str) -> tuple[tuple[str, str], ...]:
         if match:
             headers.append((index, match.group(1), match.group(2).strip()))
     cited: list[tuple[str, str]] = []
+    seen: set[str] = set()
     for position, (index, code, title) in enumerate(headers):
         end = headers[position + 1][0] if position + 1 < len(headers) else len(lines)
         block = "\n".join(lines[index:end])
-        if _NOT_MET.search(block):
-            cited.append((f"WAC {code}", title[:300]))
+        label = f"WAC {code}"
+        # A repeated rule is one stored citation row. Asis repeats the
+        # not-met line inside one rule. Blue Orchid restates two rules.
+        if _NOT_MET.search(block) and label not in seen:
+            seen.add(label)
+            cited.append((label, title[:300]))
     return tuple(cited)
 
 
@@ -133,7 +141,7 @@ def _count(text: str, citations: tuple[tuple[str, str], ...]) -> int | None:
 
 
 def parse_wa_report(text: str) -> WaReport:
-    """Date, license, and cited-WAC count from one report. Count is None when unread."""
+    """Date, license, and distinct cited-WAC count. Count is None when unread."""
     citations = _cited_wacs(text or "")
     return WaReport(
         license_digits=_license(text or ""),

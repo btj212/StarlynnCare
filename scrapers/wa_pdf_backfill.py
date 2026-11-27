@@ -393,9 +393,10 @@ def backfill_inspection(
             """
             UPDATE inspections
             SET total_deficiency_count = (
-                SELECT count(*) FROM deficiencies
+                SELECT count(DISTINCT code) FROM deficiencies
                 WHERE inspection_id = %s::uuid
                   AND coalesce(description, '') NOT LIKE %s
+                  AND btrim(coalesce(code, '')) <> ''
             )
             WHERE id = %s::uuid
             """,
