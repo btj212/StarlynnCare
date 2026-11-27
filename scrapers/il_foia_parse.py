@@ -181,8 +181,13 @@ def _parse_citation_line(line: str, visit_id: str, line_index: int) -> dict[str,
     }
 
 
-def parse_citations(raw: str, visit_id: str) -> list[dict[str, Any]] | None:
-    """None means the cell says there was no violation. A list is the citations."""
+def parse_citations(raw: str, visit_id: str) -> list[dict[str, Any]]:
+    """Citations on the visit. A 'no violation' line is skipped, not a wipe of the cell.
+
+    An empty cell and a cell that only says there was no violation both return
+    an empty list. That empty list is a count of zero. A line that cites 295
+    stays even when another line in the same cell says none.
+    """
     lines = _split_citation_lines(raw)
     if not lines:
         return []
@@ -190,9 +195,20 @@ def parse_citations(raw: str, visit_id: str) -> list[dict[str, Any]] | None:
     for index, line in enumerate(lines, start=1):
         item = _parse_citation_line(line, visit_id, index)
         if item is None:
-            return None
+            continue
         parsed.append(item)
     return parsed
+
+
+def citation_count_from_tags(raw: str, visit_id: str = "visit") -> int | None:
+    """How many citations the FOIA cell records.
+
+    A blank cell is unknown, not zero. A cell that only says there was no
+    violation is zero. A cited line stays when another line in the cell says none.
+    """
+    if not str(raw or "").strip():
+        return None
+    return len(parse_citations(raw, visit_id))
 
 
 def _subtype_token(token: str) -> str | None:

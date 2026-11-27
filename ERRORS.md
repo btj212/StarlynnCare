@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-27 — Inspection rows looked stale because the count or the URL was dropped
+
+**What went wrong:** `scrape_runs` has no Illinois, Utah, Colorado, or Pennsylvania rows, and the last `wa_dshs_inspections` success is 2026-05-11. That made the Sunday job look stopped. It is not. `state_scan_runs` shows Washington completing through 2026-11-27 (inspections stayed 4,073 that day). Illinois completes with inspections stuck at 1,532 because the weekly job only checks that LLCS has no public PDF. Washington's weekly backfill only selects inventory created after `STATE_SCAN_STARTED_AT`, and `backfill_one` skips when the runner's `.parsed.json` sidecar is gone, so older adult-family-home PDFs never become inspections. Illinois `parse_citations` used to return nothing for a whole cell when any line said "no violation". Utah's insert wrote `source_url` as `''` and `ON CONFLICT DO NOTHING` left it empty. CMS nursing-home ingest wrote the F-tags and the data.cms.gov URL and left `total_deficiency_count` null. A Postgres `~* '\bnone\b'` check undercounted Illinois, because `\b` is a backspace in Postgres.
+
+**What worked instead:** Read the PDF or the FOIA cell in Python. Washington count is cited WAC blocks, or zero when the letter says the consult was not cited. Illinois count skips a no-violation line and keeps the 295 lines; a blank cell stays null. Utah fills `https://ccl.utah.gov/facility/{id}` from `external_id`. Pennsylvania sets the count from the deficiency rows for that `cms_ccn`. Colorado still has no per-event URL. Do not add one.
+
+**Source:** Project `fwvrupjgwvvzqiutwwdg`, 2026-11-27. The one-time scripts are `scrapers/backfill_*_inspection_gate.py`. Dry-run is the default.
+
+---
+
 ## 2026-11 — Texas inspections never ran because the weekly job does not fetch, and the old TULIP account id is dead
 
 **What went wrong:** 546 of 547 Texas memory-care homes have no inspection row. The only rows are the May 2026 smoke capture for license 148715 (exit 2020-02-07 and a synthesized 2023-02-16). `scripts/weekly_inspection_ingest.py` `ingest_tx` looks for a local `.firecrawl/tulip*` directory and returns success when it is missing, so Sunday never called HHSC. The stored source URL uses Account Id `001cv00000RpEjOAAV`. That id now returns an empty general-info payload and `visitType: noData`. The same license's current Account Id is `001cv00000Rs8SAAAZ`. `alf-violations-data.pdf` is a 3-page statewide total, not a facility file. data.texas.gov HHSC CCL is child care.

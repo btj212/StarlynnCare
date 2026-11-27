@@ -339,6 +339,18 @@ def ingest_state(
             else:
                 counts["deficiencies_skipped"] += 1
 
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE inspections
+                SET total_deficiency_count = (
+                    SELECT count(*) FROM deficiencies WHERE inspection_id = %s::uuid
+                )
+                WHERE id = %s::uuid
+                """,
+                (inspection_id, inspection_id),
+            )
+
         # Build narrative from deficiencies for this inspection
         narrative_parts = [
             f"{str(d.get('Deficiency Tag Number') or d.get('F-Tag Number') or '').strip()}: {str(d.get('Deficiency Description', '') or '').strip()}"

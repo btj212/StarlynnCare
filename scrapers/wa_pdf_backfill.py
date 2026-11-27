@@ -389,6 +389,18 @@ def backfill_inspection(
             """,
             (json.dumps(narrative), inspection_id),
         )
+        cur.execute(
+            """
+            UPDATE inspections
+            SET total_deficiency_count = (
+                SELECT count(*) FROM deficiencies
+                WHERE inspection_id = %s::uuid
+                  AND coalesce(description, '') NOT LIKE %s
+            )
+            WHERE id = %s::uuid
+            """,
+            (inspection_id, f"{_WA_PLACEHOLDER_PREFIX}%", inspection_id),
+        )
 
     conn.commit()
     print(f"    Deleted {deleted} placeholders → inserted {inserted} parsed deficiencies")

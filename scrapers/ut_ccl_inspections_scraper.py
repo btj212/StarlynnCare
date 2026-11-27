@@ -204,10 +204,15 @@ INSPECTION_SQL = """
     INSERT INTO inspections (
         facility_id, inspection_date, inspection_type,
         total_deficiency_count, source_url, source_agency
-    ) VALUES (%s, %s, %s, %s, '', 'UT-CCL')
+    ) VALUES (%s, %s, %s, %s, %s, 'UT-CCL')
     ON CONFLICT DO NOTHING
     RETURNING id
 """
+
+# The public page for one CCL id. The API returns the inspection list;
+# this is the page a family opens for that same id.
+def ccl_facility_url(ccl_id: int) -> str:
+    return f"https://ccl.utah.gov/facility/{ccl_id}"
 
 # Deficiency: guard against re-insert by checking existence first.
 # No unique index on (inspection_id, code) globally since other states
@@ -238,7 +243,7 @@ def store_detail(
 ) -> tuple[int, int]:
     """Upsert inspections + findings from a facility detail response."""
     inspections = detail.get("inspections") or []
-    source_url = f"https://ccl.utah.gov/facility/{ccl_id}"
+    source_url = ccl_facility_url(ccl_id)
 
     insp_count = 0
     def_count = 0
@@ -260,7 +265,10 @@ def store_detail(
             sp = f"sp_{ccl_id}_{insp_date.isoformat().replace('-', '')}"
             try:
                 cur.execute(f"SAVEPOINT {sp}")
-                cur.execute(INSPECTION_SQL, (facility_id, insp_date, insp_type, def_count_raw))
+                cur.execute(
+                    INSPECTION_SQL,
+                    (facility_id, insp_date, insp_type, def_count_raw, source_url),
+                )
                 row = cur.fetchone()
                 inspection_id = row[0] if row else None
                 cur.execute(f"RELEASE SAVEPOINT {sp}")
@@ -277,6 +285,17 @@ def store_detail(
                 )
                 row2 = cur.fetchone()
                 inspection_id = row2[0] if row2 else None
+
+            if inspection_id:
+                cur.execute(
+                    """
+                    UPDATE inspections
+                    SET source_url = %s
+                    WHERE id = %s
+                      AND btrim(coalesce(source_url, '')) = ''
+                    """,
+                    (source_url, inspection_id),
+                )
 
             if not inspection_id or not findings:
                 continue

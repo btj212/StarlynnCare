@@ -1,0 +1,9 @@
+{
+  "blank": "",
+  "none": "none",
+  "no_violations": "No Violations",
+  "none_period": "None.",
+  "dash_no_violations": "-No violations",
+  "one_rule": "295.4010 a) 1), T2, $500",
+  "mixed_none_and_rules": "200526 and 200590-no violations_x000D_\n20031, 200769, 200685:_x000D_\n295.2050,T3_x000D_\n295.4010, repeat T2, $1,000_x000D_\n295.4060, repeat, T1, $5,000_x000D_\n295.6000, repeat T1, $2,000"
+}
