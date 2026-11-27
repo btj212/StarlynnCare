@@ -38,7 +38,12 @@ _SCRAPERS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRAPERS_DIR not in sys.path:
     sys.path.insert(0, _SCRAPERS_DIR)
 
-from _summary_guard import reject_false_clean_visit
+from _summary_guard import (
+    CITATION_ROW_SQL,
+    new_run_counters,
+    reject_false_clean_visit,
+    tally_summary_result,
+)
 from _wa_summary_guard import strip_unfounded_dementia_contract
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
@@ -425,6 +430,16 @@ def summarize(
     return None
 
 
+# Count cited deficiencies only. C0000 / WA placeholders are not citations.
+# Do not GREATEST() with total_deficiency_count: that quoted raw row totals
+# (OR 50A034: 33 accordion rows, 31/32 citations) and inflated placeholder visits.
+_CITATION_COUNT_SELECT = f"""
+                           (SELECT count(*)::int FROM deficiencies d
+                            WHERE d.inspection_id = i.id
+                              AND {CITATION_ROW_SQL.strip()}) AS def_count
+"""
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -518,10 +533,7 @@ def main() -> None:
                              )
                            ),
                            f.name, f.state_code, false,
-                           GREATEST(
-                             COALESCE(i.total_deficiency_count, 0),
-                             (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
-                           ) AS def_count
+{_CITATION_COUNT_SELECT}
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -556,10 +568,7 @@ def main() -> None:
                                WHERE t.label ~* 'dementia|memory care|sdc'
                              )
                            ) AS holds_sdc,
-                           GREATEST(
-                             COALESCE(i.total_deficiency_count, 0),
-                             (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
-                           ) AS def_count
+{_CITATION_COUNT_SELECT}
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -581,11 +590,7 @@ def main() -> None:
         print(f"Capped to {len(rows)} (--limit {args.limit})")
 
     workers = max(1, args.workers)
-    processed = 0
-    succeeded = 0
-    failed = 0
-    skipped_empty = 0
-    not_written = 0
+    stats = new_run_counters()
 
     def _summarize_row(row):
         (
@@ -624,19 +629,18 @@ def main() -> None:
 
     with psycopg.connect(DATABASE_URL) as conn:
         def _record(result):
-            nonlocal processed, succeeded, failed
             insp_id, fac_name, summary, status = result
-            processed += 1
             if status == "empty":
-                skipped_empty += 1
+                tally_summary_result(stats, "empty")
                 if workers == 1:
                     print(f"\n→ {fac_name[:45]}\n  — Empty source text, skipping")
                 return
             if status == "dry":
+                tally_summary_result(stats, "dry")
                 print(f"\n→ {fac_name[:45]}\n  [dry-run] {summary}")
                 return
             if status != "ok" or not summary:
-                failed += 1
+                tally_summary_result(stats, "fail")
                 print(f"\n→ {fac_name[:45]}\n  ✗ Summary generation failed")
                 return
             with conn.cursor() as cur:
@@ -661,7 +665,7 @@ def main() -> None:
                 wrote = cur.rowcount > 0
                 conn.commit()
             if not wrote:
-                not_written += 1
+                tally_summary_result(stats, "ok", wrote=False)
                 why = (
                     "row missing"
                     if args.refetch
@@ -669,7 +673,8 @@ def main() -> None:
                 )
                 print(f"\n→ {fac_name[:45]}\n  — Generated but not saved ({why})")
                 return
-            succeeded += 1
+            tally_summary_result(stats, "ok", wrote=True)
+            processed = stats["processed"]
             if workers == 1 or processed % 25 == 0 or processed == len(rows):
                 print(f"  ✓ {processed}/{len(rows)} {str(fac_name)[:40]}: {summary[:110]}")
 
@@ -689,9 +694,9 @@ def main() -> None:
                     _record(future.result())
 
     print(
-        f"\nDone. {succeeded} saved, {failed} failed, "
-        f"{skipped_empty} empty source, {not_written} not written, "
-        f"{processed} processed."
+        f"\nDone. {stats['succeeded']} saved, {stats['failed']} failed, "
+        f"{stats['skipped_empty']} empty source, {stats['not_written']} not written, "
+        f"{stats['processed']} processed."
     )
 
 

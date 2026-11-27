@@ -38,6 +38,8 @@ SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
 
+from _summary_guard import count_citation_rows, is_citation_row
+
 _WA_PLACEHOLDER_PREFIX = "WA DSHS report:"
 
 
@@ -366,16 +368,22 @@ def backfill_inspection(
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT code, description FROM deficiencies
+            SELECT code, description, inspector_narrative FROM deficiencies
             WHERE inspection_id = %s::uuid
-              AND coalesce(description, '') NOT LIKE %s
             ORDER BY code
             """,
-            (inspection_id, f"{_WA_PLACEHOLDER_PREFIX}%"),
+            (inspection_id,),
         )
-        narrative = rebuild_narrative_from_deficiencies(
-            [{"code": code, "description": desc} for code, desc in cur.fetchall()]
+        remaining = cur.fetchall()
+    cited = [
+        {"code": code, "description": desc, "inspector_narrative": narr}
+        for code, desc, narr in remaining
+        if is_citation_row(
+            code=code, description=desc, inspector_narrative=narr
         )
+    ]
+    narrative = rebuild_narrative_from_deficiencies(cited)
+    citation_n = count_citation_rows(cited)
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -384,14 +392,18 @@ def backfill_inspection(
                     coalesce(raw_data, '{}'::jsonb),
                     '{narrative}',
                     %s::jsonb
-                )
+                ),
+                total_deficiency_count = %s
             WHERE id = %s::uuid
             """,
-            (json.dumps(narrative), inspection_id),
+            (json.dumps(narrative), citation_n, inspection_id),
         )
 
     conn.commit()
-    print(f"    Deleted {deleted} placeholders → inserted {inserted} parsed deficiencies")
+    print(
+        f"    Deleted {deleted} placeholders → inserted {inserted} parsed deficiencies "
+        f"(total_deficiency_count={citation_n})"
+    )
     return inserted
 
 

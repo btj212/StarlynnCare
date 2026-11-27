@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — Summarizer counted C0000 / PDF stubs; _record crashed; WA totals stuck at 0
+
+**What went wrong:** `GREATEST(total_deficiency_count, count(*))` handed Claude raw accordion totals (OR 50A034 quoted 33 citations). A clean Oregon visit with only `C0000` looked like it had a deficiency, so the PR 258 guard refused “no deficiencies were cited.” `_record` incremented `skipped_empty` and `not_written` without listing them in `nonlocal`, so those paths crashed. `wa_pdf_backfill.py` replaced placeholders with WAC rows but never set `inspections.total_deficiency_count`, leaving PDF-only visits at 0 (or at the number of website report links).
+
+**What worked instead:** Count only citation rows (`C0000`/`*0000` and `WA DSHS report:` stubs out). Guard on that count. Tally with a dict. After backfill, `UPDATE inspections SET total_deficiency_count = <non-placeholder citation rows>`.
+
+**Source:** OR 50A034; clean OR kitchen C0000 visits; WA PDF-only inspections.
+
+---
+
 ## 2026-11 — --refetch generated summaries and wrote none; intro date lagged the PDF month
 
 **What went wrong:** The ID-gated refetch job summarized 99 inspections and saved 0. SELECT dropped the `narrative_summary IS NULL` filter under `--refetch`, but UPDATE still required `WHERE id=%s AND narrative_summary IS NULL`. Claude also said "no deficiencies" / "does not specify whether deficiencies were cited" for visits whose source cites WAC 388-78A-2120, 24701, 2600 (Fields 2669, Avamere 2460). WA profile intro used `inspections[0]` ("Last inspected Sep 2024") while the header used `wa_latest_posted_report` ("Last inspection Jun 2026").

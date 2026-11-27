@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Citation count excludes OR C0000 and WA PDF stubs
+
+**Decided:** Inspection summaries and `inspections.total_deficiency_count` count cited deficiencies, not raw `deficiencies` rows. Oregon tags `C0000` / `*0000` (and `V0000`, `M0000`, …) are initial comments. Washington rows whose text starts with `WA DSHS report:` (or `—: WA DSHS report:`) are PDF-link placeholders, not WAC citations. `summarize_inspections.py` passes that filtered count to Claude and to the PR 258 clean-visit guard, so a clean OR kitchen visit with only C0000 may say no deficiencies were cited, and OR 50A034 is not told it has 33 citations. `wa_pdf_backfill.py` writes `inspections.total_deficiency_count` (that column name) after swapping placeholders for parsed WAC rows. Summarizer run counters live on a dict so `skipped_empty` / `not_written` cannot UnboundLocal.
+
+**Rejected:** `GREATEST(total_deficiency_count, count(*))`. Counting every accordion row. Leaving PDF-only visits at 0 after a successful parse.
+
+**Source:** OR 50A034 (33 raw / 31 stored); clean OR C0000 kitchen visits; WA PDF-only `total_deficiency_count = 0`.
+
+---
+
 ## 2026-11 — Summary refetch must overwrite; last-inspection date is one value
 
 **Decided:** `summarize_inspections.py --refetch` overwrites `narrative_summary` for the selected rows. The write used to keep `AND narrative_summary IS NULL`, so a 99-inspection refetch saved nothing. Do not generate a summary when source text is empty. A post-check refuses a summary that claims no deficiencies / in compliance / unspecified findings when the inspection has deficiency rows or the source cites a rule (Fields 2669 June 2025, Avamere 2460 May 2025). Count existing mismatches with `scripts/count_summary_deficiency_mismatches.py` (read-only).

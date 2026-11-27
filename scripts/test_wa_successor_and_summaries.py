@@ -98,6 +98,17 @@ def test_false_clean_visit() -> None:
     assert not claims_clean_visit(
         "This follow-up visit is in the public file. No citation text was included for this visit."
     )
+    # Oregon C0000 is a cover comment. A clean visit with only that tag
+    # should be allowed to say no deficiencies were cited.
+    c0000_source = (
+        "The findings of the kitchen inspection, conducted 1/31/24, are documented "
+        "in this report. The survey was conducted to determine compliance with the OARs."
+    )
+    assert not reject_false_clean_visit(
+        "A kitchen inspection found no deficiencies were cited.",
+        deficiency_count=0,
+        source_text=c0000_source,
+    )
 
 
 if __name__ == "__main__":
