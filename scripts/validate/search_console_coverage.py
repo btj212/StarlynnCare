@@ -138,19 +138,13 @@ def facility_listed_in_sitemap(facts: FacilityFacts) -> bool:
 
 
 def facility_listed_on_hub(facts: FacilityFacts) -> bool:
-    """City hub / A–Z listed set. Same as facilityListedOnHub."""
-    if facts.inspections < 1:
-        return False
-    return not az_small_home_without_citations(
-        facts.state_code, facts.beds, facts.deficiencies
-    )
+    """Every publishable home is listed. Same as facilityListedOnHub."""
+    del facts
+    return True
 
 
 def listing_hub_marked_noindex(facilities: list[FacilityFacts]) -> bool:
-    return bool(facilities) and all(
-        az_small_home_without_citations(item.state_code, item.beds, item.deficiencies)
-        for item in facilities
-    )
+    return bool(facilities) and all(not facility_listed_on_hub(item) for item in facilities)
 
 
 def facility_cohort(facts: FacilityFacts | None) -> str:
@@ -417,7 +411,7 @@ def _examples(urls: list[str], limit: int = 12) -> list[str]:
 
 
 def excluded_city_hubs(facilities: list[FacilityFacts]) -> list[str]:
-    """City hubs whose every publishable home is an excluded Arizona small home."""
+    """Cities with homes but no listed home. That set is empty once every home is listed."""
     by_city: dict[tuple[str, str], list[FacilityFacts]] = {}
     for facts in facilities:
         if facts.state_code != "AZ" or not facts.city_slug:
@@ -647,7 +641,7 @@ def render_report(
         )
     lines.extend(["", "## Hub notes", ""])
     lines.append(
-        "A hub stays indexable when it has one home worth ranking. A county URL that lists a single city also stays. The county name is its own page. A hub is noindex only when every home on it is an excluded Arizona small home."
+        "A hub stays indexable when it lists at least one home. A county URL that lists a single city also stays. The county name is its own page."
     )
     lines.append("")
     if excluded_hubs:
@@ -717,7 +711,7 @@ def assign_cohorts(
     if single_city_counties:
         hub_notes.append(
             f"- {single_city_counties} county URLs in this sample list homes from only one city. "
-            "They stay indexable. The county name is its own page, and this pass only drops a hub when every home on it is an excluded Arizona small home."
+            "They stay indexable. The county name is its own page."
         )
     return cohorts, hub_notes
 
@@ -827,17 +821,17 @@ def select_samples(validation: dict[str, Any], cohorts: dict[tuple[str, str, str
 
 
 def assert_index_policy() -> None:
-    """Publishable pages stay in the sitemap. City hubs still require an inspection."""
+    """Publishable pages stay in the sitemap. A city hub lists every one of them."""
     cases = [
         # state, beds, defs, inspections, reviews, tours, photos, noindex, sitemap, hub
         ("AZ", 6, 2, 3, 0, 0, 0, False, True, True),
         ("IL", None, 0, 2, 0, 0, 0, False, True, True),
-        ("AZ", 8, 0, 1, 0, 0, 1, False, True, False),
+        ("AZ", 8, 0, 1, 0, 0, 1, False, True, True),
         ("OR", 6, 0, 2, 0, 0, 0, False, True, True),
         ("WA", 40, 0, 4, 0, 0, 0, False, True, True),
-        ("TX", 80, 0, 0, 0, 0, 0, False, True, False),
-        ("CA", 20, 0, 0, 0, 0, 2, False, True, False),
-        ("WA", 6, 0, 0, 0, 0, 0, False, True, False),
+        ("TX", 80, 0, 0, 0, 0, 0, False, True, True),
+        ("CA", 20, 0, 0, 0, 0, 2, False, True, True),
+        ("WA", 6, 0, 0, 0, 0, 0, False, True, True),
     ]
     for state, beds, deficiencies, inspections, reviews, tours, photos, noindex, sitemap, hub in cases:
         facts = FacilityFacts(

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { loadListedCountsForSlugs, loadStateCityCounts } from "@/lib/facility/stateCityCounts";
+import { cityHubPageExists } from "@/lib/seo/indexability";
 
 type Props = {
   stateSlug: string;
@@ -75,7 +76,7 @@ export async function SiblingCityHubLinks({
     const seen = new Set<string>();
     const filtered = preferredNearby.flatMap((n) => {
       const row = counted.get(n.slug);
-      if (!row || row.count < 1) return [];
+      if (!row || !cityHubPageExists(row.count)) return [];
       if (seen.has(row.slug)) return [];
       seen.add(row.slug);
       return [{ slug: row.slug, name: n.name || row.name, count: row.count }];
@@ -101,7 +102,7 @@ export async function SiblingCityHubLinks({
   const counted = await loadListedCountsForSlugs(stateCode, siblings);
   const filtered = siblings
     .map((slug) => counted.get(slug) ?? { slug, name: titleFromSlug(slug), count: 0 })
-    .filter((c) => c.count > 0)
+    .filter((c) => cityHubPageExists(c.count))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   if (filtered.length === 0) return null;
 

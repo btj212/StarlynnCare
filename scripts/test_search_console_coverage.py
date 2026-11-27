@@ -68,10 +68,10 @@ class CoverageCohortTests(unittest.TestCase):
         self.assertTrue(facility_listed_in_sitemap(facts))
         self.assertEqual(facility_cohort(facts), "enrich")
 
-    def test_a_hub_of_only_excluded_homes_cannot_justify_a_listing(self) -> None:
-        """The hub would only list pages the facility rule already told Google not to index."""
+    def test_a_hub_of_only_small_homes_is_still_a_hub(self) -> None:
+        """Small homes are listed. Missing prose is a gap to fill, not a reason to drop the hub."""
         homes = [_facts(slug="one"), _facts(slug="two", beds=6)]
-        self.assertEqual(hub_cohort(homes), "noindex")
+        self.assertEqual(hub_cohort(homes), "enrich")
 
     def test_one_cited_home_keeps_the_hub(self) -> None:
         """A city page still has a home worth ranking, so the hub stays."""

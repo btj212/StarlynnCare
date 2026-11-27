@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — City hubs list every publishable home, including small homes
+
+**Decided:** A city hub lists every publishable home in that city, each in exactly one section. Homes of 6 beds or fewer go in a "Small homes" section (deck: licensed homes with 6 or fewer residents; first 24, then "Show all N"), unless a Washington tier chip already placed them in "Confirmed to accept residents with dementia" or "Homes with a dementia credential". Those stay in that section and keep the chip. Arizona homes of 7–10 beds are not called small homes; they join memory care or other licensed facilities. The headline, the state-hub city card, nearby-city counts, and the homepage city count all quote that listed set. A city hub exists only when that set has at least one home (`cityHubPageExists`). The state hub and the sitemap do not link a city below that bar. Pennsylvania still collapses same-name rows at the same ZIP before the number is quoted.
+
+**Why:** 604 live Washington adult family homes and 369 live Arizona homes were publishable and on no hub. Mesa's page said 145 because the old listed set dropped 24 homes of 10 beds or fewer with no citations; the other 145 included 59 homes of 6 beds or fewer that already had an inspection. The Arizona state-hub card said 150 because the city query was not paged and PostgREST returned 1,000 of 1,923 rows.
+
+**Rejected:** Putting 7–10 bed homes in the "6 or fewer" section. Rendering every non-small card (Tucson has 236). Changing `publishable`, `serves_memory_care`, or the dementia tier definition. Changing H1 wording. Moving a confirmed-accepts or credential home into Small homes.
+
+**This supersedes** the 2026-11 "City hub listed set" entry below, which kept Arizona homes of 10 beds or fewer with no citations, and homes of 6 beds or fewer with no inspection, off the hub. It also supersedes the sitemap entry's line that hubs still require an inspection so Mesa stays at 145. It does not change the three Washington display labels.
+
+**Source:** Blake, task 8, 2026-11-27. `facilityListedOnHub` in `src/lib/seo/indexability.ts`.
+
+---
+
 ## 2026-11-27 — Facility profile title is the inspection-record template again
 
 **Decided:** A facility profile title is `{Marketing Name}, {City}: Inspection Record & Citations ({Year})`, 70 characters or fewer. Year is the build or request year. When the line is too long, drop ` & Citations`, then ` (Year)`, then `Inspection Record`, leaving `{Name}, {City}`. Marketing name is `content.marketing_name` or `facilities.marketing_name` when one is stored, otherwise the formatted legal name. The H1 is that same name. Washington tier 2 still appends `, Accepts Dementia` or `, Dementia Credential` only when the chosen title still fits. The template does not add the words Memory Care.

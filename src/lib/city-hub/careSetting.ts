@@ -236,7 +236,35 @@ export type CityHubCardGroup =
   | "other"
   | "small";
 
-/** Which first-grid section a card belongs in. Tier 2 is its own section even when the home has 6 or fewer beds. */
+export const SMALL_HOMES_SECTION_TITLE = "Small homes";
+
+export const SMALL_HOMES_SECTION_DECK =
+  "Licensed homes with 6 or fewer residents.";
+
+/** First paint of the Small homes section. The rest open with “Show all N”. */
+export const SMALL_HOMES_PREVIEW_COUNT = 24;
+
+/**
+ * Card sections, top to bottom. Memory care, then the two Washington tier
+ * sections, then Small homes, then other licensed facilities. A home is in
+ * exactly one of these.
+ */
+export const CITY_HUB_SECTION_ORDER = [
+  "memory-care-large",
+  "memory-care-medium",
+  "confirmed-accepts",
+  "credential",
+  "small",
+  "other",
+] as const;
+
+export type CityHubSectionId = (typeof CITY_HUB_SECTION_ORDER)[number];
+
+/**
+ * Which first-grid section a card belongs in. A Washington tier-2 home
+ * stays in that section even at 6 beds or fewer, so it is not also listed
+ * under Small homes. Every other home of 6 beds or fewer is Small homes.
+ */
 export function cityHubCardGroup(input: {
   careChip?: string | null;
   capacityTier: "small" | "medium" | "large" | "unknown";
@@ -247,4 +275,17 @@ export function cityHubCardGroup(input: {
   if (input.capacityTier === "small") return "small";
   if (input.inMemoryCareGroup) return "memory-care";
   return "other";
+}
+
+/** One section id per home. Large and medium memory care are separate headings. */
+export function cityHubSectionId(input: {
+  careChip?: string | null;
+  capacityTier: "small" | "medium" | "large" | "unknown";
+  inMemoryCareGroup: boolean;
+}): CityHubSectionId {
+  const group = cityHubCardGroup(input);
+  if (group === "memory-care") {
+    return input.capacityTier === "large" ? "memory-care-large" : "memory-care-medium";
+  }
+  return group;
 }

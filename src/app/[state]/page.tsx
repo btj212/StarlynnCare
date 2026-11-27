@@ -20,7 +20,9 @@ import {
 import { OR_FAQS, WA_FAQS, MN_FAQS, TX_FAQS, CO_FAQS, type FaqItem } from "@/lib/content/stateFaqs";
 import { getStateHubConfig } from "@/lib/stateHubConfigs";
 import { careSettingCopy } from "@/lib/city-hub/careSetting";
-import { loadStateHubData } from "@/lib/data/stateHub";
+import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
+import { loadPublishableCityRows, loadStateHubData } from "@/lib/data/stateHub";
+import { cityHubPageExists } from "@/lib/seo/indexability";
 import { StateHubSections } from "@/components/state-hub/StateHubSections";
 import {
   SampleFacilityRotationProvider,
@@ -155,19 +157,24 @@ export default async function StatePage({ params }: PageProps) {
   const cities = regions.filter((r) => r.kind === "city");
 
   const supabase = tryPublicSupabaseClient();
-  // Track 7+ bed facilities (medium/large/unknown tier) and small (≤6) separately
-  const countsByCity = new Map<string, number>();         // 7+ bed publishable
-  const smallCountsByCity = new Map<string, number>();    // ≤6 bed publishable
+  const countsByCity = new Map<string, number>();
   let totalPublishable = 0;
   let fetchError: string | null = null;
   let stateLastRefreshed: string | null = null;
   let stateFirstPublishedAt: string | null = null;
 
   const slugDisplayName = new Map<string, string>();
+  type CitySourceRow = {
+    id: string;
+    name: string | null;
+    zip: string | null;
+    city_slug: string | null;
+  };
+  let sourceRows: CitySourceRow[] = [];
 
   if (supabase) {
-    const [dataRes, refreshRes, firstRes] = await Promise.all([
-      supabase.from("facilities").select("city_slug, city, capacity_tier").eq("state_code", state.code).eq("publishable", true),
+    const [cityRes, refreshRes, firstRes] = await Promise.all([
+      loadPublishableCityRows(supabase, state.code),
       supabase.from("facilities").select("updated_at").eq("state_code", state.code).eq("publishable", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("facilities").select("created_at").eq("state_code", state.code).eq("publishable", true).order("created_at", { ascending: true }).limit(1).maybeSingle(),
     ]);
@@ -177,30 +184,56 @@ export default async function StatePage({ params }: PageProps) {
     stateFirstPublishedAt = (firstRes.data as { created_at: string } | null)?.created_at
       ? new Date((firstRes.data as { created_at: string }).created_at).toISOString()
       : null;
-    const { data, error } = dataRes;
-    if (error) {
-      fetchError = error.message;
+    if (cityRes.error) {
+      fetchError = cityRes.error;
     } else {
-      for (const row of data ?? []) {
-        const slug = (row as { city_slug: string | null; city: string | null; capacity_tier: string | null }).city_slug ?? "";
-        const cityLabel = (row as { city: string | null }).city?.trim();
-        const tier = (row as { city_slug: string | null; capacity_tier: string | null }).capacity_tier ?? "unknown";
+      sourceRows = cityRes.rows;
+      const bySlug = new Map<string, CitySourceRow[]>();
+      for (const row of cityRes.rows) {
+        const slug = row.city_slug ?? "";
+        const cityLabel = row.city?.trim();
         if (!slug) continue;
         if (cityLabel && !slugDisplayName.has(slug)) slugDisplayName.set(slug, cityLabel);
         totalPublishable += 1;
-        if (tier === "small") {
-          smallCountsByCity.set(slug, (smallCountsByCity.get(slug) ?? 0) + 1);
-        } else {
-          countsByCity.set(slug, (countsByCity.get(slug) ?? 0) + 1);
-        }
+        const list = bySlug.get(slug);
+        if (list) list.push(row);
+        else bySlug.set(slug, [row]);
+      }
+      for (const [slug, list] of bySlug) {
+        countsByCity.set(
+          slug,
+          quoteHomesOnPage(
+            list.map((row) => ({
+              id: row.id,
+              name: row.name ?? "",
+              zip: row.zip,
+              inspections: 0,
+              total_citations: 0,
+            })),
+            state.code,
+          ).length,
+        );
       }
     }
   }
 
-  const countyCount = (region: Region) =>
-    region.citySlugs.reduce((n, s) => n + (countsByCity.get(s) ?? 0), 0);
-  const countySmallCount = (region: Region) =>
-    region.citySlugs.reduce((n, s) => n + (smallCountsByCity.get(s) ?? 0), 0);
+  const listedInCity = (slug: string) => countsByCity.get(slug) ?? 0;
+
+  const countyCount = (region: Region) => {
+    const slugSet = new Set(region.citySlugs);
+    return quoteHomesOnPage(
+      sourceRows
+        .filter((row) => row.city_slug && slugSet.has(row.city_slug))
+        .map((row) => ({
+          id: row.id,
+          name: row.name ?? "",
+          zip: row.zip,
+          inspections: 0,
+          total_citations: 0,
+        })),
+      state.code,
+    ).length;
+  };
 
   const statePageUrl = canonicalFor(`/${state.slug}`);
   const statePageTitle = buildStateHubTitle(state.name, REGULATOR_ABBR[state.code] ?? "state", state.code);
@@ -282,7 +315,7 @@ export default async function StatePage({ params }: PageProps) {
             </div>
           )}
 
-          {counties.filter((r) => countyCount(r) + countySmallCount(r) > 0).length > 0 && (
+          {counties.filter((r) => cityHubPageExists(countyCount(r))).length > 0 && (
             <section aria-labelledby="counties-heading">
               <SectionHead
                 label="Counties we cover"
@@ -290,10 +323,9 @@ export default async function StatePage({ params }: PageProps) {
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 {counties
-                  .filter((r) => countyCount(r) + countySmallCount(r) > 0)
+                  .filter((r) => cityHubPageExists(countyCount(r)))
                   .map((region) => {
                     const n = countyCount(region);
-                    const small = countySmallCount(region);
                     return (
                       <Link
                         key={region.slug}
@@ -306,11 +338,6 @@ export default async function StatePage({ params }: PageProps) {
                         </span>
                         <p className="mt-2 font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-[0.04em]">
                           {n} {n === 1 ? "facility" : "facilities"}
-                          {small > 0 && (
-                            <span className="ml-1.5 text-[10.5px]">
-                              · {small} small care home{small !== 1 ? "s" : ""}
-                            </span>
-                          )}
                         </p>
                       </Link>
                     );
@@ -327,14 +354,9 @@ export default async function StatePage({ params }: PageProps) {
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {cities
-                  .filter(
-                    (c) =>
-                      (countsByCity.get(c.slug) ?? 0) > 0 ||
-                      (smallCountsByCity.get(c.slug) ?? 0) > 0
-                  )
+                  .filter((c) => cityHubPageExists(listedInCity(c.slug)))
                   .map((region) => {
-                    const n = countsByCity.get(region.slug) ?? 0;
-                    const small = smallCountsByCity.get(region.slug) ?? 0;
+                    const n = listedInCity(region.slug);
                     return (
                       <Link
                         key={region.slug}
@@ -347,7 +369,6 @@ export default async function StatePage({ params }: PageProps) {
                         </span>
                         <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4">
                           {n > 0 ? n : ""}
-                          {small > 0 ? ` +${small}` : ""}
                         </span>
                       </Link>
                     );
@@ -359,23 +380,16 @@ export default async function StatePage({ params }: PageProps) {
           {(() => {
             const renderedCitySlugs = new Set(
               cities
-                .filter(
-                  (c) =>
-                    (countsByCity.get(c.slug) ?? 0) > 0 ||
-                    (smallCountsByCity.get(c.slug) ?? 0) > 0,
-                )
+                .filter((c) => cityHubPageExists(listedInCity(c.slug)))
                 .map((c) => c.slug),
             );
             const allPublishableSlugs = new Set<string>();
             for (const s of countsByCity.keys()) allPublishableSlugs.add(s);
-            for (const s of smallCountsByCity.keys()) allPublishableSlugs.add(s);
             const extraCitySlugs = [...allPublishableSlugs]
-              .filter((s) => !renderedCitySlugs.has(s))
+              .filter((s) => cityHubPageExists(listedInCity(s)) && !renderedCitySlugs.has(s))
               .sort((a, b) => {
-                const ta =
-                  (countsByCity.get(a) ?? 0) + (smallCountsByCity.get(a) ?? 0);
-                const tb =
-                  (countsByCity.get(b) ?? 0) + (smallCountsByCity.get(b) ?? 0);
+                const ta = listedInCity(a);
+                const tb = listedInCity(b);
                 if (tb !== ta) return tb - ta;
                 return a.localeCompare(b);
               });
@@ -395,8 +409,7 @@ export default async function StatePage({ params }: PageProps) {
                 />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {extraCitySlugs.map((slug) => {
-                    const n = countsByCity.get(slug) ?? 0;
-                    const small = smallCountsByCity.get(slug) ?? 0;
+                    const n = listedInCity(slug);
                     const label = slugDisplayName.get(slug) ?? titleCaseSlug(slug);
                     return (
                       <Link
@@ -410,7 +423,6 @@ export default async function StatePage({ params }: PageProps) {
                         </span>
                         <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-4">
                           {n > 0 ? n : ""}
-                          {small > 0 ? ` +${small}` : ""}
                         </span>
                       </Link>
                     );

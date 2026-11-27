@@ -1,7 +1,8 @@
 import { countSeriousDeficiencies } from "@/lib/data/seriousDeficiencyCount";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { COVERED_STATES, stateFromCode } from "@/lib/states";
-import { AZ_SMALL_BED_LIMIT, facilityListedOnHub } from "@/lib/seo/indexability";
+import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
+import { AZ_SMALL_BED_LIMIT, cityHubPageExists, facilityListedOnHub } from "@/lib/seo/indexability";
 import { loadLatestInspectionDates, todayIsoDate } from "@/lib/data/inspectionDates";
 
 export type NationalStateSummary = {
@@ -103,6 +104,7 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
   // Build city sets and leaderboard from paginated rows
   const stateCitySets = new Map<string, Set<string>>();
   const cityBuckets = new Map<string, { slug: string; name: string; count: number; stateCode: string }>();
+  const listedByCity = new Map<string, CityRow[]>();
   const azSmallIds = cityRows
     .filter(
       (row) =>
@@ -122,10 +124,7 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
     const citySlug = row.city_slug;
     if (!code || !citySlug) continue;
 
-    if (!stateCitySets.has(code)) stateCitySets.set(code, new Set());
-    stateCitySets.get(code)!.add(citySlug);
-
-    // Same listed set as the city page (homesForCityIndex). Sitemap is every publishable profile.
+    // Same listed set as the city page. A city with no listed home has no hub page.
     const listed = facilityListedOnHub({
       stateCode: code,
       beds: row.beds,
@@ -135,17 +134,36 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
     if (!listed) continue;
 
     const cityKey = `${code}:${citySlug}`;
-    const existing = cityBuckets.get(cityKey);
-    if (existing) {
-      existing.count++;
-    } else {
-      cityBuckets.set(cityKey, {
-        slug: citySlug,
-        name: row.city?.trim() || citySlug,
-        count: 1,
-        stateCode: code,
-      });
-    }
+    const list = listedByCity.get(cityKey);
+    if (list) list.push(row);
+    else listedByCity.set(cityKey, [row]);
+  }
+
+  for (const [, list] of listedByCity) {
+    const code = list[0]?.state_code;
+    const citySlug = list[0]?.city_slug;
+    if (!code || !citySlug) continue;
+    const quoted = quoteHomesOnPage(
+      list.map((row) => ({
+        id: row.id,
+        name: row.name ?? "",
+        zip: row.zip,
+        inspections: 0,
+        total_citations: 0,
+      })),
+      code,
+    );
+    if (!cityHubPageExists(quoted.length)) continue;
+
+    if (!stateCitySets.has(code)) stateCitySets.set(code, new Set());
+    stateCitySets.get(code)!.add(citySlug);
+
+    cityBuckets.set(`${code}:${citySlug}`, {
+      slug: citySlug,
+      name: list.find((row) => row.city?.trim())?.city?.trim() || citySlug,
+      count: quoted.length,
+      stateCode: code,
+    });
   }
 
   const topCities: NationalCityRow[] = Array.from(cityBuckets.values())
@@ -201,6 +219,8 @@ type CityRow = {
   state_code: string;
   city_slug: string | null;
   city: string | null;
+  name: string | null;
+  zip: string | null;
   beds: number | null;
 };
 
@@ -212,8 +232,9 @@ async function loadPublishableCityRows(
   for (let from = 0; ; from += pageSize) {
     const { data, error } = await supabase
       .from("facilities")
-      .select("id, state_code, city_slug, city, beds")
+      .select("id, state_code, city_slug, city, name, zip, beds")
       .eq("publishable", true)
+      .order("id")
       .range(from, from + pageSize - 1);
     if (error) {
       console.error("[nationalHome] city page failed:", error.message);

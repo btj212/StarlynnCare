@@ -43,7 +43,7 @@ const cases: Case[] = [
     listed: true,
   },
   {
-    name: "a small Arizona home with no citations stays indexable but off the city hub",
+    name: "a small Arizona home with no citations is listed on the city hub",
     stateCode: "AZ",
     beds: 8,
     deficiencyCount: 0,
@@ -52,7 +52,7 @@ const cases: Case[] = [
     tourQuestionCount: 0,
     photoCount: 1,
     noindex: false,
-    listed: false,
+    listed: true,
   },
   {
     name: "a small uncited home outside Arizona stays indexable",
@@ -91,7 +91,7 @@ const cases: Case[] = [
     listed: true,
   },
   {
-    name: "a Washington AFH with no inspection row stays indexable and off the city hub",
+    name: "a Washington AFH with no inspection row is listed on the city hub",
     stateCode: "WA",
     beds: 6,
     deficiencyCount: 0,
@@ -100,7 +100,7 @@ const cases: Case[] = [
     tourQuestionCount: 0,
     photoCount: 0,
     noindex: false,
-    listed: false,
+    listed: true,
   },
   {
     name: "a California home with no inspections yet (Vista del Sol analog) is listed",
