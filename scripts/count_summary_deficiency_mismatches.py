@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only count of summaries that claim a clean visit despite deficiencies.
+"""Read-only count of summaries whose deficiency claim disagrees with the file.
 
 Does not write. Uses DATABASE_URL.
 
@@ -8,7 +8,8 @@ Does not write. Uses DATABASE_URL.
 
 The SQL net is also printed so it can be run in the SQL editor. Postgres
 POSIX regex is broader than the Python gate; this script re-filters with
-the same `claims_clean_visit` used when generating summaries.
+`citation_mismatch`, which uses the same `is_real_citation` rule as the
+summarizer.
 """
 
 from __future__ import annotations
@@ -28,7 +29,9 @@ sys.path.insert(0, str(ROOT / "scrapers"))
 from _summary_guard import (  # noqa: E402
     AUDIT_CLAIM_PATTERN,
     AUDIT_SQL,
-    claims_clean_visit,
+    citation_mismatch,
+    coerce_deficiency_rows,
+    real_citation_count,
 )
 
 load_dotenv(ROOT / ".env.local")
@@ -64,17 +67,21 @@ def main() -> None:
 
     for state, license_number, name, _insp_id, insp_date, total_def, def_rows, summary in rows:
         sql_hits += 1
-        if not claims_clean_visit(summary):
+        parsed_rows = coerce_deficiency_rows(def_rows)
+        if not citation_mismatch(summary, parsed_rows, state):
             continue
+        real_count = real_citation_count(parsed_rows, state)
         by_state[state] += 1
         if args.examples > 0:
             bucket = examples.setdefault(state, [])
             if len(bucket) < args.examples:
-                bucket.append((license_number, name, insp_date, total_def, def_rows, summary))
+                bucket.append(
+                    (license_number, name, insp_date, total_def, real_count, summary)
+                )
 
     total = sum(by_state.values())
     print(f"SQL net: {sql_hits} rows")
-    print(f"After Python filter (clean-visit claim + deficiency count > 0): {total}\n")
+    print(f"After Python filter (summary disagrees with real citation count): {total}\n")
     print("state\tcount")
     for state, count in sorted(by_state.items(), key=lambda item: (-item[1], item[0])):
         print(f"{state}\t{count}")
@@ -84,10 +91,10 @@ def main() -> None:
         print("\nExamples")
         for state in sorted(examples):
             print(f"\n{state}")
-            for license_number, name, insp_date, total_def, def_rows, summary in examples[state]:
+            for license_number, name, insp_date, total_def, real_count, summary in examples[state]:
                 print(
                     f"  {license_number} {name} {insp_date} "
-                    f"total_def={total_def} rows={def_rows}"
+                    f"stored={total_def} real_citations={real_count}"
                 )
                 print(f"    {summary}")
 

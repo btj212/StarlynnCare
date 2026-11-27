@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Real citation count, not every deficiency row
+
+**Decided:** `scrapers/_summary_guard.py` `is_real_citation(row, state)` is the only rule for whether a deficiency row is a cited deficiency. Oregon tags ending in `0000` (C0000, Z0000, any prefix the accordion importer writes as `tag` + letter + digits) are initial comments, not citations. Washington text that starts with `WA DSHS report:` is a placeholder, not a citation. Washington tags starting with `__wa_` are excluded from counts until we know whether they are citations. A row with a blank tag and blank text is not a citation in any state. `real_count` is that set after dropping duplicate tag+text rows. The summarizer prompt, the post-check, `scripts/count_summary_deficiency_mismatches.py`, and the Washington PDF backfill all use it. The prompt tells the model the number and lists only real citations; Oregon 0000 text may appear labelled as general comments. The post-check rejects a "no deficiencies" summary when `real_count > 0`, rejects a positive deficiency/citation claim when `real_count == 0`, and rejects a stated count (digits or one through twenty) that is not `real_count`. On a PDF swap, `wa_pdf_backfill.py` sets `inspections.total_deficiency_count` (not `total_deficiencies`) in the same transaction to the Washington real-citation count. It does not change the count when nothing was swapped. `_record` lists `skipped_empty` and `not_written` in `nonlocal`.
+
+This supersedes the source-text half of the 2026-11 refetch post-check below. A cover comment can mention compliance or a rule without being a citation, so source-text matching must not reject a `real_count == 0` summary that says no deficiencies were cited. Visits that still have real citations (Fields 2669, Avamere 2460) are still rejected when the summary says none.
+
+**Rejected:** Counting every `deficiencies` row, and `GREATEST(total_deficiency_count, row count)`, which quoted 33 when two of the rows were Oregon cover tags. Treating `__wa_` hashes as citations before that is confirmed.
+
+**Source:** Oregon refetch of 2026-11-26 (50A165, 50A034). Schema: `supabase/migrations/0001_init.sql`.
+
+---
+
 ## 2026-11 — Summary refetch must overwrite; last-inspection date is one value
 
 **Decided:** `summarize_inspections.py --refetch` overwrites `narrative_summary` for the selected rows. The write used to keep `AND narrative_summary IS NULL`, so a 99-inspection refetch saved nothing. Do not generate a summary when source text is empty. A post-check refuses a summary that claims no deficiencies / in compliance / unspecified findings when the inspection has deficiency rows or the source cites a rule (Fields 2669 June 2025, Avamere 2460 May 2025). Count existing mismatches with `scripts/count_summary_deficiency_mismatches.py` (read-only).

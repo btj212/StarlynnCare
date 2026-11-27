@@ -38,6 +38,8 @@ SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
 
+from _summary_guard import real_citation_count
+
 _WA_PLACEHOLDER_PREFIX = "WA DSHS report:"
 
 
@@ -389,6 +391,35 @@ def backfill_inspection(
             """,
             (json.dumps(narrative), inspection_id),
         )
+
+    # Only when this call actually swapped rows. Same transaction as the
+    # delete/insert above; inspections that were not swapped keep their count.
+    if deleted > 0 or inserted > 0:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT code, description, inspector_narrative
+                FROM deficiencies
+                WHERE inspection_id = %s::uuid
+                """,
+                (inspection_id,),
+            )
+            stored = [
+                {
+                    "code": code,
+                    "description": desc,
+                    "inspector_narrative": narrative_text,
+                }
+                for code, desc, narrative_text in cur.fetchall()
+            ]
+            cur.execute(
+                """
+                UPDATE inspections
+                SET total_deficiency_count = %s
+                WHERE id = %s::uuid
+                """,
+                (real_citation_count(stored, "WA"), inspection_id),
+            )
 
     conn.commit()
     print(f"    Deleted {deleted} placeholders → inserted {inserted} parsed deficiencies")
