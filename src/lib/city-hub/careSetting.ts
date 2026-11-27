@@ -8,10 +8,15 @@
  * homes. A home is memory care only with Memory Care Certified status, a
  * Specialized Dementia Care contract, or the operator's own page for that
  * address. An adult family home can qualify only from that operator page.
- * The DSHS dementia specialty is staff training and is not a label.
+ * The DSHS dementia specialty is staff training. On an adult family home it
+ * is a second label, "Accepts residents with dementia", not memory care.
  */
 
-import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import {
+  ACCEPTS_DEMENTIA_CHIP,
+  type DementiaAcceptanceTier,
+  type MemoryCareBasis,
+} from "@/lib/facility/memoryCareBasis";
 
 export type CareSettingCopy = {
   /** Short noun for titles and stats: "Directed Care homes" */
@@ -175,6 +180,7 @@ export function listedInMemoryCareGroup(input: {
   txAlzheimerCertified?: boolean | null;
 }): boolean {
   if (input.stateSlug === "washington" && input.careChip !== undefined) {
+    if (input.careChip === ACCEPTS_DEMENTIA_CHIP) return false;
     return Boolean(input.careChip);
   }
   return (
@@ -187,7 +193,9 @@ export function listedInMemoryCareGroup(input: {
 export function listCareChip(input: {
   stateCode: string;
   basis: MemoryCareBasis;
+  tier?: DementiaAcceptanceTier;
 }): string | null {
+  if (input.tier === "accepts-dementia") return ACCEPTS_DEMENTIA_CHIP;
   const code = input.stateCode.toUpperCase();
   if (input.basis.kind === "memory-care") {
     if (code === "WA") {
@@ -202,5 +210,22 @@ export function listCareChip(input: {
     return "Memory care";
   }
   if (code === "AZ" && input.basis.kind === "care-level") return "Directed Care";
+  if (code === "WA" && /not a secured memory-care unit/i.test(input.basis.label)) {
+    return ACCEPTS_DEMENTIA_CHIP;
+  }
   return null;
+}
+
+export type CityHubCardGroup = "memory-care" | "accepts-dementia" | "other" | "small";
+
+/** Which first-grid section a card belongs in. Tier 2 is its own section even when the home has 6 or fewer beds. */
+export function cityHubCardGroup(input: {
+  careChip?: string | null;
+  capacityTier: "small" | "medium" | "large" | "unknown";
+  inMemoryCareGroup: boolean;
+}): CityHubCardGroup {
+  if (input.careChip === ACCEPTS_DEMENTIA_CHIP) return "accepts-dementia";
+  if (input.capacityTier === "small") return "small";
+  if (input.inMemoryCareGroup) return "memory-care";
+  return "other";
 }

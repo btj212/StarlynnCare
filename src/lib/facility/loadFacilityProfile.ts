@@ -42,7 +42,7 @@ import {
   buildReviewSchema,
   regulatorLicensePageFor,
 } from "@/lib/seo/schema";
-import { memoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import { memoryCareBasis, dementiaAcceptanceTier, waAcceptsDementiaFaqAnswer } from "@/lib/facility/memoryCareBasis";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import {
   inspectionDatePrecision,
@@ -332,12 +332,13 @@ export interface FacilityProfile {
   /**
    * WA memory-care signal badges.
    * Non-null only for WA facilities; null for all other states.
-   * Memory Care Certified and a Specialized Dementia Care contract.
-   * The dementia-specialty training flag is not a badge.
+   * Memory Care Certified, a Specialized Dementia Care contract, or the
+   * second-tier "accepts residents with dementia" badge.
    */
   waMcSignals: {
     memoryCare: boolean;
     sdcp: boolean;
+    acceptsDementia: boolean;
     cmsOverallRating: number | null;
   } | null;
 
@@ -851,6 +852,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
           }
         : null;
   const licenseRecordUrl = regulatorLicensePageFor(facility.state_code, facility.license_number);
+  const acceptanceTier = dementiaAcceptanceTier(facility);
   const careBasis = {
     ...memoryCareBasis({
       ...facility,
@@ -883,8 +885,12 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     memoryCareLabel: careBasis.label,
     servesMemoryCare:
       facility.state_code === "WA"
-        ? careBasis.kind === "memory-care"
+        ? acceptanceTier === "memory-care"
         : facility.serves_memory_care,
+    acceptsDementiaAnswer:
+      acceptanceTier === "accepts-dementia"
+        ? waAcceptsDementiaFaqAnswer(facility.name)
+        : null,
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
     previousLicenseUrl:
@@ -982,7 +988,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
       facility.state_code === "WA"
         ? {
             memoryCare: facility.wa_memory_care_certified ?? false,
-            sdcp: facility.wa_earc_sdc_contracted ?? facility.wa_dementia_care_contract ?? false,
+            sdcp: Boolean(facility.wa_earc_sdc_contracted || facility.wa_dementia_care_contract),
+            acceptsDementia: acceptanceTier === "accepts-dementia",
             cmsOverallRating: facility.cms_overall_rating ?? null,
           }
         : null,

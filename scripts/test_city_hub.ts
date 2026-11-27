@@ -6,7 +6,7 @@ import {
   displayMunicipality,
 } from "../src/lib/city-hub/municipality.ts";
 import { cityHubTitle, cityHubH1, cityHubMetaDescription, cityFaqExtras } from "../src/lib/city-hub/copy.ts";
-import { listCareChip, listedInMemoryCareGroup } from "../src/lib/city-hub/careSetting.ts";
+import { cityHubCardGroup, listCareChip, listedInMemoryCareGroup } from "../src/lib/city-hub/careSetting.ts";
 import { memoryCareBasis } from "../src/lib/facility/memoryCareBasis.ts";
 import type { CityHubGlance } from "../src/lib/city-hub/stats.ts";
 import { findingsCopy } from "../src/lib/city-hub/findings.ts";
@@ -239,7 +239,7 @@ const afhBasisNone = memoryCareBasis({
 });
 assert.equal(
   listCareChip({ stateCode: "WA", basis: afhBasisNone }),
-  null,
+  "Accepts residents with dementia",
 );
 const mccBasis = memoryCareBasis({
   state_code: "WA",
@@ -286,6 +286,39 @@ assert.equal(
   }),
   true,
 );
+assert.equal(
+  listedInMemoryCareGroup({
+    stateSlug: "washington",
+    careChip: "Accepts residents with dementia",
+    servesMemoryCare: true,
+    memoryCareDisclosureFiled: false,
+  }),
+  false,
+);
+assert.equal(
+  cityHubCardGroup({
+    careChip: "Memory Care Certified",
+    capacityTier: "large",
+    inMemoryCareGroup: true,
+  }),
+  "memory-care",
+);
+assert.equal(
+  cityHubCardGroup({
+    careChip: "Accepts residents with dementia",
+    capacityTier: "small",
+    inMemoryCareGroup: false,
+  }),
+  "accepts-dementia",
+);
+assert.equal(
+  cityHubCardGroup({
+    careChip: null,
+    capacityTier: "medium",
+    inMemoryCareGroup: false,
+  }),
+  "other",
+);
 
 const vancouverFaqs = cityFaqExtras({
   region: city("WA", "vancouver", "Vancouver", "washington", "Washington"),
@@ -299,5 +332,7 @@ const certifiedAnswer =
   vancouverFaqs.find((pair) => pair.q.startsWith("What does Memory Care Certified"))?.a ?? "";
 assert.doesNotMatch(certifiedAnswer, /adult family home dementia specialty/);
 assert.match(certifiedAnswer, /don't count it as memory care/);
+assert.match(certifiedAnswer, /Accepts residents with dementia/);
+assert.match(certifiedAnswer, /not a secured or dedicated unit/);
 
 console.log("city hub accuracy checks passed");

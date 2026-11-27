@@ -288,7 +288,7 @@ export function cityFaqExtras(input: {
       },
       {
         q: `What does Memory Care Certified mean in Washington?`,
-        a: `StarlynnCare calls a Washington home memory care only when DSHS lists a Specialized Dementia Care contract or Memory Care Certified status, or the operator's own page for that address describes a memory-care program. Adult family homes can't hold either DSHS designation. Their DSHS 'dementia specialty' means the provider completed state dementia training, and we don't count it as memory care.`,
+        a: `StarlynnCare calls a Washington home memory care only when DSHS lists a Specialized Dementia Care contract or Memory Care Certified status, or the operator's own page for that address describes a memory-care program. A second group is labeled “Accepts residents with dementia.” That is an adult family home whose staff completed state dementia training. It is not a secured or dedicated unit, and we don't count it as memory care.`,
       },
     );
   }

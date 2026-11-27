@@ -21,6 +21,10 @@ import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { regulatorFor } from "@/lib/states/regulators";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import {
+  ACCEPTS_DEMENTIA_JSONLD,
+  dementiaAcceptanceTier,
+} from "@/lib/facility/memoryCareBasis";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { formatRecordDate, type DatePrecision } from "@/lib/format/formatRecordDate";
 import { licensedCity } from "@/lib/facility/licensedCity";
@@ -225,6 +229,16 @@ export function buildLocalBusinessForFacility(
         value: opts.memoryCare.sourceUrl,
       });
     }
+  }
+  if (
+    opts.memoryCare?.kind !== "memory-care" &&
+    dementiaAcceptanceTier(facility) === "accepts-dementia"
+  ) {
+    additionalProperty.push({
+      "@type": "PropertyValue",
+      name: "Dementia care",
+      value: ACCEPTS_DEMENTIA_JSONLD,
+    });
   }
   if (facility.state_code === "AZ" && facility.mc_program_confirmed === true) {
     additionalProperty.push({
@@ -926,6 +940,11 @@ export type FacilityFaqInput = {
    * "memory care facilities".
    */
   servesMemoryCare?: boolean;
+  /**
+   * Second-tier Washington answer. When set, ask "accept residents with
+   * dementia?" and do not also ask "provide memory care?".
+   */
+  acceptsDementiaAnswer?: string | null;
   licenseNumber: string | null;
   licenseUrl: string | null;
   /** DSHS Forms page for a prior license when the URL still uses the old number. */
@@ -988,7 +1007,12 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
   const pairs: FacilityFaqPair[] = [];
   const name = input.facilityName;
 
-  if (input.servesMemoryCare !== false) {
+  if (input.acceptsDementiaAnswer?.trim()) {
+    pairs.push({
+      q: `Does ${name} accept residents with dementia?`,
+      a: input.acceptsDementiaAnswer.trim(),
+    });
+  } else if (input.servesMemoryCare !== false) {
     pairs.push({
       q: `Does ${name} provide memory care?`,
       a: input.memoryCareLabel,

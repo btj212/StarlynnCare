@@ -13,6 +13,7 @@ import { displayCityName } from "@/lib/resolveListingRegion";
 import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
+import { dementiaAcceptanceTier } from "@/lib/facility/memoryCareBasis";
 import { loadFacilityCosts } from "@/lib/cost/loadFacilityCosts";
 import { ComplianceFlagBanner } from "@/components/facility/ComplianceFlag";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
@@ -152,6 +153,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = buildFacilityTitle({
     name: displayName,
     stateName: state.name,
+    stateCode: facility.state_code,
+    waFacilityType: facility.wa_facility_type,
+    dementiaTier: dementiaAcceptanceTier(facility),
     percentile: compositePercentile,
     city: cityLabel,
     citationCount: profile.totals.deficiencies,
