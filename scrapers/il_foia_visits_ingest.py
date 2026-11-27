@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from il_foia_parse import (
     REASON_AMBIGUOUS,
     REASON_UNMATCHED,
+    citation_count_from_tags,
     normalize_facility_name,
     pair_visits,
     parse_visit_row,
@@ -134,11 +135,13 @@ def insert_visit(
         INSERT INTO inspections (
             facility_id, inspection_date, inspection_type,
             is_complaint, civil_money_penalty_total,
+            total_deficiency_count,
             source_url, source_agency, source_event_id, scrape_run_id,
             raw_data
         ) VALUES (
             %(facility_id)s, %(inspection_date)s, %(inspection_type)s,
             %(is_complaint)s, %(civil_money_penalty_total)s,
+            %(total_deficiency_count)s,
             '', %(source_agency)s, %(source_event_id)s, %(scrape_run_id)s,
             %(raw_data)s
         )
@@ -152,6 +155,10 @@ def insert_visit(
             "inspection_type": visit["inspection_type"],
             "is_complaint": visit["is_complaint"],
             "civil_money_penalty_total": visit["civil_penalty_total"],
+            "total_deficiency_count": citation_count_from_tags(
+                str(visit["raw"].get("tags") or ""),
+                visit["source_event_id"] or "visit",
+            ),
             "source_agency": AGENCY,
             "source_event_id": visit["source_event_id"],
             "scrape_run_id": scrape_run_id,

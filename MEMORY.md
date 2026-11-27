@@ -6,6 +6,26 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Inspection gate fields for WA, IL, UT, CO, and PA
+
+**Decided:** A stored inspection can carry a date, a source URL, and a citation count only when each value comes from the regulator's file. Zero is a real count. A blank or unreadable file stays null.
+
+Washington adult family homes: the forms page `https://fortress.wa.gov/dshs/adsaapps/lookup/AFHForms.aspx?Lic=` links to the PDF. The citation count is the number of WAC blocks that say "This requirement was not met". A consultation letter that says the WAC was not cited is zero. A scan with no text layer is not zero. The license on the report must match the roster after stripping leading zeros (`0000754592` and `754592`). The stored URL is the PDF. The day is the "completed an inspection on" date, then the licensee line, then "During a visit on". Month-only dates stay the first of `posted_month`, which the profile already prints as a month.
+
+Illinois: guest `FacilitySearchLookupHomePage.getFaciliyResult` and `LLCS_LicensePageUnauth.getLicenseResult` return the roster and `licId`. They do not return a survey PDF. The FOIA `tags` cell is the citation count. "none", "No Violations", and "NONE" are zero. A blank cell is unknown. A "no violations" line does not erase a 295 line in the same cell. `source_url` stays empty. The 30 rows already set to `https://llcs.dph.illinois.gov/s/?language=en_US#license=` are the lookup shell, which `il_llcs_documents.py` already refuses. This does not change the 2026-11 roster decision. Gate proposal, not implemented: accept a visit when it has a date, a count, and the FOIA visit id in `source_event_id`.
+
+Utah: `license_number` is empty. The join is ArcGIS `external_id` `F23-106488` to `GET https://cclapi.dlbc.utah.gov/api/public/facilities/106488`. The public page is `https://ccl.utah.gov/facility/106488`. Dates and `findings[]` counts were already stored. The insert had been writing an empty `source_url`.
+
+Colorado: the May 18, 2026 HFQ workbooks identify an event (`raw_data.co_event_id`, for example `M5T211`, key `23T231|M5T211|complaint`) and already store the date and the citation count. CDPHE's public lookup is the Health Facility Search tableau, one search for every home, not an address for that event. Do not stamp it onto the row. Gate proposal, not implemented: accept a `CO-CDPHE` row when the date, the count, and `co_event_id` are present. This does not turn on weekly Colorado inspection alerts.
+
+Pennsylvania: the 73 live pages missing a count are nursing homes. They have `cms_ccn` and no DHS license id. The count is the number of F-tag rows already stored. The URL is the existing `data.cms.gov` dataset link (`r5ix-sfxw`). The personal-care portal is not their source.
+
+**Rejected:** Inventing an Illinois or Colorado document URL. Storing zero for a Washington scan or a blank Illinois cell. Matching Utah on `license_number`. Matching the Pennsylvania nursing homes on a DHS license. Editing the Sunday workflow or the publish gate in this change.
+
+**Source:** Read-only SQL on project `fwvrupjgwvvzqiutwwdg`, 2026-11-27. Live pages failing the date + URL + count test: WA 613, IL 300, UT 98, CO 70, PA 73. 5,638 live pages, 1,154 failing.
+
+---
+
 ## 2026-11-27 — City hubs list every publishable home, including small homes
 
 **Decided:** A city hub lists every publishable home in that city, each in exactly one section. Homes of 6 beds or fewer go in a "Small homes" section (deck: licensed homes with 6 or fewer residents; first 24, then "Show all N"), unless a Washington tier chip already placed them in "Confirmed to accept residents with dementia" or "Homes with a dementia credential". Those stay in that section and keep the chip. Arizona homes of 7–10 beds are not called small homes; they join memory care or other licensed facilities. The headline, the state-hub city card, nearby-city counts, and the homepage city count all quote that listed set. A city hub exists only when that set has at least one home (`cityHubPageExists`). The state hub and the sitemap do not link a city below that bar. Pennsylvania still collapses same-name rows at the same ZIP before the number is quoted.

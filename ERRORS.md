@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-27 — Inspection rows looked stale because the count or the URL was dropped
+
+**What went wrong:** `scrape_runs` has no Illinois, Utah, Colorado, or Pennsylvania rows, and the last `wa_dshs_inspections` success is 2026-05-11. That made the Sunday job look stopped. It is not. `state_scan_runs` shows Washington completing through 2026-11-27 (inspections stayed 4,073 that day). Illinois completes with inspections stuck at 1,532 because the weekly job only checks that LLCS has no public PDF. Washington's weekly backfill only selects inventory created after `STATE_SCAN_STARTED_AT`, and `backfill_one` skips when the runner's `.parsed.json` sidecar is gone, so older adult-family-home PDFs never become inspections. Illinois `parse_citations` used to return nothing for a whole cell when any line said "no violation". Utah's insert wrote `source_url` as `''` and `ON CONFLICT DO NOTHING` left it empty. CMS nursing-home ingest wrote the F-tags and the data.cms.gov URL and left `total_deficiency_count` null. A Postgres `~* '\bnone\b'` check undercounted Illinois, because `\b` is a backspace in Postgres.
+
+**What worked instead:** Read the PDF or the FOIA cell in Python. Washington count is cited WAC blocks, or zero when the letter says the consult was not cited. Illinois count skips a no-violation line and keeps the 295 lines; a blank cell stays null. Utah fills `https://ccl.utah.gov/facility/{id}` from `external_id`. Pennsylvania sets the count from the deficiency rows for that `cms_ccn`. Colorado still has no per-event URL. Do not add one.
+
+**Source:** Project `fwvrupjgwvvzqiutwwdg`, 2026-11-27. The one-time scripts are `scrapers/backfill_*_inspection_gate.py`. Dry-run is the default.
+
+---
+
 ## 2026-11-27 — Arizona city cards were a partial count
 
 **What went wrong:** `loadStateHubData` and the fallback state page selected publishable city rows with no `.order()` and no `.range()`. PostgREST stops at 1,000 rows. Arizona has 1,923 publishable homes, so Mesa's card showed 150. The city page itself said 145, which was the old listed set (169 publishable, minus 24 homes of 10 beds or fewer with no citations). An id-ordered first 1,000 contains 101 Mesa rows, so the number moved depending on which 1,000 came back.
