@@ -94,6 +94,53 @@ WHERE f.state_code = 'WA'
   AND i.total_deficiency_count IS NOT NULL
 """
 
+# The inspection being updated is not visible inside FROM. Join facilities
+# there on the state only, and match f.id to i.facility_id in WHERE.
+APPLY_SQL = """
+UPDATE inspections AS i
+SET total_deficiency_count = s.distinct_codes
+FROM (
+    SELECT d.inspection_id, count(DISTINCT d.code) AS distinct_codes
+    FROM deficiencies d
+    WHERE trim(coalesce(d.code, '')) <> ''
+    GROUP BY d.inspection_id
+) AS s
+JOIN facilities AS f ON f.state_code = 'WA'
+WHERE i.id = s.inspection_id
+  AND f.id = i.facility_id
+  AND i.total_deficiency_count IS NOT NULL
+  AND i.total_deficiency_count <> s.distinct_codes
+  AND s.distinct_codes > 0
+"""
+
+
+def update_from_clause(sql: str) -> str:
+    """The FROM clause of an UPDATE, not including a WHERE at paren depth 0."""
+    depth = 0
+    from_at: int | None = None
+    index = 0
+    while index < len(sql):
+        char = sql[index]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif depth == 0 and _keyword_at(sql, index, "FROM"):
+            from_at = index
+        elif depth == 0 and from_at is not None and _keyword_at(sql, index, "WHERE"):
+            return sql[from_at:index]
+        index += 1
+    raise ValueError("UPDATE has no FROM and WHERE at the outer level")
+
+
+def _keyword_at(sql: str, index: int, word: str) -> bool:
+    if not sql[index:].upper().startswith(word):
+        return False
+    before = sql[index - 1] if index else " "
+    after_index = index + len(word)
+    after = sql[after_index] if after_index < len(sql) else " "
+    return not (before.isalnum() or before == "_") and not (after.isalnum() or after == "_")
+
 
 def _print_rows(rows: list[dict]) -> None:
     decrease = sum(1 for row in rows if int(row["stored_count"]) > int(row["distinct_codes"]))
@@ -139,24 +186,7 @@ def main() -> None:
             print("Dry-run only. No database writes.")
             return
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                UPDATE inspections i
-                SET total_deficiency_count = s.distinct_codes
-                FROM (
-                    SELECT d.inspection_id, count(DISTINCT d.code)::int AS distinct_codes
-                    FROM deficiencies d
-                    WHERE btrim(coalesce(d.code, '')) <> ''
-                    GROUP BY d.inspection_id
-                ) s
-                JOIN facilities f ON f.id = i.facility_id
-                WHERE i.id = s.inspection_id
-                  AND f.state_code = 'WA'
-                  AND i.total_deficiency_count IS NOT NULL
-                  AND i.total_deficiency_count <> s.distinct_codes
-                  AND s.distinct_codes > 0
-                """
-            )
+            cur.execute(APPLY_SQL)
             updated = cur.rowcount
         conn.commit()
     print(f"WA updated {updated} citation counts. Inspections with no citation rows were left unchanged.")

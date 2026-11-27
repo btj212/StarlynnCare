@@ -2,7 +2,7 @@
 
 Read on November 27, 2026, after the Washington, Pennsylvania, and Utah writes. Nothing in this note was written to the database. Live pages are `facilities.publishable = true`. A page fails the current URL rule when it has no inspection with a date, an http(s) source URL, and a citation count. Zero is a real count.
 
-The gate change in this branch is narrower than that URL rule. Illinois and Colorado qualify with a date, a citation count, and the state visit id in `inspections.source_event_id`. Every other state still needs the URL. `GATE_ENFORCED` stays false, so robots and the sitemap do not change until that flag is turned on.
+The gate change in this branch is narrower than that URL rule. Illinois and Colorado qualify with a date and a citation count when they also have either the state visit id in `inspections.source_event_id` or an http(s) source URL. That URL route is how the Colorado CMS nursing home passes. Every other state still needs the URL. `GATE_ENFORCED` stays false, so robots and the sitemap do not change until that flag is turned on.
 
 ## Washington citation count
 
@@ -38,14 +38,14 @@ data.colorado.gov dataset `98pp-s4r4` is a 2017 facility directory. It has a poi
 
 Additional homes we could cover with a real document URL: 0.
 
-What does cover them: the event id already in `raw_data.co_event_id` (for example `M5T211`). All 70 have a date, a citation count, and that id. Copying the id into `source_event_id` lets the new rule count them. The one live Colorado page that already passes is a CMS nursing home.
+What does cover them: the event key already in `raw_data.co_event_key` (for example `23033N|035H13|AL18`). `co_event_id` (for example `M5T211`) is the visit, and one visit is stored once per rule set, so that id is shared by two or three rows. The unique index is `(source_agency, source_event_id)`, so the copy writes the key, and only where `source_event_id` is null. All 70 have a date, a citation count, and that key. The one live Colorado page that already passes is a CMS nursing home, which has a document URL.
 
 ```bash
 python3 scrapers/backfill_co_inspection_gate.py
 python3 scrapers/backfill_co_inspection_gate.py --apply
 ```
 
-The dry-run prints how many ids would be copied. `--apply` copies the id only. It still refuses to write the tableau address. It was not run here. A future HFQ ingest writes `source_event_id` on the insert so a second backfill is not required.
+The dry-run prints how many keys would be copied and any duplicate `(source_agency, source_event_id)` the write would create. It stops if any duplicate is found. `--apply` copies the key only. It still refuses to write the tableau address. It was not run here. A future HFQ ingest writes `source_event_id` on the insert so a second backfill is not required.
 
 ## Illinois — 300 live pages
 

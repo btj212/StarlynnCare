@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-27 — Colorado event ids and the Washington recount update were not writable
+
+**What went wrong:** `backfill_co_inspection_gate.py --apply` copied `raw_data.co_event_id` into `source_event_id`. 318 of those ids are on 2–3 rows each (646 rows), one per rule set, so the unique index `(source_agency, source_event_id)` would reject the write. `recount_wa_citation_counts.py --apply` joined `facilities` on `i.facility_id` inside `FROM` before the inspection being updated was in scope, and Postgres rejected that. `inspectionQualifies` for Illinois and Colorado accepted only the visit-id route, so a Colorado CMS nursing home with a real link and no visit id failed.
+
+**What worked instead:** Store `raw_data.co_event_key`, and only where `source_event_id` is null. Dry-run lists duplicate `(source_agency, source_event_id)` values and the write stops if any exist. The recount is `UPDATE ... FROM` a distinct-code subquery, and `f.id = i.facility_id` is in `WHERE`. Illinois and Colorado pass on a date and a count with either a visit id or an http(s) URL.
+
+**Source:** PR 274, commit `ea7436b`, applied and then stopped. No `--apply` in the correction.
+
+---
+
 ## 2026-11-27 — Inspection rows looked stale because the count or the URL was dropped
 
 **What went wrong:** `scrape_runs` has no Illinois, Utah, Colorado, or Pennsylvania rows, and the last `wa_dshs_inspections` success is 2026-05-11. That made the Sunday job look stopped. It is not. `state_scan_runs` shows Washington completing through 2026-11-27 (inspections stayed 4,073 that day). Illinois completes with inspections stuck at 1,532 because the weekly job only checks that LLCS has no public PDF. Washington's weekly backfill only selects inventory created after `STATE_SCAN_STARTED_AT`, and `backfill_one` skips when the runner's `.parsed.json` sidecar is gone, so older adult-family-home PDFs never become inspections. Illinois `parse_citations` used to return nothing for a whole cell when any line said "no violation". Utah's insert wrote `source_url` as `''` and `ON CONFLICT DO NOTHING` left it empty. CMS nursing-home ingest wrote the F-tags and the data.cms.gov URL and left `total_deficiency_count` null. A Postgres `~* '\bnone\b'` check undercounted Illinois, because `\b` is a backspace in Postgres.

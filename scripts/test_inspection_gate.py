@@ -9,6 +9,7 @@ and a lookup page is not a survey document.
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
 import unittest
 from datetime import date
@@ -19,7 +20,15 @@ FIXTURES = ROOT / "scrapers" / "fixtures" / "gate"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scrapers.backfill_co_inspection_gate import document_url_for_cdphe_event
+from scrapers.backfill_co_inspection_gate import (
+    COPY_EVENT_ID_SQL,
+    DUPLICATE_EVENT_ID_SQL,
+    abort_if_duplicate_event_ids,
+    document_url_for_cdphe_event,
+    duplicate_agency_event_ids,
+    source_event_id_to_store,
+)
+from scrapers.recount_wa_citation_counts import APPLY_SQL, update_from_clause
 from scrapers.backfill_il_inspection_gate import is_document_url
 from scrapers.backfill_pa_inspection_gate import citation_count_for_survey, pa_match_key
 from scrapers.il_foia_parse import citation_count_from_tags, parse_citations
@@ -151,6 +160,71 @@ class ColoradoEventTests(unittest.TestCase):
         self.assertEqual(event["source_url"], "")
         self.assertIsNone(document_url_for_cdphe_event(event["event_id"]))
         self.assertIsNone(document_url_for_cdphe_event(event["event_key"]))
+
+    def test_rule_sets_that_share_an_event_id_store_distinct_keys(self) -> None:
+        """One visit split by rule set shares co_event_id. The unique index is (source_agency, source_event_id), so the stored value is co_event_key."""
+        shared = "035H13"
+        rows = [
+            {"co_event_id": shared, "co_event_key": "23033N|035H13|AL18"},
+            {"co_event_id": shared, "co_event_key": "23033N|035H13|OONO"},
+        ]
+        self.assertEqual(rows[0]["co_event_id"], rows[1]["co_event_id"])
+        stored = [source_event_id_to_store(row) for row in rows]
+        self.assertEqual(stored, ["23033N|035H13|AL18", "23033N|035H13|OONO"])
+        self.assertEqual(len(set(stored)), len(stored))
+        self.assertEqual(duplicate_agency_event_ids([("CO-CDPHE", value) for value in stored if value]), [])
+        self.assertIn("raw_data->>'co_event_key'", COPY_EVENT_ID_SQL)
+        self.assertIn("source_event_id IS NULL", COPY_EVENT_ID_SQL)
+        self.assertNotIn("co_event_id", COPY_EVENT_ID_SQL)
+
+    def test_a_repeated_event_key_is_reported_before_any_write(self) -> None:
+        """The dry-run check refuses a (source_agency, source_event_id) that would land twice."""
+        pairs = [
+            ("CO-CDPHE", "23033N|035H13|AL18"),
+            ("CO-CDPHE", "23033N|035H13|AL18"),
+        ]
+        self.assertEqual(
+            duplicate_agency_event_ids(pairs),
+            [("CO-CDPHE", "23033N|035H13|AL18", 2)],
+        )
+        self.assertIn("HAVING count(*) > 1", DUPLICATE_EVENT_ID_SQL)
+        with self.assertRaises(SystemExit) as raised:
+            abort_if_duplicate_event_ids(pairs)
+        self.assertIn("not unique", str(raised.exception))
+
+
+class WashingtonRecountSqlTests(unittest.TestCase):
+    def test_apply_updates_distinct_codes_without_naming_the_target_inside_from(self) -> None:
+        """Postgres rejects a FROM join on i.facility_id because the row being updated is not in scope there. The match belongs in WHERE, and a blank code does not zero a stored count."""
+        from_clause = update_from_clause(APPLY_SQL)
+        self.assertNotIn("i.facility_id", from_clause)
+        self.assertNotIn("i.id", from_clause)
+        self.assertIn("f.id = i.facility_id", APPLY_SQL)
+
+        connection = sqlite3.connect(":memory:")
+        connection.executescript(
+            """
+            CREATE TABLE facilities (id TEXT, state_code TEXT);
+            CREATE TABLE inspections (id TEXT, facility_id TEXT, total_deficiency_count INT);
+            CREATE TABLE deficiencies (inspection_id TEXT, code TEXT);
+            INSERT INTO facilities VALUES ('wa-home', 'WA'), ('or-home', 'OR');
+            INSERT INTO inspections VALUES
+                ('repeated', 'wa-home', 15),
+                ('blank-code', 'wa-home', 4),
+                ('other-state', 'or-home', 9);
+            INSERT INTO deficiencies VALUES
+                ('repeated', 'WAC 388-76-10135'),
+                ('repeated', 'WAC 388-76-10135'),
+                ('repeated', 'WAC 388-76-10475'),
+                ('blank-code', ''),
+                ('other-state', 'WAC 411-054-0000');
+            """
+        )
+        connection.execute(APPLY_SQL)
+        stored = dict(connection.execute("SELECT id, total_deficiency_count FROM inspections"))
+        self.assertEqual(stored["repeated"], 2)
+        self.assertEqual(stored["blank-code"], 4)
+        self.assertEqual(stored["other-state"], 9)
 
 
 class PennsylvaniaMatchTests(unittest.TestCase):

@@ -157,9 +157,37 @@ assert.equal(
   "Colorado counts an event with a date, a citation count, and the CDPHE event id",
 );
 assert.equal(
-  inspectionQualifies("CO", { date: "2026-05-13", citationCount: 2, sourceUrl: "https://example.gov/missing" }),
+  inspectionQualifies("IL", {
+    date: "2026-05-09",
+    citationCount: 0,
+    sourceUrl: "https://data.cms.gov/provider-data/survey",
+  }),
+  true,
+  "Illinois counts a visit with a date, a zero citation count, and an http source URL",
+);
+assert.equal(
+  inspectionQualifies("CO", { date: "2026-05-13", citationCount: 0, visitId: "M5T211" }),
+  true,
+  "Colorado counts an event with a date, a citation count, and a visit id and no URL",
+);
+assert.equal(
+  inspectionQualifies("CO", {
+    date: "2026-05-13",
+    citationCount: 0,
+    sourceUrl: "https://data.cms.gov/provider-data/survey",
+  }),
+  true,
+  "Colorado counts a CMS nursing home with a date, a citation count, and an http source URL",
+);
+assert.equal(
+  inspectionQualifies("CO", { date: "2026-05-13", citationCount: 2 }),
   false,
-  "Colorado does not count an event that has no event id",
+  "Colorado does not count an event that has neither a visit id nor a source URL",
+);
+assert.equal(
+  inspectionQualifies("WA", { date: "2025-09-04", citationCount: 5, visitId: "wa-visit" }),
+  false,
+  "a state other than Illinois or Colorado does not count a visit id without an http source URL",
 );
 assert.equal(
   explainIndexability(

@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Colorado stores the event key, and a document URL still counts
+
+**Decided:** This corrects the same-day visit-id entry below. `inspections.source_event_id` for Colorado is `raw_data.co_event_key` (for example `23033N|035H13|AL18`), not `co_event_id`. One visit is split by rule set, so `co_event_id` is on two or three rows and the unique index `(source_agency, source_event_id)` rejects it. The backfill writes the key only where `source_event_id` is null, and it stops if that write would duplicate the pair. Illinois and Colorado also qualify on a date, a citation count (zero allowed), and an http(s) source URL, so the Colorado CMS nursing home with a link still passes. A visit id with no URL still passes for those two states. Every other state still needs the URL.
+
+**Rejected:** Copying `co_event_id` into `source_event_id`. Treating a URL as insufficient for Illinois or Colorado.
+
+**Source:** Applying PR 274, commit `ea7436b`. 318 Colorado event ids are on 646 rows. No database write in this correction.
+
+---
+
 ## 2026-11-27 — Previous operator's inspections stay on the new home's page, under the old name
 
 **Decided:** When a closed license and a new license share an address, the new profile lists the old inspections at the bottom under the heading "Inspection records of previous facilities at this address". The link is text in `facilities.license_status_detail`: the closed row says `StarlynnCare row {successor uuid}`, and the new row says `previous StarlynnCare row(s): {old uuid}`. A small parser reads that. A structured column would be better; this change does not add one. The new home's InspectionSummary, citation-hook title, quality-gate inspection check, and LocalBusiness use only its own inspections. A closed page keeps the Closed chip and, when the successor is publishable, links "Now operating at this address: {name}". No redirect.
