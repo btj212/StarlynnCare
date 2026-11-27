@@ -105,6 +105,10 @@ export interface Facility {
   memory_care_designation: string | null;
   license_status: string | null;
   license_expiration: string | null;
+  /** Regulator wording, or an Arizona successor note. See addressSuccessor.ts. */
+  license_status_detail?: string | null;
+  initial_license_date?: string | null;
+  license_closed_date?: string | null;
   publishable: boolean;
   /** Set after the state document list has been read. Null means not checked yet. */
   state_records_checked_at?: string | null;

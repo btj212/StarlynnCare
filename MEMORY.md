@@ -6,6 +6,20 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Previous operator's inspections stay on the new home's page, under the old name
+
+**Decided:** When a closed license and a new license share an address, the new profile lists the old inspections at the bottom under the heading "Inspection records of previous facilities at this address". The link is text in `facilities.license_status_detail`: the closed row says `StarlynnCare row {successor uuid}`, and the new row says `previous StarlynnCare row(s): {old uuid}`. A small parser reads that. A structured column would be better; this change does not add one. The new home's InspectionSummary, citation-hook title, quality-gate inspection check, and LocalBusiness use only its own inspections. A closed page keeps the Closed chip and, when the successor is publishable, links "Now operating at this address: {name}". No redirect.
+
+**Publishable:** `recompute_publishable.py` leaves a CLOSED row that names a successor at its current `publishable` and logs it. That is on top of the Directed Care rule: losing Directed Care still does not unpublish a licensed Arizona home, and a CLOSED row with no successor note still comes down. Other states are unchanged unless a row carries that same note.
+
+**This narrows** the same-day sentence that every closed license comes down. It does not change the California two-view unpublish.
+
+**Rejected:** Merging the old inspections onto the new row. Counting them toward the new home's inspection requirement. Putting them in the successor's JSON-LD. Redirecting the closed URL. Depending on the operator's map CSV.
+
+**Source:** Blake, 2026-11-27. Arizona Care Check notes on project fwvrupjgwvvzqiutwwdg: 47 CLOSED rows and 46 successor rows.
+
+---
+
 ## 2026-11-27 — Inspection gate fields for WA, IL, UT, CO, and PA
 
 **Decided:** A stored inspection can carry a date, a source URL, and a citation count only when each value comes from the regulator's file. Zero is a real count. A blank or unreadable file stays null.
