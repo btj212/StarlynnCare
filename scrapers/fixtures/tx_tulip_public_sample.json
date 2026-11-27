@@ -1,0 +1,68 @@
+{
+  "captured_on": "2026-11-27",
+  "search_page_html_excerpt": "fwuid%22%3A%22ZjkyMTR4bndvTWpXNFdfN1kxVEkxd2tVMjdnTGFERUU2S3FfSVdrcU92bkExNS4zLjE2MDEx%22%2C%22loaded%22%3A%7B%22APPLICATION%40markup%3A%2F%2Fsiteforce%3AcommunityApp%22%3A%221919_p_UNHwnUfNHtXRD9ejXneg%22%7D",
+  "search_148715": [
+    {
+      "Id": "001cv00000Rs8SAAAZ",
+      "Name": "ALZHEIMER'S CARE AND RESEARCH CENTER FOUNDATION",
+      "LIcense_Number__c": "148715",
+      "License_Status__c": "LICENSED"
+    }
+  ],
+  "inspections_148715_yesdata_without_date": [
+    {
+      "visitType": "yesData"
+    }
+  ],
+  "search_148140": [
+    {
+      "Id": "001cv00000RriEJAAZ",
+      "Name": "WINDERMERE AT CARTMELL",
+      "LIcense_Number__c": "148140",
+      "License_Status__c": "LICENSED"
+    }
+  ],
+  "inspections_148140_yesdata_with_date": [
+    {
+      "mostRecentExitDate": "October 02, 2015",
+      "visitType": "yesData"
+    }
+  ],
+  "search_148102": [
+    {
+      "Id": "001cv00000RsKqrAAF",
+      "Name": "KINGFISHER SENIOR LIVING  LLC",
+      "LIcense_Number__c": "148102",
+      "License_Status__c": "LICENSED"
+    }
+  ],
+  "inspections_148102_nodata": [
+    {
+      "visitType": "noData"
+    }
+  ],
+  "search_307466": [
+    {
+      "Id": "001cv00000RpXEWAA3",
+      "Name": "Brookdale Sleepy Hollow",
+      "LIcense_Number__c": "307466",
+      "License_Status__c": "LICENSED"
+    }
+  ],
+  "enforcement_307466": [
+    {
+      "action": "Administrative Penalty",
+      "agenyName": "Brookdale Sleepy Hollow",
+      "imposedAmount": "3000.00",
+      "imposedDate": "2/27/2025",
+      "name": "EVT-0000478119",
+      "penaltyWrapperLst": [
+        {
+          "regulationCited": "553.261(a)(1)(A)",
+          "stateValCited": "The facility failed to ensure that a licensed person or a trained, authorized, and delegated person administered medications according to physician's orders."
+        }
+      ],
+      "rsEventId": "a2ccv00000fKR6aAAG"
+    }
+  ]
+}

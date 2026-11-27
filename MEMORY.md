@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Texas inspections come from TULIP guest Aura, matched by license
+
+**Decided:** The live fetch is `scrapers/tx_inspections_backfill.py`. It is a dry-run unless `--apply`. It reads licensed `serves_memory_care` Texas homes and matches `RS_LTCProviderController.searchAccounts` on `LIcense_Number__c`, never on the Salesforce Account Id. `retrieveInspectionsInfo` is the survey (`yesData` + `mostRecentExitDate` is one zero-citation comprehensive visit; `noData` stores nothing). `retrieveRSEventForEnfAction` is the citation HHSC still publishes (`action`, `imposedDate`, `regulationCited`, `stateValCited`). `inspection_type` for a penalty stays the portal's `action`. The script does not run `recompute_publishable.py`. The Sunday workflow is unchanged until Blake says to point it at this script.
+
+**Rejected:** Treating `alf-violations-data.pdf` or data.texas.gov CCL (child care) as the ALF inspection file. Keeping the May 2026 account id `001cv00000RpEjOAAV` as the join key. Calling the weekly job fixed because a local `.firecrawl/tulip*` folder is absent.
+
+**Source:** Read-only SQL 2026-11-27 (547 memory-care homes, 1 with inspections, newest stored date 2023-02-16). Live Aura capture the same day. `docs/TX_DATA_SOURCES.md`.
+
+---
+
 ## 2026-11-27 — Quality gate is report-only until GATE_ENFORCED
 
 **Decided:** `src/lib/quality/gate.ts` is the only module that maps a raw license status to LICENSED / PROBATION / CLOSED / PENDING / OTHER, picks the approved headline sentence, and decides whether a home may be indexed. The city-hub listing predicates (`facilityListedOnHub`, `cityHubPageExists`, `facilityMarkedNoindex`, `listingHubMarkedNoindex`) live there too. `src/lib/seo/indexability.ts` re-exports them and does not decide. `GATE_ENFORCED` is false. While it is false, a publishable home is listed, a hub exists when at least one home is listed, and profile robots stay exactly as they are today. Profile robots, the sitemap, city-hub memory-care grouping, JSON-LD, and `EvidenceLabel` call the gate and then keep today's result. The profile `<title>` stays `buildFacilityTitle`: the citation hook, and `Licensed {license type}` from `listLicenseLabel` when there is no inspection outside Arizona and Washington. The gate does not write that title and does not add the words Memory Care. `mc_program_confirmed`, a directory listing, a name, or a chain never produce a headline. That is narrower than the live Washington display tier, which still treats an operator page as memory care. California has no §1569.627 disclosure column, so that Tier A sentence is not returned. Arizona has no separate memory-care designation: ADHS treats memory care as directed care, so `AZ_MC_SOURCE_AVAILABLE` stays false and those homes are Tier B.
