@@ -33,6 +33,7 @@ import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 import { formatLicenseStatus } from "@/lib/facility/licenseStatus";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityShareButton } from "./FacilityShareButton";
+import { evidenceLabelText } from "@/lib/quality/gate";
 import { EvidenceLabel } from "./EvidenceLabel";
 import { InspectionSummary } from "./InspectionSummary";
 
@@ -423,7 +424,9 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 regulatorUrl={profile.memoryCareBasis.sourceUrl}
               />
             ) : null}
-            <EvidenceLabel label={profile.memoryCareBasis.regulator} />
+            <EvidenceLabel
+              label={evidenceLabelText(facility, profile.memoryCareBasis.regulator)}
+            />
             {aliases.aliases.length > 0 ? (
               <p className="mt-1 font-[family-name:var(--font-sans)] text-[14px] leading-snug text-ink-3">
                 Also listed as {aliases.aliases.map((alias) => formatFacilityName(alias)).join(", ")}

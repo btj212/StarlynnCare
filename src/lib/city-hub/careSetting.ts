@@ -21,6 +21,7 @@ import {
   type DementiaAcceptanceTier,
   type MemoryCareBasis,
 } from "@/lib/facility/memoryCareBasis";
+import { GATE_ENFORCED } from "@/lib/quality/gate";
 
 export type CareSettingCopy = {
   /** Short noun for titles and stats: "Directed Care homes" */
@@ -182,7 +183,12 @@ export function listedInMemoryCareGroup(input: {
   servesMemoryCare: boolean;
   memoryCareDisclosureFiled: boolean;
   txAlzheimerCertified?: boolean | null;
+  /** Set only when the quality gate is enforced. Tier A is the memory-care section. */
+  gateTier?: "A" | "B" | "none";
 }): boolean {
+  if (GATE_ENFORCED && input.gateTier) {
+    return input.gateTier === "A";
+  }
   if (input.stateSlug === "washington" && input.careChip !== undefined) {
     if (
       input.careChip === CONFIRMED_ACCEPTS_CHIP ||

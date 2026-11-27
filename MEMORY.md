@@ -26,6 +26,52 @@ Pennsylvania: the 73 live pages missing a count are nursing homes. They have `cm
 
 ---
 
+## 2026-11 — Texas inspections come from TULIP guest Aura, matched by license
+
+**Decided:** The live fetch is `scrapers/tx_inspections_backfill.py`. It is a dry-run unless `--apply`. It reads licensed `serves_memory_care` Texas homes and matches `RS_LTCProviderController.searchAccounts` on `LIcense_Number__c`, never on the Salesforce Account Id. `retrieveInspectionsInfo` is the survey (`yesData` + `mostRecentExitDate` is one zero-citation comprehensive visit; `noData` stores nothing). `retrieveRSEventForEnfAction` is the citation HHSC still publishes (`action`, `imposedDate`, `regulationCited`, `stateValCited`). `inspection_type` for a penalty stays the portal's `action`. The script does not run `recompute_publishable.py`. The Sunday workflow is unchanged until Blake says to point it at this script.
+
+**Rejected:** Treating `alf-violations-data.pdf` or data.texas.gov CCL (child care) as the ALF inspection file. Keeping the May 2026 account id `001cv00000RpEjOAAV` as the join key. Calling the weekly job fixed because a local `.firecrawl/tulip*` folder is absent.
+
+**Source:** Read-only SQL 2026-11-27 (547 memory-care homes, 1 with inspections, newest stored date 2023-02-16). Live Aura capture the same day. `docs/TX_DATA_SOURCES.md`.
+
+---
+
+## 2026-11-27 — Quality gate is report-only until GATE_ENFORCED
+
+**Decided:** `src/lib/quality/gate.ts` is the only module that maps a raw license status to LICENSED / PROBATION / CLOSED / PENDING / OTHER, picks the approved headline sentence, and decides whether a home may be indexed. The city-hub listing predicates (`facilityListedOnHub`, `cityHubPageExists`, `facilityMarkedNoindex`, `listingHubMarkedNoindex`) live there too. `src/lib/seo/indexability.ts` re-exports them and does not decide. `GATE_ENFORCED` is false. While it is false, a publishable home is listed, a hub exists when at least one home is listed, and profile robots stay exactly as they are today. Profile robots, the sitemap, city-hub memory-care grouping, JSON-LD, and `EvidenceLabel` call the gate and then keep today's result. The profile `<title>` stays `buildFacilityTitle`: the citation hook, and `Licensed {license type}` from `listLicenseLabel` when there is no inspection outside Arizona and Washington. The gate does not write that title and does not add the words Memory Care. `mc_program_confirmed`, a directory listing, a name, or a chain never produce a headline. That is narrower than the live Washington display tier, which still treats an operator page as memory care. California has no §1569.627 disclosure column, so that Tier A sentence is not returned. Arizona has no separate memory-care designation: ADHS treats memory care as directed care, so `AZ_MC_SOURCE_AVAILABLE` stays false and those homes are Tier B.
+
+**Sync clock:** `scrape_runs.completed_at` where `status = 'success'`, else `states.last_successful_scrape`. If both are missing, the 30-day freshness check passes and the report says so. `states.last_successful_scrape` is null for every live state except CA, CO, and FL, and CA's column lags `scrape_runs`.
+
+**Rejected:** Turning the flag on in this change. Taking a live home off its city hub. Replacing the citation-hook title. Using "Memory Care" as a license fallback. Inventing a California disclosure column. Using `memory_care_disclosure_filed` as that disclosure. Treating Arizona Directed Care as a separate memory-care authorization. Editing `.github/workflows/validate.yml` (the new test is `npm run test:quality-gate`).
+
+**This does not change** the title decisions below, or the city-hub listing decision. Small homes stay in their section. The flag does not remove them.
+
+**Source:** Blake, wave 0 tasks 0.1 and 0.2. `scripts/gate_report.ts`.
+
+---
+
+## 2026-11-27 — No-inspection titles name the license, not memory care
+
+**Decided:** When a profile has no inspections and it is not Arizona or a Washington non-memory-care home, the title is `{Name}, {City} — Licensed {license type}`. The type comes from `listLicenseLabel` (the chip already on city lists): Assisted Living, Residential Care Facility, Residential Care Facility for the Elderly, Personal Care, and the other chips that function already returns. The title does not add the words Memory Care. If those words are in the home's name, they stay because they are the name.
+
+Arizona with no inspections stays `Directed Care Home`. Washington homes that are not memory care keep `Adult Family Home` or `Assisted Living`, plus `, Accepts Dementia` or `, Dementia Credential`.
+
+**This supersedes** the sentence in the citation-hook entry that left the zero-inspection fallback as `Licensed Memory Care`.
+
+**Source:** Blake, on PR 267, 2026-11-27.
+
+---
+
+## 2026-11-27 — Facility profile title is the citation hook again
+
+**Decided:** The facility profile `<title>` is the citation hook from just before PR 265: `{Name}, {City} — {N} citations, inspected {Mon YYYY}`, with the same 70-character fallbacks and the same Washington suffix (`Adult Family Home` / `Assisted Living`, plus `, Accepts Dementia` or `, Dementia Credential` on the zero-inspection fallback). The year is the last inspection year. The name passed in is still the display name the page already used.
+
+**This supersedes** the same-day inspection-record title (`Inspection Record & Citations ({Year})`) for the title only. The H1, the licensed-as line, the inspection summary, the evidence label, the FAQ, the JSON-LD identifier, nearby facilities, and the “Reviews & inspection record” heading stay as PR 265 shipped them.
+
+**Source:** Blake, after merging PR 265.
+
+---
+
 ## 2026-11-27 — City hubs list every publishable home, including small homes
 
 **Decided:** A city hub lists every publishable home in that city, each in exactly one section. Homes of 6 beds or fewer go in a "Small homes" section (deck: licensed homes with 6 or fewer residents; first 24, then "Show all N"), unless a Washington tier chip already placed them in "Confirmed to accept residents with dementia" or "Homes with a dementia credential". Those stay in that section and keep the chip. Arizona homes of 7–10 beds are not called small homes; they join memory care or other licensed facilities. The headline, the state-hub city card, nearby-city counts, and the homepage city count all quote that listed set. A city hub exists only when that set has at least one home (`cityHubPageExists`). The state hub and the sitemap do not link a city below that bar. Pennsylvania still collapses same-name rows at the same ZIP before the number is quoted.

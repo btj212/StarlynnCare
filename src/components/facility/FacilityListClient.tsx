@@ -73,6 +73,8 @@ export type ListFacility = {
   wa_memory_care_certified?: boolean | null;
   il_dementia_program_flag?: boolean | null;
   mo_alzheimer_scu?: boolean | null;
+  /** Quality-gate tier. Ignored until GATE_ENFORCED is on. */
+  gateTier?: "A" | "B" | "none";
 };
 
 type FilterChip = "all" | "large" | "medium" | "has_citations" | "no_citations" | "small";
@@ -181,6 +183,7 @@ function FacilityCard({ f, stateSlug }: { f: ListFacility; stateSlug: string }) 
     servesMemoryCare: f.serves_memory_care,
     memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
     txAlzheimerCertified: f.tx_alzheimer_certified,
+    gateTier: f.gateTier,
   });
   const careChip =
     f.careChip !== undefined
@@ -396,6 +399,7 @@ export function FacilityListClient({
       servesMemoryCare: f.serves_memory_care,
       memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
       txAlzheimerCertified: f.tx_alzheimer_certified,
+      gateTier: f.gateTier,
     });
   const groupOf = (f: ListFacility) =>
     cityHubCardGroup({

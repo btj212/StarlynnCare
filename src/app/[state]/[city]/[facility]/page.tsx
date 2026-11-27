@@ -14,6 +14,7 @@ import { stateFromSlug } from "@/lib/states";
 
 import { loadFacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { dementiaAcceptanceTier } from "@/lib/facility/memoryCareBasis";
+import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
 import { loadFacilityCosts } from "@/lib/cost/loadFacilityCosts";
 import { ComplianceFlagBanner } from "@/components/facility/ComplianceFlag";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
@@ -35,7 +36,7 @@ import { FacilityFullInspections } from "@/components/facility/profile/FacilityF
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
 import { NearbyFacilities } from "@/components/facility/profile/NearbyFacilities";
 import { assignOffer } from "@/lib/facility/offers";
-import { facilityMarkedNoindex } from "@/lib/seo/indexability";
+import { profileRobotsNoindex } from "@/lib/quality/gate";
 import { isArticleApproved } from "@/lib/content/articleReview";
 import { HOW_TO_CHECK } from "@/lib/content/howToCheckArticles";
 
@@ -163,7 +164,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     inspectionCount: profile.totals.inspections,
     reviewCount: profile.reviews.length,
     lastInspectionDate,
-    year: new Date().getFullYear(),
+    licenseLabel: listLicenseLabel({
+      stateCode: facility.state_code,
+      care_category: facility.care_category,
+      license_type: facility.license_type,
+      mo_level_of_care: facility.mo_level_of_care,
+      mn_dementia_care_licensed: facility.mn_dementia_care_licensed,
+    }),
   });
 
   const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
@@ -195,14 +202,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // small homes from the listed count; the sitemap includes every publishable page.
   const tourQs = (facility.content as { tour_questions?: string[] } | null)
     ?.tour_questions;
-  const isThin = facilityMarkedNoindex({
-    stateCode: facility.state_code,
-    beds: facility.beds,
-    deficiencyCount: profile.totals.allTimeDeficiencies,
-    inspectionCount: profile.totals.inspections,
-    reviewCount: profile.reviews.length,
-    tourQuestionCount: tourQs?.length ?? 0,
-    photoCount: profile.photoUrls.length,
+  const isThin = profileRobotsNoindex({
+    legacy: {
+      stateCode: facility.state_code,
+      beds: facility.beds,
+      deficiencyCount: profile.totals.allTimeDeficiencies,
+      inspectionCount: profile.totals.inspections,
+      reviewCount: profile.reviews.length,
+      tourQuestionCount: tourQs?.length ?? 0,
+      photoCount: profile.photoUrls.length,
+    },
+    home: {
+      ...facility,
+      title,
+      h1: displayName,
+      canonical,
+      inspections: profile.gateInspections,
+      jsonLd: profile.jsonLd,
+    },
   });
 
   return {

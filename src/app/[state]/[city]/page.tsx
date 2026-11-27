@@ -31,6 +31,7 @@ import { REGULATOR_ABBR } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { dementiaAcceptanceTier, memoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import { careSettingCopy, cityHubCardGroup, listCareChip, listedInMemoryCareGroup } from "@/lib/city-hub/careSetting";
+import { finalizeJsonLd, gateApplies, headlineLabel } from "@/lib/quality/gate";
 import {
   cityDirectAnswer,
   cityFaqExtras,
@@ -81,7 +82,7 @@ import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/
 export const revalidate = 3600;
 
 const HUB_FACILITY_SELECT =
-  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, wa_facility_type, wa_contract_types, mc_program_confirmed, mc_program_source_url, mc_program_quote, mc_review_notes, wa_county, historical_city_slugs, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served";
+  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, wa_facility_type, wa_contract_types, mc_program_confirmed, mc_program_source_url, mc_program_quote, mc_review_notes, wa_county, historical_city_slugs, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served, secure_beds";
 
 type HubFacilityRow = {
   id: string;
@@ -123,6 +124,7 @@ type HubFacilityRow = {
   il_dementia_program_flag: boolean | null;
   mo_alzheimer_scu: boolean | null;
   mo_level_of_care: string | null;
+  secure_beds: number | null;
 };
 
 type PageProps = {
@@ -462,6 +464,31 @@ export default async function RegionPage({ params }: PageProps) {
             az_memory_care_endorsed: f.az_memory_care_endorsed,
             mc_designation_type: f.mc_designation_type,
             ...contentAliasFields(f.content),
+            ...(gateApplies(region.state.code)
+              ? {
+                  gateTier: headlineLabel({
+                    state_code: region.state.code,
+                    name: f.name,
+                    license_type: f.license_type,
+                    mce_endorsed: f.mce_endorsed,
+                    mn_dementia_care_licensed: f.mn_dementia_care_licensed,
+                    mc_designation_type: f.mc_designation_type,
+                    secure_beds: f.secure_beds,
+                    il_dementia_program_flag: f.il_dementia_program_flag,
+                    mo_alzheimer_scu: f.mo_alzheimer_scu,
+                    mo_level_of_care: f.mo_level_of_care,
+                    tx_alzheimer_certified: f.tx_alzheimer_certified,
+                    wa_memory_care_certified: f.wa_memory_care_certified,
+                    wa_dementia_care_contract: f.wa_dementia_care_contract,
+                    wa_earc_sdc_contracted: f.wa_earc_sdc_contracted,
+                    wa_dementia_specialty: f.wa_dementia_specialty,
+                    wa_facility_type: f.wa_facility_type,
+                    ca_cdss_client_served: f.ca_cdss_client_served,
+                    az_license_level: f.az_license_level,
+                    az_memory_care_endorsed: f.az_memory_care_endorsed,
+                  }).tier,
+                }
+              : {}),
           };
         });
         recentReports = recentReports.map((r) => ({ ...r, name: formatFacilityName(r.name) }));
@@ -738,7 +765,7 @@ export default async function RegionPage({ params }: PageProps) {
     : displayCounty
       ? { name: displayCounty.name, url: displayCounty.href ?? undefined }
       : null;
-  const regionJsonLd = [
+  const regionJsonLd = finalizeJsonLd([
     buildBreadcrumbList([
       { name: "Home", url: canonicalFor("/") },
       { name: region.state.name, url: canonicalFor(`/${region.state.slug}`) },
@@ -766,7 +793,7 @@ export default async function RegionPage({ params }: PageProps) {
     ),
     buildFaqSchemaFromPairs(faqPairs, pageUrl),
     buildSpeakableSchema({ url: pageUrl, cssSelectors: ["#hub-lede", "#city-answer", "#hub-stats"] }),
-  ];
+  ]);
 
   // ── Additional data for content blocks ────────────────────────────────────
 

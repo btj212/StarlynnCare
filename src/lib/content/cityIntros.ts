@@ -114,7 +114,7 @@ const INTROS: Record<string, string> = {
   "OR:grants-pass":
     "Grants Pass serves the Rogue Valley with options for families between Medford and the coast. Oregon DHS Memory Care Endorsement status is required for all facilities indexed here — DHS inspection and complaint records are publicly available.",
   "OR:mcminnville":
-    "McMinnville anchors Yamhill County wine country south of Portland. DHS licensing violation history is the best independent quality signal — read complaint-driven investigation outcomes alongside routine surveys.",
+    "McMinnville anchors Yamhill County wine country south of Portland. DHS licensing violation history is an independent quality signal — read complaint-driven investigation outcomes alongside routine surveys.",
   "OR:hillsboro":
     "Hillsboro's tech-corridor demographics mirror Beaverton's pricing dynamics on the west side. DHS inspection records for endorsed facilities reflect both routine and complaint-driven reviews — read both categories before shortlisting.",
   "OR:springfield":

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SITE_ORIGIN } from "@/lib/seo/canonical";
 import { cityHubPageExists } from "@/lib/seo/indexability";
+import { gateApplies, isIndexable, rowsForSitemap, type GateHome, type GateInspection } from "@/lib/quality/gate";
 import { regionsForState } from "@/lib/regions";
 import { COVERED_STATES } from "@/lib/states";
 import { RESEARCH_INDEX } from "@/lib/content/research";
@@ -402,8 +403,15 @@ export async function collectFacilityEntriesForState(
     if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
   }
 
+  // While the gate is off this is the same array. The predicate is not called.
+  let indexed = facilities;
+  if (gateApplies(stateCode)) {
+    const passing = await indexableFacilityIds(supabase, stateCode, stateSlug, facilities);
+    indexed = rowsForSitemap(facilities, stateCode, (row) => passing.has(row.id));
+  }
+
   const withFindings = await facilitiesWithRecentFindings(supabase, stateCode);
-  const sorted = [...facilities].sort(
+  const sorted = [...indexed].sort(
     (a, b) => a.city_slug.localeCompare(b.city_slug) || a.slug.localeCompare(b.slug),
   );
   const entries: SitemapUrlRow[] = [];
@@ -424,6 +432,119 @@ export async function collectFacilityEntriesForState(
     }
   }
   return entries;
+}
+
+async function indexableFacilityIds(
+  supabase: SupabaseClient,
+  stateCode: string,
+  stateSlug: string,
+  rows: Array<{ id: string; city_slug: string; slug: string }>,
+): Promise<Set<string>> {
+  const passing = new Set<string>();
+  if (rows.length === 0) return passing;
+
+  const { data: stateRow } = await supabase
+    .from("states")
+    .select("last_successful_scrape")
+    .eq("code", stateCode)
+    .maybeSingle();
+  const syncAt =
+    (stateRow as { last_successful_scrape: string | null } | null)?.last_successful_scrape ?? null;
+
+  const columns = [
+    "id",
+    "state_code",
+    "name",
+    "city",
+    "city_slug",
+    "slug",
+    "license_status",
+    "license_type",
+    "license_number",
+    "updated_at",
+    "mce_endorsed",
+    "mn_dementia_care_licensed",
+    "mc_designation_type",
+    "secure_beds",
+    "il_dementia_program_flag",
+    "mo_alzheimer_scu",
+    "mo_level_of_care",
+    "tx_alzheimer_certified",
+    "wa_memory_care_certified",
+    "wa_dementia_care_contract",
+    "wa_earc_sdc_contracted",
+    "wa_dementia_specialty",
+    "wa_facility_type",
+    "wa_afh_residential_flag",
+    "ca_cdss_client_served",
+    "az_license_level",
+    "az_memory_care_endorsed",
+    "co_care_setting",
+    "mc_signal_apfm_listed",
+    "mc_signal_caring_listed",
+    "mc_signal_explicit_name",
+    "mc_program_quote",
+    "mc_review_notes",
+  ].join(", ");
+
+  const byId = new Map<string, GateHome & { id: string }>();
+  for (let index = 0; index < rows.length; index += 80) {
+    const chunk = rows.slice(index, index + 80).map((row) => row.id);
+    const { data, error } = await supabase.from("facilities").select(columns).in("id", chunk);
+    if (error) throw new Error(`Failed to score ${stateCode} sitemap rows: ${error.message}`);
+    for (const facility of (data ?? []) as unknown as Array<GateHome & { id: string }>) {
+      byId.set(facility.id, facility);
+    }
+  }
+
+  const inspections = new Map<string, GateInspection[]>();
+  for (let index = 0; index < rows.length; index += 80) {
+    const chunk = rows.slice(index, index + 80).map((row) => row.id);
+    let lastId = "";
+    for (;;) {
+      let query = supabase
+        .from("inspections")
+        .select("id, facility_id, inspection_date, source_url")
+        .in("facility_id", chunk)
+        .order("id")
+        .limit(1000);
+      if (lastId) query = query.gt("id", lastId);
+      const { data, error } = await query;
+      if (error) throw new Error(`Failed to read ${stateCode} inspections for the gate: ${error.message}`);
+      const page = (data ?? []) as Array<{
+        id: string;
+        facility_id: string;
+        inspection_date: string | null;
+        source_url: string | null;
+      }>;
+      for (const row of page) {
+        const list = inspections.get(row.facility_id) ?? [];
+        list.push({ date: row.inspection_date, sourceUrl: row.source_url });
+        inspections.set(row.facility_id, list);
+      }
+      if (page.length < 1000) break;
+      lastId = page[page.length - 1]?.id ?? lastId;
+    }
+  }
+
+  for (const row of rows) {
+    const facility = byId.get(row.id);
+    if (!facility) continue;
+    const name = facility.name?.trim() ?? "";
+    const city = facility.city?.trim() ?? "";
+    const ok = isIndexable({
+      ...facility,
+      state_code: stateCode,
+      sync_at: syncAt,
+      inspections: inspections.get(row.id) ?? [],
+      title: name && city ? `${name}, ${city}` : "",
+      h1: name,
+      canonical:
+        row.city_slug && row.slug ? `${SITE_ORIGIN}/${stateSlug}/${row.city_slug}/${row.slug}` : "",
+    });
+    if (ok) passing.add(row.id);
+  }
+  return passing;
 }
 
 async function facilitiesWithRecentFindings(

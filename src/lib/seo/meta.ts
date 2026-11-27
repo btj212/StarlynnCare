@@ -117,52 +117,148 @@ export function reportablePercentile(
   return percentile;
 }
 
+function countLabel(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function stripMemoryCareWords(text: string): string {
+  return text
+    .replace(/\bmemory care\b/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s,./-]+|[\s,./-]+$/g, "")
+    .trim();
+}
+
 /**
- * Facility-name searches should match the name families use, then a stable
- * inspection-record label. Year is the build or request year, not the last
- * inspection year.
+ * Prose for the no-inspection title. The short form is the chip already
+ * shown on city lists. Neither form adds the words "Memory Care".
+ */
+function licenseTitlePhrase(label: string | null | undefined): { prose: string; short: string } {
+  const raw = stripMemoryCareWords(label ?? "");
+  const known: Record<string, { prose: string; short: string }> = {
+    AL: { prose: "Assisted Living", short: "AL" },
+    ALF: { prose: "Assisted Living", short: "ALF" },
+    "ALF**": { prose: "Assisted Living", short: "ALF" },
+    "ASSISTED LIVING": { prose: "Assisted Living", short: "AL" },
+    "ASSISTED LIVING (NO DEMENTIA CARE LICENSE)": { prose: "Assisted Living", short: "AL" },
+    RCF: { prose: "Residential Care Facility", short: "RCF" },
+    "RESIDENTIAL CARE": { prose: "Residential Care Facility", short: "RCF" },
+    RCFE: { prose: "Residential Care Facility for the Elderly", short: "RCFE" },
+    "RCFE-CCRC": { prose: "Residential Care Facility for the Elderly", short: "RCFE" },
+    "PERSONAL CARE": { prose: "Personal Care", short: "Personal Care" },
+    NF: { prose: "Nursing Home", short: "NF" },
+    SNF: { prose: "Nursing Home", short: "SNF" },
+    "NURSING HOME": { prose: "Nursing Home", short: "Nursing Home" },
+    ALDC: { prose: "Assisted Living with Dementia Care", short: "ALDC" },
+    CCRC: { prose: "Continuing Care", short: "CCRC" },
+    "ALF/RCF": { prose: "Assisted Living or Residential Care", short: "ALF/RCF" },
+    "CARE FACILITY": { prose: "Care Facility", short: "Care Facility" },
+  };
+  const hit = known[raw.toUpperCase()];
+  if (hit) return hit;
+  if (!raw) return { prose: "Care Facility", short: "Care Facility" };
+  return { prose: raw, short: raw };
+}
+
+function licenseFallbackTitles(place: string, licenseLabel: string | null | undefined): string[] {
+  const { prose, short } = licenseTitlePhrase(licenseLabel);
+  const titles = [`${place} — Licensed ${prose}`];
+  if (short !== prose) titles.push(`${place} — Licensed ${short}`);
+  titles.push(`${place} — ${short}`);
+  return titles;
+}
+
+/**
+ * Name and city first so facility-name searches match the SERP, then a
+ * concrete hook (citation count and last inspection date) so the result
+ * looks like the home's page, not a generic reports dump.
  *
- * When the full label is over 70 characters, drop pieces in this order:
- * " & Citations", then " (Year)", then "Inspection Record", leaving
- * "{Name}, {City}". A Washington tier-2 suffix is appended only when the
- * chosen title still fits. The template never adds the words "Memory Care".
+ * GSC (28 days ending 2026-11-24): name queries at ~position 11 with 0
+ * clicks ("fields of florissant", "st peters post acute"). The
+ * "{Name}, {City}: Inspection Record & Citations ({Year})" title tied the
+ * profile to its /inspections subpage. Year is the last inspection year
+ * on record — never the generate date. Rank stays in the description.
  */
 export function buildFacilityTitle(input: {
   name: string;
   stateName: string;
-  /** Kept for callers. Rank is not a title claim. */
+  /** Kept for callers. Rank is no longer a title claim. */
   percentile: number | null;
   city: string;
   citationCount?: number | null;
   inspectionCount?: number | null;
   reviewCount?: number | null;
-  /** Kept for callers. The title year is not the inspection year. */
+  /** ISO yyyy-mm-dd of the latest inspection, used for the title year. */
   lastInspectionDate?: string | null;
+  /** When Washington and not memory care, use the Adult Family Home / Assisted Living suffix. */
   stateCode?: string;
-  /** Kept for callers. The title no longer names the Washington license kind. */
   waFacilityType?: string | null;
   dementiaTier?: "memory-care" | "confirmed-accepts" | "credential" | "neither";
-  /** Calendar year of the build or request. Defaults to the current year. */
-  year?: number;
+  /**
+   * License chip from listLicenseLabel. Used only when there is no inspection
+   * and the home is outside the Arizona and Washington fallbacks.
+   */
+  licenseLabel?: string | null;
 }): string {
-  const year = input.year ?? new Date().getFullYear();
-  const place = `${input.name}, ${input.city}`;
+  const { name, stateName, city, citationCount, inspectionCount, reviewCount, lastInspectionDate } = input;
+  const abbr = STATE_ABBR[stateName] ?? stateName;
+  const place = `${name}, ${city}`;
+  const placeAbbr = `${name}, ${city}, ${abbr}`;
+  const inspections = inspectionCount ?? 0;
+  const reviews = reviewCount ?? 0;
+  const year = lastInspectionDate?.slice(0, 4) ?? null;
+  const inspected = shortMonthYear(lastInspectionDate);
+  const citationHook =
+    inspections > 0 && citationCount != null
+      ? citationCount === 0
+        ? "no citations"
+        : countLabel(citationCount, "citation", "citations")
+      : null;
+  const facts: string[] = [];
+  if (inspections > 0) facts.push(countLabel(inspections, "inspection", "inspections"));
+  if (citationCount != null && inspections > 0) {
+    facts.push(countLabel(citationCount, "citation", "citations"));
+  }
+  if (reviews > 0) facts.push("reviews");
+
+  const waNotMemoryCare =
+    (input.stateCode === "WA" || input.stateName === "Washington") &&
+    input.dementiaTier != null &&
+    input.dementiaTier !== "memory-care";
+  const waKind =
+    (input.waFacilityType ?? "").trim().toUpperCase() === "AFH"
+      ? "Adult Family Home"
+      : "Assisted Living";
+  const waWithAccepts =
+    input.dementiaTier === "confirmed-accepts"
+      ? `${waKind}, Accepts Dementia`
+      : input.dementiaTier === "credential"
+        ? `${waKind}, Dementia Credential`
+        : waKind;
+  const inspectionTitles =
+    inspections > 0
+      ? [
+          citationHook && inspected ? `${place} — ${citationHook}, inspected ${inspected}` : null,
+          citationHook ? `${place} — ${citationHook}${year ? ` (${year})` : ""}` : null,
+          inspected ? `${place} — last inspected ${inspected}` : null,
+          year ? `${place}: Inspection record (${year})` : `${place}: Inspection record`,
+          `${placeAbbr}: Inspection record`,
+        ].filter((candidate): candidate is string => candidate != null)
+      : input.stateName === "Arizona"
+        ? [`${place}: Directed Care Home`, `${placeAbbr}: Directed Care Home`]
+        : waNotMemoryCare
+          ? [`${place}: ${waWithAccepts}`, `${place}: ${waKind}`, `${placeAbbr}: ${waKind}`]
+          : licenseFallbackTitles(place, input.licenseLabel);
   const candidates = [
-    `${place}: Inspection Record & Citations (${year})`,
-    `${place}: Inspection Record (${year})`,
-    `${place}: Inspection Record`,
-    place,
+    ...inspectionTitles,
+    facts.length ? `${place}: ${joinTitleFacts(facts)}` : placeAbbr,
+    facts.length > 1 ? `${place}: ${joinTitleFacts(facts.slice(0, -1))}` : place,
+    placeAbbr,
+    `${name}, ${city}`,
+    `${name}, ${abbr}`,
+    name,
   ];
-  const base = candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? clipTitle(place);
-  const isWa = input.stateCode === "WA" || input.stateName === "Washington";
-  const suffix =
-    isWa && input.dementiaTier === "confirmed-accepts"
-      ? ", Accepts Dementia"
-      : isWa && input.dementiaTier === "credential"
-        ? ", Dementia Credential"
-        : "";
-  if (suffix && base.length + suffix.length <= MAX_TITLE) return `${base}${suffix}`;
-  return base.length <= MAX_TITLE ? base : clipTitle(base);
+  return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? name);
 }
 
 /** State hub title that answers regulator-lookup queries. */
@@ -217,6 +313,12 @@ export function buildFacilityReportsTitle(input: {
     name,
   ];
   return clipTitle(candidates.find((candidate) => candidate.length <= MAX_TITLE) ?? name);
+}
+
+function joinTitleFacts(facts: string[]): string {
+  if (facts.length <= 1) return facts[0] ?? "";
+  if (facts.length === 2) return `${facts[0]} and ${facts[1]}`;
+  return `${facts.slice(0, -1).join(", ")} and ${facts[facts.length - 1]}`;
 }
 
 /** One factual sentence for the top of a facility page. Null when there is no record to cite. */
