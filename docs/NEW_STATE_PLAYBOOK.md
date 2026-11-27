@@ -365,9 +365,9 @@ CMS flags memory care SCUs via the Provider Information `Dementia Unit Type` or 
 
 ### WA-specific multi-signal classification
 
-For WA, `serves_memory_care` is ORed from three independent signals:
-- `wa_memory_care_certified` — Memory Care unit certification
-- `wa_earc_sdc_contracted` — DSHS SDCP contract
-- `wa_dementia_specialty` — training-based dementia designation
+For WA, a home counts as memory care only when:
+- Assisted living: `wa_memory_care_certified`, or a Specialized Dementia Care contract (`wa_earc_sdc_contracted` / `wa_dementia_care_contract`), or `mc_program_confirmed` with `mc_program_source_url`
+- Adult family home: `mc_program_confirmed` with `mc_program_source_url` only
+- `wa_dementia_specialty` is raw DSHS staff-training data. It never qualifies a home
 
 See `docs/WA_PIPELINE_V2.md` for the full WA runbook.

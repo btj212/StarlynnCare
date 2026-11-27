@@ -231,6 +231,10 @@ def save_flag(
             ),
         )
         if facility.get("wa_facility_type") == "AFH":
+            # serves_memory_care for an unpublished AFH comes only from a real
+            # signal (operator-confirmed program). The dementia-specialty
+            # training flag does not set it. This statement still keys off the
+            # stored flag, so the homes already listed stay published.
             cur.execute(
                 """
                 UPDATE facilities

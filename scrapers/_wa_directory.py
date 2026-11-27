@@ -28,10 +28,23 @@ def campus_key(street: str | None, phone: str | None, beds: int | None) -> tuple
 
 
 def dementia_specialty_from_attrs(attrs: dict[str, Any]) -> bool | None:
-    """ArcGIS Speciality / SpecialityCode (SPDE). None when the layer is silent."""
+    """ArcGIS Speciality / SpecialityCode (SPDE).
+
+    True when the layer lists Dementia or SPDE.
+    False when Speciality (or Specialty) is present and does not list Dementia,
+    so a later ingest can clear a stale true.
+    None only when that field is absent. Do not overwrite the stored value.
+    """
     code = str(attrs.get("SpecialityCode") or attrs.get("SpecialtyCode") or "")
-    label = str(attrs.get("Speciality") or attrs.get("Specialty") or "")
+    speciality_key = None
+    if "Speciality" in attrs and attrs.get("Speciality") is not None:
+        speciality_key = "Speciality"
+    elif "Specialty" in attrs and attrs.get("Specialty") is not None:
+        speciality_key = "Specialty"
+    label = str(attrs.get(speciality_key) or "") if speciality_key else ""
     blob = f"{code} {label}"
     if re.search(r"\bSPDE\b", blob, re.I) or re.search(r"dementia", blob, re.I):
         return True
+    if speciality_key is not None:
+        return False
     return None

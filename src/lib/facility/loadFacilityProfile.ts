@@ -332,12 +332,12 @@ export interface FacilityProfile {
   /**
    * WA memory-care signal badges.
    * Non-null only for WA facilities; null for all other states.
-   * Three independent regulatory signals, any of which qualifies the facility.
+   * Memory Care Certified and a Specialized Dementia Care contract.
+   * The dementia-specialty training flag is not a badge.
    */
   waMcSignals: {
     memoryCare: boolean;
     sdcp: boolean;
-    dementiaSpecialty: boolean;
     cmsOverallRating: number | null;
   } | null;
 
@@ -881,7 +881,10 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         ? degradedSnapshot?.grade?.composite_percentile ?? null
         : null,
     memoryCareLabel: careBasis.label,
-    servesMemoryCare: facility.serves_memory_care,
+    servesMemoryCare:
+      facility.state_code === "WA"
+        ? careBasis.kind === "memory-care"
+        : facility.serves_memory_care,
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
     previousLicenseUrl:
@@ -980,7 +983,6 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         ? {
             memoryCare: facility.wa_memory_care_certified ?? false,
             sdcp: facility.wa_earc_sdc_contracted ?? facility.wa_dementia_care_contract ?? false,
-            dementiaSpecialty: facility.wa_dementia_specialty ?? false,
             cmsOverallRating: facility.cms_overall_rating ?? null,
           }
         : null,

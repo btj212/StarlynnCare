@@ -40,7 +40,8 @@ parser → deficiencies
 | CMS Provider Information API | `cms_nh_directory_ingest.py` | Universe (inventory) | NH (SNF) |
 | DSHS SDCP-ALF list | `wa_signal_sdcp.py` | MC signal only | ALF |
 | Memory Care cert list | `wa_signal_memory_care_cert.py` | MC signal only | ALF |
-| AFHAdvLookup / BHAdvLookup | `wa_signal_dementia_specialty.py` | MC signal only | AFH, ALF |
+| ArcGIS `Speciality` (SPDE) | `wa_geo_directory_ingest.py` | Raw training flag. Not a memory-care signal | AFH, ALF |
+| AFHAdvLookup / BHAdvLookup | `wa_signal_dementia_specialty.py` | Retired. Do not run. Type-blind ASP.NET guess that stamped 0 rows | — |
 | BHForms.aspx | `wa_pdf_download.py` (seeds inventory) | Inspection PDFs | ALF, ESF |
 | AFHForms.aspx | `wa_afh_inspections_scrape.py` | Inspection PDFs | AFH |
 | CMS Health Deficiencies API | `cms_nh_deficiencies_ingest.py` | Structured deficiencies | NH |
@@ -52,8 +53,8 @@ parser → deficiencies
 
 | wa_facility_type | Beds | Inspector | Profile config | MC signal source |
 |-----------------|------|-----------|----------------|-----------------|
-| `ALF` | 7–200+ | DSHS RCS | `waProfileConfig` | SDCP, MC cert, dementia specialty |
-| `AFH` | 2–6 | DSHS RCS | `waProfileConfig` | Dementia specialty (AFHAdvLookup) |
+| `ALF` | 7–200+ | DSHS RCS | `waProfileConfig` | Memory Care Certified, Specialized Dementia Care contract, or the operator's page for that address |
+| `AFH` | 2–6 | DSHS RCS | `waProfileConfig` | Operator's own page for that address only. The dementia specialty is staff training, not a signal |
 | `ESF` | varies | DSHS RCS | `waProfileConfig` | Manual review only |
 | `NH` | 50–500 | CMS/Medicare | `waNhProfileConfig` | CMS star rating |
 | `ARC`/`EARC` | varies | DSHS RCS | `waProfileConfig` | EARC-SDC contract |
@@ -77,7 +78,7 @@ AFHs set `wa_afh_residential_flag = true` → no street view, no exterior photo.
 
 **W1c — Display:**
 - `waNhProfileConfig` in `src/lib/states/WA/profileConfig.ts` — F-tag citation prefix, CMS severity labels
-- `WaMcSignalBadges` component — cert / SDCP / specialty / CMS star rating badges
+- `WaMcSignalBadges` component — Memory Care Certified, SDCP contract, and CMS star rating. Not the dementia-specialty training flag
 - `FacilityHero` wired to show WA MC signal badges
 
 ### Wave 2 — Universe expansion (shipped May 2026)
@@ -85,8 +86,8 @@ AFHs set `wa_afh_residential_flag = true` → no street view, no exterior photo.
 - `wa_geo_directory_ingest.py` — ArcGIS REST → AFH/ALF/ESF universe (replaces BHAdvLookup as universe source)
 - `wa_signal_memory_care_cert.py` — writes `wa_memory_care_certified`
 - `wa_signal_sdcp.py` — writes `wa_earc_sdc_contracted`
-- `wa_signal_dementia_specialty.py` — writes `wa_dementia_specialty`
-- `recompute_publishable.py` — `serves_memory_care` now ORs all three new WA signals
+- `wa_signal_dementia_specialty.py` — retired. Do not run. ArcGIS `Speciality` is raw data on `wa_dementia_specialty` and is not a memory-care signal
+- `recompute_publishable.py` — Washington `serves_memory_care` is Memory Care Certified, a Specialized Dementia Care contract, or `mc_program_confirmed`. Not the dementia specialty
 
 ### Wave 3 — AFH + ESF (shipped May 2026)
 
@@ -110,7 +111,7 @@ AFHs set `wa_afh_residential_flag = true` → no street view, no exterior photo.
 |--------|------|-------------|
 | `wa_memory_care_certified` | boolean | Memory Care unit certification |
 | `wa_earc_sdc_contracted` | boolean | EARC-SDC / SDCP contract |
-| `wa_dementia_specialty` | boolean | Training-based dementia specialty |
+| `wa_dementia_specialty` | boolean | Raw DSHS staff-training flag (ArcGIS Speciality / SPDE). Not memory-care evidence |
 | `cms_ccn` | text | CMS Certification Number (SNFs) |
 | `cms_overall_rating` | smallint | Medicare 1–5 star rating |
 | `geo_archived_at` | date | WA Geo GDLArchiveDate (null = active) |
@@ -131,7 +132,7 @@ python3 scrapers/cms_nh_directory_ingest.py --state WA
 
 # 2. MC signals
 python3 scrapers/wa_signal_sdcp.py
-python3 scrapers/wa_signal_dementia_specialty.py
+# Do not run wa_signal_dementia_specialty.py. The column is raw ArcGIS data.
 # wa_signal_memory_care_cert.py requires a CSV from DSHS or PRR
 
 # 3. Publishable recompute

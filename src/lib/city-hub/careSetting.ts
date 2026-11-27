@@ -5,8 +5,10 @@
  * service requirements to every assisted living facility authorized for
  * directed care (HB2764 / Laws 2024, Ch. 100 did not create a separate
  * Memory Care subclass). Washington indexes assisted living and adult family
- * homes; a Specialized Dementia Care contract or AFH dementia specialty is
- * the memory-care label, not the listing bar.
+ * homes. A home is memory care only with Memory Care Certified status, a
+ * Specialized Dementia Care contract, or the operator's own page for that
+ * address. An adult family home can qualify only from that operator page.
+ * The DSHS dementia specialty is staff training and is not a label.
  */
 
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
@@ -158,6 +160,30 @@ export function showsMemoryCareLabel(basis: MemoryCareBasis): boolean {
   return basis.kind === "memory-care";
 }
 
+/**
+ * Washington city-hub cards group as memory care only when the chip names a
+ * real designation. `serves_memory_care` stays true for published adult
+ * family homes whose review cited only the dementia-specialty training flag.
+ * Pages that have not computed a chip leave `careChip` undefined and keep
+ * the older serves_memory_care grouping.
+ */
+export function listedInMemoryCareGroup(input: {
+  stateSlug: string;
+  careChip?: string | null;
+  servesMemoryCare: boolean;
+  memoryCareDisclosureFiled: boolean;
+  txAlzheimerCertified?: boolean | null;
+}): boolean {
+  if (input.stateSlug === "washington" && input.careChip !== undefined) {
+    return Boolean(input.careChip);
+  }
+  return (
+    input.memoryCareDisclosureFiled ||
+    input.servesMemoryCare ||
+    Boolean(input.txAlzheimerCertified)
+  );
+}
+
 export function listCareChip(input: {
   stateCode: string;
   basis: MemoryCareBasis;
@@ -165,9 +191,11 @@ export function listCareChip(input: {
   const code = input.stateCode.toUpperCase();
   if (input.basis.kind === "memory-care") {
     if (code === "WA") {
-      return /specialty/i.test(input.basis.label)
-        ? "Dementia specialty"
-        : "Dementia care contract";
+      const label = input.basis.label;
+      if (/memory-care certified/i.test(label)) return "Memory Care Certified";
+      if (/operator's own page/i.test(label)) return "Memory care program (operator)";
+      if (/dementia care contract/i.test(label)) return "Specialized Dementia Care contract";
+      return null;
     }
     if (code === "PA") return "Special care";
     if (code === "AZ") return "Directed Care";

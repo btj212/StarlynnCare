@@ -551,6 +551,39 @@ def _check_scraper_freshness(cur) -> None:
     )
 
 
+def _report_wa_afh_specialty_only(cur) -> None:
+    """Published AFHs whose only memory-care file is the training flag.
+
+    Reported, not enforced. The October 2026 batch listed these homes.
+    wa_dementia_specialty does not qualify a home, and this report must
+    not unpublish them.
+    """
+    print("\n[WA AFH dementia specialty — reported, not enforced]")
+    cur.execute(
+        """
+        SELECT COUNT(*) AS n
+        FROM facilities f
+        WHERE f.state_code = 'WA'
+          AND f.wa_facility_type = 'AFH'
+          AND f.publishable = true
+          AND COALESCE(f.wa_dementia_specialty, false)
+          AND NOT COALESCE(f.wa_memory_care_certified, false)
+          AND NOT COALESCE(f.wa_earc_sdc_contracted, false)
+          AND NOT COALESCE(f.wa_dementia_care_contract, false)
+          AND NOT (
+            COALESCE(f.mc_program_confirmed, false)
+            AND NULLIF(BTRIM(f.mc_program_source_url), '') IS NOT NULL
+          )
+        """
+    )
+    n = cur.fetchone()["n"] or 0
+    print(
+        "  no WA AFH publishable=true whose only signal is the specialty: "
+        f"{n} home(s) are listed that way. Not enforced — they stay published. "
+        "The column is DSHS staff training, not a memory-care program."
+    )
+
+
 def main() -> None:
     print("=" * 60)
     print("StarlynnCare — Layer 1: Database Invariant Checks")
@@ -563,6 +596,7 @@ def main() -> None:
             _check_positive_label_contradictions(cur)
             _check_coverage_nulls(cur)
             _check_scraper_freshness(cur)
+            _report_wa_afh_specialty_only(cur)
 
     run_all_checks("Layer 1 (DB invariants)")
 

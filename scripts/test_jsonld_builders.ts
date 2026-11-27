@@ -7,6 +7,7 @@ import {
 } from "../src/lib/seo/schema.ts";
 import { COVERED_STATES } from "../src/lib/states.ts";
 import type { Facility } from "../src/lib/types.ts";
+import { memoryCareBasis } from "../src/lib/facility/memoryCareBasis.ts";
 
 const crumbs = buildBreadcrumbList([
   { name: "Home", url: "https://www.starlynncare.com/" },
@@ -90,5 +91,45 @@ const parkland = buildLocalBusinessForFacility(
   { canonicalUrl: "https://www.starlynncare.com/washington/parkland/example" },
 ) as { address: { addressLocality?: string } };
 assert.equal(parkland.address.addressLocality, "Tacoma");
+
+const waState = { code: "WA", slug: "washington", name: "Washington" };
+const waHome = {
+  ...facility,
+  name: "AMAZING HEARTS AFH",
+  marketing_name: null,
+  city: "Vancouver",
+  city_slug: "vancouver",
+  state_code: "WA",
+  license_number: "756545",
+  care_category: "alf_general",
+} as unknown as Facility;
+const afhOnly = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "AFH",
+  wa_dementia_specialty: true,
+  serves_memory_care: true,
+});
+const afhLd = buildLocalBusinessForFacility(waHome, waState, {
+  canonicalUrl: "https://www.starlynncare.com/washington/vancouver/amazing-hearts-afh",
+  memoryCare: afhOnly,
+}) as {
+  amenityFeature?: Array<{ name: string }>;
+  additionalProperty?: Array<{ name: string }>;
+};
+assert.equal(afhLd.amenityFeature, undefined);
+assert.equal(
+  (afhLd.additionalProperty ?? []).some((prop) => prop.name === "Memory care basis"),
+  false,
+);
+
+const mccLd = buildLocalBusinessForFacility(waHome, waState, {
+  canonicalUrl: "https://www.starlynncare.com/washington/vancouver/amazing-hearts-afh",
+  memoryCare: memoryCareBasis({
+    state_code: "WA",
+    wa_facility_type: "ALF",
+    wa_memory_care_certified: true,
+  }),
+}) as { amenityFeature?: Array<{ name: string }> };
+assert.equal(mccLd.amenityFeature?.[0]?.name, "Memory care");
 
 console.log("json-ld builder checks passed");
