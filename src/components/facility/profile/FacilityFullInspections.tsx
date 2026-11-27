@@ -1,5 +1,6 @@
 import type { FacilityProfile, InspectionRow, DeficiencyRow } from "@/lib/facility/loadFacilityProfile";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
+import { formatInspectionListDate } from "@/lib/format/formatRecordDate";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import type { Deficiency } from "@/lib/types";
 import {
@@ -151,7 +152,7 @@ function InspectionItem({
 
         {/* Date */}
         <span className="w-[90px] shrink-0 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.04em] text-ink-2">
-          {insp.inspection_date}
+          {formatInspectionListDate(insp.inspection_date, insp.datePrecision)}
         </span>
 
         {/* Type + outcome */}

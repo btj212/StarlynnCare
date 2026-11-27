@@ -16,6 +16,7 @@ import {
 import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { displayCityName } from "@/lib/resolveListingRegion";
+import { licensedCity } from "@/lib/facility/licensedCity";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { citationCountPhrase } from "@/lib/facility/citationWindow";
@@ -50,11 +51,23 @@ const MC_CATEGORIES: CareCategory[] = [
   "snf_dementia_scu",
 ];
 
-function formatAddr(facility: FacilityProfile["facility"]): string {
+function formatAddr(facility: FacilityProfile["facility"]): {
+  line: string;
+  neighborhood: string | null;
+} {
   const stateCode = (facility.state_code ?? "").toUpperCase();
-  const city = displayCityName(facility.city, facility.city_slug);
-  const cityZip = [city, facility.zip].filter(Boolean).join(`, ${stateCode} `);
-  return [facility.street, cityZip].filter(Boolean).join(" · ");
+  const { locality, neighborhood } = licensedCity(facility);
+  const cityZip = [locality, facility.zip].filter(Boolean).join(`, ${stateCode} `);
+  return {
+    line: [facility.street, cityZip].filter(Boolean).join(" · "),
+    neighborhood,
+  };
+}
+
+function websiteHref(raw: string): string {
+  const trimmed = raw.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }
 
 function VerdictCard({ profile }: { profile: FacilityProfile }) {
@@ -263,6 +276,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   const { facility, state } = profile;
   const isMc = MC_CATEGORIES.includes(facility.care_category) || facility.serves_memory_care;
   const addr = formatAddr(facility);
+  const website = facility.website?.trim() || null;
   const phone = facility.phone
     ? facility.phone.replace(/\D/g, "").replace(/^1?(\d{3})(\d{3})(\d{4})$/, "($1) $2-$3")
     : null;
@@ -282,6 +296,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
     checkedOn != null &&
     profile.totals.inspections === 0 &&
     profile.totals.deficiencies === 0 &&
+    !profile.latestVisit &&
     !profile.complianceFlag;
   const formsUrl = noReportsPosted
     ? dshsFormsUrl(facility.license_number, facility.wa_facility_type)
@@ -470,15 +485,30 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               )}
             </div>
 
-            {addr && (
+            {addr.line && (
               <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-[family-name:var(--font-display)] text-[18px] italic leading-snug text-ink-2 sm:text-[20px]">
-                <span>{addr}</span>
+                <span>{addr.line}</span>
+                {addr.neighborhood && (
+                  <span className="font-[family-name:var(--font-sans)] text-[13px] not-italic tracking-[0.02em] text-ink-3">
+                    {addr.neighborhood}
+                  </span>
+                )}
                 {phone && (
                   <a
                     href={`tel:${facility.phone}`}
                     className="hidden font-[family-name:var(--font-sans)] text-[13px] not-italic tracking-[0.02em] text-ink-3 transition-colors hover:text-ink md:inline"
                   >
                     {phone}
+                  </a>
+                )}
+                {website && (
+                  <a
+                    href={websiteHref(website)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-[family-name:var(--font-sans)] text-[13px] not-italic tracking-[0.02em] text-teal underline decoration-teal/30 underline-offset-4 transition-colors hover:decoration-teal"
+                  >
+                    Website
                   </a>
                 )}
                 {facility.license_number && (() => {
@@ -546,7 +576,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
 
             {profile.latestVisit ? (
               <p className="mt-2 mb-0 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-ink-3">
-                Last inspection {formatRecordDate(profile.latestVisit.date)}
+                Last inspection {formatRecordDate(profile.latestVisit.date, profile.latestVisit.precision)}
               </p>
             ) : null}
 

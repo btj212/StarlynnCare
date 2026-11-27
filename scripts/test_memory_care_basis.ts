@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   CA_DEMENTIA_CLIENT_LABEL,
   MEMORY_CARE_BASIS_UNRECORDED,
+  WA_NO_DEMENTIA_DESIGNATION,
   hasCaDementiaClientCode,
   memoryCareBasis,
 } from "../src/lib/facility/memoryCareBasis.ts";
@@ -159,6 +160,21 @@ const waSpecialty = memoryCareBasis({
 assert.equal(waSpecialty.kind, "memory-care");
 assert.match(waSpecialty.label, /dementia specialty/);
 
+const waContractTypes = memoryCareBasis({
+  state_code: "WA",
+  wa_contract_types: ["Specialized Dementia Care"],
+});
+assert.equal(waContractTypes.kind, "memory-care");
+
+const southHill = memoryCareBasis({
+  state_code: "WA",
+  serves_memory_care: false,
+});
+assert.equal(southHill.recorded, false);
+assert.equal(southHill.kind, "none");
+assert.equal(southHill.label, WA_NO_DEMENTIA_DESIGNATION);
+assert.doesNotMatch(southHill.label, /not yet recorded/);
+
 const pairs = buildFacilityFaqPairs({
   facilityName: "Example Home",
   stateName: "Utah",
@@ -189,6 +205,10 @@ assert.match(pairs.find((pair) => pair.q.startsWith("How many"))?.a ?? "", /imme
 assert.match(pairs.find((pair) => pair.q.startsWith("Who licenses"))?.a ?? "", /F23/);
 assert.match(pairs.find((pair) => pair.q.startsWith("Who licenses"))?.a ?? "", /ccl\.utah\.gov/);
 assert.match(pairs.find((pair) => pair.q.startsWith("How does"))?.a ?? "", /top 20%/);
+assert.doesNotMatch(
+  pairs.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
+  /Utah memory care facilities/,
+);
 
 const thin = buildFacilityFaqPairs({
   facilityName: "Quiet Home",
@@ -211,6 +231,38 @@ const thin = buildFacilityFaqPairs({
 });
 assert.equal(thin.length, 1);
 assert.match(thin[0].a, /dementia care contract/);
+
+const noMcFaq = buildFacilityFaqPairs({
+  facilityName: "South Hill Village",
+  stateName: "Washington",
+  stateCode: "WA",
+  pageUrl: "https://www.starlynncare.com/washington/spokane/south-hill-village",
+  inspectionCount: 1,
+  deficiencyCount: 0,
+  countsCoverThreeYears: false,
+  lastInspectionDate: "2026-04-01",
+  lastInspectionType: "inspection",
+  lastInspectionIsComplaint: false,
+  lastInspectionPrecision: "month",
+  seriousFindings: [],
+  percentile: 62,
+  memoryCareLabel: WA_NO_DEMENTIA_DESIGNATION,
+  servesMemoryCare: false,
+  licenseNumber: "2480",
+  licenseUrl: null,
+  regulatorName: "Washington DSHS",
+  regulatorAbbr: "DSHS",
+});
+assert.equal(noMcFaq.some((pair) => pair.q.includes("provide memory care")), false);
+assert.match(
+  noMcFaq.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
+  /Washington assisted living/,
+);
+assert.doesNotMatch(
+  noMcFaq.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
+  /memory care facilities/,
+);
+assert.match(noMcFaq.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /in April 2026/);
 
 const coloradoName = memoryCareBasis({
   state_code: "CO",

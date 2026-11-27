@@ -13,6 +13,7 @@ import {
 } from "@/components/facility/profile/inspectionBlocks";
 import { loadFacilityProfile, type FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
+import { formatInspectionListDate } from "@/lib/format/formatRecordDate";
 import { facilityDisplayName } from "@/lib/facility/aliases";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { displayCityName } from "@/lib/resolveListingRegion";
@@ -185,7 +186,7 @@ export default async function FacilityInspectionsPage({ params }: PageProps) {
                     >
                       <h2 className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
                         <span className="font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-ink-2">
-                          {insp.inspection_date}
+                          {formatInspectionListDate(insp.inspection_date, insp.datePrecision)}
                         </span>
                         <span className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] text-ink">
                           {visitKindLabel(insp)}

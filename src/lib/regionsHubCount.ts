@@ -2,7 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Region } from "@/lib/regions";
 import { facilityListedInSitemap } from "@/lib/seo/indexability";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
-import { belongsOnCityPage, paOverrideOrFilter, paOverridePageSlugs } from "@/lib/city-hub/municipality";
+import {
+  belongsOnCityPage,
+  paOverrideOrFilter,
+  paOverridePageSlugs,
+  waOverrideOrFilter,
+  waOverridePageSlugs,
+} from "@/lib/city-hub/municipality";
 
 /**
  * Exact publishable facility count for a listing region (matches hub page query).
@@ -56,7 +62,7 @@ export async function loadRegionHubSummary(
 }> {
   const { data: facRows, error: facErr } = await supabase
     .from("facilities")
-    .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed")
+    .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed, wa_county, historical_city_slugs")
     .eq("state_code", region.state.code)
     .eq("publishable", true)
     .in("city_slug", region.citySlugs as unknown as string[]);
@@ -83,6 +89,8 @@ export async function loadRegionHubSummary(
     zip?: string | null;
     city_slug?: string;
     mn_dementia_care_licensed?: boolean | null;
+    wa_county?: string | null;
+    historical_city_slugs?: string[] | null;
   };
   const byId = new Map<string, HubRow>();
   for (const row of (facRows ?? []) as HubRow[]) byId.set(row.id, row);
@@ -94,7 +102,7 @@ export async function loadRegionHubSummary(
   ) {
     const { data: extraRows } = await supabase
       .from("facilities")
-      .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed")
+      .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed, wa_county, historical_city_slugs")
       .eq("state_code", "PA")
       .eq("publishable", true)
       .or(paOverrideOrFilter());
@@ -103,7 +111,37 @@ export async function loadRegionHubSummary(
     }
   }
 
-  const mergedRows = [...byId.values()];
+  if (
+    region.kind === "city" &&
+    region.state.code === "WA" &&
+    waOverridePageSlugs().includes(region.slug)
+  ) {
+    const { data: extraRows } = await supabase
+      .from("facilities")
+      .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed, wa_county, historical_city_slugs")
+      .eq("state_code", "WA")
+      .eq("publishable", true)
+      .or(waOverrideOrFilter());
+    for (const row of (extraRows ?? []) as HubRow[]) {
+      if (!byId.has(row.id)) byId.set(row.id, row);
+    }
+  }
+
+  const mergedRows = [...byId.values()].filter((row) => {
+    if (region.kind !== "city") return true;
+    if (region.state.code !== "PA" && region.state.code !== "WA") return true;
+    return belongsOnCityPage(
+      {
+        stateCode: region.state.code,
+        zip: row.zip ?? null,
+        name: row.name ?? "",
+        citySlug: row.city_slug ?? region.slug,
+        county: row.wa_county,
+        historicalCitySlugs: row.historical_city_slugs,
+      },
+      region.slug,
+    );
+  });
   const facilityIds = mergedRows.map((r) => r.id);
   const totalCount = facilityIds.length;
 
@@ -186,21 +224,6 @@ export async function loadRegionHubSummary(
   const listedRows = recordCheckIncomplete
     ? mergedRows
     : mergedRows.filter((row) => {
-        if (region.kind === "city" && region.state.code === "PA") {
-          if (
-            !belongsOnCityPage(
-              {
-                stateCode: "PA",
-                zip: row.zip ?? null,
-                name: row.name ?? "",
-                citySlug: row.city_slug ?? region.slug,
-              },
-              region.slug,
-            )
-          ) {
-            return false;
-          }
-        }
         return facilityListedInSitemap({
           stateCode: region.state.code,
           beds: row.beds,

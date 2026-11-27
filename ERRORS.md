@@ -8,6 +8,22 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — WA name keyword, SDC summaries, successor inserts, hidden PDF dates
+
+**What went wrong:** `recompute_publishable.py` treated `mc_signal_explicit_name` (a name containing “Memory Care”) as a WA memory-care signal. South Hill Village 2480 has no DSHS dementia specialty, SDC contract, or Memory Care Certified flag; the name rule would flip `serves_memory_care` back to true after it was set false. The profile still said “Memory-care basis not yet recorded”, asked “Does … provide memory care?”, and ranked the home among “Washington memory care facilities”.
+
+`summarize_inspections.py` told Claude that “Washington memory care lives in ALFs holding a DSHS Specialized Dementia Care contract.” Fields Spokane Valley 2669 has `wa_contract_types = {No Contract}` and `wa_dementia_care_contract = false`, but its June 2025 summary claimed the visit “verified compliance with Washington DSHS Specialized Dementia Care requirements”.
+
+The weekly geo scan keyed only on `license_number`. DSHS reissued licenses 2799, 2800, 2801 for the same campuses as 2037, 1947, 2141 (same street/phone/beds); the scan inserted brand-new rows and left inspections on the old URLs.
+
+`wa_signal_dementia_specialty.py` guessed ASP.NET `ddlSpecFocus=Dementia` and stamped 0 AFHs. ArcGIS `Speciality` / `SpecialityCode` (SPDE) is the real field. `wa_pdf_inventory` is admin-only RLS, so 352 publishable WA homes with a posted PDF and no `inspections` row showed last inspection as “—”.
+
+**What worked instead:** Exclude name keywords from WA `serves_memory_care`. When that flag is false, say DSHS does not list a dementia designation; skip the memory-care FAQ; rank among “Washington assisted living”. Summarizer prompt + post-check refuse an SDC claim unless the roster holds the contract. Geo ingest flags a successor license to a review list and skips the insert; do not delete or merge existing rows. Stamp specialty from ArcGIS. Public last-inspection date uses RPC `wa_latest_posted_report` (0085).
+
+**Source:** WA display audit, 2026-11-27.
+
+---
+
 ## 2026-11 — Sunday PA/UT "source URL changed" was a false lead
 
 **What went wrong:** Four Sunday `weekly-inspection-ingest.yml` runs failed on PA and UT. The guess was that DHS / CCL endpoints had moved. They had not. PA `AzureInspVioltnReprtSearchResults` still returns the inspection table for ~356/363 homes; seven GitHub-runner requests got Azure Front Door 403 (the `StarlynnCare-bot/1.0` User-Agent made that worse) and the scraper exited 1 after one retry. UT `cclapi.dlbc.utah.gov` still works; 118/119 facilities stored 566 inspections and one API call failed after one retry, which also exited 1. WA finished, but took 5.5–6 hours because AFH discovery walked 6,429 licensed homes at 1 req/s, physical-city hit Census for every WA row (no cache on the runner), compliance flags re-fetched 1,040 publishable homes, and `wa_pdf_backfill.py --rescore` re-summarized 3,335 inspections.

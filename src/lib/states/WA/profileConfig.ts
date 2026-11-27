@@ -44,6 +44,7 @@ export const waNhProfileConfig: StateProfileConfig = {
   citationPrefix: "F",
   inspectionWindowMonths: 36,
   timelineWindowMonths: 24,
+  scopeSeverityScale: "cms",
   formatSeverityTag: nhFormatSeverityTag,
   formNameForDeficiency: (d) => {
     // F-tags always have a CMS-2567 form

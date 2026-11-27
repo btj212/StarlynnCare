@@ -34,6 +34,12 @@ import anthropic
 import psycopg
 from dotenv import load_dotenv
 
+_SCRAPERS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRAPERS_DIR not in sys.path:
+    sys.path.insert(0, _SCRAPERS_DIR)
+
+from _wa_summary_guard import strip_unfounded_dementia_contract
+
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -116,10 +122,16 @@ Rules:
 9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
 
 SYSTEM_PROMPT_WA = f"""You summarize Washington DSHS Residential Care Services inspection and
-investigation findings for families researching memory care. Today is {TODAY}.
+investigation findings for families. Today is {TODAY}.
 
-Washington memory care lives in Assisted Living Facilities (ALFs) holding a DSHS Specialized
-Dementia Care contract. Findings come from routine inspections and complaint investigations.
+Washington licenses Assisted Living Facilities (ALFs) and Adult Family Homes. A Specialized
+Dementia Care (SDC) contract is a separate DSHS Medicaid overlay. Most homes do not hold it.
+A clean inspection does not mean the home has an SDC contract.
+
+The "DSHS dementia contract" field in the user message is the authority. If it is "no", do
+NOT mention Specialized Dementia Care, an SDC contract, SDCP, or dementia-care contract
+requirements. If it is "yes", mention that contract only when the narrative itself does.
+
 Washington does NOT use California-style "Type A/Type B" deficiency labels — use the regulator's
 own terminology (e.g. "deficiency cited", "investigation substantiated", "enforcement action").
 
@@ -132,7 +144,8 @@ Rules:
 6. Do NOT invent facts not in the source text.
 7. Do NOT name specific residents, staff, or inspectors.
 8. Do NOT use "the report states" / "according to the document". Just state the facts.
-9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
+9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events.
+10. Do NOT claim the visit verified a dementia contract the home does not hold."""
 
 SYSTEM_PROMPT_MN = f"""You summarize Minnesota MDH (Department of Health) inspection and complaint
 findings for families researching memory care. Today is {TODAY}.
@@ -316,6 +329,7 @@ SYSTEM_PROMPTS_BY_STATE = {
 USER_TEMPLATE = """Inspection type: {inspection_type}
 Is complaint: {is_complaint}
 Outcome (if complaint): {outcome}
+DSHS dementia contract: {dementia_contract}
 
 Narrative:
 {narrative}
@@ -336,11 +350,17 @@ def summarize(
     narrative: str,
     *,
     state_code: str = "CA",
+    holds_sdc: bool = False,
 ) -> str | None:
+    if state_code.upper() == "WA":
+        dementia_contract = "yes" if holds_sdc else "no"
+    else:
+        dementia_contract = "n/a"
     user_msg = USER_TEMPLATE.format(
         inspection_type=inspection_type or "visit",
         is_complaint="Yes" if is_complaint else "No",
         outcome=outcome or "N/A",
+        dementia_contract=dementia_contract,
         narrative=narrative[:6000],  # stay well within context
     )
     system = SYSTEM_PROMPTS_BY_STATE.get(state_code.upper(), SYSTEM_PROMPT_GENERIC)
@@ -366,6 +386,11 @@ def summarize(
             if state_code.upper() != "CA" and re.search(r"\b(Title 22|CDSS)\b", text):
                 print("    rejected California wording on a non-CA record")
                 return None
+            if state_code.upper() == "WA":
+                text = strip_unfounded_dementia_contract(text, holds_sdc)
+                if not text:
+                    print("    rejected unfounded Specialized Dementia Care claim")
+                    return None
             return text
         except Exception as e:
             message = str(e).lower()
@@ -469,7 +494,7 @@ def main() -> None:
                                  AND length(btrim(coalesce(d.inspector_narrative, ''))) >= 80
                              )
                            ),
-                           f.name, f.state_code
+                           f.name, f.state_code, false
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -495,7 +520,16 @@ def main() -> None:
                     f"""
                     SELECT i.id, i.inspection_type, i.is_complaint,
                            i.raw_data->>'outcome', i.raw_data->>'narrative',
-                           f.name, f.state_code
+                           f.name, f.state_code,
+                           (
+                             COALESCE(f.wa_dementia_care_contract, false)
+                             OR COALESCE(f.wa_earc_sdc_contracted, false)
+                             OR EXISTS (
+                               SELECT 1
+                               FROM unnest(COALESCE(f.wa_contract_types, ARRAY[]::text[])) AS t(label)
+                               WHERE t.label ~* 'dementia|memory care|sdc'
+                             )
+                           ) AS holds_sdc
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -522,7 +556,7 @@ def main() -> None:
     failed = 0
 
     def _summarize_row(row):
-        insp_id, insp_type, is_complaint, outcome, raw_narrative, fac_name, st_code = row
+        insp_id, insp_type, is_complaint, outcome, raw_narrative, fac_name, st_code, holds_sdc = row
         narrative = clean_narrative(raw_narrative)
         if not narrative:
             return insp_id, fac_name, None, "empty"
@@ -537,6 +571,7 @@ def main() -> None:
             outcome,
             narrative,
             state_code=st_code or "CA",
+            holds_sdc=bool(holds_sdc),
         )
         if not summary:
             return insp_id, fac_name, None, "fail"

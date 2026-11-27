@@ -121,8 +121,10 @@ def recompute_serves_memory_care(
     """
     Recompute serves_memory_care using the unified Option C tier-1 signal model.
 
-    Core signals (all states):
+    Core signals (all states except WA name keywords):
       - mc_signal_explicit_name: name keywords ("memory care", "Alzheimer", "dementia")
+        WA excludes this. A name alone is never memory-care evidence (South Hill
+        Village 2480 is "… & Memory Care" with no DSHS dementia flag).
       - memory_care_disclosure_filed: government regulatory confirmation filed
       - mc_signal_chain_curated: hand-verified chain match (APFM, SH, Benchmark, etc.)
       - mc_signal_apfm_listed AND mc_signal_caring_listed: both major directories agree
@@ -141,7 +143,9 @@ def recompute_serves_memory_care(
     sql = """
         UPDATE facilities
         SET serves_memory_care = COALESCE(
-             COALESCE(mc_signal_explicit_name, false)
+             -- A facility name is not a state file. WA must not flip
+             -- serves_memory_care from "Memory Care" in the legal name.
+             (state_code <> 'WA' AND COALESCE(mc_signal_explicit_name, false))
           OR COALESCE(memory_care_disclosure_filed, false)
           OR COALESCE(mc_signal_chain_curated, false)
           OR (COALESCE(mc_signal_apfm_listed, false) AND COALESCE(mc_signal_caring_listed, false))
@@ -309,7 +313,13 @@ def recompute_publishable(
           -- A probationary license is still a license: the page shows the
           -- status. CLOSED / REVOKED / PENDING never publish.
           license_status IN ('LICENSED', 'ON PROBATION')
-          AND serves_memory_care = true
+          AND (
+            serves_memory_care = true
+            -- WA: keep a home that is already listed after DSHS shows no
+            -- dementia flag. The page must not call it memory care. New
+            -- inserts start publishable=false, so name-only campuses stay out.
+            OR (state_code = 'WA' AND publishable = true)
+          )
           AND mc_review_status <> 'reviewed_reject'
           {freshness_clause}{geocode_clause}
         )

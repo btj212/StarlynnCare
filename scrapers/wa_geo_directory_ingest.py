@@ -28,10 +28,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +46,7 @@ if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
 
 from _http_helpers import make_session, polite_sleep
+from _wa_directory import campus_key, dementia_specialty_from_attrs
 
 # ArcGIS REST endpoint for WA DSHS Long-Term Care Residential Care
 # Source: https://geo.wa.gov/datasets/WADSHS::long-term-care-residential-care/api
@@ -86,6 +88,141 @@ def pad_wa_license(raw: Any) -> str:
     if not digits:
         return str(raw).strip()[:32]
     return digits.zfill(10)
+
+
+SUCCESSOR_NOTE_PREFIX = "[WA license successor"
+
+
+def successor_review_path() -> Path:
+    out_dir = REPO_ROOT / "scrapers" / "out"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return out_dir / "wa_license_successor_review.jsonl"
+
+
+def find_predecessor_campus(
+    cur: Any,
+    new_license: str,
+    street: str | None,
+    phone: str | None,
+    beds: int | None,
+) -> dict[str, Any] | None:
+    """Existing WA row at the same campus with a different license number."""
+    key = campus_key(street, phone, beds)
+    if key is None:
+        return None
+    street_n, phone_n, beds_n = key
+    cur.execute(
+        """
+        SELECT id, license_number, name, street, phone, beds, slug, city_slug
+        FROM facilities
+        WHERE state_code = 'WA'
+          AND license_number IS DISTINCT FROM %s
+          AND beds IS NOT NULL
+          AND beds = %s
+          AND btrim(regexp_replace(upper(coalesce(street, '')), '[^A-Z0-9]+', ' ', 'g'))
+              = %s
+          AND CASE
+                WHEN length(regexp_replace(coalesce(phone, ''), '\\D', '', 'g')) = 11
+                     AND regexp_replace(coalesce(phone, ''), '\\D', '', 'g') LIKE '1%%'
+                THEN substr(regexp_replace(coalesce(phone, ''), '\\D', '', 'g'), 2)
+                ELSE regexp_replace(coalesce(phone, ''), '\\D', '', 'g')
+              END = %s
+        ORDER BY publishable DESC, updated_at DESC NULLS LAST
+        LIMIT 1
+        """,
+        (new_license, beds_n, street_n, phone_n),
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    return {
+        "id": row[0],
+        "license_number": row[1],
+        "name": row[2],
+        "street": row[3],
+        "phone": row[4],
+        "beds": row[5],
+        "slug": row[6],
+        "city_slug": row[7],
+    }
+
+
+def flag_successor_license(
+    cur: Any,
+    *,
+    predecessor: dict[str, Any],
+    new_license: str,
+    new_name: str,
+    street: str | None,
+    phone: str | None,
+    beds: int | None,
+) -> None:
+    """Record a successor license for review. Do not insert or merge rows."""
+    detected = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    payload = {
+        "detected_on": detected,
+        "old_facility_id": str(predecessor["id"]),
+        "old_license": predecessor["license_number"],
+        "old_name": predecessor["name"],
+        "old_slug": predecessor["slug"],
+        "old_city_slug": predecessor["city_slug"],
+        "new_license": new_license,
+        "new_name": new_name,
+        "street": street,
+        "phone": phone,
+        "beds": beds,
+    }
+    line = json.dumps(payload, default=str)
+    with successor_review_path().open("a", encoding="utf-8") as fh:
+        fh.write(line + "\n")
+    print(
+        f"  SUCCESSOR: license {new_license} ({new_name}) matches "
+        f"{predecessor['license_number']} at {street} — skipped insert"
+    )
+
+    note = (
+        f"{SUCCESSOR_NOTE_PREFIX} {detected}] DSHS listed new license {new_license} "
+        f"at the same street/phone/beds as this row ({predecessor['license_number']}). "
+        "Scan skipped the insert. Do not merge automatically."
+    )
+    cur.execute(
+        """
+        UPDATE facilities
+        SET mc_review_notes = CASE
+              WHEN mc_review_notes IS NULL OR btrim(mc_review_notes) = '' THEN %s
+              WHEN mc_review_notes LIKE %s THEN mc_review_notes
+              ELSE mc_review_notes || E'\\n' || %s
+            END
+        WHERE id = %s
+        """,
+        (note, f"%{SUCCESSOR_NOTE_PREFIX}%{new_license}%", note, predecessor["id"]),
+    )
+    cur.execute("SAVEPOINT wa_successor_flag")
+    try:
+        cur.execute(
+            """
+            INSERT INTO wa_license_successor_flags (
+                old_facility_id, old_license_number, new_license_number,
+                new_name, street, phone, beds
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (old_license_number, new_license_number) DO NOTHING
+            """,
+            (
+                predecessor["id"],
+                predecessor["license_number"],
+                new_license,
+                new_name,
+                street,
+                phone,
+                beds,
+            ),
+        )
+        cur.execute("RELEASE SAVEPOINT wa_successor_flag")
+    except Exception as exc:
+        cur.execute("ROLLBACK TO SAVEPOINT wa_successor_flag")
+        # Table is migration 0086. Weekly scan still flags via JSONL + notes.
+        if "wa_license_successor_flags" not in str(exc):
+            raise
 
 
 def _arcgis_date(epoch_ms: int | None) -> date | None:
@@ -193,6 +330,7 @@ def upsert_facility_from_geo(
     geo_archived_at = _arcgis_date(archive_date_ms)
     beds_raw = attrs.get("LicensedBedCount") or attrs.get("Capacity") or attrs.get("Beds")
     beds = int(beds_raw) if beds_raw and str(beds_raw).isdigit() else None
+    dementia_specialty = dementia_specialty_from_attrs(attrs)
 
     # Prefer attributes-level lat/lng (already projected); fallback to geometry
     lat_raw = attrs.get("Latitude")
@@ -233,6 +371,7 @@ def upsert_facility_from_geo(
                     beds = COALESCE(%s, beds),
                     wa_facility_type = %s,
                     geo_archived_at = %s,
+                    wa_dementia_specialty = COALESCE(%s, wa_dementia_specialty),
                     updated_at = now()
                 WHERE state_code = 'WA' AND license_number = %s
                 """,
@@ -240,10 +379,27 @@ def upsert_facility_from_geo(
                     name, address, zip_code, county,
                     phone, lat, lng,
                     beds, wa_facility_type, geo_archived_at,
+                    dementia_specialty,
                     license_num,
                 ),
             )
             return "updated"
+
+        predecessor = find_predecessor_campus(
+            cur, license_num, address, phone, beds,
+        )
+        if predecessor:
+            flag_successor_license(
+                cur,
+                predecessor=predecessor,
+                new_license=license_num,
+                new_name=name,
+                street=address,
+                phone=phone,
+                beds=beds,
+            )
+            return "flagged"
+
         else:
             cur.execute(
                 """
@@ -255,6 +411,7 @@ def upsert_facility_from_geo(
                     facility_type,
                     serves_memory_care, publishable,
                     mc_review_status,
+                    wa_dementia_specialty,
                     slug
                 ) VALUES (
                     'WA', %s, %s, %s, %s, %s, %s,
@@ -264,6 +421,7 @@ def upsert_facility_from_geo(
                     %s,
                     false, false,
                     'needs_review',
+                    %s,
                     %s
                 )
                 ON CONFLICT (state_code, city_slug, slug) DO UPDATE
@@ -278,6 +436,7 @@ def upsert_facility_from_geo(
                     license_num,
                     wa_facility_type, geo_archived_at,
                     wa_facility_type,  # facility_type = wa_facility_type
+                    dementia_specialty,
                     slug,
                 ),
             )
@@ -307,7 +466,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     print(f"  {len(features)} features fetched")
 
-    inserted = updated = skipped = 0
+    inserted = updated = skipped = flagged = 0
     for feat in features:
         attrs = feat.get("attributes", {})
         geometry = feat.get("geometry")
@@ -316,12 +475,19 @@ def main(argv: list[str] | None = None) -> None:
             inserted += 1
         elif result == "updated":
             updated += 1
+        elif result == "flagged":
+            flagged += 1
         else:
             skipped += 1
 
     if not args.dry_run:
         conn.commit()
-    print(f"\nInserted: {inserted}  Updated: {updated}  Skipped: {skipped}")
+    print(
+        f"\nInserted: {inserted}  Updated: {updated}  "
+        f"Successor-flagged: {flagged}  Skipped: {skipped}"
+    )
+    if flagged:
+        print(f"  Review list: {successor_review_path()}")
     conn.close()
 
 

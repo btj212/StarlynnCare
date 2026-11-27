@@ -22,8 +22,10 @@ import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { regulatorFor } from "@/lib/states/regulators";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
-import { formatRecordDate } from "@/lib/format/formatRecordDate";
+import { formatRecordDate, type DatePrecision } from "@/lib/format/formatRecordDate";
+import { licensedCity } from "@/lib/facility/licensedCity";
 import { peerRankPhrase } from "@/lib/seo/rankPhrase";
+import { peerSetPhrase } from "@/lib/city-hub/careSetting";
 
 /**
  * Optional snapshot-derived extras the LocalBusiness/MedicalOrganization JSON-LD
@@ -210,7 +212,7 @@ export function buildLocalBusinessForFacility(
       name: "Care category",
       value: facility.care_category,
     });
-  if (opts.memoryCare) {
+  if (opts.memoryCare && opts.memoryCare.kind !== "none") {
     additionalProperty.push({
       "@type": "PropertyValue",
       name: opts.memoryCare.kind === "care-level" ? "Care level" : "Memory care basis",
@@ -286,7 +288,7 @@ export function buildLocalBusinessForFacility(
     address: {
       "@type": "PostalAddress",
       streetAddress: facility.street ?? undefined,
-      addressLocality: facility.city ?? undefined,
+      addressLocality: licensedCity(facility).locality || facility.city || undefined,
       postalCode: facility.zip ?? undefined,
       addressRegion: state.name,
       addressCountry: "US",
@@ -913,9 +915,17 @@ export type FacilityFaqInput = {
   lastInspectionType: string | null;
   /** Matches the inspection list: complaints stay complaints. Other non-complaint visits use that list's label. */
   lastInspectionIsComplaint: boolean;
+  /** WA DSHS often posts a month, not a day. */
+  lastInspectionPrecision?: DatePrecision;
   seriousFindings: Array<{ label: string; count: number }>;
   percentile: number | null;
   memoryCareLabel: string;
+  /**
+   * When false, skip "Does … provide memory care?" — that question implies
+   * the home might. Rank copy uses the state's peer-set phrase, not
+   * "memory care facilities".
+   */
+  servesMemoryCare?: boolean;
   licenseNumber: string | null;
   licenseUrl: string | null;
   regulatorName: string;
@@ -976,17 +986,21 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
   const pairs: FacilityFaqPair[] = [];
   const name = input.facilityName;
 
-  pairs.push({
-    q: `Does ${name} provide memory care?`,
-    a: input.memoryCareLabel,
-  });
+  if (input.servesMemoryCare !== false) {
+    pairs.push({
+      q: `Does ${name} provide memory care?`,
+      a: input.memoryCareLabel,
+    });
+  }
 
   if (input.lastInspectionDate) {
-    const date = formatRecordDate(input.lastInspectionDate);
+    const precision = input.lastInspectionPrecision ?? "day";
+    const date = formatRecordDate(input.lastInspectionDate, precision);
     const visit = visitPhrase(input.lastInspectionType, input.lastInspectionIsComplaint);
+    const prep = precision === "month" ? "in" : "on";
     pairs.push({
       q: `When was ${name} last inspected?`,
-      a: `${name} was last inspected on ${date}. That visit is ${visit}.`,
+      a: `${name} was last inspected ${prep} ${date}. That visit is ${visit}.`,
     });
   }
 
@@ -1029,9 +1043,10 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
 
   if (input.percentile != null) {
     const rankStr = peerRankPhrase(input.percentile).text;
+    const peers = peerSetPhrase(input.stateCode, input.stateName);
     pairs.push({
       q: `How does ${name} compare to similar ${input.stateName} facilities?`,
-      a: `Based on deficiency severity, repeat citations, and inspection frequency, ${name} ranks in the ${rankStr} of ${input.stateName} memory care facilities in peer comparison on StarlynnCare.`,
+      a: `Based on deficiency severity, repeat citations, and inspection frequency, ${name} ranks in the ${rankStr} of ${peers} in peer comparison on StarlynnCare.`,
     });
   }
 

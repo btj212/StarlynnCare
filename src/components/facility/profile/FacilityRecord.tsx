@@ -3,6 +3,7 @@ import type { FacilityProfile, TimelinePoint, ScopeSeverityCell } from "@/lib/fa
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
+import { formatInspectionListDate } from "@/lib/format/formatRecordDate";
 import Link from "next/link";
 
 // ─── Timeline rail ─────────────────────────────────────────────────────────
@@ -189,9 +190,7 @@ function ScopeSeverityGrid({
       <p className="mb-4 font-[family-name:var(--font-display)] text-[18px] italic text-ink-2">
         {agencyShort === "CDPHE"
           ? "CDPHE Level A–E"
-          : agencyShort === "CMS"
-            ? "CMS scope and severity (A–L)"
-            : "Scope × Severity (CMS A–L)"}
+          : "CMS scope and severity (A–L)"}
       </p>
 
       {total === 0 ? (
@@ -258,15 +257,6 @@ function ScopeSeverityGrid({
 
 // ─── Compact inspection list ────────────────────────────────────────────────
 
-function fmt(iso: string): string {
-  return new Date(iso + "T12:00:00").toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
   const { inspections, deficienciesByInspection, cfg } = profile;
 
@@ -293,7 +283,7 @@ function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
             style={{ gridTemplateColumns: "100px 1fr 100px 24px" }}
           >
             <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-2 tracking-[0.06em]">
-              {insp.inspection_date}
+              {formatInspectionListDate(insp.inspection_date, insp.datePrecision)}
             </span>
             <div>
               <div className="font-[family-name:var(--font-display)] text-[18px] tracking-[-0.005em]">
@@ -328,7 +318,8 @@ function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
 
 export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
   const { timeline, scopeSeverityGrid, totals, cfg } = profile;
-  const showSeverityGrid = profile.snapshot?.severity_measured !== false;
+  const showSeverityGrid =
+    cfg.scopeSeverityScale != null && profile.snapshot?.severity_measured !== false;
 
   return (
     <section id="record" className="scroll-mt-36 md:scroll-mt-28 border-b border-paper-rule py-16">

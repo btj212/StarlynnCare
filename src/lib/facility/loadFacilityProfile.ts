@@ -43,6 +43,11 @@ import {
 } from "@/lib/seo/schema";
 import { memoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import {
+  inspectionDatePrecision,
+  postedMonthToIsoDay,
+} from "@/lib/facility/inspectionPrecision";
+import type { DatePrecision } from "@/lib/format/formatRecordDate";
 import { seriousFindingCounts } from "@/lib/facility/seriousFindings";
 import { freshenTourQuestions } from "@/lib/facility/tourQuestions";
 import type { Facility, Deficiency, DataDepth, InspectionVisibilityTier } from "@/lib/types";
@@ -77,7 +82,11 @@ export type InspectionRow = {
     narrative?: string;
     duration_minutes?: number;
     areas_examined?: string;
+    washington?: boolean;
+    posted_month?: string;
   } | null;
+  /** Day vs month-only. WA DSHS Forms pages often give a posted month. */
+  datePrecision: DatePrecision;
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -299,7 +308,12 @@ export interface FacilityProfile {
   /** FAQ pairs. The visible section and the FAQ JSON-LD use this same list. */
   faqPairs: Array<{ q: string; a: string }>;
   /** Newest inspection we fetched, including those outside the three-year window. */
-  latestVisit: { date: string; type: string | null; isComplaint: boolean } | null;
+  latestVisit: {
+    date: string;
+    type: string | null;
+    isComplaint: boolean;
+    precision: DatePrecision;
+  } | null;
 
   reviews: Review[];
   /** Photo URLs — up to 5 for the gallery; sourced from photo_urls[] with photo_url fallback. */
@@ -410,9 +424,9 @@ async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
     .order("inspection_date", { ascending: false })
     .limit(50);
 
-  const inspections = ((inspData ?? []) as InspectionRow[]).filter((i) =>
-    isUsableInspectionDate(i.inspection_date, today),
-  );
+  const inspections = ((inspData ?? []) as Omit<InspectionRow, "datePrecision">[])
+    .filter((i) => isUsableInspectionDate(i.inspection_date, today))
+    .map((i) => ({ ...i, datePrecision: inspectionDatePrecision(i) }));
   if (!inspections.length) return { inspections: [], deficiencies: [] };
 
   const inspIds = inspections.map((i) => i.id);
@@ -427,6 +441,25 @@ async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
     inspections,
     deficiencies: (defData ?? []) as DeficiencyRow[],
   };
+}
+
+async function fetchWaLatestPostedReport(
+  facilityId: string,
+): Promise<{ posted_month: string; doc_type: string } | null> {
+  const supabase = tryPublicSupabaseClient();
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc("wa_latest_posted_report", {
+      p_facility_id: facilityId,
+    });
+    if (error || data == null) return null;
+    const row = data as { posted_month?: string | null; doc_type?: string | null };
+    if (!row.posted_month) return null;
+    return { posted_month: row.posted_month, doc_type: row.doc_type ?? "inspection" };
+  } catch (err) {
+    console.error("[loadFacilityProfile] wa_latest_posted_report threw:", err);
+    return null;
+  }
 }
 
 async function fetchSnapshot(facilityId: string): Promise<SnapshotPayload | null> {
@@ -633,11 +666,12 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const region = regionFromSlug(stateSlug, regionSlug);
   const countyHub = countyRegionContainingCitySlug(state.code, facility.city_slug);
 
-  const [{ inspections: allInspections, deficiencies: allDeficiencies }, snapshot, reviews, complianceFlag] = await Promise.all([
+  const [{ inspections: allInspections, deficiencies: allDeficiencies }, snapshot, reviews, complianceFlag, waPostedReport] = await Promise.all([
     fetchInspectionsAndDeficiencies(facility.id),
     fetchSnapshot(facility.id),
     loadPublishedReviews(facility.id),
     fetchComplianceFlag(facility.id),
+    facility.state_code === "WA" ? fetchWaLatestPostedReport(facility.id) : Promise.resolve(null),
   ]);
 
   // ── Free-tier display cap ──────────────────────────────────────────────────
@@ -782,26 +816,44 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     { name: facility.name, url: canonicalUrl },
   ];
 
+  const pdfDay = postedMonthToIsoDay(waPostedReport?.posted_month);
   const derivedLastInspection = latestInspectionDate([
     ...allInspections.map((i) => i.inspection_date),
     facility.last_inspection_date,
+    pdfDay,
   ]);
   facility.last_inspection_date = derivedLastInspection;
   const lastNonComplaintInspection =
     inspections.find((i) => !i.is_complaint)?.inspection_date ?? derivedLastInspection;
-  const latestVisit = allInspections[0]
+  const rowVisit = allInspections[0];
+  const pdfIsNewest = pdfDay != null && (!rowVisit || pdfDay > rowVisit.inspection_date);
+  const latestVisit = pdfIsNewest && pdfDay && waPostedReport
     ? {
-        date: allInspections[0].inspection_date,
-        type: allInspections[0].inspection_type,
-        isComplaint: allInspections[0].is_complaint,
+        date: pdfDay,
+        type: waPostedReport.doc_type === "investigation" ? "complaint" : "standard",
+        isComplaint: waPostedReport.doc_type === "investigation",
+        precision: "month" as const,
       }
-    : derivedLastInspection
-      ? { date: derivedLastInspection, type: null, isComplaint: false }
-      : null;
+    : rowVisit
+      ? {
+          date: rowVisit.inspection_date,
+          type: rowVisit.inspection_type,
+          isComplaint: rowVisit.is_complaint,
+          precision: rowVisit.datePrecision,
+        }
+      : derivedLastInspection
+        ? {
+            date: derivedLastInspection,
+            type: null,
+            isComplaint: false,
+            precision: pdfDay === derivedLastInspection ? ("month" as const) : ("day" as const),
+          }
+        : null;
   const licenseRecordUrl = regulatorLicensePageFor(facility.state_code, facility.license_number);
   const careBasis = {
     ...memoryCareBasis({
       ...facility,
+      serves_memory_care: facility.serves_memory_care,
       caCitationTexts: deficiencies.flatMap((d) =>
         [d.code, d.description, d.inspector_narrative].filter(
           (value): value is string => !!value?.trim(),
@@ -821,12 +873,14 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     lastInspectionDate: latestVisit?.date ?? null,
     lastInspectionType: latestVisit?.type ?? null,
     lastInspectionIsComplaint: latestVisit?.isComplaint ?? false,
+    lastInspectionPrecision: latestVisit?.precision ?? "day",
     seriousFindings: seriousFindingCounts(deficiencies, cfg.formatSeverityTag),
     percentile:
       (degradedSnapshot?.peer_set.n ?? 0) >= 10
         ? degradedSnapshot?.grade?.composite_percentile ?? null
         : null,
     memoryCareLabel: careBasis.label,
+    servesMemoryCare: facility.serves_memory_care,
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
     regulatorName: careBasis.regulator,

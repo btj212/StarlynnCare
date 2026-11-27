@@ -170,6 +170,14 @@ export interface Facility {
   wa_memory_care_certified?: boolean | null;
   wa_earc_sdc_contracted?: boolean | null;
   wa_dementia_specialty?: boolean | null;
+  /** DSHS contract labels from the ALF advanced lookup (e.g. Specialized Dementia Care). */
+  wa_contract_types?: string[] | null;
+  /**
+   * Prior city_slug values after a Census physical-city rewrite.
+   * For WA this is the DSHS LocationCity (Tacoma, Renton, Spokane) that the
+   * neighborhood CDP (Parkland, Fairwood) replaced. Used for address display.
+   */
+  historical_city_slugs?: string[] | null;
   /** True for Adult Family Homes: triggers privacy-aware display (no street view, no photos). */
   wa_afh_residential_flag?: boolean | null;
   cms_ccn?: string | null;
