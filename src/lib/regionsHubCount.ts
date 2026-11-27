@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Region } from "@/lib/regions";
+import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
 import { facilityListedInSitemap } from "@/lib/seo/indexability";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
 import {
@@ -41,6 +42,19 @@ export async function countPublishableFacilitiesInRegion(
  * Inspection IDs are batched in chunks of 150 to stay under PostgREST URL limits
  * (same chunking convention as the hub render).
  */
+type HubRow = {
+  id: string;
+  updated_at: string | null;
+  created_at: string | null;
+  beds: number | null;
+  name?: string;
+  zip?: string | null;
+  city_slug?: string;
+  mn_dementia_care_licensed?: boolean | null;
+  wa_county?: string | null;
+  historical_city_slugs?: string[] | null;
+};
+
 export async function loadRegionHubSummary(
   supabase: SupabaseClient,
   region: Region,
@@ -50,9 +64,8 @@ export async function loadRegionHubSummary(
   findingsDate: string | null;
   firstPublishedAt: string | null;
   /**
-   * Homes that can still justify the hub. Zero with a non-zero total means
-   * every home is an excluded Arizona small home, so the hub is noindex.
-   * A failed record check leaves this equal to totalCount.
+   * Homes listed on the hub. This matches the page headline. A failed
+   * record check leaves this equal to totalCount.
    */
   indexableFacilityCount: number;
   /** Minnesota ALDC licenses among listed homes. */
@@ -60,12 +73,26 @@ export async function loadRegionHubSummary(
   /** Set when the facilities query failed — callers must not treat this as an empty hub. */
   fetchError: string | null;
 }> {
-  const { data: facRows, error: facErr } = await supabase
-    .from("facilities")
-    .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed, wa_county, historical_city_slugs")
-    .eq("state_code", region.state.code)
-    .eq("publishable", true)
-    .in("city_slug", region.citySlugs as unknown as string[]);
+  const pageSize = 1000;
+  const facRows: HubRow[] = [];
+  let facErr: { message: string } | null = null;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("facilities")
+      .select("id, updated_at, created_at, beds, name, zip, city_slug, mn_dementia_care_licensed, wa_county, historical_city_slugs")
+      .eq("state_code", region.state.code)
+      .eq("publishable", true)
+      .in("city_slug", region.citySlugs as unknown as string[])
+      .order("id")
+      .range(from, from + pageSize - 1);
+    if (error) {
+      facErr = error;
+      break;
+    }
+    const page = (data ?? []) as HubRow[];
+    facRows.push(...page);
+    if (page.length < pageSize) break;
+  }
 
   if (facErr) {
     console.error("[loadRegionHubSummary] facilities:", facErr.message);
@@ -80,18 +107,6 @@ export async function loadRegionHubSummary(
     };
   }
 
-  type HubRow = {
-    id: string;
-    updated_at: string | null;
-    created_at: string | null;
-    beds: number | null;
-    name?: string;
-    zip?: string | null;
-    city_slug?: string;
-    mn_dementia_care_licensed?: boolean | null;
-    wa_county?: string | null;
-    historical_city_slugs?: string[] | null;
-  };
   const byId = new Map<string, HubRow>();
   for (const row of (facRows ?? []) as HubRow[]) byId.set(row.id, row);
 
@@ -202,6 +217,7 @@ export async function loadRegionHubSummary(
   const inspIds = [...inspFacMap.keys()];
 
   const facilitiesWithAnyDef = new Set<string>();
+  const citByFac = new Map<string, number>();
   const CHUNK = 150;
   for (let ci = 0; ci < inspIds.length; ci += CHUNK) {
     const chunk = inspIds.slice(ci, ci + CHUNK);
@@ -217,7 +233,10 @@ export async function loadRegionHubSummary(
     }
     for (const d of (defRows ?? []) as Array<{ inspection_id: string }>) {
       const fid = inspFacMap.get(d.inspection_id);
-      if (fid) facilitiesWithAnyDef.add(fid);
+      if (fid) {
+        facilitiesWithAnyDef.add(fid);
+        citByFac.set(fid, (citByFac.get(fid) ?? 0) + 1);
+      }
     }
   }
 
@@ -231,10 +250,19 @@ export async function loadRegionHubSummary(
           inspectionCount: inspCountByFac.get(row.id) ?? 0,
         });
       });
-  const indexableFacilityCount = listedRows.length;
-  const listedIds = new Set(listedRows.map((row) => row.id));
+  const quotedRows = quoteHomesOnPage(
+    listedRows.map((row) => ({
+      ...row,
+      name: row.name ?? "",
+      inspections: inspCountByFac.get(row.id) ?? 0,
+      total_citations: citByFac.get(row.id) ?? 0,
+    })),
+    region.state.code,
+  );
+  const indexableFacilityCount = quotedRows.length;
+  const listedIds = new Set(quotedRows.map((row) => row.id));
   const withDeficiencyListed = [...facilitiesWithAnyDef].filter((id) => listedIds.has(id)).length;
-  const dementiaLicenseCount = listedRows.filter((row) => row.mn_dementia_care_licensed).length;
+  const dementiaLicenseCount = quotedRows.filter((row) => row.mn_dementia_care_licensed).length;
 
   return {
     totalCount,

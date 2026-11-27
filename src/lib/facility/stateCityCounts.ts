@@ -1,4 +1,5 @@
-import { facilityListedInSitemap } from "@/lib/seo/indexability";
+import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
+import { cityHubPageExists, facilityListedInSitemap } from "@/lib/seo/indexability";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
@@ -14,6 +15,8 @@ type FacRow = {
   id: string;
   city_slug: string | null;
   city: string | null;
+  name: string | null;
+  zip: string | null;
   beds: number | null;
 };
 
@@ -28,7 +31,7 @@ async function listedCountByCity(
   for (let from = 0; ; from += PAGE_SIZE) {
     let q = supabase
       .from("facilities")
-      .select("id, city_slug, city, beds")
+      .select("id, city_slug, city, name, zip, beds")
       .eq("state_code", stateCode)
       .eq("publishable", true)
       .order("id")
@@ -75,7 +78,7 @@ async function listedCountByCity(
     }
   }
 
-  const byCity = new Map<string, StateCityCount>();
+  const listedByCity = new Map<string, FacRow[]>();
   for (const row of rows) {
     if (!row.city_slug) continue;
     if (
@@ -88,14 +91,30 @@ async function listedCountByCity(
     ) {
       continue;
     }
-    const existing = byCity.get(row.city_slug);
-    if (existing) existing.count += 1;
-    else
-      byCity.set(row.city_slug, {
-        slug: row.city_slug,
-        name: displayCityName(row.city, row.city_slug),
-        count: 1,
-      });
+    const list = listedByCity.get(row.city_slug);
+    if (list) list.push(row);
+    else listedByCity.set(row.city_slug, [row]);
+  }
+
+  const byCity = new Map<string, StateCityCount>();
+  for (const [slug, list] of listedByCity) {
+    const quoted = quoteHomesOnPage(
+      list.map((row) => ({
+        id: row.id,
+        name: row.name ?? "",
+        zip: row.zip,
+        inspections: inspCount.get(row.id) ?? 0,
+        total_citations: withDef.has(row.id) ? 1 : 0,
+      })),
+      stateCode,
+    );
+    if (!cityHubPageExists(quoted.length)) continue;
+    const nameRow = list.find((row) => row.city?.trim());
+    byCity.set(slug, {
+      slug,
+      name: displayCityName(nameRow?.city, slug),
+      count: quoted.length,
+    });
   }
 
   return [...byCity.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));

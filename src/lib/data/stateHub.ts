@@ -1,4 +1,6 @@
+import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
 import { regionsForState } from "@/lib/regions";
+import { cityHubPageExists } from "@/lib/seo/indexability";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
 import type { CareCategory } from "@/lib/types";
@@ -7,6 +9,78 @@ import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 /** §02 rotates through this many publishable facilities (hourly reshuffle). */
 export const SAMPLE_CARD_ROTATION_COUNT = 10;
+
+type PublishableCityRow = {
+  id: string;
+  name: string | null;
+  zip: string | null;
+  city: string | null;
+  city_slug: string | null;
+  capacity_tier: string | null;
+};
+
+/**
+ * Every publishable home's city, past PostgREST's 1000-row cap. An unpaged
+ * select was why Arizona city cards (Mesa) showed a partial count.
+ */
+export async function loadPublishableCityRows(
+  supabase: NonNullable<ReturnType<typeof tryPublicSupabaseClient>>,
+  stateCode: string,
+): Promise<{ rows: PublishableCityRow[]; error: string | null }> {
+  const pageSize = 1000;
+  const rows: PublishableCityRow[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("facilities")
+      .select("id, name, zip, city, city_slug, capacity_tier")
+      .eq("state_code", stateCode)
+      .eq("publishable", true)
+      .order("id")
+      .range(from, from + pageSize - 1);
+    if (error) return { rows, error: error.message };
+    const page = (data ?? []) as PublishableCityRow[];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return { rows, error: null };
+}
+
+function asQuotedHome(row: PublishableCityRow) {
+  return {
+    ...row,
+    name: row.name ?? "",
+    inspections: 0,
+    total_citations: 0,
+  };
+}
+
+/** Homes a city or county page lists, so a card count matches that page. */
+function quotedRows(rows: PublishableCityRow[], stateCode: string): PublishableCityRow[] {
+  return quoteHomesOnPage(rows.map(asQuotedHome), stateCode);
+}
+
+function cityTallies(
+  rows: PublishableCityRow[],
+  stateCode: string,
+): Map<string, { name: string; slug: string; count: number }> {
+  const bySlug = new Map<string, PublishableCityRow[]>();
+  for (const row of rows) {
+    const slug = row.city_slug ?? "";
+    if (!slug) continue;
+    const list = bySlug.get(slug);
+    if (list) list.push(row);
+    else bySlug.set(slug, [row]);
+  }
+
+  const cityMap = new Map<string, { name: string; slug: string; count: number }>();
+  for (const [slug, list] of bySlug) {
+    const quoted = quotedRows(list, stateCode);
+    if (!cityHubPageExists(quoted.length)) continue;
+    const name = quoted.find((row) => row.city?.trim())?.city?.trim() || slug;
+    cityMap.set(slug, { name, slug, count: quoted.length });
+  }
+  return cityMap;
+}
 
 /** Deterministic shuffle — same cohort for the ~1h ISR window. */
 export function seededShuffle<T>(items: T[], seed: number): T[] {
@@ -152,64 +226,27 @@ export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubDa
     ).filter(Boolean);
   }
 
-  const { data: tierRows } = await supabase
-    .from("facilities")
-    .select("city_slug, capacity_tier")
-    .eq("state_code", "CA")
-    .eq("publishable", true);
-
-  const countsByCity = new Map<string, number>();
-  const smallCountsByCity = new Map<string, number>();
-  for (const row of tierRows ?? []) {
-    const slug = (row as { city_slug: string | null }).city_slug ?? "";
-    const tier =
-      (row as { capacity_tier: string | null }).capacity_tier ?? "unknown";
-    if (!slug) continue;
-    if (tier === "small") {
-      smallCountsByCity.set(slug, (smallCountsByCity.get(slug) ?? 0) + 1);
-    } else {
-      countsByCity.set(slug, (countsByCity.get(slug) ?? 0) + 1);
-    }
-  }
+  const { rows: citySourceRows } = await loadPublishableCityRows(supabase, "CA");
+  const cityMap = cityTallies(citySourceRows, "CA");
 
   const counties: CountyRow[] = regionsForState("CA")
     .filter((r) => r.kind === "county")
     .map((region) => {
-      const nMediumPlus = region.citySlugs.reduce(
-        (acc, s) => acc + (countsByCity.get(s) ?? 0),
-        0,
-      );
-      const nSmall = region.citySlugs.reduce(
-        (acc, s) => acc + (smallCountsByCity.get(s) ?? 0),
-        0,
-      );
-      const citiesWithData = region.citySlugs.filter(
-        (s) =>
-          (countsByCity.get(s) ?? 0) > 0 ||
-          (smallCountsByCity.get(s) ?? 0) > 0,
+      const slugSet = new Set(region.citySlugs);
+      const count = quotedRows(
+        citySourceRows.filter((row) => row.city_slug && slugSet.has(row.city_slug)),
+        "CA",
       ).length;
+      const citiesWithData = region.citySlugs.filter((s) => cityMap.has(s)).length;
       return {
         name: region.name,
         slug: region.slug,
-        count: nMediumPlus + nSmall,
+        count,
         cities: citiesWithData,
       };
     })
-    .filter((c) => c.count > 0);
+    .filter((c) => cityHubPageExists(c.count));
 
-  const { data: cityRows } = await supabase
-    .from("facilities")
-    .select("city, city_slug")
-    .eq("publishable", true)
-    .eq("state_code", "CA");
-
-  const cityMap = new Map<string, { name: string; slug: string; count: number }>();
-  for (const r of cityRows ?? []) {
-    if (!r.city_slug) continue;
-    const existing = cityMap.get(r.city_slug);
-    if (existing) { existing.count++; }
-    else { cityMap.set(r.city_slug, { name: r.city ?? r.city_slug, slug: r.city_slug, count: 1 }); }
-  }
   const topCities = Array.from(cityMap.values())
     .sort((a, b) => b.count - a.count)
     .slice(0, 24);
@@ -377,50 +414,22 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
     ).filter(Boolean);
   }
 
-  const { data: tierRows } = await supabase
-    .from("facilities")
-    .select("city_slug, capacity_tier")
-    .eq("state_code", stateCode)
-    .eq("publishable", true);
-
-  const countsByCity = new Map<string, number>();
-  const smallCountsByCity = new Map<string, number>();
-  for (const row of tierRows ?? []) {
-    const slug = (row as { city_slug: string | null }).city_slug ?? "";
-    const tier = (row as { capacity_tier: string | null }).capacity_tier ?? "unknown";
-    if (!slug) continue;
-    if (tier === "small") {
-      smallCountsByCity.set(slug, (smallCountsByCity.get(slug) ?? 0) + 1);
-    } else {
-      countsByCity.set(slug, (countsByCity.get(slug) ?? 0) + 1);
-    }
-  }
+  const { rows: citySourceRows } = await loadPublishableCityRows(supabase, stateCode);
+  const cityMap = cityTallies(citySourceRows, stateCode);
 
   const counties: CountyRow[] = regionsForState(stateCode)
     .filter((r) => r.kind === "county")
     .map((region) => {
-      const nMediumPlus = region.citySlugs.reduce((acc, s) => acc + (countsByCity.get(s) ?? 0), 0);
-      const nSmall = region.citySlugs.reduce((acc, s) => acc + (smallCountsByCity.get(s) ?? 0), 0);
-      const citiesWithData = region.citySlugs.filter(
-        (s) => (countsByCity.get(s) ?? 0) > 0 || (smallCountsByCity.get(s) ?? 0) > 0,
+      const slugSet = new Set(region.citySlugs);
+      const count = quotedRows(
+        citySourceRows.filter((row) => row.city_slug && slugSet.has(row.city_slug)),
+        stateCode,
       ).length;
-      return { name: region.name, slug: region.slug, count: nMediumPlus + nSmall, cities: citiesWithData };
+      const citiesWithData = region.citySlugs.filter((s) => cityMap.has(s)).length;
+      return { name: region.name, slug: region.slug, count, cities: citiesWithData };
     })
-    .filter((c) => c.count > 0);
+    .filter((c) => cityHubPageExists(c.count));
 
-  const { data: cityRows } = await supabase
-    .from("facilities")
-    .select("city, city_slug")
-    .eq("publishable", true)
-    .eq("state_code", stateCode);
-
-  const cityMap = new Map<string, { name: string; slug: string; count: number }>();
-  for (const r of cityRows ?? []) {
-    if (!r.city_slug) continue;
-    const existing = cityMap.get(r.city_slug);
-    if (existing) { existing.count++; }
-    else { cityMap.set(r.city_slug, { name: r.city ?? r.city_slug, slug: r.city_slug, count: 1 }); }
-  }
   const topCities: CityRow[] = Array.from(cityMap.values())
     .sort((a, b) => b.count - a.count)
     .slice(0, 24)

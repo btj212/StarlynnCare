@@ -1,3 +1,8 @@
+import {
+  cityHubCardGroup,
+  listedInMemoryCareGroup,
+  type CityHubCardGroup,
+} from "@/lib/city-hub/careSetting";
 import { facilityListedOnHub } from "@/lib/seo/indexability";
 
 /** First set on a city hub. The rest stay on the crawlable facilities page. */
@@ -13,10 +18,9 @@ type RankedFacility = {
 };
 
 /**
- * Every home a city page should link to, A to Z. This is the listed set
- * (Arizona small homes with no citations stay off it; small homes with no
- * inspection stay off it; a newly licensed home with no inspections yet is
- * included). The facility sitemap is every publishable profile.
+ * Every home a city page should link to, A to Z. This is the listed set:
+ * every publishable home on the page, including small homes. The facility
+ * sitemap is every publishable profile.
  */
 export function homesForCityIndex<
   T extends { name: string; beds: number | null; inspections: number; total_citations: number },
@@ -43,8 +47,9 @@ function byEvidence(a: RankedFacility, b: RankedFacility): number {
 }
 
 /**
- * Homes of 6 beds or fewer stay off the hub unless they are the only homes
- * in the city. Order is inspections, then citations, then name.
+ * The opening cards prefer homes over 6 beds, ordered by inspections, then
+ * citations, then name. Small homes have their own section; this preview
+ * is only the fuller records.
  */
 export function rankHubFacilities<T extends RankedFacility>(facilities: T[]): {
   preview: T[];
@@ -59,4 +64,41 @@ export function rankHubFacilities<T extends RankedFacility>(facilities: T[]): {
     itemList: sorted.slice(0, HUB_ITEM_LIST_LIMIT),
     onlySmallHomes: nonSmall.length === 0 && facilities.length > 0,
   };
+}
+
+type GridHome = RankedFacility & {
+  id: string;
+  capacity_tier: "small" | "medium" | "large" | "unknown";
+  careChip?: string | null;
+  serves_memory_care: boolean;
+  memory_care_disclosure_filed: boolean;
+  tx_alzheimer_certified?: boolean;
+};
+
+function gridGroup(home: GridHome, stateSlug: string): CityHubCardGroup {
+  return cityHubCardGroup({
+    careChip: home.careChip,
+    capacityTier: home.capacity_tier,
+    inMemoryCareGroup: listedInMemoryCareGroup({
+      stateSlug,
+      careChip: home.careChip,
+      servesMemoryCare: home.serves_memory_care,
+      memoryCareDisclosureFiled: home.memory_care_disclosure_filed,
+      txAlzheimerCertified: home.tx_alzheimer_certified,
+    }),
+  });
+}
+
+/**
+ * Cards for the city hub. The opening set is the fullest records. Every
+ * small home and every Washington tier home is included so those sections
+ * are complete. A home is returned once.
+ */
+export function homesForCityHubGrid<T extends GridHome>(homes: T[], stateSlug: string): T[] {
+  const previewIds = new Set(rankHubFacilities(homes).preview.map((home) => home.id));
+  return homes.filter((home) => {
+    const group = gridGroup(home, stateSlug);
+    if (group === "small" || group === "confirmed-accepts" || group === "credential") return true;
+    return previewIds.has(home.id);
+  });
 }

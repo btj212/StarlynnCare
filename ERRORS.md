@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-27 — Arizona city cards were a partial count
+
+**What went wrong:** `loadStateHubData` and the fallback state page selected publishable city rows with no `.order()` and no `.range()`. PostgREST stops at 1,000 rows. Arizona has 1,923 publishable homes, so Mesa's card showed 150. The city page itself said 145, which was the old listed set (169 publishable, minus 24 homes of 10 beds or fewer with no citations). An id-ordered first 1,000 contains 101 Mesa rows, so the number moved depending on which 1,000 came back.
+
+**What worked instead:** Page city reads with `.order("id").range(...)`. The card count is the homes the city page lists.
+
+**Source:** Task 8, 2026-11-27. Live `/arizona` and `/arizona/mesa`.
+
+---
+
 ## 2026-11-27 — AFH dementia specialty was treated as memory care
 
 **What went wrong:** `wa_dementia_specialty` was an OR branch of Washington `serves_memory_care`, a profile basis sentence, a "Dementia Specialty" badge, a city-hub chip, and a hub FAQ basis. It is a staff-training credential (RCW 70.128.230(5), WAC 388-112A-0490). About 98.5% of operating adult family homes hold it (6,199 of 6,296 in the 2026-11-27 DSHS pull), so it says nothing about a particular home. The ASP.NET stamp guessed `ddlSpecFocus=Dementia` and wrote 0 rows. ArcGIS `Speciality` / `SpecialityCode=SPDE` is the real field, and the weekly geo ingest stamps it. Reverting the column to null would be undone on the next Sunday scan.

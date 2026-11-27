@@ -7,7 +7,13 @@ import type { CareCategory } from "@/lib/types";
 import { ShortlistButton } from "@/components/shortlist/ShortlistButton";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityDisplayName, nameMatchesQuery } from "@/lib/facility/aliases";
-import { cityHubCardGroup, listedInMemoryCareGroup } from "@/lib/city-hub/careSetting";
+import {
+  cityHubCardGroup,
+  listedInMemoryCareGroup,
+  SMALL_HOMES_PREVIEW_COUNT,
+  SMALL_HOMES_SECTION_DECK,
+  SMALL_HOMES_SECTION_TITLE,
+} from "@/lib/city-hub/careSetting";
 import {
   CONFIRMED_ACCEPTS_CHIP,
   CONFIRMED_ACCEPTS_SECTION,
@@ -305,6 +311,7 @@ export function FacilityListClient({
   initialShowSmall = false,
   defaultSortBy = "name",
   resultsOnly = false,
+  smallHomesSection = false,
 }: {
   facilities: ListFacility[];
   stateSlug: string;
@@ -316,11 +323,18 @@ export function FacilityListClient({
   defaultSortBy?: SortBy;
   /** Server already chose this page. Render the cards without a second search box. */
   resultsOnly?: boolean;
+  /**
+   * City hub. Small homes are their own section, after the Washington tier
+   * sections and before other licensed facilities. The first 24 show; the
+   * rest open in place.
+   */
+  smallHomesSection?: boolean;
 }) {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [chip, setChip] = useState<FilterChip>("all");
   const [showSmall, setShowSmall] = useState(initialShowSmall);
+  const [expandSmallHomes, setExpandSmallHomes] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>(defaultSortBy);
 
   // Sync query if the URL param changes (e.g. browser back/forward).
@@ -336,10 +350,11 @@ export function FacilityListClient({
       if (q && !nameMatchesQuery(f, q) && !f.city?.toLowerCase().includes(q)) {
         return false;
       }
-      // Small homes stay off the first grid until the toggle. Both lower
-      // Washington tiers are mostly ≤6-bed adult family homes, so they stay
-      // visible or their sections would be empty on a city with a larger home.
+      // Browse pages hide small homes until the toggle. The city hub shows
+      // them in their own section. Both Washington tier chips stay visible
+      // either way, or those sections would be empty on a city with a larger home.
       if (
+        !smallHomesSection &&
         f.capacity_tier === "small" &&
         !showSmall &&
         f.careChip !== CONFIRMED_ACCEPTS_CHIP &&
@@ -369,7 +384,7 @@ export function FacilityListClient({
       });
     }
     return base;
-  }, [facilities, query, chip, showSmall, sortBy]);
+  }, [facilities, query, chip, showSmall, smallHomesSection, sortBy]);
 
   const isFiltered = query.trim() !== "" || chip !== "all";
 
@@ -400,6 +415,38 @@ export function FacilityListClient({
   const credentialHomes = filtered.filter((f) => groupOf(f) === "credential");
   const nonMc = filtered.filter((f) => groupOf(f) === "other");
   const smallHomes = filtered.filter((f) => groupOf(f) === "small");
+  const visibleSmallHomes =
+    smallHomesSection && !expandSmallHomes
+      ? smallHomes.slice(0, SMALL_HOMES_PREVIEW_COUNT)
+      : smallHomes;
+  const smallSection =
+    smallHomes.length > 0 && (smallHomesSection || showSmall) ? (
+      <section className="mt-12">
+        <SectionHead
+          title={smallHomesSection ? SMALL_HOMES_SECTION_TITLE : "Residential care homes · ≤6 beds"}
+          count={smallHomes.length}
+        />
+        <p className="mt-1.5 text-xs text-muted">
+          {smallHomesSection
+            ? SMALL_HOMES_SECTION_DECK
+            : "Single-family-home conversions. Owner-operated. Receive fewer routine state inspections by design — inspect the home yourself before committing."}
+        </p>
+        <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {visibleSmallHomes.map((f) => (
+            <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
+          ))}
+        </div>
+        {smallHomesSection && smallHomes.length > visibleSmallHomes.length && (
+          <button
+            type="button"
+            onClick={() => setExpandSmallHomes(true)}
+            className="mt-5 rounded-full border border-clearing-rule-2 bg-clearing-card px-4 py-2 text-sm font-semibold text-teal hover:border-teal/40"
+          >
+            Show all {smallHomes.length}
+          </button>
+        )}
+      </section>
+    ) : null;
 
   if (resultsOnly) {
     return (
@@ -577,6 +624,8 @@ export function FacilityListClient({
             </section>
           )}
 
+          {smallHomesSection ? smallSection : null}
+
           {nonMc.length > 0 && (
             <section className="mt-12">
               <SectionHead title="Other licensed facilities" count={nonMc.length} />
@@ -591,19 +640,7 @@ export function FacilityListClient({
             </section>
           )}
 
-          {showSmall && smallHomes.length > 0 && (
-            <section className="mt-12">
-              <SectionHead title="Residential care homes · ≤6 beds" count={smallHomes.length} />
-              <p className="mt-1.5 text-xs text-muted">
-                Single-family-home conversions. Owner-operated. Receive fewer routine state inspections by design — inspect the home yourself before committing.
-              </p>
-              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {smallHomes.map((f) => (
-                  <FacilityCard key={f.id} f={f} stateSlug={stateSlug} />
-                ))}
-              </div>
-            </section>
-          )}
+          {smallHomesSection ? null : smallSection}
         </>
       )}
       <p className="mt-10 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-ink-4">

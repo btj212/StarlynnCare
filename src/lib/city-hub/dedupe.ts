@@ -22,6 +22,15 @@ type DedupeHome = {
  * the DB. Different licenses that share a marketing-style name in different
  * ZIPs stay listed.
  */
+/**
+ * Homes a hub page actually prints. Pennsylvania collapses same-name rows
+ * at the same ZIP. Every other state lists each publishable home once.
+ * The count of this list is the number the headline may quote.
+ */
+export function quoteHomesOnPage<T extends DedupeHome>(homes: T[], stateCode: string): T[] {
+  return stateCode === "PA" ? dedupeHomesByDisplayName(homes) : homes;
+}
+
 export function dedupeHomesByDisplayName<T extends DedupeHome>(homes: T[]): T[] {
   const groups = new Map<string, T[]>();
   for (const home of homes) {

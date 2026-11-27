@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SITE_ORIGIN } from "@/lib/seo/canonical";
-import { azSmallHomeWithoutCitations } from "@/lib/seo/indexability";
+import { cityHubPageExists } from "@/lib/seo/indexability";
 import { regionsForState } from "@/lib/regions";
 import { COVERED_STATES } from "@/lib/states";
 import { RESEARCH_INDEX } from "@/lib/content/research";
@@ -267,17 +267,15 @@ export async function collectHubEntriesForState(
   stateSlug: string,
 ): Promise<SitemapUrlRow[]> {
   type HubFacilityRow = {
-    id: string;
     city_slug: string;
     updated_at: string | null;
-    beds: number | null;
   };
 
   const rows: HubFacilityRow[] = [];
   for (let from = 0; ; from += SITEMAP_QUERY_PAGE_SIZE) {
     const { data, error } = await supabase
       .from("facilities")
-      .select("id, city_slug, updated_at, beds")
+      .select("city_slug, updated_at")
       .eq("state_code", stateCode)
       .eq("publishable", true)
       .order("id")
@@ -292,26 +290,12 @@ export async function collectHubEntriesForState(
     if (page.length < SITEMAP_QUERY_PAGE_SIZE) break;
   }
 
-  const smallArizonaIds =
-    stateCode === "AZ"
-      ? rows
-          .filter((facility) => azSmallHomeWithoutCitations(stateCode, facility.beds, 0))
-          .map((facility) => facility.id)
-      : [];
-  const citedSmallHomes = await azSmallHomesThatHaveCitations(supabase, smallArizonaIds);
-  const indexableBySlug = new Map<string, number>();
   const countBySlug = new Map<string, number>();
   const lastmodBySlug = new Map<string, string>();
   for (const r of rows) {
     const slug = r.city_slug;
     if (!slug) continue;
     countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
-    const excluded = azSmallHomeWithoutCitations(
-      stateCode,
-      r.beds,
-      citedSmallHomes.has(r.id) ? 1 : 0,
-    );
-    if (!excluded) indexableBySlug.set(slug, (indexableBySlug.get(slug) ?? 0) + 1);
     const updated = r.updated_at?.split("T")[0];
     if (updated && updated > (lastmodBySlug.get(slug) ?? "")) {
       lastmodBySlug.set(slug, updated);
@@ -322,8 +306,8 @@ export async function collectHubEntriesForState(
 
   for (const region of regionsForState(stateCode)) {
     if (region.kind !== "county") continue;
-    const n = region.citySlugs.reduce((acc, s) => acc + (indexableBySlug.get(s) ?? 0), 0);
-    if (n === 0) continue;
+    const n = region.citySlugs.reduce((acc, s) => acc + (countBySlug.get(s) ?? 0), 0);
+    if (!cityHubPageExists(n)) continue;
 
     const latest = region.citySlugs.reduce(
       (max, slug) => {
@@ -335,9 +319,9 @@ export async function collectHubEntriesForState(
     hubLastmod.set(region.slug, withTemplateFloor(latest || undefined, TEMPLATE_CHANGED.hub));
   }
 
-  for (const slug of countBySlug.keys()) {
-    // A city whose homes are all excluded Arizona pages cannot justify a hub URL.
-    if ((indexableBySlug.get(slug) ?? 0) === 0) continue;
+  for (const [slug, listed] of countBySlug) {
+    // Same bar as the page: no home to list means no hub URL.
+    if (!cityHubPageExists(listed)) continue;
     hubLastmod.set(
       slug,
       withTemplateFloor(lastmodBySlug.get(slug), TEMPLATE_CHANGED.hub),
@@ -378,36 +362,6 @@ export async function collectCoveredStateHubEntries(
     out.push(...(await collectHubEntriesForState(supabase, s.code, s.slug)));
   }
   return out;
-}
-
-/** City-hub listed set still omits small Arizona homes with no citations. */
-async function azSmallHomesThatHaveCitations(
-  supabase: SupabaseClient,
-  facilityIds: string[],
-): Promise<Set<string>> {
-  const found = new Set<string>();
-  for (let index = 0; index < facilityIds.length; index += 80) {
-    const chunk = facilityIds.slice(index, index + 80);
-    let lastId = "";
-    for (;;) {
-      let query = supabase
-        .from("inspections")
-        .select("id, facility_id, deficiencies!inner(id)")
-        .in("facility_id", chunk)
-        .order("id")
-        .limit(1000);
-      if (lastId) query = query.gt("id", lastId);
-      const { data, error } = await query;
-      if (error) {
-        throw new Error(`Failed to check Arizona citations: ${error.message}`);
-      }
-      const rows = (data ?? []) as Array<{ id: string; facility_id: string }>;
-      for (const row of rows) found.add(row.facility_id);
-      if (rows.length < 1000) break;
-      lastId = rows[rows.length - 1].id;
-    }
-  }
-  return found;
 }
 
 export async function collectFacilityEntriesForState(

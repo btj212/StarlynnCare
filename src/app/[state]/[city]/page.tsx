@@ -29,13 +29,8 @@ import {
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
 import { REGULATOR_ABBR } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
-import {
-  CONFIRMED_ACCEPTS_CHIP,
-  DEMENTIA_CREDENTIAL_CHIP,
-  dementiaAcceptanceTier,
-  memoryCareBasis,
-} from "@/lib/facility/memoryCareBasis";
-import { careSettingCopy, listCareChip } from "@/lib/city-hub/careSetting";
+import { dementiaAcceptanceTier, memoryCareBasis } from "@/lib/facility/memoryCareBasis";
+import { careSettingCopy, cityHubCardGroup, listCareChip, listedInMemoryCareGroup } from "@/lib/city-hub/careSetting";
 import {
   cityDirectAnswer,
   cityFaqExtras,
@@ -45,7 +40,7 @@ import {
   cityHubTitle,
 } from "@/lib/city-hub/copy";
 import { computeCityHubGlance, recentSeriousHomes } from "@/lib/city-hub/stats";
-import { dedupeHomesByDisplayName } from "@/lib/city-hub/dedupe";
+import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
 import {
   belongsOnCityPage,
   displayMunicipality,
@@ -66,7 +61,7 @@ import { isSeriousCityFinding } from "@/lib/city-hub/stats";
 import { RecentSeriousCitations } from "@/components/city-hub/RecentSeriousCitations";
 import type { CareCategory } from "@/lib/types";
 import { loadRegionHubSummary } from "@/lib/regionsHubCount";
-import { homesForCityIndex, rankHubFacilities } from "@/lib/facility/hubPreview";
+import { homesForCityHubGrid, homesForCityIndex, rankHubFacilities } from "@/lib/facility/hubPreview";
 import { contentAliasFields } from "@/lib/facility/aliases";
 import { CityHomeIndex } from "@/components/facility/CityHomeIndex";
 import {
@@ -219,17 +214,31 @@ export default async function RegionPage({ params }: PageProps) {
   if (!supabase) {
     fetchError = "Supabase is not configured.";
   } else {
-    // 1. Facilities
-    const { data: rawFacilities, error } = await supabase
-      .from("facilities")
-      .select(HUB_FACILITY_SELECT)
-      .eq("state_code", region.state.code)
-      .eq("publishable", true)
-      .in("city_slug", region.citySlugs as unknown as string[])
-      .order("name", { ascending: true });
+    // 1. Facilities. Page past the 1000-row cap so a county hub lists every home.
+    const pageSize = 1000;
+    const rawFacilities: HubFacilityRow[] = [];
+    let facilityError: string | null = null;
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase
+        .from("facilities")
+        .select(HUB_FACILITY_SELECT)
+        .eq("state_code", region.state.code)
+        .eq("publishable", true)
+        .in("city_slug", region.citySlugs as unknown as string[])
+        .order("id")
+        .range(from, from + pageSize - 1);
+      if (error) {
+        facilityError = error.message;
+        break;
+      }
+      const page = (data ?? []) as HubFacilityRow[];
+      rawFacilities.push(...page);
+      if (page.length < pageSize) break;
+    }
+    rawFacilities.sort((a, b) => a.name.localeCompare(b.name));
 
-    if (error) {
-      fetchError = error.message;
+    if (facilityError) {
+      fetchError = facilityError;
     } else {
       const seen = new Map<string, HubFacilityRow>();
       for (const row of (rawFacilities ?? []) as HubFacilityRow[]) seen.set(row.id, row);
@@ -473,14 +482,24 @@ export default async function RegionPage({ params }: PageProps) {
     hubStats = (hubStatsRows as RegionHubStats[] | null)?.[0] ?? null;
   }
 
-  const smallCount = facilities.filter((f) => f.capacity_tier === "small").length;
   const totalCount = facilities.length;
   const indexedHomes = homesForCityIndex(facilities, region.state.code);
-  const listedHomes =
-    region.state.code === "PA"
-      ? dedupeHomesByDisplayName(indexedHomes)
-      : indexedHomes;
+  const listedHomes = quoteHomesOnPage(indexedHomes, region.state.code);
   const listedCount = listedHomes.length;
+  const smallSectionCount = listedHomes.filter(
+    (f) =>
+      cityHubCardGroup({
+        careChip: f.careChip,
+        capacityTier: f.capacity_tier,
+        inMemoryCareGroup: listedInMemoryCareGroup({
+          stateSlug: region.state.slug,
+          careChip: f.careChip,
+          servesMemoryCare: f.serves_memory_care,
+          memoryCareDisclosureFiled: f.memory_care_disclosure_filed,
+          txAlzheimerCertified: f.tx_alzheimer_certified,
+        }),
+      }) === "small",
+  ).length;
   const excludedCount = Math.max(0, totalCount - listedCount);
   const glance = computeCityHubGlance({
     listed: listedHomes,
@@ -645,18 +664,10 @@ export default async function RegionPage({ params }: PageProps) {
     postalCode: f.zip,
     addressRegion: region.state.name,
   }));
-  // Adult family homes are ≤6 beds, and the first grid otherwise drops
-  // every small home when a city also has a larger one. Tier 2 would then
-  // have no section. Keep those homes on the grid; other small homes stay off it.
-  const hubPreview = [
-    ...hubRank.preview,
-    ...listedHomes.filter(
-      (home) =>
-        (home.careChip === CONFIRMED_ACCEPTS_CHIP ||
-          home.careChip === DEMENTIA_CREDENTIAL_CHIP) &&
-        !hubRank.preview.some((row) => row.id === home.id),
-    ),
-  ].map((f) => ({
+  // Opening cards are the fullest records. Small homes and both Washington
+  // tier sections are passed in full so those sections are complete. A
+  // tier chip keeps the home out of Small homes.
+  const hubPreview = homesForCityHubGrid(listedHomes, region.state.slug).map((f) => ({
     ...f,
     city: f.city ?? displayCityName(f.city, f.city_slug),
   }));
@@ -1106,17 +1117,22 @@ export default async function RegionPage({ params }: PageProps) {
               }
             />
             <aside className="mb-6 font-[family-name:var(--font-sans)] text-[13px] text-ink-3">
-              This first set is the homes with the most inspection history
-              {smallCount > 0 && !hubRank.onlySmallHomes
-                ? `, leaving out ${smallCount} homes of 6 beds or fewer`
-                : ""}
-              .{" "}
-              <a
-                href="#all-homes"
-                className="font-semibold text-teal underline underline-offset-4"
-              >
-                Browse all {listedCount} facilities in {region.name}
-              </a>
+              This first set starts with the homes that have the most inspection history.
+              {smallSectionCount > 0
+                ? " Homes with 6 or fewer residents are in the Small homes section."
+                : ""}{" "}
+              {!isCounty ? (
+                <a
+                  href="#all-homes"
+                  className="font-semibold text-teal underline underline-offset-4"
+                >
+                  Browse all {listedCount} facilities in {region.name}
+                </a>
+              ) : (
+                <span>
+                  {listedCount} {listedCount === 1 ? "home" : "homes"} in {region.name}
+                </span>
+              )}
               .{" "}
               <Link href="/methodology" className="text-teal underline underline-offset-4">
                 See methodology
@@ -1129,6 +1145,7 @@ export default async function RegionPage({ params }: PageProps) {
               regionName={region.name}
               hiddenSmallCount={0}
               initialShowSmall={hubRank.onlySmallHomes}
+              smallHomesSection
             />
           </div>
         )}

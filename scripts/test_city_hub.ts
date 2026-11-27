@@ -6,7 +6,17 @@ import {
   displayMunicipality,
 } from "../src/lib/city-hub/municipality.ts";
 import { cityHubTitle, cityHubH1, cityHubMetaDescription, cityFaqExtras } from "../src/lib/city-hub/copy.ts";
-import { cityHubCardGroup, listCareChip, listedInMemoryCareGroup } from "../src/lib/city-hub/careSetting.ts";
+import {
+  CITY_HUB_SECTION_ORDER,
+  SMALL_HOMES_PREVIEW_COUNT,
+  cityHubCardGroup,
+  cityHubSectionId,
+  listCareChip,
+  listedInMemoryCareGroup,
+} from "../src/lib/city-hub/careSetting.ts";
+import { quoteHomesOnPage } from "../src/lib/city-hub/dedupe.ts";
+import { homesForCityIndex } from "../src/lib/facility/hubPreview.ts";
+import { cityHubPageExists, facilityListedOnHub } from "../src/lib/seo/indexability.ts";
 import { memoryCareBasis } from "../src/lib/facility/memoryCareBasis.ts";
 import type { CityHubGlance } from "../src/lib/city-hub/stats.ts";
 import { findingsCopy } from "../src/lib/city-hub/findings.ts";
@@ -356,5 +366,209 @@ assert.match(certifiedAnswer, /Confirmed: accepts residents with dementia/);
 assert.match(certifiedAnswer, /Dementia credential/);
 assert.match(certifiedAnswer, /does not confirm the home currently accepts/);
 assert.match(certifiedAnswer, /Neither label is a secured or dedicated unit/);
+
+type HubHome = {
+  id: string;
+  name: string;
+  beds: number | null;
+  inspections: number;
+  total_citations: number;
+  capacity_tier: "small" | "medium" | "large" | "unknown";
+  careChip: string | null;
+  serves_memory_care: boolean;
+  memory_care_disclosure_filed: boolean;
+};
+
+function sectionFor(home: HubHome, stateSlug: string) {
+  return cityHubSectionId({
+    careChip: home.careChip,
+    capacityTier: home.capacity_tier,
+    inMemoryCareGroup: listedInMemoryCareGroup({
+      stateSlug,
+      careChip: home.careChip,
+      servesMemoryCare: home.serves_memory_care,
+      memoryCareDisclosureFiled: home.memory_care_disclosure_filed,
+    }),
+  });
+}
+
+function listedSections(homes: HubHome[], stateCode: string, stateSlug: string) {
+  const listed = homesForCityIndex(homes, stateCode);
+  const sections = new Map<string, string>();
+  for (const home of listed) sections.set(home.id, sectionFor(home, stateSlug));
+  return { listed, sections };
+}
+
+// Mesa-like: the old rule hid the 8-bed home with no citations and the 6-bed
+// home with no citations. The page now lists every one, once, and the number
+// it prints is that list.
+const mesaLike: HubHome[] = [
+  {
+    id: "large",
+    name: "Large Home",
+    beds: 80,
+    inspections: 4,
+    total_citations: 2,
+    capacity_tier: "large",
+    careChip: "Directed Care",
+    serves_memory_care: true,
+    memory_care_disclosure_filed: false,
+  },
+  {
+    id: "medium-uncited",
+    name: "Eight Bed Home",
+    beds: 8,
+    inspections: 1,
+    total_citations: 0,
+    capacity_tier: "medium",
+    careChip: null,
+    serves_memory_care: false,
+    memory_care_disclosure_filed: false,
+  },
+  {
+    id: "small-uncited",
+    name: "Six Bed Home",
+    beds: 6,
+    inspections: 1,
+    total_citations: 0,
+    capacity_tier: "small",
+    careChip: null,
+    serves_memory_care: false,
+    memory_care_disclosure_filed: false,
+  },
+  {
+    id: "small-cited",
+    name: "Cited Cottage",
+    beds: 5,
+    inspections: 2,
+    total_citations: 1,
+    capacity_tier: "small",
+    careChip: null,
+    serves_memory_care: false,
+    memory_care_disclosure_filed: false,
+  },
+  {
+    id: "other",
+    name: "Other Licensed",
+    beds: 40,
+    inspections: 3,
+    total_citations: 1,
+    capacity_tier: "medium",
+    careChip: null,
+    serves_memory_care: false,
+    memory_care_disclosure_filed: false,
+  },
+];
+const mesaListed = listedSections(mesaLike, "AZ", "arizona");
+assert.equal(mesaListed.listed.length, mesaLike.length, "small and uncited homes stay on the list");
+assert.equal(mesaListed.sections.size, mesaLike.length, "each home is in exactly one section");
+assert.equal(mesaListed.sections.get("large"), "memory-care-large");
+assert.equal(mesaListed.sections.get("medium-uncited"), "other");
+assert.equal(mesaListed.sections.get("small-uncited"), "small");
+assert.equal(mesaListed.sections.get("small-cited"), "small");
+assert.equal(mesaListed.sections.get("other"), "other");
+assert.equal(
+  facilityListedOnHub({ stateCode: "AZ", beds: 8, deficiencyCount: 0, inspectionCount: 1 }),
+  true,
+);
+assert.equal(
+  facilityListedOnHub({ stateCode: "WA", beds: 6, deficiencyCount: 0, inspectionCount: 0 }),
+  true,
+);
+
+const shown = mesaListed.listed.length;
+const listedOnPage = [...mesaListed.sections.values()].length;
+assert.equal(shown, listedOnPage, "the number on the page is the number of homes listed");
+
+// Washington: a confirmed home and a credential home stay in those sections
+// even at 6 beds. A small home with no tier chip is a small home. None of
+// them is dropped, and none is listed twice.
+const washington: HubHome[] = [
+  {
+    id: "wa-confirmed",
+    name: "Amber Hills",
+    beds: 6,
+    inspections: 0,
+    total_citations: 0,
+    capacity_tier: "small",
+    careChip: "Confirmed: accepts residents with dementia",
+    serves_memory_care: false,
+    memory_care_disclosure_filed: false,
+  },
+  {
+    id: "wa-credential",
+    name: "Specialty Family Home",
+    beds: 6,
+    inspections: 0,
+    total_citations: 0,
+    capacity_tier: "small",
+    careChip: "Dementia credential",
+    serves_memory_care: false,
+    memory_care_disclosure_filed: false,
+  },
+  {
+    id: "wa-small",
+    name: "Plain Family Home",
+    beds: 6,
+    inspections: 0,
+    total_citations: 0,
+    capacity_tier: "small",
+    careChip: null,
+    serves_memory_care: false,
+    memory_care_disclosure_filed: false,
+  },
+  {
+    id: "wa-memory",
+    name: "Certified House",
+    beds: 60,
+    inspections: 3,
+    total_citations: 1,
+    capacity_tier: "large",
+    careChip: "Memory Care Certified",
+    serves_memory_care: true,
+    memory_care_disclosure_filed: false,
+  },
+];
+const wa = listedSections(washington, "WA", "washington");
+assert.equal(wa.listed.length, washington.length);
+assert.equal(wa.sections.size, washington.length);
+assert.equal(wa.sections.get("wa-confirmed"), "confirmed-accepts");
+assert.equal(wa.sections.get("wa-credential"), "credential");
+assert.equal(wa.sections.get("wa-small"), "small");
+assert.equal(wa.sections.get("wa-memory"), "memory-care-large");
+assert.ok(
+  CITY_HUB_SECTION_ORDER.indexOf("confirmed-accepts") <
+    CITY_HUB_SECTION_ORDER.indexOf("credential"),
+);
+assert.ok(
+  CITY_HUB_SECTION_ORDER.indexOf("credential") < CITY_HUB_SECTION_ORDER.indexOf("small"),
+);
+assert.ok(CITY_HUB_SECTION_ORDER.indexOf("small") < CITY_HUB_SECTION_ORDER.indexOf("other"));
+assert.equal(SMALL_HOMES_PREVIEW_COUNT, 24);
+
+const manySmall = Array.from({ length: 30 }, (_, i) => i);
+assert.equal(manySmall.slice(0, SMALL_HOMES_PREVIEW_COUNT).length, 24);
+assert.equal(manySmall.length, 30);
+
+// A city with nothing to list is not a hub, so it is not counted or linked.
+const hubCities = [
+  { slug: "mesa", listedCount: 169 },
+  { slug: "empty", listedCount: 0 },
+].filter((city) => cityHubPageExists(city.listedCount));
+assert.deepEqual(hubCities.map((city) => city.slug), ["mesa"]);
+assert.equal(cityHubPageExists(0), false);
+assert.equal(cityHubPageExists(1), true);
+
+// Same name and ZIP in Pennsylvania is one line. The headline uses that count.
+const pittsburgh = quoteHomesOnPage(
+  [
+    { id: "a", name: "Canterbury Place", inspections: 1, total_citations: 0, zip: "15201" },
+    { id: "b", name: "CANTERBURY PLACE", inspections: 4, total_citations: 2, zip: "15201" },
+    { id: "c", name: "Other Home", inspections: 1, total_citations: 0, zip: "15201" },
+  ],
+  "PA",
+);
+assert.equal(pittsburgh.length, 2);
+assert.equal(quoteHomesOnPage(pittsburgh, "AZ").length, 2);
 
 console.log("city hub accuracy checks passed");
