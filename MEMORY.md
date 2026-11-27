@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Manual summary refetch is dispatch-only and ID-gated
+
+**Decided:** Re-running `summarize_inspections.py --refetch` for named homes is a `workflow_dispatch` job (`.github/workflows/refetch-inspection-summaries.yml`). No schedule, no push/PR trigger. `facility_ids` is required; an empty list fails before the script runs, because `--refetch` without `--facility-id` would rewrite the whole state. Secrets are the same as weekly ingest (`DATABASE_URL`, `ANTHROPIC_API_KEY`).
+
+**Rejected:** Scheduling it. Letting a blank ID list fall through to a statewide refetch.
+
+**Source:** Owner, after PR #256.
+
+---
+
 ## 2026-11 — WA display: licensed city, PDF dates, name is not MC evidence, successor licenses
 
 **Decided:** Washington facility pages print the DSHS licensed/mailing city in the address line and JSON-LD `PostalAddress.addressLocality`. Census neighborhood (Parkland, Fairwood, South Hill) stays on the URL/`city_slug` and as a secondary chip. This is an exception to the 2026-05 “URL, body, and JSON-LD city must agree” line: families need the licensed city; Search Console URLs stay on the Census slug. Two Census Fairwoods (King 98058 vs Spokane 99218) list on their DSHS city hub; URLs keep `city_slug=fairwood`.
