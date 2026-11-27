@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — Summary refetch must overwrite; last-inspection date is one value
+
+**Decided:** `summarize_inspections.py --refetch` overwrites `narrative_summary` for the selected rows. The write used to keep `AND narrative_summary IS NULL`, so a 99-inspection refetch saved nothing. Do not generate a summary when source text is empty. A post-check refuses a summary that claims no deficiencies / in compliance / unspecified findings when the inspection has deficiency rows or the source cites a rule (Fields 2669 June 2025, Avamere 2460 May 2025). Count existing mismatches with `scripts/count_summary_deficiency_mismatches.py` (read-only).
+
+On a facility page, intro, header, quick facts, meta, and FAQ use `latestVisit` (inspection rows plus WA PDF month from `wa_latest_posted_report`). Month-only dates use `formatRecordDate(..., "month")` ("June 2026"), not `shortMonthYear` of an older inspections row.
+
+**Rejected:** Leaving `--refetch` as a no-op write. Letting intro keep `inspections[0]` while the header uses the PDF month.
+
+**Source:** Manual refetch run 45949879362; Ciel Kennewick 2448 / South Hill Village 2480.
+
+---
+
 ## 2026-11 — Manual summary refetch is dispatch-only and ID-gated
 
 **Decided:** Re-running `summarize_inspections.py --refetch` for named homes is a `workflow_dispatch` job (`.github/workflows/refetch-inspection-summaries.yml`). No schedule, no push/PR trigger. `facility_ids` is required; an empty list fails before the script runs, because `--refetch` without `--facility-id` would rewrite the whole state. Secrets are the same as weekly ingest (`DATABASE_URL`, `ANTHROPIC_API_KEY`).

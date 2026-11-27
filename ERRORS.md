@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — --refetch generated summaries and wrote none; intro date lagged the PDF month
+
+**What went wrong:** The ID-gated refetch job summarized 99 inspections and saved 0. SELECT dropped the `narrative_summary IS NULL` filter under `--refetch`, but UPDATE still required `WHERE id=%s AND narrative_summary IS NULL`. Claude also said "no deficiencies" / "does not specify whether deficiencies were cited" for visits whose source cites WAC 388-78A-2120, 24701, 2600 (Fields 2669, Avamere 2460). WA profile intro used `inspections[0]` ("Last inspected Sep 2024") while the header used `wa_latest_posted_report` ("Last inspection Jun 2026").
+
+**What worked instead:** `--refetch` UPDATE is `WHERE id=%s` only. Skip empty source text. Post-check rejects a clean-visit claim when deficiency rows or source citations exist. Intro/header/quick facts/meta share `latestVisit` and `formatRecordDate` month wording.
+
+**Source:** Actions run 45949879362; Ciel 2448 / South Hill Village 2480.
+
+---
+
 ## 2026-11 — WA name keyword, SDC summaries, successor inserts, hidden PDF dates
 
 **What went wrong:** `recompute_publishable.py` treated `mc_signal_explicit_name` (a name containing “Memory Care”) as a WA memory-care signal. South Hill Village 2480 has no DSHS dementia specialty, SDC contract, or Memory Care Certified flag; the name rule would flip `serves_memory_care` back to true after it was set false. The profile still said “Memory-care basis not yet recorded”, asked “Does … provide memory care?”, and ranked the home among “Washington memory care facilities”.

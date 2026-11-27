@@ -4,6 +4,7 @@ import {
   buildFacilityDirectAnswer,
   buildFacilityRecordSentence,
   buildFacilityReportsTitle,
+  buildFacilitySnippet,
   buildFacilityTitle,
   buildStateHubTitle,
 } from "../src/lib/seo/meta.ts";
@@ -164,6 +165,21 @@ assert.ok(cited);
 assert.match(cited.a, /5 deficiencies from ADHS in the last three years/);
 assert.match(counted?.a ?? "", /5 deficiencies/);
 assert.equal(cited.a.includes("all time"), false);
+
+const monthOnlySnippet = buildFacilitySnippet({
+  facilityName: "Ciel Senior Living",
+  stateName: "Washington",
+  stateCode: "WA",
+  grade: null,
+  percentile: null,
+  citationCount: 2,
+  lastInspectionDate: "2024-09-01",
+  lastInspected: "June 2026",
+  variant: "prose",
+  regulatorAbbr: "DSHS",
+});
+assert.match(monthOnlySnippet, /last inspected June 2026/);
+assert.doesNotMatch(monthOnlySnippet, /Sep 2024/);
 
 assert.equal(displayCityName("PORTLAND", "portland"), "Portland");
 assert.equal(displayCityName("Tucson", "tucson"), "Tucson");

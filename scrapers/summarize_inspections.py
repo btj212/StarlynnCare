@@ -38,6 +38,7 @@ _SCRAPERS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRAPERS_DIR not in sys.path:
     sys.path.insert(0, _SCRAPERS_DIR)
 
+from _summary_guard import reject_false_clean_visit
 from _wa_summary_guard import strip_unfounded_dementia_contract
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
@@ -330,11 +331,13 @@ USER_TEMPLATE = """Inspection type: {inspection_type}
 Is complaint: {is_complaint}
 Outcome (if complaint): {outcome}
 DSHS dementia contract: {dementia_contract}
+Cited deficiencies on file: {deficiency_count}
 
 Narrative:
 {narrative}
 
-Write a 2-3 sentence plain-English summary for families."""
+Write a 2-3 sentence plain-English summary for families.
+{deficiency_instruction}"""
 
 
 # ---------------------------------------------------------------------------
@@ -351,17 +354,30 @@ def summarize(
     *,
     state_code: str = "CA",
     holds_sdc: bool = False,
+    deficiency_count: int = 0,
 ) -> str | None:
+    if not (narrative or "").strip():
+        return None
     if state_code.upper() == "WA":
         dementia_contract = "yes" if holds_sdc else "no"
     else:
         dementia_contract = "n/a"
+    if deficiency_count > 0:
+        deficiency_instruction = (
+            "This visit has cited deficiencies on file. Do not say no deficiencies "
+            "were cited, that the home was in compliance, that findings were "
+            "unspecified, or that the report does not say whether anything was cited."
+        )
+    else:
+        deficiency_instruction = ""
     user_msg = USER_TEMPLATE.format(
         inspection_type=inspection_type or "visit",
         is_complaint="Yes" if is_complaint else "No",
         outcome=outcome or "N/A",
         dementia_contract=dementia_contract,
+        deficiency_count=deficiency_count,
         narrative=narrative[:6000],  # stay well within context
+        deficiency_instruction=deficiency_instruction,
     )
     system = SYSTEM_PROMPTS_BY_STATE.get(state_code.upper(), SYSTEM_PROMPT_GENERIC)
     for attempt in range(5):
@@ -391,6 +407,13 @@ def summarize(
                 if not text:
                     print("    rejected unfounded Specialized Dementia Care claim")
                     return None
+            if reject_false_clean_visit(
+                text,
+                deficiency_count=deficiency_count,
+                source_text=narrative,
+            ):
+                print("    rejected clean-visit claim on a cited inspection")
+                return None
             return text
         except Exception as e:
             message = str(e).lower()
@@ -494,7 +517,11 @@ def main() -> None:
                                  AND length(btrim(coalesce(d.inspector_narrative, ''))) >= 80
                              )
                            ),
-                           f.name, f.state_code, false
+                           f.name, f.state_code, false,
+                           GREATEST(
+                             COALESCE(i.total_deficiency_count, 0),
+                             (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
+                           ) AS def_count
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -504,8 +531,7 @@ def main() -> None:
                 )
             else:
                 where_parts = [
-                    "raw_data->>'narrative' IS NOT NULL",
-                    "raw_data->>'narrative' != ''",
+                    "length(btrim(coalesce(raw_data->>'narrative', ''))) > 0",
                 ]
                 if not args.refetch:
                     where_parts.append("narrative_summary IS NULL")
@@ -529,7 +555,11 @@ def main() -> None:
                                FROM unnest(COALESCE(f.wa_contract_types, ARRAY[]::text[])) AS t(label)
                                WHERE t.label ~* 'dementia|memory care|sdc'
                              )
-                           ) AS holds_sdc
+                           ) AS holds_sdc,
+                           GREATEST(
+                             COALESCE(i.total_deficiency_count, 0),
+                             (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
+                           ) AS def_count
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -554,9 +584,23 @@ def main() -> None:
     processed = 0
     succeeded = 0
     failed = 0
+    skipped_empty = 0
+    not_written = 0
 
     def _summarize_row(row):
-        insp_id, insp_type, is_complaint, outcome, raw_narrative, fac_name, st_code, holds_sdc = row
+        (
+            insp_id,
+            insp_type,
+            is_complaint,
+            outcome,
+            raw_narrative,
+            fac_name,
+            st_code,
+            holds_sdc,
+            def_count,
+        ) = row
+        if not (raw_narrative or "").strip():
+            return insp_id, fac_name, None, "empty"
         narrative = clean_narrative(raw_narrative)
         if not narrative:
             return insp_id, fac_name, None, "empty"
@@ -572,6 +616,7 @@ def main() -> None:
             narrative,
             state_code=st_code or "CA",
             holds_sdc=bool(holds_sdc),
+            deficiency_count=int(def_count or 0),
         )
         if not summary:
             return insp_id, fac_name, None, "fail"
@@ -583,8 +628,9 @@ def main() -> None:
             insp_id, fac_name, summary, status = result
             processed += 1
             if status == "empty":
+                skipped_empty += 1
                 if workers == 1:
-                    print(f"\n→ {fac_name[:45]}\n  — Empty after cleaning, skipping")
+                    print(f"\n→ {fac_name[:45]}\n  — Empty source text, skipping")
                 return
             if status == "dry":
                 print(f"\n→ {fac_name[:45]}\n  [dry-run] {summary}")
@@ -594,15 +640,35 @@ def main() -> None:
                 print(f"\n→ {fac_name[:45]}\n  ✗ Summary generation failed")
                 return
             with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE inspections
-                    SET narrative_summary = %s
-                    WHERE id = %s AND narrative_summary IS NULL
-                    """,
-                    (summary, insp_id),
-                )
+                if args.refetch:
+                    cur.execute(
+                        """
+                        UPDATE inspections
+                        SET narrative_summary = %s
+                        WHERE id = %s
+                        """,
+                        (summary, insp_id),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        UPDATE inspections
+                        SET narrative_summary = %s
+                        WHERE id = %s AND narrative_summary IS NULL
+                        """,
+                        (summary, insp_id),
+                    )
+                wrote = cur.rowcount > 0
                 conn.commit()
+            if not wrote:
+                not_written += 1
+                why = (
+                    "row missing"
+                    if args.refetch
+                    else "row already had a summary"
+                )
+                print(f"\n→ {fac_name[:45]}\n  — Generated but not saved ({why})")
+                return
             succeeded += 1
             if workers == 1 or processed % 25 == 0 or processed == len(rows):
                 print(f"  ✓ {processed}/{len(rows)} {str(fac_name)[:40]}: {summary[:110]}")
@@ -622,7 +688,11 @@ def main() -> None:
                 for future in as_completed(futures):
                     _record(future.result())
 
-    print(f"\nDone. {succeeded} summarized, {failed} failed, {processed} processed.")
+    print(
+        f"\nDone. {succeeded} saved, {failed} failed, "
+        f"{skipped_empty} empty source, {not_written} not written, "
+        f"{processed} processed."
+    )
 
 
 if __name__ == "__main__":

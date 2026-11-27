@@ -6,7 +6,8 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalFor } from "@/lib/seo/canonical";
-import { buildFacilityDescription, buildFacilityTitle, clipMetaDescription, reportablePercentile, shortMonthYear } from "@/lib/seo/meta";
+import { buildFacilityDescription, buildFacilityTitle, clipMetaDescription, reportablePercentile } from "@/lib/seo/meta";
+import { formatRecordDate } from "@/lib/format/formatRecordDate";
 import { facilityDisplayName } from "@/lib/facility/aliases";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { stateFromSlug } from "@/lib/states";
@@ -136,11 +137,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { facility } = profile;
   const canonical = canonicalFor(`/${state.slug}/${facility.city_slug}/${facility.slug}`);
 
-  // Data-driven meta title + description. Year is the last visit on file.
-  const lastInspectionDate =
-    profile.inspections[0]?.inspection_date ??
-    profile.inspections.find((i) => !i.is_complaint)?.inspection_date ??
-    null;
+  // Data-driven meta title + description. Same last visit as the profile header.
+  const lastInspectionDate = profile.latestVisit?.date ?? null;
+  const lastInspectedLabel = profile.latestVisit
+    ? formatRecordDate(profile.latestVisit.date, profile.latestVisit.precision)
+    : null;
   const compositePercentile = reportablePercentile(
     profile.snapshot?.grade?.composite_percentile,
     profile.snapshot?.peer_set.n,
@@ -165,6 +166,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     checkedOn != null &&
     profile.totals.inspections === 0 &&
     profile.totals.deficiencies === 0 &&
+    !profile.latestVisit &&
     !profile.complianceFlag;
   const desc = clipMetaDescription(
     noReportsPosted
@@ -179,7 +181,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           inspectionCount: profile.totals.inspections,
           reviewCount: profile.reviews.length,
           agency: profile.cfg.agencyShort,
-          lastInspected: shortMonthYear(lastInspectionDate),
+          lastInspected: lastInspectedLabel,
         }),
   );
 
