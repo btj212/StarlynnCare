@@ -26,6 +26,7 @@ import {
   DEMENTIA_CREDENTIAL_JSONLD,
   dementiaAcceptanceTier,
 } from "@/lib/facility/memoryCareBasis";
+import { medicaidFaqPair, securedUnitFaqPair } from "@/lib/facility/profileFacts";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { formatRecordDate, type DatePrecision } from "@/lib/format/formatRecordDate";
 import { licensedCity } from "@/lib/facility/licensedCity";
@@ -276,16 +277,19 @@ export function buildLocalBusinessForFacility(
     ...aliases.aliases.map((alias) => formatFacilityName(alias)),
   ].filter((name) => name && name !== displayName);
 
-  const licenseIdentifier = facility.license_number
+  const licenseValue = facility.license_number?.trim() || "";
+  const regulator = regulatorFor(facility.state_code);
+  const licenseIdentifier = licenseValue
     ? {
         identifier: {
           "@type": "PropertyValue",
           name: "State license number",
-          propertyID: "license",
-          value: facility.license_number,
+          propertyID: regulator ? `${regulator.short} license` : "State license",
+          value: licenseValue,
         },
       }
     : {};
+  const telephone = facility.phone?.trim() || "";
 
   return {
     "@context": "https://schema.org",
@@ -300,7 +304,7 @@ export function buildLocalBusinessForFacility(
         : {}),
     url: opts.canonicalUrl,
     description: facilityDescription(facility, opts.extras),
-    telephone: facility.phone ?? undefined,
+    ...(telephone ? { telephone } : {}),
     image: facility.photo_url ?? undefined,
     medicalSpecialty: "Geriatric",
     ...licenseIdentifier,
@@ -955,6 +959,13 @@ export type FacilityFaqInput = {
    * credential. Do not ask whether it accepts residents or provides memory care.
    */
   dementiaCredentialAnswer?: string | null;
+  /** Oregon DHS roster flag. Null omits the Medicaid question. */
+  orAcceptsMedicaid?: boolean | null;
+  mcDesignationType?: string | null;
+  secureBeds?: number | null;
+  waMemoryCareCertified?: boolean | null;
+  mcProgramQuote?: string | null;
+  mcReviewNotes?: string | null;
   licenseNumber: string | null;
   licenseUrl: string | null;
   /** DSHS Forms page for a prior license when the URL still uses the old number. */
@@ -1084,6 +1095,24 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
         : `${input.regulatorName} licenses ${name}. The license number is ${license}.${link}${prior}`,
     });
   }
+
+  const medicaid = medicaidFaqPair({
+    name,
+    stateCode: input.stateCode,
+    orAcceptsMedicaid: input.orAcceptsMedicaid,
+  });
+  if (medicaid) pairs.push(medicaid);
+
+  const secured = securedUnitFaqPair({
+    name,
+    stateCode: input.stateCode,
+    mcDesignationType: input.mcDesignationType,
+    secureBeds: input.secureBeds,
+    waMemoryCareCertified: input.waMemoryCareCertified,
+    mcProgramQuote: input.mcProgramQuote,
+    mcReviewNotes: input.mcReviewNotes,
+  });
+  if (secured) pairs.push(secured);
 
   if (input.percentile != null) {
     const rankStr = peerRankPhrase(input.percentile).text;

@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-27 — Facility profile title is the inspection-record template again
+
+**Decided:** A facility profile title is `{Marketing Name}, {City}: Inspection Record & Citations ({Year})`, 70 characters or fewer. Year is the build or request year. When the line is too long, drop ` & Citations`, then ` (Year)`, then `Inspection Record`, leaving `{Name}, {City}`. Marketing name is `content.marketing_name` or `facilities.marketing_name` when one is stored, otherwise the formatted legal name. The H1 is that same name. Washington tier 2 still appends `, Accepts Dementia` or `, Dementia Credential` only when the chosen title still fits. The template does not add the words Memory Care.
+
+**This supersedes** the same-day citation-hook title (`{Name}, {City} — {N} citations, inspected {Mon YYYY}`) and the older rule that the year in this title was the last inspection year. Hub titles, the reports title, `serves_memory_care`, and the tier definitions are unchanged. The reason for the earlier hook (name queries landing on `/inspections`) is still worth watching after this ships.
+
+**Source:** Blake, task 13, 2026-11-27.
+
+---
+
 ## 2026-11-27 — Three Washington display labels
 
 **Decided:** Washington pages use three display levels, highest first. This does not change `serves_memory_care`, `publishable`, the sitemap, or `recompute_publishable.py`.

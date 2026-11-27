@@ -33,6 +33,8 @@ import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
 import { formatLicenseStatus } from "@/lib/facility/licenseStatus";
 import { OfferTriggerButton } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityShareButton } from "./FacilityShareButton";
+import { EvidenceLabel } from "./EvidenceLabel";
+import { InspectionSummary } from "./InspectionSummary";
 
 const SHORT_CATEGORY_LABEL: Record<CareCategory, string> = {
   rcfe_memory_care: "RCFE · Memory Care",
@@ -400,14 +402,28 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
           {/* Left */}
           <div>
             <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(36px,5.5vw,72px)] font-normal leading-[0.95] tracking-[-0.025em] text-ink">
-              {legalName},{" "}
-              <em className="not-italic text-teal">{cityName}</em>
+              {displayName}
             </h1>
-            {aliases.marketingName && (
+            {legalName !== displayName ? (
               <p className="mt-3 font-[family-name:var(--font-sans)] text-[15px] leading-snug text-ink-3">
-                Also known as {formatFacilityName(aliases.marketingName)}
+                Licensed as {legalName}
               </p>
-            )}
+            ) : null}
+            <InspectionSummary
+              lastInspected={lastInspectedLabel}
+              inspectionCount={profile.totals.inspections}
+              citationCount={profile.totals.deficiencies}
+            />
+            {profile.waMcSignals ? <WaMcSignalBadges signals={profile.waMcSignals} /> : null}
+            {profile.orMcSignals ? <OrMcSignalBadges signals={profile.orMcSignals} /> : null}
+            {facility.state_code === "AZ" ? (
+              <AzMemoryCareBadges
+                program={azMcProgram(facility)}
+                regulatorShort={profile.memoryCareBasis.regulatorShort}
+                regulatorUrl={profile.memoryCareBasis.sourceUrl}
+              />
+            ) : null}
+            <EvidenceLabel label={profile.memoryCareBasis.regulator} />
             {aliases.aliases.length > 0 ? (
               <p className="mt-1 font-[family-name:var(--font-sans)] text-[14px] leading-snug text-ink-3">
                 Also listed as {aliases.aliases.map((alias) => formatFacilityName(alias)).join(", ")}
@@ -612,31 +628,9 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               </div>
             )}
 
-            {/* WA memory-care signal badges */}
-            {profile.waMcSignals && (
-              <WaMcSignalBadges signals={profile.waMcSignals} />
-            )}
-
-            {/* OR memory-care signal badges */}
-            {profile.orMcSignals && (
-              <OrMcSignalBadges signals={profile.orMcSignals} />
-            )}
-
-            {facility.state_code === "AZ" ? (
-              <AzMemoryCareBadges
-                program={azMcProgram(facility)}
-                regulatorShort={profile.memoryCareBasis.regulatorShort}
-                regulatorUrl={profile.memoryCareBasis.sourceUrl}
-              />
-            ) : (
+            {facility.state_code === "AZ" ? null : (
               <FacilityMemoryCareBasis basis={profile.memoryCareBasis} />
             )}
-
-            {profile.latestVisit ? (
-              <p className="mt-2 mb-0 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-ink-3">
-                Last inspection {formatRecordDate(profile.latestVisit.date, profile.latestVisit.precision)}
-              </p>
-            ) : null}
 
             {/* Mobile-only percentile badge — rank summary visible without scrolling */}
             {reportableRank != null && profile.snapshot?.grade && (

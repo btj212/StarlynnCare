@@ -11,10 +11,16 @@ import { memoryCareBasis } from "../src/lib/facility/memoryCareBasis.ts";
 
 const crumbs = buildBreadcrumbList([
   { name: "Home", url: "https://www.starlynncare.com/" },
-  { name: "Arizona memory care", url: "https://www.starlynncare.com/arizona" },
-]) as { "@type": string; itemListElement: unknown[] };
+  { name: "Arizona", url: "https://www.starlynncare.com/arizona" },
+  { name: "Mesa", url: "https://www.starlynncare.com/arizona/mesa" },
+  { name: "Legacy House of Mesa", url: "https://www.starlynncare.com/arizona/mesa/legacy" },
+]) as { "@type": string; itemListElement: Array<{ name: string; position: number }> };
 assert.equal(crumbs["@type"], "BreadcrumbList");
-assert.equal(crumbs.itemListElement.length, 2);
+assert.equal(crumbs.itemListElement.length, 4);
+assert.deepEqual(
+  crumbs.itemListElement.map((item) => item.name),
+  ["Home", "Arizona", "Mesa", "Legacy House of Mesa"],
+);
 
 const dataset = buildDatasetSchema({
   pageUrl: "https://www.starlynncare.com/data",
@@ -59,17 +65,28 @@ const local = buildLocalBusinessForFacility(facility, {
   name: string;
   legalName?: string;
   telephone?: string;
-  identifier?: { value: string };
-  address: { streetAddress?: string };
+  identifier?: { value: string; propertyID?: string };
+  alternateName?: string | string[];
+  address: { streetAddress?: string; "@type"?: string };
 };
 const types = Array.isArray(local["@type"]) ? local["@type"] : [local["@type"]];
 assert.equal(types.includes("LocalBusiness"), true);
 assert.equal(local.name, "Legacy House of Mesa");
 assert.equal(local.legalName, "Legacy Retirement Residence");
+assert.equal(local.alternateName, "Legacy Retirement Residence");
 assert.equal(local.telephone, "4805550100");
 assert.equal(local.identifier?.value, "AL0001");
+assert.equal(local.identifier?.propertyID, "ADHS license");
+assert.equal(local.address["@type"], "PostalAddress");
 assert.equal(local.address.streetAddress, "123 Main St");
 assert.equal(JSON.stringify(local).includes("priceRange"), false);
+
+const blankPhone = buildLocalBusinessForFacility(
+  { ...facility, phone: "   " } as unknown as Facility,
+  { code: "AZ", slug: "arizona", name: "Arizona" },
+  { canonicalUrl: "https://www.starlynncare.com/arizona/mesa/legacy-retirement-residence" },
+) as { telephone?: string };
+assert.equal(blankPhone.telephone, undefined);
 
 const snf = buildLocalBusinessForFacility(
   { ...facility, care_category: "snf_general", marketing_name: null } as unknown as Facility,

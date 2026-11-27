@@ -33,6 +33,7 @@ import { FacilityOfferBar } from "@/components/facility/FacilityOfferBar";
 import { FacilityOfferProvider } from "@/components/facility/offer/FacilityOfferProvider";
 import { FacilityFullInspections } from "@/components/facility/profile/FacilityFullInspections";
 import { FacilitySiblings } from "@/components/facility/profile/FacilitySiblings";
+import { NearbyFacilities } from "@/components/facility/profile/NearbyFacilities";
 import { assignOffer } from "@/lib/facility/offers";
 import { facilityMarkedNoindex } from "@/lib/seo/indexability";
 import { isArticleApproved } from "@/lib/content/articleReview";
@@ -162,6 +163,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     inspectionCount: profile.totals.inspections,
     reviewCount: profile.reviews.length,
     lastInspectionDate,
+    year: new Date().getFullYear(),
   });
 
   const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
@@ -371,6 +373,7 @@ export default async function FacilityPage({ params }: PageProps) {
         </div>
 
         {/* § 08 · Nearby sibling facilities */}
+        <NearbyFacilities profile={profile} />
         <FacilitySiblings profile={profile} />
 
         {/* Sticky Watch bar — fixed position, shown at 40% scroll or 20s */}
