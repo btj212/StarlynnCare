@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11 — Oregon cover tags and WA placeholders were counted as deficiencies
+
+**What went wrong:** The 2026-11-26 `--refetch` for 81 Oregon homes treated every `deficiencies` row as a citation. Oregon files `C0000` (and other tags ending in `0000`) on every visit, including clean ones, so 95 clean visits were rewritten to "One deficiency was cited" (50A165, 2024-08-23). Other visits quoted the raw row total (50A034 said 33; two of those rows are cover comments). The prompt used `GREATEST(inspections.total_deficiency_count, count(*))`, so the larger number won. `_record` incremented `skipped_empty` and `not_written` without listing them in `nonlocal`, which raises `UnboundLocalError` the first time either path runs. `wa_pdf_backfill.py` swapped placeholder rows for parsed WAC citations and never set `inspections.total_deficiency_count`, leaving PDF-only visits at 0.
+
+**What worked instead:** One helper, `is_real_citation`, shared by the summarizer, the post-check, the mismatch script, and the backfill. The model is told the deduped real count. The post-check rejects a stated count that is not that number. The backfill writes `total_deficiency_count` only after a swap, in the same transaction. Add `skipped_empty` and `not_written` to `nonlocal`.
+
+**Source:** Oregon refetch 2026-11-26. The 95 clean summaries were restored in the database; the code fix is the follow-up.
+
+---
+
 ## 2026-11 — --refetch generated summaries and wrote none; intro date lagged the PDF month
 
 **What went wrong:** The ID-gated refetch job summarized 99 inspections and saved 0. SELECT dropped the `narrative_summary IS NULL` filter under `--refetch`, but UPDATE still required `WHERE id=%s AND narrative_summary IS NULL`. Claude also said "no deficiencies" / "does not specify whether deficiencies were cited" for visits whose source cites WAC 388-78A-2120, 24701, 2600 (Fields 2669, Avamere 2460). WA profile intro used `inspections[0]` ("Last inspected Sep 2024") while the header used `wa_latest_posted_report` ("Last inspection Jun 2026").

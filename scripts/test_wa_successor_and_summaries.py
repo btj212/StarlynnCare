@@ -81,7 +81,9 @@ def test_false_clean_visit() -> None:
     assert source_cites_deficiency(avamere_source)
     assert reject_false_clean_visit(fields_june, deficiency_count=2, source_text=fields_source)
     assert reject_false_clean_visit(avamere_may, deficiency_count=1, source_text=avamere_source)
-    assert reject_false_clean_visit(
+    # real_count 0 may say no deficiencies were cited. A cover comment that
+    # quotes a rule is not a citation, so source text does not override that.
+    assert not reject_false_clean_visit(
         "No deficiencies were cited.",
         deficiency_count=0,
         source_text=fields_source,
