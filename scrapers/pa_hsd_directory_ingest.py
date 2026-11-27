@@ -10,8 +10,10 @@ Source: https://www.humanservices.dhs.pa.gov/HUMAN_SERVICE_PROVIDER_DIRECTORY/Ho
         (no auth; one GET; refreshed daily)
 
 Memory care gate (PA-specific):
-  serves_memory_care = (mc_designation_type IS NOT NULL)
+  serves_memory_care = designation in ('Secure Dementia Care Unit', 'Special Care')
                        OR (license_type = 'ASSISTED LIVING - SPECIAL CARE')
+  'accepts_dementia_no_secured_unit' is a Washington display value. It is
+  not memory care and must not set this flag.
 
 The unified Tier-1 column `memory_care_disclosure_filed` is mirrored from the
 PA flag so recompute_publishable.py picks it up without per-state branching
@@ -282,10 +284,12 @@ def row_to_record(raw_row: tuple[Any, ...]) -> dict[str, Any] | None:
         # Defensive — the bulk export should always be PA-only
         return None
 
-    # Memory-care gate
-    serves_memory_care = (mc_designation_type is not None) or (
-        service_type == "ASSISTED LIVING - SPECIAL CARE"
-    )
+    # Memory-care gate. Only Pennsylvania's two designations. The Washington
+    # value accepts_dementia_no_secured_unit is not a secured unit.
+    serves_memory_care = mc_designation_type in (
+        "Secure Dementia Care Unit",
+        "Special Care",
+    ) or (service_type == "ASSISTED LIVING - SPECIAL CARE")
 
     # License status normalization. v1 publishable rules (Section 8 of brief):
     # only LICENSED rows go publishable; PDR-APPEAL PEND is flagged but excluded.

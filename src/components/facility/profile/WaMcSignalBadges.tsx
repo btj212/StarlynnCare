@@ -24,6 +24,9 @@ export type WaMcSignalInput = {
   wa_dementia_specialty?: boolean | null;
   mc_program_confirmed?: boolean | null;
   mc_program_source_url?: string | null;
+  mc_designation_type?: string | null;
+  mc_program_quote?: string | null;
+  mc_review_notes?: string | null;
   cms_overall_rating?: number | null;
 };
 
@@ -45,6 +48,9 @@ export function waMcSignalsFromRow(row: WaMcSignalInput): WaMcSignals {
     wa_dementia_specialty: row.wa_dementia_specialty,
     mc_program_confirmed: row.mc_program_confirmed,
     mc_program_source_url: row.mc_program_source_url,
+    mc_designation_type: row.mc_designation_type,
+    mc_program_quote: row.mc_program_quote,
+    mc_review_notes: row.mc_review_notes,
   });
   return {
     memoryCare: row.wa_memory_care_certified ?? false,

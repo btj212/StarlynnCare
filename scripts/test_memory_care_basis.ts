@@ -6,10 +6,12 @@ import {
   WA_AFH_NO_MC_BASIS,
   WA_NO_DEMENTIA_DESIGNATION,
   WA_OPERATOR_PROGRAM_LABEL,
+  WA_TOLD_US_ACCEPTS_BASIS,
   dementiaAcceptanceTier,
   hasCaDementiaClientCode,
   memoryCareBasis,
   waAcceptsDementiaFaqAnswer,
+  waToldUsFaqAnswer,
 } from "../src/lib/facility/memoryCareBasis.ts";
 import { buildFacilityTitle } from "../src/lib/seo/meta.ts";
 import {
@@ -211,13 +213,36 @@ assert.equal(dementiaAcceptanceTier({
   wa_dementia_specialty: true,
   serves_memory_care: true,
 }), "neither");
-// 2b cannot be stored: mc_designation_type's check allows only the PA values.
-assert.equal(dementiaAcceptanceTier({
-  state_code: "WA",
+const toldUs = {
+  state_code: "WA" as const,
   wa_facility_type: "ALF",
   mc_designation_type: "accepts_dementia_no_secured_unit",
-  mc_program_quote: "We do have dementia residents.",
-}), "neither");
+  mc_program_quote: "We don't have a dementia unit. We do have dementia residents. (2026-11-27)",
+};
+assert.equal(dementiaAcceptanceTier(toldUs), "accepts-dementia");
+assert.equal(memoryCareBasis(toldUs).kind, "none");
+assert.equal(memoryCareBasis(toldUs).label, WA_TOLD_US_ACCEPTS_BASIS);
+assert.equal(dementiaAcceptanceTier({ ...toldUs, mc_program_quote: "   " }), "neither");
+assert.equal(dementiaAcceptanceTier({
+  ...toldUs,
+  mc_program_quote: null,
+  mc_review_notes: "Phone call 2026-11-27 with Maria.",
+}), "accepts-dementia");
+assert.equal(dementiaAcceptanceTier({
+  ...toldUs,
+  wa_memory_care_certified: true,
+}), "memory-care");
+assert.match(memoryCareBasis({ ...toldUs, wa_memory_care_certified: true }).label, /memory-care certified/);
+const toldUsAfh = { ...toldUs, wa_facility_type: "AFH", wa_dementia_specialty: true };
+assert.equal(dementiaAcceptanceTier(toldUsAfh), "accepts-dementia");
+assert.equal(memoryCareBasis(toldUsAfh).label, WA_TOLD_US_ACCEPTS_BASIS);
+const toldSignals = waMcSignalsFromRow(toldUs);
+assert.equal(toldSignals.acceptsDementia, true);
+assert.equal(toldSignals.memoryCare, false);
+assert.equal(toldSignals.sdcp, false);
+const toldCertified = waMcSignalsFromRow({ ...toldUs, wa_memory_care_certified: true });
+assert.equal(toldCertified.memoryCare, true);
+assert.equal(toldCertified.acceptsDementia, false);
 
 const waAlfCertified = memoryCareBasis({
   state_code: "WA",
@@ -382,6 +407,47 @@ const afhFaq = buildFacilityFaqPairs({
   regulatorAbbr: "DSHS",
 });
 assert.equal(afhFaq.some((pair) => /provide memory care/i.test(pair.q)), false);
+
+const toldFaq = buildFacilityFaqPairs({
+  facilityName: "Amber Hills Assisted Living",
+  stateName: "Washington",
+  stateCode: "WA",
+  pageUrl: "https://www.starlynncare.com/washington/prosser/amber-hills",
+  inspectionCount: 0,
+  deficiencyCount: 0,
+  countsCoverThreeYears: false,
+  lastInspectionDate: null,
+  lastInspectionType: null,
+  lastInspectionIsComplaint: false,
+  seriousFindings: [],
+  percentile: null,
+  memoryCareLabel: WA_TOLD_US_ACCEPTS_BASIS,
+  servesMemoryCare: false,
+  acceptsDementiaAnswer: waToldUsFaqAnswer("Amber Hills Assisted Living"),
+  licenseNumber: "2616",
+  licenseUrl: null,
+  regulatorName: "Washington DSHS",
+  regulatorAbbr: "DSHS",
+});
+assert.equal(toldFaq.some((pair) => /provide memory care/i.test(pair.q)), false);
+assert.equal(
+  toldFaq.find((pair) => pair.q.startsWith("Does "))?.a,
+  waToldUsFaqAnswer("Amber Hills Assisted Living"),
+);
+const toldTitle = buildFacilityTitle({
+  name: "Amber Hills",
+  stateName: "Washington",
+  stateCode: "WA",
+  waFacilityType: "ALF",
+  dementiaTier: "accepts-dementia",
+  percentile: null,
+  city: "Prosser",
+  citationCount: 0,
+  inspectionCount: 0,
+  reviewCount: 0,
+});
+assert.equal(toldTitle.includes("Memory Care"), false);
+assert.equal(toldTitle, "Amber Hills, Prosser: Assisted Living, Accepts Dementia");
 const acceptsFaq = afhFaq.find((pair) => pair.q === "Does Amazing Hearts AFH accept residents with dementia?");
 assert.equal(acceptsFaq?.a, waAcceptsDementiaFaqAnswer("Amazing Hearts AFH"));
 assert.match(acceptsFaq?.a ?? "", /dementia specialty/);

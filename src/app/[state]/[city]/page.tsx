@@ -81,7 +81,7 @@ import { HubDifferentiators, type RegionHubStats } from "@/components/editorial/
 export const revalidate = 3600;
 
 const HUB_FACILITY_SELECT =
-  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, wa_facility_type, wa_contract_types, mc_program_confirmed, mc_program_source_url, wa_county, historical_city_slugs, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served";
+  "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, license_type, wa_dementia_care_contract, wa_earc_sdc_contracted, wa_memory_care_certified, wa_dementia_specialty, wa_facility_type, wa_contract_types, mc_program_confirmed, mc_program_source_url, mc_program_quote, mc_review_notes, wa_county, historical_city_slugs, az_mc_subclass, az_license_level, az_memory_care_endorsed, mce_endorsed, mc_designation_type, memory_care_disclosure_source, mn_dementia_care_licensed, il_dementia_program_flag, mo_alzheimer_scu, mo_level_of_care, ca_cdss_client_served";
 
 type HubFacilityRow = {
   id: string;
@@ -108,6 +108,8 @@ type HubFacilityRow = {
   wa_contract_types?: string[] | null;
   mc_program_confirmed?: boolean | null;
   mc_program_source_url?: string | null;
+  mc_program_quote?: string | null;
+  mc_review_notes?: string | null;
   wa_county?: string | null;
   historical_city_slugs?: string[] | null;
   az_mc_subclass: boolean | null;
@@ -391,6 +393,8 @@ export default async function RegionPage({ params }: PageProps) {
             wa_contract_types: f.wa_contract_types,
             mc_program_confirmed: f.mc_program_confirmed,
             mc_program_source_url: f.mc_program_source_url,
+            mc_program_quote: f.mc_program_quote,
+            mc_review_notes: f.mc_review_notes,
             tx_alzheimer_certified: f.tx_alzheimer_certified,
             il_dementia_program_flag: f.il_dementia_program_flag,
             mn_dementia_care_licensed: f.mn_dementia_care_licensed,

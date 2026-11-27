@@ -138,4 +138,40 @@ const mccLd = buildLocalBusinessForFacility(waHome, waState, {
 }) as { amenityFeature?: Array<{ name: string }> };
 assert.equal(mccLd.amenityFeature?.[0]?.name, "Memory care");
 
+const toldHome = {
+  ...facility,
+  name: "AMBER HILLS ASSISTED LIVING",
+  city: "Prosser",
+  city_slug: "prosser",
+  state_code: "WA",
+  license_number: "2616",
+  care_category: "alf_general",
+  wa_facility_type: "ALF",
+  wa_dementia_specialty: false,
+  mc_designation_type: "accepts_dementia_no_secured_unit",
+  mc_program_quote: "We do have dementia residents.",
+} as unknown as Facility;
+const toldBasis = memoryCareBasis({
+  state_code: "WA",
+  wa_facility_type: "ALF",
+  mc_designation_type: "accepts_dementia_no_secured_unit",
+  mc_program_quote: "We do have dementia residents.",
+});
+const toldLd = buildLocalBusinessForFacility(toldHome, waState, {
+  canonicalUrl: "https://www.starlynncare.com/washington/prosser/amber-hills",
+  memoryCare: toldBasis,
+}) as {
+  amenityFeature?: Array<{ name: string }>;
+  additionalProperty?: Array<{ name: string; value?: string }>;
+};
+assert.equal(toldLd.amenityFeature, undefined);
+assert.equal(
+  (toldLd.additionalProperty ?? []).some((prop) => prop.name === "Memory care basis"),
+  false,
+);
+assert.equal(
+  (toldLd.additionalProperty ?? []).find((prop) => prop.name === "Dementia care")?.value,
+  "Accepts residents with dementia (no secured unit)",
+);
+
 console.log("json-ld builder checks passed");

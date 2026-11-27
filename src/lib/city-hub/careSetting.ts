@@ -210,7 +210,11 @@ export function listCareChip(input: {
     return "Memory care";
   }
   if (code === "AZ" && input.basis.kind === "care-level") return "Directed Care";
-  if (code === "WA" && /not a secured memory-care unit/i.test(input.basis.label)) {
+  if (
+    code === "WA" &&
+    (/not a secured memory-care unit/i.test(input.basis.label) ||
+      /no secured or dedicated memory-care unit/i.test(input.basis.label))
+  ) {
     return ACCEPTS_DEMENTIA_CHIP;
   }
   return null;

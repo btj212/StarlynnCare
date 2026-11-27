@@ -382,7 +382,8 @@ export default async function BibliofangirlPage() {
                         </p>
                       </div>
                     )}
-                    {facility.mc_designation_type && (
+                    {(facility.mc_designation_type === "Secure Dementia Care Unit" ||
+                      facility.mc_designation_type === "Special Care") && (
                       <div>
                         <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.1em] text-ink-4">
                           PA DHS designation

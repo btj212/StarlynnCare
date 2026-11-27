@@ -42,7 +42,7 @@ import {
   buildReviewSchema,
   regulatorLicensePageFor,
 } from "@/lib/seo/schema";
-import { memoryCareBasis, dementiaAcceptanceTier, waAcceptsDementiaFaqAnswer } from "@/lib/facility/memoryCareBasis";
+import { memoryCareBasis, dementiaAcceptanceTier, waAcceptsDementiaFaqAnswer, waToldUsAcceptsDementia, waToldUsFaqAnswer } from "@/lib/facility/memoryCareBasis";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import {
   inspectionDatePrecision,
@@ -888,9 +888,11 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         ? acceptanceTier === "memory-care"
         : facility.serves_memory_care,
     acceptsDementiaAnswer:
-      acceptanceTier === "accepts-dementia"
-        ? waAcceptsDementiaFaqAnswer(facility.name)
-        : null,
+      acceptanceTier !== "accepts-dementia"
+        ? null
+        : waToldUsAcceptsDementia(facility)
+          ? waToldUsFaqAnswer(facility.name)
+          : waAcceptsDementiaFaqAnswer(facility.name),
     licenseNumber: facility.license_number,
     licenseUrl: careBasis.sourceUrl,
     previousLicenseUrl:

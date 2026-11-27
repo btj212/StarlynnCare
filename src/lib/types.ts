@@ -137,7 +137,11 @@ export interface Facility {
   memory_care_disclosure_filed: boolean;
   /** Provenance string for memory_care_disclosure_filed. */
   memory_care_disclosure_source: string | null;
-  /** PA HSD special-care string. Null, "Secure Dementia Care Unit", or "Special Care". */
+  /**
+   * Pennsylvania: null, "Secure Dementia Care Unit", or "Special Care".
+   * Washington tier 2b: "accepts_dementia_no_secured_unit". That value is
+   * not memory care and not a secured unit.
+   */
   mc_designation_type?: string | null;
   il_dementia_program_flag?: boolean | null;
   mn_dementia_care_licensed?: boolean | null;
@@ -153,6 +157,8 @@ export interface Facility {
   mc_program_confirmed?: boolean | null;
   mc_program_source_url?: string | null;
   mc_program_quote?: string | null;
+  /** Source note for a Washington tier 2b designation. Not a memory-care signal. */
+  mc_review_notes?: string | null;
   mc_program_checked_at?: string | null;
 
   // Added in migration 0004_facility_photos.sql

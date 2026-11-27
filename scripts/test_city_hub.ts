@@ -241,6 +241,26 @@ assert.equal(
   listCareChip({ stateCode: "WA", basis: afhBasisNone }),
   "Accepts residents with dementia",
 );
+assert.equal(
+  listCareChip({
+    stateCode: "WA",
+    basis: memoryCareBasis({
+      state_code: "WA",
+      wa_facility_type: "ALF",
+      mc_designation_type: "accepts_dementia_no_secured_unit",
+      mc_program_quote: "We do have dementia residents.",
+    }),
+  }),
+  "Accepts residents with dementia",
+);
+assert.equal(
+  cityHubCardGroup({
+    careChip: "Accepts residents with dementia",
+    capacityTier: "medium",
+    inMemoryCareGroup: false,
+  }),
+  "accepts-dementia",
+);
 const mccBasis = memoryCareBasis({
   state_code: "WA",
   wa_facility_type: "ALF",

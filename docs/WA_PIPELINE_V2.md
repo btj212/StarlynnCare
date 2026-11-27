@@ -96,7 +96,13 @@ Families need homes that will take a relative with dementia, including homes wit
 1. Memory care: Memory Care Certified, a Specialized Dementia Care contract, or the operator's page for that address. An adult family home qualifies only from that page.
 2. Accepts residents with dementia (no secured unit): an adult family home with `wa_dementia_specialty` and no tier-1 signal. The page must not call this memory care.
 
-A phone or operator-page confirmation of "we accept residents with dementia and have no secured unit" was meant to use `mc_designation_type = 'accepts_dementia_no_secured_unit'` plus a non-empty `mc_program_quote` or `mc_review_notes`. Migration 0044 rejects that value (only null, `Secure Dementia Care Unit`, and `Special Care`). Do not write it until a migration allows it. Amber Hills Assisted Living, Prosser, license 0000002616, is the example and was not updated.
+A home that told StarlynnCare it accepts residents with dementia and has no secured unit uses the same display tier once migration 0087 is applied. Do not apply that migration from an agent session, and do not write the row from the app.
+
+- `mc_designation_type` = `accepts_dementia_no_secured_unit`
+- `mc_program_quote` = the home's words, with the call date
+- `mc_review_notes` = the source: a phone call with the date and the staff member's first name, or the operator page URL
+
+The value is not memory care. Pennsylvania still reads only `Secure Dementia Care Unit` and `Special Care`. Amber Hills Assisted Living, Prosser, license 0000002616, is the example and is not updated here.
 
 ### Wave 3 — AFH + ESF (shipped May 2026)
 
