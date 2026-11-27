@@ -1,5 +1,5 @@
 import type { Region } from "@/lib/regions";
-import { clipMetaDescription } from "@/lib/seo/meta";
+import { clipMetaDescription, REGULATOR_ABBR } from "@/lib/seo/meta";
 import { careSettingCopy } from "@/lib/city-hub/careSetting";
 import type { CityHubGlance } from "@/lib/city-hub/stats";
 import { hasReliable12MonthWindow } from "@/lib/city-hub/findings";
@@ -7,12 +7,35 @@ import type { FaqPair } from "@/lib/content/cityFaqs";
 import { canonicalFor } from "@/lib/seo/canonical";
 
 const TITLE_MAX = 60;
+const AUTHORED_TITLE_MAX = 65;
 
-function clipTitle(s: string): string {
-  if (s.length <= TITLE_MAX) return s;
-  const cut = s.slice(0, TITLE_MAX);
+function clipTitle(s: string, max = TITLE_MAX): string {
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
   const lastSpace = cut.lastIndexOf(" ");
-  return (lastSpace > TITLE_MAX * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+  return (lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+}
+
+function cityKey(region: Region): string {
+  return `${region.state.code}:${region.slug}`;
+}
+
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_LONG = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+export function formatVisitDate(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  const short = MONTHS_SHORT[(m ?? 1) - 1] ?? "";
+  const mon = short === "May" ? "May" : `${short}.`;
+  return `${mon} ${d}, ${y}`;
+}
+
+export function formatMonthYearLabel(iso: string): string {
+  const [y, m] = iso.slice(0, 10).split("-").map(Number);
+  return `${MONTHS_LONG[(m ?? 1) - 1] ?? ""} ${y}`;
 }
 
 export function cityHubTitle(
@@ -23,6 +46,25 @@ export function cityHubTitle(
   const code = region.state.code;
   const n = listedCount;
   const name = region.name;
+  const key = cityKey(region);
+  if (key === "WA:vancouver") {
+    return "Memory Care Vancouver, WA: DSHS Records & Medicaid Contracts";
+  }
+  if (key === "WA:seattle") {
+    return "Memory Care & Dementia Care Homes in Seattle, WA | DSHS Records";
+  }
+  if (key === "CO:denver") {
+    return clipTitle(`Denver Memory Care Facilities: CDPHE Records for ${n} Homes`, AUTHORED_TITLE_MAX);
+  }
+  if (key === "CO:colorado-springs") {
+    return clipTitle(`Colorado Springs Memory Care: CDPHE Records for ${n} Homes`, AUTHORED_TITLE_MAX);
+  }
+  if (key === "IL:chicago") {
+    return clipTitle(
+      `Chicago Memory Care & Alzheimer's Care: ${n} IDPH-Licensed Homes`,
+      AUTHORED_TITLE_MAX,
+    );
+  }
   const aldc = extras?.dementiaLicenseCount ?? n;
   const candidates =
     code === "AZ"
@@ -75,6 +117,22 @@ export function cityHubH1(region: Region, listedCount: number): string {
   const setting = careSettingCopy(region.state.code);
   const st = region.state.code;
   const city = region.name;
+  const key = cityKey(region);
+  if (key === "WA:vancouver") {
+    return "Memory care and dementia care in Vancouver, WA: DSHS inspection records";
+  }
+  if (key === "WA:seattle") {
+    return `Memory care and dementia care homes in Seattle, WA (King County): DSHS records for ${listedCount} homes`;
+  }
+  if (key === "CO:denver") {
+    return `Memory care facilities in Denver, CO: CDPHE inspection records for ${listedCount} homes`;
+  }
+  if (key === "CO:colorado-springs") {
+    return `Memory care and dementia care in Colorado Springs, CO: CDPHE records for ${listedCount} homes`;
+  }
+  if (key === "IL:chicago") {
+    return `Memory care and Alzheimer's care in Chicago, IL: IDPH records for ${listedCount} homes`;
+  }
   if (st === "CA") {
     return `Memory care in ${city}: California inspection records, home by home`;
   }
@@ -113,9 +171,21 @@ export function cityHubMetaDescription(input: {
   const code = region.state.code;
   const setting = careSettingCopy(code);
   const n = listedCount;
+  const key = cityKey(region);
 
   let text: string;
-  if (code === "AZ") {
+  if (key === "WA:vancouver") {
+    text =
+      "Vancouver, WA memory care and dementia care homes with DSHS inspection records, Memory Care Certified status, and which take Medicaid for dementia care.";
+  } else if (key === "WA:seattle") {
+    text = `Compare ${n} Seattle memory care and dementia care homes in King County, WA using DSHS inspection records and Memory Care Certified status. No referral fees.`;
+  } else if (key === "CO:denver") {
+    text = `Compare ${n} Denver memory care facilities by CDPHE inspection record: citations, last visit, secure-environment findings. Colorado has no memory care license.`;
+  } else if (key === "CO:colorado-springs") {
+    text = `${n} Colorado Springs memory care homes and their CDPHE inspection records: every citation, last visit date, and any immediate-jeopardy findings on file.`;
+  } else if (key === "IL:chicago") {
+    text = `${n} Chicago assisted living homes with a dementia program, with their IDPH inspection records: violations, last visit, and links to state reports.`;
+  } else if (code === "AZ") {
     const serious =
       homesWithSeriousLast12 != null
         ? `; ${homesWithSeriousLast12} had a serious citation in the last 12 months`
@@ -162,17 +232,76 @@ export type CityDirectAnswerCost = {
   homes: number;
 } | null;
 
+export type CityAnswerFacts = {
+  areaMemoryCareCount?: number;
+  cityMemoryCareCertified?: number;
+  sdcAcrossLists?: number;
+  /** One visit's citations in the last 12 months, with the window total. */
+  halfVisit?: { count: number; name: string; dateIso: string; windowTotal: number } | null;
+  /** One home's citations in the last 36 months, with the window total. */
+  thirdHome?: { count: number; name: string; windowTotal: number } | null;
+  levelE?: { name: string; dateIso: string } | null;
+};
+
 export function cityDirectAnswer(input: {
   region: Region;
   glance: CityHubGlance;
   regulatorAbbr: string;
   listedPrice?: CityDirectAnswerCost;
+  facts?: CityAnswerFacts;
 }): { q: string; a: string } {
-  const { region, glance, regulatorAbbr, listedPrice } = input;
+  const { region, glance, regulatorAbbr, listedPrice, facts } = input;
   const city = region.name;
   const st = region.state.code;
-  const setting = careSettingCopy(st);
+  const key = cityKey(region);
   const n = glance.listedCount;
+
+  if (key === "WA:vancouver") {
+    const inside = facts?.cityMemoryCareCertified ?? 0;
+    const outside = facts?.areaMemoryCareCount ?? 0;
+    const sdc = facts?.sdcAcrossLists ?? glance.sdcCount;
+    return {
+      q: "How do I find memory care in Vancouver, WA?",
+      a: `DSHS lists ${inside + outside} Memory Care Certified assisted living facilities with a Vancouver mailing address: ${inside} inside city limits and ${outside} in unincorporated Clark County. Only homes with a DSHS Specialized Dementia Care contract can accept Medicaid for dementia care; ${sdc} of them have one in our records. Every home below links to its DSHS inspection reports.`,
+    };
+  }
+
+  if (key === "CO:denver") {
+    const visit = facts?.halfVisit;
+    const clause =
+      visit && visit.windowTotal > 0 && visit.count * 2 >= visit.windowTotal
+        ? `, ${visit.count} of them at one visit to ${visit.name} on ${formatVisitDate(visit.dateIso)}`
+        : "";
+    return {
+      q: "How do I check a Denver memory care facility?",
+      a: `Colorado does not license memory care separately: homes are assisted living residences licensed by CDPHE, and a secure environment is optional. StarlynnCare lists ${n} Denver homes we can confirm offer memory care. In the last 12 months on file, inspectors wrote ${glance.citationsLast12} citations at these homes${clause}.`,
+    };
+  }
+
+  if (key === "CO:colorado-springs") {
+    const ij = facts?.levelE;
+    const ijClause = ij
+      ? ` including an immediate-jeopardy (Level E) finding at ${ij.name} in ${formatMonthYearLabel(ij.dateIso)}`
+      : "";
+    return {
+      q: "How do I check memory care in Colorado Springs?",
+      a: `Colorado has no separate memory care license, and CDPHE does not publish which homes run a secured dementia unit. StarlynnCare lists ${n} Colorado Springs homes we can confirm offer memory care; ${glance.withCitation} have CDPHE citations on file, ${glance.citationsLast36} in the last three years${ijClause}.`,
+    };
+  }
+
+  if (key === "IL:chicago") {
+    const home = facts?.thirdHome;
+    const clause =
+      home && home.windowTotal > 0 && home.count * 3 >= home.windowTotal
+        ? `, ${home.count} of them at ${home.name}`
+        : "";
+    return {
+      q: "How do I check a Chicago memory care home?",
+      a: `In Illinois, assisted living establishments are licensed by IDPH. StarlynnCare lists ${n} Chicago homes with a dementia program; ${glance.withCitation} have at least one IDPH violation on file. In the last three years inspectors recorded ${glance.citationsLast36} violations at these homes${clause}.`,
+    };
+  }
+
+  const setting = careSettingCopy(st);
   const small = glance.size.lte6 + glance.size.from7to10;
   const large = glance.size.gte11;
   const through = monthYear(glance.newestInspection);
@@ -187,7 +316,7 @@ export function cityDirectAnswer(input: {
   if (st === "WA") {
     return {
       q: `How do I check a ${city} dementia care community?`,
-      a: `${regulatorAbbr} inspects every assisted living facility and adult family home. StarlynnCare lists ${n} ${city} homes that serve residents with dementia, ${large} of them larger assisted living communities, with every ${regulatorAbbr} inspection and citation on file. Only facilities with a DSHS Specialized Dementia Care contract can accept Medicaid for dementia care; ${glance.sdcCount} ${city} homes on this page have one.`,
+      a: `${regulatorAbbr} inspects every assisted living facility and adult family home. StarlynnCare lists ${n} ${city} homes that serve residents with dementia, ${large} of them larger assisted living communities, with every ${regulatorAbbr} inspection and citation on file. Only facilities with a DSHS Specialized Dementia Care contract can accept Medicaid for dementia care; ${glance.sdcCount} ${city} ${glance.sdcCount === 1 ? "home has" : "homes have"} one.`,
     };
   }
 
@@ -393,6 +522,13 @@ export function cityGlanceStats(
     items.push({
       n: String(glance.citationsLast12),
       label: "Oregon DHS citations in the last 12 months (no severity grade in our data)",
+      src,
+    });
+  } else if (!glance.severityMeasured) {
+    const abbr = REGULATOR_ABBR[region.state.code] ?? "The state regulator";
+    items.push({
+      n: String(glance.citationsLast12),
+      label: `${abbr} does not grade most citations by severity in our data`,
       src,
     });
   }

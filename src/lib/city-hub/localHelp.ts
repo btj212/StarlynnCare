@@ -165,6 +165,62 @@ const HELP: Record<string, LocalHelp> = {
       },
     ],
   },
+  "WA:vancouver": {
+    heading: "Local help in Clark County",
+    links: [
+      {
+        label: "Area Agency on Aging & Disabilities of Southwest Washington, Clark County Resource Center: 360-694-8144",
+        href: "https://helpingelders.org/resource-center",
+      },
+      {
+        label: "DSHS assisted living lookup",
+        href: "https://fortress.wa.gov/dshs/adsaapps/lookup/BHAdvLookup.aspx",
+        note: "Which homes hold a Specialized Dementia Care contract",
+      },
+      {
+        label: "Memory care in Portland, OR",
+        href: canonicalFor("/oregon/portland"),
+        note: "Across the Columbia River. Oregon DHS records, not DSHS.",
+      },
+    ],
+  },
+  "CO:denver": {
+    heading: "Local help in Denver",
+    links: [
+      {
+        label: "DRCOG Area Agency on Aging, Information & Assistance: 303-480-6700",
+        href: "https://drcog.org/area-agency-aging/information-assistance",
+      },
+      {
+        label: "Memory care in Colorado",
+        href: canonicalFor("/colorado"),
+      },
+    ],
+  },
+  "CO:colorado-springs": {
+    heading: "Local help in El Paso County",
+    links: [
+      {
+        label: "Pikes Peak Area Agency on Aging, Senior Information & Assistance: (719) 471-2096",
+        href: "https://ppacg.org/yellowbook/2025-26-yellow-book/",
+        note: "Long-Term Care Ombudsman: (719) 301-6388",
+      },
+    ],
+  },
+  "IL:chicago": {
+    heading: "Local help in Chicago",
+    links: [
+      {
+        label: "City of Chicago Department of Family & Support Services, Senior Services Hotline: 312-744-4016",
+        href: "https://www.chicago.gov/city/en/depts/fss/provdrs/senior.html",
+        note: "The City's Long-Term Care Ombudsman program is linked from this page.",
+      },
+      {
+        label: "Memory care in Illinois",
+        href: canonicalFor("/illinois"),
+      },
+    ],
+  },
   "OR:portland": {
     heading: "Local help in Multnomah County",
     links: [

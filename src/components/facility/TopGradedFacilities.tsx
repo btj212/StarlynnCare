@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { keepTopRanked } from "@/lib/city-hub/topRanked";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 
 interface TopGradedFacilitiesProps {
   citySlugs: ReadonlyArray<string>;
@@ -42,9 +44,34 @@ async function loadTopGraded(
   if (!raw || raw.length === 0) return [];
 
   const typed = raw as FacilityRow[];
+  const threeYearsAgo = new Date();
+  threeYearsAgo.setUTCFullYear(threeYearsAgo.getUTCFullYear() - 3);
+  const cutoff = threeYearsAgo.toISOString().slice(0, 10);
+  const today = todayIsoDate();
+  const inspectionsInThreeYears = new Map<string, number>();
+  const ids = typed.map((facility) => facility.id);
+  for (let index = 0; index < ids.length; index += 150) {
+    const chunk = ids.slice(index, index + 150);
+    const { data, error } = await supabase
+      .from("inspections")
+      .select("facility_id, inspection_date")
+      .in("facility_id", chunk)
+      .gte("inspection_date", cutoff)
+      .lte("inspection_date", today)
+      .limit(5000);
+    if (error) return [];
+    for (const row of (data ?? []) as Array<{ facility_id: string; inspection_date: string }>) {
+      inspectionsInThreeYears.set(
+        row.facility_id,
+        (inspectionsInThreeYears.get(row.facility_id) ?? 0) + 1,
+      );
+    }
+  }
+  const eligible = keepTopRanked(typed, inspectionsInThreeYears);
+  if (eligible.length === 0) return [];
 
   const snapshots = await Promise.all(
-    typed.map((f) =>
+    eligible.map((f) =>
       supabase
         .rpc("facility_snapshot", { p_facility_id: f.id })
         .then(({ data }) => ({
@@ -57,7 +84,7 @@ async function loadTopGraded(
 
   const snapMap = new Map(snapshots.map((s) => [s.id, s.grade]));
 
-  return typed
+  return eligible
     .map((f) => {
       const snap = snapMap.get(f.id);
       return {

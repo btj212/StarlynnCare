@@ -28,6 +28,9 @@ const STOP_WORDS = new Set([
   "&",
 ]);
 
+/** Portal suffixes on Illinois LLCS names. Display only; slugs stay on the stored name. */
+const LICENSE_PAREN_SUFFIX = /\s*\(\s*assisted\s+l(?:iving|vg)\s*\)\s*$/i;
+
 const ARTICLE_SUFFIX = /^(.+?),\s*(the|a|an)\s*$/i;
 /** "Madison Senior Living the" / "GARDENS AT BARRY ROAD THE" without a comma. */
 const ARTICLE_TRAILING = /^(.+?)\s+(the|a|an)$/i;
@@ -76,7 +79,7 @@ export function formatFacilityName(
   const trimmed = name.trim();
   if (!trimmed) return "";
 
-  let working = trimmed;
+  let working = trimmed.replace(LICENSE_PAREN_SUFFIX, "").trim();
   let article: string | null = null;
 
   const match = working.match(ARTICLE_SUFFIX) ?? working.match(ARTICLE_TRAILING);

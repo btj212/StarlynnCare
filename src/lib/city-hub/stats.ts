@@ -47,6 +47,8 @@ export type CityDeficiencyRow = {
   inspection_id: string;
   class: string | null;
   severity: number | null;
+  /** Verbatim regulator label. Null on most Illinois and many Colorado rows. */
+  state_severity_raw?: string | null;
 };
 
 type GlanceHome = {
@@ -62,7 +64,7 @@ type GlanceHome = {
   mn_dementia_care_licensed?: boolean | null;
 };
 
-function monthsAgoIso(months: number, today = todayIsoDate()): string {
+export function monthsAgoIso(months: number, today = todayIsoDate()): string {
   const [y, m, d] = today.split("-").map(Number);
   const dt = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
   dt.setUTCMonth(dt.getUTCMonth() - months);
@@ -73,22 +75,51 @@ function classLabel(raw: string | null): string {
   return (raw ?? "").trim().toUpperCase().replace(/^CLASS\s+/, "");
 }
 
+function rawLabel(d: { state_severity_raw?: string | null }): string {
+  return (d.state_severity_raw ?? "").trim().toUpperCase();
+}
+
+/** No class, no severity number, and no regulator label. Not a serious finding. */
+export function findingHasNoSeverityGrade(d: {
+  class: string | null;
+  severity: number | null;
+  state_severity_raw?: string | null;
+}): boolean {
+  return classLabel(d.class) === "" && d.severity == null && rawLabel(d) === "";
+}
+
 /**
  * "Serious" for city-hub stats and card badges.
  * Oregon: never — citations have no class or severity in our data.
  * Missouri: Class I only. Stored severity numbers are inverted (Class I as
  * severity 2, some Class III as 4) and are not used until that mapping is audited.
+ * Colorado: CDPHE Level C, D, or E only. A severity number with no letter is
+ * not a higher-severity finding.
+ * Illinois: Type 1 (severity 3 / state_severity_raw "Type 1"). An unclassified
+ * row is not serious.
  * California and others: Type A class, or severity >= 3 when that is the ingest.
  */
 export function isSeriousCityFinding(
-  d: { class: string | null; severity: number | null },
+  d: { class: string | null; severity: number | null; state_severity_raw?: string | null },
   stateCode?: string,
 ): boolean {
   const code = (stateCode ?? "").toUpperCase();
   if (code === "OR") return false;
+  if (findingHasNoSeverityGrade(d)) return false;
   if (code === "MO") {
     const cls = classLabel(d.class);
     return cls === "I" || cls === "1";
+  }
+  if (code === "CO") {
+    const cls = classLabel(d.class);
+    const raw = rawLabel(d);
+    if (cls === "A" || cls === "B" || raw === "A" || raw === "B") return false;
+    return cls === "C" || cls === "D" || cls === "E" || raw === "C" || raw === "D" || raw === "E";
+  }
+  if (code === "IL") {
+    const cls = classLabel(d.class);
+    const raw = rawLabel(d);
+    return cls === "TYPE 1" || cls === "T1" || raw === "TYPE 1" || raw === "T1";
   }
   return d.class === "Type A" || (d.severity ?? 0) >= 3;
 }
@@ -97,14 +128,27 @@ export function isTypeAFinding(d: { class: string | null }): boolean {
   return d.class === "Type A";
 }
 
+/**
+ * False when we must not print "0 serious".
+ * Oregon never has a grade. Any other state is the same when more than half
+ * of the deficiencies in the sample (the listed homes' last 36 months) have
+ * class, severity, and state_severity_raw all empty. Chicago is 36 of 37.
+ * Denver is 36 of 51.
+ */
 export function stateHasSeverityInData(
-  deficiencies: Array<{ class: string | null; severity: number | null }>,
+  deficiencies: Array<{
+    class: string | null;
+    severity: number | null;
+    state_severity_raw?: string | null;
+  }>,
   stateCode: string,
 ): boolean {
   const code = stateCode.toUpperCase();
   if (code === "OR") return false;
-  if (deficiencies.length === 0) return code !== "OR";
-  return deficiencies.some((d) => (d.class != null && d.class.trim() !== "") || d.severity != null);
+  if (deficiencies.length === 0) return true;
+  const blank = deficiencies.filter((d) => findingHasNoSeverityGrade(d)).length;
+  if (blank / deficiencies.length > 0.5) return false;
+  return deficiencies.some((d) => !findingHasNoSeverityGrade(d));
 }
 
 export function computeCityHubGlance(input: {
@@ -137,6 +181,7 @@ export function computeCityHubGlance(input: {
   let citationsLast12 = 0;
   let citationsPrior12 = 0;
   let citationsLast36 = 0;
+  const deficienciesLast36: CityDeficiencyRow[] = [];
   let seriousLast12 = 0;
   let typeALast12 = 0;
   const homesSerious12 = new Set<string>();
@@ -147,7 +192,10 @@ export function computeCityHubGlance(input: {
     const date = inspDate.get(d.inspection_id);
     const fid = inspFac.get(d.inspection_id);
     if (!date || !fid || !listedIds.has(fid)) continue;
-    if (date >= cutoff36) citationsLast36 += 1;
+    if (date >= cutoff36) {
+      citationsLast36 += 1;
+      deficienciesLast36.push(d);
+    }
     if (date >= cutoff12) {
       citationsLast12 += 1;
       citedLast12.set(fid, (citedLast12.get(fid) ?? 0) + 1);
@@ -217,7 +265,7 @@ export function computeCityHubGlance(input: {
     typeALast12,
     homesWithTypeALast12: homesTypeA12.size,
     newestInspection,
-    severityMeasured: stateHasSeverityInData(input.deficiencies, stateCode),
+    severityMeasured: stateHasSeverityInData(deficienciesLast36, stateCode),
     size,
     sdcCount,
     pchCount,
@@ -280,4 +328,90 @@ export function recentSeriousHomes<
     })
     .sort((a, b) => b.date.localeCompare(a.date) || b.seriousCount - a.seriousCount)
     .slice(0, limit);
+}
+
+export function countHomesWithSeriousFinding<T extends { serious_citations: number }>(
+  listed: T[],
+): number {
+  return listed.filter((home) => home.serious_citations > 0).length;
+}
+
+export type WindowCitationLead = {
+  windowTotal: number;
+  homeName: string | null;
+  homeCount: number;
+  visitDate: string | null;
+  visitCount: number;
+};
+
+/** Citations in a date window, plus the home and the single visit that hold the most. */
+export function windowCitationLead(
+  listed: Array<{ id: string; name: string }>,
+  inspections: CityInspectionRow[],
+  deficiencies: Array<{ inspection_id: string }>,
+  sinceIso: string,
+): WindowCitationLead {
+  const names = new Map(listed.map((home) => [home.id, home.name]));
+  const insp = new Map(inspections.map((row) => [row.id, row]));
+  const byHome = new Map<string, number>();
+  const byVisit = new Map<string, number>();
+  let windowTotal = 0;
+  for (const deficiency of deficiencies) {
+    const visit = insp.get(deficiency.inspection_id);
+    if (!visit || !names.has(visit.facility_id)) continue;
+    if (!isUsableInspectionDate(visit.inspection_date) || visit.inspection_date < sinceIso) continue;
+    windowTotal += 1;
+    byHome.set(visit.facility_id, (byHome.get(visit.facility_id) ?? 0) + 1);
+    byVisit.set(visit.id, (byVisit.get(visit.id) ?? 0) + 1);
+  }
+  let homeId: string | null = null;
+  let homeCount = 0;
+  for (const [id, count] of byHome) {
+    if (count > homeCount) {
+      homeCount = count;
+      homeId = id;
+    }
+  }
+  let visitId: string | null = null;
+  let visitCount = 0;
+  for (const [id, count] of byVisit) {
+    if (count > visitCount) {
+      visitCount = count;
+      visitId = id;
+    }
+  }
+  const visit = visitId ? insp.get(visitId) : undefined;
+  return {
+    windowTotal,
+    homeName: homeId ? (names.get(homeId) ?? null) : null,
+    homeCount,
+    visitDate: visit?.inspection_date ?? null,
+    visitCount,
+  };
+}
+
+export type LevelEFinding = { name: string; date: string };
+
+/** Newest CDPHE Level E (immediate jeopardy) on the listed set. */
+export function latestLevelEFinding(
+  listed: Array<{ id: string; name: string }>,
+  inspections: CityInspectionRow[],
+  deficiencies: Array<{ inspection_id: string; class: string | null; state_severity_raw?: string | null }>,
+): LevelEFinding | null {
+  const names = new Map(listed.map((home) => [home.id, home.name]));
+  const insp = new Map(inspections.map((row) => [row.id, row]));
+  let best: LevelEFinding | null = null;
+  for (const deficiency of deficiencies) {
+    const letter = classLabel(deficiency.class);
+    const raw = (deficiency.state_severity_raw ?? "").trim().toUpperCase();
+    if (letter !== "E" && raw !== "E") continue;
+    const visit = insp.get(deficiency.inspection_id);
+    if (!visit || !names.has(visit.facility_id)) continue;
+    if (!isUsableInspectionDate(visit.inspection_date)) continue;
+    const name = names.get(visit.facility_id) ?? "";
+    if (!best || visit.inspection_date > best.date) {
+      best = { name, date: visit.inspection_date };
+    }
+  }
+  return best;
 }

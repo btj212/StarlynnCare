@@ -6,6 +6,22 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11 — City hub serious count, cards, and Vancouver area homes
+
+**Decided:** The higher-severity sentence and the "serious deficiency" FAQ count homes with a finding `isSeriousCityFinding` accepts. Colorado is Level C, D, or E only. Illinois is Type 1 only. A row with class, severity, and `state_severity_raw` all empty is not serious. When more than half of the listed homes' last-36-month deficiencies are unclassified, `stateHasSeverityInData` is false and the page must not print "0 serious"; it prints the regulator floor sentence. Oregon stays false regardless. The "at least one citation on file" stat stays the any-citation count.
+
+Facility cards always print the all-years citation total. Serious is a separate badge. Washington cards print "Memory Care Certified" only from `wa_memory_care_certified` and "Specialized Dementia Care contract" only from `wa_dementia_care_contract`. "Leaving out N homes of 6 beds or fewer" counts published rows that are not in the listed set and have 6 beds or fewer. Top-ranked drops homes with fewer than 4 inspections in three years. A null bed count is "Homes, size not on file", not 7–49.
+
+`/washington/vancouver` may list Memory Care Certified ALFs from `five-corners`, `hazel-dell`, `mount-vista`, `orchards`, and `salmon-creek` in their own section. Those rows are not in the Vancouver headline, Findings, or A-Z. The Specialized Dementia Care count is `wa_dementia_care_contract` across both lists. Do not hard-code it, and do not flip White Oak Village's flag from the app.
+
+Illinois display names drop a trailing `(Assisted Living)` or `(Assisted Lvg)` and title-case all-caps legal names. Slugs stay on the stored name. Washington and Illinois cost FAQ ranges stay the Genworth bands in `stateCostBands.ts` and are labeled a regional benchmark, not a DSHS or IDPH figure.
+
+**Rejected:** Counting any citation as higher-severity. Hiding the all-years total when a serious badge exists. Treating Memory Care Certified as a Medicaid contract. Putting null beds in the 7–49 group. Merging unincorporated Clark County homes into the Vancouver listed set.
+
+**Source:** City hubs batch 3, 2026-11-27. Read-only counts that day: Denver 2 of 6 serious (Springbrooke, Sunrise at Cherry Creek); Colorado Springs 2 of 5 (Bear Creek, Brookdale Skyline) plus a Level E at Bear Creek on 2024-12-10; Chicago 1 of 12 (Amazing Grace); Vancouver 7 city ALFs, 6 area homes, 2 SDC contracts, 18 omitted small homes.
+
+---
+
 ## 2026-11 — Summary refetch must overwrite; last-inspection date is one value
 
 **Decided:** `summarize_inspections.py --refetch` overwrites `narrative_summary` for the selected rows. The write used to keep `AND narrative_summary IS NULL`, so a 99-inspection refetch saved nothing. Do not generate a summary when source text is empty. A post-check refuses a summary that claims no deficiencies / in compliance / unspecified findings when the inspection has deficiency rows or the source cites a rule (Fields 2669 June 2025, Avamere 2460 May 2025). Count existing mismatches with `scripts/count_summary_deficiency_mismatches.py` (read-only).

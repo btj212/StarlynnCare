@@ -128,3 +128,49 @@ export const TREND_MIN_INSPECTIONS_12M = 8;
 export function hasReliable12MonthWindow(inspectionsLast12: number): boolean {
   return inspectionsLast12 >= TREND_MIN_INSPECTIONS_12M;
 }
+
+export function severityFloorSentence(regulator: string): string {
+  return `${regulator} does not grade most citations by severity in our data, so this count is a floor.`;
+}
+
+/**
+ * Findings paragraph. Colorado's higher-severity number is homes with a
+ * Level C, D, or E finding, not homes with any citation. When most citations
+ * have no grade, the serious number is labeled a floor.
+ */
+export function cityFindingsLead(input: {
+  stateCode: string;
+  city: string;
+  listedCount: number;
+  anyCitationHomes: number;
+  seriousHomes: number;
+  hubNoun: string;
+  findingPhrase: string;
+  citationsLast12: number;
+  severityIsFloor: boolean;
+  regulator: string;
+}): string {
+  const listed = input.listedCount;
+  const seriousPct = listed > 0 ? Math.round((input.seriousHomes / listed) * 100) : 0;
+  const anyPct = listed > 0 ? Math.round((input.anyCitationHomes / listed) * 100) : 0;
+  const floor = input.severityIsFloor ? ` ${severityFloorSentence(input.regulator)}` : "";
+  const code = input.stateCode.toUpperCase();
+
+  if (code === "TX") {
+    return `Of the ${listed} Alzheimer-certified facilities indexed in ${input.city}, ${input.anyCitationHomes} (${anyPct}%) have at least one cited deficiency in the inspection data on file. Texas ALF license Type A/B/C is a capacity class on the license — not the same as California's Type-A/Type-B deficiency labels.`;
+  }
+
+  if (code === "CO") {
+    return `Of the ${listed} memory care facilities indexed in ${input.city}, ${input.seriousHomes} (${seriousPct}%) have at least one higher-severity finding on file. Assisted living findings use CDPHE Levels A–E. Nursing-home findings use CMS letters. Those scales are not combined into one rank.${floor}`;
+  }
+
+  const dated =
+    code === "MN" && input.citationsLast12 === 0
+      ? " None of those findings is dated in the last 12 months."
+      : "";
+  const seriousClause =
+    input.severityIsFloor && code !== "OR"
+      ? ` ${input.seriousHomes} (${seriousPct}%) have at least one higher-severity finding on file.${floor}`
+      : "";
+  return `Of the ${listed} ${input.hubNoun} indexed in ${input.city}, ${input.anyCitationHomes} (${anyPct}%) have a ${input.findingPhrase} on file.${dated}${seriousClause}`;
+}
