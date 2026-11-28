@@ -35,7 +35,7 @@ import {
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { stateFromSlug } from "@/lib/states";
 import { getStateProfileConfig } from "@/lib/states/profileConfig";
-import { regulatorPublishesSeverityScale } from "@/lib/states/severityScale";
+import { citationCarriesScaleValue, regulatorPublishesSeverityScale } from "@/lib/states/severityScale";
 import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import { canonicalFor } from "@/lib/seo/canonical";
 import type { ComplianceFlag } from "@/lib/facility/complianceFlag";
@@ -938,8 +938,16 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
       state.code,
       cfg.scopeSeverityScale,
     ),
+    severityScope: cfg.scopeSeverityScale ?? null,
+    severityFullyMeasured:
+      deficiencies.length > 0 &&
+      deficiencies.every((row) =>
+        citationCarriesScaleValue(state.code, row, cfg.scopeSeverityScale),
+      ),
+    complaintCount:
+      facility.state_code === "WA" ? inspections.filter((row) => row.is_complaint).length : 0,
     pageUrl: canonicalUrl,
-    inspectionCount: inspections.length,
+    inspectionCount: citationSummary.inspections,
     deficiencyCount: totalDeficiencies,
     countsCoverThreeYears: countsCoverProfileWindow(facility.state_code, hiddenOlderCount),
     lastInspectionDate: latestInspection?.date ?? null,
@@ -994,6 +1002,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
             ? degradedSnapshot?.grade?.composite_percentile ?? null
             : null,
         citationCount: totalDeficiencies,
+        inspectionCount: citationSummary.inspections,
         lastInspectionDate: reviewedOn,
         regulatorAbbr: cfg.agencyShort,
       },

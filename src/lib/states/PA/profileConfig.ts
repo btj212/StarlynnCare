@@ -67,6 +67,29 @@ export function paFormatSeverityTag(d: Deficiency): { label: string; tone: Sever
   return null;
 }
 
+/** Pennsylvania nursing homes use the CMS scope-and-severity grid. Personal care does not. */
+function paNhFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone } | null {
+  const letter = (d.scope_severity_code ?? "").trim().toUpperCase();
+  if (!/^[A-L]$/.test(letter)) return null;
+  if ("JKL".includes(letter)) return { label: CMS_IJ_LABEL, tone: "danger" };
+  if ("GHI".includes(letter)) return { label: `CMS ${letter}`, tone: "warn" };
+  if ("DEF".includes(letter)) return { label: `CMS ${letter}`, tone: "info" };
+  return { label: `CMS ${letter}`, tone: "mute" };
+}
+
+export const paNhProfileConfig: StateProfileConfig = {
+  code: "PA",
+  agencyShort: "CMS",
+  agencyLong: "Centers for Medicare & Medicaid Services · Nursing Home Compare",
+  citationPrefix: "F",
+  inspectionWindowMonths: 36,
+  timelineWindowMonths: 24,
+  scopeSeverityScale: "cms",
+  formatSeverityTag: paNhFormatSeverityTag,
+  formNameForDeficiency: (d) => (d.code?.startsWith("F") ? "CMS-2567" : null),
+  rulebook: [],
+};
+
 export const paProfileConfig: StateProfileConfig = {
   code: "PA",
   agencyShort: "PA DHS",

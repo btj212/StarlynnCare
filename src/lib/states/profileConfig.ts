@@ -145,7 +145,7 @@ import { waProfileConfig, waNhProfileConfig } from "./WA/profileConfig";
 import { mnProfileConfig } from "./MN/profileConfig";
 import { utProfileConfig } from "./UT/profileConfig";
 import { ilProfileConfig } from "./IL/profileConfig";
-import { paProfileConfig } from "./PA/profileConfig";
+import { paNhProfileConfig, paProfileConfig } from "./PA/profileConfig";
 import { azProfileConfig } from "./AZ/profileConfig";
 import { moProfileConfig } from "./MO/profileConfig";
 import { coAlrProfileConfig, coNhProfileConfig } from "./CO/profileConfig";
@@ -176,6 +176,7 @@ export function getStateProfileConfig(
   const upper = stateCode.toUpperCase();
   if (upper === "WA" && facilityType === "NH") return waNhProfileConfig;
   if (upper === "CO" && facilityType === "NH") return coNhProfileConfig;
+  if (upper === "PA" && facilityType === "NH") return paNhProfileConfig;
   return STATE_CONFIGS[upper] ?? makeNullConfig(upper);
 }
 

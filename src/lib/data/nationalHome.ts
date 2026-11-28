@@ -114,10 +114,13 @@ export async function loadNationalHomeData(): Promise<NationalHomeData> {
     )
     .map((row) => row.id);
   const azSmallCited = await azSmallCitationIds(supabase, azSmallIds);
-  const lastInspByFac = await loadLatestInspectionDates(
-    supabase,
-    cityRows.map((row) => row.id),
-  );
+  const waIds = cityRows.filter((row) => row.state_code === "WA").map((row) => row.id);
+  const otherIds = cityRows.filter((row) => row.state_code !== "WA").map((row) => row.id);
+  const [waDates, otherDates] = await Promise.all([
+    loadLatestInspectionDates(supabase, waIds, { excludeComplaints: true }),
+    loadLatestInspectionDates(supabase, otherIds),
+  ]);
+  const lastInspByFac = new Map([...otherDates, ...waDates]);
 
   for (const row of cityRows) {
     const code = row.state_code;

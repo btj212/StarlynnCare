@@ -27,6 +27,11 @@ import {
 import { parsePhone } from "@/lib/facility/phone";
 import { linkableFacilityUrl } from "@/lib/facility/aggregatorLink";
 import { regulatorPublishesSeverityScale } from "@/lib/states/severityScale";
+import {
+  TEXAS_RECENT_RESULTS,
+  texasRecentResultsUnpublished,
+  texasRegulatorRecordUrl,
+} from "@/lib/facility/texasRecord";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
@@ -176,6 +181,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   )
     ? selectMostRecentSevereFinding({
         stateCode: facility.state_code,
+        scope: cfg.scopeSeverityScale,
         inspections,
         deficienciesByInspection,
         today: todayIsoDate(),
@@ -198,6 +204,12 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
           ? "CMS nursing home"
           : "CDPHE assisted living residence"
         : (SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility");
+    if (texasRecentResultsUnpublished(facility.state_code, totals.inspections, totals.deficiencies)) {
+      return `${beds} ${licType}. ${TEXAS_RECENT_RESULTS}`;
+    }
+    if (facility.state_code === "TX" && totals.deficiencies === 0) {
+      return `${beds} ${licType}. HHSC has not published a citation count for this home in the last 3 years.`;
+    }
     const citLabel = citationCountPhrase({
       count: totals.deficiencies,
       agencyShort: cfg.agencyShort,
@@ -386,6 +398,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         lastInspected: lastInspectedLabel,
         regulatorAbbr: profile.cfg.agencyShort,
         licenseNumber: facility.license_number,
+        stateCode: facility.state_code,
       });
   const snippet = noReportsPosted
     ? `${displayName} has no DSHS reports posted as of ${checkedOn}.`
@@ -401,6 +414,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         frequencyPercentile: reportableRank == null ? null : profile.snapshot?.metrics.frequency.percentile ?? null,
         repeatsPercentile: reportableRank == null ? null : profile.snapshot?.metrics.repeats.percentile ?? null,
         citationCount: profile.totals.deficiencies,
+        inspectionCount: profile.totals.inspections,
         lastInspectionDate,
         lastInspected: lastInspectedLabel,
         variant: "prose",
@@ -466,10 +480,31 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               lastInspected={lastInspectedLabel}
               inspectionCount={profile.totals.inspections}
               citationCount={profile.totals.deficiencies}
+              complaintCount={
+                facility.state_code === "WA"
+                  ? profile.inspections.filter((row) => row.is_complaint).length
+                  : 0
+              }
               lastComplaintInvestigated={lastComplaintInvestigated}
               distribution={
                 facility.state_code === "CA"
-                  ? caTypeDistributionSentence(profile.totals.typeA, profile.totals.typeB, profile.totals.other)
+                  ? caTypeDistributionSentence(profile.totals.typeA, profile.totals.typeB, profile.totals.other) || null
+                  : null
+              }
+              texasRecordUrl={
+                texasRecentResultsUnpublished(
+                  facility.state_code,
+                  profile.totals.inspections,
+                  profile.totals.deficiencies,
+                )
+                  ? texasRegulatorRecordUrl()
+                  : undefined
+              }
+              zeroCitationNote={
+                facility.state_code === "TX" &&
+                profile.totals.deficiencies === 0 &&
+                profile.totals.inspections > 0
+                  ? "HHSC has not published a citation count for this home in the last 3 years."
                   : null
               }
             />

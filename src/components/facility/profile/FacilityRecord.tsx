@@ -5,6 +5,8 @@ import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { formatInspectionListDate } from "@/lib/format/formatRecordDate";
 import { citationCountPhrase } from "@/lib/facility/citationWindow";
+import { TEXAS_RECENT_RESULTS, texasRecentResultsUnpublished, texasRegulatorRecordUrl } from "@/lib/facility/texasRecord";
+import { OlderVisits, VISIBLE_VISITS } from "./OlderVisits";
 import Link from "next/link";
 
 // ─── Timeline rail ─────────────────────────────────────────────────────────
@@ -256,14 +258,20 @@ function ScopeSeverityGrid({
   );
 }
 
+function caDeck(count: number): string {
+  const phrase = citationCountPhrase({ count, agencyShort: "CDSS", window: "profile" });
+  const lead = /^[a-z]/.test(phrase) ? `${phrase.charAt(0).toUpperCase()}${phrase.slice(1)}` : phrase;
+  return count === 0 ? `${lead}.` : `${lead}. Each bar is a month with a citation.`;
+}
+
 // ─── Compact inspection list ────────────────────────────────────────────────
 
 function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
   const { inspections, deficienciesByInspection, cfg } = profile;
 
-  return (
-    <div className="border border-paper-rule bg-paper-2">
-      {inspections.map((insp) => {
+  const visible = inspections.slice(0, VISIBLE_VISITS);
+  const older = inspections.slice(VISIBLE_VISITS);
+  const row = (insp: (typeof inspections)[number]) => {
         const defs = deficienciesByInspection.get(insp.id) ?? [];
         const outcome = insp.raw_data?.outcome;
         const isSubGap =
@@ -310,7 +318,11 @@ function CompactInspectionList({ profile }: { profile: FacilityProfile }) {
             <span className="text-right text-ink-3">→</span>
           </a>
         );
-      })}
+  };
+  return (
+    <div className="border border-paper-rule bg-paper-2">
+      {visible.map(row)}
+      <OlderVisits count={older.length}>{older.map(row)}</OlderVisits>
     </div>
   );
 }
@@ -329,15 +341,26 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
           label="The Record"
           title="Reviews & inspection record"
           deck={
-            profile.facility.state_code === "CA"
-              ? `${citationCountPhrase({
-                  count: totals.deficiencies,
-                  agencyShort: "CDSS",
-                  window: "profile",
-                })}. Each bar is a month with a citation.`
-              : totals.deficiencies === 0
-                ? "No citations in the last 36 months."
-                : `${totals.deficiencies} ${totals.deficiencies === 1 ? "deficiency" : "deficiencies"} on record. Each bar is a month with a citation.`
+            texasRecentResultsUnpublished(
+              profile.facility.state_code,
+              totals.inspections,
+              totals.deficiencies,
+            ) ? (
+              <>
+                {TEXAS_RECENT_RESULTS}{" "}
+                {texasRegulatorRecordUrl() ? (
+                  <a href={texasRegulatorRecordUrl()!} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                    Texas HHS record
+                  </a>
+                ) : null}
+              </>
+            ) : profile.facility.state_code === "TX" && totals.deficiencies === 0
+                ? "HHSC has not published a citation count for this home in the last 3 years."
+                : profile.facility.state_code === "CA"
+                ? caDeck(totals.deficiencies)
+                : totals.deficiencies === 0
+                  ? "No citations in the last 36 months."
+                  : `${totals.deficiencies} ${totals.deficiencies === 1 ? "deficiency" : "deficiencies"} on record. Each bar is a month with a citation.`
           }
         />
 

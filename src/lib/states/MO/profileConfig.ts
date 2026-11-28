@@ -2,12 +2,18 @@ import type { StateProfileConfig } from "@/lib/states/profileConfig";
 import type { Deficiency } from "@/lib/types";
 import type { SeverityTone } from "@/lib/states/profileConfig";
 import { CMS_IJ_LABEL, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
+import { topTierLabel } from "@/lib/states/severityScale";
 
 /**
- * MO deficiencies use 19 CSR tag codes with numeric severity (2=standard, 4=complaint/abuse/IJ).
- * state_severity_raw carries the SURVEY_CATEGORY from the DHSS FOIA export.
+ * DHSS publishes Class I, II, and III. Class I is the top tier.
+ * state_severity_raw is the survey category, not the class.
  */
 function moFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone } | null {
+  const top = topTierLabel("MO", d);
+  if (top) return top;
+  const text = (d.class ?? "").trim();
+  if (/^class\s+(ii|2)$/i.test(text)) return { label: "Class II", tone: "warn" };
+  if (/^class\s+(iii|3)$/i.test(text)) return { label: "Class III", tone: "info" };
   if (isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
   if ((d.severity ?? 0) >= 4 || d.immediate_jeopardy) {
     const raw = (d.state_severity_raw ?? "").toUpperCase();

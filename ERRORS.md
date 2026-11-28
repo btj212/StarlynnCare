@@ -16,7 +16,9 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 **Source:** Live profiles and read-only SQL on project `fwvrupjgwvvzqiutwwdg`, 2026-11-27 and 2026-11-28. The California rebuild was still inserting rows (`deficiencies.created_at` moving, `poc_deadline` still on 14 rows at the first check).
 
-Pennsylvania pages for Elm Terrace, Spring Mill Pointe, Sunrise of Lafayette Hill, and Symphony Square linked to SeniorAdvisor or Caring.com from the cost source, not from `facilities.website` (that column is null). Treating the link as the home's website was the wrong fix. Drop the link when the host is a directory. Pennsylvania also has no DHS severity scale, so "None are tagged a severe finding" was our label. The same sentence is omitted for every state that does not publish a scale.
+Pennsylvania pages for Elm Terrace, Spring Mill Pointe, Sunrise of Lafayette Hill, and Symphony Square linked to SeniorAdvisor or Caring.com from the cost source, not from `facilities.website` (that column is null). Treating the link as the home's website was the wrong fix. Drop the link when the host is a directory, and do not leave a "Source" label with nothing to click. The price paragraph still names the directory.
+
+A first pass also treated Minnesota, Utah, Washington assisted living, and Missouri as if they had no severity scale, and it printed "None are tagged …" for Oregon, Illinois, and Colorado homes whose rows do not store one. Minnesota uses SS letters (144G.31, top tier J–L). Utah uses Low/Moderate/High/Extreme. Washington assisted living uses DSHS Type A/B/C. Missouri uses Class I/II/III. Pennsylvania nursing homes use the CMS grid; personal care does not. The negative sentence waits until every in-window citation has a scale value. Texas with nothing in the three-year window must not say "0 citations" or "clean record"; it says Health and Human Services has not published recent results and links the HHSC search.
 
 ---
 

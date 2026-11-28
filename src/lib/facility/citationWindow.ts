@@ -1,3 +1,5 @@
+import { topTierLabel } from "@/lib/states/severityScale";
+
 /**
  * Every public citation count names its window and source.
  * Profile sections show the free-tier display window (3 years).
@@ -70,8 +72,9 @@ export function countsCoverProfileWindow(stateCode: string, hiddenOlderCount: nu
 }
 
 export function caTypeDistributionSentence(typeA: number, typeB: number, other: number): string {
-  if (other > 0) return `${typeA} Type A, ${typeB} Type B, and ${other} other.`;
-  return `${typeA} Type A and ${typeB} Type B.`;
+  if (typeA + typeB + other === 0) return "";
+  if (other > 0) return `Of these, ${typeA} are Type A, ${typeB} are Type B, and ${other} are other.`;
+  return `Of these, ${typeA} are Type A and ${typeB} are Type B.`;
 }
 
 export type CitationInspectionInput = {
@@ -131,8 +134,12 @@ export function summarizeCitationWindow(args: {
     args.stateCode.toUpperCase() === "CA"
       ? typeA + typeB + other
       : defs.length + substantiatedWithoutRows;
+  const inspections =
+    args.stateCode.toUpperCase() === "WA"
+      ? inWindow.filter((row) => !row.is_complaint).length
+      : inWindow.length;
   return {
-    inspections: inWindow.length,
+    inspections,
     citations,
     typeA,
     typeB,
@@ -143,14 +150,21 @@ export function summarizeCitationWindow(args: {
 
 type SevereCandidate = {
   class?: string | null;
+  code?: string | null;
   immediate_jeopardy?: boolean | null;
   severity?: number | null;
+  state_severity_raw?: string | null;
+  scope_severity_code?: string | null;
 };
 
-/** California severe findings are Type A. Other states keep severity ≥ 3 or the stored flag. */
-export function isProfileSevereFinding(d: SevereCandidate, stateCode: string): boolean {
+/** Top tier of the state's own scale. California stays Type A only. */
+export function isProfileSevereFinding(
+  d: SevereCandidate,
+  stateCode: string,
+  scope?: "cms" | "cdphe" | null,
+): boolean {
   if (stateCode.toUpperCase() === "CA") return d.class === "Type A";
-  return Boolean(d.immediate_jeopardy) || (d.severity != null && d.severity >= 3);
+  return topTierLabel(stateCode, d, scope) != null;
 }
 
 function daysBefore(today: string, days: number): string {
@@ -170,6 +184,7 @@ export function selectMostRecentSevereFinding<
   TInsp extends { id: string; inspection_date: string },
 >(args: {
   stateCode: string;
+  scope?: "cms" | "cdphe" | null;
   inspections: TInsp[];
   deficienciesByInspection: Map<string, TDef[]>;
   today: string;
@@ -178,7 +193,7 @@ export function selectMostRecentSevereFinding<
   for (const insp of args.inspections) {
     if (insp.inspection_date.slice(0, 10) < cutoff) break;
     const defs = args.deficienciesByInspection.get(insp.id) ?? [];
-    const severe = defs.find((d) => isProfileSevereFinding(d, args.stateCode));
+    const severe = defs.find((d) => isProfileSevereFinding(d, args.stateCode, args.scope));
     if (severe) return { date: insp.inspection_date, deficiency: severe };
   }
   return null;

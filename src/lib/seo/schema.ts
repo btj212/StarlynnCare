@@ -22,7 +22,8 @@ import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { regulatorFor } from "@/lib/states/regulators";
 import { parsePhone } from "@/lib/facility/phone";
 import { linkableFacilityUrl } from "@/lib/facility/aggregatorLink";
-import { regulatorPublishesSeverityScale } from "@/lib/states/severityScale";
+import { regulatorPublishesSeverityScale, seriousTermWhenNone } from "@/lib/states/severityScale";
+import { texasRecentResultsSentence, texasRecentResultsUnpublished, texasRegulatorRecordUrl } from "@/lib/facility/texasRecord";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import {
   CONFIRMED_ACCEPTS_JSONLD,
@@ -46,6 +47,8 @@ export type FacilitySchemaExtras = {
   percentile?: number | null;
   /** Total deficiencies on record. */
   citationCount?: number;
+  /** Inspections inside the profile window. Texas uses this to avoid a zero-citation claim. */
+  inspectionCount?: number;
   /** ISO yyyy-mm-dd of last non-complaint inspection. */
   lastInspectionDate?: string | null;
   /** Profile regulator. Colorado nursing homes are CMS, not the state CDPHE abbreviation. */
@@ -144,6 +147,16 @@ function facilityDescription(
   // When snapshot data is available, mirror the meta description so the
   // LocalBusiness/MedicalOrganization graph node carries the same differentiator
   // we put in the SERP snippet. Knowledge-panel & AI Overview surfaces lift from here.
+  if (
+    texasRecentResultsUnpublished(
+      facility.state_code,
+      extras?.inspectionCount ?? 0,
+      extras?.citationCount ?? 0,
+    )
+  ) {
+    return texasRecentResultsSentence(texasRegulatorRecordUrl());
+  }
+
   if (
     extras &&
     (extras.percentile != null ||
@@ -958,6 +971,15 @@ export type FacilityFaqInput = {
   lastComplaintDate?: string | null;
   lastComplaintPrecision?: DatePrecision;
   seriousFindings: Array<{ label: string; count: number }>;
+  /**
+   * True only when every in-window citation carries the state's scale.
+   * A "None are tagged" sentence needs this. A positive count does not.
+   */
+  severityFullyMeasured?: boolean;
+  /** CMS or CDPHE grid, when this home uses one. Personal-care pages omit it. */
+  severityScope?: "cms" | "cdphe" | null;
+  /** Washington complaint investigations inside the window. Other states omit it. */
+  complaintCount?: number;
   percentile: number | null;
   memoryCareLabel: string;
   /**
@@ -1017,24 +1039,20 @@ function joinOr(items: string[]): string {
   return `${items.slice(0, -1).join(", ")}, or ${items[items.length - 1]}`;
 }
 
-function seriousTermWhenNone(stateCode: string): string {
-  if (stateCode === "CA") return "Type A";
-  if (stateCode === "IL") return "Type 1";
-  if (stateCode === "PA") return "a severe finding";
-  if (stateCode === "AZ") return "a high-risk finding";
-  if (stateCode === "CO") return "Level E";
-  return "a serious finding";
-}
-
 function seriousSentence(
   findings: Array<{ label: string; count: number }>,
   stateCode: string,
   publishesSeverityScale: boolean | undefined,
+  fullyMeasured: boolean | undefined,
+  scope: "cms" | "cdphe" | null | undefined,
 ): string {
-  const allowed = publishesSeverityScale ?? regulatorPublishesSeverityScale(stateCode);
+  const allowed = publishesSeverityScale ?? regulatorPublishesSeverityScale(stateCode, scope);
   if (!allowed) return "";
   const total = findings.reduce((sum, finding) => sum + finding.count, 0);
-  if (total === 0) return `None are tagged ${seriousTermWhenNone(stateCode)}.`;
+  if (total === 0) {
+    if (!fullyMeasured) return "";
+    return `None are tagged ${seriousTermWhenNone(stateCode, scope)}.`;
+  }
   const labels = [...new Set(findings.map((finding) => proseTag(finding.label)))];
   return `${total} ${total === 1 ? "is" : "are"} tagged ${joinOr(labels)}.`;
 }
@@ -1085,25 +1103,44 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
     });
   }
 
-  if (input.inspectionCount > 0) {
+  if (
+    texasRecentResultsUnpublished(input.stateCode, input.inspectionCount, input.deficiencyCount)
+  ) {
+    pairs.push({
+      q: `Has ${name} published inspection results?`,
+      a: texasRecentResultsSentence(input.licenseUrl ?? texasRegulatorRecordUrl()),
+    });
+  } else if (input.inspectionCount > 0 || (input.complaintCount ?? 0) > 0) {
     const defWord = input.deficiencyCount === 1 ? "deficiency" : "deficiencies";
     const inspWord = input.inspectionCount === 1 ? "inspection" : "inspections";
     const window = input.countsCoverThreeYears ? " in the last three years" : "";
+    const complaints = input.complaintCount ?? 0;
+    const complaintPhrase =
+      complaints > 0
+        ? ` and ${complaints} complaint ${complaints === 1 ? "investigation" : "investigations"}`
+        : "";
     const cited =
-      input.deficiencyCount === 0
-        ? `No. ${name} has no ${input.regulatorAbbr} citations${window}.`
-        : `Yes. ${name} has ${input.deficiencyCount} ${defWord} from ${input.regulatorAbbr}${window}.`;
+      input.stateCode === "TX" && input.deficiencyCount === 0
+        ? "HHSC has not published a citation count for this home in the last 3 years."
+        : input.deficiencyCount === 0
+          ? `No. ${name} has no ${input.regulatorAbbr} citations${window}.`
+          : `Yes. ${name} has ${input.deficiencyCount} ${defWord} from ${input.regulatorAbbr}${window}.`;
     const severity = seriousSentence(
       input.seriousFindings,
       input.stateCode,
       input.publishesSeverityScale,
+      input.severityFullyMeasured,
+      input.severityScope,
     );
     pairs.push({
       q: `Has ${name} been cited by ${input.regulatorAbbr}?`,
       a: input.deficiencyCount > 0 && severity ? `${cited} ${severity}` : cited,
     });
-    let answer = `${name} has ${input.deficiencyCount} ${defWord} across ${input.inspectionCount} ${inspWord}${window}.`;
-    if (severity) answer += ` ${severity}`;
+    let answer =
+      input.stateCode === "TX" && input.deficiencyCount === 0
+        ? "HHSC has not published a citation count for this home in the last 3 years."
+        : `${name} has ${input.deficiencyCount} ${defWord} across ${input.inspectionCount} ${inspWord}${complaintPhrase}${window}.`;
+    if (input.deficiencyCount > 0 && severity) answer += ` ${severity}`;
     pairs.push({
       q: `How many citations does ${name} have?`,
       a: answer,

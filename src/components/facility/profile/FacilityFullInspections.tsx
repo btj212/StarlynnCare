@@ -13,6 +13,7 @@ import {
 } from "./inspectionBlocks";
 import { FacilityWatchPaid } from "@/components/facility/FacilityWatchPaid";
 import { FullHistoryWaitlist } from "./FullHistoryWaitlist";
+import { OlderVisits, VISIBLE_VISITS } from "./OlderVisits";
 
 function ExpandedRow({
   insp,
@@ -246,7 +247,9 @@ export function FacilityFullInspections({
           deck={
             inspections.length === 0
               ? "No inspection records yet indexed for this facility."
-              : `${inspections.length} inspection${inspections.length === 1 ? "" : "s"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
+              : profile.facility.state_code === "WA" && inspections.some((row) => row.is_complaint)
+                ? `${totals.inspections} inspection${totals.inspections === 1 ? "" : "s"} and ${inspections.filter((row) => row.is_complaint).length} complaint ${inspections.filter((row) => row.is_complaint).length === 1 ? "investigation" : "investigations"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
+                : `${inspections.length} inspection${inspections.length === 1 ? "" : "s"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
           }
         />
 
@@ -306,7 +309,7 @@ export function FacilityFullInspections({
           </div>
         ) : (
           <div className="overflow-hidden rounded-[18px] border border-clearing-rule-2 bg-clearing-card shadow-[var(--shadow-card)]">
-            {inspections.map((insp) => (
+            {inspections.slice(0, VISIBLE_VISITS).map((insp) => (
               <InspectionItem
                 key={insp.id}
                 insp={insp}
@@ -318,6 +321,20 @@ export function FacilityFullInspections({
                 fullReportBase={`/${profile.state.slug}/${profile.facility.city_slug}/${profile.facility.slug}/inspections`}
               />
             ))}
+            <OlderVisits count={Math.max(0, inspections.length - VISIBLE_VISITS)}>
+              {inspections.slice(VISIBLE_VISITS).map((insp) => (
+                <InspectionItem
+                  key={insp.id}
+                  insp={insp}
+                  defs={deficienciesByInspection.get(insp.id) ?? []}
+                  cfg={cfg}
+                  showPremiumAfterSummary={insp.id === premiumInspectionId}
+                  facilityId={profile.facility.id}
+                  facilityName={profile.facility.name}
+                  fullReportBase={`/${profile.state.slug}/${profile.facility.city_slug}/${profile.facility.slug}/inspections`}
+                />
+              ))}
+            </OlderVisits>
           </div>
         )}
 

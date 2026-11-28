@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { caFormatSeverityTag } from "../src/lib/states/CA/severity.ts";
 import { azFormatSeverityTag } from "../src/lib/states/AZ/profileConfig.ts";
-import { paFormatSeverityTag } from "../src/lib/states/PA/profileConfig.ts";
+import { paFormatSeverityTag, paNhProfileConfig } from "../src/lib/states/PA/profileConfig.ts";
+import { mnProfileConfig } from "../src/lib/states/MN/profileConfig.ts";
+import { utProfileConfig } from "../src/lib/states/UT/profileConfig.ts";
+import { waProfileConfig } from "../src/lib/states/WA/profileConfig.ts";
+import { moProfileConfig } from "../src/lib/states/MO/profileConfig.ts";
 import { CMS_IJ_LABEL, isCmsImmediateJeopardy } from "../src/lib/states/cmsImmediateJeopardy.ts";
 import type { Deficiency } from "../src/lib/types.ts";
 
@@ -78,6 +82,51 @@ const paCms = paFormatSeverityTag(
   }),
 );
 assert.equal(paCms?.label, CMS_IJ_LABEL);
+
+assert.equal(
+  mnProfileConfig.formatSeverityTag(def({ scope_severity_code: "J", state_severity_raw: "SS=J", severity: 4 }))?.label,
+  "SS J",
+);
+assert.equal(
+  mnProfileConfig.formatSeverityTag(def({ scope_severity_code: "F", severity: 2 }))?.tone,
+  "info",
+);
+assert.equal(
+  mnProfileConfig.formatSeverityTag(def({ scope_severity_code: "G", state_severity_raw: "SS=G", severity: 3 }))?.label,
+  "SS G",
+);
+assert.equal(
+  mnProfileConfig.formatSeverityTag(def({ scope_severity_code: "G", severity: 3 }))?.tone,
+  "danger",
+);
+assert.equal(
+  utProfileConfig.formatSeverityTag(def({ state_severity_raw: "High", severity: 3 }))?.label,
+  "High",
+);
+assert.equal(
+  utProfileConfig.formatSeverityTag(def({ state_severity_raw: "Extreme", severity: 1 }))?.label,
+  "Extreme",
+);
+assert.equal(
+  waProfileConfig.formatSeverityTag(def({ state_severity_raw: "Type A", severity: 3 }))?.label,
+  "Type A",
+);
+assert.equal(
+  waProfileConfig.formatSeverityTag(def({ state_severity_raw: "Type B", severity: 4, immediate_jeopardy: true }))?.label,
+  "Type B",
+);
+assert.equal(
+  moProfileConfig.formatSeverityTag(def({ class: "Class I", severity: 2 }))?.label,
+  "Class I",
+);
+assert.equal(
+  paNhProfileConfig.formatSeverityTag(def({ scope_severity_code: "J", state_severity_raw: "Immediate Jeopardy" }))?.label,
+  CMS_IJ_LABEL,
+);
+assert.equal(
+  paNhProfileConfig.formatSeverityTag(def({ scope_severity_code: "D", state_severity_raw: "Civil Money Penalty" }))?.label,
+  "CMS D",
+);
 
 assert.equal(
   isCmsImmediateJeopardy(def({ immediate_jeopardy: true, class: "Type A" })),

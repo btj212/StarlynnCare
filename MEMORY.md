@@ -14,7 +14,9 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 **Source:** Read-only SQL on project `fwvrupjgwvvzqiutwwdg`, 2026-11-28. CDSS facility `345002797` still returned `ActionType` "Revocation Action Pending" with `CaseClosed` false and `STATUS` "Licensed".
 
-A facility page does not link to a lead-gen directory (`senioradvisor.com`, `caring.com`, `aplaceformom.com`, `seniorly.com`, and the same kind of host). That URL is not the home's website. A listed price may still name the directory, without a link. Severity sentences ("severe finding", "serious finding", "High Risk", "Serious") are only for a scale the regulator publishes: California Type A/B, Illinois Type 1/2/3, Oregon levels, Colorado Level A–E, and a CMS or CDPHE grid. Pennsylvania, Arizona, Minnesota, Missouri, Texas, Utah, and Washington assisted living do not get that sentence. Washington nursing homes still use the CMS grid.
+A facility page does not link to a lead-gen directory (`senioradvisor.com`, `caring.com`, `aplaceformom.com`, `seniorly.com`, and the same kind of host). That URL is not the home's website. A listed price may still name the directory, without a link, and the cost card does not print a "Source" label when that name is not a link.
+
+Severity sentences use the regulator's own terms, and only when that profile's rows carry the scale. California Type A, Illinois Type 1, Oregon Level 4, Colorado Level E, Minnesota Level 3 or 4 (SS G–L), Utah High or Extreme, Washington assisted living Type A, Missouri Class I, and a CMS J–L grid (Washington, Colorado, and Pennsylvania nursing homes). Pennsylvania personal care, Arizona, and Texas do not get the sentence. "None are tagged …" is printed only when every citation in the window has a scale value. This corrects the same-day sentence that left Minnesota, Utah, Washington assisted living, and Missouri off the scale. The twelve Minnesota homes that lost the line had SS G or SS I, so Level 3 stays on that line with Level 4.
 
 ---
 

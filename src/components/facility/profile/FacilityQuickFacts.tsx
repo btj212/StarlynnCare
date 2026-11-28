@@ -1,6 +1,7 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { missingPhoneRecordLabel, parsePhone } from "@/lib/facility/phone";
+import { texasRecentResultsUnpublished } from "@/lib/facility/texasRecord";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
 import { regulatorLicensePageFor } from "@/lib/seo/schema";
 
@@ -57,7 +58,13 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
             ) : null}
           </QfCell>
           <QfCell label="Last citation">
-            <span className="text-[22px]">{totals.lastCitation ? fmt(totals.lastCitation) : "None on record"}</span>
+            <span className="text-[22px]">
+              {totals.lastCitation
+                ? fmt(totals.lastCitation)
+                : texasRecentResultsUnpublished(facility.state_code, totals.inspections, totals.deficiencies)
+                  ? "Not published"
+                  : "None on record"}
+            </span>
           </QfCell>
           <QfCell label="Operated by">
             <span className="font-[family-name:var(--font-sans)] text-[15px] font-medium leading-snug">

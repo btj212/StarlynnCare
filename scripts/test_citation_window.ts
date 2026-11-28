@@ -97,7 +97,17 @@ const carltonWa = summarizeCitationWindow({
   today: TODAY,
 });
 assert.equal(carltonWa.citations, 12);
+assert.equal(carltonWa.inspections, 17);
 assert.equal(carltonWa.substantiatedWithoutRows, 1);
+
+const complaintOnly = summarizeCitationWindow({
+  inspections: [{ id: "c", inspection_date: "2026-01-16", is_complaint: true }],
+  deficiencies: [],
+  stateCode: "WA",
+  today: TODAY,
+});
+assert.equal(complaintOnly.inspections, 0);
+assert.equal(complaintOnly.citations, 0);
 
 const valle = summarizeCitationWindow({
   inspections: [

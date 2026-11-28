@@ -11,6 +11,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ComplianceFlagBanner } from "../src/components/facility/ComplianceFlag.tsx";
 import { FacilityQuickFacts } from "../src/components/facility/profile/FacilityQuickFacts.tsx";
+import { InspectionSummary } from "../src/components/facility/profile/InspectionSummary.tsx";
 import { chunkIds, loadLatestInspectionDates } from "../src/lib/data/inspectionDates.ts";
 import {
   caTypeDistributionSentence,
@@ -108,8 +109,37 @@ assert.equal(
     inspections: [{ id: "b-only", inspection_date: "2026-09-08" }],
     deficienciesByInspection: severeMap,
     today: TODAY,
-  })?.deficiency.class,
-  "Type B",
+  }),
+  null,
+);
+assert.equal(
+  selectMostRecentSevereFinding({
+    stateCode: "WA",
+    inspections: [{ id: "type-a", inspection_date: "2026-09-08" }],
+    deficienciesByInspection: new Map([
+      ["type-a", [{ state_severity_raw: "Type A", severity: 3 }]],
+    ]),
+    today: TODAY,
+  })?.deficiency.state_severity_raw,
+  "Type A",
+);
+assert.equal(
+  selectMostRecentSevereFinding({
+    stateCode: "MN",
+    inspections: [{ id: "ssj", inspection_date: "2026-09-08" }],
+    deficienciesByInspection: new Map([["ssj", [{ scope_severity_code: "J", severity: 4 }]]]),
+    today: TODAY,
+  })?.deficiency.scope_severity_code,
+  "J",
+);
+assert.equal(
+  selectMostRecentSevereFinding({
+    stateCode: "UT",
+    inspections: [{ id: "high", inspection_date: "2026-09-08" }],
+    deficienciesByInspection: new Map([["high", [{ state_severity_raw: "Extreme", severity: 1 }]]]),
+    today: TODAY,
+  })?.deficiency.state_severity_raw,
+  "Extreme",
 );
 
 assert.equal(countsCoverProfileWindow("CA", 0), true);
@@ -353,9 +383,22 @@ for (const raw of ["(503) 688-5080", "503-688-5080", "5036885080", "+1 503 688 5
   assert.deepEqual(parsePhone(raw), { display: "(503) 688-5080", tel: "5036885080" });
 }
 assert.equal(parsePhone("503-252-085"), null);
+assert.equal(parsePhone("1109728888"), null);
+assert.equal(parsePhone("0125550100"), null);
 assert.equal(parsePhone(""), null);
 assert.equal(parsePhone(null), null);
+assert.deepEqual(parsePhone("(503) 688-5080 ext. 12"), {
+  display: "(503) 688-5080 ext. 12",
+  tel: "5036885080",
+});
+assert.deepEqual(parsePhone("503-688-5080 x12"), {
+  display: "(503) 688-5080 ext. 12",
+  tel: "5036885080",
+});
 assert.equal(missingPhoneRecordLabel("OR"), "Check Oregon DHS record");
+assert.equal(missingPhoneRecordLabel("MN"), "Search the MDH provider directory");
+assert.equal(missingPhoneRecordLabel("PA"), "Search the PA DHS provider directory");
+assert.equal(missingPhoneRecordLabel("TX"), "Search the HHSC provider directory");
 assert.equal(
   regulatorLicensePageFor("OR", "50R358"),
   "https://ltclicensing.oregon.gov/Providers/Details/50R358",
@@ -464,56 +507,90 @@ const txTitle = buildFacilityTitle({
   percentile: null,
   city: "Houston",
   citationCount: 0,
-  inspectionCount: 1,
+  inspectionCount: 0,
   reviewCount: 0,
-  lastInspectionDate: "2023-02-16",
+  lastInspectionDate: null,
   licenseLabel: "Assisted Living",
 });
-assert.equal(txTitle, "Sample Home, Houston — no citations, inspected Feb 2023");
-assert.doesNotMatch(txTitle, /0 citations/);
-assert.doesNotMatch(txTitle, /clean record/i);
-
 const txSentence = buildFacilityRecordSentence({
   citationCount: 0,
-  inspectionCount: 1,
-  lastInspected: "Feb 2023",
+  inspectionCount: 0,
+  lastInspected: null,
   regulatorAbbr: "HHSC",
   licenseNumber: "148715",
+  stateCode: "TX",
 });
-assert.equal(
-  txSentence,
-  "0 HHSC citations on record in the last 3 years, last inspected Feb 2023, license 148715.",
-);
-assert.doesNotMatch(txSentence ?? "", /clean record/i);
-
+const txDescription = buildFacilityDescription({
+  name: "Sample Home",
+  percentile: null,
+  stateName: "Texas",
+  stateCode: "TX",
+  city: "Houston",
+  citationCount: 0,
+  inspectionCount: 0,
+  agency: "HHSC",
+  lastInspected: null,
+});
+const txSnippet = buildFacilitySnippet({
+  facilityName: "Sample Home",
+  stateName: "Texas",
+  stateCode: "TX",
+  grade: null,
+  percentile: null,
+  citationCount: 0,
+  inspectionCount: 0,
+  lastInspectionDate: null,
+  variant: "prose",
+  regulatorAbbr: "HHSC",
+});
 const txFaq = buildFacilityFaqPairs({
   facilityName: "Sample Home",
   stateName: "Texas",
   stateCode: "TX",
   pageUrl: "https://www.starlynncare.com/texas/houston/sample-home",
-  inspectionCount: 1,
+  inspectionCount: 0,
   deficiencyCount: 0,
   countsCoverThreeYears: false,
-  lastInspectionDate: "2023-02-16",
-  lastInspectionType: "annual",
+  lastInspectionDate: null,
+  lastInspectionType: null,
   lastInspectionIsComplaint: false,
   seriousFindings: [],
   percentile: null,
   memoryCareLabel: "HHSC lists this home.",
   licenseNumber: "148715",
-  licenseUrl: null,
+  licenseUrl: "https://apps.hhs.texas.gov/LTCSearch/",
   regulatorName: "Texas Health and Human Services",
   regulatorAbbr: "HHSC",
 });
-assert.equal(
-  txFaq.find((pair) => pair.q.startsWith("Has "))?.a,
-  "No. Sample Home has no HHSC citations.",
+const txLd = buildLocalBusinessForFacility(
+  { ...facilityBase, state_code: "TX", name: "Sample Home", license_number: "148715", city: "Houston" },
+  stateFromCode("TX")!,
+  {
+    canonicalUrl: "https://www.starlynncare.com/texas/houston/sample-home",
+    extras: { citationCount: 0, inspectionCount: 0, lastInspectionDate: null },
+  },
+) as { description?: string };
+const txSummary = renderToStaticMarkup(
+  createElement(InspectionSummary, {
+    lastInspected: null,
+    inspectionCount: 0,
+    citationCount: 0,
+    texasRecordUrl: "https://apps.hhs.texas.gov/LTCSearch/",
+  }),
 );
-assert.equal(
-  txFaq.find((pair) => pair.q.startsWith("How many"))?.a,
-  "Sample Home has 0 deficiencies across 1 inspection.",
-);
-assert.equal(txFaq.some((pair) => /clean record/i.test(pair.a)), false);
+const txCopy = [
+  txTitle,
+  txSentence,
+  txDescription,
+  txSnippet,
+  txFaq.map((pair) => pair.a).join("\n"),
+  txLd.description,
+  txSummary,
+].join("\n");
+assert.match(txCopy, /has not published recent inspection results/);
+assert.match(txCopy, /apps\.hhs\.texas\.gov\/LTCSearch/);
+assert.doesNotMatch(txCopy, /0 citations/);
+assert.doesNotMatch(txCopy, /clean record/i);
 
 const caStrings = [
   caTypeDistributionSentence(9, 7, 0),
@@ -623,13 +700,59 @@ assert.equal(regulatorPublishesSeverityScale("IL"), true);
 assert.equal(regulatorPublishesSeverityScale("OR"), true);
 assert.equal(regulatorPublishesSeverityScale("CO"), true);
 assert.equal(regulatorPublishesSeverityScale("WA", "cms"), true);
-assert.equal(regulatorPublishesSeverityScale("WA"), false);
+assert.equal(regulatorPublishesSeverityScale("WA"), true);
 assert.equal(regulatorPublishesSeverityScale("PA"), false);
+assert.equal(regulatorPublishesSeverityScale("PA", "cms"), true);
 assert.equal(regulatorPublishesSeverityScale("AZ"), false);
-assert.equal(regulatorPublishesSeverityScale("MN"), false);
-assert.equal(regulatorPublishesSeverityScale("MO"), false);
+assert.equal(regulatorPublishesSeverityScale("MN"), true);
+assert.equal(regulatorPublishesSeverityScale("MO"), true);
 assert.equal(regulatorPublishesSeverityScale("TX"), false);
-assert.equal(regulatorPublishesSeverityScale("UT"), false);
+assert.equal(regulatorPublishesSeverityScale("UT"), true);
+
+const orUnmeasured = buildFacilityFaqPairs({
+  facilityName: "Fircrest Senior Living",
+  stateName: "Oregon",
+  stateCode: "OR",
+  pageUrl: "https://www.starlynncare.com/oregon/mcminnville/fircrest",
+  inspectionCount: 4,
+  deficiencyCount: 2,
+  countsCoverThreeYears: true,
+  lastInspectionDate: "2026-04-01",
+  lastInspectionType: "annual",
+  lastInspectionIsComplaint: false,
+  seriousFindings: [],
+  severityFullyMeasured: false,
+  percentile: null,
+  memoryCareLabel: "Oregon DHS lists this home.",
+  licenseNumber: "50R358",
+  licenseUrl: null,
+  regulatorName: "Oregon DHS",
+  regulatorAbbr: "OR-DHS",
+});
+assert.doesNotMatch(orUnmeasured.map((pair) => pair.a).join("\n"), /None are tagged/);
+
+const zeroWindow = buildFacilityFaqPairs({
+  facilityName: "Empty Window",
+  stateName: "California",
+  stateCode: "CA",
+  pageUrl: "https://www.starlynncare.com/california/example",
+  inspectionCount: 12,
+  deficiencyCount: 0,
+  countsCoverThreeYears: true,
+  lastInspectionDate: "2026-04-01",
+  lastInspectionType: "annual",
+  lastInspectionIsComplaint: false,
+  seriousFindings: [],
+  severityFullyMeasured: true,
+  publishesSeverityScale: true,
+  percentile: null,
+  memoryCareLabel: "CDSS lists this home.",
+  licenseNumber: "1",
+  licenseUrl: null,
+  regulatorName: "CDSS",
+  regulatorAbbr: "CDSS",
+});
+assert.doesNotMatch(zeroWindow.map((pair) => pair.a).join("\n"), /None are tagged/);
 
 siblingDates
   .then(() => {
