@@ -327,7 +327,7 @@ def test_long_report_counts_equal_d_rows() -> None:
     assert "June" not in out and "July" not in out  # form boilerplate is not the survey date
     # The stored summary is capped at about six sentences. The header keeps the true total.
     assert out.count(_SAFE_DESCRIPTION) == 3
-    assert "The report lists 13 further findings." in out
+    assert "The report lists 13 further correction orders." in out
     final_user = summary_calls[0]["messages"][0]["content"]
     assert f"Cited deficiencies on file: {d_rows}" in final_user
     tag_lines = [line for line in final_user.splitlines() if line.startswith("- tag ")]
@@ -929,7 +929,7 @@ def test_forced_chunk_merge_on_long_row() -> None:
     assert out
     assert "7 correction orders" in out
     assert out.count(_SAFE_DESCRIPTION) == 3
-    assert "The report lists 4 further findings." in out
+    assert "The report lists 4 further correction orders." in out
     final_user = summary_calls[0]["messages"][0]["content"]
     tags = [line.split(":", 1)[0][len("- tag "):] for line in final_user.splitlines() if line.startswith("- tag ")]
     assert tags == list(dict.fromkeys(tags))
@@ -1414,7 +1414,9 @@ def test_v11_retry_falls_back_per_finding_and_warnings_are_logged() -> None:
     assert out and "forty-four" not in out.lower()
     assert "25 correction orders" in out
     assert len(si._sentences(out)) <= 6
-    assert "The report lists 23 further findings." in out
+    closing = re.search(r"The report lists (\d+) further correction orders\.", out)
+    described = out.count("The observation was recorded.")
+    assert closing and int(closing.group(1)) == 25 - described
     assert len(calls) == 26
 
     source = (
@@ -1674,7 +1676,7 @@ def test_v12_visit_penalty_length_and_minnesota_fallback() -> None:
     assert summary and "12 correction orders" in summary
     assert len(si._sentences(summary)) <= 6
     kept = summary.count("The licensee failed to post the hours.")
-    match = re.search(r"The report lists (\d+) further findings\.", summary)
+    match = re.search(r"The report lists (\d+) further correction orders\.", summary)
     assert match and int(match.group(1)) + kept == 12
 
     fallback = si.summarize(
@@ -1721,6 +1723,144 @@ def test_v12_visit_penalty_length_and_minnesota_fallback() -> None:
     assert zero == unchanged
     assert zero and "No deficiencies were cited at this visit." in zero
     assert "further finding" not in zero
+
+
+def test_v12_1_remainder_is_findings_not_sentences() -> None:
+    """The closing number counts findings left out, using the header's noun.
+
+    One short violation gets no closing line. A three-sentence finding that does
+    not fit is one omitted finding. A follow-up phrase on a standard row, and an
+    appended 'must correct' that the finding does not say, each hold the row.
+    """
+    import tempfile
+
+    one = si.summarize(
+        _json_client(json.dumps([{
+            "tag": None,
+            "description": "The licensee failed to post the hours.",
+        }])),
+        "survey",
+        False,
+        None,
+        (
+            "On March 10, 2024, the Oregon Department of Human Services completed a full survey. "
+            "The licensee failed to post the hours."
+        ),
+        state_code="OR",
+        deficiency_count=1,
+        record_date="2024-03-10",
+    )
+    assert one and "1 violation" in one
+    assert "further" not in one
+    assert "5 further" not in one
+
+    codes = [f"{510 + i:04d}" for i in range(23)]
+    narrative = " ".join(
+        f"{code} not met as evidenced by the licensee failed to post the hours."
+        for code in codes
+    )
+    described = [
+        {"tag": code, "description": "The licensee failed to post the hours."}
+        for code in codes
+    ]
+    many = si.summarize(
+        _json_client(json.dumps(described)),
+        "standard",
+        False,
+        None,
+        narrative,
+        state_code="MN",
+        deficiency_count=23,
+        d_tags=codes,
+        record_date="2024-03-10",
+    )
+    assert many and "23 correction orders" in many
+    kept = many.count("The licensee failed to post the hours.")
+    match = re.search(r"The report lists (\d+) further correction orders\.", many)
+    assert kept == 4 and match and int(match.group(1)) == 19
+
+    long_desc = (
+        "The licensee failed to post the hours. "
+        "The licensee failed to record the temperature. "
+        "The licensee failed to update the log."
+    )
+    quad_codes = ["0510", "0520", "0530", "0540"]
+    quad_narrative = " ".join(
+        f"{code} not met as evidenced by the licensee failed to post the hours."
+        for code in quad_codes[:3]
+    ) + (
+        " 0540 not met as evidenced by the licensee failed to post the hours. "
+        "The licensee failed to record the temperature. "
+        "The licensee failed to update the log."
+    )
+    quad = [
+        {"tag": code, "description": "The licensee failed to post the hours."}
+        for code in quad_codes[:3]
+    ] + [{"tag": "0540", "description": long_desc}]
+    mixed = si.summarize(
+        _json_client(json.dumps(quad)),
+        "standard",
+        False,
+        None,
+        quad_narrative,
+        state_code="MN",
+        deficiency_count=4,
+        d_tags=quad_codes,
+        record_date="2024-03-10",
+    )
+    assert mixed and "4 correction orders" in mixed
+    assert long_desc not in mixed
+    assert "record the temperature" not in mixed
+    short_kept = mixed.count("The licensee failed to post the hours.")
+    dropped = re.search(r"The report lists (\d+) further correction order\.", mixed)
+    assert short_kept == 3 and dropped and int(dropped.group(1)) == 1
+
+    follow = (
+        "On March 10, 2024, the Minnesota Department of Health completed a follow-up survey. "
+        "0510 not met as evidenced by the licensee failed to post the hours."
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = f"{tmp}/warnings.jsonl"
+        held = si.summarize(
+            _json_client(json.dumps([{
+                "tag": "0510",
+                "description": "The licensee failed to post the hours.",
+            }])),
+            "standard",
+            False,
+            None,
+            follow,
+            state_code="MN",
+            deficiency_count=1,
+            d_tags=["0510"],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="follow",
+        )
+        assert held is None
+        assert "follow-up" in _last_warning(path)["warnings"][0]
+
+        directed = si.summarize(
+            _json_client(json.dumps([{
+                "tag": "0510",
+                "description": "The licensee failed to post the hours. The facility must correct this.",
+            }])),
+            "survey",
+            False,
+            None,
+            (
+                "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+                "0510 not met as evidenced by the licensee failed to post the hours."
+            ),
+            state_code="MN",
+            deficiency_count=1,
+            d_tags=["0510"],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="directive",
+        )
+        assert directed is None
+        assert "unsourced directive" in _last_warning(path)["warnings"][0]
 
 
 if __name__ == "__main__":

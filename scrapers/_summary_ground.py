@@ -1030,6 +1030,15 @@ def or_real_tag_count(source: str) -> int | None:
     return sum(1 for tag in seen if not re.fullmatch(r"[A-Z]0000", tag))
 
 
+def directive_problem(description: str, evidence: str) -> str | None:
+    """A directive the finding does not contain, such as 'must correct'."""
+    if re.search(r"\bmust correct\b", description or "", re.I) and not re.search(
+        r"\bmust correct\b", evidence or "", re.I
+    ):
+        return "unsourced directive"
+    return None
+
+
 def visit_type_conflict(
     header: str,
     *,
@@ -1039,12 +1048,15 @@ def visit_type_conflict(
     """The header visit phrase has to agree with the inspection row."""
     text = header or ""
     kind = (inspection_type or "").lower()
+    agreed = re.search(r"re-?visit|follow-?\s?up|follow up", kind)
     if re.search(r"\bcomplaint investigation\b", text, re.I):
         if not is_complaint and "complaint" not in kind:
             return "visit type contradicts the record: complaint investigation"
-    if re.search(r"\bre-?visit\b", text, re.I):
-        if not re.search(r"re-?visit|follow-?up|follow up", kind):
-            return "visit type contradicts the record: revisit"
+    follow = re.search(r"\bfollow-?\s?up\s+(?:survey|visit)\b", text, re.I)
+    if follow and not agreed:
+        return f"visit type contradicts the record: {follow.group(0).lower()}"
+    if re.search(r"\bre-?visit\b", text, re.I) and not agreed:
+        return "visit type contradicts the record: revisit"
     return None
 
 
@@ -1145,6 +1157,7 @@ def ground_problems(
         lambda: rule_as_finding(description, evidence, source),
         lambda: regulation_as_finding(description, state_code),
         lambda: tag_dump_problem(description),
+        lambda: directive_problem(description, evidence),
     ):
         hit = fn()
         if hit:

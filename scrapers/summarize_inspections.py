@@ -52,12 +52,15 @@ from _summary_assemble import (
     regulator_sentence,
 )
 from _summary_ground import (
+    directive_problem,
     evidence_text,
     is_factual_hold,
     is_regulation_text,
+    mn_evidence,
     or_real_tag_count,
     rank_by_severity,
     tag_dump_problem,
+    tag_span,
     visit_type_conflict,
 )
 from mn_defs import tag_codes
@@ -805,19 +808,143 @@ def _sentences(text: str) -> list[str]:
     return [part.strip() for part in re.split(r"(?<=[.!?])\s+", (text or "").strip()) if part.strip()]
 
 
-def cap_summary(text: str) -> str:
-    """About six sentences. The header stays, and the remainder is stated exactly.
+_HEADER_COUNT = re.compile(
+    r"\bissued\s+(\d+)\s+([A-Za-z]+(?:\s+[A-Za-z]+){0,3})(?:\s+at this visit)?\.",
+    re.I,
+)
+_HEADER_COUNT_BARE = re.compile(
+    r"\b(\d+)\s+([A-Za-z]+(?:\s+[A-Za-z]+){0,3})\s+were issued\.",
+    re.I,
+)
+_NOUN_SINGULAR = {
+    "correction order": "correction order",
+    "correction orders": "correction order",
+    "citation": "citation",
+    "citations": "citation",
+    "violation": "violation",
+    "violations": "violation",
+    "deficiency": "deficiency",
+    "deficiencies": "deficiency",
+    "finding": "finding",
+    "findings": "finding",
+}
 
-    Whole sentences only. A summary that already fits is returned unchanged,
-    including the zero-citation line.
+
+def _header_tally(header: str) -> tuple[int, str] | None:
+    """The finding count and noun written in the code header."""
+    match = _HEADER_COUNT.search(header or "") or _HEADER_COUNT_BARE.search(header or "")
+    if not match:
+        return None
+    return int(match.group(1)), match.group(2).strip().lower()
+
+
+def _noun_for_count(header_noun: str, count: int) -> str | None:
+    singular = _NOUN_SINGULAR.get((header_noun or "").lower())
+    if not singular:
+        return None
+    if count == 1:
+        return singular
+    if singular.endswith("y") and not singular.endswith(("ay", "ey", "oy")):
+        return singular[:-1] + "ies"
+    return singular + "s"
+
+
+def _sentence_count(text: str) -> int:
+    return len(_sentences(text))
+
+
+def align_findings(body: str, candidates: list[str]) -> list[str] | None:
+    """Walk the summary body by whole description strings. None if they do not line up."""
+    remaining = (body or "").strip()
+    pool = [item.strip() for item in candidates if item and item.strip()]
+    found: list[str] = []
+    while remaining:
+        matches = [item for item in pool if remaining.startswith(item)]
+        if not matches:
+            return None
+        match = max(matches, key=len)
+        pool.remove(match)
+        found.append(match)
+        remaining = remaining[len(match):].strip()
+    return found
+
+
+def findings_in_text(text: str, header: str | None, candidates: list[str]) -> list[str] | None:
+    """The descriptions that make up the body, in the order they were stored."""
+    if not header or not (text or "").startswith(header):
+        return None
+    body = text[len(header):].strip()
+    ordered = [item.strip() for item in candidates if item and item.strip()]
+    if not body:
+        return []
+    if body == " ".join(ordered):
+        return ordered
+    return align_findings(body, ordered)
+
+
+def cap_summary(
+    text: str,
+    *,
+    header: str | None,
+    findings: list[str] | None,
+) -> tuple[str | None, str | None]:
+    """Keep whole findings inside about six sentences.
+
+    The closing number is the header's finding count minus the findings whose
+    full text was kept. A finding that runs to several sentences is kept or
+    dropped together. Returns (summary, hold reason).
     """
-    parts = _sentences(text)
-    if len(parts) <= _SUMMARY_SENTENCES:
-        return " ".join(parts) if parts else (text or "")
-    kept = parts[: _SUMMARY_SENTENCES - 1]
-    omitted = len(parts) - len(kept)
-    noun = "finding" if omitted == 1 else "findings"
-    return " ".join(kept + [f"The report lists {omitted} further {noun}."])
+    if findings is None:
+        return None, "header count unknown does not match the finding list unknown"
+    if not findings:
+        tally = _header_tally(header or "")
+        if tally and tally[0] > 0:
+            return None, f"header count {tally[0]} does not match the finding list 0"
+        if _sentence_count(text) <= _SUMMARY_SENTENCES:
+            return text, None
+        return None, "header count unknown does not match the finding list 0"
+    if not header:
+        return None, f"header count unknown does not match the finding list {len(findings)}"
+    tally = _header_tally(header)
+    if tally is None:
+        return None, f"header count unknown does not match the finding list {len(findings)}"
+    total, noun = tally
+    if len(findings) != total:
+        return None, f"header count {total} does not match the finding list {len(findings)}"
+    header_n = _sentence_count(header)
+    all_n = header_n + sum(_sentence_count(item) for item in findings)
+    if all_n <= _SUMMARY_SENTENCES:
+        selected = list(findings)
+    else:
+        selected = []
+        used = header_n
+        for item in findings:
+            needed = _sentence_count(item) or 1
+            if used + needed + 1 <= _SUMMARY_SENTENCES:
+                selected.append(item)
+                used += needed
+        # One finding that does not fit is kept whole. Its sentences are not findings.
+        if not selected and len(findings) == 1:
+            selected = list(findings)
+    described = len(selected)
+    if described > total:
+        return None, f"header count {total} does not match described {described}"
+    omitted = total - described
+    if omitted < 0:
+        return None, f"header count {total} does not match described {described}"
+    if omitted == 0:
+        rebuilt = " ".join(part for part in (header.strip(), *(item.strip() for item in selected)) if part)
+        if rebuilt == (text or "").strip():
+            return text, None
+        return rebuilt, None
+    word = _noun_for_count(noun, omitted)
+    if not word:
+        return None, f"header count {total} does not match described {described}"
+    closing = f"The report lists {omitted} further {word}."
+    rebuilt = " ".join(
+        part for part in (header.strip(), *(item.strip() for item in selected), closing) if part
+    )
+    return rebuilt, None
 
 
 def _finding_block(text: str, state_code: str) -> str | None:
@@ -909,12 +1036,18 @@ def _real_rows(defs: list[dict] | None) -> list[dict] | None:
     ]
 
 
-def _with_severity_order(text: str, header: str | None, defs: list[dict] | None) -> str:
-    """Put the most serious findings first when the header is a known prefix."""
-    if not header or not text.startswith(header):
-        return text
-    findings = rank_by_severity(_sentences(text[len(header):]), _real_rows(defs))
-    return " ".join(part for part in (header.strip(), *findings) if part).strip()
+def _parsed_has_directive(narrative: str, state_code: str, parsed: list[dict] | None) -> bool:
+    """True when a model description adds 'must correct' and that finding's span does not."""
+    for item in parsed or []:
+        description = str(item.get("description") or "")
+        tag = "" if item.get("tag") is None else str(item.get("tag"))
+        if (state_code or "").upper() == "MN":
+            span = mn_evidence(narrative, tag) or tag_span(narrative, tag) or narrative
+        else:
+            span = tag_span(narrative, tag) or narrative
+        if directive_problem(description, span):
+            return True
+    return False
 
 
 def _release(
@@ -928,11 +1061,11 @@ def _release(
     warning_log: str | None,
     inspection_id: str | None,
     header: str | None = None,
+    findings: list[str] | None = None,
 ) -> str | None:
-    """Visit and penalty checks, then the sentence cap. A hold stores nothing."""
+    """Visit and penalty checks, then the finding cap. A hold stores nothing."""
     if not text:
         return None
-    text = _with_severity_order(text, header, defs)
     opened = " ".join(
         sentence for sentence in _sentences(text)[:4] if "completed a" in sentence.lower()
     )
@@ -950,7 +1083,15 @@ def _release(
     ):
         _hold(warning_log, inspection_id, "dollar penalty absent from the record")
         return None
-    return cap_summary(text)
+    ordered = findings
+    rows = _real_rows(defs) if defs else None
+    if findings is not None and rows and len(rows) == len(findings):
+        ordered = rank_by_severity(list(findings), rows)
+    capped, reason = cap_summary(text, header=header, findings=ordered)
+    if reason:
+        _hold(warning_log, inspection_id, reason)
+        return None
+    return capped
 
 
 def _split_problems(problems: list[str]) -> tuple[list[str], list[str]]:
@@ -988,7 +1129,7 @@ def _regulator_summary(
     followup_amount: str | None,
     followup_letter_date: str | None,
     blocked: list[str] | None = None,
-) -> str | None:
+) -> tuple[str | None, list[str]]:
     """Header plus the regulator's own wording, one sentence per finding."""
     from _summary_ground import deficiency_rows, mn_evidence, tag_span
 
@@ -1013,13 +1154,13 @@ def _regulator_summary(
                 sentences.append(_regulator_for_span(span, None, state_code))
     sentences = [sentence for sentence in sentences if sentence]
     if not sentences:
-        return None
+        return None, []
     for sentence in sentences:
         why = _finding_block(sentence, state_code)
         if why:
             if blocked is not None:
                 blocked.append(why)
-            return None
+            return None, []
     if followup_amount and followup_letter_date:
         penalty = None
     else:
@@ -1035,7 +1176,8 @@ def _regulator_summary(
         inspection_type=inspection_type,
         outcome=outcome,
     )
-    return " ".join(part for part in (header, *sentences) if part and part.strip()).strip() or None
+    text = " ".join(part for part in (header, *sentences) if part and part.strip()).strip()
+    return (text or None), sentences
 
 
 def _describe_each_finding(
@@ -1060,7 +1202,7 @@ def _describe_each_finding(
     facility: str | None,
     warning_log: str | None = None,
     inspection_id: str | None = None,
-) -> str | None:
+) -> tuple[str | None, list[str]]:
     """One call per finding. A bad finding is retried once, then copied from the report.
 
     A California or Oregon fallback that is rule text, or any tag dump, holds the row.
@@ -1072,7 +1214,6 @@ def _describe_each_finding(
         if code:
             rows_by_code[code] = row
     pieces: list[str] = []
-    piece_rows: list[dict] = []
     warnings: list[str] = []
     blocked: str | None = None
 
@@ -1131,8 +1272,11 @@ def _describe_each_finding(
                 + "\nFix only that problem. Do not add a count, a date, or a dollar amount.",
                 span,
             )
-            if again and not holds2 and len(warns2) <= len(warns):
+            if again and not holds2 and len(warns2) <= len(warns) and not directive_problem(again, span):
                 description, warns = again, warns2
+            elif directive_problem(description, span) or directive_problem(again, span):
+                blocked = "unsourced directive"
+                description = ""
             else:
                 description = _regulator_for_span(span, rows_by_code.get(code), state_code)
                 why = _finding_block(description, state_code)
@@ -1140,17 +1284,18 @@ def _describe_each_finding(
                     blocked = why
                 warns = [f"fallback to regulator wording: {code}"]
                 print(f"    fallback: {code}: {holds2[0] if holds2 else reason}")
+        elif directive_problem(description, span):
+            blocked = "unsourced directive"
+            description = ""
         if description:
             pieces.append(description)
-            piece_rows.append(rows_by_code.get(code) or {})
         warnings.extend(warns)
     if blocked:
         _hold(warning_log, inspection_id, blocked)
-        return None
+        return None, []
     if not pieces:
         print("    held: nothing to store")
-        return None
-    pieces = rank_by_severity(pieces, piece_rows)
+        return None, []
     if followup_amount and followup_letter_date:
         penalty = None
     else:
@@ -1169,7 +1314,7 @@ def _describe_each_finding(
     text = " ".join(part for part in (header, *pieces) if part and part.strip()).strip()
     if warnings:
         append_warning_record(warning_log, {"id": inspection_id, "warnings": warnings})
-    return text or None
+    return (text or None), pieces
 
 
 def _is_stub_or_error(narrative: str) -> bool:
@@ -1248,7 +1393,21 @@ def summarize(
     if not (narrative or "").strip():
         return None
 
-    def _finish(text: str | None) -> str | None:
+    def _header_for(text: str | None) -> str | None:
+        return _guess_header(
+            text or "",
+            state_code=state_code,
+            source=narrative,
+            finding_count=deficiency_count,
+            inspection_date=record_date,
+            inspection_type=inspection_type,
+            outcome=outcome,
+            followup_amount=followup_amount,
+            followup_letter_date=followup_letter_date,
+            defs=defs,
+        )
+
+    def _finish(text: str | None, findings: list[str] | None = None) -> str | None:
         return _release(
             text,
             is_complaint=is_complaint,
@@ -1258,18 +1417,8 @@ def summarize(
             defs=defs,
             warning_log=warning_log,
             inspection_id=inspection_id,
-            header=_guess_header(
-                text or "",
-                state_code=state_code,
-                source=narrative,
-                finding_count=deficiency_count,
-                inspection_date=record_date,
-                inspection_type=inspection_type,
-                outcome=outcome,
-                followup_amount=followup_amount,
-                followup_letter_date=followup_letter_date,
-                defs=defs,
-            ),
+            header=_header_for(text),
+            findings=findings,
         )
     if deficiency_count == 0 and not d_tags:
         # The fixed line is only for a published, non-Texas report that says so.
@@ -1291,7 +1440,7 @@ def summarize(
             state_code=state_code,
             inspection_type=inspection_type,
             inspection_date=record_date,
-        ))
+        ), [])
     if (state_code or "").upper() == "OR" and defs:
         defs = _real_rows(defs) or []
     if (state_code or "").upper() == "OR":
@@ -1336,7 +1485,7 @@ def summarize(
     budget = _narrative_budget(system, overhead)
     jobs = _jobs_over_limit(narrative, defs)
     if jobs:
-        return _finish(_describe_each_finding(
+        described, found = _describe_each_finding(
             client,
             jobs,
             system=system,
@@ -1357,7 +1506,8 @@ def summarize(
             facility=facility,
             warning_log=warning_log,
             inspection_id=inspection_id,
-        ))
+        )
+        return _finish(described, found)
 
     def _gate(raw: str | None, notes: list[str]) -> tuple[str | None, str | None]:
         if not raw:
@@ -1415,14 +1565,25 @@ def summarize(
         if text and not err:
             if notes:
                 append_warning_record(warning_log, {"id": inspection_id, "warnings": notes})
-            return _finish(text)
+            header = _header_for(text)
+            return _finish(text, findings_in_text(
+                text, header, [str(item.get("description") or "") for item in parsed],
+            ))
         text2, err2, notes2, parsed2 = _attempt([err or "rejected"])
         if text2 and not err2 and len(notes2) <= len(notes):
             if notes2:
                 append_warning_record(warning_log, {"id": inspection_id, "warnings": notes2})
-            return _finish(text2)
+            header = _header_for(text2)
+            return _finish(text2, findings_in_text(
+                text2, header, [str(item.get("description") or "") for item in (parsed2 or [])],
+            ))
+        if _parsed_has_directive(narrative, state_code, parsed) or _parsed_has_directive(
+            narrative, state_code, parsed2,
+        ):
+            _hold(warning_log, inspection_id, "unsourced directive")
+            return None
         reasons: list[str] = []
-        fallback = _regulator_summary(
+        fallback, found = _regulator_summary(
             narrative,
             state_code=state_code,
             defs=defs,
@@ -1446,7 +1607,7 @@ def summarize(
             warning_log,
             {"id": inspection_id, "warnings": ["fallback to regulator wording"]},
         )
-        return _finish(fallback)
+        return _finish(fallback, found)
 
     if len(narrative) <= budget:
         return _describe_until_stored(
