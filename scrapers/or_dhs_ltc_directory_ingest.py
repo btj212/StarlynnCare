@@ -2,7 +2,7 @@
 # Replaced by the OR Full Universe rebuild (migration 0033_or_universe.sql).
 # New pipeline: or_providers_ingest.py, or_inspections_ingest.py, or_violations_ingest.py,
 #               or_regulatory_actions_ingest.py, or_signal_mce.py, or_afh_detail.py, etc.
-# Key reason: this script zero-pads Provider IDs, breaking alphanumeric IDs like '50M300'.
+# Key reason: superseded by or_providers_ingest.py. Provider IDs are kept as printed.
 # See scripts/or_overnight_run.sh for the replacement orchestration.
 #
 # Original content preserved below for reference.
@@ -13,7 +13,7 @@
 Ingest Oregon DHS LTC Licensing provider CSV (memory-care export) into facilities.
 
 Upsert conflict target: (state_code, city_slug, slug)
-Join key for inspections: or_provider_id and license_number (padded numeric ID).
+Join key for inspections: or_provider_id and license_number (the regulator ID, as printed).
 
 Usage:
   python3 scrapers/or_dhs_ltc_directory_ingest.py --input .firecrawl/or-scrape/providers-2026-05-08.csv
@@ -69,18 +69,19 @@ def titleize(text: str) -> str:
 
 
 def pad_license_or(raw: Any) -> str:
-    """Normalize Oregon Provider ID for facilities.license_number + bundle matching."""
-    if raw is None or str(raw).strip() == "":
-        return "0000000000"
-    digits = re.sub(r"\D", "", str(raw))
-    if not digits:
-        return "0000000000"
-    return digits.zfill(10)
+    """Keep the regulator's Provider ID as printed.
+
+    Letters stay, and the value is not zero-padded: 50M133 stays 50M133,
+    and a numeric ID stays numeric. The slug is built from this same text.
+    """
+    if raw is None:
+        return ""
+    return str(raw).strip()
 
 
 def facility_slug(name: str, license_num: str) -> str:
     base = slugify(name)
-    suffix = license_num[-8:].lstrip("0") or license_num[-4:]
+    suffix = (license_num[-8:].lstrip("0") or license_num[-4:]).lower()
     return f"{base}-{suffix}"
 
 
@@ -257,7 +258,7 @@ INSERT INTO facilities (
 )
 ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     name                         = EXCLUDED.name,
-    license_number               = EXCLUDED.license_number,
+    license_number               = COALESCE(facilities.license_number, EXCLUDED.license_number),
     license_type                 = EXCLUDED.license_type,
     street                       = EXCLUDED.street,
     city                         = EXCLUDED.city,

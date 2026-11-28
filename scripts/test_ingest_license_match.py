@@ -284,8 +284,8 @@ class OakLaneTests(unittest.TestCase):
     def test_rename_reuses_slug_and_verbatim_license(self) -> None:
         """50M133 already has a URL. A new name must not insert a second Oregon home."""
         incoming = _oak_csv_record()
-        self.assertEqual(incoming["license_number"], "0000050133")
-        self.assertEqual(incoming["slug"], "oak-lane-senior-living-and-memory-care-50133")
+        self.assertEqual(incoming["license_number"], "50M133")
+        self.assertEqual(incoming["slug"], "oak-lane-senior-living-and-memory-care-50m133")
         self.assertEqual(incoming["_raw_id"], "50M133")
 
         bare = dict(incoming)
@@ -301,6 +301,45 @@ class OakLaneTests(unittest.TestCase):
         self.assertEqual(row["city_slug"], "grants-pass")
         self.assertEqual(row["license_number"], "50M133")
         self.assertEqual(row["name"], "Oak Lane Senior Living and Memory Care")
+
+
+class OregonLicenseIdTests(unittest.TestCase):
+    def test_alphanumeric_and_numeric_ids_stay_as_printed(self) -> None:
+        """50M133 must not become 0000050133, and a numeric ID must not be padded."""
+        self.assertEqual(or_dhs.pad_license_or("50M133"), "50M133")
+        self.assertEqual(or_dhs.pad_license_or("50m133"), "50m133")
+        self.assertEqual(or_dhs.pad_license_or("50133"), "50133")
+        self.assertEqual(or_dhs.pad_license_or("000123"), "000123")
+        self.assertEqual(
+            or_dhs.facility_slug("Oak Lane Residential Care Facility", "50M133"),
+            "oak-lane-residential-care-facility-50m133",
+        )
+
+    def test_slug_hit_keeps_an_existing_license(self) -> None:
+        """A slug conflict must not replace a license that is already on the row."""
+        existing = {
+            "id": "or-1",
+            "state_code": "OR",
+            "name": "Oak Lane",
+            "slug": "oak-lane-50m133",
+            "city_slug": "grants-pass",
+            "license_number": "50M133",
+            "external_id": "50M133",
+            "publishable": True,
+            "created_at": "2020-01-01",
+        }
+        incoming = {
+            "state_code": "OR",
+            "name": "Oak Lane Senior Living",
+            "slug": "oak-lane-50m133",
+            "city_slug": "grants-pass",
+            "license_number": "0000050133",
+        }
+        conn = FakeConn([existing])
+        conn.apply_upsert(or_dhs.OR_UPSERT_SQL, incoming)
+        self.assertEqual(len(conn.rows), 1)
+        self.assertEqual(conn.rows[0]["license_number"], "50M133")
+        self.assertEqual(conn.rows[0]["name"], "Oak Lane Senior Living")
 
 
 class RenameInPlaceTests(unittest.TestCase):
