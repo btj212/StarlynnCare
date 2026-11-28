@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — A finding that starts at the end of a chunk was dropped
+
+**What went wrong:** The long-report merge kept a quote only when the whole quote sat inside the one chunk that returned it. On the Northern Lakes complaint, tag 02360 starts at the end of chunk 2 and the sentence finishes in chunk 3. Both models quoted that whole sentence, so it was not a substring of either chunk, the check dropped it, and only tag 02310 survived. A character cap on the rendered list could also omit a later tag.
+
+**What worked instead:** Keep a quote when it is verbatim in the chunk, or in that chunk joined to the previous or next chunk with nothing inserted. If the quote is untagged and only exists across that seam, attach it to the tag left open at the end of the previous chunk. Dedupe still keeps each tag-plus-quote once. Do not drop rendered lines for length. Counts, dates, and penalties are filled in code from the report; the model returns descriptions with no digits.
+
+**Source:** PR 278, Traditions of Waterville fixture (`01fa1748`, 7 chunks, 16 tags) and the three-chunk 02310/02360 test in `scripts/test_summarize_prompts.py`.
+
+---
+
 ## 2026-11-27 — Colorado event ids and the Washington recount update were not writable
 
 **What went wrong:** `backfill_co_inspection_gate.py --apply` copied `raw_data.co_event_id` into `source_event_id`. 318 of those ids are on 2–3 rows each (646 rows), one per rule set, so the unique index `(source_agency, source_event_id)` would reject the write. `recount_wa_citation_counts.py --apply` joined `facilities` on `i.facility_id` inside `FROM` before the inspection being updated was in scope, and Postgres rejected that. `inspectionQualifies` for Illinois and Colorado accepted only the visit-id route, so a Colorado CMS nursing home with a real link and no visit id failed.
