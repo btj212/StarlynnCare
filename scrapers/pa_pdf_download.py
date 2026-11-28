@@ -5,9 +5,11 @@ PA PDF Download — walk pa_pdf_inventory and download pending PDFs.
 Clone of or_pdf_download.py, targeting pa_pdf_inventory and the DHS Azure
 inspection portal for PDF hosting.
 
-For each row with download_status='pending', and each 'done' row whose
-local_path file is no longer on disk (the GitHub runner cache does not
-survive between jobs):
+For each row that still needs a file: download_status='pending', or a
+'done' row whose parse or backfill is still pending and whose file is
+not on disk. Rows already parsed and backfilled are not downloaded again.
+The runner disk starts empty, and re-downloading those ~10k PDFs every
+week overruns the job.
   1. Download the PDF to .firecrawl/pa-pdfs/<sha256[:2]>/<sha256>.pdf.
   2. Compute sha256, record size_bytes.
   3. Update download_status='done'.
@@ -101,13 +103,35 @@ def download_pdf(
     return dest, digest, size
 
 
+def row_needs_download(
+    download_status: str,
+    parse_status: str | None,
+    backfill_status: str | None,
+    file_present: bool,
+) -> bool:
+    """True only for a row that still needs its PDF.
+
+    A completed row is not downloaded again just because the runner disk is
+    empty. Parse downloads a missing file itself when it is about to read it.
+    """
+    if download_status == "pending":
+        return True
+    waiting = parse_status == "pending" or backfill_status == "pending"
+    return download_status == "done" and waiting and not file_present
+
+
 def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> None:
     dsn = get_dsn()
     session = make_session()
 
     where_clauses = [
-        "(p.download_status = 'pending'"
-        " OR (p.download_status = 'done' AND p.local_path IS NOT NULL))"
+        "("
+        "p.download_status = 'pending'"
+        " OR ("
+        "p.download_status = 'done'"
+        " AND (p.parse_status = 'pending' OR p.backfill_status = 'pending')"
+        ")"
+        ")"
     ]
     params: list[Any] = []
     if facility_id_filter:
@@ -116,43 +140,39 @@ def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> Non
 
     where_sql = " AND ".join(where_clauses)
 
-    # Fetch the work list up front with a short-lived connection.
-    # 'done' rows are included so a new runner can refill a cache that was
-    # thrown away. The limit is applied after the disk check so a capped run
-    # still downloads pending PDFs instead of stopping on files already cached.
+    # Only rows still waiting. Completed PDFs are not selected, so a fresh
+    # runner does not stat or re-download the whole cache.
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 f"""
-                SELECT p.id, p.pdf_url, p.facility_id, p.local_path, p.download_status
+                SELECT p.id, p.pdf_url, p.facility_id, p.local_path,
+                       p.download_status, p.parse_status, p.backfill_status
                 FROM pa_pdf_inventory p
                 WHERE {where_sql}
-                ORDER BY p.created_at
+                ORDER BY CASE WHEN p.download_status = 'pending' THEN 0 ELSE 1 END,
+                         p.created_at
                 """,
                 params,
             )
             rows = cur.fetchall()
 
     skipped = 0
-    pending_rows: list[tuple[Any, ...]] = []
-    repair_rows: list[tuple[Any, ...]] = []
+    work: list[tuple[Any, ...]] = []
     for row in rows:
-        _inv_id, _pdf_url, _facility_id, local_path, download_status = row
-        if download_status == "done" and local_path and Path(local_path).is_file():
+        _inv_id, _pdf_url, _facility_id, local_path, download_status, parse_status, backfill_status = row
+        file_present = bool(local_path) and Path(local_path).is_file()
+        if not row_needs_download(download_status, parse_status, backfill_status, file_present):
             skipped += 1
             continue
-        if download_status == "done":
-            repair_rows.append(row)
-        else:
-            pending_rows.append(row)
-    work = pending_rows + repair_rows
+        work.append(row)
     if limit:
         work = work[:limit]
 
     print(f"  {len(work)} PDFs to download ({skipped} already on disk)", flush=True)
 
     if dry_run:
-        for inv_id, pdf_url, _, _, _ in work[:5]:
+        for inv_id, pdf_url, *_rest in work[:5]:
             print(f"    {inv_id}  {pdf_url[:70]}")
         print("  ... (dry-run, no downloads)")
         return
@@ -160,7 +180,7 @@ def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> Non
     PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     ok = err = 0
 
-    for inv_id, pdf_url, _facility_id, _cached_path, download_status in work:
+    for inv_id, pdf_url, _facility_id, _cached_path, download_status, _parse_status, _backfill_status in work:
         try:
             local_path, digest, size = download_pdf(session, pdf_url, PDF_CACHE_DIR, str(inv_id))
             # Fresh connection per update — avoids session pooler idle-timeout disconnect

@@ -5,11 +5,13 @@ PA PDF Parse — extract deficiencies from downloaded PA inspection PDFs.
 For each pa_pdf_inventory row with parse_status='pending' and
 download_status='done':
   1. If the cached PDF is gone, re-download it into .firecrawl/pa-pdfs.
-  2. Read every page. Image-only cover pages in front of a text report are
-     not a scanned document. OCR only when the report itself has no text
-     layer (no "Description of Violation" and pages that are not just covers).
-  3. Split the text on every "Description of Violation" block. That count is
-     the source of truth — the model is not allowed to return a shorter list.
+  2. Read every page. Keep only pages whose footer survey date matches this
+     visit. A PDF with no page for that date is an error. Image covers in
+     front of the first text page are not OCR'd. A blank page after the
+     report starts is. ocrmypdf is run without --deskew.
+  3. Split the kept text on every "Description of Violation" block. That
+     count is the source of truth — the model is not allowed to return a
+     shorter list.
   4. Ask Claude Haiku for the plain-language fields, one chunk of whole
      blocks at a time. Write the JSON sidecar and set parse_status.
 
@@ -31,6 +33,7 @@ import subprocess
 import sys
 import tempfile
 import uuid
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +65,13 @@ _SECTION_HEADING = re.compile(
 )
 _REQUIREMENTS_LINE = re.compile(r"^\d+\.\s*Requirements\s*$", re.I)
 _VIOLATION_MARKER = "Description of Violation"
+# Footer on each survey page: "MM/DD/YYYY  n of N". OCR sometimes drops the spaces ("4of5").
+_PAGE_FOOTER = re.compile(
+    r"(\d{2}/\d{2}/\d{4})\s+\d+\s*of\s*\d+\s*$",
+    re.IGNORECASE,
+)
+_REQUIREMENTS_NUMBER = re.compile(r"^\s*(\d+)\.\s*Requirements\b", re.IGNORECASE | re.MULTILINE)
+_CLEAN_LETTER = "no regulatory citations have been identified"
 
 # PA-specific prompt — uses 55 Pa Code section vocabulary + DHS enforcement language
 _SYSTEM_PROMPT = """You are a structured data extractor for Pennsylvania DHS Office of Long-Term Living inspection reports for Personal Care Homes (55 Pa Code Ch 2600) and Assisted Living Residences (55 Pa Code Ch 2800).
@@ -147,6 +157,120 @@ def report_error_summary(label: str, counts: dict[str, int]) -> None:
 
 def violation_marker_count(text: str) -> int:
     return len(re.findall(re.escape(_VIOLATION_MARKER), text))
+
+
+def page_footer_date(text: str) -> date | None:
+    """Survey date in the page footer, or None when the page has no footer.
+
+    Body dates ("03/25/2024 - On-Site") are not the footer. The footer is the
+    last line shaped "MM/DD/YYYY  n of N".
+    """
+    for line in reversed(text.splitlines()):
+        match = _PAGE_FOOTER.search(line.strip())
+        if match:
+            return datetime.strptime(match.group(1), "%m/%d/%Y").date()
+    return None
+
+
+def pages_for_visit(pages: list[str], inspection_date: date) -> list[str]:
+    """Pages whose footer date is this visit. Never fall back to the whole file.
+
+    DHS staples several inspection summaries into one PDF. A citation on a
+    page dated for another visit belongs to that visit.
+    """
+    kept: list[str] = []
+    found: list[date] = []
+    for text in pages:
+        footer = page_footer_date(text)
+        if footer is not None:
+            found.append(footer)
+        if footer == inspection_date:
+            kept.append(text)
+    if not kept:
+        seen = ", ".join(sorted({day.isoformat() for day in found})) or "none"
+        raise RuntimeError(
+            f"no pages with survey date {inspection_date.isoformat()} (footers: {seen})"
+        )
+    return kept
+
+
+def _as_date(value: date | datetime | str | None) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str) and value.strip():
+        return date.fromisoformat(value.strip()[:10])
+    raise RuntimeError(
+        "inspection date is missing; refusing to count every survey in the PDF"
+    )
+
+
+def pages_requiring_ocr(texts: list[str]) -> list[int]:
+    """1-based pages that still need OCR.
+
+    Image covers that sit only before the first text page are skipped. A blank
+    page after the report has started is read, even when an earlier page
+    already contains a citation. A fully scanned file is read in full.
+    """
+    if not texts:
+        return []
+    textless = [
+        number
+        for number, text in enumerate(texts, start=1)
+        if len(text.strip()) < _PAGE_TEXT_MIN
+    ]
+    if not textless:
+        return []
+    first_text = next(
+        (
+            number
+            for number, text in enumerate(texts, start=1)
+            if len(text.strip()) >= _PAGE_TEXT_MIN
+        ),
+        None,
+    )
+    if first_text is None:
+        return textless
+    return [number for number in textless if number > first_text]
+
+
+def needs_ocr(texts: list[str]) -> bool:
+    """True when some page of the report itself is missing from the text layer."""
+    return bool(pages_requiring_ocr(texts))
+
+
+def ocr_is_false_zero(text: str, page_count: int) -> bool:
+    """A multi-page OCR with no citations is a failed read, not a clean letter.
+
+    The known clean letter says no regulatory citations were identified.
+    One- and two-page scans can still be that letter.
+    """
+    if violation_marker_count(text) > 0:
+        return False
+    if _CLEAN_LETTER in text.lower():
+        return False
+    return page_count > 2
+
+
+def ocr_requirements_conflict(text: str) -> str | None:
+    """OCR sometimes drops a citation. The numbered Requirements lines are the check.
+
+    Agreeing with the count of those lines, or with the highest number, is
+    enough. A text-layer PDF is not checked; only OCR output is.
+    """
+    markers = violation_marker_count(text)
+    if markers == 0:
+        return None
+    numbers = [int(match.group(1)) for match in _REQUIREMENTS_NUMBER.finditer(text)]
+    if not numbers:
+        return f"OCR found {markers} citations but no numbered Requirements lines"
+    if markers == len(numbers) or markers == max(numbers):
+        return None
+    return (
+        f"OCR found {markers} citations but {len(numbers)} Requirements lines "
+        f"(highest {max(numbers)})"
+    )
 
 
 def _is_section_heading(line: str) -> bool:
@@ -247,45 +371,19 @@ def has_text_layer(pdf_path: Path) -> bool:
     return any(len(text.strip()) >= _PAGE_TEXT_MIN for text in page_texts(pdf_path))
 
 
-def _leading_covers_only(texts: list[str]) -> bool:
-    """Image pages that sit strictly before the first text page are covers."""
-    seen_text = False
-    saw_leading_gap = False
-    for text in texts:
-        if len(text.strip()) < _PAGE_TEXT_MIN:
-            if seen_text:
-                return False
-            saw_leading_gap = True
-        else:
-            seen_text = True
-    return seen_text and saw_leading_gap
-
-
-def needs_ocr(texts: list[str]) -> bool:
-    """OCR a scanned report. Do not OCR image covers in front of text pages.
-
-    Citations are already countable when any page contains the violation
-    marker. A fully scanned report has textless pages and no marker, and the
-    blank pages are not merely leading covers.
-    """
-    has_gap = any(len(text.strip()) < _PAGE_TEXT_MIN for text in texts)
-    if not has_gap:
-        return False
-    if any(_VIOLATION_MARKER in text for text in texts):
-        return False
-    if _leading_covers_only(texts):
-        return False
-    return True
-
-
 def extract_text(pdf_path: Path) -> str:
     return "\n".join(part for part in page_texts(pdf_path) if part)
 
 
 def ocr_pdf(pdf_path: Path) -> Path:
+    """Add a text layer. --deskew is omitted on purpose.
+
+    On these DHS scans, ocrmypdf 16.7 with --deskew skips every page
+    ("page has no images") and the report comes back with zero citations.
+    """
     out = pdf_path.parent / f"{pdf_path.stem}_ocr.pdf"
     subprocess.run(
-        ["ocrmypdf", "--skip-text", "--deskew", str(pdf_path), str(out)],
+        ["ocrmypdf", "--skip-text", str(pdf_path), str(out)],
         check=True,
         capture_output=True,
     )
@@ -323,44 +421,49 @@ def _ocr_page_tesseract(pdf_path: Path, page_no: int) -> str:
         return result.stdout
 
 
-def ocr_textless_pages(pdf_path: Path, texts: list[str]) -> str:
-    """OCR only pages without a text layer, then return the report in page order.
+def ocr_textless_pages(pdf_path: Path, texts: list[str]) -> list[str]:
+    """OCR pages that still need it and return one string per page, in order.
 
-    ocrmypdf --skip-text already leaves text pages alone. Without it, render
-    just the blank pages and keep the pdfplumber text of the rest.
+    Leading image covers are not in that list. ocrmypdf --skip-text leaves
+    pages that already have text alone, which also fills a blank page that
+    follows the report. Without ocrmypdf, render just the required pages.
     """
-    missing = [
-        number
-        for number, text in enumerate(texts, start=1)
-        if len(text.strip()) < _PAGE_TEXT_MIN
-    ]
+    required = pages_requiring_ocr(texts)
     if shutil.which("ocrmypdf"):
         try:
-            return extract_text(ocr_pdf(pdf_path))
+            return page_texts(ocr_pdf(pdf_path))
         except subprocess.CalledProcessError as exc:
             detail = exc.stderr.decode(errors="replace")[:200] if exc.stderr else str(exc)
             raise RuntimeError(f"OCR failed: {detail}") from exc
     if shutil.which("pdftoppm") and shutil.which("tesseract"):
         merged = list(texts)
-        for page_no in missing:
+        for page_no in required:
             merged[page_no - 1] = _ocr_page_tesseract(pdf_path, page_no)
-        return "\n".join(part for part in merged if part)
-    raise RuntimeError(f"no OCR tool available for pages {missing}")
+        return merged
+    raise RuntimeError(f"no OCR tool available for pages {required}")
+
+
+def prepare_pages(pdf_path: Path) -> tuple[list[str], str]:
+    """Per-page text, OCR'd where the report itself has no text layer."""
+    texts = page_texts(pdf_path)
+    if not needs_ocr(texts):
+        return texts, "pdfplumber"
+    pages = ocr_textless_pages(pdf_path, texts)
+    joined = "\n".join(part for part in pages if part)
+    if not joined.strip():
+        raise RuntimeError("no text extracted from PDF after OCR")
+    if ocr_is_false_zero(joined, len(pages)):
+        raise RuntimeError(
+            f"OCR produced 0 citations on a {len(pages)}-page report"
+        )
+    method = "ocrmypdf+pdfplumber" if shutil.which("ocrmypdf") else "pdftoppm+tesseract"
+    return pages, method
 
 
 def extract_report_text(pdf_path: Path) -> tuple[str, str]:
     """Return (text, parse_method). Raises when a scanned report cannot be read."""
-    texts = page_texts(pdf_path)
-    if not needs_ocr(texts):
-        return "\n".join(part for part in texts if part), "pdfplumber"
-    text = ocr_textless_pages(pdf_path, texts)
-    # A one-page "no regulatory citations" letter has text and zero markers.
-    # Empty text after OCR is a failed read, not that letter.
-    if not text.strip():
-        raise RuntimeError("no text extracted from PDF after OCR")
-    if shutil.which("ocrmypdf"):
-        return text, "ocrmypdf+pdfplumber"
-    return text, "pdftoppm+tesseract"
+    pages, method = prepare_pages(pdf_path)
+    return "\n".join(part for part in pages if part), method
 
 
 def _strip_json_fence(raw: str) -> str:
@@ -505,11 +608,28 @@ def ensure_local_pdf(
         raise
 
 
+def visit_text(
+    pages: list[str],
+    inspection_date: date | datetime | str | None,
+    *,
+    from_ocr: bool,
+) -> str:
+    """Text of this visit only. OCR output is checked against Requirements lines."""
+    kept = pages_for_visit(pages, _as_date(inspection_date))
+    text = "\n".join(part for part in kept if part)
+    if from_ocr:
+        conflict = ocr_requirements_conflict(text)
+        if conflict:
+            raise RuntimeError(conflict)
+    return text
+
+
 def parse_pdf(
     _inv_id: str,
     local_path: str | None,
     dry_run: bool,
     pdf_url: str | None = None,
+    inspection_date: date | datetime | str | None = None,
 ) -> tuple[str, list[dict[str, Any]] | None, Path]:
     """
     Returns (parse_method, deficiencies_list, pdf_path).
@@ -517,10 +637,15 @@ def parse_pdf(
     parse_method: 'pdfplumber' | 'ocrmypdf+pdfplumber' | 'pdftoppm+tesseract'
     """
     pdf_path = ensure_local_pdf(local_path, pdf_url)
-    text, parse_method = extract_report_text(pdf_path)
+    pages, parse_method = prepare_pages(pdf_path)
+    text = visit_text(pages, inspection_date, from_ocr=parse_method != "pdfplumber")
 
     if dry_run:
-        print(f"    text_len={len(text)} parse_method={parse_method}", flush=True)
+        markers = violation_marker_count(text)
+        print(
+            f"    text_len={len(text)} markers={markers} parse_method={parse_method}",
+            flush=True,
+        )
         return parse_method, None, pdf_path
 
     deficiencies = parse_deficiencies_from_text(text)
@@ -538,7 +663,7 @@ def run(dry_run: bool, limit: int | None) -> None:
         with conn.cursor() as cur:
             cur.execute(
                 f"""
-                SELECT id, local_path, pdf_url
+                SELECT id, local_path, pdf_url, inspection_date
                 FROM pa_pdf_inventory
                 WHERE parse_status = 'pending'
                   AND download_status = 'done'
@@ -553,10 +678,10 @@ def run(dry_run: bool, limit: int | None) -> None:
 
     ok = err = skipped = 0
     error_classes: dict[str, int] = {}
-    for inv_id, local_path, pdf_url in rows:
+    for inv_id, local_path, pdf_url, inspection_date in rows:
         try:
             parse_method, deficiencies, pdf_path = parse_pdf(
-                str(inv_id), local_path, dry_run, pdf_url
+                str(inv_id), local_path, dry_run, pdf_url, inspection_date
             )
             if dry_run:
                 skipped += 1

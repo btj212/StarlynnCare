@@ -9,13 +9,17 @@ not have, or a second pass that double-counts the same finding.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import contextmanager
+from datetime import date
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,40 +28,61 @@ if str(ROOT) not in sys.path:
 
 import pdfplumber
 
-from scrapers.pa_pdf_backfill import dedupe_key
+from scrapers.pa_pdf_backfill import (
+    backfill_one,
+    dedupe_key,
+    empty_backfill_is_failure,
+)
+from scrapers.pa_pdf_download import row_needs_download
 from scrapers.pa_pdf_parse import (
     chunk_blocks,
     ensure_local_pdf,
     extract_report_text,
     needs_ocr,
+    ocr_is_false_zero,
+    ocr_pdf,
+    ocr_requirements_conflict,
+    page_footer_date,
+    page_texts,
+    pages_for_visit,
+    pages_requiring_ocr,
     pages_without_text,
     parse_deficiencies_from_text,
+    prepare_pages,
     should_fail,
     split_violation_blocks,
     violation_marker_count,
+    visit_text,
 )
 
 FIXTURE_DIR = ROOT / "scrapers" / "fixtures" / "pa_pdf"
 
-# Public DHS Licensing Inspection Summary files. Counts are the number of
-# "Description of Violation" markers, which is the citation count families see.
+# Public DHS Licensing Inspection Summary files. `markers` is this visit:
+# pages whose footer date matches the inventory inspection date. `file_markers`
+# is every marker in the PDF, including a survey stapled on from another date.
 FIXTURES = (
     {
         "name": "spring_mill_pointe_20260811.pdf",
         "sha256": "be24297b4e157306",
         "markers": 19,
+        "file_markers": 19,
+        "inspection_date": date(2026, 8, 11),
         "textless_pages": [1, 2, 3],
     },
     {
         "name": "symphony_square_20260605.pdf",
         "sha256": "67c80ed2bdc94177",
         "markers": 10,
+        "file_markers": 10,
+        "inspection_date": date(2026, 6, 5),
         "textless_pages": [1, 2, 3],
     },
     {
         "name": "atria_lafayette_hill_20240325.pdf",
         "sha256": "d245aaa86efd5ff8",
-        "markers": 18,
+        "markers": 15,
+        "file_markers": 18,
+        "inspection_date": date(2024, 3, 25),
         "textless_pages": [],
     },
 )
@@ -168,15 +193,18 @@ class PaPdfFixtureTests(unittest.TestCase):
                 self.assertTrue(data.startswith(b"%PDF"))
                 self.assertTrue(hashlib.sha256(data).hexdigest().startswith(str(fixture["sha256"])))
                 text = pdfplumber_text(path)
-                self.assertEqual(violation_marker_count(text), fixture["markers"])
+                self.assertEqual(violation_marker_count(text), fixture["file_markers"])
                 self.assertGreater(len(text), 12_000)
+                pages = page_texts(path)
+                visit = "\n".join(pages_for_visit(pages, fixture["inspection_date"]))
+                self.assertEqual(violation_marker_count(visit), fixture["markers"])
                 if shutil.which("pdftotext"):
                     layout = subprocess.check_output(
                         ["pdftotext", "-layout", str(path), "-"],
                         text=True,
                         errors="replace",
                     )
-                    self.assertEqual(violation_marker_count(layout), fixture["markers"])
+                    self.assertEqual(violation_marker_count(layout), fixture["file_markers"])
 
     def test_image_covers_do_not_send_the_report_to_ocr(self) -> None:
         """2026 PDFs have blank pages 1-3 and the citations from page 4. Those are not scanned reports."""
@@ -190,14 +218,15 @@ class PaPdfFixtureTests(unittest.TestCase):
                 ):
                     text, method = extract_report_text(path)
                 self.assertEqual(method, "pdfplumber")
-                self.assertEqual(violation_marker_count(text), fixture["markers"])
+                self.assertEqual(violation_marker_count(text), fixture["file_markers"])
 
     def test_mocked_model_keeps_every_block(self) -> None:
         """The old 12,000-character cut stored a short list and still marked the PDF done."""
         for fixture in FIXTURES:
             path = FIXTURE_DIR / str(fixture["name"])
             with self.subTest(fixture=fixture["name"]):
-                text = pdfplumber_text(path)
+                pages = page_texts(path)
+                text = "\n".join(pages_for_visit(pages, fixture["inspection_date"]))
                 blocks = split_violation_blocks(text)
                 self.assertEqual(len(blocks), fixture["markers"])
                 self.assertEqual(
@@ -260,32 +289,41 @@ class PaPdfBlockTests(unittest.TestCase):
         summary = "Description of Violation\n" + ("The inspector saw a citation. " * 3)
         letter = "no regulatory citations have been identified. " * 2
         self.assertFalse(needs_ocr([cover, cover, summary]))
+        self.assertEqual(pages_requiring_ocr([cover, cover, summary]), [])
         self.assertFalse(needs_ocr([cover, cover, letter]))
         self.assertFalse(needs_ocr([letter]))
         self.assertTrue(needs_ocr([cover, cover]))
+        self.assertEqual(pages_requiring_ocr([cover, cover]), [1, 2])
         self.assertTrue(needs_ocr([letter, cover]))
+        # A marker on an earlier page does not excuse a later page with no text.
+        self.assertTrue(needs_ocr([summary, cover]))
+        self.assertEqual(pages_requiring_ocr([summary, cover]), [2])
 
 
 class PaDedupeTests(unittest.TestCase):
-    def test_atria_repeat_sections_stay_distinct_and_a_rerun_does_not(self) -> None:
-        """Atria 3/25/2024 cites 187(a) twice. The same wording on a second pass is one row."""
-        text = pdfplumber_text(FIXTURE_DIR / "atria_lafayette_hill_20240325.pdf")
-        blocks = split_violation_blocks(text)
+    def test_atria_march_visit_is_15_and_the_may_survey_is_separate(self) -> None:
+        """The file has 18 markers. Three of them are dated 05/16/2024, not this visit.
+
+        187(a) is cited once on 3/25 and once on 5/16. Counting the whole file
+        would store both under the March visit.
+        """
+        pages = page_texts(FIXTURE_DIR / "atria_lafayette_hill_20240325.pdf")
+        file_blocks = split_violation_blocks("\n".join(pages))
+        self.assertEqual(len(file_blocks), 18)
+        visit = "\n".join(pages_for_visit(pages, date(2024, 3, 25)))
+        blocks = split_violation_blocks(visit)
         stubs = [(regulation_code(block), violation_description(block)) for block in blocks]
-        self.assertEqual(len(stubs), 18)
+        self.assertEqual(len(stubs), 15)
         self.assertTrue(all(code and description for code, description in stubs))
         codes = [code for code, _description in stubs]
-        self.assertEqual(codes.count("55 Pa Code § 2600.187(a)"), 2)
+        self.assertEqual(codes.count("55 Pa Code § 2600.187(a)"), 1)
         self.assertIn("55 Pa Code § 2600.51", codes)
         keys = [dedupe_key(code, description) for code, description in stubs]
-        self.assertEqual(len(set(keys)), 18)
-        self.assertEqual(len(set(keys + keys)), 18)
-        repeated = [code for code in codes if codes.count(code) > 1]
-        self.assertTrue(repeated)
-        for code in repeated:
-            descriptions = [description for found, description in stubs if found == code]
-            self.assertEqual(len(descriptions), len(set(descriptions)))
-            self.assertNotEqual(dedupe_key(code, descriptions[0]), dedupe_key(code, descriptions[1]))
+        self.assertEqual(len(set(keys)), 15)
+        file_codes = [regulation_code(block) for block in file_blocks]
+        self.assertEqual(file_codes.count("55 Pa Code § 2600.187(a)"), 2)
+        may = "\n".join(pages_for_visit(pages, date(2024, 5, 16)))
+        self.assertEqual(violation_marker_count(may), 3)
 
     def test_normalization_collapses_only_the_same_wording(self) -> None:
         """Punctuation and case are not a second citation. A different account is."""
@@ -368,6 +406,336 @@ class PaJobAndCacheTests(unittest.TestCase):
             )
             self.assertEqual(again, downloaded)
             self.assertEqual(session.urls, [])
+
+
+def _survey_page(footer: str, markers: int) -> str:
+    """One survey page: `markers` citations and a DHS footer."""
+    body = []
+    for index in range(1, markers + 1):
+        body.append(
+            f"{index}. Requirements\n"
+            "2600.\n"
+            f"{index}.a. The home shall do thing {index}.\n"
+            "Description of Violation\n"
+            f"The inspector saw issue {index} on {footer}.\n"
+            "Plan of Correction\n"
+            "The home corrected it.\n"
+        )
+    body.append(footer)
+    return "\n".join(body)
+
+
+def _pages_from_ocr_text(text: str) -> list[str]:
+    """Split an OCR dump into pages on the survey footer. The tools are not run."""
+    pages: list[str] = []
+    buf: list[str] = []
+    for line in text.splitlines(keepends=True):
+        buf.append(line)
+        if page_footer_date(line):
+            pages.append("".join(buf))
+            buf = []
+    if any(part.strip() for part in buf):
+        pages.append("".join(buf))
+    return pages
+
+
+class PaBundledPdfTests(unittest.TestCase):
+    def test_belle_reve_august_visit_is_not_in_the_pdf(self) -> None:
+        """20260811_22513 has 47 citations, none of them dated 08/11/2026.
+
+        19 are the 05/05/2026 survey and 28 are 02/18/2026. Storing 47 under
+        the August visit would put another inspection's findings on that page.
+        """
+        path = FIXTURE_DIR / "20260811_22513.pdf"
+        data = path.read_bytes()
+        self.assertTrue(data.startswith(b"%PDF"))
+        self.assertTrue(
+            hashlib.sha256(data).hexdigest().startswith("1da616f40d14e4d6")
+        )
+        pages = page_texts(path)
+        self.assertEqual(violation_marker_count("\n".join(pages)), 47)
+        with self.assertRaises(RuntimeError) as caught:
+            pages_for_visit(pages, date(2026, 8, 11))
+        message = str(caught.exception)
+        self.assertIn("2026-08-11", message)
+        self.assertIn("2026-05-05", message)
+        self.assertIn("2026-02-18", message)
+        may = "\n".join(pages_for_visit(pages, date(2026, 5, 5)))
+        february = "\n".join(pages_for_visit(pages, date(2026, 2, 18)))
+        self.assertEqual(violation_marker_count(may), 19)
+        self.assertEqual(violation_marker_count(february), 28)
+
+    def test_one_bundle_filed_under_three_dates_is_not_tripled(self) -> None:
+        """License 14141's pattern: one 83-citation bundle under three visits is 249 rows.
+
+        Each visit keeps its own pages. The three counts add to 83, not 249.
+        """
+        pages = [
+            _survey_page("04/08/2024 1 of 1", 20),
+            _survey_page("07/10/2024 1 of 1", 30),
+            _survey_page("08/05/2024 1 of 1", 33),
+        ]
+        self.assertEqual(violation_marker_count("\n".join(pages)), 83)
+        counts = []
+        for day in (date(2024, 4, 8), date(2024, 7, 10), date(2024, 8, 5)):
+            text = "\n".join(pages_for_visit(pages, day))
+            counts.append(violation_marker_count(text))
+        self.assertEqual(counts, [20, 30, 33])
+        self.assertEqual(sum(counts), 83)
+        self.assertEqual(83 * 3, 249)
+
+
+class PaOcrGuardTests(unittest.TestCase):
+    def test_ocrmypdf_command_does_not_deskew(self) -> None:
+        """--deskew makes ocrmypdf 16.7 skip these scans and return an empty report."""
+        seen: dict[str, list[str]] = {}
+
+        def fake_run(cmd: list[str], **_kwargs: object) -> subprocess.CompletedProcess[bytes]:
+            seen["cmd"] = list(cmd)
+            return subprocess.CompletedProcess(cmd, 0)
+
+        with patch("scrapers.pa_pdf_parse.subprocess.run", side_effect=fake_run):
+            ocr_pdf(Path("/tmp/scan.pdf"))
+        self.assertEqual(seen["cmd"][:2], ["ocrmypdf", "--skip-text"])
+        self.assertNotIn("--deskew", seen["cmd"])
+
+    def test_harmony_tesseract_text_has_19_and_deskew_text_is_an_error(self) -> None:
+        """Harmony at Harts Run 7/22/2024: tesseract recovers 19 markers; deskew recovers 0.
+
+        The 19 are not one visit. 17 sit on 04/29/2024 pages and 2 on 07/22/2024.
+        The July pages also contain a third Requirements line, so that OCR slice
+        is held instead of stored short. This test reads the saved OCR text. It
+        does not run ocrmypdf or tesseract.
+        """
+        tess = (FIXTURE_DIR / "20240722_45322.pdf.tess.txt").read_text()
+        deskew = (FIXTURE_DIR / "20240722_45322.pdf.ocrmypdf.txt").read_text()
+        self.assertEqual(violation_marker_count(tess), 19)
+        self.assertEqual(violation_marker_count(deskew), 0)
+        self.assertTrue(ocr_is_false_zero(deskew, 8))
+        self.assertFalse(ocr_is_false_zero(tess, 20))
+        pages = _pages_from_ocr_text(tess)
+        april = "\n".join(pages_for_visit(pages, date(2024, 4, 29)))
+        july = "\n".join(pages_for_visit(pages, date(2024, 7, 22)))
+        self.assertEqual(violation_marker_count(april), 17)
+        self.assertEqual(violation_marker_count(july), 2)
+        self.assertIsNone(ocr_requirements_conflict(april))
+        self.assertIsNotNone(ocr_requirements_conflict(july))
+        with self.assertRaises(RuntimeError):
+            visit_text(pages, date(2024, 7, 22), from_ocr=True)
+
+    def test_artis_deskew_text_is_not_stored_as_zero(self) -> None:
+        """Artis South Hills deskew output is a cover letter with 0 citations.
+
+        The review measured 15 without --deskew and 16 with tesseract. Those
+        texts are not in this fixture pack, so this test locks the failure
+        we do have: a multi-page OCR with no marker and no clean-letter line.
+        """
+        text = (FIXTURE_DIR / "20250211_44916.pdf.ocrmypdf.txt").read_text()
+        self.assertEqual(violation_marker_count(text), 0)
+        self.assertNotIn("no regulatory citations have been identified", text.lower())
+        self.assertTrue(ocr_is_false_zero(text, 10))
+        self.assertIn("Artis Senior Living of South Hills", text)
+
+    def test_a_two_page_clean_letter_is_a_real_ocr_zero(self) -> None:
+        """Hickman 11/28/2023 says no citations were identified. That zero is real."""
+        text = (FIXTURE_DIR / "20231128_14093.pdf.ocrmypdf.txt").read_text()
+        self.assertEqual(violation_marker_count(text), 0)
+        self.assertFalse(ocr_is_false_zero(text, 2))
+        self.assertFalse(ocr_is_false_zero(text, 6))
+
+    def test_prepare_pages_rejects_a_multipage_ocr_zero(self) -> None:
+        """needs_ocr was true and the report is more than two pages. Zero markers is an error."""
+        deskew = (FIXTURE_DIR / "20240722_45322.pdf.ocrmypdf.txt").read_text()
+        pages = [deskew, "second page of the scan", "third page of the scan"]
+        with patch("scrapers.pa_pdf_parse.page_texts", return_value=["", "", ""]):
+            with patch("scrapers.pa_pdf_parse.ocr_textless_pages", return_value=pages):
+                with self.assertRaises(RuntimeError) as caught:
+                    prepare_pages(Path("/tmp/scan.pdf"))
+        self.assertIn("0 citations", str(caught.exception))
+
+    def test_ocr_cross_check_catches_a_dropped_citation(self) -> None:
+        """15 markers against Requirements numbered through 16 is a miss, not a count."""
+        short = synthetic_report(15)
+        short += "\n16. Requirements\n2600.\nThe next citation was not read.\n"
+        conflict = ocr_requirements_conflict(short)
+        self.assertIsNotNone(conflict)
+        self.assertIn("15", conflict or "")
+        self.assertIn("16", conflict or "")
+        self.assertIsNone(ocr_requirements_conflict(synthetic_report(15)))
+
+
+class _Column:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+class _FakeCursor:
+    def __init__(self, conn: "_FakeConn") -> None:
+        self.conn = conn
+        self.description: list[_Column] | None = None
+        self._result: list[tuple[Any, ...]] = []
+
+    def __enter__(self) -> "_FakeCursor":
+        return self
+
+    def __exit__(self, *_exc: object) -> bool:
+        return False
+
+    def execute(self, sql: str, params: Any = None) -> None:
+        compact = " ".join(sql.split())
+        if compact.startswith("SELECT code, description"):
+            inspection_id = params[0]
+            columns = (
+                "code",
+                "description",
+                "inspector_narrative",
+                "plan_of_correction",
+                "severity",
+                "immediate_jeopardy",
+                "civil_money_penalty",
+                "status",
+                "cited_date",
+                "state_severity_raw",
+            )
+            self.description = [_Column(name) for name in columns]
+            self._result = [
+                tuple(row.get(name) for name in columns)
+                for row in self.conn.rows
+                if row["inspection_id"] == inspection_id
+            ]
+            return
+        if compact.startswith("DELETE FROM deficiencies"):
+            inspection_id = params[0]
+            self.conn.rows = [
+                row for row in self.conn.rows if row["inspection_id"] != inspection_id
+            ]
+            return
+        if compact.startswith("INSERT INTO deficiencies"):
+            self.conn.rows.append(dict(params))
+            return
+        if compact.startswith("UPDATE inspections"):
+            inspection_id = params[0]
+            self.conn.counts[inspection_id] = sum(
+                1 for row in self.conn.rows if row["inspection_id"] == inspection_id
+            )
+            return
+        raise AssertionError(compact)
+
+    def fetchall(self) -> list[tuple[Any, ...]]:
+        return list(self._result)
+
+
+class _FakeConn:
+    """In-memory stand-in. No database is opened."""
+
+    def __init__(self) -> None:
+        self.rows: list[dict[str, Any]] = []
+        self.counts: dict[str, int] = {}
+
+    def cursor(self) -> _FakeCursor:
+        return _FakeCursor(self)
+
+    @contextmanager
+    def transaction(self) -> Any:
+        yield
+
+
+class PaBackfillReplaceTests(unittest.TestCase):
+    def test_running_backfill_twice_keeps_the_same_row_count(self) -> None:
+        """The model rewrites each description. A second pass must replace, not append.
+
+        A shorter second list is held: the first rows stay, and a backup of
+        them was written before the successful replace.
+        """
+        inspection_id = "insp-1"
+        first = [
+            {
+                "code": "55 Pa Code § 2600.51",
+                "description": "First wording of the background check.",
+                "severity": "Citation",
+            },
+            {
+                "code": "55 Pa Code § 2600.85(a)",
+                "description": "First wording of the sanitary finding.",
+                "severity": "Citation",
+            },
+            {
+                "code": "55 Pa Code § 2600.187(a)",
+                "description": "First wording of the medication record.",
+                "severity": "Citation",
+            },
+        ]
+        second = [
+            {
+                "code": item["code"],
+                "description": item["description"].replace("First wording", "Rewritten wording"),
+                "severity": "Citation",
+            }
+            for item in first
+        ]
+        shorter = second[:2]
+        conn = _FakeConn()
+        with tempfile.TemporaryDirectory() as tmp:
+            pdf = Path(tmp) / "visit.pdf"
+            pdf.write_bytes(b"%PDF-1.4")
+            sidecar = pdf.parent / "visit.deficiencies.json"
+            sidecar.write_text(json.dumps(first))
+            written = backfill_one(conn, "inv-1", inspection_id, str(pdf), False)  # type: ignore[arg-type]
+            self.assertEqual(written, 3)
+            self.assertEqual(len(conn.rows), 3)
+            self.assertEqual(conn.counts[inspection_id], 3)
+
+            sidecar.write_text(json.dumps(second))
+            written = backfill_one(conn, "inv-1", inspection_id, str(pdf), False)  # type: ignore[arg-type]
+            self.assertEqual(written, 3)
+            self.assertEqual(len(conn.rows), 3)
+            self.assertEqual(conn.counts[inspection_id], 3)
+            stored = {row["description"] for row in conn.rows}
+            self.assertTrue(all(text.startswith("Rewritten wording") for text in stored))
+            backup = json_backup(pdf)
+            self.assertEqual(len(backup["rows"]), 3)
+            self.assertTrue(
+                all(row["description"].startswith("First wording") for row in backup["rows"])
+            )
+
+            sidecar.write_text(json.dumps(shorter))
+            with self.assertRaises(RuntimeError) as caught:
+                backfill_one(conn, "inv-1", inspection_id, str(pdf), False)  # type: ignore[arg-type]
+            self.assertIn("holding inspection", str(caught.exception))
+            self.assertEqual(len(conn.rows), 3)
+            self.assertTrue(all(row["description"].startswith("Rewritten wording") for row in conn.rows))
+
+    def test_a_week_of_clean_letters_is_not_a_failed_job(self) -> None:
+        """Zero rows is a failure only when a PDF that cited something wrote nothing."""
+        self.assertFalse(empty_backfill_is_failure(3, 0, 3))
+        self.assertTrue(empty_backfill_is_failure(3, 0, 0))
+        self.assertTrue(empty_backfill_is_failure(3, 0, 2))
+        self.assertFalse(empty_backfill_is_failure(3, 5, 0))
+        self.assertFalse(empty_backfill_is_failure(0, 0, 0))
+
+
+def json_backup(pdf: Path) -> dict[str, Any]:
+    path = pdf.parent / f"{pdf.stem}.deficiencies.backup.json"
+    loaded = json.loads(path.read_text())
+    if not isinstance(loaded, dict):
+        raise AssertionError("backup was not an object")
+    return loaded
+
+
+class PaDownloadSelectionTests(unittest.TestCase):
+    def test_completed_pdfs_are_not_downloaded_again(self) -> None:
+        """A fresh runner is missing ~10k finished PDFs. Those are not the weekly download.
+
+        A row still waiting on parse or backfill, whose file is gone, is.
+        """
+        self.assertFalse(row_needs_download("done", "done", "done", False))
+        self.assertFalse(row_needs_download("done", "done", "done", True))
+        self.assertTrue(row_needs_download("pending", "pending", "pending", False))
+        self.assertTrue(row_needs_download("pending", "done", "done", True))
+        self.assertTrue(row_needs_download("done", "pending", "pending", False))
+        self.assertFalse(row_needs_download("done", "pending", "pending", True))
+        self.assertTrue(row_needs_download("done", "done", "pending", False))
+        self.assertFalse(row_needs_download("done", "error", "error", False))
 
 
 if __name__ == "__main__":
