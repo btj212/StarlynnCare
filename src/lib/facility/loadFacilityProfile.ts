@@ -36,7 +36,7 @@ import {
 } from "@/lib/data/inspectionDates";
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { stateFromSlug } from "@/lib/states";
-import { getStateProfileConfig } from "@/lib/states/profileConfig";
+import { getStateProfileConfig, profileFacilityType } from "@/lib/states/profileConfig";
 import { citationCarriesScaleValue, regulatorPublishesSeverityScale } from "@/lib/states/severityScale";
 import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import { canonicalFor } from "@/lib/seo/canonical";
@@ -1039,10 +1039,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
       ?.inspection_date ?? null;
 
   // Per-state config — WA nursing homes get CMS/F-tag config
-  const cfg = getStateProfileConfig(
-    state.code,
-    facility.co_care_setting === "NH" ? "NH" : facility.wa_facility_type,
-  );
+  const cfg = getStateProfileConfig(state.code, profileFacilityType(facility));
 
   // ── Narrative validity gate ───────────────────────────────────────────────
   // True when at least one visible inspection has real parsed narrative text.
@@ -1209,6 +1206,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     lastComplaintDate: latestComplaint?.date ?? null,
     lastComplaintPrecision: latestComplaint?.precision,
     seriousFindings: seriousFindingCounts(deficiencies, cfg.formatSeverityTag),
+    classTypeACount: facility.state_code === "CA" ? citationSummary.typeA : undefined,
     percentile:
       (degradedSnapshot?.peer_set.n ?? 0) >= 10
         ? degradedSnapshot?.grade?.composite_percentile ?? null

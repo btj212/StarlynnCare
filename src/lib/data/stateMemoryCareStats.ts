@@ -127,6 +127,7 @@ async function facilityIdsForState(
       .select("id")
       .eq("publishable", true)
       .eq("state_code", code)
+      .order("id", { ascending: true })
       .range(from, from + ID_PAGE - 1);
     if (error) {
       console.error(`[stateMemoryCareStats] facility ids ${code}:`, error.message);
@@ -162,6 +163,7 @@ async function windowFindings(
         .in("facility_id", ids)
         .gte("inspection_date", cutoff)
         .lte("inspection_date", today)
+        .order("id", { ascending: true })
         .range(from, from + ID_PAGE - 1);
       if (error) {
         console.error("[stateMemoryCareStats] window inspections:", error.message);
@@ -217,6 +219,7 @@ async function countWithInspection(
         .in("facility_id", ids)
         .lte("inspection_date", today)
         .not("inspection_date", "is", null)
+        .order("id", { ascending: true })
         .range(from, from + ID_PAGE - 1);
       if (error) {
         console.error("[stateMemoryCareStats] withInspection:", error.message);
@@ -241,6 +244,13 @@ function isSerious(d: WindowFinding): boolean {
 
 let cachedStats: Promise<StateMemoryCareStats | null> | null = null;
 let cachedStatsKey: string | null = null;
+
+/** Tests only. A successful walk stays cached for the process otherwise. */
+export function clearStateMemoryCareStatsCache(): void {
+  cachedStats = null;
+  cachedStatsKey = null;
+  facilityIdCache.clear();
+}
 
 async function walkStateMemoryCareStats(
   supabase: SupabaseClient,

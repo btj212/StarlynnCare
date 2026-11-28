@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — Paged reads sort by id, and a Pennsylvania nursing home is facility_type "Nursing Home"
+
+**Decided:** The three paged reads in `loadStateMemoryCareStats` order by `id` before `.range()`, so a page of 1,000 cannot skip or repeat the next row. California's "tagged Type A" FAQ and JSON-LD sentence uses the same Type A head count as the headline. Pennsylvania nursing homes are the rows whose `facility_type` is `Nursing Home` (73 publishable rows also have `wa_facility_type` `NH`). Personal care leaves `facility_type` null. The CMS directory insert writes both values; the profile config follows `facility_type`.
+
+**Rejected:** Treating a severity index of 0.0 as "clean record." The May 11, 2026 cost study scored Sunrise at Yorba Linda at 0.0, and the current CDSS record has a Type B citation from an October 18, 2022 visit.
+
+**Source:** Re-review `/cursor/stores/bot/reviews/pr277_rereview_20261127.md`. Read-only SQL on `fwvrupjgwvvzqiutwwdg`. No database write.
+
+---
+
 ## 2026-11-28 — State walks and profile headlines are counted, not joined
 
 **Decided:** `loadStateMemoryCareStats` and `loadCaResearchCorpus` keep one promise per process for the day. A null result is dropped so the next call tries again. The newest inspection date is the max `inspection_date` already read while counting homes with an inspection. Window counts and the California research corpus use published facility ids in chunks and `count: "exact", head: true`. A profile renders the newest 25 visits. The headline, the last-citation date, and the 90-day severe line use those exact counts, and the severe line can read one later page when the newest 25 have no deficiency row. The full record page loads the window 100 visits at a time. No schema, index, or RPC was added.

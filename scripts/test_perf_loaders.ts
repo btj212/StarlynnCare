@@ -10,13 +10,19 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { COVERED_STATES } from "../src/lib/states";
-import { loadStateMemoryCareStats } from "../src/lib/data/stateMemoryCareStats";
 import {
+  clearStateMemoryCareStatsCache,
+  loadStateMemoryCareStats,
+} from "../src/lib/data/stateMemoryCareStats";
+import {
+  caTypeDistributionSentence,
   citationSummaryFromCounts,
   summarizeCitationWindow,
   type CitationInspectionInput,
   type CitationDeficiencyInput,
 } from "../src/lib/facility/citationWindow";
+import { buildFacilityFaqPairs, buildFaqSchemaFromPairs } from "../src/lib/seo/schema";
+import { getStateProfileConfig, profileFacilityType } from "../src/lib/states/profileConfig";
 import { InspectionSummary } from "../src/components/facility/profile/InspectionSummary";
 import { buildFacilityRecordSentence } from "../src/lib/seo/meta";
 import { TEXAS_RECENT_RESULTS } from "../src/lib/facility/texasRecord";
@@ -340,7 +346,189 @@ async function main(): Promise<void> {
   assert.doesNotMatch(visitMarkup, /0 citations/);
   assert.doesNotMatch(visitMarkup, /clean record/i);
 
+  clearStateMemoryCareStatsCache();
+  const paged = await loadStateMemoryCareStats(orderedPageClient());
+  assert.ok(paged);
+  const california = paged.rows.find((row) => row.code === "CA");
+  assert.ok(california);
+  assert.equal(california.published, 1001, "facility pages must not skip or repeat the 1,001st home");
+  assert.equal(california.withInspection, 1001, "inspection pages must not skip a home past the 1,000-row boundary");
+  assert.equal(california.findings, 1852, "a repeated inspection page would count the same finding twice");
+  assert.equal(california.seriousHomes, 1001);
+
+  const tailVisits: CitationInspectionInput[] = [];
+  const tailDefs: CitationDeficiencyInput[] = [];
+  for (let i = 0; i < 30; i += 1) {
+    const id = `tail-${i}`;
+    tailVisits.push({ id, inspection_date: "2026-06-01", is_complaint: false });
+    if (i >= 25) tailDefs.push({ inspection_id: id, class: "Type A" });
+  }
+  const tailToday = "2026-11-27";
+  const tailFull = summarizeCitationWindow({
+    inspections: tailVisits,
+    deficiencies: tailDefs,
+    stateCode: "CA",
+    today: tailToday,
+  });
+  const tailNewest = summarizeCitationWindow({
+    inspections: tailVisits.slice(0, 25),
+    deficiencies: tailDefs,
+    stateCode: "CA",
+    today: tailToday,
+  });
+  assert.equal(tailNewest.typeA, 0);
+  assert.equal(tailFull.typeA, 5);
+  const tailCounts = citationSummaryFromCounts(
+    {
+      windowInspections: 30,
+      windowComplaints: 0,
+      windowDeficiencies: 5,
+      windowTypeA: 5,
+      windowTypeB: 0,
+      substantiatedWithoutRows: 0,
+    },
+    "CA",
+  );
+  assert.deepEqual(tailCounts, tailFull);
+  const hero = caTypeDistributionSentence(tailCounts.typeA, tailCounts.typeB, tailCounts.other);
+  const tailFaq = buildFacilityFaqPairs({
+    facilityName: "Tail Home",
+    stateName: "California",
+    stateCode: "CA",
+    publishesSeverityScale: true,
+    pageUrl: "https://www.starlynncare.com/california/example/tail-home",
+    inspectionCount: tailCounts.inspections,
+    deficiencyCount: tailCounts.citations,
+    countsCoverThreeYears: true,
+    lastInspectionDate: "2026-06-01",
+    lastInspectionType: "annual",
+    lastInspectionIsComplaint: false,
+    seriousFindings: [],
+    classTypeACount: tailCounts.typeA,
+    percentile: null,
+    memoryCareLabel: "CDSS lists this home.",
+    licenseNumber: "1",
+    licenseUrl: null,
+    regulatorName: "California Dept. of Social Services",
+    regulatorAbbr: "CDSS",
+  });
+  const howMany = tailFaq.find((pair) => pair.q.startsWith("How many"))?.a ?? "";
+  assert.match(hero, /5 are Type A/);
+  assert.match(howMany, /5 are tagged Type A/);
+  assert.match(JSON.stringify(buildFaqSchemaFromPairs(tailFaq, tailFaq[0] ? "https://www.starlynncare.com/california/example/tail-home" : "")), /5 are tagged Type A/);
+
+  const storedNursingHome = {
+    state_code: "PA",
+    facility_type: "Nursing Home",
+    wa_facility_type: "NH",
+    co_care_setting: null,
+    license_type: null,
+  };
+  const nursing = getStateProfileConfig("PA", profileFacilityType(storedNursingHome));
+  assert.equal(nursing.scopeSeverityScale, "cms");
+  assert.equal(nursing.agencyShort, "CMS");
+  const columnOnly = { ...storedNursingHome, wa_facility_type: null };
+  assert.equal(
+    getStateProfileConfig("PA", profileFacilityType(columnOnly)).scopeSeverityScale,
+    "cms",
+    "Pennsylvania uses facility_type Nursing Home, not the Washington type column",
+  );
+  const personalCare = {
+    state_code: "PA",
+    facility_type: null,
+    wa_facility_type: null,
+    co_care_setting: null,
+    license_type: "PERSONAL CARE HOMES",
+  };
+  const personal = getStateProfileConfig("PA", profileFacilityType(personalCare));
+  assert.equal(personal.agencyShort, "PA DHS");
+  assert.equal(personal.scopeSeverityScale, undefined);
+
   console.log("test_perf_loaders: ok");
+}
+
+type PageRow = { id: string; facility_id?: string; inspection_id?: string; inspection_date?: string; class?: string; severity?: number };
+
+function orderedPageClient(): SupabaseClient {
+  const facilities = Array.from({ length: 1001 }, (_, index) => ({
+    id: `f${String(index).padStart(4, "0")}`,
+  }));
+  const inspections: PageRow[] = [];
+  const deficiencies: PageRow[] = [];
+  let n = 0;
+  for (let extra = 0; extra < 852; extra += 1) {
+    const id = `i${String(n).padStart(4, "0")}`;
+    inspections.push({ id, facility_id: "f0000", inspection_date: "2026-01-01" });
+    deficiencies.push({ id: `d${String(n).padStart(4, "0")}`, inspection_id: id, class: "Type A", severity: 4 });
+    n += 1;
+  }
+  for (let facility = 1; facility < 1001; facility += 1) {
+    const id = `i${String(n).padStart(4, "0")}`;
+    inspections.push({
+      id,
+      facility_id: `f${String(facility).padStart(4, "0")}`,
+      inspection_date: "2026-01-01",
+    });
+    deficiencies.push({ id: `d${String(n).padStart(4, "0")}`, inspection_id: id, class: "Type A", severity: 4 });
+    n += 1;
+  }
+
+  function rowsFor(table: string, stateCode: string | null, ids: string[] | null): PageRow[] {
+    if (table === "facilities") {
+      return stateCode === "CA" ? facilities : [];
+    }
+    if (table === "inspections") {
+      const wanted = new Set(ids ?? []);
+      return inspections.filter((row) => wanted.has(row.facility_id ?? ""));
+    }
+    const wanted = new Set(ids ?? []);
+    return deficiencies.filter((row) => wanted.has(row.inspection_id ?? ""));
+  }
+
+  return {
+    from(table: string) {
+      let stateCode: string | null = null;
+      let ids: string[] | null = null;
+      let ordered = false;
+      const builder = {
+        select() {
+          return builder;
+        },
+        eq(column: string, value: string) {
+          if (column === "state_code") stateCode = value;
+          return builder;
+        },
+        in(_column: string, values: string[]) {
+          ids = values;
+          return builder;
+        },
+        gte() {
+          return builder;
+        },
+        lte() {
+          return builder;
+        },
+        not() {
+          return builder;
+        },
+        order(column: string) {
+          if (column === "id") ordered = true;
+          return builder;
+        },
+        range(from: number, to: number) {
+          const rows = [...rowsFor(table, stateCode, ids)].sort((a, b) => a.id.localeCompare(b.id));
+          const page = ordered ? rows.slice(from, to + 1) : unstablePage(rows, from);
+          return Promise.resolve({ data: page, error: null });
+        },
+      };
+      return builder;
+    },
+  } as unknown as SupabaseClient;
+}
+
+function unstablePage(rows: PageRow[], from: number): PageRow[] {
+  if (from === 0) return rows.slice(0, 1000);
+  return rows.slice(Math.max(0, from - 500), from);
 }
 
 main().catch((err: unknown) => {

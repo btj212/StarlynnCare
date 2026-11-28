@@ -165,8 +165,27 @@ const STATE_CONFIGS: Record<string, StateProfileConfig> = {
 };
 
 /**
+ * The type string `getStateProfileConfig` should see.
+ * Washington and Colorado nursing homes are stored as "NH" on their own columns.
+ * Pennsylvania nursing homes are stored as facility_type "Nursing Home"
+ * (CMS directory ingest). Personal care leaves that column null.
+ */
+export function profileFacilityType(facility: {
+  state_code: string;
+  facility_type?: string | null;
+  wa_facility_type?: string | null;
+  co_care_setting?: string | null;
+}): string | null {
+  const state = facility.state_code.toUpperCase();
+  if (state === "PA") return facility.facility_type ?? null;
+  if (state === "CO" && facility.co_care_setting === "NH") return "NH";
+  return facility.wa_facility_type ?? null;
+}
+
+/**
  * Returns the profile config for the given state code.
- * For WA nursing homes (wa_facility_type = 'NH'), returns waNhProfileConfig.
+ * Washington and Colorado nursing homes pass "NH".
+ * Pennsylvania nursing homes pass facility_type "Nursing Home".
  * Falls back to a safe no-op config if the state is not registered.
  */
 export function getStateProfileConfig(
@@ -176,7 +195,9 @@ export function getStateProfileConfig(
   const upper = stateCode.toUpperCase();
   if (upper === "WA" && facilityType === "NH") return waNhProfileConfig;
   if (upper === "CO" && facilityType === "NH") return coNhProfileConfig;
-  if (upper === "PA" && facilityType === "NH") return paNhProfileConfig;
+  if (upper === "PA" && (facilityType === "Nursing Home" || facilityType === "NH")) {
+    return paNhProfileConfig;
+  }
   return STATE_CONFIGS[upper] ?? makeNullConfig(upper);
 }
 

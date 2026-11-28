@@ -972,6 +972,12 @@ export type FacilityFaqInput = {
   lastComplaintPrecision?: DatePrecision;
   seriousFindings: Array<{ label: string; count: number }>;
   /**
+   * California only. Exact Type A rows in the window, from the same head
+   * count as the headline. When set, the tagged sentence does not use
+   * `seriousFindings`, which may be only the newest 25 visits.
+   */
+  classTypeACount?: number;
+  /**
    * True only when every in-window citation carries the state's scale.
    * A "None are tagged" sentence needs this. A positive count does not.
    */
@@ -1045,9 +1051,17 @@ function seriousSentence(
   publishesSeverityScale: boolean | undefined,
   fullyMeasured: boolean | undefined,
   scope: "cms" | "cdphe" | null | undefined,
+  classTypeACount?: number,
 ): string {
   const allowed = publishesSeverityScale ?? regulatorPublishesSeverityScale(stateCode, scope);
   if (!allowed) return "";
+  if (stateCode.toUpperCase() === "CA" && classTypeACount != null) {
+    if (classTypeACount === 0) {
+      if (!fullyMeasured) return "";
+      return `None are tagged ${seriousTermWhenNone(stateCode, scope)}.`;
+    }
+    return `${classTypeACount} ${classTypeACount === 1 ? "is" : "are"} tagged Type A.`;
+  }
   const total = findings.reduce((sum, finding) => sum + finding.count, 0);
   if (total === 0) {
     if (!fullyMeasured) return "";
@@ -1131,6 +1145,7 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
       input.publishesSeverityScale,
       input.severityFullyMeasured,
       input.severityScope,
+      input.classTypeACount,
     );
     pairs.push({
       q: `Has ${name} been cited by ${input.regulatorAbbr}?`,

@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — A `.range()` page with no `order` skips or repeats the next thousand rows
+
+**What went wrong:** Three walks in `loadStateMemoryCareStats` paged with `.range(from, from + 999)` and never called `.order()`. PostgREST can return a different thousand rows on the next page. California has more than 1,000 publishable homes, so `/data` could drop or double a home. The same gap made the FAQ "tagged Type A" sentence count only the newest 25 visits.
+
+**What worked instead:** `.order("id")` on each of those reads, and the California tagged sentence uses the Type A head count.
+
+**Source:** Re-review of PR 277 at head `0d074ee`. No database write.
+
+---
+
 ## 2026-11-28 — `facilities!inner` newest and oldest queries hit the 3-second cap
 
 **What went wrong:** A preview build of main failed while generating pages. The anon role has `statement_timeout` of 3 seconds. `newestInspection` and the inspection-window oldest query selected `facilities!inner(...)` and ordered by date with `limit 1`. PostgREST turns that into a lateral join that sorts inspections for the state. California and Texas newest, and Illinois oldest, were the lines that canceled. `loadStateMemoryCareStats` was also uncached, so one build repeated that walk about ten times. `.limit(5000)` does not raise PostgREST's max-rows, so a dense deficiency page can stop at 1000.
