@@ -64,7 +64,7 @@ export const RESEARCH_INDEX: ResearchEntry[] = [
     kind: "analysis",
     title:
       "High-income California ZIPs do not have better memory care records",
-    dek: "In a May 2026 study of 484 California homes, ZIP-level household income explained almost none of the variation in deficiency rates (r = 0.23). Several of the highest-income ZIPs ranked among the worst-cited.",
+    dek: "In a May 2026 study of 484 California homes, ZIP-level household income explained almost none of the variation in deficiency rates (r = 0.23). The highest-income quartile averaged 1.32 deficiencies per inspection; the lowest averaged 0.52.",
     scope: "California",
     bylineDate: "May 2026",
     headlineFinding: "r = 0.23 income–deficiency correlation",

@@ -218,6 +218,37 @@ type FacilityFullInspectionsProps = {
   showPaidWatch?: boolean;
 };
 
+/** A date or an older row means the file is not empty. */
+function holdsInspectionVisit(profile: FacilityProfile): boolean {
+  return (
+    profile.hiddenOlderCount > 0 ||
+    profile.totals.inspections > 0 ||
+    Boolean(profile.facility.last_inspection_date) ||
+    Boolean(profile.latestInspection)
+  );
+}
+
+function fullRecordDeck(profile: FacilityProfile): string {
+  const { inspections, totals, facility, hasRealInspectionText } = profile;
+  if (inspections.length > 0 && !hasRealInspectionText) {
+    return "Inspection reports for this home have not been parsed yet.";
+  }
+  if (inspections.length === 0) {
+    if (holdsInspectionVisit(profile)) {
+      return "The inspection visits we hold are older than the last 3 years.";
+    }
+    return "No inspection is in the records we hold.";
+  }
+  if (facility.state_code === "WA" && profile.windowComplaints > 0) {
+    const visits = totals.inspections === 1 ? "inspection" : "inspections";
+    const complaints = profile.windowComplaints === 1 ? "investigation" : "investigations";
+    return `${totals.inspections} ${visits} and ${profile.windowComplaints} complaint ${complaints} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`;
+  }
+  const shown = inspections.length + profile.olderWindowVisits;
+  const noun = shown === 1 ? "inspection" : "inspections";
+  return `${shown} ${noun} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`;
+}
+
 export function FacilityFullInspections({
   profile,
   showPaidWatch = false,
@@ -244,13 +275,7 @@ export function FacilityFullInspections({
               Every inspection visit, <em>in plain language.</em>
             </>
           }
-          deck={
-            inspections.length === 0
-              ? "No inspection records yet indexed for this facility."
-              : profile.facility.state_code === "WA" && profile.windowComplaints > 0
-                ? `${totals.inspections} inspection${totals.inspections === 1 ? "" : "s"} and ${profile.windowComplaints} complaint ${profile.windowComplaints === 1 ? "investigation" : "investigations"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
-                : `${inspections.length + profile.olderWindowVisits} inspection${inspections.length + profile.olderWindowVisits === 1 ? "" : "s"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
-          }
+          deck={fullRecordDeck(profile)}
         />
 
         {/* PDF-links-only banner — shown when no inspection has parsed narrative text */}
@@ -260,7 +285,7 @@ export function FacilityFullInspections({
               Note
             </span>
             <p className="text-[13.5px] leading-relaxed text-amber-900">
-              Inspection reports for this facility have not yet been parsed — we only have links to the
+              Inspection reports for this home have not been parsed yet. We only have links to the
               regulator&rsquo;s PDF documents. Open the PDFs below to see the actual findings.
               Citation text, plain-language summaries, and quality scores are not available until
               the PDFs are processed.
@@ -301,12 +326,14 @@ export function FacilityFullInspections({
         )}
 
         {inspections.length === 0 ? (
+          holdsInspectionVisit(profile) ? null : (
           <div className="border border-paper-rule bg-paper-2 px-6 py-8 text-center">
             <p className="font-[family-name:var(--font-mono)] text-[12px] text-ink-3 tracking-wide">
               Individual inspection and deficiency records are scraped in a separate pipeline. This
               section will populate with dated citations as that pipeline runs.
             </p>
           </div>
+          )
         ) : (
           <div className="overflow-hidden rounded-[18px] border border-clearing-rule-2 bg-clearing-card shadow-[var(--shadow-card)]">
             {inspections.slice(0, VISIBLE_VISITS).map((insp) => (

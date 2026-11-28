@@ -1,6 +1,7 @@
 import type { CareCategory } from "@/lib/types";
 import { TrackedProfileLink } from "@/components/analytics/TrackedProfileLink";
-import { peerRankBarFillCss } from "@/lib/peerRankBar";
+import { peerMedianLines } from "@/lib/facility/pageCopy";
+import { REGULATOR_ABBR } from "@/lib/seo/meta";
 import { stateFromCode } from "@/lib/states";
 
 export type MobileGradeFacility = {
@@ -18,26 +19,28 @@ export type MobileGradeFacility = {
   sev_pct: number | null;
   rep_pct: number | null;
   freq_pct: number | null;
+  severityValue?: number | null;
+  severityPeerMedian?: number | null;
+  repeatsValue?: number | null;
+  repeatsPeerMedian?: number | null;
+  frequencyValue?: number | null;
+  frequencyPeerMedian?: number | null;
 };
-
-function MobileGradeBar({ label, pct }: { label: string; pct: number | null }) {
-  const w = pct != null ? Math.min(100, Math.max(0, pct)) : 0;
-  const fill = peerRankBarFillCss(pct);
-  return (
-    <div className="m-bar">
-      <span className="lbl">{label}</span>
-      <span className="track">
-        <span className="fill" style={{ width: `${w}%`, background: fill }} />
-      </span>
-      <span className="pct">{pct != null ? Math.round(pct) : "—"}</span>
-    </div>
-  );
-}
 
 export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFacility }) {
   const stateInfo = stateFromCode(facility.state_code);
   const stateSlug = stateInfo?.slug ?? facility.state_code.toLowerCase();
   const profileUrl = `/${stateSlug}/${facility.city_slug}/${facility.slug}`;
+  const lines = peerMedianLines({
+    agencyShort: REGULATOR_ABBR[facility.state_code] ?? "state",
+    windowMonths: 36,
+    severityValue: facility.severityValue,
+    severityPeerMedian: facility.severityPeerMedian,
+    repeatsValue: facility.repeatsValue,
+    repeatsPeerMedian: facility.repeatsPeerMedian,
+    frequencyValue: facility.frequencyValue,
+    frequencyPeerMedian: facility.frequencyPeerMedian,
+  });
 
   return (
     <TrackedProfileLink href={profileUrl} facilityId={facility.id} className="m-facility block no-underline">
@@ -53,17 +56,18 @@ export function MobileFacilityGradeCard({ facility }: { facility: MobileGradeFac
           </div>
         </div>
       </div>
-      <div className="m-fc-grade">
-        <p className="m-fc-peer-hdr">Peer percentiles · higher is better</p>
-        <div className="m-bars">
-          <MobileGradeBar label="Severity" pct={facility.sev_pct} />
-          <MobileGradeBar label="Repeat rate" pct={facility.rep_pct} />
-          <MobileGradeBar label="Frequency" pct={facility.freq_pct} />
+      {lines.length > 0 ? (
+        <div className="m-fc-grade">
+          <ul className="m-0 flex list-none flex-col gap-2 p-0 text-[13px] leading-snug text-ink-2">
+            {lines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <p className="m-fc-peer-note">
+            Not medical advice. The figures compare published inspections with similar-size homes.
+          </p>
         </div>
-        <p className="m-fc-peer-note">
-          Not medical advice — inspection summaries only, same methodology as full profiles.
-        </p>
-      </div>
+      ) : null}
       <div className="m-fc-foot">
         <span>{stateInfo?.name ?? facility.state_code} · public inspection data</span>
         <span className="text-teal font-medium">View profile →</span>

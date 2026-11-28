@@ -1,8 +1,10 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { citationRecordPhrase } from "@/lib/facility/pageCopy";
 import { missingPhoneRecordLabel, parsePhone } from "@/lib/facility/phone";
 import { texasRecentResultsUnpublished } from "@/lib/facility/texasRecord";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
+import { REGULATOR_ABBR } from "@/lib/seo/meta";
 import { regulatorLicensePageFor } from "@/lib/seo/schema";
 
 function fmt(iso: string | null | undefined): string {
@@ -41,6 +43,23 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
     ? null
     : regulatorLicensePageFor(facility.state_code, facility.license_number);
   const phoneRecordLabel = phone ? null : missingPhoneRecordLabel(facility.state_code);
+  const agency = profile.cfg?.agencyShort ?? REGULATOR_ABBR[facility.state_code] ?? "state";
+  const citationText = texasRecentResultsUnpublished(
+    facility.state_code,
+    totals.inspections ?? 0,
+    totals.deficiencies ?? 0,
+  )
+    ? "Not published"
+    : citationRecordPhrase({
+        stateCode: facility.state_code,
+        regulatorAbbr: agency,
+        windowCount: totals.deficiencies ?? 0,
+        inspectionCount: totals.inspections ?? 0,
+        heldCount: totals.allTimeDeficiencies,
+        olderCitation: totals.olderCitation,
+        lastCitationDate: totals.lastCitationAllTime ?? (totals.olderCitation ? totals.lastCitation : null),
+        earliestInspectionDate: totals.earliestInspectionDate,
+      });
 
   return (
     <div className="border-y border-clearing-rule bg-clearing-tint">
@@ -58,12 +77,8 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
             ) : null}
           </QfCell>
           <QfCell label="Last citation">
-            <span className="text-[22px]">
-              {totals.lastCitation
-                ? fmt(totals.lastCitation)
-                : texasRecentResultsUnpublished(facility.state_code, totals.inspections, totals.deficiencies)
-                  ? "Not published"
-                  : "None on record"}
+            <span className="font-[family-name:var(--font-sans)] text-[15px] font-medium leading-snug">
+              {citationText}
             </span>
           </QfCell>
           <QfCell label="Operated by">

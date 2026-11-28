@@ -9,6 +9,7 @@ import {
   SERIOUS_COUNT_SENTENCE,
   SERIOUS_PROFILE_TAGS,
 } from "@/lib/content/seriousCitationTerms";
+import { NO_INSPECTION_DATE_WE_HOLD } from "@/lib/facility/pageCopy";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
 const ILLUSTRATION = {
@@ -107,7 +108,7 @@ function ReportTable({ rows }: { rows: StateMemoryCareStat[] }) {
                   {formatCount(row.seriousHomes)}
                 </td>
                 <td className="py-4 font-[family-name:var(--font-mono)] text-sm text-ink">
-                  {formatRecordDate(row.newestInspection) ?? "None on record"}
+                  {formatRecordDate(row.newestInspection) ?? NO_INSPECTION_DATE_WE_HOLD}
                 </td>
               </tr>
             ))}

@@ -391,7 +391,7 @@ A "regulatory citation" or "deficiency" is a finding by a CDSS licensing agent t
 
 "Repeat citation" in this analysis means the same CCR Title 22 regulation code was cited at the same facility in 3 or more distinct inspection visits in our database (May 2019 – May 2026). A repeat citation does not mean the violation was never corrected between visits.
 
-"Chain" means facilities sharing the same operator name as recorded in CDSS licensing records. CDSS records list the legal entity, which may differ from consumer brand names. Chain rankings include only operators with 3 or more facilities and at least 50 total licensed beds in our dataset. Where a single operating brand appears under multiple legal entity names in CDSS records, rows have been combined for readability.
+"Chain" means facilities sharing the same operator name as recorded in CDSS licensing records. CDSS records list the legal entity, which may differ from consumer brand names. The chain table includes only operators with 3 or more facilities and at least 50 total licensed beds in our dataset. Where a single operating brand appears under multiple legal entity names in CDSS records, rows have been combined for readability.
 
 "Weighted Citation Score" is a relative index of citation frequency and severity in our dataset over the last three years. It is not a safety rating or clinical quality measure.
 

@@ -77,7 +77,7 @@ export function NationalHomeSections({ data }: Props) {
               >
                 Find memory care you can{" "}
                 <em className="italic text-teal">trust,</em>{" "}
-                ranked with regulator data.
+                with regulator data.
               </h1>
 
               <p className="mb-6 max-w-[44ch] font-[family-name:var(--font-sans)] text-[18px] leading-[1.55] text-[#4A564F] sm:mb-8 sm:text-[19px]">
@@ -148,7 +148,7 @@ export function NationalHomeSections({ data }: Props) {
       <section id="browse" className="border-b border-clearing-rule bg-clearing-tint">
         <div className={`${gutter} py-16 md:py-20`}>
           <SectionHead
-            title={<>Top cities by facility count, <em>across all states.</em></>}
+            title={<>Cities by listed homes, <em>across all states.</em></>}
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {topCities.map((c) => (

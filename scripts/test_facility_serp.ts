@@ -205,7 +205,7 @@ const sentence = buildFacilityRecordSentence({
 });
 assert.equal(
   sentence,
-  "5 ADHS citations on record in the last 3 years, last inspected Sep 2024, license AL11370C.",
+  "5 citations in the last 3 years, last inspected Sep 2024, license AL11370C.",
 );
 
 const none = buildFacilityRecordSentence({
@@ -229,7 +229,9 @@ const desc = buildFacilityDescription({
   lastInspected: null,
 });
 assert.equal(/review/i.test(desc), false);
-assert.match(desc, /no OR DHS inspection on record/);
+assert.match(desc, /no OR DHS inspection is in the records we hold/);
+assert.doesNotMatch(desc, /\bon record\b/);
+assert.doesNotMatch(desc, /\bTop \d/);
 
 const answer = buildFacilityDirectAnswer({
   name: "Brookdale Tanque Verde",
@@ -291,7 +293,8 @@ const faq = buildFacilityFaqPairs({
 const cited = faq.find((pair) => pair.q === "Has Brookdale Tanque Verde been cited by ADHS?");
 const counted = faq.find((pair) => pair.q.startsWith("How many"));
 assert.ok(cited);
-assert.match(cited.a, /5 deficiencies from ADHS in the last three years/);
+assert.match(cited.a, /5 citations in the last 3 years/);
+assert.doesNotMatch(cited.a, /^No\./);
 assert.match(counted?.a ?? "", /5 deficiencies/);
 assert.equal(cited.a.includes("all time"), false);
 

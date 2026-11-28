@@ -29,7 +29,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.starlynncare.com"),
-  title: "California Memory Care, Ranked by Inspection Data | StarlynnCare",
+  title: "California Memory Care, with Inspection Records | StarlynnCare",
   description:
     "California memory care with real CDSS inspection records, citations, and quality context. No referral commissions.",
   icons: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "StarlynnCare — Find memory care you can trust, ranked with regulator data.",
+    title: "StarlynnCare — Find memory care you can trust, with regulator data.",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care.",
     url: "https://www.starlynncare.com",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StarlynnCare — Find memory care you can trust, ranked with regulator data.",
+    title: "StarlynnCare — Find memory care you can trust, with regulator data.",
     description:
       "Real inspection records. No commissions. Built for families searching for memory care.",
     images: ["/og-default.png"],

@@ -1,8 +1,5 @@
-import type { ReactNode } from "react";
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { SectionHead } from "@/components/editorial/SectionHead";
-import { peerRankBarFillCss } from "@/lib/peerRankBar";
-import { ordinalSuffix } from "@/lib/format/ordinalSuffix";
 
 const CARE_LABEL: Record<string, string> = {
   rcfe_memory_care: "RCFE memory care",
@@ -17,78 +14,25 @@ const CARE_LABEL: Record<string, string> = {
 
 type MetricCellProps = {
   label: string;
-  percentile: number | null;
-  peerMedian?: number | null;
-  desc: string;
-  emptyMessage?: ReactNode;
+  value: number | null | undefined;
+  peerMedian: number | null | undefined;
+  caption: string;
 };
 
-function MetricCell({ label, percentile, peerMedian, desc, emptyMessage }: MetricCellProps) {
-  // Suppress when the metric is degenerate: peer_median = 0 means the majority
-  // of the peer group has zero repeat citations, so everyone ties at 100th and
-  // the ranking carries no information. Treat identically to the null/no-data case.
-  const isDegenerate = peerMedian === 0 && percentile === 100;
-
-  // null means the metric is genuinely unavailable (e.g. no routine inspections
-  // for frequency rank) — render a suppressed card rather than a misleading 0th.
-  if (percentile === null || isDegenerate) {
-    const suppressedMsg = isDegenerate
-      ? <>Not enough repeat citations<br />among peers to rank.</>
-      : emptyMessage ?? <>No routine inspections<br />on file.</>;
-    return (
-      <div className="bg-paper-2 p-7 pb-6 flex flex-col">
-        <div className="mb-4 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-ink-3">
-          {label}
-        </div>
-        <div className="font-[family-name:var(--font-display)] text-[28px] leading-[1.2] tracking-[-0.02em] text-ink-3 italic">
-          {suppressedMsg}
-        </div>
-        <div className="mt-4 font-[family-name:var(--font-display)] text-[16px] italic leading-[1.3] text-ink-2">
-          {desc}
-        </div>
-      </div>
-    );
-  }
-
-  const pct = percentile;
-  const fillColor = peerRankBarFillCss(pct);
+function MetricCell({ label, value, peerMedian, caption }: MetricCellProps) {
+  if (value == null || peerMedian == null) return null;
+  if (!Number.isFinite(value) || !Number.isFinite(peerMedian)) return null;
 
   return (
     <div className="bg-paper-2 p-7 pb-6">
       <div className="mb-4 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-ink-3">
         {label}
       </div>
-      <div
-        className="font-[family-name:var(--font-display)] text-[96px] leading-[0.85] tracking-[-0.04em]"
-        style={{ color: fillColor }}
-      >
-        {pct}
-        <sup className="font-[family-name:var(--font-mono)] text-[0.3em] tracking-[0.04em] text-ink-2 align-super">{ordinalSuffix(pct)}%</sup>
+      <div className="font-[family-name:var(--font-display)] text-[64px] leading-[0.9] tracking-[-0.04em] text-ink">
+        {value.toFixed(2)}
       </div>
       <div className="mt-4 font-[family-name:var(--font-display)] text-[16px] italic leading-[1.3] text-ink-2">
-        {desc}
-      </div>
-      {/* Scale bar */}
-      <div className="relative mt-5 h-7">
-        {/* Track */}
-        <div className="absolute left-0 right-0 top-3 h-1 border border-paper-rule bg-paper" />
-        {/* Tertile zone markers (faint) */}
-        <div className="absolute top-3 h-1 opacity-20" style={{ left: 0, width: "33.33%", background: "var(--color-grade-f)" }} />
-        <div className="absolute top-3 h-1 opacity-20" style={{ left: "33.33%", width: "33.34%", background: "var(--color-gold)" }} />
-        <div className="absolute top-3 h-1 opacity-20" style={{ left: "66.67%", width: "33.33%", background: "var(--color-grade-a)" }} />
-        {/* Fill */}
-        <div
-          className="absolute left-0 top-3 h-1"
-          style={{ width: `${pct}%`, background: fillColor }}
-        />
-        {/* Median tick */}
-        <div className="absolute left-1/2 top-1.5 h-4 w-px -translate-x-1/2 bg-ink-3" />
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 font-[family-name:var(--font-mono)] text-[9px] text-ink-3 tracking-[0.06em]">
-          peer median
-        </div>
-        {/* Ends */}
-        <div className="absolute left-0 top-[26px] font-[family-name:var(--font-mono)] text-[9px] text-ink-4 tracking-[0.06em]">0</div>
-        <div className="absolute right-0 top-[26px] font-[family-name:var(--font-mono)] text-[9px] text-ink-4 tracking-[0.06em]">100</div>
+        {caption} {peerMedian.toFixed(2)}
       </div>
     </div>
   );
@@ -122,11 +66,11 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
       <div className="mx-auto max-w-[1280px] px-4 md:px-8">
         <SectionHead
           label="Peer Comparison"
-          title={peerN < 10 ? <>Not ranked against a peer group.</> : <>Compared to {peerTitle}</>}
+          title={peerN < 10 ? <>A comparison needs at least 10 homes.</> : <>Compared to {peerTitle}</>}
           deck={
             peerN < 10
-              ? `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.agencyLong}. A rank needs at least 10 homes in the same care setting.`
-              : `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.inspectionWindowMonths}-month window. Higher percentile = better performance on inspection record.` +
+              ? `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.agencyLong}. A comparison needs at least 10 homes in the same care setting.`
+              : `${careLabel.charAt(0).toUpperCase() + careLabel.slice(1)} · ${cfg.inspectionWindowMonths}-month window. The figure is this home's measure against the similar-size peer median.` +
                 ` Source: ${cfg.agencyLong}.`
           }
           invert
@@ -138,41 +82,34 @@ export function FacilityPeerRank({ profile }: { profile: FacilityProfile }) {
           </div>
         ) : peerN < 10 ? (
           <div className="rounded-sm bg-paper-2/10 px-6 py-8 text-center text-paper/60 font-[family-name:var(--font-mono)] text-[13px] tracking-wide">
-            Not enough homes in this care setting for a rank. The inspection record below is the record.
+            Not enough homes in this care setting for a comparison. The inspection record below is the record.
           </div>
         ) : (
           <>
             <div className="grid gap-1 md:grid-cols-3">
               <MetricCell
-                label="Severity rank"
-                percentile={snapshot.metrics.severity.percentile}
-                desc="Weighted citations per bed."
-                emptyMessage={
-                  snapshot.severity_measured === false ? (
-                    <>
-                      The state does not record
-                      <br />
-                      a severity for these findings.
-                    </>
-                  ) : undefined
-                }
+                label="Severity"
+                value={snapshot.metrics.severity.value}
+                peerMedian={snapshot.metrics.severity.peer_median}
+                caption="weighted citations per bed · peer median"
               />
               <MetricCell
-                label="Repeat rank"
-                percentile={snapshot.metrics.repeats.percentile}
+                label="Repeat share"
+                value={snapshot.metrics.repeats.value}
                 peerMedian={snapshot.metrics.repeats.peer_median}
-                desc="Repeat deficiencies as share of total."
+                caption="repeat deficiencies as a share of total · peer median"
               />
               <MetricCell
-                label="Frequency rank"
-                percentile={snapshot.metrics.frequency.percentile}
-                desc="Deficiencies per inspection."
+                label="Frequency"
+                value={snapshot.metrics.frequency.value}
+                peerMedian={snapshot.metrics.frequency.peer_median}
+                caption="deficiencies per inspection · peer median"
               />
             </div>
             <p className="mt-5 font-[family-name:var(--font-mono)] text-[11px] text-paper/50 tracking-[0.06em] leading-relaxed">
               {snapshot.severity_measured === false
-                ? `The severity rank is not shown. ${cfg.agencyShort} does not record a severity on these findings. Frequency: fewer citations = higher percentile. Repeat rate: lower repeat citation share = higher percentile.`
-                : `Rankings based on ${cfg.inspectionWindowMonths}-month ${cfg.agencyShort} inspection data. Severity and frequency: fewer citations = higher percentile. Repeat rate: lower repeat citation share = higher percentile.`}
+                ? `${cfg.agencyShort} does not record a severity on these findings. The other figures are this home's measure against the similar-size peer median over ${cfg.inspectionWindowMonths} months.`
+                : `Figures are this home's measure against the similar-size peer median over ${cfg.inspectionWindowMonths} months (${cfg.agencyShort}). A lower weighted-citation figure means fewer citations per bed.`}
             </p>
           </>
         )}

@@ -14,7 +14,7 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
   const anchors: Anchor[] = [
     { href: "#reviews", label: "Reviews", show: profile.reviews.length > 0 },
     { href: "#snapshot", label: "Snapshot", show: true },
-    { href: "#peer", label: "Peer rank", show: true },
+    { href: "#peer", label: "Peer comparison", show: true },
     { href: "#record", label: "Record", show: true },
     { href: "#rules", label: "Rules", show: rulesCards.length > 0 },
     { href: "#tour", label: "Tour", show: tourQuestions.length >= 3 },
@@ -52,7 +52,7 @@ export function FacilitySubNav({ profile }: { profile: FacilityProfile }) {
           <FacilitySubNavAnchors anchors={anchors} />
 
           {/* Mobile "jump to facts" chips — horizontally scrollable, one tap to
-              the peer rank / citation record a high-intent visitor came for.
+              the peer comparison / citation record a high-intent visitor came for.
               Right-edge fade signals scrollability instead of a hard text cut. */}
           <nav
             className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto md:hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,#000_90%,transparent)]"

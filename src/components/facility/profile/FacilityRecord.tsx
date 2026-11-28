@@ -4,7 +4,7 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { formatInspectionListDate } from "@/lib/format/formatRecordDate";
-import { citationCountPhrase } from "@/lib/facility/citationWindow";
+import { citationRecordPhrase } from "@/lib/facility/pageCopy";
 import { TEXAS_RECENT_RESULTS, texasRecentResultsUnpublished, texasRegulatorRecordUrl } from "@/lib/facility/texasRecord";
 import { OlderVisits, VISIBLE_VISITS } from "./OlderVisits";
 import Link from "next/link";
@@ -258,10 +258,26 @@ function ScopeSeverityGrid({
   );
 }
 
-function caDeck(count: number): string {
-  const phrase = citationCountPhrase({ count, agencyShort: "CDSS", window: "profile" });
-  const lead = /^[a-z]/.test(phrase) ? `${phrase.charAt(0).toUpperCase()}${phrase.slice(1)}` : phrase;
-  return count === 0 ? `${lead}.` : `${lead}. Each bar is a month with a citation.`;
+function recordDeck(profile: FacilityProfile): string {
+  const { facility, totals, cfg } = profile;
+  const phrase = citationRecordPhrase({
+    stateCode: facility.state_code,
+    regulatorAbbr: cfg.agencyShort,
+    windowCount: totals.deficiencies,
+    inspectionCount: totals.inspections,
+    heldCount: totals.allTimeDeficiencies,
+    olderCitation: totals.olderCitation,
+    lastCitationDate: totals.lastCitationAllTime,
+    earliestInspectionDate: totals.earliestInspectionDate,
+  });
+  if (
+    phrase.includes("records we hold") ||
+    phrase.startsWith("HHSC") ||
+    phrase.startsWith("Texas Health")
+  ) {
+    return `${phrase}.`;
+  }
+  return `${phrase}. Each bar is a month with a citation.`;
 }
 
 // ─── Compact inspection list ────────────────────────────────────────────────
@@ -356,11 +372,7 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
               </>
             ) : profile.facility.state_code === "TX" && totals.deficiencies === 0
                 ? "HHSC has not published a citation count for this home in the last 3 years."
-                : profile.facility.state_code === "CA"
-                ? caDeck(totals.deficiencies)
-                : totals.deficiencies === 0
-                  ? "No citations in the last 36 months."
-                  : `${totals.deficiencies} ${totals.deficiencies === 1 ? "deficiency" : "deficiencies"} on record. Each bar is a month with a citation.`
+                : recordDeck(profile)
           }
         />
 

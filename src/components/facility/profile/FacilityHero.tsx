@@ -10,7 +10,6 @@ import {
   buildFacilityDirectAnswer,
   buildFacilityRecordSentence,
   buildFacilitySnippet,
-  reportablePercentile,
 } from "@/lib/seo/meta";
 import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { formatFacilityName } from "@/lib/facility/displayName";
@@ -21,7 +20,6 @@ import { displayWaLicense, priorWaDshsFormsUrl, priorWaLicenseFromSlug } from "@
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import {
   caTypeDistributionSentence,
-  citationCountPhrase,
   selectMostRecentSevereFinding,
 } from "@/lib/facility/citationWindow";
 import { parsePhone } from "@/lib/facility/phone";
@@ -39,8 +37,11 @@ import { FacilityMemoryCareBasis } from "./FacilityMemoryCareBasis";
 import { AzMemoryCareBadges } from "./AzMemoryCareBadges";
 import { azMcProgram } from "@/lib/facility/azMcProgram";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
-import { peerRankPhrase } from "@/lib/seo/rankPhrase";
-import { peerSetPhrase } from "@/lib/city-hub/careSetting";
+import {
+  citationRecordPhrase,
+  facilityPageNoun,
+  weightedCitationsPerBedPhrase,
+} from "@/lib/facility/pageCopy";
 import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
 import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
 import { FacilityPhotoGrid } from "./FacilityPhotoGrid";
@@ -130,49 +131,15 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
   // compared per bed against peers in the same bed band, so the multiple is
   // apples-to-apples rather than penalizing larger facilities for raw volume.
   const sevMetric = snapshot?.metrics.severity ?? null;
-  const sevValue = sevMetric?.value ?? null;
-  const sevMedian = sevMetric?.peer_median ?? null;
-  const sevPct = sevMetric?.percentile ?? null;
-  const severityRatio =
-    sevValue !== null && sevValue > 0 && sevMedian !== null && sevMedian > 0
-      ? sevValue / sevMedian
+  const peerPhrase =
+    (snapshot?.peer_set.n ?? 0) >= 10
+      ? weightedCitationsPerBedPhrase({
+          value: sevMetric?.value,
+          peerMedian: sevMetric?.peer_median,
+          agencyShort: cfg.agencyShort,
+          windowMonths: cfg.inspectionWindowMonths,
+        })
       : null;
-  // Cap display at 50× for extreme outliers; show a decimal for low multiples
-  // so "2.4×" doesn't round away to "2×".
-  const severityRatioDisplay =
-    severityRatio === null
-      ? null
-      : severityRatio > 50
-        ? "50+"
-        : severityRatio >= 10
-          ? String(Math.round(severityRatio))
-          : severityRatio.toFixed(1);
-  // Bidirectional signal: reward strong performers, flag weak ones. Tertiles
-  // match the peer-rank bar (higher percentile = fewer weighted citations/bed).
-  const sevTier: "good" | "mid" | "bad" | null =
-    sevPct === null ? null : sevPct >= 67 ? "good" : sevPct <= 33 ? "bad" : "mid";
-  const showSeverityCallout =
-    (snapshot?.peer_set.n ?? 0) >= 10 && !!snapshot?.has_inspections && sevTier !== null;
-  const sevTierColor =
-    sevTier === "good"
-      ? "var(--color-grade-b)"
-      : sevTier === "bad"
-        ? "var(--color-rust)"
-        : "var(--color-gold)";
-  const sevHeadline =
-    sevTier === "good"
-      ? `Top ${100 - (sevPct ?? 0)}%`
-      : sevTier === "bad"
-        ? severityRatioDisplay !== null
-          ? `${severityRatioDisplay}× peer median`
-          : "Worse than most"
-        : "Mid-pack";
-  const sevPlain =
-    sevTier === "good"
-      ? `Fewer weighted citations per bed than ${sevPct}% of similar-size peers.`
-      : sevTier === "bad"
-        ? `More weighted citations per bed than ${100 - (sevPct ?? 0)}% of similar-size peers.`
-        : "About average on weighted citations per bed for similar-size peers.";
 
   // Most recent severe finding within 90 days. California uses Type A only.
   const recentSevere = regulatorPublishesSeverityScale(
@@ -210,12 +177,17 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
     if (facility.state_code === "TX" && totals.deficiencies === 0) {
       return `${beds} ${licType}. HHSC has not published a citation count for this home in the last 3 years.`;
     }
-    const citLabel = citationCountPhrase({
-      count: totals.deficiencies,
-      agencyShort: cfg.agencyShort,
-      window: "profile",
+    const citLabel = citationRecordPhrase({
+      stateCode: facility.state_code,
+      regulatorAbbr: cfg.agencyShort,
+      windowCount: totals.deficiencies,
+      inspectionCount: totals.inspections,
+      heldCount: totals.allTimeDeficiencies,
+      olderCitation: totals.olderCitation,
+      lastCitationDate: totals.lastCitationAllTime,
+      earliestInspectionDate: totals.earliestInspectionDate,
     });
-    return `${beds} ${licType} with ${citLabel}.`;
+    return `${beds} ${licType}. ${citLabel}.`;
   })();
 
   const lastVisit = profile.latestInspection;
@@ -281,22 +253,13 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
         )}
 
         {/* Severity callout — per-bed weighted citations vs. size-matched peers */}
-        {showSeverityCallout && (
+        {peerPhrase ? (
           <div className="hidden md:block mt-4 border-t border-white/15 pt-3.5">
             <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.16em] text-gold/70 mb-0.5">
               Citation severity vs. similar-size peers
             </div>
-            <div
-              className="font-[family-name:var(--font-display)] text-[26px] leading-tight tracking-[-0.01em]"
-              style={{ color: sevTierColor }}
-            >
-              {sevHeadline}
-            </div>
-            <div className="font-[family-name:var(--font-display)] text-[14px] italic leading-snug text-white/70 mt-1 max-w-[34ch]">
-              {sevPlain}
-            </div>
-            <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.06em] text-white/40 mt-1.5">
-              {sevValue?.toFixed(2)} wtd citations/bed · peer median {sevMedian?.toFixed(2)} · {cfg.inspectionWindowMonths}-mo window
+            <div className="font-[family-name:var(--font-display)] text-[15px] leading-snug text-white">
+              {peerPhrase}
             </div>
             <Link
               href="/methodology#metrics-heading"
@@ -305,7 +268,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
               How severity is scored →
             </Link>
           </div>
-        )}
+        ) : null}
 
         {complaintLabel ? (
           <div className="hidden md:flex mt-5 justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em]">
@@ -386,10 +349,21 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   const formsUrl = noReportsPosted
     ? dshsFormsUrl(facility.license_number, facility.wa_facility_type)
     : null;
-  const reportableRank = reportablePercentile(
-    profile.snapshot?.grade?.composite_percentile,
-    profile.snapshot?.peer_set.n,
-  );
+  const peersReady = (profile.snapshot?.peer_set.n ?? 0) >= 10;
+  const severityValue = peersReady ? profile.snapshot?.metrics.severity.value ?? null : null;
+  const severityPeerMedian = peersReady ? profile.snapshot?.metrics.severity.peer_median ?? null : null;
+  const heroPeerPhrase = weightedCitationsPerBedPhrase({
+    value: severityValue,
+    peerMedian: severityPeerMedian,
+    agencyShort: profile.cfg.agencyShort,
+    windowMonths: profile.cfg.inspectionWindowMonths,
+  });
+  const citationArgs = {
+    heldCount: profile.totals.allTimeDeficiencies,
+    olderCitation: profile.totals.olderCitation,
+    lastCitationDate: profile.totals.lastCitationAllTime,
+    earliestInspectionDate: profile.totals.earliestInspectionDate,
+  };
   const recordSentence = noReportsPosted
     ? null
     : buildFacilityRecordSentence({
@@ -399,6 +373,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         regulatorAbbr: profile.cfg.agencyShort,
         licenseNumber: facility.license_number,
         stateCode: facility.state_code,
+        ...citationArgs,
       });
   const snippet = noReportsPosted
     ? `${displayName} has no DSHS reports posted as of ${checkedOn}.`
@@ -408,17 +383,18 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         facilityName: displayName,
         stateName: state.name,
         stateCode: state.code,
-        grade: reportableRank == null ? null : profile.snapshot?.grade?.letter ?? null,
-        percentile: reportableRank,
-        severityPercentile: reportableRank == null ? null : profile.snapshot?.metrics.severity.percentile ?? null,
-        frequencyPercentile: reportableRank == null ? null : profile.snapshot?.metrics.frequency.percentile ?? null,
-        repeatsPercentile: reportableRank == null ? null : profile.snapshot?.metrics.repeats.percentile ?? null,
+        grade: null,
+        percentile: null,
         citationCount: profile.totals.deficiencies,
         inspectionCount: profile.totals.inspections,
         lastInspectionDate,
         lastInspected: lastInspectedLabel,
         variant: "prose",
         regulatorAbbr: profile.cfg.agencyShort,
+        severityValue,
+        severityPeerMedian,
+        windowMonths: profile.cfg.inspectionWindowMonths,
+        ...citationArgs,
       });
   const azDirected = azDirectedCareLicense(facility.az_license_level);
   const azLicenseLabel =
@@ -451,7 +427,15 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         lastInspected: lastInspectedLabel,
         beds: facility.beds,
         azLicenseLevel: facility.az_license_level,
-        facilityNoun: facility.state_code === "AZ" ? azNoun : undefined,
+        basisRecorded: profile.memoryCareBasis.recorded,
+        facilityNoun:
+          facility.state_code === "AZ"
+            ? azNoun
+            : facilityPageNoun({
+                stateCode: state.code,
+                basisRecorded: profile.memoryCareBasis.recorded,
+              }),
+        ...citationArgs,
       });
 
   return (
@@ -730,25 +714,24 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               <FacilityMemoryCareBasis basis={profile.memoryCareBasis} />
             )}
 
-            {/* Mobile-only percentile badge — rank summary visible without scrolling */}
-            {reportableRank != null && profile.snapshot?.grade && (
+            {heroPeerPhrase ? (
               <div className="mt-4 flex items-center gap-4 border-t border-clearing-rule pt-4 md:hidden">
                 <div>
                   <div className="mb-0.5 font-[family-name:var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-4">
-                    Peer rank
+                    Peer comparison
                   </div>
-                  <div className="font-[family-name:var(--font-sans)] text-[15px] font-semibold text-ink-2">
-                    {peerRankPhrase(profile.snapshot.grade.composite_percentile).text.replace(/^./, (c) => c.toUpperCase())} of {peerSetPhrase(facility.state_code, state.name)}
+                  <div className="font-[family-name:var(--font-sans)] text-[15px] font-semibold leading-snug text-ink-2">
+                    {heroPeerPhrase}
                   </div>
                   <a
                     href="#peer"
                     className="mt-1 block w-fit border-b border-teal/30 pb-px font-[family-name:var(--font-sans)] text-[12px] font-medium text-teal"
                   >
-                    See full peer rank →
+                    See full peer comparison
                   </a>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Offer CTA — above the fold on all viewports */}
             <div className="mt-5">

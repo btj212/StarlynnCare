@@ -203,7 +203,7 @@ StarlynnCare indexes both and distinguishes complaint-driven inspections from ro
 3. **Repeat citation flag** — same deficiency code cited in consecutive surveys
 4. **Inspection frequency** — number of visits per year relative to peers
 5. **Trajectory** — 24-month trend vs. peer cohort median (when sufficient data exists)
-6. **Composite percentile** — derived from the above; only emitted when peer set is ≥ 10 similarly-sized facilities
+6. **Weighted citations per bed against the peer median** — emitted when the peer set has at least 10 similarly-sized facilities
 
 StarlynnCare does not publish a single letter grade. Profiles show disaggregated signals so families can apply their own weighting.
 

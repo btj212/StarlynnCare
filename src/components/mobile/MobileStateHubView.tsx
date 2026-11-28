@@ -49,7 +49,7 @@ export function MobileStateHubView({ data, config }: Props) {
           {stateName} Edition · {edition} · {season} {year}
         </div>
         <h1>
-          Find the <em>best</em> memory care in {stateName},{" "}
+          Memory care in {stateName},{" "}
           <span className="ul">verified by real state inspections.</span>
         </h1>
         <p className="deck">
@@ -137,14 +137,14 @@ export function MobileStateHubView({ data, config }: Props) {
 
       {showZipSearch && (
         <section className="m-section">
-          <div className="label">§ 02 · How We Rank</div>
+          <div className="label">§ 02 · Peer comparison</div>
           <h2>
-            Ranked on public record. <em>Transparent methodology.</em>
+            Weighted citations per bed. <em>Against the peer median.</em>
           </h2>
           <p className="mb-4 text-[14px] leading-relaxed text-ink-2 px-[18px] -mx-[18px]">
-            Each facility is ranked against peers in its state using publicly available state inspection records.{" "}
+            Each profile states weighted citations per bed against the peer median for similar-size homes (state agency, 36 months).{" "}
             <Link href="/methodology" className="text-teal underline underline-offset-4">
-              How we calculate rankings →
+              How the comparison is calculated →
             </Link>
           </p>
         </section>
@@ -152,14 +152,14 @@ export function MobileStateHubView({ data, config }: Props) {
 
       {!showZipSearch && (
         <section className="m-section">
-          <div className="label">§ 02 · How We Rank</div>
+          <div className="label">§ 02 · Peer comparison</div>
           <h2>
-            Ranked on public record. <em>Transparent methodology.</em>
+            Weighted citations per bed. <em>Against the peer median.</em>
           </h2>
           <p className="mb-4 text-[14px] leading-relaxed text-ink-2 px-[18px] -mx-[18px]">
-            Each facility is ranked against peers in {stateName} using publicly available inspection records.{" "}
+            Each {stateName} profile states weighted citations per bed against the peer median for similar-size homes (36 months).{" "}
             <Link href="/methodology" className="text-teal underline underline-offset-4">
-              How we calculate rankings →
+              How the comparison is calculated →
             </Link>
           </p>
         </section>
@@ -332,7 +332,7 @@ export function MobileStateHubView({ data, config }: Props) {
           Find the right facility, <em>without the sales funnel.</em>
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-white/85 max-w-[40ch]">
-          Search by ZIP, compare peer rankings, read every dated citation — with no operator behind the recommendation.
+          Search by ZIP, compare a home with similar homes, and read every dated citation — with no operator behind the recommendation.
         </p>
         <Link
           href={`/${stateSlug}/facilities`}

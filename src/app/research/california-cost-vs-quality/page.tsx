@@ -164,7 +164,7 @@ export default async function CACostVsQualityPage() {
             The single facility with the largest gap between price tier and
             inspection severity in the dataset is{" "}
             <strong>Araville Residential Care Home II</strong> in San Bruno —
-            a 97th-percentile-priced market with a severity index of 9.7.
+            a market priced above 97 percent of counties, with a severity index of 9.7.
             High-cost market, high-severity inspection record. The
             relationship families would intuitively expect is reversed.
           </p>
@@ -173,9 +173,9 @@ export default async function CACostVsQualityPage() {
             Yorba Linda at a severity index of 0.0. That index divides CDSS
             severity weights by beds for deficiency dates from January 1,
             2021, in the data loaded for the study. A score of 0.0 is not a
-            finding that the home has no citations. The current CDSS record
+            finding that the home was never cited. The current CDSS record
             includes a Type B citation (87465(a)(9)) from an October 18, 2022
-            visit. We do not publish a single &ldquo;best value&rdquo; list
+            visit. We do not publish one combined value list
             because the calculation depends on what families weight; instead
             we surface the four independent signals on each facility profile.
           </p>

@@ -121,11 +121,11 @@ const STATE_SECTIONS: Array<{
 const FAQ_PAIRS = [
   {
     q: "How does StarlynnCare rate memory care facilities?",
-    a: "StarlynnCare rates facilities using only official state inspection records — we do not accept paid placements, referral fees, or operator submissions that could bias rankings. Each facility is scored on four independent signals derived from its state inspection file: citation severity (how serious), citation frequency (how often), repeat citations (the same problem recurring), and inspection recency (how current the data is). These signals are compared against the facility's local peer set so a rural facility is not penalized for having fewer inspections than a large urban community.",
+    a: "StarlynnCare rates facilities using only official state inspection records — we do not accept paid placements, referral fees, or operator submissions that could bias the comparison. Each facility is scored on four independent signals derived from its state inspection file: citation severity (how serious), citation frequency (how often), repeat citations (the same problem recurring), and inspection recency (how current the data is). These signals are compared against the facility's local peer set so a rural facility is not penalized for having fewer inspections than a large urban community.",
   },
   {
     q: "What does 'rated by inspection records' mean?",
-    a: "Every state that licenses memory care facilities must inspect them on a regular basis and publish the findings. Those published findings — called deficiencies, citations, or statements of deficiency depending on the state — are the raw data behind our ratings. We ingest these documents directly from each state's licensing portal and parse them into a searchable database. A facility's 'rating' on StarlynnCare is therefore an index of its published government inspection record, not a consumer review or an advertiser-sponsored ranking.",
+    a: "Every state that licenses memory care facilities must inspect them on a regular basis and publish the findings. Those published findings — called deficiencies, citations, or statements of deficiency depending on the state — are the raw data behind our ratings. We ingest these documents directly from each state's licensing portal and parse them into a searchable database. A facility's 'rating' on StarlynnCare is therefore an index of its published government inspection record, not a consumer review or an advertiser-sponsored placement.",
   },
   {
     q: "Do you use star ratings or letter grades?",
@@ -238,7 +238,7 @@ export default function MemoryCareFacilityRatingsPage() {
                   portal and parse them into a searchable database. A facility&rsquo;s
                   &ldquo;rating&rdquo; on StarlynnCare is an index of its published
                   government inspection record — not a consumer review, not an advertiser-
-                  sponsored ranking, and not a survey result.
+                  sponsored placement, and not a survey result.
                 </p>
                 <p>
                   Referral services like A Place for Mom and Caring.com earn revenue when

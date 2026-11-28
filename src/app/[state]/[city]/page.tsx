@@ -10,7 +10,6 @@ import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { UpdatedStamp } from "@/components/editorial/UpdatedStamp";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
 import { AreaWatchModal } from "@/components/facility/AreaWatchModal";
-import { TopGradedFacilities } from "@/components/facility/TopGradedFacilities";
 import { SiblingCityHubLinks } from "@/components/facility/SiblingCityHubLinks";
 import { HubFaqSection } from "@/components/facility/HubFaqSection";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
@@ -27,6 +26,7 @@ import {
   buildWebPageWithReviewer,
 } from "@/lib/seo/schema";
 import { buildCityFaqs } from "@/lib/content/cityFaqs";
+import { formatCopyDate } from "@/lib/facility/pageCopy";
 import { REGULATOR_ABBR } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { dementiaAcceptanceTier, memoryCareBasis } from "@/lib/facility/memoryCareBasis";
@@ -207,8 +207,6 @@ export default async function RegionPage({ params }: PageProps) {
     : null;
   let facilities: ListFacility[] = [];
   let fetchError: string | null = null;
-  // PA county IJ tracker — populated inside the supabase block, used outside.
-  const ijCitByFac = new Map<string, number>();
   // Newest cited visit per home, for the "Recent reports" block on city pages.
   let recentReports: RecentReport[] = [];
   const allInspData: Array<{ id: string; facility_id: string; inspection_date: string }> = [];
@@ -378,9 +376,6 @@ export default async function RegionPage({ params }: PageProps) {
           const isSerious = isSeriousCityFinding(d, region.state.code);
           if (isSerious) {
             seriousCitByFac.set(fid, (seriousCitByFac.get(fid) ?? 0) + 1);
-          }
-          if ((d.severity ?? 0) >= 4) {
-            ijCitByFac.set(fid, (ijCitByFac.get(fid) ?? 0) + 1);
           }
         }
 
@@ -577,18 +572,78 @@ export default async function RegionPage({ params }: PageProps) {
       })
     : null;
 
-  // PA county record stats — derived from already-fetched data, no extra queries.
-  const paTotalDeficiencies = facilities.reduce((s, f) => s + f.total_citations, 0);
-  const paTotalSevere = facilities.reduce((s, f) => s + f.serious_citations, 0);
-  const paTotalIj = facilities.reduce((s, f) => s + (ijCitByFac.get(f.id) ?? 0), 0);
+  // PA county figures from deficiency rows already loaded. The 3-year window
+  // is the same cutoff the city page uses for recent visits.
+  const paCutoff = new Date();
+  paCutoff.setFullYear(paCutoff.getFullYear() - 3);
+  const paCutoffStr = paCutoff.toISOString().split("T")[0];
+  const paInspById = new Map(allInspData.map((row) => [row.id, row]));
+  let paEarliest: string | null = null;
+  let paLastCitation: string | null = null;
+  let paWindowCitations = 0;
+  let paHeldCitations = 0;
+  let paOlderCitation = false;
+  let paWindowSevere = 0;
+  let paWindowSeverity4 = 0;
+  const paWindowSeriousByFac = new Map<string, number>();
+  for (const row of allInspData) {
+    if (!isUsableInspectionDate(row.inspection_date)) continue;
+    if (!paEarliest || row.inspection_date < paEarliest) paEarliest = row.inspection_date;
+  }
+  for (const row of allDefs) {
+    const visit = paInspById.get(row.inspection_id);
+    if (!visit || !isUsableInspectionDate(visit.inspection_date)) continue;
+    paHeldCitations += 1;
+    const inWindow = visit.inspection_date >= paCutoffStr;
+    if (inWindow) paWindowCitations += 1;
+    else paOlderCitation = true;
+    if (!paLastCitation || visit.inspection_date > paLastCitation) {
+      paLastCitation = visit.inspection_date;
+    }
+    if (isSeriousCityFinding(row, region.state.code) && inWindow) {
+      paWindowSevere += 1;
+      paWindowSeriousByFac.set(
+        visit.facility_id,
+        (paWindowSeriousByFac.get(visit.facility_id) ?? 0) + 1,
+      );
+    }
+    if ((row.severity ?? 0) >= 4 && inWindow) paWindowSeverity4 += 1;
+  }
   const paAvgSevere =
-    totalCount > 0 ? Math.round((paTotalSevere / totalCount) * 10) / 10 : 0;
+    totalCount > 0 ? Math.round((paWindowSevere / totalCount) * 10) / 10 : 0;
+  const paLastCitationLabel =
+    paOlderCitation && paLastCitation ? `Last citation ${formatCopyDate(paLastCitation)}` : undefined;
+  const paEmptyFileLabel = paEarliest
+    ? `No citations in the PA DHS records we hold since ${formatCopyDate(paEarliest)}`
+    : "No citations in the PA DHS records we hold";
 
-  // Most-cited on record for the "both directions" mini-list (PA county only).
-  const paMostCited = [...facilities]
-    .sort((a, b) => b.serious_citations - a.serious_citations || b.total_citations - a.total_citations)
-    .slice(0, 5)
-    .filter((f) => f.serious_citations > 0);
+  const paMostCited = facilities
+    .map((facility) => ({
+      ...facility,
+      windowSerious: paWindowSeriousByFac.get(facility.id) ?? 0,
+    }))
+    .filter((facility) => facility.windowSerious > 0)
+    .sort(
+      (a, b) => b.windowSerious - a.windowSerious || a.name.localeCompare(b.name),
+    );
+  const paMostCitedShown: typeof paMostCited = [];
+  for (const facility of paMostCited) {
+    if (
+      paMostCitedShown.length >= 5 &&
+      facility.windowSerious !== paMostCitedShown[paMostCitedShown.length - 1].windowSerious
+    ) {
+      break;
+    }
+    paMostCitedShown.push(facility);
+  }
+  const paSeriousPositions = paMostCitedShown.map((facility, index) => {
+    if (index > 0 && facility.windowSerious === paMostCitedShown[index - 1].windowSerious) {
+      return paMostCitedShown
+        .slice(0, index)
+        .findIndex((row) => row.windowSerious === facility.windowSerious) + 1;
+    }
+    return index + 1;
+  });
 
   if (!fetchError && totalCount === 0) {
     notFound();
@@ -843,7 +898,7 @@ export default async function RegionPage({ params }: PageProps) {
                 {
                   n: String(excludedCount),
                   label:
-                    "Licensed homes not listed here (no inspection on file, or Arizona homes of 10 beds or fewer with no citations)",
+                    "Licensed homes not listed here (no inspection on file, or Arizona homes of 10 beds or fewer with no citations in the records we hold)",
                   src: "Listing rules",
                 },
               ]
@@ -857,21 +912,31 @@ export default async function RegionPage({ params }: PageProps) {
             src: "PA DHS OLTL",
           },
           {
-            n: String(paTotalDeficiencies),
-            label: `Total PA DHS citations on record across all ${region.name} facilities`,
-            src: "PA DHS OLTL",
-            delta: totalCount > 0 ? `avg ${Math.round(paTotalDeficiencies / totalCount)} per facility` : undefined,
+            n: paHeldCitations === 0 ? "—" : String(paWindowCitations),
+            label:
+              paHeldCitations === 0
+                ? paEmptyFileLabel
+                : `PA DHS citations in the last 3 years across ${region.name} facilities`,
+            src: "PA DHS OLTL deficiency rows",
+            delta:
+              paHeldCitations === 0
+                ? undefined
+                : paLastCitationLabel ??
+                  (totalCount > 0
+                    ? `avg ${Math.round(paWindowCitations / totalCount)} per facility`
+                    : undefined),
           },
           {
-            n: String(paTotalSevere),
-            label: "Severe findings (PA DHS severity ≥ 3) on record",
-            src: "PA DHS OLTL",
+            n: String(paWindowSevere),
+            label: "Severe findings (PA DHS severity ≥ 3) in the last 3 years",
+            src: "PA DHS OLTL deficiency rows",
             delta: `avg ${paAvgSevere} per facility`,
           },
           {
-            n: String(paTotalIj),
-            label: "Severity-4 findings on record (includes substantiated abuse; not CMS Immediate Jeopardy)",
-            src: "PA DHS OLTL",
+            n: String(paWindowSeverity4),
+            label:
+              "Severity-4 findings in the last 3 years (includes substantiated abuse; not CMS Immediate Jeopardy)",
+            src: "PA DHS OLTL deficiency rows",
           },
         ]
       : [
@@ -895,7 +960,7 @@ export default async function RegionPage({ params }: PageProps) {
                 {
                   n: String(excludedCount),
                   label:
-                    "Licensed homes not listed here (no inspection on file, or Arizona homes of 10 beds or fewer with no citations)",
+                    "Licensed homes not listed here (no inspection on file, or Arizona homes of 10 beds or fewer with no citations in the records we hold)",
                   src: "Listing rules",
                 },
               ]
@@ -960,9 +1025,8 @@ export default async function RegionPage({ params }: PageProps) {
               id="hub-lede"
               className="max-w-[50ch] font-[family-name:var(--font-sans)] text-[18px] leading-[1.5] text-ink-3 sm:text-[19px]"
             >
-              {listedCount > 0 ? `${listedCount} ${setting.hubNoun}, ` : ""}
-              ranked by {reg} inspection records — every citation from primary data, no
-              referral fees.
+              {listedCount > 0 ? `${listedCount} ${setting.hubNoun}. ` : ""}
+              Every citation comes from {reg} primary data. No referral fees.
             </p>
             {answer && (
               <div id="city-answer">
@@ -1101,8 +1165,7 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* ── Top performers rail — positioned before the full list so it anchors the
-            "ranked by inspection record" frame before the user hits the grid ── */}
+        {/* County figures, then the full list. */}
         {!fetchError && totalCount > 0 && (
           <>
             {/* Hub differentiation block — unique-per-city computed stats */}
@@ -1117,25 +1180,18 @@ export default async function RegionPage({ params }: PageProps) {
               />
             )}
 
-            <TopGradedFacilities
-              citySlugs={region.citySlugs}
-              stateCode={region.state.code}
-              stateSlug={region.state.slug}
-              countyName={region.name}
-              isCity={!isCounty}
-            />
-
-            {/* PA county: most-cited on record (the other direction) */}
-            {region.state.code === "PA" && isCounty && paMostCited.length > 0 && (
+            {region.state.code === "PA" && isCounty && paMostCitedShown.length > 0 && (
               <div className="mx-auto mt-10 max-w-[1280px] px-4 pb-10 sm:px-6 md:px-[60px]">
                 <p className="mb-4 font-[family-name:var(--font-sans)] text-[12px] font-semibold uppercase tracking-[0.1em] text-ink-4">
-                  Most-cited on record · {region.name} County · PA DHS OLTL
+                  Severe findings in the last 3 years · {region.name} County · PA DHS
                 </p>
                 <ol className="space-y-2">
-                  {paMostCited.map((f, i) => (
+                  {paMostCitedShown.map((f, i) => (
                     <li key={f.id} className="flex items-center gap-3 rounded-[14px] border border-clearing-rule-2 bg-clearing-card px-3 py-2.5 text-[14px] shadow-[var(--shadow-card)]">
-                      <span className="w-4 shrink-0 text-right font-[family-name:var(--font-sans)] text-[12px] text-ink-4">
-                        {i + 1}.
+                      <span className="w-8 shrink-0 text-right font-[family-name:var(--font-sans)] text-[12px] text-ink-4">
+                        {paMostCitedShown.filter((row) => row.windowSerious === f.windowSerious).length > 1
+                          ? `Tied ${paSeriousPositions[i]}`
+                          : `${paSeriousPositions[i]}.`}
                       </span>
                       <Link
                         href={`/${region.state.slug}/${f.city_slug}/${f.slug}`}
@@ -1144,7 +1200,7 @@ export default async function RegionPage({ params }: PageProps) {
                         {f.name}
                       </Link>
                       <span className="shrink-0 font-[family-name:var(--font-sans)] text-[12px] font-semibold text-teal">
-                        {f.serious_citations} severe
+                        {f.windowSerious} severe in the last 3 years
                       </span>
                     </li>
                   ))}

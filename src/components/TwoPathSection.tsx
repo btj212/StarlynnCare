@@ -3,7 +3,7 @@ const paths = [
     icon: "🗓️",
     title: "Planning ahead",
     subtitle: "6+ months before placement",
-    body: "Memory care waitlists run 6–12 months in most markets. The best facilities fill up fast. Starting early means making a real decision — not just taking what has a bed.",
+    body: "Memory care waitlists run 6–12 months in most markets. Homes with an open bed fill quickly. Starting early means making a real decision — not just taking what has a bed.",
     features: [
       "Compare facilities side-by-side with inspection history",
       "Generate a custom tour checklist",

@@ -35,7 +35,7 @@ export function LibraryCta({
           Next step
         </p>
         <h2 className="font-[family-name:var(--font-display)] text-[clamp(22px,3vw,32px)] font-normal leading-[1.15] tracking-[-0.01em] text-ink">
-          Find a facility — ranked by inspection record,{" "}
+          Find a facility by its state inspection record,{" "}
           <em>not referral commission.</em>
         </h2>
         <p className="mt-3 text-[16px] text-ink-2 leading-[1.6] max-w-[60ch]">

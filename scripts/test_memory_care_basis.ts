@@ -370,15 +370,41 @@ assert.equal(pairs.some((pair) => pair.q.includes("tour")), false);
 assert.equal(pairs[0].a, MEMORY_CARE_BASIS_UNRECORDED);
 assert.match(pairs.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /September 23, 2026/);
 assert.match(pairs.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /annual compliance visit/);
-assert.match(pairs.find((pair) => pair.q.startsWith("Has "))?.a ?? "", /4 deficiencies from DLBC in the last three years/);
+assert.match(pairs.find((pair) => pair.q.startsWith("Has "))?.a ?? "", /4 citations in the last 3 years/);
 assert.match(pairs.find((pair) => pair.q.startsWith("How many"))?.a ?? "", /last three years/);
 assert.match(pairs.find((pair) => pair.q.startsWith("How many"))?.a ?? "", /immediate jeopardy/);
 assert.match(pairs.find((pair) => pair.q.startsWith("Who licenses"))?.a ?? "", /F23/);
 assert.match(pairs.find((pair) => pair.q.startsWith("Who licenses"))?.a ?? "", /ccl\.utah\.gov/);
-assert.match(pairs.find((pair) => pair.q.startsWith("How does"))?.a ?? "", /top 20%/);
+assert.equal(pairs.find((pair) => pair.q.startsWith("How does")), undefined);
+const compared = buildFacilityFaqPairs({
+  facilityName: "Example Home",
+  stateName: "Utah",
+  stateCode: "UT",
+  pageUrl: "https://www.starlynncare.com/utah/west-jordan/example",
+  inspectionCount: 2,
+  deficiencyCount: 4,
+  countsCoverThreeYears: true,
+  lastInspectionDate: "2026-09-23",
+  lastInspectionType: "annual",
+  lastInspectionIsComplaint: false,
+  seriousFindings: [{ label: "IJ", count: 1 }],
+  percentile: 80,
+  severityValue: 0.12,
+  severityPeerMedian: 0.4,
+  peerWindowMonths: 36,
+  memoryCareLabel: MEMORY_CARE_BASIS_UNRECORDED,
+  licenseNumber: "F23",
+  licenseUrl: "https://ccl.utah.gov",
+  regulatorName: utah.regulator,
+  regulatorAbbr: "DLBC",
+});
+assert.match(
+  compared.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
+  /Weighted citations per bed: 0\.12, against a similar-size peer median of 0\.40 \(DLBC, 36 months\)/,
+);
 assert.doesNotMatch(
-  pairs.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
-  /Utah memory care facilities/,
+  compared.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
+  /top |ranked|percentile/i,
 );
 
 const thin = buildFacilityFaqPairs({
@@ -623,14 +649,11 @@ const sdcFaq = buildFacilityFaqPairs({
   regulatorAbbr: "DSHS",
 });
 assert.equal(sdcFaq.some((pair) => /provide memory care/i.test(pair.q)), true);
-assert.match(
-  noMcFaq.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
-  /Washington assisted living/,
-);
-assert.doesNotMatch(
-  noMcFaq.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
-  /memory care facilities/,
-);
+// A percentile alone is not a comparison sentence. The question stays out
+// until both the weighted-citations value and the peer median are present,
+// so a home without a memory-care basis is not called a memory-care peer set.
+assert.equal(noMcFaq.find((pair) => pair.q.startsWith("How does")), undefined);
+assert.doesNotMatch(noMcFaq.map((pair) => pair.a).join("\n"), /memory care facilities/);
 assert.match(noMcFaq.find((pair) => pair.q.startsWith("When was"))?.a ?? "", /in April 2026/);
 
 const coloradoName = memoryCareBasis({

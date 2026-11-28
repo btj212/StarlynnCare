@@ -1,8 +1,12 @@
-import { peerRankPhrase } from "@/lib/seo/rankPhrase";
-import { careSettingCopy, peerSetPhrase } from "@/lib/city-hub/careSetting";
+import { careSettingCopy } from "@/lib/city-hub/careSetting";
 import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
 import {
-  TEXAS_RECENT_RESULTS,
+  BASIS_NOT_RECORDED_SENTENCE,
+  citationRecordPhrase,
+  facilityPageNoun,
+  weightedCitationsPerBedPhrase,
+} from "@/lib/facility/pageCopy";
+import {
   texasRecentResultsSentence,
   texasRecentResultsUnpublished,
   texasRegulatorRecordUrl,
@@ -147,6 +151,9 @@ function licenseTitlePhrase(label: string | null | undefined): { prose: string; 
     ALF: { prose: "Assisted Living", short: "ALF" },
     "ALF**": { prose: "Assisted Living", short: "ALF" },
     "ASSISTED LIVING": { prose: "Assisted Living", short: "AL" },
+    "TYPE A": { prose: "Assisted Living", short: "AL" },
+    "TYPE B": { prose: "Assisted Living", short: "AL" },
+    "TYPE C": { prose: "Assisted Living", short: "AL" },
     "ASSISTED LIVING (NO DEMENTIA CARE LICENSE)": { prose: "Assisted Living", short: "AL" },
     RCF: { prose: "Residential Care Facility", short: "RCF" },
     "RESIDENTIAL CARE": { prose: "Residential Care Facility", short: "RCF" },
@@ -184,7 +191,8 @@ function licenseFallbackTitles(place: string, licenseLabel: string | null | unde
  * clicks ("fields of florissant", "st peters post acute"). The
  * "{Name}, {City}: Inspection Record & Citations ({Year})" title tied the
  * profile to its /inspections subpage. Year is the last inspection year
- * on record — never the generate date. Rank stays in the description.
+ * we hold — never the generate date. The description states the citation
+ * count and, when both numbers exist, weighted citations per bed.
  */
 export function buildFacilityTitle(input: {
   name: string;
@@ -220,7 +228,7 @@ export function buildFacilityTitle(input: {
   const citationHook =
     inspections > 0 && citationCount != null && !(input.stateCode === "TX" && citationCount === 0)
       ? citationCount === 0
-        ? "no citations"
+        ? "no citations in 3 yrs"
         : countLabel(citationCount, "citation", "citations")
       : null;
   const facts: string[] = [];
@@ -345,6 +353,13 @@ export function buildFacilityRecordSentence(input: {
   regulatorAbbr: string;
   licenseNumber: string | null;
   stateCode?: string | null;
+  /** Deficiency rows we hold, any year. `0` is an empty file, not an unknown one. */
+  heldCount?: number | null;
+  olderCitation?: boolean;
+  /** ISO date of the newest deficiency row, any year. */
+  lastCitationDate?: string | null;
+  /** ISO date of the oldest inspection we hold. */
+  earliestInspectionDate?: string | null;
 }): string | null {
   if (
     input.stateCode &&
@@ -354,19 +369,19 @@ export function buildFacilityRecordSentence(input: {
   }
   if (input.inspectionCount < 1) {
     return input.licenseNumber
-      ? `No ${input.regulatorAbbr} inspection is on record. License ${input.licenseNumber}.`
+      ? `No ${input.regulatorAbbr} inspection is in the records we hold. License ${input.licenseNumber}.`
       : null;
   }
-  if (input.stateCode === "TX" && input.citationCount === 0) {
-    const parts = ["HHSC has not published a citation count for this home in the last 3 years"];
-    if (input.lastInspected) parts.push(`last inspected ${input.lastInspected}`);
-    if (input.licenseNumber) parts.push(`license ${input.licenseNumber}`);
-    return `${parts.join(", ")}.`;
-  }
-  const cite =
-    input.citationCount === 1
-      ? `1 ${input.regulatorAbbr} citation on record in the last 3 years`
-      : `${input.citationCount} ${input.regulatorAbbr} citations on record in the last 3 years`;
+  const cite = citationRecordPhrase({
+    stateCode: input.stateCode,
+    regulatorAbbr: input.regulatorAbbr,
+    windowCount: input.citationCount,
+    inspectionCount: input.inspectionCount,
+    heldCount: input.heldCount,
+    olderCitation: input.olderCitation,
+    lastCitationDate: input.lastCitationDate,
+    earliestInspectionDate: input.earliestInspectionDate,
+  });
   const parts = [cite];
   if (input.lastInspected) parts.push(`last inspected ${input.lastInspected}`);
   if (input.licenseNumber) parts.push(`license ${input.licenseNumber}`);
@@ -377,17 +392,13 @@ export function buildFacilityRecordSentence(input: {
 const MIN_DESC = 110;
 
 /**
- * Build a data-driven meta description for a facility SERP result.
- *
- * Top-half facilities (composite_percentile ≥ 50) lead with the comparative
- * rank claim. Bottom-half and unrated facilities lead with facts only — city,
- * citation count, last inspection date — with no quality claim.
- *
- * YMYL rule: never assert a ranking for a facility in the bottom half.
+ * Meta description for a facility SERP result. Citation text names the window
+ * or the records we hold. A peer sentence is the measured value against the
+ * peer median, and only when both numbers are present.
  */
 export function buildFacilityDescription(f: {
   name: string;
-  /** Composite percentile 0–100, higher = better. Null when peer set too thin. */
+  /** Kept so callers can still pass the snapshot grade. Not printed. */
   percentile: number | null;
   stateName: string;
   stateCode?: string;
@@ -399,48 +410,56 @@ export function buildFacilityDescription(f: {
   agency: string;
   /** Pre-formatted month+year string, e.g. "Apr 2026" */
   lastInspected: string | null;
+  heldCount?: number | null;
+  olderCitation?: boolean;
+  lastCitationDate?: string | null;
+  earliestInspectionDate?: string | null;
+  basisRecorded?: boolean;
+  severityValue?: number | null;
+  severityPeerMedian?: number | null;
+  windowMonths?: number | null;
 }): string {
-  const unpublished =
-    f.stateCode != null &&
-    texasRecentResultsUnpublished(f.stateCode, f.inspectionCount ?? 0, f.citationCount);
-  const citations = unpublished
-    ? TEXAS_RECENT_RESULTS
-      : (f.inspectionCount ?? 1) < 1
-      ? `no ${f.agency} inspection on record`
-      : f.stateCode === "TX" && f.citationCount === 0
-        ? "HHSC has not published a citation count for this home in the last 3 years"
-        : f.citationCount === 0
-        ? `no ${f.agency} citations on record in the last 3 years`
-        : f.citationCount === 1
-          ? `1 ${f.agency} citation on record in the last 3 years`
-          : `${f.citationCount} ${f.agency} citations on record in the last 3 years`;
+  const inspectionCount = f.inspectionCount ?? 0;
+  const citations =
+    inspectionCount < 1 &&
+    !(f.stateCode && texasRecentResultsUnpublished(f.stateCode, inspectionCount, f.citationCount))
+      ? `no ${f.agency} inspection is in the records we hold`
+      : citationRecordPhrase({
+          stateCode: f.stateCode,
+          regulatorAbbr: f.agency,
+          windowCount: f.citationCount,
+          inspectionCount,
+          heldCount: f.heldCount,
+          olderCitation: f.olderCitation,
+          lastCitationDate: f.lastCitationDate,
+          earliestInspectionDate: f.earliestInspectionDate,
+        });
   const inspPart = f.lastInspected ? ` · last inspected ${f.lastInspected}` : "";
   const ctaSuffix = `View the full inspection record on StarlynnCare — no referral fees.`;
   const reviewCta =
     (f.reviewCount ?? 0) > 0
       ? ` Read reviews and the full ${f.agency} inspection record on StarlynnCare.`
       : ` Read the full ${f.agency} inspection record on StarlynnCare.`;
+  const peer = weightedCitationsPerBedPhrase({
+    value: f.severityValue,
+    peerMedian: f.severityPeerMedian,
+    agencyShort: f.agency,
+    windowMonths: f.windowMonths,
+  });
+  const padNoun = facilityPageNoun({
+    stateCode: f.stateCode ?? "",
+    basisRecorded: f.basisRecorded === true,
+  });
 
-  // Top-half — comparative claim.
-  if (f.percentile != null && f.percentile >= 50) {
-    const topPct = Math.max(1, 100 - f.percentile);
-    const tail =
-      topPct <= 10
-        ? `View the full inspection record on StarlynnCare.`
-        : `View inspection record — no referral commissions.`;
-    const peers = f.stateCode ? peerSetPhrase(f.stateCode, f.stateName) : `${f.stateName} memory care`;
-    const padNoun = f.stateCode ? careSettingCopy(f.stateCode).facilityNoun : "licensed memory care facility";
-    const base = `Top ${topPct}% of ${peers} · ${citations}${inspPart}.`;
-    const full = `${base} ${tail}`;
-    return full.length >= MIN_DESC ? full : `${base} ${padNoun} in ${f.city}, ${f.stateName}. ${tail}`;
+  if (peer) {
+    const base = `${peer}. ${citations}${inspPart}.`;
+    const full = `${base} ${ctaSuffix}`;
+    return full.length >= MIN_DESC ? full : `${base} ${padNoun} in ${f.city}, ${f.stateName}. ${ctaSuffix}`;
   }
 
-  // Bottom-half or unrated — facts only, no ranking language.
   const base = `${f.name} in ${f.city}, ${f.stateName} · ${citations}${inspPart}.`;
-  const cta = reviewCta;
-  const core = base + cta;
+  const core = base + reviewCta;
   if (core.length >= MIN_DESC) return core;
-  const padNoun = f.stateCode ? careSettingCopy(f.stateCode).facilityNoun : "licensed memory care facility";
   return `${base} ${padNoun.charAt(0).toUpperCase()}${padNoun.slice(1)}. ${ctaSuffix}`;
 }
 
@@ -458,7 +477,7 @@ export interface FacilitySnippetArgs {
   severityPercentile?: number | null;
   frequencyPercentile?: number | null;
   repeatsPercentile?: number | null;
-  /** Total deficiencies on record. */
+  /** Deficiency rows inside the 3-year window. */
   citationCount: number;
   /** Inspections in the profile window. Used so Texas does not call an empty window clean. */
   inspectionCount?: number;
@@ -466,57 +485,29 @@ export interface FacilitySnippetArgs {
   lastInspectionDate: string | null;
   /** Pre-formatted last-inspected label. When set, used instead of shortMonthYear. */
   lastInspected?: string | null;
-  /** "meta" emits the "What X's website won't show you:" prefix. "prose" emits a
-   *  natural-prose sentence suitable for in-page rendering. Default "meta". */
+  /** "meta" emits a compact line. "prose" emits a sentence for the page. Default "meta". */
   variant?: FacilitySnippetVariant;
   /** Overrides the state-level regulator abbreviation. Colorado nursing homes are CMS, not CDPHE. */
   regulatorAbbr?: string | null;
+  heldCount?: number | null;
+  olderCitation?: boolean;
+  lastCitationDate?: string | null;
+  earliestInspectionDate?: string | null;
+  /** Weighted citations per bed. Omitted from the sentence when null. */
+  severityValue?: number | null;
+  severityPeerMedian?: number | null;
+  windowMonths?: number | null;
 }
 
 /**
- * Build a data-driven facility SERP snippet from snapshot RPC + totals.
- *
- * Both variants pull from the same fragments (grade+rank, citation count,
- * last inspection) so meta and on-page prose stay aligned — important because
- * Google overrides our meta ~20–30% of the time and we want it to lift the
- * same differentiator from on-page text.
- *
- * Fragments degrade gracefully: if grade is null we drop the rank fragment;
- * if there are no inspections we drop the last-inspection fragment. The helper
- * always returns at least the citation fragment ("no CDSS citations on record"
- * when zero), so callers never get an empty string.
+ * Citation sentence for the lede and the JSON-LD description. The peer clause
+ * is the measured value against the peer median. It is omitted when either
+ * number is missing.
  */
-/**
- * For bottom-half facilities: find the sub-metric that is at least 10 points
- * worse than the composite and has the lowest percentile. Returns null when no
- * sub-metric differs by the threshold, when all sub-metrics are null, or when
- * the composite is top-half (we only call this for bottom-half facilities).
- */
-function worstSubMetricFragment(
-  composite: number,
-  severityPct: number | null | undefined,
-  frequencyPct: number | null | undefined,
-  repeatsPct: number | null | undefined,
-): { percentile: number; label: string } | null {
-  const candidates: Array<{ percentile: number; label: string }> = [
-    { percentile: severityPct ?? Infinity, label: "citation severity" },
-    { percentile: frequencyPct ?? Infinity, label: "citation frequency" },
-    { percentile: repeatsPct ?? Infinity, label: "repeat-citation rate" },
-  ].filter((c) => c.percentile !== Infinity && c.percentile < 50 && composite - c.percentile >= 10);
-  if (candidates.length === 0) return null;
-  return candidates.reduce((a, b) => (b.percentile < a.percentile ? b : a));
-}
-
 export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   const {
     facilityName,
-    stateName,
     stateCode,
-    grade,
-    percentile,
-    severityPercentile,
-    frequencyPercentile,
-    repeatsPercentile,
     citationCount,
     lastInspectionDate,
     variant = "meta",
@@ -524,61 +515,35 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   } = args;
 
   const reg = regulatorAbbr?.trim() || REGULATOR_ABBR[stateCode] || "state";
-
-  // Clamp the displayed rank so we never print "top 0%" / "bottom 0%" — at the
-  // tails (percentile === 100 or === 0) say "top 1%" / "bottom 1%" instead.
-  let rankFrag: string | null = null;
-  if (percentile != null) {
-    if (percentile >= 50) {
-      rankFrag = `Ranked in the ${peerRankPhrase(percentile).text} of ${peerSetPhrase(stateCode, stateName)}`;
-    } else {
-      // For bottom-half, prefer the worst sub-metric when the gap is ≥ 10 pts
-      const worst = worstSubMetricFragment(
-        percentile,
-        severityPercentile,
-        frequencyPercentile,
-        repeatsPercentile,
-      );
-      if (worst) {
-        rankFrag = `Ranked in the bottom ${Math.max(1, Math.round(worst.percentile))}% on ${worst.label} among ${stateName} peers`;
-      } else {
-        rankFrag = `Ranked in the ${peerRankPhrase(percentile).text} of ${peerSetPhrase(stateCode, stateName)}`;
-      }
-    }
-  }
-
-  const citeFrag = texasRecentResultsUnpublished(
+  const citeFrag = citationRecordPhrase({
     stateCode,
-    args.inspectionCount ?? 1,
-    citationCount,
-  )
-    ? TEXAS_RECENT_RESULTS
-    : stateCode === "TX" && citationCount === 0
-      ? "HHSC has not published a citation count for this home in the last 3 years"
-      : citationCount > 0
-      ? `${citationCount} ${reg} citation${citationCount === 1 ? "" : "s"} on record`
-      : `no ${reg} citations on record`;
+    regulatorAbbr: reg,
+    windowCount: citationCount,
+    inspectionCount: args.inspectionCount ?? 1,
+    heldCount: args.heldCount,
+    olderCitation: args.olderCitation,
+    lastCitationDate: args.lastCitationDate,
+    earliestInspectionDate: args.earliestInspectionDate,
+  });
 
   const inspMo = args.lastInspected ?? shortMonthYear(lastInspectionDate);
   const inspFrag = inspMo ? `last inspected ${inspMo}` : null;
+  const peer = weightedCitationsPerBedPhrase({
+    value: args.severityValue,
+    peerMedian: args.severityPeerMedian,
+    agencyShort: reg,
+    windowMonths: args.windowMonths,
+  });
+  const peerBit = peer ? ` ${peer}.` : "";
 
   if (variant === "prose") {
-    if (rankFrag) {
-      const tail = [citeFrag, inspFrag].filter(Boolean).join("; ");
-      const ranked = rankFrag.charAt(0).toLowerCase() + rankFrag.slice(1);
-      return `${facilityName} is ${ranked} with ${tail}.`;
-    }
-    return `${facilityName} has ${citeFrag}${inspFrag ? `; ${inspFrag}` : ""}.`;
+    const lead = citeFrag.includes("records we hold")
+      ? `${facilityName}: ${citeFrag}`
+      : `${facilityName} has ${citeFrag}`;
+    return `${lead}${inspFrag ? `; ${inspFrag}` : ""}.${peerBit}`;
   }
 
-  // Meta variant: lead with the value (percentile/grade) so the differentiator
-  // lands in the visible snippet before Google truncates it.
-  if (rankFrag) {
-    const tail = [citeFrag, inspFrag].filter(Boolean).join(" · ");
-    return `${rankFrag}${tail ? ` · ${tail}` : ""}.`;
-  }
-  // No grade — lead with citations and inspection date.
-  return `${citeFrag}${inspFrag ? ` · ${inspFrag}` : ""}. Independent public-record review on StarlynnCare.`;
+  return `${citeFrag}${inspFrag ? ` · ${inspFrag}` : ""}.${peerBit} Independent public-record review on StarlynnCare.`;
 }
 
 function wordCount(text: string): number {
@@ -604,12 +569,23 @@ export function buildFacilityDirectAnswer(input: {
   facilityNoun?: string;
   /** When set and not Directed Care, the Arizona sentence does not use that license level. */
   azLicenseLevel?: string | null;
+  /** When set, "licensed memory care home" is used only if this is true. */
+  basisRecorded?: boolean;
+  heldCount?: number | null;
+  olderCitation?: boolean;
+  lastCitationDate?: string | null;
+  earliestInspectionDate?: string | null;
 }): string | null {
   if (input.inspectionCount < 1 && !input.licenseNumber) return null;
 
   const license = input.licenseNumber ? ` License ${input.licenseNumber}.` : "";
   const beds = input.beds != null ? ` Licensed for ${input.beds} beds.` : "";
   const inspected = input.lastInspected ? ` Last inspected ${input.lastInspected}.` : "";
+  const citeKnown =
+    input.heldCount != null ||
+    input.olderCitation != null ||
+    input.lastCitationDate != null ||
+    input.earliestInspectionDate != null;
 
   let record: string;
   if (
@@ -621,15 +597,27 @@ export function buildFacilityDirectAnswer(input: {
     record = `No ${input.regulatorAbbr} inspection is on file yet.`;
   } else if (input.stateCode === "TX" && input.citationCount === 0) {
     record = "HHSC has not published a citation count for this home in the last 3 years.";
+  } else if (citeKnown) {
+    const visits = `${input.inspectionCount} ${input.regulatorAbbr} ${input.inspectionCount === 1 ? "inspection is" : "inspections are"} on file from the last 3 years.`;
+    const cite = citationRecordPhrase({
+      stateCode: input.stateCode,
+      regulatorAbbr: input.regulatorAbbr,
+      windowCount: input.citationCount,
+      inspectionCount: input.inspectionCount,
+      heldCount: input.heldCount,
+      olderCitation: input.olderCitation,
+      lastCitationDate: input.lastCitationDate,
+      earliestInspectionDate: input.earliestInspectionDate,
+    });
+    record = `${visits} ${cite}.`;
   } else if (input.citationCount === 0) {
     record = `${input.inspectionCount} ${input.regulatorAbbr} ${input.inspectionCount === 1 ? "inspection is" : "inspections are"} on file from the last 3 years, with no citations in that window.`;
   } else {
     record = `${input.inspectionCount} ${input.regulatorAbbr} ${input.inspectionCount === 1 ? "inspection" : "inspections"} and ${input.citationCount} ${input.citationCount === 1 ? "citation" : "citations"} are on file from the last 3 years.`;
   }
 
-  const noun =
-    input.facilityNoun ??
-    (input.stateCode === "AZ" || input.stateName === "Arizona"
+  const legacyNoun =
+    input.stateCode === "AZ" || input.stateName === "Arizona"
       ? input.azLicenseLevel != null && !azDirectedCareLicense(input.azLicenseLevel)
         ? "licensed home"
         : "Directed Care licensed home"
@@ -637,17 +625,26 @@ export function buildFacilityDirectAnswer(input: {
         ? "licensed home that may serve residents with dementia"
         : input.stateCode === "PA" || input.stateName === "Pennsylvania"
           ? "licensed personal care or assisted living home"
-          : "licensed memory care home");
+          : "licensed memory care home";
+  const noun =
+    input.facilityNoun ??
+    (input.basisRecorded == null
+      ? legacyNoun
+      : facilityPageNoun({
+          stateCode: input.stateCode ?? "",
+          basisRecorded: input.basisRecorded,
+        }));
+  const basisNote =
+    input.basisRecorded === false ? ` ${BASIS_NOT_RECORDED_SENTENCE}` : "";
 
   const base = `${input.name} is a ${noun} in ${input.city}, ${input.stateName}.${license}${beds} ${record}${inspected} Read the dated inspection record on this page; StarlynnCare does not take referral fees.`;
   const words = wordCount(base);
+  let body = base;
   if (words < 40) {
     const padded = `${base} Compare it with nearby homes using the same ${input.regulatorAbbr} source.`;
-    return wordCount(padded) <= 70 ? padded : base;
+    body = wordCount(padded) <= 70 ? padded : base;
+  } else if (words > 60) {
+    body = `${input.name} is a ${noun} in ${input.city}, ${input.stateName}.${license} ${record}${inspected} The inspection record is on this page.`;
   }
-  if (words > 60) {
-    const shorter = `${input.name} in ${input.city}, ${input.stateName}.${license} ${record}${inspected} The inspection record is on this page.`;
-    return shorter;
-  }
-  return base;
+  return `${body}${basisNote}`;
 }

@@ -285,7 +285,7 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
   {
     slug: "/pennsylvania/insights/philadelphia-suburbs-worst-records",
     title: "Philadelphia's affluent suburbs have some of PA's worst memory care records",
-    desc: "Chester and Montgomery counties rank among PA's highest for deficiencies per facility. Chester County's 26 facilities average 80 deficiencies each.",
+    desc: "Chester and Montgomery counties are among the Pennsylvania counties with the highest deficiencies per facility. Chester County's 26 facilities average 80 deficiencies each.",
     states: ["PA"],
     tags: ["data", "inspection"],
     live: true,
@@ -346,7 +346,7 @@ export const ARTICLE_REGISTRY: RegistryArticle[] = [
   {
     slug: "/colorado/memory-care-vs-nursing-home",
     title: "Assisted living and nursing homes in Colorado",
-    desc: "CDPHE Level A–E citations and CMS F-tags are different records. StarlynnCare does not rank them on one scale.",
+    desc: "CDPHE Level A–E citations and CMS F-tags are different records. StarlynnCare does not score them on one scale.",
     states: ["CO"],
     tags: ["decision", "licensing"],
     live: true,

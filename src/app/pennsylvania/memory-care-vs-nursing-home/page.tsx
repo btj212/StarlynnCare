@@ -47,7 +47,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "How do I read a Pennsylvania facility profile on StarlynnCare?",
-    a: "PA DHS OLTL profiles show inspection records sourced from DHS OLTL inspection PDFs, parsed and dated with the specific 55 Pa Code citation for each deficiency. Severity chips show the DHS classification — Citation, Civil Money Penalty, Provisional License, Substantiated Abuse, Immediate Jeopardy, or Revocation. The peer percentile positions the facility against other PA DHS-regulated memory care facilities in its county. If the profile also shows CMS data (for nursing facilities with dementia units), those inspections are labeled separately with the CMS source designation.",
+    a: "PA DHS OLTL profiles show inspection records sourced from DHS OLTL inspection PDFs, parsed and dated with the specific 55 Pa Code citation for each deficiency. Severity chips show the DHS classification — Citation, Civil Money Penalty, Provisional License, Substantiated Abuse, Immediate Jeopardy, or Revocation. The comparison with similar homes sets the facility against other PA DHS-regulated memory care facilities in its county. If the profile also shows CMS data (for nursing facilities with dementia units), those inspections are labeled separately with the CMS source designation.",
   },
 ];
 

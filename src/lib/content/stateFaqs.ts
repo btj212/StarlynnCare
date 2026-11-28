@@ -19,7 +19,7 @@ export function buildNationalFaqs(coverage: Coverage): FaqItem[] {
     },
     {
       q: "Do you accept payments from facilities or operators?",
-      a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+      a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from state inspection records and verified family reviews.",
     },
     {
       q: "How often is the data updated?",
@@ -44,7 +44,7 @@ export const CA_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews. We are funded by reader memberships and the sale of our annual data report to public-interest organizations.",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from state inspection records and verified family reviews. We are funded by reader memberships and the sale of our annual data report to public-interest organizations.",
   },
   {
     q: "How often is the data updated?",
@@ -72,7 +72,7 @@ export const TX_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews. We are funded by reader memberships and the sale of our annual data report to public-interest organizations.",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from state inspection records and verified family reviews. We are funded by reader memberships and the sale of our annual data report to public-interest organizations.",
   },
   {
     q: "How often is Texas data updated?",
@@ -100,7 +100,7 @@ export const OR_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from state inspection records and verified family reviews.",
   },
   {
     q: "How often is Oregon data updated?",
@@ -128,7 +128,7 @@ export const WA_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from state inspection records and verified family reviews.",
   },
   {
     q: "How often is Washington data updated?",
@@ -156,7 +156,7 @@ export const MN_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from state inspection records and verified family reviews.",
   },
   {
     q: "How often is Minnesota data updated?",
@@ -184,7 +184,7 @@ export const UT_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from state inspection records and verified family reviews.",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from state inspection records and verified family reviews.",
   },
   {
     q: "How often is Utah data updated?",
@@ -252,7 +252,7 @@ export const PA_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from DHS inspection records and verified family reviews.",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from DHS inspection records and verified family reviews.",
   },
   {
     q: "Can a facility correct or respond to information on its profile?",
@@ -327,7 +327,7 @@ export const MO_FAQS: FaqItem[] = [
   },
   {
     q: "Do you accept payments from facilities or operators?",
-    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. Rankings are derived solely from DHSS inspection records and verified family reviews.",
+    a: "No. StarlynnCare receives no referral commissions, lead fees, or paid placement from any operator. The figures on each profile come from DHSS inspection records and verified family reviews.",
   },
   {
     q: "How often is Missouri data updated?",

@@ -287,7 +287,7 @@ export default async function AdminWatchersPage() {
       {stats.topFacilities.length > 0 && (
         <div>
           <h2 className="mb-3 text-lg font-semibold text-navy">
-            Top 10 facilities by official-alert recipients
+            10 facilities by official-alert recipients
           </h2>
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <table className="w-full text-sm">

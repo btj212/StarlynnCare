@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { CareCategory } from "@/lib/types";
-import { peerRankBarFillHex } from "@/lib/peerRankBar";
-import { ordinalSuffix } from "@/lib/format/ordinalSuffix";
+import { peerMedianLines } from "@/lib/facility/pageCopy";
+import { REGULATOR_ABBR } from "@/lib/seo/meta";
 
 const CATEGORY_LABEL: Partial<Record<CareCategory, string>> = {
   rcfe_memory_care: "RCFE · Memory care",
@@ -29,13 +29,14 @@ export type CarouselFacility = {
   sev_pct: number | null;
   rep_pct: number | null;
   freq_pct: number | null;
+  state_code?: string | null;
+  severityValue?: number | null;
+  severityPeerMedian?: number | null;
+  repeatsValue?: number | null;
+  repeatsPeerMedian?: number | null;
+  frequencyValue?: number | null;
+  frequencyPeerMedian?: number | null;
 };
-
-const METRIC_BARS: [string, keyof Pick<CarouselFacility, "sev_pct" | "rep_pct" | "freq_pct">][] = [
-  ["Severity", "sev_pct"],
-  ["Repeats", "rep_pct"],
-  ["Frequency", "freq_pct"],
-];
 
 const INTERVAL_MS = 4000;
 
@@ -106,7 +107,16 @@ export function FacilityCarousel({ facilities }: { facilities: CarouselFacility[
 }
 
 function CardInner({ f }: { f: CarouselFacility }) {
-  const hasData = f.composite !== null;
+  const lines = peerMedianLines({
+    agencyShort: REGULATOR_ABBR[f.state_code ?? "CA"] ?? "CDSS",
+    windowMonths: 36,
+    severityValue: f.severityValue,
+    severityPeerMedian: f.severityPeerMedian,
+    repeatsValue: f.repeatsValue,
+    repeatsPeerMedian: f.repeatsPeerMedian,
+    frequencyValue: f.frequencyValue,
+    frequencyPeerMedian: f.frequencyPeerMedian,
+  });
 
   return (
     <>
@@ -136,40 +146,13 @@ function CardInner({ f }: { f: CarouselFacility }) {
         </div>
       </div>
 
-      {/* Peer percentile bars */}
-      <div className="mt-3.5 rounded-xl bg-[#f5f2ec] px-4 py-3.5">
-        {hasData ? (
-          <div className="flex flex-col gap-2.5">
-            {METRIC_BARS.map(([label, key]) => {
-              const val = f[key];
-              const barColor = peerRankBarFillHex(val);
-              return (
-                <div key={key}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-muted leading-none">{label}</span>
-                    {val !== null && (
-                      <span
-                        className="text-[10px] font-semibold leading-none tabular-nums"
-                        style={{ color: barColor }}
-                      >
-                        {val}<span className="font-normal opacity-70">{ordinalSuffix(val)}</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="h-[3px] w-full rounded-full overflow-hidden bg-black/10">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${val ?? 0}%`, backgroundColor: barColor }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-[11px] text-muted">No inspection data on file</p>
-        )}
-      </div>
+      {lines.length > 0 ? (
+        <ul className="mt-3.5 flex list-none flex-col gap-2 rounded-xl bg-[#f5f2ec] px-4 py-3.5 text-[11px] leading-snug text-navy">
+          {lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      ) : null}
     </>
   );
 }

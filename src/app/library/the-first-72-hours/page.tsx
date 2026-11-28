@@ -251,7 +251,7 @@ export default function CrisisPlaybookPage() {
               Your shortlist, conflict-free
             </p>
             <p className="text-[15.5px] text-ink-2 leading-relaxed mb-4">
-              Build a comparison shortlist of facilities in your area, ranked by inspection grade.
+              Build a comparison shortlist of facilities in your area from each home's inspection record.
               No referral fees. No paid placement. The same public record the state uses — in plain language.
             </p>
             <Link

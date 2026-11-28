@@ -25,7 +25,7 @@ export const revalidate = 3600;
 const pageCanonical = canonicalFor("/california");
 const PAGE_TITLE = "California Memory Care Inspection Reports | CDSS Lookup";
 const PAGE_DESC =
-  "State inspection records and peer rankings for California memory care facilities — CDSS citations, county benchmarks, and family-ready profiles. Refreshed weekly.";
+  "State inspection records for California memory care facilities — CDSS citations, county figures, and family-ready profiles. Refreshed weekly.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,

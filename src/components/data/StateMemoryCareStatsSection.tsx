@@ -5,6 +5,7 @@ import {
   formatRecordDate,
   type StateMemoryCareStats,
 } from "@/lib/data/stateMemoryCareStats";
+import { NO_INSPECTION_DATE_WE_HOLD } from "@/lib/facility/pageCopy";
 
 function formatCount(n: number): string {
   return n.toLocaleString("en-US");
@@ -63,7 +64,7 @@ export function StateMemoryCareStatsSection({
               src: "Type A or severity 3+",
             },
             {
-              n: formatRecordDate(newest) ?? "None on record",
+              n: formatRecordDate(newest) ?? NO_INSPECTION_DATE_WE_HOLD,
               label: "Newest inspection date we hold",
               src: "Inspection dates",
             },
@@ -109,7 +110,7 @@ export function StateMemoryCareStatsSection({
                   Newest inspection
                 </dt>
                 <dd className="mt-1 font-[family-name:var(--font-mono)] text-sm text-ink">
-                  {formatRecordDate(row.newestInspection) ?? "None on record"}
+                  {formatRecordDate(row.newestInspection) ?? NO_INSPECTION_DATE_WE_HOLD}
                 </dd>
               </div>
             </dl>
@@ -150,7 +151,7 @@ export function StateMemoryCareStatsSection({
                   {formatCount(row.seriousHomes)}
                 </td>
                 <td className="py-4 font-[family-name:var(--font-mono)] text-sm text-ink">
-                  {formatRecordDate(row.newestInspection) ?? "None on record"}
+                  {formatRecordDate(row.newestInspection) ?? NO_INSPECTION_DATE_WE_HOLD}
                 </td>
               </tr>
             ))}

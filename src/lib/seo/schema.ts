@@ -34,8 +34,7 @@ import { medicaidFaqPair, securedUnitFaqPair } from "@/lib/facility/profileFacts
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { formatRecordDate, type DatePrecision } from "@/lib/format/formatRecordDate";
 import { licensedCity } from "@/lib/facility/licensedCity";
-import { peerRankPhrase } from "@/lib/seo/rankPhrase";
-import { peerSetPhrase } from "@/lib/city-hub/careSetting";
+import { citationRecordPhrase, facilityPageNoun, weightedCitationsPerBedPhrase } from "@/lib/facility/pageCopy";
 
 /**
  * Optional snapshot-derived extras the LocalBusiness/MedicalOrganization JSON-LD
@@ -43,9 +42,9 @@ import { peerSetPhrase } from "@/lib/city-hub/careSetting";
  * `facilityDescription` falls back to the legacy location-only sentence.
  */
 export type FacilitySchemaExtras = {
-  /** Composite percentile 0–100, higher = better. Null when peer-set too thin. */
+  /** Composite percentile 0–100. Passed through and not printed as a rank. */
   percentile?: number | null;
-  /** Total deficiencies on record. */
+  /** Deficiency rows inside the 3-year window. */
   citationCount?: number;
   /** Inspections inside the profile window. Texas uses this to avoid a zero-citation claim. */
   inspectionCount?: number;
@@ -53,6 +52,13 @@ export type FacilitySchemaExtras = {
   lastInspectionDate?: string | null;
   /** Profile regulator. Colorado nursing homes are CMS, not the state CDPHE abbreviation. */
   regulatorAbbr?: string | null;
+  heldCount?: number | null;
+  olderCitation?: boolean;
+  lastCitationDate?: string | null;
+  earliestInspectionDate?: string | null;
+  severityValue?: number | null;
+  severityPeerMedian?: number | null;
+  windowMonths?: number | null;
 };
 
 export type BreadcrumbItem = { name: string; url?: string };
@@ -138,6 +144,7 @@ function parseCoord(s: string | null | undefined): number | null {
 function facilityDescription(
   facility: Facility,
   extras?: FacilitySchemaExtras,
+  memoryCare?: MemoryCareBasis,
 ): string {
   if (facility.content?.what_families_should_know) {
     return facility.content.what_families_should_know.slice(0, 5000);
@@ -170,14 +177,27 @@ function facilityDescription(
       grade: null,
       percentile: extras.percentile ?? null,
       citationCount: extras.citationCount ?? 0,
+      inspectionCount: extras.inspectionCount,
       lastInspectionDate: extras.lastInspectionDate ?? null,
       variant: "prose",
       regulatorAbbr: extras.regulatorAbbr,
+      heldCount: extras.heldCount,
+      olderCitation: extras.olderCitation,
+      lastCitationDate: extras.lastCitationDate,
+      earliestInspectionDate: extras.earliestInspectionDate,
+      severityValue: extras.severityValue,
+      severityPeerMedian: extras.severityPeerMedian,
+      windowMonths: extras.windowMonths,
     });
   }
 
   const location = facility.city ? `${facility.city}, ${stateName}` : stateName;
-  return `Licensed memory care profile for ${facility.name} in ${location}, with state inspection context from StarlynnCare.`;
+  const noun = facilityPageNoun({
+    stateCode: facility.state_code,
+    basisRecorded: memoryCare?.recorded === true,
+  });
+  const label = noun.charAt(0).toUpperCase() + noun.slice(1);
+  return `${label} profile for ${facility.name} in ${location}, with state inspection context from StarlynnCare.`;
 }
 
 function nestedAggregateFromReviews(reviews: Review[]): object {
@@ -322,7 +342,7 @@ export function buildLocalBusinessForFacility(
         ? { alternateName: alternateNames }
         : {}),
     url: opts.canonicalUrl,
-    description: facilityDescription(facility, opts.extras),
+    description: facilityDescription(facility, opts.extras, opts.memoryCare),
     ...(telephone ? { telephone } : {}),
     image: facility.photo_url ?? undefined,
     medicalSpecialty: "Geriatric",
@@ -955,7 +975,16 @@ export type FacilityFaqInput = {
   publishesSeverityScale?: boolean;
   pageUrl: string;
   inspectionCount: number;
+  /** Deficiency rows inside the three-year window. */
   deficiencyCount: number;
+  /** Deficiency rows we hold, any year. Omit when the caller only knows the window. */
+  heldCount?: number | null;
+  /** A deficiency row exists on a visit older than the window. */
+  olderCitation?: boolean;
+  /** All-time last cited inspection, ISO yyyy-mm-dd. */
+  lastCitationDate?: string | null;
+  /** Oldest inspection date we hold, ISO yyyy-mm-dd. */
+  earliestInspectionDate?: string | null;
   /** True when older inspections exist outside the three-year display window. */
   countsCoverThreeYears: boolean;
   lastInspectionDate: string | null;
@@ -986,7 +1015,11 @@ export type FacilityFaqInput = {
   severityScope?: "cms" | "cdphe" | null;
   /** Washington complaint investigations inside the window. Other states omit it. */
   complaintCount?: number;
+  /** Kept for callers. The comparison answer uses the measured value, not this number. */
   percentile: number | null;
+  severityValue?: number | null;
+  severityPeerMedian?: number | null;
+  peerWindowMonths?: number | null;
   memoryCareLabel: string;
   /**
    * When false, skip "Does … provide memory care?" — that question implies
@@ -1133,12 +1166,17 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
       complaints > 0
         ? ` and ${complaints} complaint ${complaints === 1 ? "investigation" : "investigations"}`
         : "";
-    const cited =
-      input.stateCode === "TX" && input.deficiencyCount === 0
-        ? "HHSC has not published a citation count for this home in the last 3 years."
-        : input.deficiencyCount === 0
-          ? `No. ${name} has no ${input.regulatorAbbr} citations${window}.`
-          : `Yes. ${name} has ${input.deficiencyCount} ${defWord} from ${input.regulatorAbbr}${window}.`;
+    const record = citationRecordPhrase({
+      stateCode: input.stateCode,
+      regulatorAbbr: input.regulatorAbbr,
+      windowCount: input.deficiencyCount,
+      inspectionCount: input.inspectionCount,
+      heldCount: input.heldCount,
+      olderCitation: input.olderCitation,
+      lastCitationDate: input.lastCitationDate,
+      earliestInspectionDate: input.earliestInspectionDate,
+    });
+    const cited = record.endsWith(".") ? record : `${record}.`;
     const severity = seriousSentence(
       input.seriousFindings,
       input.stateCode,
@@ -1195,12 +1233,16 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
   });
   if (secured) pairs.push(secured);
 
-  if (input.percentile != null) {
-    const rankStr = peerRankPhrase(input.percentile).text;
-    const peers = peerSetPhrase(input.stateCode, input.stateName);
+  const peer = weightedCitationsPerBedPhrase({
+    value: input.severityValue,
+    peerMedian: input.severityPeerMedian,
+    agencyShort: input.regulatorAbbr,
+    windowMonths: input.peerWindowMonths,
+  });
+  if (peer) {
     pairs.push({
       q: `How does ${name} compare to similar ${input.stateName} facilities?`,
-      a: `Based on deficiency severity, repeat citations, and inspection frequency, ${name} ranks in the ${rankStr} of ${peers} in peer comparison on StarlynnCare.`,
+      a: `${peer}. The measure weights each citation by severity. It compares public records; it is not a quality rating.`,
     });
   }
 
