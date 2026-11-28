@@ -29,7 +29,23 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
-from _license_match import load_identity_map, reuse_identity
+from _license_match import load_identity_map, record_protected_diffs, reuse_identity
+
+# Left in place on conflict. A new insert still sets them.
+PRESERVE_ON_UPDATE = (
+    "publishable",
+    "care_category",
+    "serves_memory_care",
+    "memory_care_designation",
+    "memory_care_disclosure_filed",
+    "memory_care_disclosure_source",
+    "mc_signal_explicit_name",
+    "mc_signal_chain_name",
+    "mc_review_status",
+    "mc_signal_apfm_listed",
+    "mc_signal_caring_listed",
+    "wa_dementia_care_contract",
+)
 
 STATE_CODE = "WA"
 SOURCE_PAGE = "https://fortress.wa.gov/dshs/adsaapps/Lookup/BHAdvLookup.aspx"
@@ -146,17 +162,7 @@ ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     beds                         = EXCLUDED.beds,
     facility_type                = EXCLUDED.facility_type,
     source_url                   = EXCLUDED.source_url,
-    care_category                = EXCLUDED.care_category,
-    serves_memory_care           = EXCLUDED.serves_memory_care,
-    memory_care_designation      = EXCLUDED.memory_care_designation,
     license_status               = EXCLUDED.license_status,
-    publishable                  = EXCLUDED.publishable,
-    mc_review_status             = CASE
-        WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject')
-        THEN facilities.mc_review_status
-        ELSE EXCLUDED.mc_review_status
-    END,
-    wa_dementia_care_contract    = EXCLUDED.wa_dementia_care_contract,
     wa_contract_types            = EXCLUDED.wa_contract_types,
     wa_county                    = EXCLUDED.wa_county,
     wa_facility_type             = EXCLUDED.wa_facility_type,
@@ -306,6 +312,7 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
                 [r["license_number"]],
                 keep_stored_license=True,
             )
+        record_protected_diffs(cur, "WA", rows, PRESERVE_ON_UPDATE)
         cur.executemany(WA_UPSERT_SQL, rows)
 
 

@@ -37,7 +37,23 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
-from _license_match import load_identity_map, reuse_identity
+from _license_match import load_identity_map, record_protected_diffs, reuse_identity
+
+# Left in place on conflict. A new insert still sets them.
+PRESERVE_ON_UPDATE = (
+    "publishable",
+    "care_category",
+    "serves_memory_care",
+    "memory_care_designation",
+    "memory_care_disclosure_filed",
+    "memory_care_disclosure_source",
+    "mc_signal_explicit_name",
+    "mc_signal_chain_name",
+    "mc_review_status",
+    "mc_signal_apfm_listed",
+    "mc_signal_caring_listed",
+    "or_memory_care_endorsed",
+)
 
 STATE_CODE = "OR"
 SOURCE_PAGE = "https://ltclicensing.oregon.gov/Providers"
@@ -267,18 +283,8 @@ ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     facility_type                = EXCLUDED.facility_type,
     certification_type           = EXCLUDED.certification_type,
     source_url                   = EXCLUDED.source_url,
-    care_category                = EXCLUDED.care_category,
-    serves_memory_care           = EXCLUDED.serves_memory_care,
-    memory_care_designation      = EXCLUDED.memory_care_designation,
     license_status               = EXCLUDED.license_status,
     license_expiration           = EXCLUDED.license_expiration,
-    publishable                  = EXCLUDED.publishable,
-    mc_review_status             = CASE
-        WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject')
-        THEN facilities.mc_review_status
-        ELSE EXCLUDED.mc_review_status
-    END,
-    or_memory_care_endorsed      = EXCLUDED.or_memory_care_endorsed,
     or_provider_id               = EXCLUDED.or_provider_id,
     or_facility_type             = EXCLUDED.or_facility_type,
     or_accepts_medicaid          = EXCLUDED.or_accepts_medicaid,
@@ -299,6 +305,7 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
                 [r.get("_raw_id"), r["license_number"]],
                 keep_stored_license=True,
             )
+        record_protected_diffs(cur, "OR", rows, PRESERVE_ON_UPDATE)
         db_rows = [{k: v for k, v in r.items() if not str(k).startswith("_")} for r in rows]
         cur.executemany(OR_UPSERT_SQL, db_rows)
 

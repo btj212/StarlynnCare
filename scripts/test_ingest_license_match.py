@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import re
 import sys
 import tempfile
@@ -16,6 +17,7 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRAPERS = ROOT / "scrapers"
@@ -24,6 +26,7 @@ if str(SCRAPERS) not in sys.path:
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import _license_match
 import mn_alrc_ingest
 import mn_mdh_directory_ingest
 import or_dhs_ltc_directory_ingest as or_dhs
@@ -280,7 +283,24 @@ def _oak_csv_record() -> dict[str, Any]:
     return rec
 
 
-class OakLaneTests(unittest.TestCase):
+class _ReviewTempMixin:
+    """Keep the publishable review file out of scrapers/out during tests."""
+
+    def setUp(self) -> None:
+        self._review_dir = tempfile.TemporaryDirectory()
+        self._review_patch = mock.patch.object(
+            _license_match,
+            "REVIEW_LOG_PATH",
+            Path(self._review_dir.name) / "review.jsonl",
+        )
+        self._review_patch.start()
+
+    def tearDown(self) -> None:
+        self._review_patch.stop()
+        self._review_dir.cleanup()
+
+
+class OakLaneTests(_ReviewTempMixin, unittest.TestCase):
     def test_rename_reuses_slug_and_verbatim_license(self) -> None:
         """50M133 already has a URL. A new name must not insert a second Oregon home."""
         incoming = _oak_csv_record()
@@ -342,7 +362,7 @@ class OregonLicenseIdTests(unittest.TestCase):
         self.assertEqual(conn.rows[0]["name"], "Oak Lane Senior Living")
 
 
-class RenameInPlaceTests(unittest.TestCase):
+class RenameInPlaceTests(_ReviewTempMixin, unittest.TestCase):
     def test_each_state_updates_the_licensed_row(self) -> None:
         """Same license, new name: one row, and the public slug does not move."""
         cases = [
@@ -477,8 +497,10 @@ class RenameInPlaceTests(unittest.TestCase):
                 writer.writerow(incoming_row)
             real_get_conn = or_providers_ingest.get_conn
             or_providers_ingest.get_conn = lambda: conn  # type: ignore[method-assign]
+            review = Path(tmp) / "review.jsonl"
             try:
-                or_providers_ingest.ingest(path, dry_run=False, limit=None)
+                with mock.patch.object(_license_match, "REVIEW_LOG_PATH", review):
+                    or_providers_ingest.ingest(path, dry_run=False, limit=None)
             finally:
                 or_providers_ingest.get_conn = real_get_conn
         self.assertEqual(len(conn.rows), 1)
@@ -488,7 +510,7 @@ class RenameInPlaceTests(unittest.TestCase):
         self.assertEqual(conn.rows[0]["name"], "Oak Lane Senior Living and Memory Care")
 
 
-class IdentityHelperTests(unittest.TestCase):
+class IdentityHelperTests(_ReviewTempMixin, unittest.TestCase):
     def test_new_license_inserts_and_leaves_the_slug_alone(self) -> None:
         """A license we have never seen is a real new home, on today's slug."""
         rec = {
@@ -621,6 +643,110 @@ class IdentityHelperTests(unittest.TestCase):
         )
         self.assertEqual(len(conn.rows), 1)
         self.assertEqual(conn.rows[0]["name"], "Lakeside Senior Living")
+
+
+class PublishPreserveTests(_ReviewTempMixin, unittest.TestCase):
+    def test_existing_row_keeps_publishable_and_logs_the_difference(self) -> None:
+        """An update must not unpublish a home or clear a memory-care decision.
+        The difference is written aside for a person to review."""
+        existing = {
+            "id": "wa-rosario",
+            "state_code": "WA",
+            "name": "Rosario Assisted Living",
+            "slug": "rosario-assisted-living-2528",
+            "city_slug": "seattle",
+            "license_number": "0000002791",
+            "external_id": None,
+            "publishable": True,
+            "serves_memory_care": True,
+            "memory_care_designation": "Washington DSHS Dementia Care Contract",
+            "mc_review_status": "reviewed_publish",
+            "care_category": "alf_memory_care",
+            "wa_dementia_care_contract": True,
+            "created_at": "2020-06-01",
+        }
+        incoming = {
+            "state_code": "WA",
+            "name": "Rosario Senior Living",
+            "slug": "rosario-senior-living-2791",
+            "city_slug": "tacoma",
+            "license_number": "0000002791",
+            "publishable": False,
+            "serves_memory_care": False,
+            "memory_care_designation": None,
+            "mc_review_status": "needs_review",
+            "care_category": "alf_general",
+            "wa_dementia_care_contract": False,
+        }
+        conn = FakeConn([existing])
+        wa_dshs.upsert_facilities(conn, [incoming])
+        self.assertEqual(len(conn.rows), 1)
+        row = conn.rows[0]
+        self.assertEqual(row["name"], "Rosario Senior Living")
+        self.assertEqual(row["slug"], "rosario-assisted-living-2528")
+        self.assertTrue(row["publishable"])
+        self.assertTrue(row["serves_memory_care"])
+        self.assertEqual(row["mc_review_status"], "reviewed_publish")
+        self.assertEqual(row["care_category"], "alf_memory_care")
+        self.assertEqual(
+            row["memory_care_designation"],
+            "Washington DSHS Dementia Care Contract",
+        )
+        self.assertTrue(row["wa_dementia_care_contract"])
+        logged = [
+            json.loads(line)
+            for line in _license_match.REVIEW_LOG_PATH.read_text(encoding="utf-8").splitlines()
+        ]
+        by_field = {item["field"]: item for item in logged}
+        self.assertEqual(by_field["publishable"]["facility_id"], "wa-rosario")
+        self.assertIs(by_field["publishable"]["db_value"], True)
+        self.assertIs(by_field["publishable"]["incoming_value"], False)
+        self.assertIs(by_field["serves_memory_care"]["db_value"], True)
+        self.assertIs(by_field["serves_memory_care"]["incoming_value"], False)
+        self.assertEqual(by_field["mc_review_status"]["db_value"], "reviewed_publish")
+        self.assertEqual(by_field["mc_review_status"]["incoming_value"], "needs_review")
+
+    def test_new_insert_still_sets_the_fields(self) -> None:
+        """A home that is not already in the table still gets the values this script sets."""
+        incoming = {
+            "state_code": "WA",
+            "name": "New Home",
+            "slug": "new-home-9999",
+            "city_slug": "seattle",
+            "license_number": "0000009999",
+            "publishable": False,
+            "serves_memory_care": True,
+            "mc_review_status": "auto_published",
+        }
+        conn = FakeConn([])
+        wa_dshs.upsert_facilities(conn, [incoming])
+        self.assertEqual(len(conn.rows), 1)
+        self.assertIs(conn.rows[0]["publishable"], False)
+        self.assertIs(conn.rows[0]["serves_memory_care"], True)
+        self.assertFalse(_license_match.REVIEW_LOG_PATH.exists())
+
+    def test_do_update_leaves_preserved_fields_alone(self) -> None:
+        """Every directory script's conflict update omits publishable and memory-care columns.
+        The insert column list still names publishable."""
+        modules = {
+            "scrapers/or_dhs_ltc_directory_ingest.py": or_dhs.PRESERVE_ON_UPDATE,
+            "scrapers/or_providers_ingest.py": or_providers_ingest.PRESERVE_ON_UPDATE,
+            "scrapers/mn_mdh_directory_ingest.py": mn_mdh_directory_ingest.PRESERVE_ON_UPDATE,
+            "scrapers/mn_alrc_ingest.py": mn_alrc_ingest.PRESERVE_ON_UPDATE,
+            "scrapers/tx_alf_ingest.py": tx_alf_ingest.PRESERVE_ON_UPDATE,
+            "scrapers/wa_dshs_directory_ingest.py": wa_dshs.PRESERVE_ON_UPDATE,
+        }
+        for rel, fields in modules.items():
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            blocks = _do_update_blocks(text)
+            self.assertTrue(blocks, rel)
+            for block in blocks:
+                for field in fields:
+                    self.assertIsNone(
+                        re.search(rf"^\s*{re.escape(field)}\s*=", block, re.M),
+                        f"{rel} still assigns {field} on update",
+                    )
+            self.assertIn("publishable", text.split("DO UPDATE SET", 1)[0])
 
 
 class SqlConstantTests(unittest.TestCase):

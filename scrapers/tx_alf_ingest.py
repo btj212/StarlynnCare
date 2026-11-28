@@ -43,7 +43,27 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
-from _license_match import load_identity_map, reuse_identity
+from _license_match import load_identity_map, record_protected_diffs, reuse_identity
+
+# Left in place on conflict. A new insert still sets them.
+PRESERVE_ON_UPDATE = (
+    "publishable",
+    "care_category",
+    "serves_memory_care",
+    "memory_care_designation",
+    "memory_care_disclosure_filed",
+    "memory_care_disclosure_source",
+    "mc_signal_explicit_name",
+    "mc_signal_chain_name",
+    "mc_review_status",
+    "mc_signal_apfm_listed",
+    "mc_signal_caring_listed",
+    "tx_alzheimer_certified",
+    "tx_alzheimer_capacity",
+    "tx_alzheimer_cert_no",
+    "tx_alzheimer_cert_effective",
+    "tx_alzheimer_cert_expiration",
+)
 
 STATE_CODE = "TX"
 SCRAPER_NAME = "tx_hhsc_alf_directory"
@@ -451,26 +471,10 @@ ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     latitude                     = EXCLUDED.latitude,
     longitude                    = EXCLUDED.longitude,
     source_url                   = EXCLUDED.source_url,
-    care_category                = EXCLUDED.care_category,
-    serves_memory_care           = EXCLUDED.serves_memory_care,
-    memory_care_designation      = EXCLUDED.memory_care_designation,
     license_status               = EXCLUDED.license_status,
     license_expiration           = EXCLUDED.license_expiration,
-    publishable                  = EXCLUDED.publishable,
-    mc_signal_explicit_name      = EXCLUDED.mc_signal_explicit_name,
-    mc_signal_chain_name         = EXCLUDED.mc_signal_chain_name,
-    mc_review_status             = CASE
-        WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject')
-        THEN facilities.mc_review_status
-        ELSE EXCLUDED.mc_review_status
-    END,
     tx_license_class             = EXCLUDED.tx_license_class,
-    tx_alzheimer_certified       = EXCLUDED.tx_alzheimer_certified,
     tx_facility_id               = EXCLUDED.tx_facility_id,
-    tx_alzheimer_capacity        = EXCLUDED.tx_alzheimer_capacity,
-    tx_alzheimer_cert_no         = EXCLUDED.tx_alzheimer_cert_no,
-    tx_alzheimer_cert_effective  = EXCLUDED.tx_alzheimer_cert_effective,
-    tx_alzheimer_cert_expiration = EXCLUDED.tx_alzheimer_cert_expiration,
     tx_license_effective         = EXCLUDED.tx_license_effective,
     tx_license_expiration        = EXCLUDED.tx_license_expiration,
     tx_license_initial           = EXCLUDED.tx_license_initial,
@@ -489,6 +493,7 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
         idmap = load_identity_map(cur, "TX")
         for r in rows:
             reuse_identity(r, idmap, [r["license_number"]])
+        record_protected_diffs(cur, "TX", rows, PRESERVE_ON_UPDATE)
         cur.executemany(UPSERT_SQL, rows)
 
 
