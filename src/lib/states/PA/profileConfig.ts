@@ -45,7 +45,7 @@ export function paFormatSeverityTag(d: Deficiency): { label: string; tone: Sever
     if (lower === "immediate jeopardy" || lower === "ij") {
       if (cms && !paCode) return { label: CMS_IJ_LABEL, tone: "danger" };
       if (looksLikeAbuseFinding(d)) return { label: "Substantiated Abuse", tone: "danger" };
-      return { label: "Serious finding", tone: "danger" };
+      return null;
     }
     if (lower === "revocation" || lower === "license revocation" || lower === "license refusal")
       return { label: "Revocation", tone: "danger" };
@@ -59,19 +59,10 @@ export function paFormatSeverityTag(d: Deficiency): { label: string; tone: Sever
       return { label: "Citation", tone: "info" };
   }
 
-  // Do not promote the ingest boolean / severity=4 to Immediate Jeopardy.
-  // That flag is also set for substantiated abuse and revocation.
+  // Pennsylvania does not publish a 1–4 severity scale. Do not invent
+  // Provisional License, a civil penalty, or "Serious finding" from the integer.
   if (isCmsImmediateJeopardy(d) && !paCode) return { label: CMS_IJ_LABEL, tone: "danger" };
-  if (d.severity !== undefined && d.severity !== null) {
-    if (d.severity >= 4) {
-      if (looksLikeAbuseFinding(d)) return { label: "Substantiated Abuse", tone: "danger" };
-      return { label: "Serious finding", tone: "danger" };
-    }
-    if (d.severity === 3) return { label: "Provisional License", tone: "danger" };
-    if (d.severity === 2) return { label: "Civil Money Penalty", tone: "warn" };
-    if (d.severity === 1) return { label: "Citation", tone: "info" };
-  }
-
+  if (looksLikeAbuseFinding(d)) return { label: "Substantiated Abuse", tone: "danger" };
   if (raw) return { label: raw, tone: "mute" };
   return null;
 }

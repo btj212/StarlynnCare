@@ -7,8 +7,8 @@
  *
  * Data sources wired here:
  *   • facilities table  (1 row)
- *   • inspections table (up to 50 rows, ordered most-recent-first)
- *   • deficiencies table (all rows for those inspections)
+ *   • inspections table (paged, newest first; the page shows the 3-year window)
+ *   • deficiencies table (paged in chunks for those inspections)
  *   • facility_snapshot() RPC (1 call — percentiles, sparkline, heatmap)
  *   • reviews table via loadPublishedReviews()
  *   • Per-state config via getStateProfileConfig()
@@ -19,8 +19,15 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { regionFromSlug } from "@/lib/regions";
-import { PROFILE_CITATION_WINDOW_YEARS } from "@/lib/facility/citationWindow";
 import {
+  PROFILE_CITATION_WINDOW_YEARS,
+  countsCoverProfileWindow,
+  inspectionInProfileWindow,
+  summarizeCitationWindow,
+} from "@/lib/facility/citationWindow";
+import {
+  ID_CHUNK,
+  chunkIds,
   isUsableInspectionDate,
   latestInspectionDate,
   todayIsoDate,
@@ -28,6 +35,7 @@ import {
 import { countyRegionContainingCitySlug } from "@/lib/regionsCountyLookup";
 import { stateFromSlug } from "@/lib/states";
 import { getStateProfileConfig } from "@/lib/states/profileConfig";
+import { regulatorPublishesSeverityScale } from "@/lib/states/severityScale";
 import { loadPublishedReviews } from "@/lib/reviews/loadPublishedReviews";
 import { canonicalFor } from "@/lib/seo/canonical";
 import type { ComplianceFlag } from "@/lib/facility/complianceFlag";
@@ -53,6 +61,7 @@ import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import {
   inspectionDatePrecision,
   postedMonthToIsoDay,
+  resolveProfileVisits,
 } from "@/lib/facility/inspectionPrecision";
 import type { DatePrecision } from "@/lib/format/formatRecordDate";
 import { seriousFindingCounts } from "@/lib/facility/seriousFindings";
@@ -284,6 +293,11 @@ export interface FacilityProfile {
     /** Deficiencies on record, including those older than the display window. */
     allTimeDeficiencies: number;
     typeA: number;
+    typeB: number;
+    /** Rows in the window whose class is neither Type A nor Type B. */
+    other: number;
+    /** Substantiated complaints with no deficiency rows. Not added to the CA headline. */
+    substantiatedWithoutRows: number;
     lastCitation: string | null;
   };
   /** Released state enforcement flag. Pending Tier 1 is not public. */
@@ -327,6 +341,21 @@ export interface FacilityProfile {
     date: string;
     type: string | null;
     isComplaint: boolean;
+    precision: DatePrecision;
+  } | null;
+  /**
+   * Newest visit that is an inspection. Non-WA states copy latestVisit.
+   * Washington does not treat a complaint investigation as an inspection.
+   */
+  latestInspection: {
+    date: string;
+    type: string | null;
+    isComplaint: boolean;
+    precision: DatePrecision;
+  } | null;
+  /** Washington only. Newest complaint investigation. Null for every other state. */
+  latestComplaint: {
+    date: string;
     precision: DatePrecision;
   } | null;
 
@@ -431,6 +460,8 @@ async function fetchComplianceFlag(facilityId: string): Promise<ComplianceFlag |
   };
 }
 
+const INSPECTION_PAGE = 1000;
+
 async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
   inspections: InspectionRow[];
   deficiencies: DeficiencyRow[];
@@ -439,33 +470,49 @@ async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
   if (!supabase) return { inspections: [], deficiencies: [] };
 
   const today = todayIsoDate();
-  const { data: inspData } = await supabase
-    .from("inspections")
-    .select(
-      "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, source_event_id, source_agency, raw_data",
-    )
-    .eq("facility_id", facilityId)
-    .lte("inspection_date", today)
-    .order("inspection_date", { ascending: false })
-    .limit(50);
+  const inspectionSelect =
+    "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, source_event_id, source_agency, raw_data";
+  const rawInspections: Omit<InspectionRow, "datePrecision">[] = [];
+  for (let from = 0; from <= 50000; from += INSPECTION_PAGE) {
+    const { data } = await supabase
+      .from("inspections")
+      .select(inspectionSelect)
+      .eq("facility_id", facilityId)
+      .lte("inspection_date", today)
+      .order("inspection_date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + INSPECTION_PAGE - 1);
+    const page = (data ?? []) as Omit<InspectionRow, "datePrecision">[];
+    rawInspections.push(...page);
+    if (page.length < INSPECTION_PAGE) break;
+    if (from >= 50000) {
+      console.error("[loadFacilityProfile] inspection page stopped at 50000 rows", facilityId);
+    }
+  }
 
-  const inspections = ((inspData ?? []) as Omit<InspectionRow, "datePrecision">[])
+  const inspections = rawInspections
     .filter((i) => isUsableInspectionDate(i.inspection_date, today))
     .map((i) => ({ ...i, datePrecision: inspectionDatePrecision(i) }));
   if (!inspections.length) return { inspections: [], deficiencies: [] };
 
-  const inspIds = inspections.map((i) => i.id);
-  const { data: defData } = await supabase
-    .from("deficiencies")
-    .select(
-      "id, inspection_id, class, code, severity, scope, scope_severity_code, immediate_jeopardy, description, inspector_narrative, state_severity_raw, is_repeat, plan_of_correction, civil_money_penalty, status",
-    )
-    .in("inspection_id", inspIds);
+  const deficiencySelect =
+    "id, inspection_id, class, code, severity, scope, scope_severity_code, immediate_jeopardy, description, inspector_narrative, state_severity_raw, is_repeat, plan_of_correction, civil_money_penalty, status";
+  const deficiencies: DeficiencyRow[] = [];
+  for (const chunk of chunkIds(inspections.map((i) => i.id), ID_CHUNK)) {
+    for (let from = 0; from <= 50000; from += INSPECTION_PAGE) {
+      const { data } = await supabase
+        .from("deficiencies")
+        .select(deficiencySelect)
+        .in("inspection_id", chunk)
+        .order("id", { ascending: true })
+        .range(from, from + INSPECTION_PAGE - 1);
+      const page = (data ?? []) as DeficiencyRow[];
+      deficiencies.push(...page);
+      if (page.length < INSPECTION_PAGE) break;
+    }
+  }
 
-  return {
-    inspections,
-    deficiencies: (defData ?? []) as DeficiencyRow[],
-  };
+  return { inspections, deficiencies };
 }
 
 async function fetchWaLatestPostedReport(
@@ -709,11 +756,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   // ── Free-tier display cap ──────────────────────────────────────────────────
   // Only show inspections from the past INSPECTION_DISPLAY_YEARS years.
   // All data stays in the DB; this is view-layer filtering only.
-  const cutoff = new Date();
-  cutoff.setFullYear(cutoff.getFullYear() - INSPECTION_DISPLAY_YEARS);
-  const cutoffStr = cutoff.toISOString().split("T")[0]; // "YYYY-MM-DD"
-
-  const inspections = allInspections.filter((i) => i.inspection_date >= cutoffStr);
+  const today = todayIsoDate();
+  const inspections = allInspections.filter((i) => inspectionInProfileWindow(i.inspection_date, today));
   const hiddenOlderCount = allInspections.length - inspections.length;
   const oldestHiddenYear =
     allInspections.length > 0
@@ -742,16 +786,16 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     deficienciesByInspection.set(d.inspection_id, list);
   }
 
-  // Compute substantiated-complaint gaps (scraper gap: citation on sub-page)
-  const substantiatedGaps = inspections.filter(
-    (i) =>
-      i.is_complaint &&
-      i.raw_data?.outcome === "Substantiated" &&
-      (deficienciesByInspection.get(i.id) ?? []).length === 0,
-  );
-
-  const typeACount = deficiencies.filter((d) => d.class === "Type A").length;
-  const totalDeficiencies = deficiencies.length + substantiatedGaps.length;
+  // California headline is Type A + Type B rows. Other states still add a
+  // substantiated complaint that has no deficiency rows.
+  const citationSummary = summarizeCitationWindow({
+    inspections: allInspections,
+    deficiencies: allDeficiencies,
+    stateCode: facility.state_code,
+    today,
+  });
+  const typeACount = citationSummary.typeA;
+  const totalDeficiencies = citationSummary.citations;
   const lastCitation =
     inspections.find((i) => (deficienciesByInspection.get(i.id) ?? []).length > 0)
       ?.inspection_date ?? null;
@@ -855,32 +899,22 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     pdfDay,
   ]);
   facility.last_inspection_date = derivedLastInspection;
+  const { latestVisit, latestInspection, latestComplaint } = resolveProfileVisits({
+    stateCode: facility.state_code,
+    inspections: allInspections,
+    waPostedReport,
+    derivedLastInspection,
+  });
+  // Washington must not reuse a complaint month from the facility column or
+  // from derivedLastInspection. Other states keep the previous fallback.
   const lastNonComplaintInspection =
-    inspections.find((i) => !i.is_complaint)?.inspection_date ?? derivedLastInspection;
-  const rowVisit = allInspections[0];
-  const pdfIsNewest = pdfDay != null && (!rowVisit || pdfDay > rowVisit.inspection_date);
-  const latestVisit = pdfIsNewest && pdfDay && waPostedReport
-    ? {
-        date: pdfDay,
-        type: waPostedReport.doc_type === "investigation" ? "complaint" : "standard",
-        isComplaint: waPostedReport.doc_type === "investigation",
-        precision: "month" as const,
-      }
-    : rowVisit
-      ? {
-          date: rowVisit.inspection_date,
-          type: rowVisit.inspection_type,
-          isComplaint: rowVisit.is_complaint,
-          precision: rowVisit.datePrecision,
-        }
-      : derivedLastInspection
-        ? {
-            date: derivedLastInspection,
-            type: null,
-            isComplaint: false,
-            precision: pdfDay === derivedLastInspection ? ("month" as const) : ("day" as const),
-          }
-        : null;
+    facility.state_code === "WA"
+      ? null
+      : inspections.find((i) => !i.is_complaint)?.inspection_date ?? derivedLastInspection;
+  const reviewedOn =
+    facility.state_code === "WA"
+      ? latestInspection?.date ?? null
+      : latestVisit?.date ?? lastNonComplaintInspection;
   const licenseRecordUrl = regulatorLicensePageFor(facility.state_code, facility.license_number);
   const acceptanceTier = dementiaAcceptanceTier(facility);
   const careBasis = {
@@ -900,14 +934,20 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     facilityName: faqName,
     stateName: state.name,
     stateCode: state.code,
+    publishesSeverityScale: regulatorPublishesSeverityScale(
+      state.code,
+      cfg.scopeSeverityScale,
+    ),
     pageUrl: canonicalUrl,
     inspectionCount: inspections.length,
     deficiencyCount: totalDeficiencies,
-    countsCoverThreeYears: hiddenOlderCount > 0,
-    lastInspectionDate: latestVisit?.date ?? null,
-    lastInspectionType: latestVisit?.type ?? null,
-    lastInspectionIsComplaint: latestVisit?.isComplaint ?? false,
-    lastInspectionPrecision: latestVisit?.precision ?? "day",
+    countsCoverThreeYears: countsCoverProfileWindow(facility.state_code, hiddenOlderCount),
+    lastInspectionDate: latestInspection?.date ?? null,
+    lastInspectionType: latestInspection?.type ?? null,
+    lastInspectionIsComplaint: latestInspection?.isComplaint ?? false,
+    lastInspectionPrecision: latestInspection?.precision ?? "day",
+    lastComplaintDate: latestComplaint?.date ?? null,
+    lastComplaintPrecision: latestComplaint?.precision,
     seriousFindings: seriousFindingCounts(deficiencies, cfg.formatSeverityTag),
     percentile:
       (degradedSnapshot?.peer_set.n ?? 0) >= 10
@@ -954,7 +994,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
             ? degradedSnapshot?.grade?.composite_percentile ?? null
             : null,
         citationCount: totalDeficiencies,
-        lastInspectionDate: latestVisit?.date ?? lastNonComplaintInspection,
+        lastInspectionDate: reviewedOn,
         regulatorAbbr: cfg.agencyShort,
       },
       memoryCare: careBasis,
@@ -964,13 +1004,11 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     buildFacilityMedicalWebPage({
       name: `${facility.name} — StarlynnCare`,
       url: canonicalUrl,
-      lastReviewed: latestVisit?.date ?? lastNonComplaintInspection,
+      lastReviewed: reviewedOn,
       datePublished: new Date(facility.created_at).toISOString(),
       dateModified: (() => {
         const updatedAt = new Date(facility.updated_at).getTime();
-        const inspectedAt = (latestVisit?.date ?? lastNonComplaintInspection)
-          ? new Date(`${latestVisit?.date ?? lastNonComplaintInspection}T12:00:00Z`).getTime()
-          : 0;
+        const inspectedAt = reviewedOn ? new Date(`${reviewedOn}T12:00:00Z`).getTime() : 0;
         return new Date(Math.max(updatedAt, inspectedAt)).toISOString();
       })(),
     }),
@@ -994,10 +1032,13 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     })),
     deficienciesByInspection,
     totals: {
-      inspections: inspections.length,
+      inspections: citationSummary.inspections,
       deficiencies: totalDeficiencies,
       allTimeDeficiencies: allDeficiencies.length,
       typeA: typeACount,
+      typeB: citationSummary.typeB,
+      other: citationSummary.other,
+      substantiatedWithoutRows: citationSummary.substantiatedWithoutRows,
       lastCitation,
     },
     complianceFlag,
@@ -1017,6 +1058,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     memoryCareBasis: careBasis,
     faqPairs,
     latestVisit,
+    latestInspection,
+    latestComplaint,
 
     reviews,
     photoUrls,

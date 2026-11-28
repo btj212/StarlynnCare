@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — A Washington inspection is not a complaint, and a California citation is a row
+
+**Decided:** On a Washington profile, "Last inspection" is the newest non-complaint inspection row, or the newest posted PDF only when `doc_type` is `inspection`. A complaint investigation is its own line. The page does not use `facilities.last_inspection_date` for that headline, because the column can hold a complaint month. `wa_latest_posted_report` still returns one PDF. When that PDF is an investigation, an older inspection month in `wa_pdf_inventory` stays hidden until the function can take a document type. California headline counts are the Type A and Type B deficiency rows whose parent visit is in the three-year window. A substantiated complaint with no rows is not added. The window phrase is always shown for California. Inspections and their deficiencies are paged. A phone is shown only when it has 10 digits, or 11 with a leading 1. Otherwise the cell says "Not on file" and links the regulator record. Oregon license links go to `/Providers/Details/{license}`. A compliance-banner link uses the state's short regulator name (CDSS in California, DSHS in Washington). No phone numbers and no Oakmont banner row were written.
+
+**Rejected:** Scraping phones or the CDSS TSO block during render. Writing the 82 Oregon phones or the Oakmont flag in this change. Calling a complaint the last inspection. Keeping the 50-inspection cap. Labeling every banner link "DSHS".
+
+**Source:** Read-only SQL on project `fwvrupjgwvvzqiutwwdg`, 2026-11-28. CDSS facility `345002797` still returned `ActionType` "Revocation Action Pending" with `CaseClosed` false and `STATUS` "Licensed".
+
+A facility page does not link to a lead-gen directory (`senioradvisor.com`, `caring.com`, `aplaceformom.com`, `seniorly.com`, and the same kind of host). That URL is not the home's website. A listed price may still name the directory, without a link. Severity sentences ("severe finding", "serious finding", "High Risk", "Serious") are only for a scale the regulator publishes: California Type A/B, Illinois Type 1/2/3, Oregon levels, Colorado Level A–E, and a CMS or CDPHE grid. Pennsylvania, Arizona, Minnesota, Missouri, Texas, Utah, and Washington assisted living do not get that sentence. Washington nursing homes still use the CMS grid.
+
+---
+
 ## 2026-11-27 — Colorado stores the event key, and a document URL still counts
 
 **Decided:** This corrects the same-day visit-id entry below. `inspections.source_event_id` for Colorado is `raw_data.co_event_key` (for example `23033N|035H13|AL18`), not `co_event_id`. One visit is split by rule set, so `co_event_id` is on two or three rows and the unique index `(source_agency, source_event_id)` rejects it. The backfill writes the key only where `source_event_id` is null, and it stops if that write would duplicate the pair. Illinois and Colorado also qualify on a date, a citation count (zero allowed), and an http(s) source URL, so the Colorado CMS nursing home with a link still passes. A visit id with no URL still passes for those two states. Every other state still needs the URL.

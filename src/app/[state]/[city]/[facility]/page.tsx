@@ -142,9 +142,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const canonical = canonicalFor(`/${state.slug}/${facility.city_slug}/${facility.slug}`);
 
   // Data-driven meta title + description. Same last visit as the profile header.
-  const lastInspectionDate = profile.latestVisit?.date ?? null;
-  const lastInspectedLabel = profile.latestVisit
-    ? formatRecordDate(profile.latestVisit.date, profile.latestVisit.precision)
+  const lastInspectionDate = profile.latestInspection?.date ?? null;
+  const lastInspectedLabel = profile.latestInspection
+    ? formatRecordDate(profile.latestInspection.date, profile.latestInspection.precision)
     : null;
   const compositePercentile = reportablePercentile(
     profile.snapshot?.grade?.composite_percentile,
@@ -306,7 +306,7 @@ export default async function FacilityPage({ params }: PageProps) {
           stateCode={facility.state_code}
         >
         <main className="bg-paper">
-        <ComplianceFlagBanner flag={profile.complianceFlag} placement="top" />
+        <ComplianceFlagBanner flag={profile.complianceFlag} placement="top" stateCode={facility.state_code} />
         {/* Sticky sub-nav */}
         <FacilitySubNav profile={profile} />
 
@@ -362,7 +362,7 @@ export default async function FacilityPage({ params }: PageProps) {
 
           {/* § 03 · Citation record — timeline + heatmap + inspection list */}
           <div className="order-3 md:order-none">
-            <ComplianceFlagBanner flag={profile.complianceFlag} placement="section" />
+            <ComplianceFlagBanner flag={profile.complianceFlag} placement="section" stateCode={facility.state_code} />
             <FacilityRecord profile={profile} />
           </div>
         </div>

@@ -64,6 +64,7 @@ async function loadSiblings(
   const dates = await loadLatestInspectionDates(
     supabase,
     sliced.map((row) => row.id),
+    stateCode === "WA" ? { excludeComplaints: true } : undefined,
   );
   return sliced.map((row) => ({
     ...row,

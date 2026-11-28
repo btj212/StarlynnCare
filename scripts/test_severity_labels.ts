@@ -30,6 +30,18 @@ assert.equal(caTypeA?.label.includes("Immediate"), false);
 const caTypeB = caFormatSeverityTag(def({ class: "Type B" }));
 assert.equal(caTypeB?.label, "Type B");
 
+const caTypeASevere = caFormatSeverityTag(
+  def({ class: "Type A", immediate_jeopardy: true, severity: 4, scope_severity_code: "J" }),
+);
+assert.equal(caTypeASevere?.label, "Type A");
+assert.doesNotMatch(caTypeASevere?.label ?? "", /Immediate|IJ|Sev|CMS/);
+
+const caTypeBFlag = caFormatSeverityTag(
+  def({ class: "Type B", immediate_jeopardy: true, severity: 4 }),
+);
+assert.equal(caTypeBFlag?.label, "Type B");
+assert.doesNotMatch(caTypeBFlag?.label ?? "", /Immediate|IJ|Sev|CMS/);
+
 const cmsJk = caFormatSeverityTag(
   def({ code: "F689", scope_severity_code: "J", immediate_jeopardy: true }),
 );
@@ -38,8 +50,7 @@ assert.equal(cmsJk?.label, CMS_IJ_LABEL);
 const azFlag = azFormatSeverityTag(
   def({ immediate_jeopardy: true, state_severity_raw: "Complete" }),
 );
-assert.equal(azFlag?.label, "High Risk");
-assert.doesNotMatch(azFlag?.label ?? "", /immediate jeopardy/i);
+assert.equal(azFlag, null);
 
 const paAbuse = paFormatSeverityTag(
   def({
@@ -57,7 +68,7 @@ const paOther = paFormatSeverityTag(
     immediate_jeopardy: true,
   }),
 );
-assert.equal(paOther?.label, "Serious finding");
+assert.equal(paOther, null);
 
 const paCms = paFormatSeverityTag(
   def({

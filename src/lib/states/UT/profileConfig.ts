@@ -19,25 +19,10 @@ function utFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone
   const lower = (raw ?? "").toLowerCase();
   if (lower.includes("revocation")) return { label: "Revocation", tone: "danger" };
   if (lower.includes("suspension")) return { label: "Suspension", tone: "danger" };
-  if (d.severity !== undefined && d.severity !== null) {
-    if (d.severity >= 4) return { label: "Serious", tone: "danger" };
-    if (d.severity === 3) return { label: "Serious", tone: "warn" };
-    if (d.severity === 2) return { label: "Moderate", tone: "info" };
-    if (d.severity === 1) return { label: "Standard", tone: "mute" };
-  }
-  if (raw) {
-    if (lower.includes("immediate jeopardy")) {
-      return { label: "Serious", tone: "danger" };
-    }
-    if (lower.includes("admission ban") || lower.includes("monitoring")) {
-      return { label: "Serious", tone: "warn" };
-    }
-    if (lower.includes("penalty") || lower.includes("fine")) {
-      return { label: "Moderate", tone: "info" };
-    }
-    return { label: raw, tone: "mute" };
-  }
-  return null;
+  // Utah does not publish a severity scale. Do not rename a stored outcome
+  // to Serious, Moderate, or Standard.
+  if (!raw || lower.includes("immediate jeopardy")) return null;
+  return { label: raw, tone: "mute" };
 }
 
 export const utProfileConfig: StateProfileConfig = {

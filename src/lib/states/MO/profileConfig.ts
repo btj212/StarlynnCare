@@ -12,7 +12,7 @@ function moFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone
   if ((d.severity ?? 0) >= 4 || d.immediate_jeopardy) {
     const raw = (d.state_severity_raw ?? "").toUpperCase();
     if (raw.includes("COMPLAINT")) return { label: "Complaint", tone: "warn" };
-    return { label: "High Risk", tone: "warn" };
+    return null;
   }
   const code = d.code;
   if (code) return { label: code.slice(0, 12), tone: "info" };

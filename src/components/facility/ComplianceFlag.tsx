@@ -1,11 +1,17 @@
 import type { ComplianceFlag } from "@/lib/facility/complianceFlag";
+import { regulatorFor } from "@/lib/states/regulators";
 
-function linked(text: string) {
+function sourceLinkLabel(stateCode: string | undefined): string {
+  if (!stateCode) return "DSHS";
+  return regulatorFor(stateCode)?.short ?? "DSHS";
+}
+
+function linked(text: string, label: string) {
   const parts = text.split(/(https?:\/\/[^\s)]+)/g);
   return parts.map((part, index) =>
     part.startsWith("http") ? (
       <a key={index} href={part} className="underline" rel="noopener noreferrer">
-        DSHS
+        {label}
       </a>
     ) : (
       <span key={index}>{part}</span>
@@ -16,9 +22,11 @@ function linked(text: string) {
 export function ComplianceFlagBanner({
   flag,
   placement,
+  stateCode,
 }: {
   flag: ComplianceFlag | null;
   placement: "top" | "section";
+  stateCode?: string;
 }) {
   if (!flag?.banner_text) return null;
   if (placement === "top" && flag.tier === 3) return null;
@@ -38,7 +46,7 @@ export function ComplianceFlagBanner({
     >
       <div className="mx-auto max-w-[1280px]">
         <p className="m-0 max-w-[75ch] font-[family-name:var(--font-sans)] text-[15px] leading-relaxed text-ink">
-          {linked(flag.banner_text)}
+          {linked(flag.banner_text, sourceLinkLabel(stateCode))}
         </p>
       </div>
     </section>

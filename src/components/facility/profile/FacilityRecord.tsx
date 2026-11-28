@@ -4,6 +4,7 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
 import { formatInspectionListDate } from "@/lib/format/formatRecordDate";
+import { citationCountPhrase } from "@/lib/facility/citationWindow";
 import Link from "next/link";
 
 // ─── Timeline rail ─────────────────────────────────────────────────────────
@@ -328,9 +329,15 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
           label="The Record"
           title="Reviews & inspection record"
           deck={
-            totals.deficiencies === 0
-              ? "No citations in the last 36 months."
-              : `${totals.deficiencies} ${totals.deficiencies === 1 ? "deficiency" : "deficiencies"} on record. Each bar is a month with a citation.`
+            profile.facility.state_code === "CA"
+              ? `${citationCountPhrase({
+                  count: totals.deficiencies,
+                  agencyShort: "CDSS",
+                  window: "profile",
+                })}. Each bar is a month with a citation.`
+              : totals.deficiencies === 0
+                ? "No citations in the last 36 months."
+                : `${totals.deficiencies} ${totals.deficiencies === 1 ? "deficiency" : "deficiencies"} on record. Each bar is a month with a citation.`
           }
         />
 

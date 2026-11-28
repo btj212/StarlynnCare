@@ -8,6 +8,18 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — A complaint was printed as the last inspection, and California counts stopped at 50
+
+**What went wrong:** `latestVisit` was the newest visit of any kind, so a Washington complaint investigation was the "Last inspection" date. `fetchInspectionsAndDeficiencies` used `.limit(50)`, so a home with more visits in the window said "across 50 inspections". The headline added substantiated complaints that had no deficiency rows, which made the California total higher than Type A plus Type B. The phone cell was a dash when the database had no number, and a short digit string would have been shown as typed. Every compliance-banner link said "DSHS".
+
+**What worked instead:** Keep `latestVisit` for "any visit", and print `latestInspection` separately from `latestComplaint` on Washington pages. Page the inspection and deficiency reads. For California, the headline is the deficiency rows in the window, and the three-year phrase stays even when nothing is older. Show a phone only after it parses to 10 digits; otherwise say "Not on file" and link the regulator record. Label the banner link from the state regulator.
+
+**Source:** Live profiles and read-only SQL on project `fwvrupjgwvvzqiutwwdg`, 2026-11-27 and 2026-11-28. The California rebuild was still inserting rows (`deficiencies.created_at` moving, `poc_deadline` still on 14 rows at the first check).
+
+Pennsylvania pages for Elm Terrace, Spring Mill Pointe, Sunrise of Lafayette Hill, and Symphony Square linked to SeniorAdvisor or Caring.com from the cost source, not from `facilities.website` (that column is null). Treating the link as the home's website was the wrong fix. Drop the link when the host is a directory. Pennsylvania also has no DHS severity scale, so "None are tagged a severe finding" was our label. The same sentence is omitted for every state that does not publish a scale.
+
+---
+
 ## 2026-11-27 — Colorado event ids and the Washington recount update were not writable
 
 **What went wrong:** `backfill_co_inspection_gate.py --apply` copied `raw_data.co_event_id` into `source_event_id`. 318 of those ids are on 2–3 rows each (646 rows), one per rule set, so the unique index `(source_agency, source_event_id)` would reject the write. `recount_wa_citation_counts.py --apply` joined `facilities` on `i.facility_id` inside `FROM` before the inspection being updated was in scope, and Postgres rejected that. `inspectionQualifies` for Illinois and Colorado accepted only the visit-id route, so a Colorado CMS nursing home with a real link and no visit id failed.

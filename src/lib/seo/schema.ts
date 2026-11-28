@@ -20,6 +20,9 @@ import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { regulatorFor } from "@/lib/states/regulators";
+import { parsePhone } from "@/lib/facility/phone";
+import { linkableFacilityUrl } from "@/lib/facility/aggregatorLink";
+import { regulatorPublishesSeverityScale } from "@/lib/states/severityScale";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import {
   CONFIRMED_ACCEPTS_JSONLD,
@@ -70,7 +73,7 @@ export function cdssLicensePageFor(
  *
  * - CA → CDSS FacDetail deep link
  * - TX → HHSC LTC Online Search portal (LTC Search; users paste license number)
- * - OR → Oregon DHS LTC Licensing portal
+ * - OR → Oregon DHS provider record (`/Providers/Details/{license}`)
  * - WA → Washington DSHS ALF Public Lookup
  * - MN → Minnesota MDH Licensed/Certified Provider lookup
  */
@@ -84,6 +87,8 @@ export function regulatorLicensePageFor(
   switch (code) {
     case "CA":
       return cdssLicensePageFor(lic);
+    case "OR":
+      return `https://ltclicensing.oregon.gov/Providers/Details/${encodeURIComponent(lic)}`;
     default:
       return regulatorFor(code)?.portalUrl ?? null;
   }
@@ -191,7 +196,8 @@ export function buildLocalBusinessForFacility(
   const sameAs: string[] = [];
   const regulatorUrl = regulatorLicensePageFor(state.code, facility.license_number);
   if (regulatorUrl) sameAs.push(regulatorUrl);
-  if (facility.website?.trim()) sameAs.push(facility.website.trim());
+  const website = linkableFacilityUrl(facility.website);
+  if (website) sameAs.push(website);
 
   const additionalProperty: object[] = [];
   if (facility.license_number)
@@ -289,7 +295,7 @@ export function buildLocalBusinessForFacility(
         },
       }
     : {};
-  const telephone = facility.phone?.trim() || "";
+  const telephone = parsePhone(facility.phone)?.display ?? "";
 
   return {
     "@context": "https://schema.org",
@@ -929,6 +935,11 @@ export type FacilityFaqInput = {
   facilityName: string;
   stateName: string;
   stateCode: string;
+  /**
+   * When set, overrides the state default. Washington nursing homes pass
+   * true because they use the CMS grid. Washington assisted living does not.
+   */
+  publishesSeverityScale?: boolean;
   pageUrl: string;
   inspectionCount: number;
   deficiencyCount: number;
@@ -940,6 +951,12 @@ export type FacilityFaqInput = {
   lastInspectionIsComplaint: boolean;
   /** WA DSHS often posts a month, not a day. */
   lastInspectionPrecision?: DatePrecision;
+  /**
+   * Washington only. Newest complaint investigation, kept off the inspection
+   * question. Other states omit it.
+   */
+  lastComplaintDate?: string | null;
+  lastComplaintPrecision?: DatePrecision;
   seriousFindings: Array<{ label: string; count: number }>;
   percentile: number | null;
   memoryCareLabel: string;
@@ -1012,7 +1029,10 @@ function seriousTermWhenNone(stateCode: string): string {
 function seriousSentence(
   findings: Array<{ label: string; count: number }>,
   stateCode: string,
+  publishesSeverityScale: boolean | undefined,
 ): string {
+  const allowed = publishesSeverityScale ?? regulatorPublishesSeverityScale(stateCode);
+  if (!allowed) return "";
   const total = findings.reduce((sum, finding) => sum + finding.count, 0);
   if (total === 0) return `None are tagged ${seriousTermWhenNone(stateCode)}.`;
   const labels = [...new Set(findings.map((finding) => proseTag(finding.label)))];
@@ -1056,6 +1076,15 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
     });
   }
 
+  if (input.stateCode === "WA" && input.lastComplaintDate) {
+    const precision = input.lastComplaintPrecision ?? "month";
+    const date = formatRecordDate(input.lastComplaintDate, precision);
+    pairs.push({
+      q: `When was the most recent DSHS complaint investigation at ${name}?`,
+      a: `The most recent DSHS complaint investigation report posted for ${name} is dated ${date}. A complaint investigation responds to a complaint. It is not a routine inspection.`,
+    });
+  }
+
   if (input.inspectionCount > 0) {
     const defWord = input.deficiencyCount === 1 ? "deficiency" : "deficiencies";
     const inspWord = input.inspectionCount === 1 ? "inspection" : "inspections";
@@ -1064,17 +1093,17 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
       input.deficiencyCount === 0
         ? `No. ${name} has no ${input.regulatorAbbr} citations${window}.`
         : `Yes. ${name} has ${input.deficiencyCount} ${defWord} from ${input.regulatorAbbr}${window}.`;
+    const severity = seriousSentence(
+      input.seriousFindings,
+      input.stateCode,
+      input.publishesSeverityScale,
+    );
     pairs.push({
       q: `Has ${name} been cited by ${input.regulatorAbbr}?`,
-      a:
-        input.deficiencyCount > 0
-          ? `${cited} ${seriousSentence(input.seriousFindings, input.stateCode)}`
-          : cited,
+      a: input.deficiencyCount > 0 && severity ? `${cited} ${severity}` : cited,
     });
     let answer = `${name} has ${input.deficiencyCount} ${defWord} across ${input.inspectionCount} ${inspWord}${window}.`;
-    if (input.deficiencyCount > 0) {
-      answer += ` ${seriousSentence(input.seriousFindings, input.stateCode)}`;
-    }
+    if (severity) answer += ` ${severity}`;
     pairs.push({
       q: `How many citations does ${name} have?`,
       a: answer,
