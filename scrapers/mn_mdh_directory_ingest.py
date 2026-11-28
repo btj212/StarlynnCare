@@ -27,6 +27,11 @@ import psycopg
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import load_identity_map, reuse_identity
+
 STATE_CODE = "MN"
 SOURCE_PAGE = "https://www.health.state.mn.us/facilities/regulation/directory/directorydatafile.html"
 
@@ -325,6 +330,9 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
     if not rows:
         return
     with conn.cursor() as cur:
+        idmap = load_identity_map(cur, "MN")
+        for r in rows:
+            reuse_identity(r, idmap, [r["license_number"]], keep_stored_license=False)
         cur.executemany(MN_UPSERT_SQL, rows)
 
 

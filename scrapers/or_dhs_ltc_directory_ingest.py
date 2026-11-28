@@ -6,9 +6,8 @@
 # See scripts/or_overnight_run.sh for the replacement orchestration.
 #
 # Original content preserved below for reference.
+# __main__ refuses to run. The guard is not at module level, so tests can import it.
 # ─────────────────────────────────────────────────────────────────────────────
-import sys; print('ERROR: or_dhs_ltc_directory_ingest.py is retired. Run or_providers_ingest.py instead.', file=sys.stderr); sys.exit(1)
-
 #!/usr/bin/env python3
 """
 Ingest Oregon DHS LTC Licensing provider CSV (memory-care export) into facilities.
@@ -36,6 +35,10 @@ from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import load_identity_map, reuse_identity
+
 STATE_CODE = "OR"
 SOURCE_PAGE = "https://ltclicensing.oregon.gov/Providers"
 
@@ -197,6 +200,8 @@ def row_to_record(headers: list[str], row: dict[str, str]) -> dict[str, Any] | N
         "or_facility_type": type_raw or None,
         "or_accepts_medicaid": parse_bool_medicaid(get("accepts medicaid", "medicaid")),
         "or_status": status or None,
+        # Not a SQL column. upsert_facilities strips "_"-prefixed keys before executemany.
+        "_raw_id": pid,
     }
 
 
@@ -285,7 +290,16 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
     if not rows:
         return
     with conn.cursor() as cur:
-        cur.executemany(OR_UPSERT_SQL, rows)
+        idmap = load_identity_map(cur, "OR")
+        for r in rows:
+            reuse_identity(
+                r,
+                idmap,
+                [r.get("_raw_id"), r["license_number"]],
+                keep_stored_license=True,
+            )
+        db_rows = [{k: v for k, v in r.items() if not str(k).startswith("_")} for r in rows]
+        cur.executemany(OR_UPSERT_SQL, db_rows)
 
 
 def read_csv(path: Path) -> list[dict[str, Any]]:
@@ -331,4 +345,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    print(
+        "ERROR: or_dhs_ltc_directory_ingest.py is retired. "
+        "Run or_providers_ingest.py instead.",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)

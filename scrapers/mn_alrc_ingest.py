@@ -32,6 +32,11 @@ import psycopg
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import load_identity_map, reuse_identity
+
 STATE_CODE = "MN"
 SOURCE_PAGE = "https://alreportcard.dhs.mn.gov/Search"
 
@@ -243,6 +248,10 @@ def main() -> int:
     stats = {"upserted": 0, "skipped": 0, "no_addr": 0}
 
     conn_ctx = psycopg.connect(db_url) if not args.dry_run else None
+    idmap: dict[str, dict[str, str]] = {}
+    if conn_ctx is not None:
+        with conn_ctx.cursor() as cur:
+            idmap = load_identity_map(cur, "MN")
 
     try:
         for row in excel_rows:
@@ -300,6 +309,7 @@ def main() -> int:
                 stats["upserted"] += 1
                 continue
 
+            reuse_identity(record, idmap, [license_number, mn_hfid])
             result = upsert_facility(conn_ctx, record)
             if result == "conflict":
                 stats["skipped"] += 1

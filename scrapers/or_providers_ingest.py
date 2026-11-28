@@ -38,6 +38,11 @@ import psycopg
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import load_identity_map, reuse_identity
+
 STATE_CODE = "OR"
 SOURCE_PAGE = "https://ltclicensing.oregon.gov/Providers"
 
@@ -252,8 +257,16 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
     conn = get_conn()
     ok = err = 0
     with conn:
+        with conn.cursor() as cur0:
+            idmap = load_identity_map(cur0, "OR")
         for rec in records:
             db_rec = {k: v for k, v in rec.items() if not k.startswith("_")}
+            reuse_identity(
+                db_rec,
+                idmap,
+                [db_rec["external_id"], db_rec["license_number"]],
+                keep_stored_license=True,
+            )
             try:
                 with conn.cursor() as cur:
                     # Savepoint: a failed execute rolls back only this row,
