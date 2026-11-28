@@ -30,6 +30,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -40,6 +41,11 @@ from typing import Any
 
 import psycopg
 from dotenv import load_dotenv
+
+try:
+    from pa_pdf_parse import classify_error, report_error_summary, should_fail
+except ImportError:  # imported as scrapers.pa_pdf_backfill
+    from scrapers.pa_pdf_parse import classify_error, report_error_summary, should_fail
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -73,6 +79,25 @@ _IJ_KEYS = {
 
 # Match dollar amounts like "$500", "$1,250", "$25,000.00"
 _DOLLAR_RE = re.compile(r"\$\s?([\d,]+)(?:\.\d+)?")
+_NORM_RE = re.compile(r"[^a-z0-9]+")
+
+
+def _normalize_token(value: str | None) -> str:
+    """Lowercase and drop whitespace and punctuation so re-runs compare equal."""
+    if not value:
+        return ""
+    return _NORM_RE.sub("", value.lower())
+
+
+def dedupe_key(code: str | None, description: str | None) -> tuple[str, str]:
+    """(normalized code, md5 of the normalized description).
+
+    Two citations of the same 55 Pa Code section both insert when the
+    description differs. The same wording on a second sidecar does not.
+    The inspection id is paired with this key at insert time.
+    """
+    digest = hashlib.md5(_normalize_token(description).encode("utf-8")).hexdigest()
+    return (_normalize_token(code), digest)
 
 
 def load_env() -> None:
@@ -162,6 +187,17 @@ def backfill_one(
         print(f"    {str(inv_id)[:8]}  {len(deficiencies)} deficiencies  (dry-run)", flush=True)
         return len(deficiencies)
 
+    # One row per (inspection, normalized code, description hash). Repeat
+    # citations of one section stay; a second pass of the same sidecar does not.
+    existing: set[tuple[str, str]] = set()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT code, description FROM deficiencies WHERE inspection_id = %s",
+            (inspection_id,),
+        )
+        for row_code, row_desc in cur.fetchall():
+            existing.add(dedupe_key(row_code, row_desc))
+
     written = 0
     for d in deficiencies:
         sev_raw = d.get("severity") or ""
@@ -172,27 +208,11 @@ def backfill_one(
         corrected = d.get("corrected")
         # Try to extract CMP amount for itemized penalty
         cmp_amount = _parse_dollar_amount(desc) if sev_raw and "penalty" in sev_raw.lower() else None
-
-        # Skip exact duplicate (inspection_id, code). Some sidecar rows have no
-        # `code` (regulation section wasn't parsed) — for those, fall back to
-        # matching on inspection_id + description so a re-run (e.g. inventory
-        # row reset to backfill_status='pending') can't re-insert the same
-        # citation twice. See ERRORS.md — this previously let ~700+ PA
-        # duplicate rows accumulate.
-        with conn.cursor() as cur:
-            if code:
-                cur.execute(
-                    "SELECT 1 FROM deficiencies WHERE inspection_id = %s AND code = %s LIMIT 1",
-                    (inspection_id, code),
-                )
-            else:
-                cur.execute(
-                    "SELECT 1 FROM deficiencies WHERE inspection_id = %s AND code IS NULL "
-                    "AND description = %s LIMIT 1",
-                    (inspection_id, desc[:1000] if desc else None),
-                )
-            if cur.fetchone():
-                continue
+        stored_desc = desc[:1000] if desc else None
+        key = dedupe_key(code, stored_desc)
+        if key in existing:
+            continue
+        existing.add(key)
 
         with conn.cursor() as cur:
             cur.execute(
@@ -230,15 +250,18 @@ def backfill_one(
             )
         written += 1
 
-    # Update inspection total_deficiency_count
+    # Recount from the table. Adding the rows just written inflates the
+    # total the next time this sidecar is applied.
     with conn.cursor() as cur:
         cur.execute(
             """
             UPDATE inspections
-            SET total_deficiency_count = COALESCE(total_deficiency_count, 0) + %s
+            SET total_deficiency_count = (
+                SELECT count(*) FROM deficiencies WHERE inspection_id = %s
+            )
             WHERE id = %s
             """,
-            (written, inspection_id),
+            (inspection_id, inspection_id),
         )
 
     return written
@@ -267,6 +290,7 @@ def run(dry_run: bool, limit: int | None) -> None:
     print(f"  {len(rows)} PDFs to backfill", flush=True)
 
     ok = err = total_defs = 0
+    error_classes: dict[str, int] = {}
     for inv_id, local_path, inspection_id in rows:
         # Fresh connection per row — avoids session pooler idle-timeout disconnect
         with psycopg.connect(dsn) as conn:
@@ -305,12 +329,23 @@ def run(dry_run: bool, limit: int | None) -> None:
                     except Exception:
                         pass
                 err += 1
+                label = classify_error(exc)
+                error_classes[label] = error_classes.get(label, 0) + 1
                 print(f"  ERR {str(inv_id)[:8]}: {exc}", file=sys.stderr, flush=True)
 
     print(
         f"  Done — {ok} PDFs processed, {total_defs} deficiency rows written, {err} errors",
         flush=True,
     )
+    report_error_summary("PA PDF backfill", error_classes)
+    attempted = ok + err
+    if not dry_run and should_fail(err, attempted):
+        print(
+            f"FAIL: {err} of {attempted} PDFs errored during backfill",
+            file=sys.stderr,
+            flush=True,
+        )
+        sys.exit(1)
 
     # Fail loud: if we have parsed PDFs but wrote 0 deficiencies, the schema or
     # sidecar shape probably drifted (per CLAUDE.md Rule 12).
