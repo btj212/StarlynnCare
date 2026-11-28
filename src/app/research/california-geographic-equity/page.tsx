@@ -27,7 +27,7 @@ const TITLE =
   "High-income California ZIPs do not have better memory care records";
 const META_TITLE = `${TITLE} | StarlynnCare Research`;
 const DESC =
-  "ZIP-level household income explains almost none of the variation in California memory care deficiency rates (Pearson r = 0.23). Several of the highest-income ZIPs rank among the worst-cited.";
+  "ZIP-level household income explains almost none of the variation in California memory care deficiency rates (Pearson r = 0.23). The highest-income quartile averaged 1.32 deficiencies per inspection; the lowest averaged 0.52.";
 const DATE_PUBLISHED = "2026-05-11";
 
 export const metadata: Metadata = {

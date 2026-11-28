@@ -22,7 +22,7 @@ export function StateHubCta({ facilityCount, ctaHref }: Props) {
             Find the right facility, <em>without the sales funnel.</em>
           </h2>
           <p className="mt-3 max-w-[46ch] text-[17px] leading-relaxed text-[#C6DAD3]">
-            Search by ZIP, compare peer rankings, read every dated citation — with no operator behind the recommendation.
+            Search by ZIP, compare a home with similar homes, and read every dated citation — with no operator behind the recommendation.
           </p>
           <div className="mt-7">
             <Link

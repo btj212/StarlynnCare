@@ -10,7 +10,6 @@ import { DataFootnote } from "@/components/editorial/DataFootnote";
 import { UpdatedStamp } from "@/components/editorial/UpdatedStamp";
 import { FacilityListClient, type ListFacility } from "@/components/facility/FacilityListClient";
 import { AreaWatchModal } from "@/components/facility/AreaWatchModal";
-import { TopGradedFacilities } from "@/components/facility/TopGradedFacilities";
 import { SiblingCityHubLinks } from "@/components/facility/SiblingCityHubLinks";
 import { HubFaqSection } from "@/components/facility/HubFaqSection";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
@@ -899,7 +898,7 @@ export default async function RegionPage({ params }: PageProps) {
                 {
                   n: String(excludedCount),
                   label:
-                    "Licensed homes not listed here (no inspection on file, or Arizona homes of 10 beds or fewer with no citations)",
+                    "Licensed homes not listed here (no inspection on file, or Arizona homes of 10 beds or fewer with no citations in the records we hold)",
                   src: "Listing rules",
                 },
               ]
@@ -961,7 +960,7 @@ export default async function RegionPage({ params }: PageProps) {
                 {
                   n: String(excludedCount),
                   label:
-                    "Licensed homes not listed here (no inspection on file, or Arizona homes of 10 beds or fewer with no citations)",
+                    "Licensed homes not listed here (no inspection on file, or Arizona homes of 10 beds or fewer with no citations in the records we hold)",
                   src: "Listing rules",
                 },
               ]
@@ -1166,7 +1165,7 @@ export default async function RegionPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Comparison rail, then the full list. */}
+        {/* County figures, then the full list. */}
         {!fetchError && totalCount > 0 && (
           <>
             {/* Hub differentiation block — unique-per-city computed stats */}
@@ -1180,14 +1179,6 @@ export default async function RegionPage({ params }: PageProps) {
                 newestInspection={glance.newestInspection}
               />
             )}
-
-            <TopGradedFacilities
-              citySlugs={region.citySlugs}
-              stateCode={region.state.code}
-              stateSlug={region.state.slug}
-              countyName={region.name}
-              isCity={!isCounty}
-            />
 
             {region.state.code === "PA" && isCounty && paMostCitedShown.length > 0 && (
               <div className="mx-auto mt-10 max-w-[1280px] px-4 pb-10 sm:px-6 md:px-[60px]">

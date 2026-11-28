@@ -32,8 +32,7 @@ export function StateHubSections({ data, config }: Props) {
       <StateHubHero
         title={
           <>
-            Find the <em className="italic text-rust">best</em> memory care
-            in {stateName},{" "}
+            Memory care in {stateName},{" "}
             <span
               className="px-1"
               style={{ backgroundImage: "linear-gradient(transparent 70%, var(--color-gold-soft) 70%)" }}

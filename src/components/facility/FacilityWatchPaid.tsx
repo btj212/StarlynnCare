@@ -203,7 +203,7 @@ export function FacilityWatchPaid({
                     {
                       value: "year" as const,
                       label: `$${PAID_WATCH_ANNUAL_USD}/year`,
-                      sub: "Best value",
+                      sub: "Annual price",
                     },
                   ] as const
                 ).map((opt) => {

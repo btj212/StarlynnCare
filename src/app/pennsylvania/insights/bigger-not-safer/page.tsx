@@ -41,7 +41,7 @@ const FAQ_PAIRS = [
   },
   {
     q: "Why might large facilities have more severe citations per facility?",
-    a: "Larger facilities have more regulatory surface area — more residents, more staff, more medication passes. Survey teams find more because there is more to inspect. Pennsylvania's XL-tier facilities are also disproportionately chain-operated, and multi-site operators have been cited in PA DHS enforcement actions for staffing shortfalls. The pattern is real, but it plays out differently at the individual facility level. Several XL-tier facilities in PA have clean records; several small ones have poor ones.",
+    a: "Larger facilities have more regulatory surface area — more residents, more staff, more medication passes. Survey teams find more because there is more to inspect. Pennsylvania's XL-tier facilities are also disproportionately chain-operated, and multi-site operators have been cited in PA DHS enforcement actions for staffing shortfalls. The pattern is real, but it plays out differently at the individual facility level. Several XL-tier facilities in PA have few citations; several small ones have many.",
   },
   {
     q: "What bed-size tiers does StarlynnCare use for Pennsylvania?",

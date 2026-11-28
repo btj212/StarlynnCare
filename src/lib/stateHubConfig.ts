@@ -16,7 +16,7 @@ export const CALIFORNIA_EDITORIAL_CARDS: EditorialCard[] = [
   {
     kind: "Annual Data Report · 2026",
     title: "The State of Memory Care in California",
-    desc: "Year-over-year analysis of inspection reports across licensed facilities — deficiency rates by county, severity trends, and the operators with the cleanest and most concerning records.",
+    desc: "Year-over-year analysis of inspection reports across licensed facilities — deficiency rates by county and severity trends.",
     meta: "Live · Dataset overview",
     href: "/data",
     live: true,

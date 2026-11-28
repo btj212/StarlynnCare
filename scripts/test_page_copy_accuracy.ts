@@ -30,6 +30,7 @@ import {
   buildFacilityDirectAnswer,
   buildFacilityRecordSentence,
   buildFacilitySnippet,
+  buildFacilityTitle,
 } from "../src/lib/seo/meta";
 import { buildFacilityFaqPairs, buildLocalBusinessForFacility } from "../src/lib/seo/schema";
 import { stateFromCode } from "../src/lib/states";
@@ -225,7 +226,14 @@ const sunriseFaq = buildFacilityFaqPairs({
   licenseUrl: null,
   regulatorName: "California Department of Social Services",
   regulatorAbbr: "CDSS",
+  heldCount: sunrise.held,
+  olderCitation: sunrise.olderCitation,
+  lastCitationDate: sunrise.lastCitationDate,
+  earliestInspectionDate: sunrise.earliest,
 });
+const sunriseCited = sunriseFaq.find((pair) => pair.q.startsWith("Has "))?.a ?? "";
+assert.equal(sunriseCited, "0 citations in the last 3 years; Last citation Oct 18, 2022.");
+assert.doesNotMatch(sunriseCited, /^No\./);
 assert.match(
   sunriseFaq.find((pair) => pair.q.startsWith("How does"))?.a ?? "",
   /Weighted citations per bed: 0\.00, against a similar-size peer median of 0\.30 \(CDSS, 36 months\)/,
@@ -527,6 +535,130 @@ assert.doesNotMatch(txCopy, /0 citations/);
 assert.doesNotMatch(txCopy, /clean record/i);
 assert.equal(facilityPageNoun({ stateCode: "TX", basisRecorded: false }), "state-licensed assisted living facility");
 
+/** The title names the window. A bare "no citations" is the claim the review caught. */
+const quietTitle = buildFacilityTitle({
+  name: "Quiet Home",
+  stateName: "California",
+  stateCode: "CA",
+  percentile: null,
+  city: "Napa",
+  citationCount: 0,
+  inspectionCount: 4,
+  lastInspectionDate: "2026-07-24",
+});
+assert.equal(quietTitle, "Quiet Home, Napa — no citations in 3 yrs, inspected Jul 2026");
+const txTypeTitle = buildFacilityTitle({
+  name: "Sample Home",
+  stateName: "Texas",
+  stateCode: "TX",
+  percentile: null,
+  city: "Houston",
+  citationCount: 0,
+  inspectionCount: 0,
+  licenseLabel: "TYPE B",
+});
+assert.equal(txTypeTitle, "Sample Home, Houston — Licensed Assisted Living");
+assert.doesNotMatch(txTypeTitle, /TYPE B/i);
+assert.doesNotMatch(txTypeTitle, /0 citations|clean record/i);
+
+/**
+ * The "Has this home been cited?" answer uses the same sentence as the page.
+ * These four homes have a window of zero and an older deficiency row, so a
+ * flat "No" is false.
+ */
+function citedAnswer(input: {
+  name: string;
+  stateName: string;
+  stateCode: string;
+  agency: string;
+  windowCount: number;
+  inspectionCount: number;
+  heldCount: number;
+  olderCitation: boolean;
+  lastCitationDate: string | null;
+  earliestInspectionDate?: string | null;
+}): string {
+  return (
+    buildFacilityFaqPairs({
+      facilityName: input.name,
+      stateName: input.stateName,
+      stateCode: input.stateCode,
+      pageUrl: "https://www.starlynncare.com/example",
+      inspectionCount: input.inspectionCount,
+      deficiencyCount: input.windowCount,
+      heldCount: input.heldCount,
+      olderCitation: input.olderCitation,
+      lastCitationDate: input.lastCitationDate,
+      earliestInspectionDate: input.earliestInspectionDate ?? null,
+      countsCoverThreeYears: false,
+      lastInspectionDate: "2026-01-01",
+      lastInspectionType: "annual",
+      lastInspectionIsComplaint: false,
+      seriousFindings: [],
+      percentile: null,
+      memoryCareLabel: "listed",
+      licenseNumber: "1",
+      licenseUrl: null,
+      regulatorName: input.agency,
+      regulatorAbbr: input.agency,
+    }).find((pair) => pair.q.startsWith("Has "))?.a ?? ""
+  );
+}
+
+const truvalCited = citedAnswer({
+  name: "Truval",
+  stateName: "Arizona",
+  stateCode: "AZ",
+  agency: "ADHS",
+  windowCount: 0,
+  inspectionCount: 3,
+  heldCount: 7,
+  olderCitation: true,
+  lastCitationDate: "2023-11-08",
+});
+const engelCited = citedAnswer({
+  name: "Engel Haus",
+  stateName: "Minnesota",
+  stateCode: "MN",
+  agency: "MDH",
+  windowCount: 0,
+  inspectionCount: 4,
+  heldCount: 5,
+  olderCitation: true,
+  lastCitationDate: "2023-02-14",
+});
+const mercysCited = citedAnswer({
+  name: "Mercy's Care Home I",
+  stateName: "Arizona",
+  stateCode: "AZ",
+  agency: "ADHS",
+  windowCount: 0,
+  inspectionCount: 2,
+  heldCount: 1,
+  olderCitation: true,
+  lastCitationDate: "2023-07-03",
+});
+assert.equal(truvalCited, "0 citations in the last 3 years; Last citation Nov 8, 2023.");
+assert.equal(engelCited, "0 citations in the last 3 years; Last citation Feb 14, 2023.");
+assert.equal(mercysCited, "0 citations in the last 3 years; Last citation Jul 3, 2023.");
+for (const answer of [sunriseCited, truvalCited, engelCited, mercysCited]) {
+  assert.doesNotMatch(answer, /^No\./);
+  assert.match(answer, /Last citation /);
+}
+const emptyFileCited = citedAnswer({
+  name: "Empty File",
+  stateName: "Arizona",
+  stateCode: "AZ",
+  agency: "ADHS",
+  windowCount: 0,
+  inspectionCount: 2,
+  heldCount: 0,
+  olderCitation: false,
+  lastCitationDate: null,
+  earliestInspectionDate: "2020-01-02",
+});
+assert.equal(emptyFileCited, "No citations in the ADHS records we hold since Jan 2, 2020.");
+
 const rendered = [
   sunriseCite,
   sunriseSnippet,
@@ -543,6 +675,12 @@ const rendered = [
   mnCite,
   mnAnswer ?? "",
   txCopy,
+  quietTitle,
+  txTypeTitle,
+  truvalCited,
+  engelCited,
+  mercysCited,
+  emptyFileCited,
 ].join("\n");
 
 assert.doesNotMatch(rendered, /\bon record\b/i);

@@ -34,7 +34,7 @@ import { medicaidFaqPair, securedUnitFaqPair } from "@/lib/facility/profileFacts
 import { visitKindLabel } from "@/lib/facility/visitLabel";
 import { formatRecordDate, type DatePrecision } from "@/lib/format/formatRecordDate";
 import { licensedCity } from "@/lib/facility/licensedCity";
-import { facilityPageNoun, weightedCitationsPerBedPhrase } from "@/lib/facility/pageCopy";
+import { citationRecordPhrase, facilityPageNoun, weightedCitationsPerBedPhrase } from "@/lib/facility/pageCopy";
 
 /**
  * Optional snapshot-derived extras the LocalBusiness/MedicalOrganization JSON-LD
@@ -975,7 +975,16 @@ export type FacilityFaqInput = {
   publishesSeverityScale?: boolean;
   pageUrl: string;
   inspectionCount: number;
+  /** Deficiency rows inside the three-year window. */
   deficiencyCount: number;
+  /** Deficiency rows we hold, any year. Omit when the caller only knows the window. */
+  heldCount?: number | null;
+  /** A deficiency row exists on a visit older than the window. */
+  olderCitation?: boolean;
+  /** All-time last cited inspection, ISO yyyy-mm-dd. */
+  lastCitationDate?: string | null;
+  /** Oldest inspection date we hold, ISO yyyy-mm-dd. */
+  earliestInspectionDate?: string | null;
   /** True when older inspections exist outside the three-year display window. */
   countsCoverThreeYears: boolean;
   lastInspectionDate: string | null;
@@ -1157,12 +1166,17 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
       complaints > 0
         ? ` and ${complaints} complaint ${complaints === 1 ? "investigation" : "investigations"}`
         : "";
-    const cited =
-      input.stateCode === "TX" && input.deficiencyCount === 0
-        ? "HHSC has not published a citation count for this home in the last 3 years."
-        : input.deficiencyCount === 0
-          ? `No. ${name} has no ${input.regulatorAbbr} citations${window}.`
-          : `Yes. ${name} has ${input.deficiencyCount} ${defWord} from ${input.regulatorAbbr}${window}.`;
+    const record = citationRecordPhrase({
+      stateCode: input.stateCode,
+      regulatorAbbr: input.regulatorAbbr,
+      windowCount: input.deficiencyCount,
+      inspectionCount: input.inspectionCount,
+      heldCount: input.heldCount,
+      olderCitation: input.olderCitation,
+      lastCitationDate: input.lastCitationDate,
+      earliestInspectionDate: input.earliestInspectionDate,
+    });
+    const cited = record.endsWith(".") ? record : `${record}.`;
     const severity = seriousSentence(
       input.seriousFindings,
       input.stateCode,

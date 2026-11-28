@@ -151,6 +151,9 @@ function licenseTitlePhrase(label: string | null | undefined): { prose: string; 
     ALF: { prose: "Assisted Living", short: "ALF" },
     "ALF**": { prose: "Assisted Living", short: "ALF" },
     "ASSISTED LIVING": { prose: "Assisted Living", short: "AL" },
+    "TYPE A": { prose: "Assisted Living", short: "AL" },
+    "TYPE B": { prose: "Assisted Living", short: "AL" },
+    "TYPE C": { prose: "Assisted Living", short: "AL" },
     "ASSISTED LIVING (NO DEMENTIA CARE LICENSE)": { prose: "Assisted Living", short: "AL" },
     RCF: { prose: "Residential Care Facility", short: "RCF" },
     "RESIDENTIAL CARE": { prose: "Residential Care Facility", short: "RCF" },
@@ -225,7 +228,7 @@ export function buildFacilityTitle(input: {
   const citationHook =
     inspections > 0 && citationCount != null && !(input.stateCode === "TX" && citationCount === 0)
       ? citationCount === 0
-        ? "no citations"
+        ? "no citations in 3 yrs"
         : countLabel(citationCount, "citation", "citations")
       : null;
   const facts: string[] = [];
@@ -534,7 +537,7 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
   const peerBit = peer ? ` ${peer}.` : "";
 
   if (variant === "prose") {
-    const lead = citeFrag.startsWith("No citations")
+    const lead = citeFrag.includes("records we hold")
       ? `${facilityName}: ${citeFrag}`
       : `${facilityName} has ${citeFrag}`;
     return `${lead}${inspFrag ? `; ${inspFrag}` : ""}.${peerBit}`;

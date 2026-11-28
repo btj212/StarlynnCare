@@ -151,8 +151,8 @@ export default async function StoryBPage() {
           <ul className="list-disc pl-5 space-y-2.5">
             <li>
               Chester County ({chester?.facilities ?? 26} facilities) and Montgomery County (
-              {montgomery?.facilities ?? 48} facilities) rank among Pennsylvania&apos;s top five
-              counties for deficiencies per facility.
+              {montgomery?.facilities ?? 48} facilities) are among the five Pennsylvania
+              counties with the highest deficiencies per facility.
             </li>
             <li>
               Chester County averages{" "}

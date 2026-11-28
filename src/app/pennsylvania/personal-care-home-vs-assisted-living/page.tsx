@@ -276,7 +276,7 @@ export default function PchVsAssistedLivingPage() {
               On each StarlynnCare PA facility profile, the full DHS OLTL inspection record
               shows: the date of each inspection, the specific 55 Pa Code regulation cited, the
               enforcement classification (Citation through Immediate Jeopardy), and the inspector
-              narrative where available. The peer percentile positions the facility against other
+              narrative where available. The comparison with similar homes sets the facility against other
               DHS-regulated memory care facilities in its county.
             </p>
             <p>

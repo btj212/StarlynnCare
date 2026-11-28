@@ -67,7 +67,7 @@ export function MobileHomeView({
           California Edition · Vol. 02 · {season} {year}
         </div>
         <h1>
-          Find the <em>best</em> memory care in California,{" "}
+          Memory care in California,{" "}
           <span className="ul">verified by real state inspections.</span>
         </h1>
         <p className="deck">
@@ -278,7 +278,7 @@ export function MobileHomeView({
           Find the right facility, <em>without the sales funnel.</em>
         </h2>
         <p className="mt-2 text-[15px] leading-relaxed text-[#C6DAD3]">
-          Search by ZIP, compare peer rankings, read every dated citation. No operator is paying for placement here.
+          Search by ZIP, compare a home with similar homes, and read every dated citation. No operator is paying for placement here.
         </p>
         <Link
           href="/california"

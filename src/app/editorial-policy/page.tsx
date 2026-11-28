@@ -142,8 +142,8 @@ export default function EditorialPolicyPage() {
           <Section id="coi" title="Conflict of interest">
             <p>
               StarlynnCare does not accept referral commissions, lead bonuses, or paid placement fees from
-              facility operators. Sponsorship language cannot appear adjacent to ranked profiles or directory
-              rankings.
+              facility operators. Sponsorship language cannot appear adjacent to facility profiles or the
+              directory.
             </p>
             <p>
               Founders hold no equity interests in licensed operators reviewed on this site. Future partnerships

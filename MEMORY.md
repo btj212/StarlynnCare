@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — Cited FAQ, title hook, and the county rail
+
+**Decided:** The “Has this home been cited?” FAQ and its JSON-LD use `citationRecordPhrase`: “&lt;N&gt; citations in the last 3 years”, plus “Last citation &lt;Mon D, YYYY&gt;” when an older row exists, or “No citations in the &lt;agency&gt; records we hold since &lt;date&gt;”. The title and og:title hook says “no citations in 3 yrs”, and a Texas Type A/B/C license is “Licensed Assisted Living”, not “— TYPE B”. “Inspection reports for this home have not been parsed yet” is shown only when the visits on the page have no narrative. An older visit outside the three-year list says the visits we hold are older than the last 3 years. The county “fewest weighted citations” rail is removed, including its rank badges.
+
+**Rejected:** Computing that rail across every home in the county. The weighted figure comes only from `facility_snapshot`, and one call per home on every county page is not build-safe. A head count is a different number. Also rejected: “No inspection records yet indexed” next to a visit we already hold, and an unqualified “no citations” title for a home with an older citation.
+
+**Source:** Re-review `/cursor/stores/bot/reviews/pr281_review_20261127.md`. No database write. No schema, RPC, index, migration, or workflow change.
+
+---
+
 ## 2026-11-28 — "None on record" and "Top N%" are not facility or hub copy
 
 **Decided:** A missing inspection date says "No inspection date in the records we hold." A missing listing field on the confirm page says "Not in the state file we hold." County and homepage comparisons print weighted citations per bed against the peer median, with the agency and the 36-month window, or they print nothing. Equal values share one position. `rankPhrase.ts` is deleted because nothing calls it.

@@ -385,7 +385,7 @@ export default function CaliforniaCostGuidePage() {
               Type-A vs. Type-B deficiencies →
             </Link>
             <Link href="/methodology" className="text-teal underline underline-offset-4">
-              How we rank facilities →
+              How the comparison is calculated →
             </Link>
           </div>
           <DataFootnote

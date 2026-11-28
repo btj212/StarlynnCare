@@ -50,7 +50,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "Why don't you publish a 'WA average' score?",
-    a: "Because it would be misleading. The WA complaint distribution is so skewed — 10% of facilities absorb 33% of all complaints, 20% absorb 54% — that an average describes almost no actual facility accurately. The median WA facility has a meaningfully different profile from the mean. We rank individual facilities, not the state.",
+    a: "Because it would be misleading. The WA complaint distribution is so skewed — 10% of facilities absorb 33% of all complaints, 20% absorb 54% — that an average describes almost no actual facility accurately. The median WA facility has a meaningfully different profile from the mean. We show each home's own record, not a state average.",
   },
   {
     q: "Why don't you show whether a facility is improving or getting worse?",
@@ -263,7 +263,7 @@ export default function WaReadInspectionDataPage() {
               Normalizing by beds changes the picture further. Small facilities with high complaint counts can appear moderate in raw numbers but extreme when adjusted for capacity. A facility with 47 beds and 10 complaints is generating complaints at 21 per 100 beds — roughly 3× the rate of a 126-bed facility with 9 complaints.
             </p>
             <p>
-              The practical implication: a statewide average complaint rate describes almost no actual facility accurately. The distribution is so skewed that the mean is far above the median. When a state-level summary says &ldquo;the average WA memory care facility receives X complaints per year,&rdquo; it is averaging a large quiet majority with a small extremely active tail. We don&apos;t publish that average. We rank individual facilities instead.
+              The practical implication: a statewide average complaint rate describes almost no actual facility accurately. The distribution is so skewed that the mean is far above the median. When a state-level summary says &ldquo;the average WA memory care facility receives X complaints per year,&rdquo; it is averaging a large quiet majority with a small extremely active tail. We don&apos;t publish that average. We show each home&apos;s own record instead.
             </p>
           </Prose>
 

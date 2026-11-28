@@ -293,7 +293,8 @@ const faq = buildFacilityFaqPairs({
 const cited = faq.find((pair) => pair.q === "Has Brookdale Tanque Verde been cited by ADHS?");
 const counted = faq.find((pair) => pair.q.startsWith("How many"));
 assert.ok(cited);
-assert.match(cited.a, /5 deficiencies from ADHS in the last three years/);
+assert.match(cited.a, /5 citations in the last 3 years/);
+assert.doesNotMatch(cited.a, /^No\./);
 assert.match(counted?.a ?? "", /5 deficiencies/);
 assert.equal(cited.a.includes("all time"), false);
 

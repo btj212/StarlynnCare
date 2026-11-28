@@ -122,7 +122,7 @@ export default function TermsPage() {
             <p>
               StarlynnCare endeavors to reproduce public records as published by CDSS. We make
               no warranty that any reproduction is error-free, complete, or current. Analytic
-              metrics (peer percentiles, composite scores) are derived computations and may
+              metrics (comparisons with similar homes) are derived computations and may
               contain errors. Disputes regarding the underlying CDSS source data should
               be directed to CDSS at{" "}
               <a href="https://www.cdss.ca.gov" target="_blank" rel="noopener noreferrer" className="text-teal underline underline-offset-4">
@@ -139,7 +139,7 @@ export default function TermsPage() {
               </strong>
             </p>
             <p>
-              Facility profiles, inspection summaries, peer-percentile metrics, and editorial
+              Facility profiles, inspection summaries, comparisons with similar homes, and editorial
               content are provided for <em>informational purposes only</em> to assist families and
               discharge planners in understanding publicly available government inspection records.
               They are not a substitute for:
@@ -198,7 +198,7 @@ export default function TermsPage() {
               This includes, without limitation, damages for:
             </p>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Reliance on inspection data, percentile scores, or editorial content;</li>
+              <li>Reliance on inspection data, comparisons with similar homes, or editorial content;</li>
               <li>Care placement decisions or outcomes;</li>
               <li>Loss of business, revenue, or reputation by any facility operator;</li>
               <li>Errors, omissions, or inaccuracies in reproduced government records; or</li>

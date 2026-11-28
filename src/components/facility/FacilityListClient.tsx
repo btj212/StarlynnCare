@@ -307,7 +307,7 @@ const CHIPS: { id: FilterChip; label: string }[] = [
   { id: "all", label: "All" },
   { id: "large", label: "50+ beds" },
   { id: "medium", label: "7–49 beds" },
-  { id: "no_citations", label: "No citations" },
+  { id: "no_citations", label: "No citations, all years" },
   { id: "has_citations", label: "Has citations" },
 ];
 

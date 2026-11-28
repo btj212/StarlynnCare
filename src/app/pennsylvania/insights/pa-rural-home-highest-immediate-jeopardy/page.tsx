@@ -47,7 +47,7 @@ const FAQ_PAIRS = [
   },
   {
     q: "How does this compare to the Pennsylvania state average?",
-    a: "Among the 354 publishable PA memory care facilities in the StarlynnCare dataset, the median IJ count is significantly lower than 21. Raw IJ-count comparisons favor facilities with shorter license histories or fewer inspection cycles. The county hub pages on StarlynnCare show where a facility's IJ count ranks against its county peers — a more useful comparison than statewide rankings that don't control for license age.",
+    a: "Among the 354 publishable PA memory care facilities in the StarlynnCare dataset, the median IJ count is significantly lower than 21. Raw IJ-count comparisons favor facilities with shorter license histories or fewer inspection cycles. The county hub pages on StarlynnCare show how a facility's IJ count compares with its county peers — a more useful comparison than a statewide total that does not control for license age.",
   },
 ];
 

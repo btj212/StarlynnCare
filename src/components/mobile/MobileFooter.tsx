@@ -11,7 +11,7 @@ export function MobileFooter({ lastRefreshed }: { lastRefreshed: string | null }
         Starlynn<span style={{ color: "#C6DAD3" }}>Care</span>
       </div>
       <p className="stmt">
-        Independent care facility publisher. We rank every licensed memory care facility against the
+        Independent care facility publisher. We read every licensed memory care facility against the
         state&apos;s own public inspection record.
       </p>
       <nav className="links" aria-label="Footer links">

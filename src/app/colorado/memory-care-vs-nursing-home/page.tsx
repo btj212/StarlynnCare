@@ -19,7 +19,7 @@ const canonicalUrl = canonicalFor(PAGE_PATH);
 const ARTICLE_HEADLINE = "Assisted living and nursing homes in Colorado are not the same record";
 const TITLE = "Colorado Assisted Living vs Nursing Homes: CDPHE and CMS (2026)";
 const DESC =
-  "CDPHE licenses assisted living and uses Level A–E citations. CMS surveys nursing homes with F-tags. StarlynnCare does not rank the two on one scale.";
+  "CDPHE licenses assisted living and uses Level A–E citations. CMS surveys nursing homes with F-tags. StarlynnCare does not score the two on one scale.";
 const DATE_PUBLISHED = "2026-10-31";
 
 const FAQ_PAIRS: Array<{ q: string; a: string }> = [
@@ -76,7 +76,7 @@ const ROWS: Array<[string, string, string]> = [
   ["Rule", "6 CCR 1011-1 Chapter 7", "Federal nursing-home requirements"],
   ["Citation scale", "Level A–E. E is immediate jeopardy.", "F-tags. J, K, and L are immediate jeopardy."],
   ["Public lookup", "Find and Compare Facilities", "Care Compare"],
-  ["Ranked against the other?", "No", "No"],
+  ["Scored on one scale?", "No", "No"],
 ];
 
 export default function ColoradoSettingPage() {

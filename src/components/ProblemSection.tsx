@@ -9,7 +9,7 @@ const painPoints = [
   {
     icon: "💰",
     title: "Free services aren't free",
-    body: "Referral platforms earn $3,000–$7,000 per placement from facilities. The facilities with the most referrals aren't the best ones — they're the ones paying the most.",
+    body: "Referral platforms earn $3,000–$7,000 per placement from facilities. The facilities with the most referrals are the ones paying the most.",
     accent: "#b7791f",
     accentBg: "#fffbeb",
   },

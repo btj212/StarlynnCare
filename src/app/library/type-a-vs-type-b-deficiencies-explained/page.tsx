@@ -341,7 +341,7 @@ export default function TypeATypeBPage() {
             </p>
             <p>
               <Link href="/methodology" className="text-teal underline underline-offset-4 hover:text-teal/80">
-                How we rank facilities →
+                How the comparison is calculated →
               </Link>
             </p>
             <p>

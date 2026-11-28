@@ -52,7 +52,7 @@ const FAQ_PAIRS: Array<{ q: string; a: string }> = [
   },
   {
     q: "How do I compare cost against quality for PA personal care homes?",
-    a: "Cost alone is not a reliable quality signal. Some of Pennsylvania's most expensive facilities have serious PA DHS OLTL inspection records; some lower-cost rural facilities have clean records. On StarlynnCare, every PA facility profile shows the full DHS OLTL inspection record alongside the facility's location, bed count, and license type — so you can assess inspection history and peer rank before calling for a price quote.",
+    a: "Cost alone is not a reliable quality signal. Some of Pennsylvania's most expensive facilities have serious PA DHS OLTL inspection records; some lower-cost rural facilities have fewer citations. On StarlynnCare, every PA facility profile shows the full DHS OLTL inspection record alongside the facility's location, bed count, and license type — so you can read the inspection history and the comparison with similar homes before calling for a price quote.",
   },
 ];
 
@@ -315,7 +315,7 @@ export default function PersonalCareHomeCostPage() {
             <p>
               Before requesting a rate quote from any PA facility, look at its DHS OLTL inspection
               record on StarlynnCare. The record shows every citation, the specific 55 Pa Code
-              regulation violated, the enforcement classification, and the peer percentile
+              regulation violated, the enforcement classification, and the comparison with similar homes
               positioning the facility against other PA memory care facilities in its county. A
               facility that charges $7,000/month with five Immediate Jeopardy findings in three
               years is not a premium facility — it is an expensive one.

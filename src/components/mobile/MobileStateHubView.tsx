@@ -49,7 +49,7 @@ export function MobileStateHubView({ data, config }: Props) {
           {stateName} Edition · {edition} · {season} {year}
         </div>
         <h1>
-          Find the <em>best</em> memory care in {stateName},{" "}
+          Memory care in {stateName},{" "}
           <span className="ul">verified by real state inspections.</span>
         </h1>
         <p className="deck">
@@ -332,7 +332,7 @@ export function MobileStateHubView({ data, config }: Props) {
           Find the right facility, <em>without the sales funnel.</em>
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-white/85 max-w-[40ch]">
-          Search by ZIP, compare peer rankings, read every dated citation — with no operator behind the recommendation.
+          Search by ZIP, compare a home with similar homes, and read every dated citation — with no operator behind the recommendation.
         </p>
         <Link
           href={`/${stateSlug}/facilities`}

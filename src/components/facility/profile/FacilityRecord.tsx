@@ -271,7 +271,7 @@ function recordDeck(profile: FacilityProfile): string {
     earliestInspectionDate: totals.earliestInspectionDate,
   });
   if (
-    phrase.startsWith("No citations") ||
+    phrase.includes("records we hold") ||
     phrase.startsWith("HHSC") ||
     phrase.startsWith("Texas Health")
   ) {

@@ -36,7 +36,7 @@ const STORIES = [
   {
     slug: "/pennsylvania/insights/philadelphia-suburbs-worst-records",
     title: "Philadelphia's affluent suburbs have some of PA's worst memory care records",
-    desc: "Chester and Montgomery counties, home to some of Pennsylvania's wealthiest ZIP codes, rank among the state's highest for deficiencies per facility — with collar-county IJ rates outpacing Pittsburgh metro.",
+    desc: "Chester and Montgomery counties, home to some of Pennsylvania's wealthiest ZIP codes, are among the counties with the highest deficiencies per facility — with collar-county IJ rates outpacing Pittsburgh metro.",
     eyebrow: "County comparison · Story B",
     image: {
       src: "/illustrations/pa-insights/affluent-suburban-residence-empty.png",

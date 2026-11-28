@@ -292,7 +292,7 @@ export default function WaDshsContractPage() {
               On a WA facility profile, the DSHS Dementia Care contract flag appears as a factual data point — a label that says the facility holds the contract, linked to the DSHS ADSA public lookup so families can verify it independently. It is displayed alongside other facility attributes like license type and bed count.
             </p>
             <p>
-              It does not appear as a checkmark badge, a quality indicator, or a recommended signal. It does not boost the facility&apos;s ranking or summary grade on this site. It does not cause us to display fewer caveats about a facility&apos;s inspection history.
+              It does not appear as a checkmark badge, a quality indicator, or a recommended signal. It does not change the facility&apos;s summary on this site. It does not cause us to display fewer caveats about a facility&apos;s inspection history.
             </p>
             <p>
               This editorial posture — factual display, no quality inference — is the same one we apply to every regulatory designation we surface. Texas&apos;s Alzheimer Certification, California&apos;s Assisted Living Waiver participation, Oregon&apos;s Memory Care Endorsement: all factual flags, none of them a quality verdict. The data does not support treating any of them that way.

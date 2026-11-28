@@ -80,7 +80,7 @@ const ROWS: Array<[string, string, string]> = [
   ["Rule", "210 ILCS 9. Part 295, or Part 296 for a shared house of 12 or fewer.", "Federal nursing-home survey"],
   ["Citation scale", "Type 1, Type 2, and Type 3.", "F-tags. J, K, and L are immediate jeopardy."],
   ["Public lookup", "IDPH LLCS portal", "Care Compare"],
-  ["Ranked against the other?", "No", "No"],
+  ["Scored on one scale?", "No", "No"],
 ];
 
 export default function IllinoisSettingPage() {
