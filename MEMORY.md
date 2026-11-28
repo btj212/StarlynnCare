@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — A Pennsylvania PDF counts only the pages for this visit
+
+**Decided:** A DHS inspection PDF often holds more than one survey. A page counts for `pa_pdf_inventory.inspection_date` only when its footer (`MM/DD/YYYY n of N`) is that date. If no page matches, the parse errors and nothing is stored. Atria Lafayette Hill 2024-03-25 is 15 citations; the other 3 in that file are the 2024-05-16 survey. Belle Reve `20260811_22513` has no 2026-08-11 pages (19 are 2026-05-05, 28 are 2026-02-18), so that visit errors. `ocrmypdf` is run with `--skip-text` and without `--deskew`. A multi-page OCR with zero citations, and no "no regulatory citations have been identified" line, is an error. OCR marker counts are checked against the numbered Requirements lines. Blank pages after the first text page are OCR'd; leading image covers are not. Backfill replaces that inspection's deficiency rows in one transaction, after writing a JSON backup beside the sidecar, and only when the new count is at least the old count. Otherwise the inspection is held. The weekly download fetches pending rows, plus a done row that is still waiting on parse or backfill and whose file is missing. It does not re-download the ~10k finished PDFs. The file-level sweep total is 2,033 markers in 362 PDFs (16 files did not open). That number is not the visit-level total.
+
+**Rejected:** Counting every Description of Violation in the file. Falling back to the whole file when the date matches nothing. `--deskew`. Treating an OCR zero on a long scan as a clean letter. Deduping re-runs on a hash of the model's description. Re-downloading every done PDF whose local file is gone.
+
+**Source:** Review of PR 279, 2026-11-27. No database write in this change.
+
+---
+
 ## 2026-11-27 — Colorado stores the event key, and a document URL still counts
 
 **Decided:** This corrects the same-day visit-id entry below. `inspections.source_event_id` for Colorado is `raw_data.co_event_key` (for example `23033N|035H13|AL18`), not `co_event_id`. One visit is split by rule set, so `co_event_id` is on two or three rows and the unique index `(source_agency, source_event_id)` rejects it. The backfill writes the key only where `source_event_id` is null, and it stops if that write would duplicate the pair. Illinois and Colorado also qualify on a date, a citation count (zero allowed), and an http(s) source URL, so the Colorado CMS nursing home with a link still passes. A visit id with no URL still passes for those two states. Every other state still needs the URL.

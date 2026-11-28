@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — Pennsylvania PDF recount would have stored the wrong visit
+
+**What went wrong:** Three fixes in the first PA PDF patch created new wrong counts. The parser assigned every Description of Violation in a bundled PDF to the inventory row's date, so Atria 2024-03-25 was locked in as 18 instead of 15 and Belle Reve 2026-08-11 would have stored 47 citations from other dates. `ocrmypdf --skip-text --deskew` on ocrmypdf 16.7 skipped these scans ("page has no images") and saved 0 citations for Harmony at Harts Run (the tesseract text has 19) and Artis South Hills. The backfill dedupe key hashed the model's rewritten description, so a re-parse appended a second set of rows and `SET total_deficiency_count = count(*)` made the sum official. The download step treated every done row with a missing local file as work, which on a fresh GitHub runner is ~10k PDFs and longer than the 70-minute job.
+
+**What worked instead:** Filter pages by footer date and error when none match. Drop `--deskew`. Treat a multi-page OCR zero as an error unless the letter says no citations were identified, and cross-check OCR counts against `N. Requirements`. Replace one inspection's rows in a transaction after a JSON backup, and hold the row when the new count is lower. Download only rows still waiting to be parsed or backfilled.
+
+**Source:** Independent review of PR 279, 2026-11-27. Tests are `scripts/test_pa_pdf_parse.py`. They are not run by the Data Validation workflow.
+
+---
+
 ## 2026-11-27 — Colorado event ids and the Washington recount update were not writable
 
 **What went wrong:** `backfill_co_inspection_gate.py --apply` copied `raw_data.co_event_id` into `source_event_id`. 318 of those ids are on 2–3 rows each (646 rows), one per rule set, so the unique index `(source_agency, source_event_id)` would reject the write. `recount_wa_citation_counts.py --apply` joined `facilities` on `i.facility_id` inside `FROM` before the inspection being updated was in scope, and Postgres rejected that. `inspectionQualifies` for Illinois and Colorado accepted only the visit-id route, so a Colorado CMS nursing home with a real link and no visit id failed.

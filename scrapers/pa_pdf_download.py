@@ -5,7 +5,11 @@ PA PDF Download — walk pa_pdf_inventory and download pending PDFs.
 Clone of or_pdf_download.py, targeting pa_pdf_inventory and the DHS Azure
 inspection portal for PDF hosting.
 
-For each row with download_status='pending':
+For each row that still needs a file: download_status='pending', or a
+'done' row whose parse or backfill is still pending and whose file is
+not on disk. Rows already parsed and backfilled are not downloaded again.
+The runner disk starts empty, and re-downloading those ~10k PDFs every
+week overruns the job.
   1. Download the PDF to .firecrawl/pa-pdfs/<sha256[:2]>/<sha256>.pdf.
   2. Compute sha256, record size_bytes.
   3. Update download_status='done'.
@@ -99,38 +103,76 @@ def download_pdf(
     return dest, digest, size
 
 
+def row_needs_download(
+    download_status: str,
+    parse_status: str | None,
+    backfill_status: str | None,
+    file_present: bool,
+) -> bool:
+    """True only for a row that still needs its PDF.
+
+    A completed row is not downloaded again just because the runner disk is
+    empty. Parse downloads a missing file itself when it is about to read it.
+    """
+    if download_status == "pending":
+        return True
+    waiting = parse_status == "pending" or backfill_status == "pending"
+    return download_status == "done" and waiting and not file_present
+
+
 def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> None:
     dsn = get_dsn()
     session = make_session()
 
-    where_clauses = ["p.download_status = 'pending'"]
+    where_clauses = [
+        "("
+        "p.download_status = 'pending'"
+        " OR ("
+        "p.download_status = 'done'"
+        " AND (p.parse_status = 'pending' OR p.backfill_status = 'pending')"
+        ")"
+        ")"
+    ]
     params: list[Any] = []
     if facility_id_filter:
         where_clauses.append("p.facility_id = %s")
         params.append(facility_id_filter)
 
     where_sql = " AND ".join(where_clauses)
-    limit_sql = f"LIMIT {limit}" if limit else ""
 
-    # Fetch the work list up front with a short-lived connection.
+    # Only rows still waiting. Completed PDFs are not selected, so a fresh
+    # runner does not stat or re-download the whole cache.
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 f"""
-                SELECT p.id, p.pdf_url, p.facility_id
+                SELECT p.id, p.pdf_url, p.facility_id, p.local_path,
+                       p.download_status, p.parse_status, p.backfill_status
                 FROM pa_pdf_inventory p
                 WHERE {where_sql}
-                ORDER BY p.created_at
-                {limit_sql}
+                ORDER BY CASE WHEN p.download_status = 'pending' THEN 0 ELSE 1 END,
+                         p.created_at
                 """,
                 params,
             )
             rows = cur.fetchall()
 
-    print(f"  {len(rows)} PDFs to download", flush=True)
+    skipped = 0
+    work: list[tuple[Any, ...]] = []
+    for row in rows:
+        _inv_id, _pdf_url, _facility_id, local_path, download_status, parse_status, backfill_status = row
+        file_present = bool(local_path) and Path(local_path).is_file()
+        if not row_needs_download(download_status, parse_status, backfill_status, file_present):
+            skipped += 1
+            continue
+        work.append(row)
+    if limit:
+        work = work[:limit]
+
+    print(f"  {len(work)} PDFs to download ({skipped} already on disk)", flush=True)
 
     if dry_run:
-        for inv_id, pdf_url, _ in rows[:5]:
+        for inv_id, pdf_url, *_rest in work[:5]:
             print(f"    {inv_id}  {pdf_url[:70]}")
         print("  ... (dry-run, no downloads)")
         return
@@ -138,7 +180,7 @@ def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> Non
     PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     ok = err = 0
 
-    for inv_id, pdf_url, facility_id in rows:
+    for inv_id, pdf_url, _facility_id, _cached_path, download_status, _parse_status, _backfill_status in work:
         try:
             local_path, digest, size = download_pdf(session, pdf_url, PDF_CACHE_DIR, str(inv_id))
             # Fresh connection per update — avoids session pooler idle-timeout disconnect
@@ -159,21 +201,33 @@ def run(dry_run: bool, limit: int | None, facility_id_filter: str | None) -> Non
             try:
                 with psycopg.connect(dsn) as conn:
                     with conn.cursor() as cur:
-                        cur.execute(
-                            """
-                            UPDATE pa_pdf_inventory
-                            SET download_status = 'error', download_error = %s
-                            WHERE id = %s
-                            """,
-                            (str(exc)[:500], inv_id),
-                        )
+                        # A cache refill that fails must stay 'done' so the next
+                        # run tries the file again. A first download still errors.
+                        if download_status == "done":
+                            cur.execute(
+                                """
+                                UPDATE pa_pdf_inventory
+                                SET download_error = %s
+                                WHERE id = %s
+                                """,
+                                (str(exc)[:500], inv_id),
+                            )
+                        else:
+                            cur.execute(
+                                """
+                                UPDATE pa_pdf_inventory
+                                SET download_status = 'error', download_error = %s
+                                WHERE id = %s
+                                """,
+                                (str(exc)[:500], inv_id),
+                            )
             except Exception as db_exc:
                 print(f"  DB ERR writing error status: {db_exc}", file=sys.stderr, flush=True)
             err += 1
             print(f"  ERR {pdf_url[-50:]}: {exc}", file=sys.stderr, flush=True)
         polite_sleep()
 
-    print(f"  Done — ok: {ok}, errors: {err}", flush=True)
+    print(f"  Done — ok: {ok}, errors: {err}, already on disk: {skipped}", flush=True)
 
 
 def main() -> None:

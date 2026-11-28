@@ -470,10 +470,10 @@ def ingest_pa(_conn: object) -> bool:
         allow_fail=True,
     )
     _python(str(SCRAPERS / "pa_pdf_download.py"), label="PA PDF download", allow_fail=True)
-    _python(str(SCRAPERS / "pa_pdf_parse.py"), label="PA PDF parse", allow_fail=True)
-    _python(str(SCRAPERS / "pa_pdf_backfill.py"), label="PA PDF backfill", allow_fail=True)
+    parse_rc = _python(str(SCRAPERS / "pa_pdf_parse.py"), label="PA PDF parse")
+    backfill_rc = _python(str(SCRAPERS / "pa_pdf_backfill.py"), label="PA PDF backfill")
     rc = _python(str(SCRAPERS / "recompute_publishable.py"), "--state", "PA", label="PA recompute publishable")
-    return scrape_rc == 0 and rc == 0
+    return scrape_rc == 0 and parse_rc == 0 and backfill_rc == 0 and rc == 0
 
 
 def ingest_az(_conn: object) -> bool:
