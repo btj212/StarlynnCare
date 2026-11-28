@@ -54,6 +54,8 @@ from _summary_assemble import (
 from _summary_ground import (
     directive_problem,
     evidence_text,
+    fallback_problem,
+    invented_requirement,
     is_factual_hold,
     is_regulation_text,
     mn_evidence,
@@ -892,7 +894,8 @@ def cap_summary(
 
     The closing number is the header's finding count minus the findings whose
     full text was kept. A finding that runs to several sentences is kept or
-    dropped together. Returns (summary, hold reason).
+    dropped together. One finding that is longer than the cap keeps its first
+    whole sentences and a fixed detail line. Returns (summary, hold reason).
     """
     if findings is None:
         return None, "header count unknown does not match the finding list unknown"
@@ -913,6 +916,7 @@ def cap_summary(
         return None, f"header count {total} does not match the finding list {len(findings)}"
     header_n = _sentence_count(header)
     all_n = header_n + sum(_sentence_count(item) for item in findings)
+    detail = False
     if all_n <= _SUMMARY_SENTENCES:
         selected = list(findings)
     else:
@@ -923,9 +927,17 @@ def cap_summary(
             if used + needed + 1 <= _SUMMARY_SENTENCES:
                 selected.append(item)
                 used += needed
-        # One finding that does not fit is kept whole. Its sentences are not findings.
+        # One long finding stays one finding. Extra sentences stop at a boundary.
         if not selected and len(findings) == 1:
-            selected = list(findings)
+            parts = _sentences(findings[0])
+            room = _SUMMARY_SENTENCES - header_n
+            if room < 1:
+                room = 1
+            if len(parts) > room:
+                selected = [" ".join(parts[:room])]
+                detail = True
+            else:
+                selected = list(findings)
     described = len(selected)
     if described > total:
         return None, f"header count {total} does not match described {described}"
@@ -933,8 +945,11 @@ def cap_summary(
     if omitted < 0:
         return None, f"header count {total} does not match described {described}"
     if omitted == 0:
-        rebuilt = " ".join(part for part in (header.strip(), *(item.strip() for item in selected)) if part)
-        if rebuilt == (text or "").strip():
+        tail = "The report describes this finding in more detail." if detail else ""
+        rebuilt = " ".join(
+            part for part in (header.strip(), *(item.strip() for item in selected), tail) if part
+        )
+        if not detail and rebuilt == (text or "").strip():
             return text, None
         return rebuilt, None
     word = _noun_for_count(noun, omitted)
@@ -1041,11 +1056,23 @@ def _parsed_has_directive(narrative: str, state_code: str, parsed: list[dict] | 
     for item in parsed or []:
         description = str(item.get("description") or "")
         tag = "" if item.get("tag") is None else str(item.get("tag"))
-        if (state_code or "").upper() == "MN":
-            span = mn_evidence(narrative, tag) or tag_span(narrative, tag) or narrative
-        else:
-            span = tag_span(narrative, tag) or narrative
-        if directive_problem(description, span):
+        if directive_problem(description, _item_span(narrative, state_code, tag)):
+            return True
+    return False
+
+
+def _item_span(narrative: str, state_code: str, tag: str) -> str:
+    if (state_code or "").upper() == "MN":
+        return mn_evidence(narrative, tag) or tag_span(narrative, tag) or narrative
+    return tag_span(narrative, tag) or narrative
+
+
+def _parsed_has_invented(narrative: str, state_code: str, parsed: list[dict] | None) -> bool:
+    """True when a description adds a requirement the finding does not state."""
+    for item in parsed or []:
+        description = str(item.get("description") or "")
+        tag = "" if item.get("tag") is None else str(item.get("tag"))
+        if invented_requirement(description, _item_span(narrative, state_code, tag)):
             return True
     return False
 
@@ -1134,29 +1161,31 @@ def _regulator_summary(
     from _summary_ground import deficiency_rows, mn_evidence, tag_span
 
     rows, _subst = deficiency_rows(defs)
-    sentences: list[str] = []
+    pairs: list[tuple[str, str]] = []
     if rows:
         for row in rows:
             code = "" if row.get("code") is None else str(row.get("code")).strip()
             span = (row.get("inspector_narrative") or "").strip()
             if len(span) < 40:
                 span = (mn_evidence(narrative, code) or tag_span(narrative, code) or span)
-            sentences.append(_regulator_for_span(span, row, state_code))
+            pairs.append((_regulator_for_span(span, row, state_code), span))
     else:
         tags = [item.get("tag") for item in (descriptions or []) if item.get("tag")]
         if not tags and d_tags:
             tags = list(d_tags)
         if not tags:
-            sentences.append(_regulator_for_span(narrative, None, state_code))
+            pairs.append((_regulator_for_span(narrative, None, state_code), narrative))
         else:
             for tag in tags:
                 span = mn_evidence(narrative, tag) or tag_span(narrative, tag) or narrative
-                sentences.append(_regulator_for_span(span, None, state_code))
-    sentences = [sentence for sentence in sentences if sentence]
+                pairs.append((_regulator_for_span(span, None, state_code), span))
+    sentences = [sentence for sentence, _span in pairs if sentence]
     if not sentences:
         return None, []
-    for sentence in sentences:
-        why = _finding_block(sentence, state_code)
+    for sentence, span in pairs:
+        if not sentence:
+            continue
+        why = fallback_problem(sentence, span) or _finding_block(sentence, state_code)
         if why:
             if blocked is not None:
                 blocked.append(why)
@@ -1272,20 +1301,32 @@ def _describe_each_finding(
                 + "\nFix only that problem. Do not add a count, a date, or a dollar amount.",
                 span,
             )
-            if again and not holds2 and len(warns2) <= len(warns) and not directive_problem(again, span):
+            if (
+                again
+                and not holds2
+                and len(warns2) <= len(warns)
+                and not directive_problem(again, span)
+                and not invented_requirement(again, span)
+            ):
                 description, warns = again, warns2
             elif directive_problem(description, span) or directive_problem(again, span):
                 blocked = "unsourced directive"
                 description = ""
+            elif invented_requirement(description, span) or invented_requirement(again, span):
+                blocked = "invented requirement"
+                description = ""
             else:
                 description = _regulator_for_span(span, rows_by_code.get(code), state_code)
-                why = _finding_block(description, state_code)
+                why = fallback_problem(description, span) or _finding_block(description, state_code)
                 if why:
                     blocked = why
                 warns = [f"fallback to regulator wording: {code}"]
                 print(f"    fallback: {code}: {holds2[0] if holds2 else reason}")
         elif directive_problem(description, span):
             blocked = "unsourced directive"
+            description = ""
+        elif invented_requirement(description, span):
+            blocked = "invented requirement"
             description = ""
         if description:
             pieces.append(description)
@@ -1581,6 +1622,11 @@ def summarize(
             narrative, state_code, parsed2,
         ):
             _hold(warning_log, inspection_id, "unsourced directive")
+            return None
+        if _parsed_has_invented(narrative, state_code, parsed) or _parsed_has_invented(
+            narrative, state_code, parsed2,
+        ):
+            _hold(warning_log, inspection_id, "invented requirement")
             return None
         reasons: list[str] = []
         fallback, found = _regulator_summary(

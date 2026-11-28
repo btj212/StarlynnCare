@@ -1039,6 +1039,72 @@ def directive_problem(description: str, evidence: str) -> str | None:
     return None
 
 
+_PAGE_CHROME = (
+    "minnesota department of health",
+    "state correction orders",
+    "state form",
+    "printed:",
+    "event id",
+    "if continuation sheet",
+)
+_NORMATIVE = re.compile(
+    r"\bis required to\b|\bmust\b|\bshall\b|\bneeds to\b|\bshould\b",
+    re.I,
+)
+_NORM_WORDS = {"must", "shall", "should", "need", "needs", "required", "require"}
+
+
+def _norm_ws(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip().lower()
+
+
+def fallback_problem(sentence: str, span: str) -> str | None:
+    """A regulator sentence that is column bleed, or not copied from this finding.
+
+    Page-chrome tokens count when they sit mid-sentence. The sentence, aside from
+    a period added at the end, has to be a contiguous run of the finding's span.
+    """
+    flat = _norm_ws(sentence)
+    if not flat:
+        return None
+    for token in _PAGE_CHROME:
+        idx = flat.find(token)
+        if idx > 0:
+            return "garbled column text"
+    probe = re.sub(r"[.!?]+$", "", flat).strip()
+    if probe and probe not in _norm_ws(span):
+        return "fallback is not in the finding"
+    return None
+
+
+def invented_requirement(description: str, evidence: str) -> str | None:
+    """A normative sentence whose content words are not in this finding.
+
+    A sentence copied from the span is kept. 'must correct' stays with directive_problem.
+    Hold when at least 60 percent of the nouns and verbs are absent from the span.
+    """
+    span_stems = {stem(word) for word in re.findall(r"[A-Za-z']+", evidence or "")}
+    span_flat = _norm_ws(evidence)
+    for sentence in re.split(r"(?<=[.!?])\s+", description or ""):
+        if not sentence.strip() or not _NORMATIVE.search(sentence):
+            continue
+        copied = re.sub(r"[.!?]+$", "", _norm_ws(sentence)).strip()
+        if copied and copied in span_flat:
+            continue
+        words = []
+        for word in re.findall(r"[A-Za-z']+", sentence):
+            low = word.lower()
+            if low in _STOP or low in _NORM_WORDS or len(low) < 4:
+                continue
+            words.append(stem(low))
+        if not words:
+            continue
+        missing = sum(1 for word in words if word not in span_stems)
+        if missing / len(words) >= 0.6:
+            return "invented requirement"
+    return None
+
+
 def visit_type_conflict(
     header: str,
     *,
@@ -1158,6 +1224,7 @@ def ground_problems(
         lambda: regulation_as_finding(description, state_code),
         lambda: tag_dump_problem(description),
         lambda: directive_problem(description, evidence),
+        lambda: invented_requirement(description, evidence),
     ):
         hit = fn()
         if hit:

@@ -1863,6 +1863,130 @@ def test_v12_1_remainder_is_findings_not_sentences() -> None:
         assert "unsourced directive" in _last_warning(path)["warnings"][0]
 
 
+def test_v12_2_garbled_fallback_invented_requirement_and_long_finding() -> None:
+    """Column bleed and an invented requirement hold the row. A copied requirement stores.
+
+    One finding that runs past the cap keeps its first whole sentences and a detail line.
+    """
+    import tempfile
+
+    garbled = (
+        "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+        "0510 not met as evidenced by record Minnesota Department of Health is review, "
+        "the licensee failed to ensure unlicensed documenting the State Correction Orders "
+        "personnel were present."
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = f"{tmp}/warnings.jsonl"
+        held = si.summarize(
+            _json_client(json.dumps([{
+                "tag": "0510",
+                "description": "The licensee failed to post 3 hours.",
+            }])),
+            "survey",
+            False,
+            None,
+            garbled,
+            state_code="MN",
+            deficiency_count=1,
+            d_tags=["0510"],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="garbled",
+        )
+        assert held is None
+        assert "garbled column text" in _last_warning(path)["warnings"][0]
+
+        invented = si.summarize(
+            _json_client(json.dumps([{
+                "tag": "0510",
+                "description": (
+                    "The licensee failed to post the hours. "
+                    "The facility is required to maintain proper water temperature."
+                ),
+            }])),
+            "survey",
+            False,
+            None,
+            (
+                "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+                "0510 not met as evidenced by the licensee failed to post the hours."
+            ),
+            state_code="MN",
+            deficiency_count=1,
+            d_tags=["0510"],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="water",
+        )
+        assert invented is None
+        assert "invented requirement" in _last_warning(path)["warnings"][0]
+
+    clean = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The licensee failed to post 3 hours.",
+        }])),
+        "survey",
+        False,
+        None,
+        (
+            "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+            "0510 not met as evidenced by the licensee failed to post the hours."
+        ),
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert clean and "failed to" in clean and "3" not in clean
+    assert "garbled" not in clean.lower()
+
+    copied = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The facility is required to maintain proper water temperature.",
+        }])),
+        "survey",
+        False,
+        None,
+        (
+            "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+            "0510 not met as evidenced by the facility is required to maintain proper water temperature."
+        ),
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert copied and "proper water temperature" in copied
+    assert "in more detail" not in copied
+
+    long_bits = ["The licensee failed to post the hours."] * 9
+    long_out = si.summarize(
+        _json_client(json.dumps([{
+            "tag": None,
+            "description": " ".join(long_bits),
+        }])),
+        "survey",
+        False,
+        None,
+        (
+            "On March 10, 2024, the Oregon Department of Human Services completed a full survey. "
+            + " ".join(long_bits)
+        ),
+        state_code="OR",
+        deficiency_count=1,
+        record_date="2024-03-10",
+    )
+    assert long_out and "1 violation" in long_out
+    sentences = si._sentences(long_out)
+    detail = "The report describes this finding in more detail."
+    assert sentences[-1] == detail
+    assert len(sentences) - 1 <= 6
+    assert long_out.count("The licensee failed to post the hours.") < 9
+
+
 if __name__ == "__main__":
     for _n, _f in sorted(globals().items()):
         if _n.startswith("test_") and callable(_f):
