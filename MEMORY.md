@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — State walks and profile headlines are counted, not joined
+
+**Decided:** `loadStateMemoryCareStats` and `loadCaResearchCorpus` keep one promise per process for the day. A null result is dropped so the next call tries again. The newest inspection date is the max `inspection_date` already read while counting homes with an inspection. Window counts and the California research corpus use published facility ids in chunks and `count: "exact", head: true`. A profile renders the newest 25 visits. The headline, the last-citation date, and the 90-day severe line use those exact counts, and the severe line can read one later page when the newest 25 have no deficiency row. The full record page loads the window 100 visits at a time. No schema, index, or RPC was added.
+
+**Rejected:** Raising the anon `statement_timeout`, adding an index, or adding a `state_memory_care_stats` RPC. Those were diagnosis only. Caching a failed walk. Computing the headline from the 25 rendered rows. Embedding `facilities!inner` or `inspections!inner`, which PostgREST plans as a lateral join and which timed out under the 3-second anon cap.
+
+**Source:** `/cursor/stores/bot/reviews/build-timeout-diagnosis-2026-11-27.md`. Preview of main, not this branch, failed static generation. Read-only. No database write.
+
+---
+
 ## 2026-11-28 — A Washington inspection is not a complaint, and a California citation is a row
 
 **Decided:** On a Washington profile, "Last inspection" is the newest non-complaint inspection row, or the newest posted PDF only when `doc_type` is `inspection`. A complaint investigation is its own line. The page does not use `facilities.last_inspection_date` for that headline, because the column can hold a complaint month. `wa_latest_posted_report` still returns one PDF. When that PDF is an investigation, an older inspection month in `wa_pdf_inventory` stays hidden until the function can take a document type. California headline counts are the Type A and Type B deficiency rows whose parent visit is in the three-year window. A substantiated complaint with no rows is not added. The window phrase is always shown for California. Inspections and their deficiencies are paged. A phone is shown only when it has 10 digits, or 11 with a leading 1. Otherwise the cell says "Not on file" and links the regulator record. Oregon license links go to `/Providers/Details/{license}`. A compliance-banner link uses the state's short regulator name (CDSS in California, DSHS in Washington). No phone numbers and no Oakmont banner row were written.

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { PROFILE_VISIBLE_VISITS } from "@/lib/facility/citationWindow";
 
-export const VISIBLE_VISITS = 25;
+export const VISIBLE_VISITS = PROFILE_VISIBLE_VISITS;
 
 /** Newest visits stay in the page. The rest render only after this control. */
 export function OlderVisits({ count, children }: { count: number; children: ReactNode }) {

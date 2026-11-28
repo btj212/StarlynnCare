@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — `facilities!inner` newest and oldest queries hit the 3-second cap
+
+**What went wrong:** A preview build of main failed while generating pages. The anon role has `statement_timeout` of 3 seconds. `newestInspection` and the inspection-window oldest query selected `facilities!inner(...)` and ordered by date with `limit 1`. PostgREST turns that into a lateral join that sorts inspections for the state. California and Texas newest, and Illinois oldest, were the lines that canceled. `loadStateMemoryCareStats` was also uncached, so one build repeated that walk about ten times. `.limit(5000)` does not raise PostgREST's max-rows, so a dense deficiency page can stop at 1000.
+
+**What worked instead:** Read published facility ids, then count with `.in("facility_id", chunk)` and `head: true`. Take the newest date from the inspection rows that count already reads. Memoize the successful walk for the process and drop the promise when it returns null. Page any select that would have asked for more than 1000 rows. Do not add an index or change the timeout.
+
+**Source:** `/cursor/stores/bot/reviews/build-timeout-diagnosis-2026-11-27.md`. No database write.
+
+---
+
 ## 2026-11-28 — A complaint was printed as the last inspection, and California counts stopped at 50
 
 **What went wrong:** `latestVisit` was the newest visit of any kind, so a Washington complaint investigation was the "Last inspection" date. `fetchInspectionsAndDeficiencies` used `.limit(50)`, so a home with more visits in the window said "across 50 inspections". The headline added substantiated complaints that had no deficiency rows, which made the California total higher than Type A plus Type B. The phone cell was a dash when the database had no number, and a short digit string would have been shown as typed. Every compliance-banner link said "DSHS".

@@ -13,6 +13,7 @@ import { REGULATOR_ABBR, clipMetaDescription } from "@/lib/seo/meta";
 import type { CareCategory } from "@/lib/types";
 import { contentAliasFields } from "@/lib/facility/aliases";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
+import { collectInPages } from "@/lib/data/pageSelect";
 import { careSettingCopy } from "@/lib/city-hub/careSetting";
 
 export const revalidate = 3600;
@@ -74,15 +75,38 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
   if (!supabase) {
     fetchError = "Supabase is not configured.";
   } else {
-    const { data: rawFacilities, error } = await supabase
-      .from("facilities")
-      .select(
-        "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, az_license_level, license_type",
-      )
-      .eq("state_code", state.code)
-      .eq("publishable", true)
-      .order("name", { ascending: true })
-      .limit(2000);
+    const facilityPage = await collectInPages<{
+      id: string;
+      name: string;
+      city: string | null;
+      street: string | null;
+      zip: string | null;
+      city_slug: string;
+      slug: string;
+      beds: number | null;
+      care_category: string;
+      photo_url: string | null;
+      serves_memory_care: boolean;
+      memory_care_disclosure_filed: boolean;
+      tx_alzheimer_certified: boolean | null;
+      capacity_tier: "small" | "medium" | "large" | "unknown";
+      content: unknown;
+      az_license_level: string | null;
+      license_type: string | null;
+    }>((from, to) =>
+      supabase
+        .from("facilities")
+        .select(
+          "id, name, city, street, zip, city_slug, slug, beds, care_category, photo_url, serves_memory_care, memory_care_disclosure_filed, tx_alzheimer_certified, capacity_tier, content, az_license_level, license_type",
+        )
+        .eq("state_code", state.code)
+        .eq("publishable", true)
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    const rawFacilities = facilityPage.rows;
+    const error = facilityPage.error ? { message: facilityPage.error } : null;
 
     if (error) {
       fetchError = error.message;
@@ -112,22 +136,25 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
 
         // Inspections — chunked to avoid URL-length limits and PostgREST's default
         // 1000-row cap. CA has thousands of inspections across ~2000 facilities;
-        // without chunking + explicit limit, most facilities get 0 citations displayed.
+        // without paging, a dense state is cut off and most homes show a blank citation count.
         const INSP_CHUNK = 150;
         const allInspData: Array<{ id: string; facility_id: string }> = [];
         for (let ci = 0; ci < ids.length; ci += INSP_CHUNK) {
           const chunk = ids.slice(ci, ci + INSP_CHUNK);
-          const { data: chunkData, error: chunkErr } = await supabase
-            .from("inspections")
-            .select("id, facility_id")
-            .in("facility_id", chunk)
-            .lte("inspection_date", todayIsoDate())
-            .limit(5000);
-          if (chunkErr) {
-            console.error("[facilities] inspections chunk failed:", chunkErr.message);
+          const inspPage = await collectInPages<{ id: string; facility_id: string }>((from, to) =>
+            supabase
+              .from("inspections")
+              .select("id, facility_id")
+              .in("facility_id", chunk)
+              .lte("inspection_date", todayIsoDate())
+              .order("id", { ascending: true })
+              .range(from, to),
+          );
+          if (inspPage.error) {
+            console.error("[facilities] inspections chunk failed:", inspPage.error);
             break;
           }
-          if (chunkData) allInspData.push(...(chunkData as typeof allInspData));
+          allInspData.push(...inspPage.rows);
         }
 
         const inspCountByFac = new Map<string, number>();
@@ -144,16 +171,23 @@ export default async function StateFacilitiesPage({ params }: PageProps) {
         const allDefs: Array<{ inspection_id: string; class: string | null; severity: number | null }> = [];
         for (let ci = 0; ci < inspIds.length; ci += DEF_CHUNK) {
           const chunk = inspIds.slice(ci, ci + DEF_CHUNK);
-          const { data: chunkData, error: chunkErr } = await supabase
-            .from("deficiencies")
-            .select("inspection_id, class, severity")
-            .in("inspection_id", chunk)
-            .limit(5000);
-          if (chunkErr) {
-            console.error("[facilities] deficiencies chunk failed:", chunkErr.message);
+          const defPage = await collectInPages<{
+            inspection_id: string;
+            class: string | null;
+            severity: number | null;
+          }>((from, to) =>
+            supabase
+              .from("deficiencies")
+              .select("inspection_id, class, severity")
+              .in("inspection_id", chunk)
+              .order("id", { ascending: true })
+              .range(from, to),
+          );
+          if (defPage.error) {
+            console.error("[facilities] deficiencies chunk failed:", defPage.error);
             break;
           }
-          if (chunkData) allDefs.push(...(chunkData as typeof allDefs));
+          allDefs.push(...defPage.rows);
         }
 
         const totalCitByFac = new Map<string, number>();

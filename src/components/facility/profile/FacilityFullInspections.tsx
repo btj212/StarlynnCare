@@ -247,9 +247,9 @@ export function FacilityFullInspections({
           deck={
             inspections.length === 0
               ? "No inspection records yet indexed for this facility."
-              : profile.facility.state_code === "WA" && inspections.some((row) => row.is_complaint)
-                ? `${totals.inspections} inspection${totals.inspections === 1 ? "" : "s"} and ${inspections.filter((row) => row.is_complaint).length} complaint ${inspections.filter((row) => row.is_complaint).length === 1 ? "investigation" : "investigations"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
-                : `${inspections.length} inspection${inspections.length === 1 ? "" : "s"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
+              : profile.facility.state_code === "WA" && profile.windowComplaints > 0
+                ? `${totals.inspections} inspection${totals.inspections === 1 ? "" : "s"} and ${profile.windowComplaints} complaint ${profile.windowComplaints === 1 ? "investigation" : "investigations"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
+                : `${inspections.length + profile.olderWindowVisits} inspection${inspections.length + profile.olderWindowVisits === 1 ? "" : "s"} in the public record, most recent first. Each row opens to a plain-language summary and links to the full citation text.`
           }
         />
 
@@ -321,6 +321,16 @@ export function FacilityFullInspections({
                 fullReportBase={`/${profile.state.slug}/${profile.facility.city_slug}/${profile.facility.slug}/inspections`}
               />
             ))}
+            {profile.olderWindowVisits > 0 ? (
+              <p className="border-t border-clearing-rule-2 px-5 py-4 font-[family-name:var(--font-mono)] text-[12px] text-ink-3">
+                <a
+                  href={`/${profile.state.slug}/${profile.facility.city_slug}/${profile.facility.slug}/inspections`}
+                  className="border-b border-rust pb-px text-rust"
+                >
+                  {profile.olderWindowVisits} older visits in the last 3 years are on the full record page
+                </a>
+              </p>
+            ) : null}
             <OlderVisits count={Math.max(0, inspections.length - VISIBLE_VISITS)}>
               {inspections.slice(VISIBLE_VISITS).map((insp) => (
                 <InspectionItem

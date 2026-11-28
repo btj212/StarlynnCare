@@ -14,8 +14,8 @@ type Props = {
   /** Texas, when the window has no published results. */
   texasRecordUrl?: string | null;
   /**
-   * Texas, when visits are on file and the citation count is not.
-   * Replaces a "0 citations" count.
+   * Texas, when visits are on file and a citation count was not published.
+   * The summary names that gap instead of a zero.
    */
   zeroCitationNote?: string | null;
 };

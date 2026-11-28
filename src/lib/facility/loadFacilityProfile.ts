@@ -7,8 +7,8 @@
  *
  * Data sources wired here:
  *   • facilities table  (1 row)
- *   • inspections table (paged, newest first; the page shows the 3-year window)
- *   • deficiencies table (paged in chunks for those inspections)
+ *   • inspections table (newest 25 on the profile; the full window on /inspections)
+ *   • deficiencies table (rows for the visits that page renders, plus exact counts)
  *   • facility_snapshot() RPC (1 call — percentiles, sparkline, heatmap)
  *   • reviews table via loadPublishedReviews()
  *   • Per-state config via getStateProfileConfig()
@@ -21,9 +21,11 @@ import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { regionFromSlug } from "@/lib/regions";
 import {
   PROFILE_CITATION_WINDOW_YEARS,
+  PROFILE_VISIBLE_VISITS,
+  citationSummaryFromCounts,
   countsCoverProfileWindow,
   inspectionInProfileWindow,
-  summarizeCitationWindow,
+  profileWindowStart,
 } from "@/lib/facility/citationWindow";
 import {
   ID_CHUNK,
@@ -278,8 +280,14 @@ export interface FacilityProfile {
   county: { name: string; slug: string } | null;
   cfg: StateProfileConfig;
 
-  /** Inspection rows within the 3-year display window, most-recent-first. */
+  /** Inspection rows this page renders, most-recent-first, inside the 3-year window. */
   inspections: InspectionRow[];
+  /**
+   * Newest-first visits for the 90-day severe line. The profile renders
+   * `inspections` only. This list adds the next page when those 25 rows
+   * have no deficiency but the window count is greater than zero.
+   */
+  recordInspections: InspectionRow[];
   /**
    * Every stored inspection date and source URL, including rows outside the
    * display window. The quality gate reads this. It is not rendered.
@@ -304,6 +312,10 @@ export interface FacilityProfile {
   complianceFlag: ComplianceFlag | null;
   /** Count of inspections older than INSPECTION_DISPLAY_YEARS that are hidden in free tier. */
   hiddenOlderCount: number;
+  /** Window visits not included in `inspections`. The profile links them to /inspections. */
+  olderWindowVisits: number;
+  /** Complaint investigations inside the profile window. Exact, not the length of the rendered list. */
+  windowComplaints: number;
   /** Year of the oldest inspection on record (used for footer copy). Null when no inspections exist. */
   oldestHiddenYear: number | null;
   /** Depth of historical coverage based on full ingested history span. */
@@ -461,58 +473,280 @@ async function fetchComplianceFlag(facilityId: string): Promise<ComplianceFlag |
 }
 
 const INSPECTION_PAGE = 1000;
+const FULL_RECORD_PAGE = 100;
+const LIGHT_LIST_CAP = 500;
+const INSPECTION_SELECT =
+  "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, source_event_id, source_agency, raw_data";
+const DEFICIENCY_SELECT =
+  "id, inspection_id, class, code, severity, scope, scope_severity_code, immediate_jeopardy, description, inspector_narrative, state_severity_raw, is_repeat, plan_of_correction, civil_money_penalty, status";
 
-async function fetchInspectionsAndDeficiencies(facilityId: string): Promise<{
-  inspections: InspectionRow[];
+type LightInspection = {
+  id: string;
+  inspection_date: string;
+  is_complaint: boolean | null;
+  source_url: string | null;
+  source_event_id: string | null;
+  total_deficiency_count: number | null;
+  outcome: string | null;
+  co_event_id: string | null;
+};
+
+type ProfileInspectionBundle = {
+  /** Visits this page renders, newest first, inside the three-year window. */
+  displayInspections: InspectionRow[];
+  /** Display visits plus any later page fetched so a citation outside the first 25 can still be named. */
+  walkInspections: InspectionRow[];
   deficiencies: DeficiencyRow[];
-}> {
+  light: LightInspection[];
+  allTimeInspections: number;
+  windowInspections: number;
+  windowComplaints: number;
+  windowDeficiencies: number;
+  windowTypeA: number;
+  windowTypeB: number;
+  allTimeDeficiencies: number;
+  substantiatedWithoutRows: number;
+};
+
+function withPrecision(row: Omit<InspectionRow, "datePrecision">): InspectionRow {
+  return { ...row, datePrecision: inspectionDatePrecision(row) };
+}
+
+function sortNewest(rows: InspectionRow[]): InspectionRow[] {
+  return [...rows].sort((a, b) => {
+    const byDate = b.inspection_date.localeCompare(a.inspection_date);
+    return byDate === 0 ? b.id.localeCompare(a.id) : byDate;
+  });
+}
+
+async function fetchInspectionsAndDeficiencies(
+  facilityId: string,
+  detail: "summary" | "full",
+): Promise<ProfileInspectionBundle> {
+  const empty: ProfileInspectionBundle = {
+    displayInspections: [],
+    walkInspections: [],
+    deficiencies: [],
+    light: [],
+    allTimeInspections: 0,
+    windowInspections: 0,
+    windowComplaints: 0,
+    windowDeficiencies: 0,
+    windowTypeA: 0,
+    windowTypeB: 0,
+    allTimeDeficiencies: 0,
+    substantiatedWithoutRows: 0,
+  };
   const supabase = tryPublicSupabaseClient();
-  if (!supabase) return { inspections: [], deficiencies: [] };
+  if (!supabase) return empty;
+  const db = supabase;
 
   const today = todayIsoDate();
-  const inspectionSelect =
-    "id, inspection_date, inspection_type, is_complaint, complaint_id, total_deficiency_count, narrative_summary, source_url, source_event_id, source_agency, raw_data";
-  const rawInspections: Omit<InspectionRow, "datePrecision">[] = [];
-  for (let from = 0; from <= 50000; from += INSPECTION_PAGE) {
-    const { data } = await supabase
-      .from("inspections")
-      .select(inspectionSelect)
-      .eq("facility_id", facilityId)
-      .lte("inspection_date", today)
-      .order("inspection_date", { ascending: false })
-      .order("id", { ascending: false })
-      .range(from, from + INSPECTION_PAGE - 1);
-    const page = (data ?? []) as Omit<InspectionRow, "datePrecision">[];
-    rawInspections.push(...page);
-    if (page.length < INSPECTION_PAGE) break;
-    if (from >= 50000) {
-      console.error("[loadFacilityProfile] inspection page stopped at 50000 rows", facilityId);
-    }
+  const windowStart = profileWindowStart(today);
+
+  const { data: lightData, error: lightError } = await supabase
+    .from("inspections")
+    .select(
+      "id, inspection_date, is_complaint, source_url, source_event_id, total_deficiency_count, outcome:raw_data->>outcome, co_event_id:raw_data->>co_event_id",
+    )
+    .eq("facility_id", facilityId)
+    .lte("inspection_date", today)
+    .order("inspection_date", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(LIGHT_LIST_CAP);
+  if (lightError) {
+    console.error("[loadFacilityProfile] light inspection list:", lightError.message);
+  }
+  const light = ((lightData ?? []) as LightInspection[]).filter((row) =>
+    isUsableInspectionDate(row.inspection_date, today),
+  );
+  if ((lightData ?? []).length >= LIGHT_LIST_CAP) {
+    console.error("[loadFacilityProfile] light inspection list hit 500", facilityId);
   }
 
-  const inspections = rawInspections
-    .filter((i) => isUsableInspectionDate(i.inspection_date, today))
-    .map((i) => ({ ...i, datePrecision: inspectionDatePrecision(i) }));
-  if (!inspections.length) return { inspections: [], deficiencies: [] };
+  async function inspectionHead(windowed: boolean, complaintsOnly: boolean): Promise<number> {
+    let query = db
+      .from("inspections")
+      .select("id", { count: "exact", head: true })
+      .eq("facility_id", facilityId)
+      .lte("inspection_date", today)
+      .not("inspection_date", "is", null);
+    if (windowed) query = query.gte("inspection_date", windowStart);
+    if (complaintsOnly) query = query.eq("is_complaint", true);
+    const { count, error } = await query;
+    if (error || count == null) {
+      console.error("[loadFacilityProfile] inspection count:", error?.message);
+      return 0;
+    }
+    return count;
+  }
 
-  const deficiencySelect =
-    "id, inspection_id, class, code, severity, scope, scope_severity_code, immediate_jeopardy, description, inspector_narrative, state_severity_raw, is_repeat, plan_of_correction, civil_money_penalty, status";
-  const deficiencies: DeficiencyRow[] = [];
-  for (const chunk of chunkIds(inspections.map((i) => i.id), ID_CHUNK)) {
-    for (let from = 0; from <= 50000; from += INSPECTION_PAGE) {
-      const { data } = await supabase
+  const [allTimeInspections, windowInspections, windowComplaints] = await Promise.all([
+    inspectionHead(false, false),
+    inspectionHead(true, false),
+    inspectionHead(true, true),
+  ]);
+
+  const windowIds = light
+    .filter((row) => inspectionInProfileWindow(row.inspection_date, today))
+    .map((row) => row.id);
+  const allIds = light.map((row) => row.id);
+
+  async function deficiencyHead(ids: string[], klass: "Type A" | "Type B" | null): Promise<number> {
+    let total = 0;
+    for (const chunk of chunkIds(ids, ID_CHUNK)) {
+      let query = db
         .from("deficiencies")
-        .select(deficiencySelect)
+        .select("id", { count: "exact", head: true })
+        .in("inspection_id", chunk);
+      if (klass) query = query.eq("class", klass);
+      const { count, error } = await query;
+      if (error || count == null) {
+        console.error("[loadFacilityProfile] deficiency count:", error?.message);
+        return total;
+      }
+      total += count;
+    }
+    return total;
+  }
+
+  const [windowDeficiencies, windowTypeA, windowTypeB, allTimeDeficiencies] = await Promise.all([
+    deficiencyHead(windowIds, null),
+    deficiencyHead(windowIds, "Type A"),
+    deficiencyHead(windowIds, "Type B"),
+    deficiencyHead(allIds, null),
+  ]);
+
+  const substantiatedIds = light
+    .filter(
+      (row) =>
+        inspectionInProfileWindow(row.inspection_date, today) &&
+        row.is_complaint === true &&
+        row.outcome === "Substantiated",
+    )
+    .map((row) => row.id);
+  const withDeficiency = new Set<string>();
+  for (const chunk of chunkIds(substantiatedIds, ID_CHUNK)) {
+    for (let from = 0; ; from += INSPECTION_PAGE) {
+      const { data, error } = await db
+        .from("deficiencies")
+        .select("inspection_id")
         .in("inspection_id", chunk)
         .order("id", { ascending: true })
         .range(from, from + INSPECTION_PAGE - 1);
-      const page = (data ?? []) as DeficiencyRow[];
-      deficiencies.push(...page);
+      if (error) {
+        console.error("[loadFacilityProfile] substantiated rows:", error.message);
+        break;
+      }
+      const page = (data ?? []) as Array<{ inspection_id: string }>;
+      for (const row of page) withDeficiency.add(row.inspection_id);
       if (page.length < INSPECTION_PAGE) break;
     }
   }
+  const substantiatedWithoutRows = substantiatedIds.filter((id) => !withDeficiency.has(id)).length;
 
-  return { inspections, deficiencies };
+  async function fetchDeficiencyRows(ids: string[]): Promise<DeficiencyRow[]> {
+    const deficiencies: DeficiencyRow[] = [];
+    for (const chunk of chunkIds(ids, ID_CHUNK)) {
+      for (let from = 0; ; from += INSPECTION_PAGE) {
+        const { data, error } = await db
+          .from("deficiencies")
+          .select(DEFICIENCY_SELECT)
+          .in("inspection_id", chunk)
+          .order("id", { ascending: true })
+          .range(from, from + INSPECTION_PAGE - 1);
+        if (error) {
+          console.error("[loadFacilityProfile] deficiencies:", error.message);
+          break;
+        }
+        const page = (data ?? []) as DeficiencyRow[];
+        deficiencies.push(...page);
+        if (page.length < INSPECTION_PAGE) break;
+      }
+    }
+    return deficiencies;
+  }
+
+  async function fetchWindowPage(
+    from: number,
+    size: number,
+  ): Promise<{ rows: InspectionRow[]; rawCount: number }> {
+    const { data, error } = await db
+      .from("inspections")
+      .select(INSPECTION_SELECT)
+      .eq("facility_id", facilityId)
+      .gte("inspection_date", windowStart)
+      .lte("inspection_date", today)
+      .order("inspection_date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + size - 1);
+    if (error) {
+      console.error("[loadFacilityProfile] inspection page:", error.message);
+      return { rows: [], rawCount: 0 };
+    }
+    const raw = (data ?? []) as Omit<InspectionRow, "datePrecision">[];
+    return {
+      rawCount: raw.length,
+      rows: raw.filter((row) => isUsableInspectionDate(row.inspection_date, today)).map(withPrecision),
+    };
+  }
+
+  let displayInspections: InspectionRow[] = [];
+  let walkInspections: InspectionRow[] = [];
+  let deficiencies: DeficiencyRow[] = [];
+
+  if (detail === "full") {
+    for (let from = 0; ; from += FULL_RECORD_PAGE) {
+      const page = await fetchWindowPage(from, FULL_RECORD_PAGE);
+      displayInspections.push(...page.rows);
+      if (page.rawCount < FULL_RECORD_PAGE) break;
+    }
+    walkInspections = displayInspections;
+    deficiencies = await fetchDeficiencyRows(displayInspections.map((row) => row.id));
+  } else {
+    displayInspections = (await fetchWindowPage(0, PROFILE_VISIBLE_VISITS)).rows;
+    walkInspections = displayInspections;
+    deficiencies = await fetchDeficiencyRows(displayInspections.map((row) => row.id));
+    if (deficiencies.length === 0 && windowDeficiencies > 0) {
+      const windowLight = light.filter((row) => inspectionInProfileWindow(row.inspection_date, today));
+      for (let index = PROFILE_VISIBLE_VISITS; index < windowLight.length; index += PROFILE_VISIBLE_VISITS) {
+        const ids = windowLight.slice(index, index + PROFILE_VISIBLE_VISITS).map((row) => row.id);
+        if (ids.length === 0) break;
+        const { data, error } = await supabase
+          .from("inspections")
+          .select(INSPECTION_SELECT)
+          .in("id", ids);
+        if (error) {
+          console.error("[loadFacilityProfile] later inspection page:", error.message);
+          break;
+        }
+        const page = sortNewest(
+          ((data ?? []) as Omit<InspectionRow, "datePrecision">[])
+            .filter((row) => isUsableInspectionDate(row.inspection_date, today))
+            .map(withPrecision),
+        );
+        const pageDefs = await fetchDeficiencyRows(page.map((row) => row.id));
+        walkInspections = sortNewest([...walkInspections, ...page]);
+        deficiencies = [...deficiencies, ...pageDefs];
+        if (pageDefs.length > 0) break;
+      }
+    }
+  }
+
+  return {
+    displayInspections,
+    walkInspections,
+    deficiencies,
+    light,
+    allTimeInspections,
+    windowInspections,
+    windowComplaints,
+    windowTypeA,
+    windowTypeB,
+    windowDeficiencies,
+    allTimeDeficiencies,
+    substantiatedWithoutRows,
+  };
 }
 
 async function fetchWaLatestPostedReport(
@@ -651,8 +885,11 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   stateSlug: string;
   regionSlug: string;
   facilitySlug: string;
+  /** summary: newest 25 visits. full: every visit in the three-year window, paged. */
+  detail?: "summary" | "full";
 }): Promise<FacilityProfile | "not_found" | "unconfigured" | FacilityRedirect> {
   const { stateSlug, regionSlug, facilitySlug } = params;
+  const detail = params.detail ?? "summary";
 
   const state = stateFromSlug(stateSlug);
   if (!state) return "not_found";
@@ -738,8 +975,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const region = regionFromSlug(stateSlug, regionSlug);
   const countyHub = countyRegionContainingCitySlug(state.code, facility.city_slug);
 
-  const [{ inspections: allInspections, deficiencies: allDeficiencies }, snapshot, reviews, complianceFlag, waPostedReport, addressHistory] = await Promise.all([
-    fetchInspectionsAndDeficiencies(facility.id),
+  const [bundle, snapshot, reviews, complianceFlag, waPostedReport, addressHistory] = await Promise.all([
+    fetchInspectionsAndDeficiencies(facility.id, detail),
     fetchSnapshot(facility.id),
     loadPublishedReviews(facility.id),
     fetchComplianceFlag(facility.id),
@@ -753,23 +990,32 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     }),
   ]);
 
-  // ── Free-tier display cap ──────────────────────────────────────────────────
-  // Only show inspections from the past INSPECTION_DISPLAY_YEARS years.
-  // All data stays in the DB; this is view-layer filtering only.
+  // The rendered list is the three-year window (25 newest on the profile).
+  // Counts below are exact head counts, not the length of that list.
   const today = todayIsoDate();
-  const inspections = allInspections.filter((i) => inspectionInProfileWindow(i.inspection_date, today));
-  const hiddenOlderCount = allInspections.length - inspections.length;
+  const inspections = bundle.displayInspections;
+  const hiddenOlderCount = bundle.allTimeInspections - bundle.windowInspections;
   const oldestHiddenYear =
-    allInspections.length > 0
-      ? Math.min(...allInspections.map((i) => new Date(i.inspection_date).getUTCFullYear()))
+    bundle.light.length > 0
+      ? Math.min(...bundle.light.map((row) => new Date(row.inspection_date).getUTCFullYear()))
       : null;
 
-  const visibleInspectionIds = new Set(inspections.map((i) => i.id));
-  const deficiencies = allDeficiencies.filter((d) => visibleInspectionIds.has(d.inspection_id));
+  const deficiencies = bundle.deficiencies;
+  const citationSummary = citationSummaryFromCounts(
+    {
+      windowInspections: bundle.windowInspections,
+      windowComplaints: bundle.windowComplaints,
+      windowDeficiencies: bundle.windowDeficiencies,
+      windowTypeA: bundle.windowTypeA,
+      windowTypeB: bundle.windowTypeB,
+      substantiatedWithoutRows: bundle.substantiatedWithoutRows,
+    },
+    facility.state_code,
+  );
 
   // Derive data depth from full history span (not just the visible window)
   const dataDepth: DataDepth = (() => {
-    if (allInspections.length === 0 || oldestHiddenYear === null) return "shallow";
+    if (bundle.light.length === 0 || oldestHiddenYear === null) return "shallow";
     const currentYear = new Date().getUTCFullYear();
     const spanYears = currentYear - oldestHiddenYear;
     if (spanYears >= 5) return "deep";
@@ -786,18 +1032,10 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     deficienciesByInspection.set(d.inspection_id, list);
   }
 
-  // California headline is Type A + Type B rows. Other states still add a
-  // substantiated complaint that has no deficiency rows.
-  const citationSummary = summarizeCitationWindow({
-    inspections: allInspections,
-    deficiencies: allDeficiencies,
-    stateCode: facility.state_code,
-    today,
-  });
   const typeACount = citationSummary.typeA;
   const totalDeficiencies = citationSummary.citations;
   const lastCitation =
-    inspections.find((i) => (deficienciesByInspection.get(i.id) ?? []).length > 0)
+    bundle.walkInspections.find((row) => (deficienciesByInspection.get(row.id) ?? []).length > 0)
       ?.inspection_date ?? null;
 
   // Per-state config — WA nursing homes get CMS/F-tag config
@@ -822,7 +1060,7 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   // Derived data
   const timeline = deriveTimeline(degradedSnapshot);
   const scopeSeverityGrid = deriveScopeSeverityGrid(degradedSnapshot);
-  const rulesCards = deriveRulesCards(cfg, deficiencies, inspections);
+  const rulesCards = deriveRulesCards(cfg, deficiencies, bundle.walkInspections);
   const tourQuestions = freshenTourQuestions(
     (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [],
     {
@@ -893,15 +1131,26 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   ];
 
   const pdfDay = postedMonthToIsoDay(waPostedReport?.posted_month);
+  const detailById = new Map(bundle.walkInspections.map((row) => [row.id, row]));
+  const visitRows = bundle.light.map((row) => {
+    const full = detailById.get(row.id);
+    if (full) return full;
+    return {
+      inspection_date: row.inspection_date,
+      inspection_type: null,
+      is_complaint: row.is_complaint === true,
+      datePrecision: "day" as const,
+    };
+  });
   const derivedLastInspection = latestInspectionDate([
-    ...allInspections.map((i) => i.inspection_date),
+    ...bundle.light.map((row) => row.inspection_date),
     facility.last_inspection_date,
     pdfDay,
   ]);
   facility.last_inspection_date = derivedLastInspection;
   const { latestVisit, latestInspection, latestComplaint } = resolveProfileVisits({
     stateCode: facility.state_code,
-    inspections: allInspections,
+    inspections: visitRows,
     waPostedReport,
     derivedLastInspection,
   });
@@ -910,7 +1159,10 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const lastNonComplaintInspection =
     facility.state_code === "WA"
       ? null
-      : inspections.find((i) => !i.is_complaint)?.inspection_date ?? derivedLastInspection;
+      : visitRows.find(
+          (row) =>
+            row.is_complaint === false && inspectionInProfileWindow(row.inspection_date, today),
+        )?.inspection_date ?? derivedLastInspection;
   const reviewedOn =
     facility.state_code === "WA"
       ? latestInspection?.date ?? null
@@ -940,12 +1192,12 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     ),
     severityScope: cfg.scopeSeverityScale ?? null,
     severityFullyMeasured:
-      deficiencies.length > 0 &&
+      bundle.windowDeficiencies > 0 &&
+      deficiencies.length === bundle.windowDeficiencies &&
       deficiencies.every((row) =>
         citationCarriesScaleValue(state.code, row, cfg.scopeSeverityScale),
       ),
-    complaintCount:
-      facility.state_code === "WA" ? inspections.filter((row) => row.is_complaint).length : 0,
+    complaintCount: facility.state_code === "WA" ? bundle.windowComplaints : 0,
     pageUrl: canonicalUrl,
     inspectionCount: citationSummary.inspections,
     deficiencyCount: totalDeficiencies,
@@ -1033,17 +1285,26 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     cfg,
 
     inspections,
-    gateInspections: allInspections.map((row) => ({
-      date: row.inspection_date,
-      sourceUrl: row.source_url,
-      citationCount: row.total_deficiency_count,
-      visitId: row.source_event_id?.trim() || row.raw_data?.co_event_id?.trim() || null,
-    })),
+    recordInspections: bundle.walkInspections,
+    gateInspections: bundle.light.map((row) => {
+      const full = detailById.get(row.id);
+      return {
+        date: row.inspection_date,
+        sourceUrl: full?.source_url ?? row.source_url,
+        citationCount: full?.total_deficiency_count ?? row.total_deficiency_count,
+        visitId:
+          full?.source_event_id?.trim() ||
+          full?.raw_data?.co_event_id?.trim() ||
+          row.source_event_id?.trim() ||
+          row.co_event_id?.trim() ||
+          null,
+      };
+    }),
     deficienciesByInspection,
     totals: {
       inspections: citationSummary.inspections,
       deficiencies: totalDeficiencies,
-      allTimeDeficiencies: allDeficiencies.length,
+      allTimeDeficiencies: bundle.allTimeDeficiencies,
       typeA: typeACount,
       typeB: citationSummary.typeB,
       other: citationSummary.other,
@@ -1052,9 +1313,11 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     },
     complianceFlag,
     hiddenOlderCount,
+    olderWindowVisits: Math.max(0, bundle.windowInspections - inspections.length),
+    windowComplaints: bundle.windowComplaints,
     oldestHiddenYear,
     dataDepth,
-    limitedHistory: inspections.length < 4,
+    limitedHistory: bundle.windowInspections < 4,
     visibilityTier: "free" as InspectionVisibilityTier,
 
     hasRealInspectionText,

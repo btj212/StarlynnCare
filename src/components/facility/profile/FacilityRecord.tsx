@@ -377,6 +377,16 @@ export function FacilityRecord({ profile }: { profile: FacilityProfile }) {
         {/* Full-width inspection list below */}
         <div className="mt-7">
           <CompactInspectionList profile={profile} />
+          {profile.olderWindowVisits > 0 ? (
+            <p className="mt-4 font-[family-name:var(--font-mono)] text-[12px] text-ink-3">
+              <a
+                href={`/${profile.state.slug}/${profile.facility.city_slug}/${profile.facility.slug}/inspections`}
+                className="border-b border-rust pb-px text-rust"
+              >
+                {profile.olderWindowVisits} older visits in the last 3 years are on the full record page
+              </a>
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-4 flex justify-end">

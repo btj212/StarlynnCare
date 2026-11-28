@@ -4,6 +4,7 @@ import { COVERED_STATES, stateFromCode } from "@/lib/states";
 import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
 import { AZ_SMALL_BED_LIMIT, cityHubPageExists, facilityListedOnHub } from "@/lib/seo/indexability";
 import { loadLatestInspectionDates, todayIsoDate } from "@/lib/data/inspectionDates";
+import { collectInPages } from "@/lib/data/pageSelect";
 
 export type NationalStateSummary = {
   stateSlug: string;
@@ -259,19 +260,21 @@ async function azSmallCitationIds(
   const chunkSize = 150;
   for (let i = 0; i < facilityIds.length; i += chunkSize) {
     const chunk = facilityIds.slice(i, i + chunkSize);
-    const { data, error } = await supabase
-      .from("inspections")
-      .select("facility_id, total_deficiency_count")
-      .in("facility_id", chunk)
-      .gt("total_deficiency_count", 0)
-      .limit(5000);
-    if (error) {
-      console.error("[nationalHome] AZ citation probe failed:", error.message);
+    const page = await collectInPages<{ facility_id: string }>((from, to) =>
+      supabase
+        .from("inspections")
+        .select("facility_id, total_deficiency_count")
+        .in("facility_id", chunk)
+        .gt("total_deficiency_count", 0)
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    if (page.error) {
+      console.error("[nationalHome] AZ citation probe failed:", page.error);
       continue;
     }
-    for (const row of data ?? []) {
-      const id = (row as { facility_id: string }).facility_id;
-      if (id) cited.add(id);
+    for (const row of page.rows) {
+      if (row.facility_id) cited.add(row.facility_id);
     }
   }
   return cited;

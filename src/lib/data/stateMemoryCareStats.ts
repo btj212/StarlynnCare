@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { COVERED_STATES } from "@/lib/states";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
+import { collectInPages } from "@/lib/data/pageSelect";
 
 /**
  * Live counts for /data. A serious citation is the same rule the city hubs
@@ -47,6 +48,46 @@ const OFFICES: Record<string, string> = {
 
 const ID_PAGE = 1000;
 const ID_CHUNK = 150;
+const STATE_WALK_CONCURRENCY = 3;
+
+const facilityIdCache = new Map<string, Promise<string[] | null>>();
+
+/** One published-id list per state per day. A failed read is not kept. */
+export function publishedFacilityIds(
+  supabase: SupabaseClient,
+  code: string,
+): Promise<string[] | null> {
+  const key = `${code.toUpperCase()}|${todayIsoDate()}`;
+  const hit = facilityIdCache.get(key);
+  if (hit) return hit;
+  const pending = facilityIdsForState(supabase, code).then((ids) => {
+    if (ids == null) facilityIdCache.delete(key);
+    return ids;
+  });
+  facilityIdCache.set(key, pending);
+  return pending;
+}
+
+async function mapAtMost<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Math.min(limit, items.length);
+  await Promise.all(
+    Array.from({ length: workers }, async () => {
+      for (;;) {
+        const index = next;
+        next += 1;
+        if (index >= items.length) return;
+        out[index] = await fn(items[index]);
+      }
+    }),
+  );
+  return out;
+}
 
 export function seriousCitationCutoff(now = new Date()): string {
   const cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -134,20 +175,23 @@ async function windowFindings(
     if (inspRows.length === 0) continue;
     const inspFac = new Map(inspRows.map((i) => [i.id, i.facility_id]));
     for (const inspChunk of chunk(inspRows.map((i) => i.id), ID_CHUNK)) {
-      const { data, error } = await supabase
-        .from("deficiencies")
-        .select("inspection_id, class, severity")
-        .in("inspection_id", inspChunk)
-        .limit(5000);
-      if (error) {
-        console.error("[stateMemoryCareStats] window deficiencies:", error.message);
-        return null;
-      }
-      for (const d of (data ?? []) as Array<{
+      const page = await collectInPages<{
         inspection_id: string;
         class: string | null;
         severity: number | null;
-      }>) {
+      }>((from, to) =>
+        supabase
+          .from("deficiencies")
+          .select("inspection_id, class, severity")
+          .in("inspection_id", inspChunk)
+          .order("id", { ascending: true })
+          .range(from, to),
+      );
+      if (page.error) {
+        console.error("[stateMemoryCareStats] window deficiencies:", page.error);
+        return null;
+      }
+      for (const d of page.rows) {
         const facility_id = inspFac.get(d.inspection_id);
         if (!facility_id) continue;
         findings.push({ facility_id, class: d.class, severity: d.severity });
@@ -161,14 +205,15 @@ async function countWithInspection(
   supabase: SupabaseClient,
   facilityIds: string[],
   today: string,
-): Promise<number | null> {
+): Promise<{ homes: number; newest: string | null } | null> {
   const seen = new Set<string>();
+  let newest: string | null = null;
   for (const ids of chunk(facilityIds, ID_CHUNK)) {
     let from = 0;
     for (;;) {
       const { data, error } = await supabase
         .from("inspections")
-        .select("facility_id")
+        .select("facility_id, inspection_date")
         .in("facility_id", ids)
         .lte("inspection_date", today)
         .not("inspection_date", "is", null)
@@ -177,56 +222,39 @@ async function countWithInspection(
         console.error("[stateMemoryCareStats] withInspection:", error.message);
         return null;
       }
-      const page = (data ?? []) as Array<{ facility_id: string }>;
-      for (const row of page) seen.add(row.facility_id);
+      const page = (data ?? []) as Array<{ facility_id: string; inspection_date: string | null }>;
+      for (const row of page) {
+        seen.add(row.facility_id);
+        const day = row.inspection_date?.slice(0, 10) ?? null;
+        if (day && (newest == null || day > newest)) newest = day;
+      }
       if (page.length < ID_PAGE) break;
       from += ID_PAGE;
     }
   }
-  return seen.size;
-}
-
-async function newestInspection(
-  supabase: SupabaseClient,
-  code: string,
-  today: string,
-): Promise<string | null | undefined> {
-  const { data, error } = await supabase
-    .from("inspections")
-    .select("inspection_date, facilities!inner(state_code, publishable)")
-    .eq("facilities.state_code", code)
-    .eq("facilities.publishable", true)
-    .lte("inspection_date", today)
-    .order("inspection_date", { ascending: false })
-    .limit(1);
-  if (error) {
-    console.error(`[stateMemoryCareStats] newest ${code}:`, error.message);
-    return undefined;
-  }
-  const row = data?.[0] as { inspection_date?: string | null } | undefined;
-  return row?.inspection_date ? row.inspection_date.slice(0, 10) : null;
+  return { homes: seen.size, newest };
 }
 
 function isSerious(d: WindowFinding): boolean {
   return d.class === "Type A" || (d.severity ?? 0) >= 3;
 }
 
-export async function loadStateMemoryCareStats(
-  supabase: SupabaseClient,
-): Promise<StateMemoryCareStats | null> {
-  const cutoff = seriousCitationCutoff();
-  const today = todayIsoDate();
-  const rows: StateMemoryCareStat[] = [];
+let cachedStats: Promise<StateMemoryCareStats | null> | null = null;
+let cachedStatsKey: string | null = null;
 
-  for (const state of COVERED_STATES) {
-    const facilityIds = await facilityIdsForState(supabase, state.code);
+async function walkStateMemoryCareStats(
+  supabase: SupabaseClient,
+  cutoff: string,
+  today: string,
+): Promise<StateMemoryCareStats | null> {
+  const settled = await mapAtMost(COVERED_STATES, STATE_WALK_CONCURRENCY, async (state) => {
+    const facilityIds = await publishedFacilityIds(supabase, state.code);
     if (!facilityIds) {
       console.error(`[stateMemoryCareStats] skipped ${state.code}: facility ids`);
-      continue;
+      return null;
     }
-    const [withInspection, newest, findings] = await Promise.all([
+    const [withInspection, findings] = await Promise.all([
       countWithInspection(supabase, facilityIds, today),
-      newestInspection(supabase, state.code, today),
       windowFindings(supabase, facilityIds, cutoff, today),
     ]);
     if (withInspection == null || findings == null) {
@@ -235,24 +263,45 @@ export async function loadStateMemoryCareStats(
         findings == null ? "findings" : "",
       ].filter(Boolean);
       console.error(`[stateMemoryCareStats] skipped ${state.code}: ${failed.join(", ")}`);
-      continue;
+      return null;
     }
     const seriousHomes = new Set(findings.filter(isSerious).map((d) => d.facility_id)).size;
     const uncodedFindings = findings.filter((d) => d.class == null && d.severity == null).length;
-    rows.push({
+    const row: StateMemoryCareStat = {
       code: state.code,
       name: state.name,
       slug: state.slug,
       regulatorLong: OFFICES[state.code],
       published: facilityIds.length,
-      withInspection,
+      withInspection: withInspection.homes,
       seriousHomes,
-      newestInspection: newest ?? null,
+      newestInspection: withInspection.newest,
       findings: findings.length,
       uncodedFindings,
-    });
-  }
+    };
+    return row;
+  });
 
+  const rows = settled.filter((row): row is StateMemoryCareStat => row != null);
   if (rows.length === 0) return null;
   return { cutoff, rows };
+}
+
+export function loadStateMemoryCareStats(
+  supabase: SupabaseClient,
+): Promise<StateMemoryCareStats | null> {
+  const cutoff = seriousCitationCutoff();
+  const today = todayIsoDate();
+  const key = `${cutoff}|${today}`;
+  if (cachedStats && cachedStatsKey === key) return cachedStats;
+  cachedStatsKey = key;
+  const pending = walkStateMemoryCareStats(supabase, cutoff, today).then((result) => {
+    if (result == null && cachedStats === pending) {
+      cachedStats = null;
+      cachedStatsKey = null;
+    }
+    return result;
+  });
+  cachedStats = pending;
+  return pending;
 }

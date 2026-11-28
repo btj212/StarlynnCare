@@ -71,6 +71,7 @@ import {
 } from "@/components/facility/RecentInspectionReports";
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { isUsableInspectionDate, todayIsoDate } from "@/lib/data/inspectionDates";
+import { collectInPages } from "@/lib/data/pageSelect";
 import { parentCountyForCity } from "@/lib/regions";
 import { cityIntroForRegion, countyIntroParasForRegion } from "@/lib/content/cityIntros";
 import { formatCostRange, formatCurrency, getStateCostBand } from "@/lib/content/stateCostBands";
@@ -303,17 +304,24 @@ export default async function RegionPage({ params }: PageProps) {
         const INSP_CHUNK = 150;
         for (let ci = 0; ci < ids.length; ci += INSP_CHUNK) {
           const chunk = ids.slice(ci, ci + INSP_CHUNK);
-          const { data: chunkData, error: chunkErr } = await supabase
-            .from("inspections")
-            .select("id, facility_id, inspection_date")
-            .in("facility_id", chunk)
-            .lte("inspection_date", todayIsoDate())
-            .limit(5000);
-          if (chunkErr) {
-            console.error("[hub] inspections chunk failed:", chunkErr.message);
+          const inspPage = await collectInPages<{
+            id: string;
+            facility_id: string;
+            inspection_date: string;
+          }>((from, to) =>
+            supabase
+              .from("inspections")
+              .select("id, facility_id, inspection_date")
+              .in("facility_id", chunk)
+              .lte("inspection_date", todayIsoDate())
+              .order("id", { ascending: true })
+              .range(from, to),
+          );
+          if (inspPage.error) {
+            console.error("[hub] inspections chunk failed:", inspPage.error);
             break;
           }
-          if (chunkData) allInspData.push(...(chunkData as typeof allInspData));
+          allInspData.push(...inspPage.rows);
         }
 
         const cutoff3y = new Date();
@@ -341,16 +349,23 @@ export default async function RegionPage({ params }: PageProps) {
         const DEF_CHUNK = 150;
         for (let ci = 0; ci < inspIds.length; ci += DEF_CHUNK) {
           const chunk = inspIds.slice(ci, ci + DEF_CHUNK);
-          const { data: chunkData, error: chunkErr } = await supabase
-            .from("deficiencies")
-            .select("inspection_id, class, severity")
-            .in("inspection_id", chunk)
-            .limit(5000);
-          if (chunkErr) {
-            console.error("[hub] deficiencies chunk query failed:", chunkErr.message, { ci, chunkLen: chunk.length });
+          const defPage = await collectInPages<{
+            inspection_id: string;
+            class: string | null;
+            severity: number | null;
+          }>((from, to) =>
+            supabase
+              .from("deficiencies")
+              .select("inspection_id, class, severity")
+              .in("inspection_id", chunk)
+              .order("id", { ascending: true })
+              .range(from, to),
+          );
+          if (defPage.error) {
+            console.error("[hub] deficiencies chunk query failed:", defPage.error, { ci, chunkLen: chunk.length });
             break;
           }
-          if (chunkData) allDefs.push(...(chunkData as typeof allDefs));
+          allDefs.push(...defPage.rows);
         }
 
         const totalCitByFac = new Map<string, number>();
@@ -606,12 +621,16 @@ export default async function RegionPage({ params }: PageProps) {
     const trendInspRows: Array<{ id: string; facility_id: string }> = [];
     for (let ci = 0; ci < ids.length; ci += TREND_INSP_CHUNK) {
       const chunk = ids.slice(ci, ci + TREND_INSP_CHUNK);
-      const { data: chunkData } = await supabase
-        .from("inspections")
-        .select("id, facility_id")
-        .in("facility_id", chunk)
-        .gte("inspection_date", isoDate)
-        .limit(5000);
+      const trendPage = await collectInPages<{ id: string; facility_id: string }>((from, to) =>
+        supabase
+          .from("inspections")
+          .select("id, facility_id")
+          .in("facility_id", chunk)
+          .gte("inspection_date", isoDate)
+          .order("id", { ascending: true })
+          .range(from, to),
+      );
+      const chunkData = trendPage.rows;
       if (chunkData) trendInspRows.push(...(chunkData as typeof trendInspRows));
     }
 

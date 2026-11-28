@@ -1,4 +1,5 @@
 import { getServiceClient } from "@/lib/supabase/server";
+import { collectInPages } from "@/lib/data/pageSelect";
 import { SectionHead } from "@/components/editorial/SectionHead";
 import { ReviewTabs } from "./ReviewTabs";
 
@@ -76,12 +77,17 @@ async function loadReviewData(page: number) {
     console.error("Failed to load yellow queue:", yellowError);
   }
 
-  const { data: redRows, error: redError } = await supabase
-    .from("facilities")
-    .select(SELECT_COLUMNS)
-    .eq("mc_review_status", "reviewed_reject")
-    .order("mc_reviewed_at", { ascending: false })
-    .limit(5000);
+  const redPage = await collectInPages<FacilityReview>((from, to) =>
+    supabase
+      .from("facilities")
+      .select(SELECT_COLUMNS)
+      .eq("mc_review_status", "reviewed_reject")
+      .order("mc_reviewed_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
+  const redRows = redPage.rows;
+  const redError = redPage.error ? { message: redPage.error } : null;
 
   if (redError) {
     console.error("Failed to load red bucket:", redError);

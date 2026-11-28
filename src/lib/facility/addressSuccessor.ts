@@ -1,5 +1,6 @@
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { isUsableInspectionDate, todayIsoDate } from "@/lib/data/inspectionDates";
+import { collectInPages } from "@/lib/data/pageSelect";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 
@@ -211,13 +212,17 @@ async function loadInspections(
 
   const ids = inspections.map((row) => row.id);
   const counts = new Map<string, number>();
-  if (ids.length > 0) {
-    const { data: defData } = await supabase
-      .from("deficiencies")
-      .select("inspection_id")
-      .in("inspection_id", ids)
-      .limit(5000);
-    for (const row of (defData ?? []) as DeficiencyHit[]) {
+  for (let index = 0; index < ids.length; index += 80) {
+    const chunk = ids.slice(index, index + 80);
+    const page = await collectInPages<DeficiencyHit>((from, to) =>
+      supabase
+        .from("deficiencies")
+        .select("inspection_id")
+        .in("inspection_id", chunk)
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    for (const row of page.rows) {
       counts.set(row.inspection_id, (counts.get(row.inspection_id) ?? 0) + 1);
     }
   }

@@ -8,6 +8,7 @@ import { CompareCard } from "@/components/shortlist/CompareCard";
 import { SharedShortlistClient } from "./SharedShortlistClient";
 import type { ShortlistItem } from "@/lib/shortlist/context";
 import type { CareCategory } from "@/lib/types";
+import { collectInPages } from "@/lib/data/pageSelect";
 
 export const metadata: Metadata = {
   title: "Shared Shortlist · StarlynnCare",
@@ -32,12 +33,15 @@ async function fetchShortlistItems(ids: string[]): Promise<ShortlistItem[]> {
 
   const facIds = rawFacilities.map((f) => f.id as string);
 
-  // Inspections — max 10 facilities so no chunking needed
-  const { data: inspData } = await supabase
-    .from("inspections")
-    .select("id, facility_id")
-    .in("facility_id", facIds)
-    .limit(5000);
+  const inspPage = await collectInPages<{ id: string; facility_id: string }>((from, to) =>
+    supabase
+      .from("inspections")
+      .select("id, facility_id")
+      .in("facility_id", facIds)
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
+  const inspData = inspPage.rows;
 
   const inspCountByFac = new Map<string, number>();
   const inspFacMap = new Map<string, string>();
@@ -49,11 +53,23 @@ async function fetchShortlistItems(ids: string[]): Promise<ShortlistItem[]> {
 
   const inspIds = (inspData ?? []).map((i) => (i as { id: string }).id);
 
-  const { data: defData } = await supabase
-    .from("deficiencies")
-    .select("inspection_id, class, severity")
-    .in("inspection_id", inspIds)
-    .limit(10000);
+  const defData: Array<{ inspection_id: string; class: string | null; severity: number | null }> = [];
+  for (let index = 0; index < inspIds.length; index += 80) {
+    const chunk = inspIds.slice(index, index + 80);
+    const defPage = await collectInPages<{
+      inspection_id: string;
+      class: string | null;
+      severity: number | null;
+    }>((from, to) =>
+      supabase
+        .from("deficiencies")
+        .select("inspection_id, class, severity")
+        .in("inspection_id", chunk)
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    defData.push(...defPage.rows);
+  }
 
   const totalCitByFac = new Map<string, number>();
   const seriousCitByFac = new Map<string, number>();

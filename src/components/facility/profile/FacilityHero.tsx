@@ -182,7 +182,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
     ? selectMostRecentSevereFinding({
         stateCode: facility.state_code,
         scope: cfg.scopeSeverityScale,
-        inspections,
+        inspections: profile.recordInspections,
         deficienciesByInspection,
         today: todayIsoDate(),
       })
@@ -480,11 +480,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               lastInspected={lastInspectedLabel}
               inspectionCount={profile.totals.inspections}
               citationCount={profile.totals.deficiencies}
-              complaintCount={
-                facility.state_code === "WA"
-                  ? profile.inspections.filter((row) => row.is_complaint).length
-                  : 0
-              }
+              complaintCount={facility.state_code === "WA" ? profile.windowComplaints : 0}
               lastComplaintInvestigated={lastComplaintInvestigated}
               distribution={
                 facility.state_code === "CA"

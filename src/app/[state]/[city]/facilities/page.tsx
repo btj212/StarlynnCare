@@ -15,6 +15,7 @@ import { CITY_BROWSE_PAGE_SIZE } from "@/lib/facility/hubPreview";
 import type { CareCategory } from "@/lib/types";
 import { contentAliasFields, nameMatchesQuery } from "@/lib/facility/aliases";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
+import { collectInPages } from "@/lib/data/pageSelect";
 import { careSettingCopy } from "@/lib/city-hub/careSetting";
 import { isSeriousCityFinding } from "@/lib/city-hub/stats";
 import { listLicenseLabel } from "@/lib/city-hub/licenseLabel";
@@ -160,17 +161,20 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
         const allInspections: Array<{ id: string; facility_id: string }> = [];
         for (let index = 0; index < ids.length; index += 150) {
           const chunk = ids.slice(index, index + 150);
-          const { data, error: chunkError } = await supabase
-            .from("inspections")
-            .select("id, facility_id")
-            .in("facility_id", chunk)
-            .lte("inspection_date", todayIsoDate())
-            .limit(5000);
-          if (chunkError) {
-            console.error("[city facilities] inspections chunk failed:", chunkError.message);
+          const inspPage = await collectInPages<{ id: string; facility_id: string }>((from, to) =>
+            supabase
+              .from("inspections")
+              .select("id, facility_id")
+              .in("facility_id", chunk)
+              .lte("inspection_date", todayIsoDate())
+              .order("id", { ascending: true })
+              .range(from, to),
+          );
+          if (inspPage.error) {
+            console.error("[city facilities] inspections chunk failed:", inspPage.error);
             break;
           }
-          if (data) allInspections.push(...(data as typeof allInspections));
+          allInspections.push(...inspPage.rows);
         }
 
         const inspectionCount = new Map<string, number>();
@@ -187,16 +191,23 @@ export default async function CityFacilitiesPage({ params, searchParams }: PageP
         const allDeficiencies: Array<{ inspection_id: string; class: string | null; severity: number | null }> = [];
         for (let index = 0; index < inspectionIds.length; index += 150) {
           const chunk = inspectionIds.slice(index, index + 150);
-          const { data, error: chunkError } = await supabase
-            .from("deficiencies")
-            .select("inspection_id, class, severity")
-            .in("inspection_id", chunk)
-            .limit(5000);
-          if (chunkError) {
-            console.error("[city facilities] deficiencies chunk failed:", chunkError.message);
+          const defPage = await collectInPages<{
+            inspection_id: string;
+            class: string | null;
+            severity: number | null;
+          }>((from, to) =>
+            supabase
+              .from("deficiencies")
+              .select("inspection_id, class, severity")
+              .in("inspection_id", chunk)
+              .order("id", { ascending: true })
+              .range(from, to),
+          );
+          if (defPage.error) {
+            console.error("[city facilities] deficiencies chunk failed:", defPage.error);
             break;
           }
-          if (data) allDeficiencies.push(...(data as typeof allDeficiencies));
+          allDeficiencies.push(...defPage.rows);
         }
 
         const citationCount = new Map<string, number>();

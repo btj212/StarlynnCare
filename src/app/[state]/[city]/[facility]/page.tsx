@@ -128,7 +128,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const state = stateFromSlug(stateSlug);
   if (!state) return { title: "Facility | StarlynnCare" };
 
-  const result = await loadFacilityProfile({ stateSlug, regionSlug: citySlug, facilitySlug });
+  const result = await loadFacilityProfile({ stateSlug, regionSlug: citySlug, facilitySlug, detail: "summary" });
   if (result === "not_found" || result === "unconfigured") {
     return { title: "Facility | StarlynnCare" };
   }
@@ -249,7 +249,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function FacilityPage({ params }: PageProps) {
   const { state: stateSlug, city: regionSlug, facility: facilitySlug } = await params;
 
-  const result = await loadFacilityProfile({ stateSlug, regionSlug, facilitySlug });
+  const result = await loadFacilityProfile({ stateSlug, regionSlug, facilitySlug, detail: "summary" });
 
   // Supabase not configured — show a dev hint
   // Permanent redirect: covers two cases:

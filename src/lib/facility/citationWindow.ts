@@ -8,6 +8,9 @@ import { topTierLabel } from "@/lib/states/severityScale";
 
 export const PROFILE_CITATION_WINDOW_YEARS = 3;
 
+/** Newest visits rendered on a profile. Older window visits stay on /inspections. */
+export const PROFILE_VISIBLE_VISITS = 25;
+
 export function profileCitationWindowPhrase(agencyShort: string): string {
   return `in the last ${PROFILE_CITATION_WINDOW_YEARS} years (${agencyShort})`;
 }
@@ -145,6 +148,50 @@ export function summarizeCitationWindow(args: {
     typeB,
     other,
     substantiatedWithoutRows,
+  };
+}
+
+/**
+ * The same summary as `summarizeCitationWindow`, from exact counts.
+ * The profile page does not load every visit, so the headline must not
+ * be `inspections.length` of the newest 25 rows.
+ * Washington inspections are the window rows that are not complaints.
+ * California citations are deficiency rows only.
+ */
+export type CitationWindowCountInput = {
+  /** Inspections in the profile window, complaints included. */
+  windowInspections: number;
+  /** Of those, rows stored with is_complaint true. */
+  windowComplaints: number;
+  /** Deficiency rows whose parent visit is in the window. */
+  windowDeficiencies: number;
+  windowTypeA: number;
+  windowTypeB: number;
+  /** Window complaint visits marked Substantiated that have no deficiency row. */
+  substantiatedWithoutRows: number;
+};
+
+export function citationSummaryFromCounts(
+  counts: CitationWindowCountInput,
+  stateCode: string,
+): CitationWindowSummary {
+  const typeA = counts.windowTypeA;
+  const typeB = counts.windowTypeB;
+  const other = counts.windowDeficiencies - typeA - typeB;
+  const code = stateCode.toUpperCase();
+  const citations =
+    code === "CA"
+      ? typeA + typeB + other
+      : counts.windowDeficiencies + counts.substantiatedWithoutRows;
+  const inspections =
+    code === "WA" ? counts.windowInspections - counts.windowComplaints : counts.windowInspections;
+  return {
+    inspections,
+    citations,
+    typeA,
+    typeB,
+    other,
+    substantiatedWithoutRows: counts.substantiatedWithoutRows,
   };
 }
 

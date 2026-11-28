@@ -44,7 +44,7 @@ function hasPrintableFindings(profile: FacilityProfile): boolean {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { state: stateSlug, city: citySlug, facility: facilitySlug } = await params;
   const state = stateFromSlug(stateSlug);
-  const result = await loadFacilityProfile({ stateSlug, regionSlug: citySlug, facilitySlug });
+  const result = await loadFacilityProfile({ stateSlug, regionSlug: citySlug, facilitySlug, detail: "full" });
   if (!state || !isProfile(result)) {
     return { title: "Inspection reports | StarlynnCare", robots: { index: false, follow: true } };
   }
@@ -93,7 +93,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function FacilityInspectionsPage({ params }: PageProps) {
   const { state: stateSlug, city: regionSlug, facility: facilitySlug } = await params;
-  const result = await loadFacilityProfile({ stateSlug, regionSlug, facilitySlug });
+  const result = await loadFacilityProfile({ stateSlug, regionSlug, facilitySlug, detail: "full" });
 
   if (typeof result === "object" && result !== null && "kind" in result && result.kind === "redirect") {
     const canonicalCity = result.canonicalCitySlug ?? regionSlug;
