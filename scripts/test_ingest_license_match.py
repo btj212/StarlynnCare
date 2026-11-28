@@ -213,10 +213,16 @@ def _copy_row(rec: dict[str, Any], n: int) -> dict[str, Any]:
     return row
 
 
+class _Column:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
 class FakeCursor:
     def __init__(self, conn: FakeConn) -> None:
         self.conn = conn
         self._fetched: list[tuple[Any, ...]] = []
+        self.description: list[_Column] = []
 
     def __enter__(self) -> "FakeCursor":
         return self
@@ -230,6 +236,7 @@ class FakeCursor:
             return
         if lowered.startswith("select"):
             self._fetched = self.conn.serve_select(sql, params)
+            self.description = [_Column(col) for col in _columns(sql)]
             return
         if "on conflict" in lowered:
             self.conn.apply_upsert(sql, params if isinstance(params, dict) else {})
@@ -743,6 +750,7 @@ class PublishPreserveTests(_ReviewTempMixin, unittest.TestCase):
             "scrapers/mn_alrc_ingest.py": mn_alrc_ingest.PRESERVE_ON_UPDATE,
             "scrapers/tx_alf_ingest.py": tx_alf_ingest.PRESERVE_ON_UPDATE,
             "scrapers/wa_dshs_directory_ingest.py": wa_dshs.PRESERVE_ON_UPDATE,
+            "scrapers/az_adhs_directory_ingest.py": az_adhs.PRESERVE_ON_UPDATE,
         }
         for rel, fields in modules.items():
             text = (ROOT / rel).read_text(encoding="utf-8")
@@ -1023,6 +1031,92 @@ class AzStaleLayerTests(unittest.TestCase):
             az_adhs.main()
         fetch.assert_called_once()
         connect.assert_called_once()
+
+
+class AzUpdateProtectionTests(_ReviewTempMixin, unittest.TestCase):
+    def test_license_hit_keeps_memory_care_and_the_stored_facid(self) -> None:
+        """With the stale-layer flag, a matching license updates that home.
+        The new FACID is not written, and memory-care fields stay as they are."""
+        existing = {
+            "id": "az-1",
+            "state_code": "AZ",
+            "external_id": "FAC-OLD",
+            "license_number": "LIC1",
+            "name": "Old Name",
+            "slug": "old-name-fac-old",
+            "city_slug": "phoenix",
+            "publishable": True,
+            "serves_memory_care": True,
+            "mc_review_status": "reviewed_publish",
+            "memory_care_disclosure_filed": True,
+            "memory_care_disclosure_source": "facility",
+            "az_mc_subclass": True,
+            "az_memory_care_endorsed": True,
+            "az_license_level": "Directed Care",
+            "created_at": "2020-01-01",
+        }
+        incoming = {
+            "state_code": "AZ",
+            "external_id": "FAC-NEW",
+            "license_number": "LIC1",
+            "name": "New Name",
+            "slug": "new-name-fac-new",
+            "city_slug": "tucson",
+            "publishable": False,
+            "serves_memory_care": False,
+            "mc_review_status": "needs_review",
+            "memory_care_disclosure_filed": False,
+            "memory_care_disclosure_source": None,
+            "az_mc_subclass": False,
+            "az_memory_care_endorsed": False,
+            "az_license_level": "Personal Care",
+            "license_type": "Assisted Living Home",
+            "license_subtype": None,
+            "license_status": "OPEN",
+            "license_expiration": None,
+            "beds": 10,
+            "street": "1 Main",
+            "city": "Tucson",
+            "county": "Pima",
+            "zip": "85701",
+            "phone": None,
+            "latitude": None,
+            "longitude": None,
+            "source_url": "https://example.invalid",
+        }
+        conn = FakeConn([existing])
+        ok, errors = az_adhs.upsert_batch(conn, [incoming])
+        self.assertEqual((ok, errors), (1, 0))
+        self.assertEqual(len(conn.rows), 1)
+        row = conn.rows[0]
+        self.assertEqual(row["external_id"], "FAC-OLD")
+        self.assertEqual(row["license_number"], "LIC1")
+        self.assertEqual(row["slug"], "old-name-fac-old")
+        self.assertEqual(row["city_slug"], "phoenix")
+        self.assertEqual(row["name"], "New Name")
+        self.assertTrue(row["publishable"])
+        self.assertTrue(row["serves_memory_care"])
+        self.assertEqual(row["mc_review_status"], "reviewed_publish")
+        self.assertTrue(row["memory_care_disclosure_filed"])
+        self.assertEqual(row["memory_care_disclosure_source"], "facility")
+        self.assertTrue(row["az_mc_subclass"])
+        self.assertTrue(row["az_memory_care_endorsed"])
+        self.assertEqual(row["az_license_level"], "Personal Care")
+        logged = [
+            json.loads(line)
+            for line in _license_match.REVIEW_LOG_PATH.read_text(encoding="utf-8").splitlines()
+        ]
+        kept = [item for item in logged if item["reason"] == "kept_stored_external_id"]
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(kept[0]["db_value"], "FAC-OLD")
+        self.assertEqual(kept[0]["incoming_value"], "FAC-NEW")
+        self.assertEqual(kept[0]["db_result"], "updated")
+        self.assertTrue(kept[0]["run_id"])
+        by_field = {
+            item["field"]: item for item in logged if item["reason"] == "field_diff"
+        }
+        self.assertIs(by_field["serves_memory_care"]["db_value"], True)
+        self.assertIs(by_field["serves_memory_care"]["incoming_value"], False)
 
 
 class SqlConstantTests(unittest.TestCase):
