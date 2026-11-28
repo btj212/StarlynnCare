@@ -107,7 +107,18 @@ export const BASIS_NOT_RECORDED_SENTENCE =
  * Measured severity against the peer median. Null when either number is missing,
  * so the caller renders nothing.
  */
-export function weightedCitationsPerBedPhrase(input: {
+/** A missing inspection date. This is not a citation count. */
+export const NO_INSPECTION_DATE_WE_HOLD = "No inspection date in the records we hold";
+
+/** A listing field the state file does not include. Not a citation count. */
+export const NOT_IN_STATE_FILE = "Not in the state file we hold";
+
+/**
+ * Measured figure against the peer median. Null when either number is missing,
+ * so the caller renders nothing.
+ */
+export function metricAgainstPeerMedian(input: {
+  label: string;
   value: number | null | undefined;
   peerMedian: number | null | undefined;
   agencyShort: string;
@@ -117,7 +128,71 @@ export function weightedCitationsPerBedPhrase(input: {
   if (!Number.isFinite(input.value) || !Number.isFinite(input.peerMedian)) return null;
   const months = input.windowMonths != null && input.windowMonths > 0 ? input.windowMonths : 36;
   const figure = (n: number) => n.toFixed(2);
-  return `Weighted citations per bed: ${figure(input.value)}, against a similar-size peer median of ${figure(input.peerMedian)} (${input.agencyShort}, ${months} months)`;
+  return `${input.label}: ${figure(input.value)}, against a similar-size peer median of ${figure(input.peerMedian)} (${input.agencyShort}, ${months} months)`;
+}
+
+export function weightedCitationsPerBedPhrase(input: {
+  value: number | null | undefined;
+  peerMedian: number | null | undefined;
+  agencyShort: string;
+  windowMonths?: number | null;
+}): string | null {
+  return metricAgainstPeerMedian({ ...input, label: "Weighted citations per bed" });
+}
+
+export function repeatSharePhrase(input: {
+  value: number | null | undefined;
+  peerMedian: number | null | undefined;
+  agencyShort: string;
+  windowMonths?: number | null;
+}): string | null {
+  return metricAgainstPeerMedian({
+    ...input,
+    label: "Repeat deficiencies as a share of total",
+  });
+}
+
+export function deficiencyFrequencyPhrase(input: {
+  value: number | null | undefined;
+  peerMedian: number | null | undefined;
+  agencyShort: string;
+  windowMonths?: number | null;
+}): string | null {
+  return metricAgainstPeerMedian({
+    ...input,
+    label: "Deficiencies per inspection",
+  });
+}
+
+/** Lines to print. An empty list means the card shows no comparison. */
+export function peerMedianLines(input: {
+  agencyShort: string;
+  windowMonths?: number | null;
+  severityValue?: number | null;
+  severityPeerMedian?: number | null;
+  repeatsValue?: number | null;
+  repeatsPeerMedian?: number | null;
+  frequencyValue?: number | null;
+  frequencyPeerMedian?: number | null;
+}): string[] {
+  const shared = { agencyShort: input.agencyShort, windowMonths: input.windowMonths };
+  return [
+    weightedCitationsPerBedPhrase({
+      ...shared,
+      value: input.severityValue,
+      peerMedian: input.severityPeerMedian,
+    }),
+    repeatSharePhrase({
+      ...shared,
+      value: input.repeatsValue,
+      peerMedian: input.repeatsPeerMedian,
+    }),
+    deficiencyFrequencyPhrase({
+      ...shared,
+      value: input.frequencyValue,
+      peerMedian: input.frequencyPeerMedian,
+    }),
+  ].filter((line): line is string => line != null);
 }
 
 /** Newest visit in `rowsNewestFirst` that has a deficiency row. */

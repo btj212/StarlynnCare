@@ -287,7 +287,7 @@ export default async function CARCFERepeatCitationsPage() {
               </ul>
 
               {/* Repeat offenders table */}
-              <H2 id="repeat-offenders">Repeat-citation facilities — top 20</H2>
+              <H2 id="repeat-offenders">Repeat-citation facilities — 20 homes</H2>
               <p className="text-[13.5px] text-ink-3 mb-5 max-w-[70ch]">
                 Facility + regulation pairs cited in 3 or more distinct inspection visits. Sorted
                 by visit count, then maximum severity. Click a facility name to view its full

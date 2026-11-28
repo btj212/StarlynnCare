@@ -56,7 +56,7 @@ export type ShownListingFact = {
   shown: string;
 };
 
-const NONE = "None on record";
+const NONE = "Not in the state file we hold";
 const CORRECTION_MAX = 200;
 
 export type ListingFacility = MemoryCareBasisInput & {

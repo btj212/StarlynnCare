@@ -27,7 +27,7 @@ const HEADLINE =
 const TITLE =
   "Philadelphia suburbs lead PA in memory care deficiencies per facility — inspection data analysis";
 const DESC =
-  "Chester and Montgomery counties — among Pennsylvania's wealthiest — rank in the top five statewide for memory care deficiencies per facility. Chester County's 26 facilities average 80 deficiencies each, and outpace Pittsburgh's Allegheny County on IJ findings per facility despite having 40% fewer homes.";
+  "Chester and Montgomery counties — among Pennsylvania's wealthiest — are among the five Pennsylvania counties with the highest memory care deficiencies per facility. Chester County's 26 facilities average 80 deficiencies each, and outpace Pittsburgh's Allegheny County on IJ findings per facility despite having 40% fewer homes.";
 const DATE_PUBLISHED = "2026-06-07";
 
 /** Collar counties around Philadelphia — accented in the chart. */
@@ -39,12 +39,12 @@ const FAQ_PAIRS = [
     a: "Based on PA DHS OLTL inspection records through mid-2026, Philadelphia (87.6 deficiencies/facility), Chester (80.1), Lackawanna (75.6), Delaware (75.4), and Montgomery (75.4) counties have the highest rates among counties with 5 or more publishable memory care facilities. Note that Philadelphia's rate is based on only 7 facilities — a small sample that inflates the average — while Chester and Montgomery represent much larger samples of 26 and 48 facilities, respectively.",
   },
   {
-    q: "Why do wealthy suburban counties rank so high for memory care deficiencies?",
+    q: "Why are deficiency rates high in wealthy suburban counties?",
     a: "A few structural factors contribute. Chester and Montgomery counties have high concentrations of large-capacity facilities — larger facilities accumulate more total deficiency findings across inspection cycles. Wealthier suburban markets attract more facility investment, which increases the number of inspection targets. PA DHS OLTL also responds to family complaints; more engaged families means more complaint-triggered inspections on top of routine surveys. None of that cancels the finding. The per-facility rate controls for facility count, and Chester still outpaces Allegheny on IJ findings per facility.",
   },
   {
     q: "How does Allegheny County (Pittsburgh) compare to the Philadelphia collar counties?",
-    a: "Allegheny County has 44 publishable memory care facilities and 136 total immediate-jeopardy findings on record. Chester County has 26 facilities and 109 IJ findings — roughly 40% fewer facilities, but accumulating IJ findings at a rate of 4.2 per facility versus Allegheny's 3.1 per facility. This means Chester County's facilities collectively have a higher per-facility IJ rate than Pittsburgh-area facilities, despite being a smaller and wealthier suburban market.",
+    a: "Allegheny County has 44 publishable memory care facilities and 136 total immediate-jeopardy findings in the PA DHS records we hold since 2002. Chester County has 26 facilities and 109 IJ findings — roughly 40% fewer facilities, but accumulating IJ findings at a rate of 4.2 per facility versus Allegheny's 3.1 per facility. This means Chester County's facilities collectively have a higher per-facility IJ rate than Pittsburgh-area facilities, despite being a smaller and wealthier suburban market.",
   },
   {
     q: "What is a 'collar county' in the context of Pennsylvania memory care?",
@@ -186,12 +186,12 @@ export default async function StoryBPage() {
             id="chart-b-heading"
             className="font-[family-name:var(--font-display)] font-normal text-[clamp(18px,2.5vw,26px)] leading-[1.15] tracking-[-0.01em] text-ink mb-4"
           >
-            Deficiencies per facility — top 10 PA counties (5+ facilities)
+            Deficiencies per facility — 10 PA counties with 5 or more facilities
           </h2>
           <div className="rounded-lg border border-paper-rule bg-paper-2 p-4 sm:p-6 overflow-x-auto">
             <BarChartSSR
               title="Deficiencies per facility — top PA counties"
-              description="Vertical bar chart showing deficiencies per facility for the top 10 Pennsylvania counties, with Philadelphia collar counties highlighted."
+              description="Vertical bar chart showing deficiencies per facility for 10 Pennsylvania counties with 5 or more facilities, with Philadelphia collar counties highlighted."
               data={chartCounties.map((c) => ({
                 label: c.county,
                 value: c.defPerFacility,
@@ -228,7 +228,7 @@ export default async function StoryBPage() {
             <strong className="font-medium text-ink">
               {allegheny?.ijTotal ?? 136} total immediate-jeopardy findings
             </strong>{" "}
-            on record — {alleghenyIjPerFac} IJ findings per facility.
+            in the PA DHS records we hold since 2002 — {alleghenyIjPerFac} IJ findings per facility.
           </p>
           <p>
             Chester County, with {chester?.facilities ?? 26} facilities — roughly 40% fewer than

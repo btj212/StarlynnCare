@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { GovernanceBar } from "@/components/site/GovernanceBar";
+import { citationRecordPhrase } from "@/lib/facility/pageCopy";
 import { createPublicSupabaseClient } from "@/lib/supabase/server";
 
 // Not indexed — personal report page
@@ -160,7 +161,20 @@ function DeficiencySummary({
               Deficiency detail is still being extracted from inspection PDFs — check back shortly.
             </span>
           ) : (
-            <span className="text-teal font-medium">No deficiencies on record.</span>
+            <span className="text-teal font-medium">
+              {citationRecordPhrase({
+                stateCode: "PA",
+                regulatorAbbr: "PA DHS",
+                windowCount: 0,
+                inspectionCount: inspections.length,
+                heldCount: 0,
+                earliestInspectionDate: inspections
+                  .map((row) => row.inspection_date)
+                  .filter((date) => date)
+                  .sort()[0] ?? null,
+              })}
+              .
+            </span>
           )
         ) : (
           <span className="italic text-ink-4">No data available.</span>
@@ -356,7 +370,7 @@ export default async function BibliofangirlPage() {
                   <div className="mt-4 flex flex-wrap gap-6">
                     <div>
                       <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.1em] text-ink-4">
-                        Inspections on record
+                        Inspections we hold
                       </p>
                       <p className="text-[22px] font-[family-name:var(--font-display)] text-ink mt-0.5">
                         {facilityInspections.length}

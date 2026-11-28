@@ -10,7 +10,8 @@
     "verify-schema": "tsx scripts/verify-schema.ts",
     "test:quality-gate": "tsx scripts/test_quality_gate.ts",
     "test:perf-loaders": "tsx scripts/test_perf_loaders.ts",
-    "test:page-copy": "tsx scripts/test_page_copy_accuracy.ts"
+    "test:page-copy": "tsx scripts/test_page_copy_accuracy.ts",
+    "test:banned-copy": "tsx scripts/test_banned_copy.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.7",

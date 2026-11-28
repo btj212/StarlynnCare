@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — "None on record" and "Top N%" are not facility or hub copy
+
+**Decided:** A missing inspection date says "No inspection date in the records we hold." A missing listing field on the confirm page says "Not in the state file we hold." County and homepage comparisons print weighted citations per bed against the peer median, with the agency and the 36-month window, or they print nothing. Equal values share one position. `rankPhrase.ts` is deleted because nothing calls it.
+
+**Rejected:** Leaving "None on record" on state stats, outreach facts, or Pennsylvania county labels. Leaving "Top N%" and percentile bars on the homepage card, county rail, carousel, or mobile hubs.
+
+**Source:** Follow-up on the facility-page copy change. No database write. Outreach sending code is unchanged.
+
+---
+
 ## 2026-11-28 — Facility citation copy uses deficiency rows and names the window
 
 **Decided:** A facility page says "<N> citations in the last 3 years". When a deficiency row is older than that window, it adds "Last citation <Mon D, YYYY>" from the newest cited inspection in the bounded list. When the rows we hold have no citation, it says "No citations in the <agency> records we hold since <earliest inspection we hold>". "licensed memory care home" is printed only when `memoryCareBasis().recorded` is true. Stored tour questions that contain a date, a digit, a number word, or a zero/none claim are dropped at render and replaced from the live profile. Peer copy is the weighted-citations-per-bed value against the peer median, with the agency and the 36-month window. The percentile math is unchanged and is not printed on these surfaces. Texas still does not say "0 citations" or "clean record" when nothing was published.

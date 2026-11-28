@@ -126,7 +126,7 @@ export function cityHubMetaDescription(input: {
   } else if (code === "PA") {
     text = `Compare ${n} ${city}-area personal care and assisted living homes by PA DHS inspection record. Independent data, no referral fees.`;
   } else if (code === "TX") {
-    text = `${n} Alzheimer-certified assisted living facilities in ${city}, ranked by HHSC inspection records.`;
+    text = `${n} Alzheimer-certified assisted living facilities in ${city}. HHSC inspection records. No referral fees.`;
   } else if (code === "CA") {
     const lead =
       homesWithTypeALast12 != null
@@ -144,7 +144,7 @@ export function cityHubMetaDescription(input: {
         ? `Every ${city} memory care endorsed home here has an Oregon DHS citation on file. Compare violations, inspection dates and license type. No referral fees.`
         : `${withCitation} of ${n} ${city} memory care endorsed homes have an Oregon DHS citation on file. Compare violations, inspection dates and license type. No referral fees.`;
   } else {
-    text = `${n} ${setting.hubNoun} in ${city}, ranked by ${regulatorAbbr} inspection records. ${withCitation > 0 ? `${withCitation} have citations on file.` : "Includes full citation history."}`;
+    text = `${n} ${setting.hubNoun} in ${city}. ${regulatorAbbr} inspection records. ${withCitation > 0 ? `${withCitation} have citations on file.` : "Includes the citation history we hold."}`;
   }
   return clipMetaDescription(text);
 }

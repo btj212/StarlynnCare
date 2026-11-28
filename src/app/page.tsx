@@ -23,7 +23,10 @@ import { NationalHomeSections } from "@/components/national-home/NationalHomeSec
 import { loadNationalHomeData } from "@/lib/data/nationalHome";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { seededShuffle, SAMPLE_CARD_ROTATION_COUNT } from "@/lib/data/stateHub";
-import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
+import {
+  comparisonFieldsFromSnapshot,
+  type HomeSampleFacility,
+} from "@/components/home/homeSampleFacilityTypes";
 import type { CareCategory } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -31,14 +34,14 @@ export const revalidate = 3600;
 const homeCanonical = canonicalFor("/");
 
 const _stateNameList = COVERED_STATES.map((s) => s.name).join(", ");
-const _homeDesc = `Memory care facilities ranked by state inspection records across ${COVERED_STATES.length} states (${_stateNameList}) — no commissions, no paid placement. Public regulator data, independent family resource.`;
+const _homeDesc = `Memory care facilities with state inspection records across ${COVERED_STATES.length} states (${_stateNameList}). No commissions, no paid placement. Public regulator data, independent family resource.`;
 
 export const metadata: Metadata = {
-  title: "Memory care facilities, ranked by state inspectors | StarlynnCare",
+  title: "Memory care facilities, with state inspection records | StarlynnCare",
   description: _homeDesc,
   alternates: { canonical: homeCanonical },
   openGraph: {
-    title: "Memory care facilities, ranked by state inspectors | StarlynnCare",
+    title: "Memory care facilities, with state inspection records | StarlynnCare",
     description: _homeDesc,
     url: homeCanonical,
     type: "website",
@@ -79,27 +82,10 @@ async function loadGradeCardFacilities(): Promise<HomeSampleFacility[]> {
     await Promise.all(
       ordered.map(async (picked) => {
         const { data: snap } = await supabase.rpc("facility_snapshot", { p_facility_id: picked.id });
-        const s = snap as null | {
-          grade?: { letter: string; composite_percentile: number } | null;
-          metrics?: {
-            severity:  { percentile: number | null };
-            repeats:   { percentile: number | null; peer_median?: number | null };
-            frequency: { percentile: number | null };
-          } | null;
-        };
-        const repPct     = s?.metrics?.repeats?.percentile ?? null;
-        const repMedian  = s?.metrics?.repeats?.peer_median ?? null;
-        // Suppress degenerate repeat rank (everyone ties at 100 because the
-        // peer median is 0 repeat citations — same logic as FacilityPeerRank).
-        const repPctFinal = (repMedian === 0 && repPct === 100) ? null : repPct;
         return {
           ...picked,
           care_category: picked.care_category as CareCategory,
-          grade: s?.grade?.letter ?? null,
-          composite: s?.grade?.composite_percentile ?? null,
-          sev_pct:  s?.metrics?.severity?.percentile ?? null,
-          rep_pct:  repPctFinal,
-          freq_pct: s?.metrics?.frequency?.percentile ?? null,
+          ...comparisonFieldsFromSnapshot(snap),
         } satisfies HomeSampleFacility;
       }),
     )
@@ -129,9 +115,9 @@ export default async function Home() {
     buildHomeOrganizationGraph({ founderPersonNode }),
     buildBreadcrumbList([{ name: "Home", url: homeCanonical }]),
     buildWebPageWithReviewer({
-      name: "Memory care facilities, ranked by state inspectors | StarlynnCare",
+      name: "Memory care facilities, with state inspection records | StarlynnCare",
       url: homeCanonical,
-      description: `No paid ads. No sales calls. Public inspection data from ${coverage.indexedStateCount} states — ${coverageStateNames(coverage)} — analyzed and ranked for families.`,
+      description: `No paid ads. No sales calls. Public inspection data from ${coverage.indexedStateCount} states — ${coverageStateNames(coverage)}.`,
       datePublished: "2025-01-01T00:00:00Z",
       dateModified: data.lastRefreshed,
     }),

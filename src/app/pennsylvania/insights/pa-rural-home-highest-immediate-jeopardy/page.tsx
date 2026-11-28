@@ -149,7 +149,7 @@ export default async function StoryAPage() {
               surveyors found residents at risk of immediate serious harm or death.
             </li>
             <li>
-              7 of the top-10 IJ facilities in PA are in collar counties or mid-size cities —
+              7 of these 10 homes are in collar counties or mid-size cities —
               geography, ownership, and staffing patterns matter more than size.
             </li>
           </ul>
@@ -169,12 +169,12 @@ export default async function StoryAPage() {
             id="chart-a-heading"
             className="font-[family-name:var(--font-display)] font-normal text-[clamp(18px,2.5vw,26px)] leading-[1.15] tracking-[-0.01em] text-ink mb-4"
           >
-            Top 10 PA memory care facilities by immediate-jeopardy count
+            10 PA memory care facilities by immediate-jeopardy count (PA DHS, 2002–2026)
           </h2>
           <div className="rounded-lg border border-paper-rule bg-paper-2 p-4 sm:p-6 overflow-x-auto">
             <BarChartSSR
-              title="Top 10 PA memory care facilities by immediate-jeopardy count"
-              description="Horizontal bar chart showing the 10 Pennsylvania memory care facilities with the highest number of immediate-jeopardy findings on record."
+              title="10 PA memory care facilities by immediate-jeopardy count (PA DHS, 2002–2026)"
+              description="Horizontal bar chart showing 10 Pennsylvania memory care facilities and their immediate-jeopardy findings in the PA DHS records we hold since 2002."
               data={chartData}
               orientation="horizontal"
               unit="immediate-jeopardy findings"
@@ -203,7 +203,7 @@ export default async function StoryAPage() {
             issues an IJ finding when surveyors determine that a practice or condition placed one
             or more residents at immediate risk of serious harm or death. The facility must submit
             an acceptable plan of correction before surveyors close the finding. The 21 here span
-            the full inspection history on record.
+            the inspection history in the records we hold since 2002.
           </p>
           <p>
             The{" "}

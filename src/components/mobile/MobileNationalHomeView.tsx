@@ -41,7 +41,7 @@ export function MobileNationalHomeView({ data }: Props) {
         </div>
         <h1>
           Find memory care you can <em>trust,</em>{" "}
-          ranked with regulator data.
+          with regulator data.
         </h1>
         <p className="deck">
           Public inspection data. No paid ads. No sales calls. Every claim sourced to a state record.
@@ -112,7 +112,7 @@ export function MobileNationalHomeView({ data }: Props) {
       <section className="m-section tight" style={{ paddingBottom: 0 }}>
         <div className="label">§ 03 · Popular Cities</div>
         <h2>
-          Top cities <em>by facility count.</em>
+          Cities <em>by listed homes.</em>
         </h2>
       </section>
       <div className="m-cities">
@@ -130,9 +130,9 @@ export function MobileNationalHomeView({ data }: Props) {
       </div>
 
       <section className="m-section">
-        <div className="label">§ 04 · How We Rank</div>
+        <div className="label">§ 04 · Peer comparison</div>
         <h2>
-          Ranked on public record. <em>Transparent methodology.</em>
+          Weighted citations per bed. <em>Against the peer median.</em>
         </h2>
       </section>
 
@@ -149,9 +149,9 @@ export function MobileNationalHomeView({ data }: Props) {
 
       <div className="px-[18px] pt-5 pb-2">
         <p className="text-[14px] leading-relaxed text-ink-2">
-          Each facility is ranked against peers in its state using publicly available inspection records from state licensing agencies.{" "}
+          Each profile states weighted citations per bed against the peer median for similar-size homes (state agency, 36 months).{" "}
           <Link href="/methodology" className="text-teal underline underline-offset-4">
-            How we calculate rankings →
+            How the comparison is calculated →
           </Link>
         </p>
       </div>

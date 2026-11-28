@@ -2,7 +2,10 @@ import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
 import { regionsForState } from "@/lib/regions";
 import { cityHubPageExists } from "@/lib/seo/indexability";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
-import type { HomeSampleFacility } from "@/components/home/homeSampleFacilityTypes";
+import {
+  comparisonFieldsFromSnapshot,
+  type HomeSampleFacility,
+} from "@/components/home/homeSampleFacilityTypes";
 import type { CareCategory } from "@/lib/types";
 import { stateFromCode } from "@/lib/states";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
@@ -204,22 +207,10 @@ export async function loadCaliforniaStateHubData(): Promise<CaliforniaStateHubDa
           const { data: snap } = await supabase.rpc("facility_snapshot", {
             p_facility_id: picked.id,
           });
-          const s = snap as null | {
-            grade?: { letter: string; composite_percentile: number } | null;
-            metrics?: {
-              severity: { percentile: number };
-              repeats: { percentile: number };
-              frequency: { percentile: number };
-            } | null;
-          };
           return {
             ...picked,
             care_category: picked.care_category as CareCategory,
-            grade: s?.grade?.letter ?? null,
-            composite: s?.grade?.composite_percentile ?? null,
-            sev_pct: s?.metrics?.severity?.percentile ?? null,
-            rep_pct: s?.metrics?.repeats?.percentile ?? null,
-            freq_pct: s?.metrics?.frequency?.percentile ?? null,
+            ...comparisonFieldsFromSnapshot(snap),
           } satisfies HomeSampleFacility;
         }),
       )
@@ -396,18 +387,10 @@ export async function loadStateHubData(stateCode: string): Promise<StateHubData>
       await Promise.all(
         ordered.map(async (picked) => {
           const { data: snap } = await supabase.rpc("facility_snapshot", { p_facility_id: picked.id });
-          const s = snap as null | {
-            grade?: { letter: string; composite_percentile: number } | null;
-            metrics?: { severity: { percentile: number }; repeats: { percentile: number }; frequency: { percentile: number } } | null;
-          };
           return {
             ...picked,
             care_category: picked.care_category as CareCategory,
-            grade: s?.grade?.letter ?? null,
-            composite: s?.grade?.composite_percentile ?? null,
-            sev_pct: s?.metrics?.severity?.percentile ?? null,
-            rep_pct: s?.metrics?.repeats?.percentile ?? null,
-            freq_pct: s?.metrics?.frequency?.percentile ?? null,
+            ...comparisonFieldsFromSnapshot(snap),
           } satisfies HomeSampleFacility;
         }),
       )

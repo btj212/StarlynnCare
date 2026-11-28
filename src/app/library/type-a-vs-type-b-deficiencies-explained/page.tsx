@@ -313,7 +313,7 @@ export default function TypeATypeBPage() {
               from CDSS inspection records ingested directly from the public CCLD transparency
               API. Type A findings are surfaced prominently; repeat findings across the same
               regulatory section are flagged. No paid placement, operator-supplied content, or
-              referral revenue influences how a facility is ranked or displayed.
+              referral revenue influences how a facility is ordered or displayed.
             </p>
           </Prose>
 

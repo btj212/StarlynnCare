@@ -42,7 +42,7 @@ const facts = shownListingFacts({
   memory_care_disclosure_source: "ADHS Directed Care License",
 });
 assert.equal(facts.find((f) => f.key === "licensed_name")?.shown, "Legacy Retirement Residence");
-assert.equal(facts.find((f) => f.key === "marketing_name")?.shown, "None on record");
+assert.equal(facts.find((f) => f.key === "marketing_name")?.shown, "Not in the state file we hold");
 assert.match(facts.find((f) => f.key === "memory_care_label")?.shown ?? "", /R9-10-816/);
 assert.equal(facts.find((f) => f.key === "memory_care_label")?.shown, AZ_MC_LEVEL1_LABEL);
 
