@@ -10,11 +10,12 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
 import re
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -27,6 +28,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import _license_match
+import az_adhs_directory_ingest as az_adhs
 import mn_alrc_ingest
 import mn_mdh_directory_ingest
 import or_dhs_ltc_directory_ingest as or_dhs
@@ -747,6 +749,43 @@ class PublishPreserveTests(_ReviewTempMixin, unittest.TestCase):
                         f"{rel} still assigns {field} on update",
                     )
             self.assertIn("publishable", text.split("DO UPDATE SET", 1)[0])
+
+
+class AzStaleLayerTests(unittest.TestCase):
+    def test_without_flag_exits_and_makes_no_calls(self) -> None:
+        """The February layer still has the old FACID, name, and license. Do not touch the network or the database."""
+        buf = io.StringIO()
+        with (
+            mock.patch.object(az_adhs, "fetch_all_facilities") as fetch,
+            mock.patch.object(az_adhs.psycopg, "connect") as connect,
+            mock.patch.object(az_adhs, "load_env") as load_env,
+            mock.patch.object(sys, "argv", ["az_adhs_directory_ingest.py"]),
+            redirect_stderr(buf),
+        ):
+            with self.assertRaises(SystemExit) as ctx:
+                az_adhs.main()
+        self.assertEqual(ctx.exception.code, 1)
+        self.assertIn(az_adhs.STALE_LAYER_REFUSAL, buf.getvalue())
+        fetch.assert_not_called()
+        connect.assert_not_called()
+        load_env.assert_not_called()
+
+    def test_allow_flag_proceeds(self) -> None:
+        """With Blake's flag the script gets past the stop and continues the usual run."""
+        conn = mock.MagicMock()
+        conn.__enter__.return_value = conn
+        with (
+            mock.patch.object(az_adhs, "fetch_all_facilities", return_value=[]) as fetch,
+            mock.patch.object(az_adhs.psycopg, "connect", return_value=conn) as connect,
+            mock.patch.object(az_adhs, "load_env"),
+            mock.patch.dict(os.environ, {"DATABASE_URL": "postgres://example.invalid/db"}),
+            mock.patch.object(
+                sys, "argv", ["az_adhs_directory_ingest.py", "--allow-stale-layer"]
+            ),
+        ):
+            az_adhs.main()
+        fetch.assert_called_once()
+        connect.assert_called_once()
 
 
 class SqlConstantTests(unittest.TestCase):

@@ -78,6 +78,12 @@ PROTECTED_FIELDS = (
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+STALE_LAYER_REFUSAL = (
+    "Refusing to run: ADHS layer still shows pre-rename FACID/name/license "
+    "for ~60 homes; see audit file az_renamed_homes_exposure.json. "
+    "Pass --allow-stale-layer only with Blake's OK."
+)
+
 
 def _as_date(value: Any) -> date | None:
     if value is None or value == "":
@@ -473,7 +479,15 @@ def main() -> None:
                         help="Only load Directed Care (serves_memory_care=true) rows")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print transformed rows, no DB writes")
+    parser.add_argument(
+        "--allow-stale-layer",
+        action="store_true",
+        help="Run even though layer 12 still shows pre-rename ids. Blake's OK only.",
+    )
     args = parser.parse_args()
+    if not args.allow_stale_layer:
+        print(STALE_LAYER_REFUSAL, file=sys.stderr)
+        raise SystemExit(1)
 
     load_env()
 
