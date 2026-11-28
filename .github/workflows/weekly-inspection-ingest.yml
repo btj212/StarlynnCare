@@ -101,7 +101,7 @@ jobs:
         timeout-minutes: 10
         run: |
           sudo apt-get update
-          sudo apt-get install -y poppler-utils tesseract-ocr
+          sudo apt-get install -y poppler-utils tesseract-ocr ocrmypdf
           pip install -r scrapers/requirements.txt
 
       - name: Run weekly inspection ingest (${{ matrix.state }})
