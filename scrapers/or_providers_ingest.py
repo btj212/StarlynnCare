@@ -41,7 +41,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
-from _license_match import load_identity_map, record_protected_diffs, reuse_identity
+from _license_match import load_identity_map, record_protected_diffs, report_review_log, reuse_identity
 
 # Left in place on conflict. A new insert still sets them.
 PRESERVE_ON_UPDATE = (
@@ -256,24 +256,23 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
         return
 
     conn = get_conn()
-    ok = err = 0
+    ok = err = skipped = 0
+    written: list[dict[str, Any]] = []
     with conn:
         with conn.cursor() as cur0:
             idmap = load_identity_map(cur0, "OR")
         prepared: list[tuple[dict[str, Any], dict[str, Any]]] = []
         for rec in records:
             db_rec = {k: v for k, v in rec.items() if not k.startswith("_")}
-            reuse_identity(
+            if reuse_identity(
                 db_rec,
                 idmap,
                 [db_rec["external_id"], db_rec["license_number"]],
                 keep_stored_license=True,
-            )
+            ) is None:
+                skipped += 1
+                continue
             prepared.append((rec, db_rec))
-        with conn.cursor() as cur0:
-            record_protected_diffs(
-                cur0, "OR", [db for _, db in prepared], PRESERVE_ON_UPDATE
-            )
         for rec, db_rec in prepared:
             try:
                 with conn.cursor() as cur:
@@ -284,6 +283,7 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
                         cur.execute(UPSERT_BY_EXT_ID_SQL, db_rec)
                         cur.execute("RELEASE SAVEPOINT sp_row")
                         ok += 1
+                        written.append(db_rec)
                     except Exception:
                         cur.execute("ROLLBACK TO SAVEPOINT sp_row")
                         cur.execute("RELEASE SAVEPOINT sp_row")
@@ -293,6 +293,7 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
                             cur.execute(UPSERT_SQL, db_rec)
                             cur.execute("RELEASE SAVEPOINT sp_fallback")
                             ok += 1
+                            written.append(db_rec)
                         except Exception as exc2:
                             cur.execute("ROLLBACK TO SAVEPOINT sp_fallback")
                             cur.execute("RELEASE SAVEPOINT sp_fallback")
@@ -302,8 +303,12 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
                 print(f"  WARN outer: {rec['external_id']} — {exc_outer}", file=sys.stderr)
                 err += 1
         conn.commit()
+        if written:
+            with conn.cursor() as cur0:
+                record_protected_diffs(cur0, "OR", written, PRESERVE_ON_UPDATE)
+    report_review_log()
 
-    print(f"  Done — inserted/updated: {ok}, errors: {err}")
+    print(f"  Done — inserted/updated: {ok}, errors: {err}, skipped: {skipped}")
 
 
 def main() -> None:

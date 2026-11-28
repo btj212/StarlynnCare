@@ -35,7 +35,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
-from _license_match import load_identity_map, load_review_index, note_protected_diffs, reuse_identity
+from _license_match import (
+    load_identity_map,
+    load_review_index,
+    note_protected_diffs,
+    report_review_log,
+    reuse_identity,
+)
 
 # Left in place on conflict. A new insert still sets them.
 PRESERVE_ON_UPDATE = (
@@ -313,12 +319,14 @@ def main() -> int:
                 stats["upserted"] += 1
                 continue
 
-            reuse_identity(record, idmap, [license_number, mn_hfid])
-            note_protected_diffs(review_index, [record], PRESERVE_ON_UPDATE)
+            if reuse_identity(record, idmap, [license_number, mn_hfid]) is None:
+                stats["skipped"] += 1
+                continue
             result = upsert_facility(conn_ctx, record)
             if result == "conflict":
                 stats["skipped"] += 1
             else:
+                note_protected_diffs(review_index, [record], PRESERVE_ON_UPDATE)
                 stats["upserted"] += 1
 
         if conn_ctx:
@@ -327,6 +335,8 @@ def main() -> int:
         if conn_ctx:
             conn_ctx.close()
 
+    if not args.dry_run:
+        report_review_log()
     print(f"\nDone: upserted={stats['upserted']}, "
           f"skipped={stats['skipped']}, "
           f"no_addr={stats['no_addr']}")

@@ -29,7 +29,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
-from _license_match import load_identity_map, record_protected_diffs, reuse_identity
+from _license_match import load_identity_map, record_protected_diffs, report_review_log, reuse_identity
 
 # Left in place on conflict. A new insert still sets them.
 PRESERVE_ON_UPDATE = (
@@ -305,15 +305,20 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
         return
     with conn.cursor() as cur:
         idmap = load_identity_map(cur, "WA")
+        writing: list[dict[str, Any]] = []
         for r in rows:
-            reuse_identity(
+            if reuse_identity(
                 r,
                 idmap,
                 [r["license_number"]],
                 keep_stored_license=True,
-            )
-        record_protected_diffs(cur, "WA", rows, PRESERVE_ON_UPDATE)
-        cur.executemany(WA_UPSERT_SQL, rows)
+            ) is None:
+                continue
+            writing.append(r)
+        if writing:
+            cur.executemany(WA_UPSERT_SQL, writing)
+        record_protected_diffs(cur, "WA", writing, PRESERVE_ON_UPDATE)
+    report_review_log()
 
 
 def read_csv(path: Path) -> list[dict[str, Any]]:

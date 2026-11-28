@@ -30,7 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
-from _license_match import load_identity_map, record_protected_diffs, reuse_identity
+from _license_match import load_identity_map, record_protected_diffs, report_review_log, reuse_identity
 
 # Left in place on conflict. A new insert still sets them.
 PRESERVE_ON_UPDATE = (
@@ -337,10 +337,22 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
         return
     with conn.cursor() as cur:
         idmap = load_identity_map(cur, "MN")
+        writing: list[dict[str, Any]] = []
         for r in rows:
-            reuse_identity(r, idmap, [r["license_number"]], keep_stored_license=False)
-        record_protected_diffs(cur, "MN", rows, PRESERVE_ON_UPDATE)
-        cur.executemany(MN_UPSERT_SQL, rows)
+            # Live MN licenses are ALRC:n. Compare that to the MDH number, and
+            # write the stored license back so the padded HFID does not replace it.
+            if reuse_identity(
+                r,
+                idmap,
+                [r["license_number"]],
+                keep_stored_license=True,
+            ) is None:
+                continue
+            writing.append(r)
+        if writing:
+            cur.executemany(MN_UPSERT_SQL, writing)
+        record_protected_diffs(cur, "MN", writing, PRESERVE_ON_UPDATE)
+    report_review_log()
 
 
 def main() -> int:

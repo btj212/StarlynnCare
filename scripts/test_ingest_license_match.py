@@ -12,6 +12,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -535,14 +536,14 @@ class IdentityHelperTests(_ReviewTempMixin, unittest.TestCase):
         conn = FakeConn([_oak_existing()])
         with conn.cursor() as cur:
             idmap = load_identity_map(cur, "OR")
-        for candidate in ("50m133", "50M133"):
+        for candidate in ("50m133", "50M133", " 50M133 "):
             rec = {"slug": "new", "city_slug": "new", "license_number": "padded"}
             self.assertTrue(reuse_identity(rec, idmap, [candidate], keep_stored_license=True))
             self.assertEqual(rec["slug"], "oak-lane-residential-care-facility-50m133")
             self.assertEqual(rec["license_number"], "50M133")
 
-    def test_duplicate_license_keeps_the_earlier_publishable_row(self) -> None:
-        """Two rows share a license: warn, update the publishable one, do not insert."""
+    def test_duplicate_license_is_skipped_and_logged(self) -> None:
+        """Two homes must not be merged because they share a license. Write to neither."""
         rows = [
             {
                 "id": "late",
@@ -579,13 +580,6 @@ class IdentityHelperTests(_ReviewTempMixin, unittest.TestCase):
             },
         ]
         conn = FakeConn(rows)
-        buf = io.StringIO()
-        with conn.cursor() as cur:
-            with redirect_stdout(buf):
-                idmap = load_identity_map(cur, "MN")
-        self.assertEqual(idmap["DUP1"]["id"], "early")
-        self.assertIn("more than one row shares license/id DUP1", buf.getvalue())
-        self.assertIn("using early", buf.getvalue())
         incoming = {
             "state_code": "MN",
             "name": "Renamed Home",
@@ -595,9 +589,17 @@ class IdentityHelperTests(_ReviewTempMixin, unittest.TestCase):
         }
         mn_mdh_directory_ingest.upsert_facilities(conn, [incoming])
         self.assertEqual(len(conn.rows), 3)
-        early = next(row for row in conn.rows if row["id"] == "early")
-        self.assertEqual(early["slug"], "early-slug")
-        self.assertEqual(early["name"], "Renamed Home")
+        self.assertTrue(all(row["name"] != "Renamed Home" for row in conn.rows))
+        logged = [
+            json.loads(line)
+            for line in _license_match.REVIEW_LOG_PATH.read_text(encoding="utf-8").splitlines()
+        ]
+        ambiguous = [item for item in logged if item["reason"] == "ambiguous_license"]
+        self.assertEqual(len(ambiguous), 1)
+        self.assertEqual(set(ambiguous[0]["row_ids"]), {"early", "late", "unpub"})
+        self.assertEqual(ambiguous[0]["db_result"], "skipped")
+        self.assertTrue(ambiguous[0]["run_id"])
+        self.assertIn("T", ambiguous[0]["timestamp"])
 
     def test_blank_license_does_not_change_the_record(self) -> None:
         """A missing license is not evidence, and must not attach the row to someone else."""
@@ -707,6 +709,10 @@ class PublishPreserveTests(_ReviewTempMixin, unittest.TestCase):
         self.assertIs(by_field["serves_memory_care"]["incoming_value"], False)
         self.assertEqual(by_field["mc_review_status"]["db_value"], "reviewed_publish")
         self.assertEqual(by_field["mc_review_status"]["incoming_value"], "needs_review")
+        self.assertEqual(by_field["publishable"]["reason"], "field_diff")
+        self.assertEqual(by_field["publishable"]["db_result"], "updated")
+        self.assertTrue(by_field["publishable"]["run_id"])
+        self.assertIn("T", by_field["publishable"]["timestamp"])
 
     def test_new_insert_still_sets_the_fields(self) -> None:
         """A home that is not already in the table still gets the values this script sets."""
@@ -749,6 +755,237 @@ class PublishPreserveTests(_ReviewTempMixin, unittest.TestCase):
                         f"{rel} still assigns {field} on update",
                     )
             self.assertIn("publishable", text.split("DO UPDATE SET", 1)[0])
+
+
+class ReviewFixTests(_ReviewTempMixin, unittest.TestCase):
+    def test_mn_aldc_fallback_does_not_merge_two_cities(self) -> None:
+        """MN-ALDC-<name> is a truncated name, not a license. Minneapolis must not
+        become the St. Louis Park row. Live rows 69968bfe and 810b02e7 share one."""
+        rows = [
+            {
+                "id": "69968bfe",
+                "state_code": "MN",
+                "name": "H & H Group Home Llc",
+                "slug": "h-h-group-home-llc-mn0",
+                "city_slug": "st-louis-park",
+                "license_number": "MN-ALDC-h-h-group-home-llc",
+                "external_id": None,
+                "created_at": "1",
+                "publishable": False,
+            },
+            {
+                "id": "810b02e7",
+                "state_code": "MN",
+                "name": "H & H Group Home Llc",
+                "slug": "h-h-group-home-llc-mn0",
+                "city_slug": "minneapolis",
+                "license_number": "MN-ALDC-h-h-group-home-llc",
+                "external_id": None,
+                "created_at": "1",
+                "publishable": False,
+            },
+        ]
+        conn = FakeConn(rows)
+        with conn.cursor() as cur:
+            idmap = load_identity_map(cur, "MN")
+        mpls = {
+            "state_code": "MN",
+            "name": "H & H Group Home Llc",
+            "license_number": "MN-ALDC-h-h-group-home-llc",
+            "slug": "h-h-group-home-llc-mn0",
+            "city_slug": "minneapolis",
+        }
+        self.assertFalse(reuse_identity(mpls, idmap, [mpls["license_number"], None]))
+        self.assertEqual(mpls["city_slug"], "minneapolis")
+        conn.apply_upsert(
+            """
+            INSERT INTO facilities (state_code, city_slug, slug, name)
+            VALUES (%(state_code)s, %(city_slug)s, %(slug)s, %(name)s)
+            ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
+                name = EXCLUDED.name
+            """,
+            {**mpls, "name": "H & H Group Home Updated"},
+        )
+        by_id = {row["id"]: row for row in conn.rows}
+        self.assertEqual(by_id["810b02e7"]["name"], "H & H Group Home Updated")
+        self.assertEqual(by_id["810b02e7"]["city_slug"], "minneapolis")
+        self.assertEqual(by_id["69968bfe"]["city_slug"], "st-louis-park")
+        self.assertEqual(by_id["69968bfe"]["name"], "H & H Group Home Llc")
+        self.assertEqual(len(conn.rows), 2)
+
+    def test_license_and_slug_on_different_rows_writes_neither(self) -> None:
+        """The license is row A and the slug is row B. Do not update either one."""
+        rows = [
+            {
+                "id": "A",
+                "state_code": "TX",
+                "name": "Alpha",
+                "slug": "alpha-111111",
+                "city_slug": "austin",
+                "license_number": "111111",
+                "external_id": None,
+                "created_at": "1",
+                "publishable": True,
+            },
+            {
+                "id": "B",
+                "state_code": "TX",
+                "name": "Bravo",
+                "slug": "bravo-222222",
+                "city_slug": "austin",
+                "license_number": "222222",
+                "external_id": None,
+                "created_at": "2",
+                "publishable": True,
+            },
+        ]
+        conn = FakeConn(rows)
+        rec = {
+            "state_code": "TX",
+            "name": "Should Not Land",
+            "slug": "bravo-222222",
+            "city_slug": "austin",
+            "license_number": "111111",
+        }
+        tx_alf_ingest.upsert_facilities(conn, [rec])
+        self.assertEqual(rec["slug"], "bravo-222222")
+        by_id = {row["id"]: row for row in conn.rows}
+        self.assertEqual(by_id["A"]["name"], "Alpha")
+        self.assertEqual(by_id["B"]["name"], "Bravo")
+        self.assertEqual(len(conn.rows), 2)
+        logged = [
+            json.loads(line)
+            for line in _license_match.REVIEW_LOG_PATH.read_text(encoding="utf-8").splitlines()
+        ]
+        conflicts = [item for item in logged if item["reason"] == "license_slug_conflict"]
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0]["facility_id"], "A")
+        self.assertEqual(conflicts[0]["other_facility_id"], "B")
+        self.assertEqual(conflicts[0]["row_ids"], ["A", "B"])
+        self.assertEqual(conflicts[0]["db_result"], "skipped")
+        self.assertTrue(conflicts[0]["run_id"])
+        self.assertIn("T", conflicts[0]["timestamp"])
+
+    def test_or_leading_zeros_match_for_comparison_only(self) -> None:
+        """CSV 15 is the same home as stored 0000000015. The stored id stays padded."""
+        row = {
+            "id": "7dcc990b",
+            "state_code": "OR",
+            "name": "Hazel Gutierrez",
+            "slug": "hazel-gutierrez-15",
+            "city_slug": "milwaukie",
+            "license_number": "0000000015",
+            "external_id": "0000000015",
+            "created_at": "1",
+            "publishable": False,
+        }
+        conn = FakeConn([row])
+        incoming = {
+            "state_code": "OR",
+            "name": "Hazel G Smith",
+            "slug": "hazel-g-smith-15",
+            "city_slug": "milwaukie",
+            "license_number": or_dhs.pad_license_or("15"),
+            "_raw_id": "15",
+        }
+        self.assertEqual(incoming["license_number"], "15")
+        or_dhs.upsert_facilities(conn, [incoming])
+        self.assertEqual(len(conn.rows), 1)
+        self.assertEqual(conn.rows[0]["slug"], "hazel-gutierrez-15")
+        self.assertEqual(conn.rows[0]["license_number"], "0000000015")
+        self.assertEqual(conn.rows[0]["name"], "Hazel G Smith")
+
+    def test_letter_id_does_not_match_a_zero_padded_number(self) -> None:
+        """50M133 and 0000050133 are different Oregon ids. Stripping zeros must not join them."""
+        conn = FakeConn([_oak_existing()])
+        with conn.cursor() as cur:
+            idmap = load_identity_map(cur, "OR")
+        rec = {"license_number": "0000050133", "slug": "new-slug", "city_slug": "new-city"}
+        self.assertFalse(reuse_identity(rec, idmap, ["0000050133", rec["license_number"]]))
+        self.assertEqual(rec["slug"], "new-slug")
+
+    def test_mn_alrc_license_matches_an_mdh_hfid(self) -> None:
+        """Live MN licenses are ALRC:n. The MDH number n must find that row and leave ALRC:n stored."""
+        existing = {
+            "id": "mn-alrc-15",
+            "state_code": "MN",
+            "name": "Old Home",
+            "slug": "old-home-15",
+            "city_slug": "duluth",
+            "license_number": "ALRC:15",
+            "external_id": None,
+            "publishable": True,
+            "created_at": "2020-01-01",
+        }
+        incoming = {
+            "state_code": "MN",
+            "name": "New Home",
+            "slug": "new-home-0000000015",
+            "city_slug": "minneapolis",
+            "license_number": "0000000015",
+        }
+        conn = FakeConn([existing])
+        mn_mdh_directory_ingest.upsert_facilities(conn, [incoming])
+        self.assertEqual(len(conn.rows), 1)
+        self.assertEqual(conn.rows[0]["slug"], "old-home-15")
+        self.assertEqual(conn.rows[0]["city_slug"], "duluth")
+        self.assertEqual(conn.rows[0]["license_number"], "ALRC:15")
+        self.assertEqual(conn.rows[0]["name"], "New Home")
+
+    def test_field_diff_is_written_only_after_the_update_succeeds(self) -> None:
+        """A review line describes a write that happened. A failed write leaves no field diff."""
+        existing = {
+            "id": "wa-1",
+            "state_code": "WA",
+            "name": "Old",
+            "slug": "old-1",
+            "city_slug": "seattle",
+            "license_number": "0000000001",
+            "external_id": None,
+            "publishable": True,
+            "created_at": "2020-01-01",
+        }
+        incoming = {
+            "state_code": "WA",
+            "name": "New",
+            "slug": "new-1",
+            "city_slug": "seattle",
+            "license_number": "0000000001",
+            "publishable": False,
+        }
+        conn = FakeConn([existing])
+        real_execute = FakeCursor.execute
+
+        def execute(cursor: FakeCursor, sql: str, params: Any = None) -> None:
+            lowered = " ".join(sql.split()).lower()
+            if "on conflict" in lowered:
+                raise RuntimeError("db down")
+            return real_execute(cursor, sql, params)
+
+        with mock.patch.object(FakeCursor, "execute", execute):
+            with self.assertRaises(RuntimeError):
+                wa_dshs.upsert_facilities(conn, [incoming])
+        self.assertFalse(_license_match.REVIEW_LOG_PATH.exists())
+        self.assertEqual(conn.rows[0]["name"], "Old")
+
+    def test_retired_or_dhs_exits_on_import(self) -> None:
+        """Importing the retired Oregon script stops, the way it did before this PR.
+        The unit tests are allowed to import it; a normal import is not."""
+        proc = subprocess.run(
+            [sys.executable, "-c", "import or_dhs_ltc_directory_ingest"],
+            cwd=SCRAPERS,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("retired", proc.stderr.lower())
+        script = subprocess.run(
+            [sys.executable, str(SCRAPERS / "or_dhs_ltc_directory_ingest.py")],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(script.returncode, 1)
+        self.assertIn("retired", script.stderr.lower())
 
 
 class AzStaleLayerTests(unittest.TestCase):
