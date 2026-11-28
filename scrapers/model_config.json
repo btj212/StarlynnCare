@@ -1,0 +1,9 @@
+{
+ "_note": "Single place for the summarizer model. Pick a profile with MODEL_PROFILE=<name>; there is NO default, so nothing runs until a profile is chosen. Prices are USD per 1M tokens and drive spend.json and SPEND_STOP. Reasoning tokens (xAI) are billed as output. Model decision pending Blake (Reviewer relay 27 Nov: 'Grok models only for everything').",
+ "profiles": {
+  "haiku": {"provider": "anthropic", "model": "claude-haiku-4-5-20251001", "key_env": "ANTHROPIC_API_KEY", "price_in": 1.0, "price_out": 5.0},
+  "grok-4.3": {"provider": "xai", "model": "grok-4.3", "key_env": "XAI_API_KEY", "base_url": "https://api.x.ai/v1", "price_in": 1.25, "price_out": 2.5, "reasoning_effort": null},
+  "grok-4.20-nr": {"provider": "xai", "model": "grok-4.20-0309-non-reasoning", "key_env": "XAI_API_KEY", "base_url": "https://api.x.ai/v1", "price_in": 1.25, "price_out": 2.5, "reasoning_effort": null},
+  "grok-4.7": {"provider": "xai", "model": "grok-4.7", "key_env": "XAI_API_KEY", "base_url": "https://api.x.ai/v1", "price_in": 2.0, "price_out": 6.0, "reasoning_effort": "low"}
+ }
+}

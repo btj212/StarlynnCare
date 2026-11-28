@@ -1,0 +1,973 @@
+{
+ "title": "MN follow-up fine label plan",
+ "read_only": true,
+ "no_writes": true,
+ "decision": "KEEP the 42 stored cmp amounts. Do not set them to NULL. Earlier NULL proposals for these 42 are dropped. This file is the current plan (labeling only). Historical attribution files remain as a record of the old proposal.",
+ "verified_current_cmp": "42/42 still equal the stored follow-up-letter totals (read 2026-11-27 ~6:58 PM PT). No amounts were changed in this step.",
+ "schema": {
+  "can_mark_without_schema_change": true,
+  "caveats": [
+   "inspections.raw_data (jsonb) can hold a fine_label string with no DDL. The facility profile loader already selects raw_data.",
+   "The public site does not currently display inspections.civil_money_penalty_total at all. loadFacilityProfile does not even select that column. MN profileConfig has no followUp.showFine. Fine chips exist only for PA and IL, and they read deficiencies.civil_money_penalty (item-level), not the visit total.",
+   "So keeping these 42 amounts does not by itself change public pages, and a label will not appear until the site is taught to show it.",
+   "Putting the label in raw_data is fragile: MN ingest rebuilds raw_data from the directory/PDF payload and would likely overwrite an editorial key on the next refresh.",
+   "Do not use narrative_summary. facility_compliance_flags.banner_text and facility_data_quality_issues are facility-level admin fields, not visit-level public labels."
+  ],
+  "recommended": "A dedicated column is safer than raw_data. That is Blake's call. Proposed DDL is text only; not applied.",
+  "proposed_ddl": "ALTER TABLE public.inspections\n  ADD COLUMN civil_money_penalty_note text;\n\nCOMMENT ON COLUMN public.inspections.civil_money_penalty_note IS\n  'Optional public explanation of civil_money_penalty_total, used when the fine was imposed after a later follow-up found orders from this survey uncorrected. Null means no extra label.';\n",
+  "site_change_also_required": "Select civil_money_penalty_total and civil_money_penalty_note (or raw_data.fine_label) in loadFacilityProfile, and render them on the MN inspection block. Today MN shows neither."
+ },
+ "n_42": 42,
+ "n_name_this_survey": 40,
+ "n_do_not_name_this_survey_date": 2,
+ "the_2": [
+  "cbe2e0fe-737f-4947-b6cd-f302dd3adef3",
+  "90ecdafe-fbad-4201-bccf-86bc83bf77a2"
+ ],
+ "rows": [
+  {
+   "inspection_id": "f1d80504-5c16-40e8-84da-51b12680aa77",
+   "facility": "Door of Grace Llc",
+   "visit_date": "2023-03-10",
+   "followup_letter_date": "2023-06-07",
+   "followup_letter_date_display": "June 7, 2023",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey completed on March 10, 2023, found not corrected at the time of the May 26, 2023, follow-up survey and/or subject to penalty assessment are as follo\u2026",
+   "proposed_label": "Fine of $500.00 assessed on June 7, 2023 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2023-05-26",
+     "letter_date": "2023-06-07",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "de1b1881-1f70-41df-8472-5981c90b967a",
+   "facility": "Restful Home Llc",
+   "visit_date": "2023-04-05",
+   "followup_letter_date": "2023-08-11",
+   "followup_letter_date_display": "August 11, 2023",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on April 5, 2023, found not corrected at the time of the follow-up survey follow-up survey and subject to a penalty assessment are as fol\u2026",
+   "proposed_label": "Fine of $500.00 assessed on August 11, 2023 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2023-08-01",
+     "letter_date": "2023-08-11",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "21cadec8-6155-4b5b-9f9d-8f68e8772d65",
+   "facility": "Precious Health Services Llf",
+   "visit_date": "2023-06-23",
+   "followup_letter_date": "2023-09-26",
+   "followup_letter_date_display": "September 26, 2023",
+   "amount": 3500,
+   "printed_amount": "$3,500.00",
+   "current_cmp": 3500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on June 23, 2023, found not corrected at the time of the December 13, 2023, follow-up survey and/ or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $3,500.00 assessed on September 26, 2023 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2023-09-13",
+     "letter_date": "2023-09-26",
+     "amount": 3500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "084a3b3d-4704-45ad-8cb4-58ca1ba725ab",
+   "facility": "Villa Court Llc",
+   "visit_date": "2023-08-24",
+   "followup_letter_date": "2023-11-15",
+   "followup_letter_date_display": "November 15, 2023",
+   "amount": 1500,
+   "printed_amount": "$1,500.00",
+   "current_cmp": 1500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on August 24, 2023, found not corrected at the time of the November 7, 2023, follow-up survey and/ or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $1,500.00 assessed on November 15, 2023 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2023-11-07",
+     "letter_date": "2023-11-15",
+     "amount": 1500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "7cdc77ae-3f60-46b5-ba59-1b6f312deb1a",
+   "facility": "Rise Residential Services Sc",
+   "visit_date": "2023-11-30",
+   "followup_letter_date": "2024-03-06",
+   "followup_letter_date_display": "March 6, 2024",
+   "amount": 2500,
+   "printed_amount": "$2,500.00",
+   "current_cmp": 2500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on November 30, 2023, found not corrected at the time of the January 30, 2024, follow-up survey and/ or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $2,500.00 assessed on March 6, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-01-30",
+     "letter_date": "2024-03-06",
+     "amount": 2500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "3362fe0b-22e1-4fa1-894c-77688686dcc6",
+   "facility": "Ridgeview Assisted Living Llc",
+   "visit_date": "2024-01-10",
+   "followup_letter_date": "2024-05-02",
+   "followup_letter_date_display": "May 2, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on January 10, 2024, found not corrected at the time of the follow- up survey and/ or subject to a penalty assessment are as follows: 1890-P\u2026",
+   "proposed_label": "Fine of $500.00 assessed on May 2, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-04-23",
+     "letter_date": "2024-05-02",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "b55a6cc7-8206-4320-9ef6-7a37797a861c",
+   "facility": "Maple Care Homes",
+   "visit_date": "2024-01-23",
+   "followup_letter_date": "2024-04-29",
+   "followup_letter_date_display": "April 29, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on January 23, 2024, found not corrected at the time of the April11, 2024, follow-up survey and/ or subject to penalty assessment are as fol\u2026",
+   "proposed_label": "Fine of $500.00 assessed on April 29, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-04-11",
+     "letter_date": "2024-04-29",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "c10eca26-6d6a-48d4-8ac8-cc9938e9f8a2",
+   "facility": "Caring Rose Homes Llc",
+   "visit_date": "2024-03-06",
+   "followup_letter_date": "2024-06-27",
+   "followup_letter_date_display": "June 27, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on March 6, 2024, found not corrected at the time of the June 4, 2024, follow-up survey and/or subject to penalty assessment are as follo\u2026",
+   "proposed_label": "Fine of $500.00 assessed on June 27, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-06-04",
+     "letter_date": "2024-12-04",
+     "amount": 500.0
+    }
+   ],
+   "note": "December 4, 2024 letter amends the June 27, 2024 enforcement letter (same $500.00).",
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "6f3fb2ba-dcdc-4b1a-8206-8251683a9905",
+   "facility": "Aah Mercy Home Health",
+   "visit_date": "2024-04-11",
+   "followup_letter_date": "2024-07-22",
+   "followup_letter_date_display": "July 22, 2024",
+   "amount": 1000,
+   "printed_amount": "$1,000.00",
+   "current_cmp": 1000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on April 11, 2024, found not corrected at the time of the July 8, 2024, follow-up survey and/or subject to penalty assessment are as follo\u2026",
+   "proposed_label": "Fine of $1,000.00 assessed on July 22, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-07-08",
+     "letter_date": "2024-07-22",
+     "amount": 1000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "50dc90b8-6d43-46dc-bea9-67bad94145af",
+   "facility": "Berkeley Heights Homes of Minn",
+   "visit_date": "2024-04-26",
+   "followup_letter_date": "2024-07-05",
+   "followup_letter_date_display": "July 5, 2024",
+   "amount": 4000,
+   "printed_amount": "$4,000.00",
+   "current_cmp": 4000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on April 26, 2024, found not corrected at the time of the July 3, 2024, follow-up survey and/or subject to penalty assessment are as follo\u2026",
+   "proposed_label": "Fine of $4,000.00 assessed on July 5, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-07-03",
+     "letter_date": "2024-07-05",
+     "amount": 4000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "0c23732c-8ce3-42c4-a155-9809aa0826ac",
+   "facility": "St Charles Assisted Living",
+   "visit_date": "2024-05-01",
+   "followup_letter_date": "2024-09-18",
+   "followup_letter_date_display": "September 18, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on May 1, 2024, found not corrected at the time of the August 26, 2024, follow-up survey and/or subject to penalty assessment are as fo\u2026",
+   "proposed_label": "Fine of $500.00 assessed on September 18, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-08-26",
+     "letter_date": "2024-09-18",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "d7d99c99-6543-41b6-abb0-182b89e14b6b",
+   "facility": "United Homes Services",
+   "visit_date": "2024-06-12",
+   "followup_letter_date": "2024-10-08",
+   "followup_letter_date_display": "October 8, 2024",
+   "amount": 1500,
+   "printed_amount": "$1,500.00",
+   "current_cmp": 1500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on June 12, 2024, found not corrected at the time of the September 4, 2024, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $1,500.00 assessed on October 8, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-09-04",
+     "letter_date": "2024-10-08",
+     "amount": 1500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "cbe2e0fe-737f-4947-b6cd-f302dd3adef3",
+   "facility": "Optimum Healthcare Services Ll",
+   "visit_date": "2024-06-18",
+   "followup_letter_date": "2024-10-15",
+   "followup_letter_date_display": "October 15, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": false,
+   "quote_naming_uncorrected_orders": "On July 2, 2025, the Minnesota Department of Health (MDH) completed a follow-up survey of your facility to determine correction of orders found on the survey completed on June 21, 2024. This follow-up survey determined your facility had not corrected all of the state correction orders issued pursuant to the June 21, 2024 survey.",
+   "proposed_label": "Fine of $500.00 assessed on October 15, 2024 after a follow-up visit found orders from the survey completed on June 21, 2024 uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-07-02",
+     "letter_date": "2025-08-26",
+     "amount": 500.0
+    },
+    {
+     "followup_survey_date": "2024-09-04",
+     "letter_date": "2024-10-15",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "7974148b-37b1-42f6-8f25-bf02d048cdae",
+   "facility": "Metro Assisted Living",
+   "visit_date": "2024-06-20",
+   "followup_letter_date": "2024-10-10",
+   "followup_letter_date_display": "October 10, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "This follow-up survey determined your facility had not corrected all of the state correction orders issued pursuant to the June 20, 2024 survey. In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to t\u2026",
+   "proposed_label": "Fine of $500.00 assessed on October 10, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-09-04",
+     "letter_date": "2024-10-10",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "f0c13f8c-60c7-437d-9492-b36135c17093",
+   "facility": "Blessing Residential Care Llc",
+   "visit_date": "2024-06-21",
+   "followup_letter_date": "2024-10-09",
+   "followup_letter_date_display": "October 9, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on June 21, 2024, found not corrected at the time of the September 3, 2024, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $500.00 assessed on October 9, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-09-03",
+     "letter_date": "2024-10-09",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "44225575-1e91-4c13-b981-0c7273af3367",
+   "facility": "Comfort Care Cottages",
+   "visit_date": "2024-07-02",
+   "followup_letter_date": "2024-11-04",
+   "followup_letter_date_display": "November 4, 2024",
+   "amount": 2000,
+   "printed_amount": "$2,000.00",
+   "current_cmp": 2000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on July 2, 2024, found not corrected at the time of the September 30, 2024, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $2,000.00 assessed on November 4, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-09-30",
+     "letter_date": "2024-11-04",
+     "amount": 2000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "a1108fcc-b9e2-42e8-b727-1b1fcfd44653",
+   "facility": "Merrcy Care Home Llc",
+   "visit_date": "2024-07-10",
+   "followup_letter_date": "2024-11-01",
+   "followup_letter_date_display": "November 1, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on July 10, 2024, found not corrected at the time of the October 1, 2024, follow-up survey and/or subject to penalty assessment are as fo\u2026",
+   "proposed_label": "Fine of $500.00 assessed on November 1, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-10-01",
+     "letter_date": "2024-11-01",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "fe7bb312-92ab-4c85-addb-983aa2f0cf76",
+   "facility": "Serenity Group Homes Llc",
+   "visit_date": "2024-07-17",
+   "followup_letter_date": "2024-11-01",
+   "followup_letter_date_display": "November 1, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on July 17, 2024, found not corrected at the time of the follow-up survey follow-up survey and/or subject to a penalty assessment are as\u2026",
+   "proposed_label": "Fine of $500.00 assessed on November 1, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-10-01",
+     "letter_date": "2024-11-01",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "550d80c7-f950-46a8-81a8-ce7b640d3dd8",
+   "facility": "Healing Home Services Llc",
+   "visit_date": "2024-07-18",
+   "followup_letter_date": "2024-12-11",
+   "followup_letter_date_display": "December 11, 2024",
+   "amount": 1500,
+   "printed_amount": "$1,500.00",
+   "current_cmp": 1500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "fety, and welfare of residents in your care. Furthermore, the follow-up survey determined your facility had not corrected all of the state correction orders issued pursuant to the July 18, 2024, initial survey. In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on July 8, 2024, found not corrected a\u2026",
+   "proposed_label": "Fine of $1,500.00 assessed on December 11, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-11-13",
+     "letter_date": "2024-12-11",
+     "amount": 1500.0
+    }
+   ],
+   "note": "The same December 11, 2024 letter names the July 18, 2024 initial survey, then once writes \"last survey completed on July 8, 2024\" (a typo; July 18 appears throughout, July 8 only once).",
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "b3d1d9d5-8905-4419-ad5e-b9e1019c6965",
+   "facility": "The Geneva Suites",
+   "visit_date": "2024-07-29",
+   "followup_letter_date": "2025-01-28",
+   "followup_letter_date_display": "January 28, 2025",
+   "amount": 3000,
+   "printed_amount": "$3,000.00",
+   "current_cmp": 3000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on July 29, 2024, found not corrected at the time of the February 14, 2025, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $3,000.00 assessed on January 28, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-10-23",
+     "letter_date": "2025-01-28",
+     "amount": 3000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "f137d4bb-facf-445a-9bb8-4a6ffc74b54a",
+   "facility": "Joy Care Homes Llc",
+   "visit_date": "2024-07-30",
+   "followup_letter_date": "2025-01-29",
+   "followup_letter_date_display": "January 29, 2025",
+   "amount": 6000,
+   "printed_amount": "$6,000.00",
+   "current_cmp": 6000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on July 30, 2024, found not corrected at the time of the October 22, 2024, follow-up survey and/or subject to penalty assessment are as f\u2026",
+   "proposed_label": "Fine of $6,000.00 assessed on January 29, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-10-22",
+     "letter_date": "2025-01-29",
+     "amount": 6000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "5eb881d4-3c4b-4509-a4a0-bdef3ff471d3",
+   "facility": "Eden Homes Inc",
+   "visit_date": "2024-07-31",
+   "followup_letter_date": "2024-10-16",
+   "followup_letter_date_display": "October 16, 2024",
+   "amount": 1000,
+   "printed_amount": "$1,000.00",
+   "current_cmp": 1000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on July 31, 2024, found not corrected at the time of the October 14, 2024, follow-up survey and/or subject to penalty assessment are as f\u2026",
+   "proposed_label": "Fine of $1,000.00 assessed on October 16, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-10-14",
+     "letter_date": "2024-10-16",
+     "amount": 1000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "d5c1db6b-4499-452c-a284-ce09524b198d",
+   "facility": "The Geneva Suites",
+   "visit_date": "2024-08-01",
+   "followup_letter_date": "2024-12-18",
+   "followup_letter_date_display": "December 18, 2024",
+   "amount": 3000,
+   "printed_amount": "$3,000.00",
+   "current_cmp": 3000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on August 1, 2024, found not corrected at the time of the January 21, 2025, follow-up survey and/or subject to penalty assessment are as f\u2026",
+   "proposed_label": "Fine of $3,000.00 assessed on December 18, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-10-23",
+     "letter_date": "2024-12-18",
+     "amount": 3000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "fb9b0ff6-1b95-4b8a-91cf-174025beb279",
+   "facility": "Eleged Home Care Inc",
+   "visit_date": "2024-08-01",
+   "followup_letter_date": "2024-11-05",
+   "followup_letter_date_display": "November 5, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on August 1, 2024, found not corrected at the time of the October 7, 2024, follow-up survey and/or subject to penalty assessment are as fo\u2026",
+   "proposed_label": "Fine of $500.00 assessed on November 5, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-10-07",
+     "letter_date": "2024-11-05",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "5485fe0c-f960-48e8-84f3-15709ac128a4",
+   "facility": "Twin Cities Assisted Living in",
+   "visit_date": "2024-08-06",
+   "followup_letter_date": "2024-11-01",
+   "followup_letter_date_display": "November 1, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on August 6, 2024, found not corrected at the time of the September 30, 2024, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $500.00 assessed on November 1, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-09-30",
+     "letter_date": "2024-11-01",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "2f03362b-f705-451f-af50-83cbbf3c0e23",
+   "facility": "Gentle Care Homes Inc",
+   "visit_date": "2024-08-07",
+   "followup_letter_date": "2025-03-14",
+   "followup_letter_date_display": "March 14, 2025",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "On December 31, 2024, The Minnesota Department of Health (MDH) completed a follow-up survey of your facility to determine correction of orders found on the survey completed August 7, 2024. The follow-up survey found the facility to be in substantial compliance. Based on these findings, the condition(s) on the license were removed effective December 31, 2024. State\u2026",
+   "proposed_label": "Fine of $500.00 assessed on March 14, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-12-31",
+     "letter_date": "2025-03-14",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "ca5beffc-3b27-4a5d-8d93-e0a868201ed5",
+   "facility": "Twin Cities Nursing Care",
+   "visit_date": "2024-08-07",
+   "followup_letter_date": "2024-12-10",
+   "followup_letter_date_display": "December 10, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on August 7, 2024, found not corrected at the time of the follow-up survey follow-up survey and/or subject to a penalty assessment are as\u2026",
+   "proposed_label": "Fine of $500.00 assessed on December 10, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-11-26",
+     "letter_date": "2024-12-10",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "e70470d8-5b2f-4f29-beb3-945e1798f782",
+   "facility": "Najma Group Home Llc",
+   "visit_date": "2024-08-09",
+   "followup_letter_date": "2025-02-25",
+   "followup_letter_date_display": "February 25, 2025",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on August 9, 2024, found not corrected at the time of the January 22, 2025, follow-up survey and/or subject to penalty assessment are as f\u2026",
+   "proposed_label": "Fine of $500.00 assessed on February 25, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-01-22",
+     "letter_date": "2025-02-25",
+     "amount": 500.0
+    },
+    {
+     "followup_survey_date": "2024-10-24",
+     "letter_date": "2024-12-06",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "20ee01f7-e649-4c67-b469-108230e0feae",
+   "facility": "Bright Living Llc",
+   "visit_date": "2024-08-19",
+   "followup_letter_date": "2024-12-17",
+   "followup_letter_date_display": "December 17, 2024",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on August 19, 2024, found not corrected at the time of the follow-up survey follow-up survey and/or subject to a penalty assessment are as\u2026",
+   "proposed_label": "Fine of $500.00 assessed on December 17, 2024 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-12-03",
+     "letter_date": "2024-12-17",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "fe6d9c8d-c2f8-4207-baa3-abc0ae1551b8",
+   "facility": "Empire Systems Home Care",
+   "visit_date": "2024-08-21",
+   "followup_letter_date": "2025-05-23",
+   "followup_letter_date_display": "May 23, 2025",
+   "amount": 3000,
+   "printed_amount": "$3,000.00",
+   "current_cmp": 3000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on August 21, 2024, found not corrected at the time of the February 12, 2025, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $3,000.00 assessed on May 23, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-02-12",
+     "letter_date": "2025-05-23",
+     "amount": 3000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "b8f3d318-247a-4914-bdba-7b7b56a8467f",
+   "facility": "Destiny Home",
+   "visit_date": "2024-08-28",
+   "followup_letter_date": "2025-02-06",
+   "followup_letter_date_display": "February 6, 2025",
+   "amount": 1000,
+   "printed_amount": "$1,000.00",
+   "current_cmp": 1000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on August 28, 2024, found not corrected at the time of the November 26, 2024, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $1,000.00 assessed on February 6, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-11-26",
+     "letter_date": "2025-02-06",
+     "amount": 1000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "cee2770b-c328-4c5a-a6b4-33806089d0b3",
+   "facility": "Revive Care Services Inc",
+   "visit_date": "2024-08-29",
+   "followup_letter_date": "2025-01-29",
+   "followup_letter_date_display": "January 29, 2025",
+   "amount": 3000,
+   "printed_amount": "$3,000.00",
+   "current_cmp": 3000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on August 29, 2024, found not corrected at the time of the November 12, 2024, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $3,000.00 assessed on January 29, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-11-12",
+     "letter_date": "2025-01-29",
+     "amount": 3000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "90ecdafe-fbad-4201-bccf-86bc83bf77a2",
+   "facility": "Best Home Health Care Service",
+   "visit_date": "2024-08-30",
+   "followup_letter_date": "2025-02-12",
+   "followup_letter_date_display": "February 12, 2025",
+   "amount": 1000,
+   "printed_amount": "$1,000.00",
+   "current_cmp": 1000,
+   "names_this_visit_survey_explicitly": false,
+   "quote_naming_uncorrected_orders": "On December 17, 2024, The Minnesota Department of Health (MDH) completed a follow-up survey of your facility to determine correction of orders found on the survey completed December 17, 2024. \u2026 Furthermore, the follow-up survey determined your facility had not corrected all of the state correction orders issued pursuant to the December 17, 2024 initial survey. In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on December 17, 2024, found not corrected \u2026 the total amount you are assessed is $1,000.00.",
+   "proposed_label": "Fine of $1,000.00 assessed on February 12, 2025 after a follow-up visit on December 17, 2024 found orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-12-17",
+     "letter_date": "2025-02-12",
+     "amount": 1000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "bdce9c44-1885-473e-aabd-d7c4477c9665",
+   "facility": "Loon Home Health Care Llc",
+   "visit_date": "2024-09-11",
+   "followup_letter_date": "2025-02-18",
+   "followup_letter_date_display": "February 18, 2025",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on September 11, 2024, found not corrected at the time of the follow-up survey follow-up survey and/or subject to a penalty assessment are as\u2026",
+   "proposed_label": "Fine of $500.00 assessed on February 18, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-01-22",
+     "letter_date": "2025-02-18",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "dbc68cd0-3378-409f-9b7c-1a8c3beb9a5c",
+   "facility": "Personal Care Solutions Llc",
+   "visit_date": "2024-09-11",
+   "followup_letter_date": "2025-01-08",
+   "followup_letter_date_display": "January 8, 2025",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on September 11, 2024, found not corrected at the time of the follow-up survey follow-up survey and/or subject to a penalty assessment are as\u2026",
+   "proposed_label": "Fine of $500.00 assessed on January 8, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-12-12",
+     "letter_date": "2025-01-08",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "53dd1e34-f5f7-4ad7-933e-095c765b61e0",
+   "facility": "Kindheart Homes Inc",
+   "visit_date": "2024-09-25",
+   "followup_letter_date": "2025-02-07",
+   "followup_letter_date_display": "February 7, 2025",
+   "amount": 3000,
+   "printed_amount": "$3,000.00",
+   "current_cmp": 3000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on September 25, 2024, found not corrected at the time of the December 18, 2024, follow-up survey and/or subject to penalty assessment are as\u2026",
+   "proposed_label": "Fine of $3,000.00 assessed on February 7, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2024-12-18",
+     "letter_date": "2025-02-07",
+     "amount": 3000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "c4c7bd04-e2d3-4fad-82ed-255f68095007",
+   "facility": "Covered Bridge Llc",
+   "visit_date": "2024-10-25",
+   "followup_letter_date": "2025-03-24",
+   "followup_letter_date_display": "March 24, 2025",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "fety, and welfare of residents in your care. Furthermore, the follow-up survey determined your facility had not corrected all of the state correction orders issued pursuant to the October 25, 2024, initial survey. In accordance with Minn. Stat. \u00a7 144G.31, Subd. 4 (a), state correction orders issued pursuant to the last survey completed on February 19, 2025, found not correc\u2026",
+   "proposed_label": "Fine of $500.00 assessed on March 24, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-02-19",
+     "letter_date": "2025-03-24",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "2940b2c9-f0bb-48b3-be64-0f7ba8c1b2a0",
+   "facility": "Plainview Estates",
+   "visit_date": "2024-11-20",
+   "followup_letter_date": "2025-05-15",
+   "followup_letter_date_display": "May 15, 2025",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on November 20, 2024, found not corrected at the time of the April 15, 2025, follow-up survey and/or subject to penalty assessment are as fol\u2026",
+   "proposed_label": "Fine of $500.00 assessed on May 15, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-04-15",
+     "letter_date": "2025-05-15",
+     "amount": 500.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "4527123f-9f44-426e-9d6f-e495ca371afb",
+   "facility": "River Oaks at Lake Pepin Llc",
+   "visit_date": "2024-12-04",
+   "followup_letter_date": "2025-03-28",
+   "followup_letter_date_display": "March 28, 2025",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on December 4, 2024, found not corrected at the time of the May 20, 2025, follow-up survey and/or subject to penalty assessment are as follo\u2026",
+   "proposed_label": "Fine of $500.00 assessed on March 28, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-05-20",
+     "letter_date": "2025-08-08",
+     "amount": 500.0
+    },
+    {
+     "followup_survey_date": "2025-02-24",
+     "letter_date": "2025-03-28",
+     "amount": 500.0
+    }
+   ],
+   "note": "A later letter dated August 8, 2025 restates the same $500.00 after a May 20, 2025 follow-up.",
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "918c14a9-a0c1-47bd-9486-2db84ae754d2",
+   "facility": "Hilstar Homes Corporation",
+   "visit_date": "2025-01-15",
+   "followup_letter_date": "2025-05-06",
+   "followup_letter_date_display": "May 6, 2025",
+   "amount": 1000,
+   "printed_amount": "$1,000.00",
+   "current_cmp": 1000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on January 15, 2025, found not corrected at the time of the April 11, 2025, follow-up survey and/or subject to penalty assessment are as fol\u2026",
+   "proposed_label": "Fine of $1,000.00 assessed on May 6, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-04-11",
+     "letter_date": "2025-05-06",
+     "amount": 1000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "82cb33fe-f56c-4b5e-b034-3666e987745f",
+   "facility": "The Wellstead of Rogers",
+   "visit_date": "2025-01-23",
+   "followup_letter_date": "2025-05-21",
+   "followup_letter_date_display": "May 21, 2025",
+   "amount": 500,
+   "printed_amount": "$500.00",
+   "current_cmp": 500,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on January 23, 2025, found not corrected at the time of the April 16, 2025, follow-up survey and/or subject to penalty assessment are as fol\u2026",
+   "proposed_label": "Fine of $500.00 assessed on May 21, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-07-18",
+     "letter_date": "2025-09-29",
+     "amount": 500.0
+    },
+    {
+     "followup_survey_date": "2025-04-16",
+     "letter_date": "2025-05-21",
+     "amount": 500.0
+    }
+   ],
+   "note": "A later letter dated September 29, 2025 restates the same $500.00 after a July 18, 2025 follow-up.",
+   "proposal_status": "KEEP amount; do not set to NULL"
+  },
+  {
+   "inspection_id": "6d03d57d-ed79-4afb-9187-5bd8ad3f2047",
+   "facility": "611 Flats Llc",
+   "visit_date": "2025-02-05",
+   "followup_letter_date": "2025-06-09",
+   "followup_letter_date_display": "June 9, 2025",
+   "amount": 3000,
+   "printed_amount": "$3,000.00",
+   "current_cmp": 3000,
+   "names_this_visit_survey_explicitly": true,
+   "quote_naming_uncorrected_orders": "In accordance with Minn. Stat. \u00a7 144G.31 Subd. 4 (a), state correction orders issued pursuant to the last survey, completed on February 5, 2025, found not corrected at the time of the April 29, 2025, follow-up survey and/or subject to penalty assessment are as fol\u2026",
+   "proposed_label": "Fine of $3,000.00 assessed on June 9, 2025 after a follow-up visit found these orders uncorrected.",
+   "related_letters": [
+    {
+     "followup_survey_date": "2025-04-29",
+     "letter_date": "2025-06-09",
+     "amount": 3000.0
+    }
+   ],
+   "note": null,
+   "proposal_status": "KEEP amount; do not set to NULL"
+  }
+ ]
+}
