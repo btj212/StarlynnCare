@@ -32,6 +32,27 @@ import psycopg
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import (
+    discard_review_log,
+    load_identity_map,
+    load_review_index,
+    note_protected_diffs,
+    report_review_log,
+    reuse_identity,
+)
+
+# Left in place on conflict. A new insert still sets them.
+PRESERVE_ON_UPDATE = (
+    "publishable",
+    "serves_memory_care",
+    "care_category",
+    "mc_review_status",
+    "mn_dementia_care_licensed",
+)
+
 STATE_CODE = "MN"
 SOURCE_PAGE = "https://alreportcard.dhs.mn.gov/Search"
 
@@ -172,16 +193,9 @@ def upsert_facility(
                 street                   = COALESCE(EXCLUDED.street, facilities.street),
                 zip                      = COALESCE(EXCLUDED.zip, facilities.zip),
                 beds                     = COALESCE(EXCLUDED.beds, facilities.beds),
-                mn_dementia_care_licensed = EXCLUDED.mn_dementia_care_licensed,
                 mn_hfid                  = COALESCE(EXCLUDED.mn_hfid, facilities.mn_hfid),
                 mn_all_capacity          = COALESCE(EXCLUDED.mn_all_capacity, facilities.mn_all_capacity),
-                mn_lic_type              = COALESCE(EXCLUDED.mn_lic_type, facilities.mn_lic_type),
-                care_category            = EXCLUDED.care_category,
-                mc_review_status         = CASE
-                    WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject')
-                    THEN facilities.mc_review_status
-                    ELSE EXCLUDED.mc_review_status
-                END
+                mn_lic_type              = COALESCE(EXCLUDED.mn_lic_type, facilities.mn_lic_type)
             RETURNING id::text
             """,
             record,
@@ -243,7 +257,15 @@ def main() -> int:
     stats = {"upserted": 0, "skipped": 0, "no_addr": 0}
 
     conn_ctx = psycopg.connect(db_url) if not args.dry_run else None
+    idmap: dict[str, dict[str, str]] = {}
+    review_index: dict[tuple[str, str], dict[str, Any]] = {}
+    if conn_ctx is not None:
+        with conn_ctx.cursor() as cur:
+            idmap = load_identity_map(cur, "MN")
+            review_index = load_review_index(cur, "MN", PRESERVE_ON_UPDATE)
 
+    committed = False
+    written_records: list[dict[str, Any]] = []
     try:
         for row in excel_rows:
             name_key = row["name"].strip().lower()
@@ -300,18 +322,29 @@ def main() -> int:
                 stats["upserted"] += 1
                 continue
 
+            if reuse_identity(record, idmap, [license_number, mn_hfid]) is None:
+                stats["skipped"] += 1
+                continue
             result = upsert_facility(conn_ctx, record)
             if result == "conflict":
                 stats["skipped"] += 1
             else:
+                written_records.append(record)
                 stats["upserted"] += 1
 
         if conn_ctx:
             conn_ctx.commit()
+            committed = True
+            # Diffs use the pre-update snapshot. The file is written after commit.
+            note_protected_diffs(review_index, written_records, PRESERVE_ON_UPDATE)
     finally:
         if conn_ctx:
             conn_ctx.close()
 
+    if committed:
+        report_review_log()
+    else:
+        discard_review_log()
     print(f"\nDone: upserted={stats['upserted']}, "
           f"skipped={stats['skipped']}, "
           f"no_addr={stats['no_addr']}")

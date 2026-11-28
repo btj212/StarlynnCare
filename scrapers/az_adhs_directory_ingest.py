@@ -77,6 +77,34 @@ PROTECTED_FIELDS = (
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import (
+    load_identity_map,
+    note_kept_external_id,
+    record_protected_diffs,
+    report_review_log,
+    reuse_identity,
+)
+
+# Left in place on conflict. A new insert still sets them.
+# az_license_level still updates: it is the license level, not the memory-care decision.
+PRESERVE_ON_UPDATE = (
+    "publishable",
+    "serves_memory_care",
+    "mc_review_status",
+    "memory_care_disclosure_filed",
+    "memory_care_disclosure_source",
+    "az_mc_subclass",
+    "az_memory_care_endorsed",
+)
+
+STALE_LAYER_REFUSAL = (
+    "Refusing to run: ADHS layer still shows pre-rename FACID/name/license "
+    "for ~60 homes; see audit file az_renamed_homes_exposure.json. "
+    "Pass --allow-stale-layer only with Blake's OK."
+)
 
 
 def _as_date(value: Any) -> date | None:
@@ -387,13 +415,7 @@ UPSERT_SQL = """
         phone                      = EXCLUDED.phone,
         latitude                   = EXCLUDED.latitude,
         longitude                  = EXCLUDED.longitude,
-        serves_memory_care         = EXCLUDED.serves_memory_care,
-        mc_review_status           = EXCLUDED.mc_review_status,
-        memory_care_disclosure_filed   = EXCLUDED.memory_care_disclosure_filed,
-        memory_care_disclosure_source  = EXCLUDED.memory_care_disclosure_source,
         az_license_level           = EXCLUDED.az_license_level,
-        az_mc_subclass             = EXCLUDED.az_mc_subclass,
-        az_memory_care_endorsed    = EXCLUDED.az_memory_care_endorsed,
         source_url                 = EXCLUDED.source_url
 """
 
@@ -424,15 +446,38 @@ def upsert_batch(
     conn: psycopg.Connection,
     records: list[dict[str, Any]],
 ) -> tuple[int, int]:
-    """Upsert records with per-row savepoints; return (success_count, error_count)."""
+    """Upsert records with per-row savepoints; return (success_count, error_count).
+
+    A license that already exists updates that row, even when the layer's FACID
+    differs. Memory-care fields are not part of the update.
+    """
+    with conn.cursor() as cur:
+        idmap = load_identity_map(cur, "AZ")
+    pending: list[dict[str, Any]] = []
+    for rec in records:
+        if reuse_identity(
+            rec,
+            idmap,
+            [rec.get("license_number"), rec.get("external_id")],
+            keep_stored_license=True,
+            keep_stored_external_id=True,
+        ) is None:
+            print(
+                f"  skip {rec.get('license_number')}: license is ambiguous "
+                "or belongs to a different row than the slug",
+                flush=True,
+            )
+            continue
+        pending.append(rec)
     existing = load_existing_license_rows(
         conn,
-        [rec["external_id"] for rec in records if rec.get("external_id")],
+        [rec["external_id"] for rec in pending if rec.get("external_id")],
     )
     success = 0
     errors = 0
+    written: list[dict[str, Any]] = []
     with conn.cursor() as cur:
-        for rec in records:
+        for rec in pending:
             guarded, skipped_fields = apply_adhs_map_guard(
                 rec, existing.get(rec.get("external_id"))
             )
@@ -449,16 +494,25 @@ def upsert_batch(
                     flush=True,
                 )
             rec = guarded
+            db_rec = {k: v for k, v in rec.items() if not str(k).startswith("_")}
             sp = f"sp_{re.sub(r'[^a-z0-9]', '_', (rec.get('external_id') or 'unknown').lower())}"
             try:
                 cur.execute(f"SAVEPOINT {sp}")
-                cur.execute(UPSERT_SQL, rec)
+                cur.execute(UPSERT_SQL, db_rec)
                 cur.execute(f"RELEASE SAVEPOINT {sp}")
                 success += 1
+                note_kept_external_id(rec)
+                written.append(rec)
             except Exception as exc:
                 cur.execute(f"ROLLBACK TO SAVEPOINT {sp}")
                 print(f"  ERROR {rec.get('external_id')}: {exc}", flush=True)
                 errors += 1
+    # Review lines are written only after this commit. A row that errored above
+    # (including a successor with no stored FACID) is not in `written`.
+    conn.commit()
+    with conn.cursor() as cur:
+        record_protected_diffs(cur, "AZ", written, PRESERVE_ON_UPDATE)
+    report_review_log()
     return success, errors
 
 
@@ -473,7 +527,15 @@ def main() -> None:
                         help="Only load Directed Care (serves_memory_care=true) rows")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print transformed rows, no DB writes")
+    parser.add_argument(
+        "--allow-stale-layer",
+        action="store_true",
+        help="Run even though layer 12 still shows pre-rename ids. Blake's OK only.",
+    )
     args = parser.parse_args()
+    if not args.allow_stale_layer:
+        print(STALE_LAYER_REFUSAL, file=sys.stderr)
+        raise SystemExit(1)
 
     load_env()
 

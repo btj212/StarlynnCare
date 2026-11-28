@@ -27,6 +27,27 @@ import psycopg
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import load_identity_map, record_protected_diffs, report_review_log, reuse_identity
+
+# Left in place on conflict. A new insert still sets them.
+PRESERVE_ON_UPDATE = (
+    "publishable",
+    "care_category",
+    "serves_memory_care",
+    "memory_care_designation",
+    "memory_care_disclosure_filed",
+    "memory_care_disclosure_source",
+    "mc_signal_explicit_name",
+    "mc_signal_chain_name",
+    "mc_review_status",
+    "mc_signal_apfm_listed",
+    "mc_signal_caring_listed",
+    "mn_dementia_care_licensed",
+)
+
 STATE_CODE = "MN"
 SOURCE_PAGE = "https://www.health.state.mn.us/facilities/regulation/directory/directorydatafile.html"
 
@@ -185,17 +206,7 @@ ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     beds                         = EXCLUDED.beds,
     facility_type                = EXCLUDED.facility_type,
     source_url                   = EXCLUDED.source_url,
-    care_category                = EXCLUDED.care_category,
-    serves_memory_care           = EXCLUDED.serves_memory_care,
-    memory_care_designation      = EXCLUDED.memory_care_designation,
     license_status               = EXCLUDED.license_status,
-    publishable                  = EXCLUDED.publishable,
-    mc_review_status             = CASE
-        WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject')
-        THEN facilities.mc_review_status
-        ELSE EXCLUDED.mc_review_status
-    END,
-    mn_dementia_care_licensed    = EXCLUDED.mn_dementia_care_licensed,
     mn_hfid                      = EXCLUDED.mn_hfid,
     mn_lic_type                  = EXCLUDED.mn_lic_type,
     mn_hcp_type                  = EXCLUDED.mn_hcp_type,
@@ -325,7 +336,26 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
     if not rows:
         return
     with conn.cursor() as cur:
-        cur.executemany(MN_UPSERT_SQL, rows)
+        idmap = load_identity_map(cur, "MN")
+        writing: list[dict[str, Any]] = []
+        for r in rows:
+            # ALRC:n is not an MDH HFID. Do not run this script against live MN
+            # rows; it would insert a duplicate for each home. A real HFID hit
+            # still keeps the stored license.
+            if reuse_identity(
+                r,
+                idmap,
+                [r["license_number"]],
+                keep_stored_license=True,
+            ) is None:
+                continue
+            writing.append(r)
+        if writing:
+            cur.executemany(MN_UPSERT_SQL, writing)
+    conn.commit()
+    with conn.cursor() as cur:
+        record_protected_diffs(cur, "MN", writing, PRESERVE_ON_UPDATE)
+    report_review_log()
 
 
 def main() -> int:

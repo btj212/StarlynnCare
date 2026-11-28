@@ -38,6 +38,22 @@ import psycopg
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import load_identity_map, record_protected_diffs, report_review_log, reuse_identity
+
+# Left in place on conflict. A new insert still sets them.
+PRESERVE_ON_UPDATE = (
+    "publishable",
+    "care_category",
+    "serves_memory_care",
+    "mc_review_status",
+    "mce_endorsed",
+    "mce_evidence",
+    "unendorsed_mc_violation",
+)
+
 STATE_CODE = "OR"
 SOURCE_PAGE = "https://ltclicensing.oregon.gov/Providers"
 
@@ -186,13 +202,8 @@ ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     city               = COALESCE(EXCLUDED.city, facilities.city),
     zip                = COALESCE(EXCLUDED.zip, facilities.zip),
     beds               = COALESCE(EXCLUDED.beds, facilities.beds),
-    care_category      = EXCLUDED.care_category,
     license_status     = EXCLUDED.license_status,
-    serves_memory_care = EXCLUDED.serves_memory_care,
-    mc_review_status   = COALESCE(EXCLUDED.mc_review_status, facilities.mc_review_status),
-    source_url         = EXCLUDED.source_url,
-    mce_endorsed       = EXCLUDED.mce_endorsed,
-    mce_evidence       = COALESCE(EXCLUDED.mce_evidence, facilities.mce_evidence)
+    source_url         = EXCLUDED.source_url
 """
 
 # Primary upsert target: (state_code, external_id) — fastest path for repeat runs
@@ -218,12 +229,7 @@ DO UPDATE SET
     city_slug          = EXCLUDED.city_slug,
     zip                = COALESCE(EXCLUDED.zip, facilities.zip),
     beds               = COALESCE(EXCLUDED.beds, facilities.beds),
-    care_category      = EXCLUDED.care_category,
-    license_status     = EXCLUDED.license_status,
-    serves_memory_care = EXCLUDED.serves_memory_care,
-    mc_review_status   = COALESCE(EXCLUDED.mc_review_status, facilities.mc_review_status),
-    mce_endorsed       = EXCLUDED.mce_endorsed,
-    mce_evidence       = COALESCE(EXCLUDED.mce_evidence, facilities.mce_evidence)
+    license_status     = EXCLUDED.license_status
 """
 
 
@@ -250,10 +256,24 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
         return
 
     conn = get_conn()
-    ok = err = 0
+    ok = err = skipped = 0
+    written: list[dict[str, Any]] = []
     with conn:
+        with conn.cursor() as cur0:
+            idmap = load_identity_map(cur0, "OR")
+        prepared: list[tuple[dict[str, Any], dict[str, Any]]] = []
         for rec in records:
             db_rec = {k: v for k, v in rec.items() if not k.startswith("_")}
+            if reuse_identity(
+                db_rec,
+                idmap,
+                [db_rec["external_id"], db_rec["license_number"]],
+                keep_stored_license=True,
+            ) is None:
+                skipped += 1
+                continue
+            prepared.append((rec, db_rec))
+        for rec, db_rec in prepared:
             try:
                 with conn.cursor() as cur:
                     # Savepoint: a failed execute rolls back only this row,
@@ -263,6 +283,7 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
                         cur.execute(UPSERT_BY_EXT_ID_SQL, db_rec)
                         cur.execute("RELEASE SAVEPOINT sp_row")
                         ok += 1
+                        written.append(db_rec)
                     except Exception:
                         cur.execute("ROLLBACK TO SAVEPOINT sp_row")
                         cur.execute("RELEASE SAVEPOINT sp_row")
@@ -272,6 +293,7 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
                             cur.execute(UPSERT_SQL, db_rec)
                             cur.execute("RELEASE SAVEPOINT sp_fallback")
                             ok += 1
+                            written.append(db_rec)
                         except Exception as exc2:
                             cur.execute("ROLLBACK TO SAVEPOINT sp_fallback")
                             cur.execute("RELEASE SAVEPOINT sp_fallback")
@@ -281,8 +303,12 @@ def ingest(input_path: Path, dry_run: bool, limit: int | None) -> None:
                 print(f"  WARN outer: {rec['external_id']} — {exc_outer}", file=sys.stderr)
                 err += 1
         conn.commit()
+        if written:
+            with conn.cursor() as cur0:
+                record_protected_diffs(cur0, "OR", written, PRESERVE_ON_UPDATE)
+    report_review_log()
 
-    print(f"  Done — inserted/updated: {ok}, errors: {err}")
+    print(f"  Done — inserted/updated: {ok}, errors: {err}, skipped: {skipped}")
 
 
 def main() -> None:

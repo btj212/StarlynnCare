@@ -2,19 +2,19 @@
 # Replaced by the OR Full Universe rebuild (migration 0033_or_universe.sql).
 # New pipeline: or_providers_ingest.py, or_inspections_ingest.py, or_violations_ingest.py,
 #               or_regulatory_actions_ingest.py, or_signal_mce.py, or_afh_detail.py, etc.
-# Key reason: this script zero-pads Provider IDs, breaking alphanumeric IDs like '50M300'.
+# Key reason: superseded by or_providers_ingest.py. Provider IDs are kept as printed.
 # See scripts/or_overnight_run.sh for the replacement orchestration.
 #
 # Original content preserved below for reference.
+# Importing this module exits, as it used to. Set STARLYNN_ALLOW_OR_DHS_IMPORT=1
+# to import it for tests. Running the file still exits.
 # ─────────────────────────────────────────────────────────────────────────────
-import sys; print('ERROR: or_dhs_ltc_directory_ingest.py is retired. Run or_providers_ingest.py instead.', file=sys.stderr); sys.exit(1)
-
 #!/usr/bin/env python3
 """
 Ingest Oregon DHS LTC Licensing provider CSV (memory-care export) into facilities.
 
 Upsert conflict target: (state_code, city_slug, slug)
-Join key for inspections: or_provider_id and license_number (padded numeric ID).
+Join key for inspections: or_provider_id and license_number (the regulator ID, as printed).
 
 Usage:
   python3 scrapers/or_dhs_ltc_directory_ingest.py --input .firecrawl/or-scrape/providers-2026-05-08.csv
@@ -36,6 +36,26 @@ from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRAPERS_DIR = Path(__file__).resolve().parent
+if str(SCRAPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRAPERS_DIR))
+from _license_match import load_identity_map, record_protected_diffs, report_review_log, reuse_identity
+
+# Left in place on conflict. A new insert still sets them.
+PRESERVE_ON_UPDATE = (
+    "publishable",
+    "care_category",
+    "serves_memory_care",
+    "memory_care_designation",
+    "memory_care_disclosure_filed",
+    "memory_care_disclosure_source",
+    "mc_signal_explicit_name",
+    "mc_signal_chain_name",
+    "mc_review_status",
+    "mc_signal_apfm_listed",
+    "mc_signal_caring_listed",
+    "or_memory_care_endorsed",
+)
+
 STATE_CODE = "OR"
 SOURCE_PAGE = "https://ltclicensing.oregon.gov/Providers"
 
@@ -66,18 +86,19 @@ def titleize(text: str) -> str:
 
 
 def pad_license_or(raw: Any) -> str:
-    """Normalize Oregon Provider ID for facilities.license_number + bundle matching."""
-    if raw is None or str(raw).strip() == "":
-        return "0000000000"
-    digits = re.sub(r"\D", "", str(raw))
-    if not digits:
-        return "0000000000"
-    return digits.zfill(10)
+    """Keep the regulator's Provider ID as printed.
+
+    Letters stay, and the value is not zero-padded: 50M133 stays 50M133,
+    and a numeric ID stays numeric. The slug is built from this same text.
+    """
+    if raw is None:
+        return ""
+    return str(raw).strip()
 
 
 def facility_slug(name: str, license_num: str) -> str:
     base = slugify(name)
-    suffix = license_num[-8:].lstrip("0") or license_num[-4:]
+    suffix = (license_num[-8:].lstrip("0") or license_num[-4:]).lower()
     return f"{base}-{suffix}"
 
 
@@ -197,6 +218,8 @@ def row_to_record(headers: list[str], row: dict[str, str]) -> dict[str, Any] | N
         "or_facility_type": type_raw or None,
         "or_accepts_medicaid": parse_bool_medicaid(get("accepts medicaid", "medicaid")),
         "or_status": status or None,
+        # Not a SQL column. upsert_facilities strips "_"-prefixed keys before executemany.
+        "_raw_id": pid,
     }
 
 
@@ -252,7 +275,7 @@ INSERT INTO facilities (
 )
 ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     name                         = EXCLUDED.name,
-    license_number               = EXCLUDED.license_number,
+    license_number               = COALESCE(facilities.license_number, EXCLUDED.license_number),
     license_type                 = EXCLUDED.license_type,
     street                       = EXCLUDED.street,
     city                         = EXCLUDED.city,
@@ -261,18 +284,8 @@ ON CONFLICT (state_code, city_slug, slug) DO UPDATE SET
     facility_type                = EXCLUDED.facility_type,
     certification_type           = EXCLUDED.certification_type,
     source_url                   = EXCLUDED.source_url,
-    care_category                = EXCLUDED.care_category,
-    serves_memory_care           = EXCLUDED.serves_memory_care,
-    memory_care_designation      = EXCLUDED.memory_care_designation,
     license_status               = EXCLUDED.license_status,
     license_expiration           = EXCLUDED.license_expiration,
-    publishable                  = EXCLUDED.publishable,
-    mc_review_status             = CASE
-        WHEN facilities.mc_review_status IN ('reviewed_publish','reviewed_reject')
-        THEN facilities.mc_review_status
-        ELSE EXCLUDED.mc_review_status
-    END,
-    or_memory_care_endorsed      = EXCLUDED.or_memory_care_endorsed,
     or_provider_id               = EXCLUDED.or_provider_id,
     or_facility_type             = EXCLUDED.or_facility_type,
     or_accepts_medicaid          = EXCLUDED.or_accepts_medicaid,
@@ -285,7 +298,25 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
     if not rows:
         return
     with conn.cursor() as cur:
-        cur.executemany(OR_UPSERT_SQL, rows)
+        idmap = load_identity_map(cur, "OR")
+        writing: list[dict[str, Any]] = []
+        for r in rows:
+            if reuse_identity(
+                r,
+                idmap,
+                [r.get("_raw_id"), r["license_number"]],
+                keep_stored_license=True,
+            ) is None:
+                continue
+            writing.append(r)
+        db_rows = [{k: v for k, v in r.items() if not str(k).startswith("_")} for r in writing]
+        if db_rows:
+            cur.executemany(OR_UPSERT_SQL, db_rows)
+    # The review file is written only after this commit succeeds.
+    conn.commit()
+    with conn.cursor() as cur:
+        record_protected_diffs(cur, "OR", writing, PRESERVE_ON_UPDATE)
+    report_review_log()
 
 
 def read_csv(path: Path) -> list[dict[str, Any]]:
@@ -330,5 +361,21 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+def _retire_unless_allowed() -> None:
+    """Exit on import unless STARLYNN_ALLOW_OR_DHS_IMPORT=1.
+
+    Running this file always exits. The check is at the bottom of the module
+    because a statement above `from __future__ import annotations` is a syntax error.
+    """
+    if __name__ != "__main__" and os.environ.get("STARLYNN_ALLOW_OR_DHS_IMPORT") == "1":
+        return
+    print(
+        "ERROR: or_dhs_ltc_directory_ingest.py is retired. "
+        "Run or_providers_ingest.py instead.",
+        file=sys.stderr,
+    )
+    sys.modules.pop(__name__, None)
+    raise SystemExit(1)
+
+
+_retire_unless_allowed()
