@@ -1987,6 +1987,306 @@ def test_v12_2_garbled_fallback_invented_requirement_and_long_finding() -> None:
     assert long_out.count("The licensee failed to post the hours.") < 9
 
 
+def test_v12_3_withdrawn_advice_instructions_and_paraphrase() -> None:
+    """A removed citation, advice, an order, column bleed, a made-up duty, rule text, or a new outcome word holds the row.
+
+    A normal 'failed to' finding, a requirement copied from the span, and a quoted
+    licensee policy still store. The report text is not rewritten.
+    """
+    import tempfile
+
+    survey = "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+    removed = (
+        survey
+        + "0510 not met as evidenced by the carbon monoxide detector was not installed in the home. "
+        + "Deficiency removed."
+    )
+    called = {"n": 0}
+
+    class _Count:
+        def create(self, **kw):
+            called["n"] += 1
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text="[]")])
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = f"{tmp}/warnings.jsonl"
+
+        def run(payload: str, narrative: str, **kwargs):
+            return si.summarize(
+                _json_client(payload),
+                "survey",
+                False,
+                None,
+                narrative,
+                state_code=kwargs.pop("state_code", "MN"),
+                deficiency_count=kwargs.pop("deficiency_count", 1),
+                record_date="2024-03-10",
+                warning_log=path,
+                **kwargs,
+            )
+
+        held = si.summarize(
+            types.SimpleNamespace(messages=_Count()),
+            "survey",
+            False,
+            None,
+            removed,
+            state_code="MN",
+            deficiency_count=1,
+            d_tags=["0510"],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="removed",
+        )
+        assert held is None and called["n"] == 0
+        assert "withdrawn finding" in _last_warning(path)["warnings"][0]
+        assert "header count 0" in _last_warning(path)["warnings"][0]
+        assert "record count 1" in _last_warning(path)["warnings"][0]
+
+        advice = (
+            survey
+            + "0510 not met as evidenced by the licensee failed to post the hours. "
+            + "Technical Assistance: The medication should have been assessed before the dose. "
+            + "CSMAR advice was offered to the nurse."
+        )
+        advised = run(
+            json.dumps([{
+                "tag": "0510",
+                "description": "The medication should have been assessed before the dose.",
+            }]),
+            advice,
+            d_tags=["0510"],
+            inspection_id="advice",
+        )
+        assert advised is None
+        assert "technical assistance" in _last_warning(path)["warnings"][0]
+
+        ordered = run(
+            json.dumps([{"tag": "0510", "description": "Unlock medications."}]),
+            survey + "0510 not met as evidenced by the licensee failed to lock the medications.",
+            d_tags=["0510"],
+            inspection_id="order",
+        )
+        assert ordered is None
+        assert "inspector instruction" in _last_warning(path)["warnings"][0]
+
+        bled = run(
+            json.dumps([{
+                "tag": "0510",
+                "description": (
+                    "The licensee failed to post the hours. "
+                    "No Plan of Correction (PoC) required."
+                ),
+            }]),
+            survey + "0510 not met as evidenced by the licensee failed to post the hours. "
+            + "No Plan of Correction (PoC) required.",
+            d_tags=["0510"],
+            inspection_id="chrome",
+        )
+        assert bled is None
+        assert "garbled column text" in _last_warning(path)["warnings"][0]
+
+        invented = run(
+            json.dumps([{
+                "tag": "0510",
+                "description": "The facility must ensure water temperature is maintained properly.",
+            }]),
+            survey + "0510 not met as evidenced by the facility did not maintain the water temperature.",
+            d_tags=["0510"],
+            inspection_id="must-ensure",
+        )
+        assert invented is None
+        assert "invented requirement" in _last_warning(path)["warnings"][0]
+
+        statute = run(
+            json.dumps([{
+                "tag": "0510",
+                "description": "A licensee may not accept appointments as guardians.",
+            }]),
+            survey
+            + "0510 not met as evidenced by the licensee accepted an appointment as guardian for a resident. "
+            + "A licensee may not accept appointments as guardians.",
+            d_tags=["0510"],
+            inspection_id="guardians",
+        )
+        assert statute is None
+        assert "rule text" in _last_warning(path)["warnings"][0]
+
+        hospital = run(
+            json.dumps([{
+                "tag": "0510",
+                "description": "The resident was discharged to the hospital.",
+            }]),
+            survey + "0510 not met as evidenced by the licensee failed to complete the transfer form.",
+            d_tags=["0510"],
+            inspection_id="hospital",
+        )
+        assert hospital is None
+        assert "unsupported outcome" in _last_warning(path)["warnings"][0]
+
+        mold = run(
+            json.dumps([{
+                "tag": "0510",
+                "description": "The licensee failed to clean the mold.",
+            }]),
+            survey + "0510 not met as evidenced by the licensee failed to clean the mole.",
+            d_tags=["0510"],
+            inspection_id="mold",
+        )
+        assert mold is None
+        assert "unsupported outcome" in _last_warning(path)["warnings"][0]
+
+        drill = run(
+            json.dumps([{
+                "tag": "0510",
+                "description": "The last drill was over a year ago.",
+            }]),
+            survey + "0510 not met as evidenced by the last drill was not recorded.",
+            d_tags=["0510"],
+            inspection_id="drill",
+        )
+        assert drill is None
+        assert "unsupported outcome" in _last_warning(path)["warnings"][0]
+
+    kept = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The licensee failed to post the hours.",
+        }])),
+        "survey",
+        False,
+        None,
+        survey + "0510 not met as evidenced by the licensee failed to post the hours.",
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert kept and "failed to post the hours" in kept
+    assert "withdrawn" not in kept.lower()
+    assert "in more detail" not in kept
+
+    advised_ok = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The licensee failed to post the hours.",
+        }])),
+        "survey",
+        False,
+        None,
+        survey
+        + "0510 not met as evidenced by the licensee failed to post the hours. "
+        + "Technical Assistance: The medication should have been assessed before the dose.",
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert advised_ok and "failed to post the hours" in advised_ok
+    assert "assessed" not in advised_ok
+
+    locked = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The licensee failed to lock the medications.",
+        }])),
+        "survey",
+        False,
+        None,
+        survey + "0510 not met as evidenced by the licensee failed to lock the medications.",
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert locked and "failed to lock the medications" in locked
+
+    policy = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The facility's policy indicated medications must be locked in the cabinet.",
+        }])),
+        "survey",
+        False,
+        None,
+        survey
+        + "0510 not met as evidenced by the facility's policy indicated medications must be locked in the cabinet.",
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert policy and "policy indicated" in policy
+
+    copied = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The facility is required to maintain proper water temperature.",
+        }])),
+        "survey",
+        False,
+        None,
+        survey
+        + "0510 not met as evidenced by the facility is required to maintain proper water temperature.",
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert copied and "proper water temperature" in copied
+
+    observed = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The licensee accepted an appointment as guardian for a resident.",
+        }])),
+        "survey",
+        False,
+        None,
+        survey
+        + "0510 not met as evidenced by the licensee accepted an appointment as guardian for a resident. "
+        + "A licensee may not accept appointments as guardians.",
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert observed and "accepted an appointment" in observed
+    assert "may not" not in observed
+
+    discharged = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The resident was discharged to the hospital.",
+        }])),
+        "survey",
+        False,
+        None,
+        survey + "0510 not met as evidenced by the resident was discharged to the hospital.",
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert discharged and "discharged to the hospital" in discharged
+
+    other_state = si.summarize(
+        _json_client(json.dumps([{
+            "tag": None,
+            "description": "Residents have the right to refuse treatment.",
+        }])),
+        "survey",
+        False,
+        None,
+        "On March 10, 2024, the department completed a full survey. "
+        "Residents have the right to refuse treatment.",
+        state_code="IL",
+        deficiency_count=1,
+        record_date="2024-03-10",
+    )
+    assert other_state is None
+
+
 if __name__ == "__main__":
     for _n, _f in sorted(globals().items()):
         if _n.startswith("test_") and callable(_f):

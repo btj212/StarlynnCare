@@ -942,8 +942,17 @@ _FINDING_ACT = re.compile(
     re.I,
 )
 _RULE_OPEN = re.compile(r"^(?:section\s+\d{4,}\b|\([A-Za-z0-9]{1,3}\))", re.I)
-_MODAL_RULE = re.compile(r"\b(?:shall|must|have the right|is required to)\b", re.I)
+_MODAL_RULE = re.compile(
+    r"\b(?:shall|must|have the right|is required to|may not)\b",
+    re.I,
+)
 _REG_SUBJECT = re.compile(r"\b(?:87202|87203|87303|87411)\b|\bOAR\s*411-", re.I)
+_STATUTE_MARK = re.compile(
+    r"^(?:section\s+\d{4,}\b|\([A-Za-z0-9]{1,3}\))|"
+    r"\b(?:87202|87203|87303|87411)\b|\bOAR\s*411-|"
+    r"\bmay not\b|\bhave the right\b",
+    re.I,
+)
 _TAG_DUMP = re.compile(r"Severity Level|Scope:|Visits:", re.I)
 _TAG_CODE = re.compile(r"\b[A-Z]{1,3}\d{4}\b")
 _OR_TAG = re.compile(r"(?<![A-Za-z0-9])([A-Z]\d{4})(?!\d)")
@@ -952,10 +961,10 @@ _OR_TAG = re.compile(r"(?<![A-Za-z0-9])([A-Z]\d{4})(?!\d)")
 def is_regulation_text(text: str) -> bool:
     """A finding that is the rule, not what the visit observed.
 
-    A subsection marker, a Section number, a duty (shall, must, have the right,
-    is required to), or a regulation number used as the subject. A sentence that
-    says what happened (failed to, did not, was observed, staff stated, record
-    review) is the finding.
+    A subsection marker, a Section number, a duty (shall, must, may not, have
+    the right, is required to), or a regulation number used as the subject. A
+    sentence that says what happened (failed to, did not, was observed, staff
+    stated, record review) is the finding.
     """
     cleaned = re.sub(r"\s+", " ", text or "").strip()
     if not cleaned:
@@ -980,13 +989,63 @@ def is_regulation_text(text: str) -> bool:
     return rule_sentences > other
 
 
-def regulation_as_finding(description: str, state_code: str) -> str | None:
-    """California and Oregon only. Minnesota keeps the narrower rule-text check."""
-    if (state_code or "").upper() not in {"CA", "OR"}:
+def _word_tokens(text: str) -> list[str]:
+    flat = (text or "").replace("\u2019", "'").replace("\u2018", "'")
+    return re.findall(r"[a-z0-9']+", re.sub(r"\s+", " ", flat).lower())
+
+
+def near_copy(sentence: str, evidence: str) -> bool:
+    """True when the sentence is a near-verbatim copy of one sentence in the span.
+
+    Tokens are compared in order against a single sentence. At least 80 percent
+    of the sentence's tokens have to occur, in that order, in that one sentence.
+    """
+    wanted = _word_tokens(re.sub(r"[.!?]+$", "", sentence or ""))
+    if not wanted:
+        return False
+    if " ".join(wanted) in " ".join(_word_tokens(evidence)):
+        return True
+
+    def _covered(span_tokens: list[str]) -> float:
+        cursor = 0
+        got = 0
+        for token in wanted:
+            while cursor < len(span_tokens) and span_tokens[cursor] != token:
+                cursor += 1
+            if cursor < len(span_tokens):
+                got += 1
+                cursor += 1
+        return got / len(wanted)
+
+    for part in re.split(r"(?<=[.!?])\s+", evidence or ""):
+        if _covered(_word_tokens(part)) >= 0.8:
+            return True
+    return False
+
+
+def regulation_as_finding(
+    description: str,
+    state_code: str,
+    evidence: str = "",
+) -> str | None:
+    """Rule text presented as the finding, in every state.
+
+    A statute marker still holds when the sentence is copied from the report.
+    A duty sentence that is a near copy of the finding itself is the inspector's
+    wording, so it is kept.
+    """
+    del state_code  # the check is the same in every state
+    if not is_regulation_text(description):
         return None
-    if is_regulation_text(description):
+    if _STATUTE_MARK.search(description or ""):
         return "rule text presented as a finding"
-    return None
+    sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", description or "") if part.strip()]
+    if evidence and sentences and all(
+        not _MODAL_RULE.search(sentence) or near_copy(sentence, evidence)
+        for sentence in sentences
+    ):
+        return None
+    return "rule text presented as a finding"
 
 
 def tag_dump_problem(text: str) -> str | None:
@@ -1047,11 +1106,59 @@ _PAGE_CHROME = (
     "event id",
     "if continuation sheet",
 )
+_DESC_CHROME = (
+    "no plan of correction (poc) required",
+    "state form",
+    "event id",
+    "printed:",
+    "continuation sheet",
+    "state correction orders",
+)
 _NORMATIVE = re.compile(
-    r"\bis required to\b|\bmust\b|\bshall\b|\bneeds to\b|\bshould\b",
+    r"\bis required to\b|\bmust\b|\bshall\b|\bneeds to\b|\bshould\b|\bhas to ensure\b",
     re.I,
 )
 _NORM_WORDS = {"must", "shall", "should", "need", "needs", "required", "require"}
+_POLICY_QUOTE = re.compile(
+    r"\b(?:facility|licensee)(?:'s|’s)\s+policy\s+(?:indicated|stated|states|says|required|requires)\b",
+    re.I,
+)
+_WITHDRAWN = re.compile(
+    r"\bdeficiency removed\b|\bdeleted\b|\bwithdrawn\b|\brescinded\b|"
+    r"\bno longer cited\b|\bstruck\b",
+    re.I,
+)
+_ADVISORY_HEAD = re.compile(
+    r"(?:^|\n|(?<=[.!?])\s+)"
+    r"(?:technical assistance|\bTA\b|\bconsultation\b|\brecommendation\b|\badvisory\b|"
+    r"(?<!initial )comments)\s*:",
+    re.I,
+)
+_NEXT_FINDING = re.compile(
+    r"\n\s*\d{3,5}\b|\bnot met as evidenced\b",
+    re.I,
+)
+_INSTRUCTION = re.compile(
+    r"\bmust be locked away\b|\bplease submit\b|\bensure that\b|\bplan of correction due\b",
+    re.I,
+)
+_INSTRUCTION_SUBJECT = re.compile(
+    r"\b(?:the|a|an|this|that|licensee|facility|staff|resident|surveyor|it|they)\b",
+    re.I,
+)
+_FINITE = re.compile(r"\b(?:was|were|is|are|been|be|failed|did|had|has|have)\b", re.I)
+_OUTCOME_WORDS = (
+    "hospital",
+    "discharged",
+    "injury",
+    "death",
+    "abuse",
+    "neglect",
+    "mold",
+    "fire",
+    "fall",
+)
+_OUTCOME_PHRASES = ("over a year",)
 
 
 def _norm_ws(text: str) -> str:
@@ -1077,32 +1184,182 @@ def fallback_problem(sentence: str, span: str) -> str | None:
     return None
 
 
-def invented_requirement(description: str, evidence: str) -> str | None:
-    """A normative sentence whose content words are not in this finding.
+def _split_sentences(text: str) -> list[str]:
+    return [part.strip() for part in re.split(r"(?<=[.!?])\s+", text or "") if part.strip()]
 
-    A sentence copied from the span is kept. 'must correct' stays with directive_problem.
-    Hold when at least 60 percent of the nouns and verbs are absent from the span.
+
+def is_withdrawn_text(text: str) -> bool:
+    """The report marks this deficiency removed, deleted, withdrawn, or struck."""
+    return _WITHDRAWN.search(text or "") is not None
+
+
+def text_around(narrative: str, span: str, pad: int = 320) -> str:
+    """The finding span plus the text immediately beside it in the report."""
+    source = narrative or ""
+    needle = (span or "").strip()
+    if not needle:
+        return ""
+    idx = source.find(needle)
+    if idx < 0:
+        return needle
+    start = max(0, idx - pad)
+    end = min(len(source), idx + len(needle) + pad)
+    return source[start:end]
+
+
+def _mainly_normative(sentence: str) -> bool:
+    if not _NORMATIVE.search(sentence or ""):
+        return False
+    if _FINDING_ACT.search(sentence or ""):
+        return False
+    return True
+
+
+def invented_requirement(description: str, evidence: str) -> str | None:
+    """A requirement sentence the finding does not actually say.
+
+    A sentence that is mainly 'must', 'shall', 'is required to', 'needs to',
+    'should', or 'has to ensure' holds unless it is a near copy of one sentence
+    in the span. A licensee's own policy, quoted as such and copied from the
+    span, is kept. 'must correct' stays with directive_problem.
     """
-    span_stems = {stem(word) for word in re.findall(r"[A-Za-z']+", evidence or "")}
-    span_flat = _norm_ws(evidence)
-    for sentence in re.split(r"(?<=[.!?])\s+", description or ""):
-        if not sentence.strip() or not _NORMATIVE.search(sentence):
+    for sentence in _split_sentences(description):
+        if not _mainly_normative(sentence):
             continue
-        copied = re.sub(r"[.!?]+$", "", _norm_ws(sentence)).strip()
-        if copied and copied in span_flat:
+        if _POLICY_QUOTE.search(sentence) and near_copy(sentence, evidence):
             continue
-        words = []
-        for word in re.findall(r"[A-Za-z']+", sentence):
-            low = word.lower()
-            if low in _STOP or low in _NORM_WORDS or len(low) < 4:
-                continue
-            words.append(stem(low))
-        if not words:
+        if near_copy(sentence, evidence):
             continue
-        missing = sum(1 for word in words if word not in span_stems)
-        if missing / len(words) >= 0.6:
-            return "invented requirement"
+        return "invented requirement"
     return None
+
+
+def chrome_problem(description: str) -> str | None:
+    """Page chrome in a model sentence. The agency name may open a real sentence."""
+    for sentence in _split_sentences(description):
+        flat = _norm_ws(sentence)
+        if not flat:
+            continue
+        for token in _DESC_CHROME:
+            if token in flat:
+                return "garbled column text"
+        idx = flat.find("minnesota department of health")
+        if idx < 0:
+            continue
+        prefix = flat[:idx].strip()
+        if prefix not in {"", "the"}:
+            return "garbled column text"
+    return None
+
+
+def _advisory_ranges(text: str) -> list[tuple[int, int]]:
+    starts = [match.start() for match in _ADVISORY_HEAD.finditer(text or "")]
+    ranges: list[tuple[int, int]] = []
+    for index, start in enumerate(starts):
+        end = starts[index + 1] if index + 1 < len(starts) else len(text)
+        window = text[start:end]
+        nxt = _NEXT_FINDING.search(window, 1)
+        if nxt:
+            end = start + nxt.start()
+        ranges.append((start, end))
+    return ranges
+
+
+def _content_stems(text: str) -> list[str]:
+    stems: list[str] = []
+    for word in re.findall(r"[A-Za-z']+", text or ""):
+        low = word.lower()
+        if low in _STOP or low in _NORM_WORDS or len(low) < 4:
+            continue
+        stems.append(stem(low))
+    return stems
+
+
+def advisory_only_problem(description: str, evidence: str, source: str) -> str | None:
+    """A description whose content words come only from an advice section.
+
+    Technical Assistance, TA, Consultation, Recommendation, Advisory, and
+    Comments are not findings. Words that also appear in the finding are kept.
+    """
+    blob = source or evidence or ""
+    ranges = _advisory_ranges(blob)
+    if not ranges:
+        return None
+    advisory = " ".join(blob[start:end] for start, end in ranges)
+    cursor = 0
+    kept: list[str] = []
+    for start, end in ranges:
+        kept.append(blob[cursor:start])
+        cursor = end
+    kept.append(blob[cursor:])
+    finding = " ".join(kept)
+    words = _content_stems(description)
+    if not words:
+        return None
+    advice_stems = set(_content_stems(advisory))
+    finding_stems = set(_content_stems(finding))
+    if all(word in advice_stems for word in words) and not any(word in finding_stems for word in words):
+        return "technical assistance described as a finding"
+    return None
+
+
+def _instruction_sentence(sentence: str) -> bool:
+    if _FINDING_ACT.search(sentence or ""):
+        return False
+    if _INSTRUCTION.search(sentence or ""):
+        return True
+    stripped = (sentence or "").strip()
+    if not stripped or _FINITE.search(stripped) or _INSTRUCTION_SUBJECT.search(stripped):
+        return False
+    if ":" in stripped or tag_dump_problem(stripped):
+        return False
+    # A short verb-first line ("Unlock medications.") is an order. A longer
+    # sentence with no article is still an observation.
+    words = re.findall(r"[A-Za-z']+", stripped)
+    if len(words) > 5:
+        return False
+    return re.match(r"^(?:Please\s+)?[A-Za-z]{3,}\b", stripped) is not None
+
+
+def instruction_problem(description: str) -> str | None:
+    """An imperative or a directive to the licensee, not something the visit found."""
+    sentences = _split_sentences(description)
+    if not sentences:
+        return None
+    hits = sum(1 for sentence in sentences if _instruction_sentence(sentence))
+    if hits and hits > len(sentences) - hits:
+        return "inspector instruction"
+    return None
+
+
+def outcome_problem(description: str, evidence: str) -> str | None:
+    """A severity or outcome word the finding's span does not use."""
+    desc = description or ""
+    ev = evidence or ""
+    for phrase in _OUTCOME_PHRASES:
+        if re.search(re.escape(phrase), desc, re.I) and not re.search(re.escape(phrase), ev, re.I):
+            return "unsupported outcome"
+    for word in _OUTCOME_WORDS:
+        if re.search(rf"\b{word}\b", desc, re.I) and not re.search(rf"\b{word}\b", ev, re.I):
+            return "unsupported outcome"
+    return None
+
+
+def output_problem(
+    description: str,
+    evidence: str,
+    source: str,
+    state_code: str,
+) -> str | None:
+    """A model sentence that must not be stored, even as a regulator fallback."""
+    return (
+        chrome_problem(description)
+        or advisory_only_problem(description, evidence, source)
+        or instruction_problem(description)
+        or invented_requirement(description, evidence)
+        or regulation_as_finding(description, state_code, evidence)
+        or outcome_problem(description, evidence)
+    )
 
 
 def visit_type_conflict(
@@ -1221,10 +1478,14 @@ def ground_problems(
         lambda: check_arrival(description, evidence),
         lambda: check_attributed_count(description, evidence),
         lambda: rule_as_finding(description, evidence, source),
-        lambda: regulation_as_finding(description, state_code),
+        lambda: regulation_as_finding(description, state_code, evidence),
         lambda: tag_dump_problem(description),
         lambda: directive_problem(description, evidence),
         lambda: invented_requirement(description, evidence),
+        lambda: chrome_problem(description),
+        lambda: advisory_only_problem(description, evidence, source),
+        lambda: instruction_problem(description),
+        lambda: outcome_problem(description, evidence),
     ):
         hit = fn()
         if hit:

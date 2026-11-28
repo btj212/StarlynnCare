@@ -55,14 +55,16 @@ from _summary_ground import (
     directive_problem,
     evidence_text,
     fallback_problem,
-    invented_requirement,
     is_factual_hold,
-    is_regulation_text,
+    is_withdrawn_text,
     mn_evidence,
     or_real_tag_count,
+    output_problem,
     rank_by_severity,
+    regulation_as_finding,
     tag_dump_problem,
     tag_span,
+    text_around,
     visit_type_conflict,
 )
 from mn_defs import tag_codes
@@ -962,11 +964,11 @@ def cap_summary(
     return rebuilt, None
 
 
-def _finding_block(text: str, state_code: str) -> str | None:
-    """A fallback that is the rule, or a tag dump, holds the row. Minnesota rule text does not."""
+def _finding_block(text: str, state_code: str, span: str = "") -> str | None:
+    """A fallback that is the rule, or a tag dump, holds the row in every state."""
     if tag_dump_problem(text):
         return "tag or metadata dump"
-    if (state_code or "").upper() in {"CA", "OR"} and is_regulation_text(text):
+    if regulation_as_finding(text, state_code, span):
         return "rule text presented as a finding"
     return None
 
@@ -1051,30 +1053,85 @@ def _real_rows(defs: list[dict] | None) -> list[dict] | None:
     ]
 
 
-def _parsed_has_directive(narrative: str, state_code: str, parsed: list[dict] | None) -> bool:
-    """True when a model description adds 'must correct' and that finding's span does not."""
-    for item in parsed or []:
-        description = str(item.get("description") or "")
-        tag = "" if item.get("tag") is None else str(item.get("tag"))
-        if directive_problem(description, _item_span(narrative, state_code, tag)):
-            return True
-    return False
-
-
 def _item_span(narrative: str, state_code: str, tag: str) -> str:
     if (state_code or "").upper() == "MN":
         return mn_evidence(narrative, tag) or tag_span(narrative, tag) or narrative
     return tag_span(narrative, tag) or narrative
 
 
-def _parsed_has_invented(narrative: str, state_code: str, parsed: list[dict] | None) -> bool:
-    """True when a description adds a requirement the finding does not state."""
+def _output_hold(description: str, span: str, narrative: str, state_code: str) -> str | None:
+    """A description that must not be stored, including by copying the regulator sentence."""
+    evidence = span or ""
+    if (state_code or "").upper() == "MN":
+        evidence = evidence_text(evidence)[0] or evidence
+    if directive_problem(description, evidence):
+        return "unsourced directive"
+    return output_problem(description, evidence, narrative or evidence, state_code)
+
+
+def _parsed_output_hold(
+    narrative: str,
+    state_code: str,
+    parsed: list[dict] | None,
+) -> str | None:
     for item in parsed or []:
         description = str(item.get("description") or "")
         tag = "" if item.get("tag") is None else str(item.get("tag"))
-        if invented_requirement(description, _item_span(narrative, state_code, tag)):
-            return True
-    return False
+        hit = _output_hold(description, _item_span(narrative, state_code, tag), narrative, state_code)
+        if hit:
+            return hit
+    return None
+
+
+def _withdrawn_reason(
+    narrative: str,
+    state_code: str,
+    deficiency_count: int,
+    d_tags: list[str] | None,
+    defs: list[dict] | None,
+) -> str | None:
+    """A removed deficiency is not described and is not counted.
+
+    When that leaves a different count than the database, the row is held.
+    """
+    from _summary_ground import deficiency_rows
+
+    state = (state_code or "").upper()
+    rows, _subst = deficiency_rows(defs)
+    blobs: list[str] = []
+    if rows:
+        codes = ["" if row.get("code") is None else str(row.get("code")).strip() for row in rows]
+        listed = [code for code in codes if code]
+        for row, code in zip(rows, codes):
+            stored = " ".join(
+                str(row.get(key) or "")
+                for key in ("inspector_narrative", "description", "status")
+            )
+            located = ""
+            if code:
+                if state == "MN":
+                    located = mn_evidence(narrative, code) or ""
+                located = located or tag_span(narrative, code, listed) or ""
+            anchor = located or stored
+            blobs.append(" ".join(part for part in (text_around(narrative, anchor), stored) if part))
+    elif d_tags:
+        tags = [str(tag) for tag in d_tags if tag]
+        for tag in tags:
+            span = (mn_evidence(narrative, tag) or "") if state == "MN" else ""
+            span = span or tag_span(narrative, tag, tags) or ""
+            blobs.append(text_around(narrative, span or tag))
+    elif narrative and int(deficiency_count or 0) > 0:
+        blobs.append(narrative)
+    gone = sum(1 for blob in blobs if blob and is_withdrawn_text(blob))
+    if not gone:
+        return None
+    remaining = len(blobs) - gone
+    if remaining != int(deficiency_count or 0):
+        return (
+            f"withdrawn finding: header count {remaining} does not match "
+            f"the record count {deficiency_count}"
+        )
+    return None
 
 
 def _release(
@@ -1185,7 +1242,7 @@ def _regulator_summary(
     for sentence, span in pairs:
         if not sentence:
             continue
-        why = fallback_problem(sentence, span) or _finding_block(sentence, state_code)
+        why = fallback_problem(sentence, span) or _finding_block(sentence, state_code, span)
         if why:
             if blocked is not None:
                 blocked.append(why)
@@ -1301,33 +1358,26 @@ def _describe_each_finding(
                 + "\nFix only that problem. Do not add a count, a date, or a dollar amount.",
                 span,
             )
-            if (
-                again
-                and not holds2
-                and len(warns2) <= len(warns)
-                and not directive_problem(again, span)
-                and not invented_requirement(again, span)
-            ):
+            bad = _output_hold(description, span, narrative, state_code) or _output_hold(
+                again, span, narrative, state_code,
+            )
+            if again and not holds2 and len(warns2) <= len(warns) and not bad:
                 description, warns = again, warns2
-            elif directive_problem(description, span) or directive_problem(again, span):
-                blocked = "unsourced directive"
-                description = ""
-            elif invented_requirement(description, span) or invented_requirement(again, span):
-                blocked = "invented requirement"
+            elif bad:
+                blocked = bad
                 description = ""
             else:
                 description = _regulator_for_span(span, rows_by_code.get(code), state_code)
-                why = fallback_problem(description, span) or _finding_block(description, state_code)
+                why = fallback_problem(description, span) or _finding_block(description, state_code, span)
                 if why:
                     blocked = why
                 warns = [f"fallback to regulator wording: {code}"]
                 print(f"    fallback: {code}: {holds2[0] if holds2 else reason}")
-        elif directive_problem(description, span):
-            blocked = "unsourced directive"
-            description = ""
-        elif invented_requirement(description, span):
-            blocked = "invented requirement"
-            description = ""
+        else:
+            bad = _output_hold(description, span, narrative, state_code)
+            if bad:
+                blocked = bad
+                description = ""
         if description:
             pieces.append(description)
         warnings.extend(warns)
@@ -1493,6 +1543,12 @@ def summarize(
                 f"source tag count {source_count} does not match the record count {deficiency_count}",
             )
             return None
+    withdrawn = _withdrawn_reason(
+        narrative, state_code, deficiency_count, d_tags, defs,
+    )
+    if withdrawn:
+        _hold(warning_log, inspection_id, withdrawn)
+        return None
     if model_name() is None:
         print("ERROR: MODEL_PROFILE is not set to a profile in model_config.json")
         return None
@@ -1618,15 +1674,11 @@ def summarize(
             return _finish(text2, findings_in_text(
                 text2, header, [str(item.get("description") or "") for item in (parsed2 or [])],
             ))
-        if _parsed_has_directive(narrative, state_code, parsed) or _parsed_has_directive(
+        held_for = _parsed_output_hold(narrative, state_code, parsed) or _parsed_output_hold(
             narrative, state_code, parsed2,
-        ):
-            _hold(warning_log, inspection_id, "unsourced directive")
-            return None
-        if _parsed_has_invented(narrative, state_code, parsed) or _parsed_has_invented(
-            narrative, state_code, parsed2,
-        ):
-            _hold(warning_log, inspection_id, "invented requirement")
+        )
+        if held_for:
+            _hold(warning_log, inspection_id, held_for)
             return None
         reasons: list[str] = []
         fallback, found = _regulator_summary(
