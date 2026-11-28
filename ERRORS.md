@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — The v8 description gate stored five findings that were not in the source
+
+**What went wrong:** The gate checked digits, tags, and a few banned phrases. It did not check that a description's words came from that finding. A TB line about one of six staff files was stored as if it were every file. A 125-degree water reading gained "above the regulatory limit." A document due after the visit was stored as missed. An ombudsman sentence from the rule was stored as the finding. "Reviewed by the LLA" was stored as "reviewed by the licensee." Oregon rows were rejected because no deficiency-table tags were passed. Minnesota complaint rows were rejected because an MN-SUBST substantiation row was counted as a deficiency.
+
+**What worked instead:** Ground each description in that finding's own evidence. For Minnesota, that is the parser's narrative after "not met as evidenced by," not the statute in front of it. A partial count has to stay partial. The named actor has to be the actor in the finding. On a failure, send the same reason back twice; if it still fails, store nothing. Oregon tags that are printed in the report are accepted. MN-SUBST is not a deficiency tag.
+
+**Source:** v8 pilot, 10 of 20 first drafts stored, five factual errors in four drafts. Rows fdd54f3c, bf1bb029, 407d1544, 3e155a98.
+
+---
+
 ## 2026-11-28 — A finding that starts at the end of a chunk was dropped
 
 **What went wrong:** The long-report merge kept a quote only when the whole quote sat inside the one chunk that returned it. On the Northern Lakes complaint, tag 02360 starts at the end of chunk 2 and the sentence finishes in chunk 3. Both models quoted that whole sentence, so it was not a substring of either chunk, the check dropped it, and only tag 02310 survived. A character cap on the rendered list could also omit a later tag.

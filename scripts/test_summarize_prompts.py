@@ -104,7 +104,7 @@ def test_user_message_carries_record_date() -> None:
         def __init__(self) -> None:
             self.content = [
                 types.SimpleNamespace(
-                    text='[{"tag": null, "description": "The licensee failed to arrive on time."}]'
+                    text='[{"tag": null, "description": "The analyst visited."}]'
                 )
             ]
 
@@ -136,7 +136,7 @@ def _stub_client(sent: list[dict]) -> types.SimpleNamespace:
         def __init__(self) -> None:
             self.content = [
                 types.SimpleNamespace(
-                    text='[{"tag": null, "description": "A routine inspection found a lighting problem in the hallway."}]'
+                    text='[{"tag": null, "description": "The resident said staff were late to the dining room."}]'
                 )
             ]
 
@@ -237,7 +237,7 @@ def test_split_keeps_every_character() -> None:
 # v7 extractive merge
 # ---------------------------------------------------------------------------
 FIXTURE = json.loads((ROOT / "scripts" / "testdata" / "mn_long_report_01fa1748.json").read_text())
-_SAFE_DESCRIPTION = "The licensee failed to meet this requirement."
+_SAFE_DESCRIPTION = "The licensee failed to."
 _FAIL = re.compile(r"the licensee failed to[^.]{10,400}\.", re.I)
 
 
@@ -463,7 +463,10 @@ def test_penalty_latest_letter_and_followup_label() -> None:
 
 def test_description_gate() -> None:
     """A digit, a dollar sign, report-says, an identifier, or a made-up visit label is not stored."""
-    source = "On March 10, 2024, the Minnesota Department of Health completed a full survey."
+    source = (
+        "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+        "0510 not met as evidenced by the licensee failed to post the hours."
+    )
     base = {
         "state_code": "MN",
         "source": source,
@@ -593,6 +596,389 @@ def test_no_findings_and_length_limit() -> None:
                 return types.SimpleNamespace(content=[types.SimpleNamespace(text=reply)])
         out = si.summarize(types.SimpleNamespace(messages=_Messages()), "complaint", True, None, "Form text only.", state_code="MN")
         assert out is None
+
+
+def _pilot(prefix: str) -> dict:
+    if not hasattr(_pilot, "rows"):
+        _pilot.rows = json.loads((ROOT / "scripts" / "testdata" / "pilot_rows_v8.json").read_text())
+    return next(row for row in _pilot.rows if row["id"].startswith(prefix))
+
+
+def _gate(row: dict, descriptions: list[dict], **kwargs):
+    count = kwargs.pop("finding_count", row["tdc"])
+    return asm.assemble_summary(
+        state_code=row["state"],
+        source=row["narrative"],
+        descriptions=descriptions,
+        d_tags=kwargs.pop("d_tags", None),
+        finding_count=count,
+        penalty=kwargs.pop("penalty", asm.latest_assessed_penalty(row["narrative"], row.get("cmp"))),
+        inspection_date=row["inspection_date"],
+        inspection_type=row.get("inspection_type"),
+        defs=kwargs.pop("defs", None),
+        facility=row.get("facility"),
+    )
+
+
+def test_v6_check_sites_are_mapped() -> None:
+    """Every v6 check site is ported, already covered, or a dropped length rule."""
+    from _summary_ground import V6_CHECK_SITES, v6_site_counts
+
+    assert len(V6_CHECK_SITES) == 59
+    counts = v6_site_counts()
+    assert counts == {"ported": 46, "covered": 8, "dropped": 5}
+    dropped = [line for line, status, _name in V6_CHECK_SITES if status == "dropped"]
+    assert dropped == [309, 314, 315, 316, 317]
+
+
+def test_grounding_catches_the_pilot_errors() -> None:
+    """The five stored errors are rejected, and a description copied from the same finding is kept."""
+    fdd = _pilot("fdd54f3c")
+    bad_fdd = [
+        {"tag": None, "description": "Staff files did not contain proof of required annual training"},
+        {"tag": None, "description": "Staff files did not contain proof of TB test"},
+        {"tag": None, "description": "Emergency evacuation chair is located in one stairwell only"},
+    ]
+    text, err = _gate(fdd, bad_fdd)
+    assert text is None
+    assert err and "punctuation" in err
+    evidence, _how = asm._evidence_for(fdd["narrative"], None, [])
+    tb_problems = asm.description_problems(
+        bad_fdd[1]["description"], fdd["narrative"], "CA",
+        evidence=evidence, inspection_date=fdd["inspection_date"],
+    )
+    assert any("one out of six" in problem for problem in tb_problems)
+    good_fdd = [
+        {"tag": None, "description": "Six out of six staff files did not contain proof of required annual training."},
+        {"tag": None, "description": "One out of six staff files did not have proof of a TB test."},
+        {"tag": None, "description": "There is a emergency evacuation chair in one stairwell only."},
+    ]
+    kept, kept_err = _gate(fdd, good_fdd, penalty=None)
+    assert kept_err is None and kept and "3 citations" in kept
+
+    hot = _pilot("bf1bb029")
+    limit = "Hot water temperature in a resident apartment unit on the second floor measured above the regulatory limit."
+    late = "The licensee failed to submit required updated and current documents by the specified deadline."
+    hot_evidence, _how = asm._evidence_for(hot["narrative"], None, [])
+    limit_problems = asm.description_problems(
+        limit, hot["narrative"], "CA", evidence=hot_evidence, inspection_date=hot["inspection_date"],
+    )
+    late_problems = asm.description_problems(
+        late, hot["narrative"], "CA", evidence=hot_evidence, inspection_date=hot["inspection_date"],
+    )
+    assert _gate(hot, [{"tag": None, "description": limit}], finding_count=1)[0] is None
+    assert any("regulatory" in problem for problem in limit_problems)
+    assert _gate(hot, [{"tag": None, "description": late}], finding_count=1)[0] is None
+    assert any("failed to submit" in problem for problem in late_problems)
+    hot_ok, hot_err = _gate(hot, [{"tag": None, "description": "Hot water temperature in a resident apartment was tested."}], finding_count=1, penalty=None)
+    due_ok, due_err = _gate(hot, [{"tag": None, "description": "Updated and current documents are to be submitted."}], finding_count=1, penalty=None)
+    assert hot_err is None and hot_ok
+    assert due_err is None and due_ok
+
+    mn = _pilot("407d1544")
+    questioned = (
+        "When questioned, the staff member acknowledged not performing hand hygiene "
+        "before or after resident care."
+    )
+    ombuds = (
+        "The posting lacked contact information for the Office of Ombudsman for Long-Term Care "
+        "and information for reporting suspected maltreatment."
+    )
+    assert _gate(mn, [{"tag": "0510", "description": questioned}], finding_count=1, d_tags=["0510"])[0] is None
+    q_err = _gate(mn, [{"tag": "0510", "description": questioned}], finding_count=1, d_tags=["0510"])[1]
+    assert q_err and "questioned" in q_err
+    assert _gate(mn, [{"tag": "0550", "description": ombuds}], finding_count=1, d_tags=["0550"])[0] is None
+    o_err = _gate(mn, [{"tag": "0550", "description": ombuds}], finding_count=1, d_tags=["0550"])[1]
+    assert o_err and "ombudsman" in o_err
+    fixed = [
+        {"tag": "0480", "description": "The licensee failed to ensure food was prepared and served according to the Minnesota Food Code."},
+        {"tag": "0510", "description": "The staff acknowledged not performing hand hygiene and stated he forgot."},
+        {"tag": "0550", "description": "The licensee failed to post the required information related to the grievance procedure."},
+    ]
+    stored, stored_err = _gate(mn, fixed, finding_count=3, d_tags=["0480", "0510", "0550"])
+    assert stored_err is None and stored
+    assert "$500.00" in stored
+    assert "ombudsman" not in stored.lower()
+
+    oregon = _pilot("3e155a98")
+    swapped = (
+        "Residents had a financial agreement and rent responsibility form separate from the residency "
+        "agreement that was not reviewed by the licensee for compliance with rules."
+    )
+    assert _gate(oregon, [{"tag": "V6219", "description": swapped}], finding_count=1)[0] is None
+    swap_err = _gate(oregon, [{"tag": "V6219", "description": swapped}], finding_count=1)[1]
+    assert swap_err and "licensee" in swap_err
+    lla, lla_err = _gate(
+        oregon,
+        [{"tag": "V6219", "description": "This form was not reviewed by LLA."}],
+        finding_count=1,
+        penalty=None,
+    )
+    assert lla_err is None and lla and "LLA" in lla
+
+
+def test_clean_pilot_drafts_still_pass() -> None:
+    """Three drafts the hand check marked clean stay stored."""
+    drafts = {
+        "a9d6185e": "One staff member on the facility guardian roster was not associated with the facility and did not have a criminal record clearance or exemption approval on file. The staff member was hired as a minor, became eighteen years old, and has not obtained criminal record clearance. The administrator removed the staff member from the schedule until criminal record clearance is obtained.",
+        "f62c9930": "Medication inventory revealed that dates of administration of medications could not be verified as no start date was documented and an accurate medication count could not be confirmed.",
+        "060f49a8": "The licensee failed to ensure required annual dementia care training for a direct-care employee. The employee's training record lacked documentation of the required hours of dementia care training in the specified timeframe.",
+    }
+    for key, description in drafts.items():
+        row = _pilot(key)
+        tag = "01540" if key == "060f49a8" else None
+        text, err = _gate(
+            row,
+            [{"tag": tag, "description": description}],
+            finding_count=1,
+            d_tags=[tag] if tag else None,
+            penalty=None,
+        )
+        assert err is None and text, key
+
+
+def test_extra_description_is_rejected() -> None:
+    """c2add82e returned three descriptions for two deficiency rows."""
+    row = _pilot("c2add82e")
+    descriptions = [
+        {"tag": None, "description": "The facility did not display a PUB475 poster in a visible area."},
+        {"tag": None, "description": "One staff member worked at the facility without a background clearance."},
+        {"tag": None, "description": "Two staff members were missing a health screening."},
+    ]
+    text, err = _gate(row, descriptions, finding_count=2, penalty=None)
+    assert text is None
+    assert err and "count" in err
+
+
+def test_oregon_tags_and_minnesota_substantiation() -> None:
+    """Oregon tags are accepted when no deficiency-table tags were passed. MN-SUBST is not a deficiency."""
+    oregon = {
+        "2ba83b45": [
+            {"tag": "A1415", "description": "Some caregivers were scheduled to work together and none of them had Recordkeeping B."},
+            {"tag": "A2525", "description": "The resident info sheet has DNR marked on it."},
+            {"tag": "A3355", "description": "The backup operator needs to complete the EPP Certification of Training."},
+        ],
+        "5dc192c7": [
+            {"tag": "C0242", "description": "The facility failed to provide a daily program of social and recreational activities."},
+            {"tag": "C0252", "description": "The facility failed to ensure the move-in evaluation contained all required elements."},
+        ],
+        "fe96a34c": [
+            {"tag": "A3110", "description": "Operator did not have an annual furnace inspection report."},
+            {"tag": "A3250", "description": "Fire extinguishers on both levels of the home were last serviced in June."},
+            {"tag": "A3355", "description": "EPP notification information sheet was missing two residents name's."},
+        ],
+    }
+    for key, descriptions in oregon.items():
+        row = _pilot(key)
+        text, err = _gate(row, descriptions, penalty=None)
+        assert err is None and text, (key, err)
+        assert "tag not in D rows" not in (err or "")
+        if row.get("inspection_type") == "Re-Licensure":
+            assert "re-licensure" in text.lower()
+    indexed = _pilot("2ba83b45")
+    by_index = [
+        {"tag": "1", "description": oregon["2ba83b45"][0]["description"]},
+        {"tag": "2", "description": oregon["2ba83b45"][1]["description"]},
+        {"tag": "3", "description": oregon["2ba83b45"][2]["description"]},
+    ]
+    text, err = _gate(indexed, by_index, penalty=None)
+    assert err is None and text
+
+    one = _pilot("f9d77b5c")
+    text, err = _gate(
+        one,
+        [{"tag": "02360", "description": "The facility failed to ensure one of one resident was free from maltreatment."}],
+        defs=one["defs"],
+        penalty=None,
+    )
+    assert err is None and text
+    assert "1 correction order" in text
+    assert "2 correction" not in text
+    assert "Maltreatment occurred." in text
+    two = _pilot("0877ce83")
+    text, err = _gate(
+        two,
+        [
+            {"tag": "02310", "description": "The licensee failed to provide care and assisted living services according to an up-to-date service plan."},
+            {"tag": "02360", "description": "The facility failed to ensure one of one resident was free from maltreatment."},
+        ],
+        defs=two["defs"],
+        penalty=None,
+    )
+    assert err is None and text
+    assert "2 correction orders" in text
+    assert "3 correction" not in text
+
+
+def test_rejection_retry_then_hold() -> None:
+    """A gate failure is sent back once. A row that still fails is held and nothing is stored."""
+    import io
+    from contextlib import redirect_stdout
+
+    source = (
+        "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+        "0510 not met as evidenced by the licensee failed to post the hours."
+    )
+
+    class _Once:
+        def __init__(self) -> None:
+            self.calls: list[dict] = []
+
+        def create(self, **kw):
+            self.calls.append(kw)
+            if len(self.calls) == 1:
+                text = '[{"tag": "0510", "description": "The licensee failed to post 3 hours."}]'
+            else:
+                text = '[{"tag": "0510", "description": "The licensee failed to post the hours."}]'
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text=text)])
+
+    good = _Once()
+    out = si.summarize(
+        types.SimpleNamespace(messages=good), "survey", False, None, source,
+        state_code="MN", deficiency_count=1, d_tags=["0510"], record_date="2024-03-10",
+    )
+    assert out and "post the hours" in out
+    assert len(good.calls) == 2
+    assert "digit or dollar sign" in good.calls[1]["messages"][0]["content"]
+
+    class _Always:
+        def __init__(self) -> None:
+            self.calls: list[dict] = []
+
+        def create(self, **kw):
+            self.calls.append(kw)
+            text = '[{"tag": "0510", "description": "The licensee failed to post 3 hours."}]'
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text=text)])
+
+    bad = _Always()
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        held = si.summarize(
+            types.SimpleNamespace(messages=bad), "survey", False, None, source,
+            state_code="MN", deficiency_count=1, d_tags=["0510"], record_date="2024-03-10",
+        )
+    assert held is None
+    assert len(bad.calls) == 3
+    assert "held:" in buf.getvalue()
+    assert "digit or dollar sign" in bad.calls[2]["messages"][0]["content"]
+
+
+def test_forced_chunk_merge_on_long_row() -> None:
+    """A long real report split into three or more chunks loses no text and keeps each tag once."""
+    row = _pilot("6838c917")
+    narrative = row["narrative"]
+    codes = [item["code"] for item in row["defs"]]
+    assert len(narrative) > 50_000
+    assert len(codes) == 7
+    sent: list[dict] = []
+
+    def extract(chunk: str) -> str:
+        flat = " ".join(chunk.split())
+        items = []
+        for tag in codes:
+            if not re.search(r"\b" + tag[0] + r"\s?" + tag[1:] + r"\b", flat):
+                continue
+            found = _FAIL.search(flat)
+            if found:
+                items.append({"tag": tag, "kind": "finding", "quote": found.group(0)})
+        return json.dumps(items)
+
+    original = si._narrative_budget
+    si._narrative_budget = lambda system, overhead: 8_000
+    try:
+        out = si.summarize(
+            _extracting_client(sent, extract), row["inspection_type"], False, None, narrative,
+            state_code="MN", deficiency_count=len(codes), record_date=row["inspection_date"],
+        )
+    finally:
+        si._narrative_budget = original
+    extract_calls = [call for call in sent if call["system"] == si.EXTRACT_SYSTEM_PROMPT]
+    summary_calls = [call for call in sent if call["system"] != si.EXTRACT_SYSTEM_PROMPT]
+    assert len(extract_calls) >= 3
+    delivered = []
+    for number, call in enumerate(extract_calls, 1):
+        user = call["messages"][0]["content"]
+        start = user.index("Text:\n") + len("Text:\n")
+        end = user.index(f"\n\nEnd of part {number}.")
+        delivered.append(user[start:end])
+    assert "".join(delivered) == narrative
+    assert out
+    assert out.count(_SAFE_DESCRIPTION) == len(codes)
+    assert "7 correction orders" in out
+    final_user = summary_calls[0]["messages"][0]["content"]
+    tags = [line.split(":", 1)[0][len("- tag "):] for line in final_user.splitlines() if line.startswith("- tag ")]
+    assert tags == list(dict.fromkeys(tags))
+    assert sorted(tags) == sorted(codes)
+
+
+def test_zero_citation_line_is_code_only() -> None:
+    """A published visit with no deficiencies gets one fixed line. Texas and missing text get nothing."""
+    called: list[dict] = []
+
+    class _Messages:
+        def create(self, **kw):
+            called.append(kw)
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text=si._NO_FINDINGS)])
+
+    client = types.SimpleNamespace(messages=_Messages())
+    reports = {
+        "CA": "On March 10, 2024, the California Department of Social Services completed a full survey. No deficiencies were cited during this visit at the home.",
+        "MN": "On March 10, 2024, the Minnesota Department of Health completed a full survey. No deficiencies were cited during this visit at the home.",
+        "OR": "On March 10, 2024, the Oregon Department of Human Services completed a full survey. No deficiencies were cited during this visit at the home.",
+    }
+    for state, narrative in reports.items():
+        out = si.summarize(
+            client, "survey", False, None, narrative,
+            state_code=state, deficiency_count=0, published=True, record_date="2024-03-10",
+        )
+        assert out and "No deficiencies were cited at this visit." in out
+        assert "0 citations" not in out
+        assert "clean record" not in out.lower()
+    assert called == []
+    before = len(called)
+    tx = si.summarize(
+        client, "survey", False, None, reports["CA"],
+        state_code="TX", deficiency_count=0, published=True, record_date="2024-03-10",
+    )
+    missing = si.summarize(client, "survey", False, None, "", state_code="CA", deficiency_count=0, published=True)
+    stub = si.summarize(
+        client, "survey", False, None, "page not found " * 12,
+        state_code="CA", deficiency_count=0, published=True,
+    )
+    cited = (
+        "On March 10, 2024, the California Department of Social Services completed a full survey. "
+        "The licensee failed to post the hours. No deficiencies were cited."
+    )
+    not_clear = si.summarize(
+        client, "survey", False, None, cited,
+        state_code="CA", deficiency_count=0, published=True, record_date="2024-03-10",
+    )
+    assert tx is None and missing is None and stub is None
+    assert not_clear is None
+    unpublished = si.summarize(
+        client, "survey", False, None, reports["CA"],
+        state_code="CA", deficiency_count=0, published=False, record_date="2024-03-10",
+    )
+    assert unpublished is None
+    assert len(called) == before + 1  # unpublished, Texas, and stubs never reach the model
+    assert all(
+        "No deficiencies were cited at this visit." not in (item or "")
+        for item in (tx, missing, stub, not_clear, unpublished)
+    )
+
+
+def test_header_omits_a_date_that_disagrees() -> None:
+    """The report date is used only when it is the inspection row's date."""
+    source = "On August 7, 2024, the Minnesota Department of Health completed a standard survey."
+    omitted = asm.build_header(
+        state_code="MN", source=source, finding_count=1, penalty=None, inspection_date="2024-09-30",
+    )
+    assert "August" not in omitted
+    assert "standard survey" in omitted
+    kept = asm.build_header(
+        state_code="MN", source=source, finding_count=1, penalty=None, inspection_date="2024-08-07",
+    )
+    assert "August 7, 2024" in kept
 
 
 if __name__ == "__main__":

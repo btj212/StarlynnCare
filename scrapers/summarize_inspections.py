@@ -44,6 +44,7 @@ from _wa_summary_guard import strip_unfounded_dementia_contract
 from _extractive_merge import EXTRACT_SYSTEM_PROMPT, merge_items, parse_items, render_items
 from _summary_assemble import (
     assemble_summary,
+    build_header,
     latest_assessed_penalty,
     parse_descriptions,
 )
@@ -421,6 +422,9 @@ Each description is plain words only:
 - no evaluative adjectives such as serious, severe, significant, alarming, or similar
 - do not write "best", "top-rated", or "does not offer memory care"
 - use "licensee" or "facility" exactly as that finding writes it
+- end with a period, and do not run two findings together
+- use only words from that finding, after any "not met as evidenced by" line
+- keep a partial count (one out of six) partial; do not turn the rule text into the finding
 - do not add a count, a penalty, or a visit type
 
 If the text has no findings, reply exactly: NO FINDINGS IN TEXT"""
@@ -671,17 +675,31 @@ def _stored_summary(
     d_tags: list[str] | None,
     followup_amount: str | None,
     followup_letter_date: str | None,
-) -> str | None:
-    """Turn the model's JSON into a header plus gated descriptions. None means store nothing."""
+    inspection_type: str | None = None,
+    inspection_date: str | None = None,
+    outcome: str | None = None,
+    is_complaint: bool = False,
+    defs: list[dict] | None = None,
+    facility: str | None = None,
+) -> tuple[str | None, str | None]:
+    """Turn the model's JSON into a header plus gated descriptions.
+
+    Returns (summary, error). A set error is a gate failure and may be retried.
+    MN complaint rows count MN-SUBST apart from deficiency tags: when the report's
+    own tags are fewer than the stored count, the extra row is the substantiation.
+    """
     descriptions = parse_descriptions(raw)
     if descriptions is None:
         print("    rejected summary: model did not return finding descriptions")
-        return None
+        return None, "model did not return finding descriptions"
     tags = d_tags
+    count = deficiency_count
     if tags is None and state_code.upper() == "MN":
         parsed = tag_codes(narrative)
         if parsed:
             tags = parsed
+            if is_complaint and count > len(parsed):
+                count = len(parsed)
     if followup_amount and followup_letter_date:
         penalty = None
     else:
@@ -691,29 +709,91 @@ def _stored_summary(
         source=narrative,
         descriptions=descriptions,
         d_tags=tags,
-        finding_count=deficiency_count,
+        finding_count=count,
         penalty=penalty,
         followup_amount=followup_amount,
         followup_letter_date=followup_letter_date,
+        inspection_date=inspection_date,
+        inspection_type=inspection_type,
+        outcome=outcome,
+        facility=facility,
+        defs=defs,
     )
     if err or not text:
         print(f"    rejected summary: {err or 'nothing to store'}")
-        return None
+        return None, err or "nothing to store"
     if state_code.upper() != "CA" and re.search(r"\b(Title 22|CDSS)\b", text):
         print("    rejected California wording on a non-CA record")
-        return None
+        return None, "California wording on a non-CA record"
     if state_code.upper() == "WA":
         text = strip_unfounded_dementia_contract(text, holds_sdc)
         if not text:
             print("    rejected unfounded Specialized Dementia Care claim")
-            return None
+            return None, "unfounded Specialized Dementia Care claim"
     if reject_false_clean_visit(
         text,
-        deficiency_count=deficiency_count,
+        deficiency_count=count,
         source_text=narrative,
     ):
         print("    rejected clean-visit claim on a cited inspection")
-        return None
+        return None, "clean-visit claim on a cited inspection"
+    return text, None
+
+
+_GATE_RETRIES = 2
+_NO_RETRY = {"nothing to store", "model did not return finding descriptions"}
+_ZERO_LINE = "No deficiencies were cited at this visit."
+
+
+def _is_stub_or_error(narrative: str) -> bool:
+    text = (narrative or "").strip()
+    if len(text) < 80:
+        return True
+    return re.search(r"page not found|404 not found|access denied|error page", text, re.I) is not None
+
+
+def _shows_no_deficiencies(narrative: str) -> bool:
+    if re.search(r"failed to|not met as evidenced|\btype [ab]\b", narrative or "", re.I):
+        return False
+    return re.search(
+        r"\bno (?:deficienc(?:y|ies)|citations?|violations?|correction orders?)\b",
+        narrative or "",
+        re.I,
+    ) is not None
+
+
+def _published_zero_visit(
+    narrative: str,
+    *,
+    state_code: str,
+    deficiency_count: int,
+    published: bool,
+    d_tags: list[str] | None,
+) -> bool:
+    """A published visit with the report in hand and no cited deficiency. Never Texas."""
+    if not published or (state_code or "").upper() == "TX" or deficiency_count != 0 or d_tags:
+        return False
+    if _is_stub_or_error(narrative):
+        return False
+    return _shows_no_deficiencies(narrative)
+
+
+def _zero_citation_summary(
+    narrative: str,
+    *,
+    state_code: str,
+    inspection_type: str | None,
+    inspection_date: str | None,
+) -> str:
+    header = build_header(
+        state_code=state_code,
+        source=narrative,
+        finding_count=0,
+        penalty=None,
+        inspection_date=inspection_date,
+        inspection_type=inspection_type,
+    )
+    text = f"{header} {_ZERO_LINE}".strip() if header else _ZERO_LINE
     return text
 
 
@@ -732,11 +812,35 @@ def summarize(
     inspection_id: str | None = None,
     followup_amount: str | None = None,
     followup_letter_date: str | None = None,
+    published: bool = False,
+    defs: list[dict] | None = None,
+    facility: str | None = None,
 ) -> str | None:
+    if not (narrative or "").strip():
+        return None
+    if deficiency_count == 0 and not d_tags:
+        # The fixed line is only for a published, non-Texas report that says so.
+        # Texas, a stub, and an unpublished report that says nothing was cited
+        # get no summary and no model call. Any other report continues.
+        if (state_code or "").upper() == "TX" or (published and _is_stub_or_error(narrative)):
+            return None
+        if not published and _shows_no_deficiencies(narrative):
+            return None
+    if _published_zero_visit(
+        narrative,
+        state_code=state_code,
+        deficiency_count=deficiency_count,
+        published=published,
+        d_tags=d_tags,
+    ):
+        return _zero_citation_summary(
+            narrative,
+            state_code=state_code,
+            inspection_type=inspection_type,
+            inspection_date=record_date,
+        )
     if model_name() is None:
         print("ERROR: MODEL_PROFILE is not set to a profile in model_config.json")
-        return None
-    if not (narrative or "").strip():
         return None
     if followup_amount is None and followup_letter_date is None and inspection_id:
         labeled = followup_for(inspection_id)
@@ -767,9 +871,9 @@ def summarize(
     )
     budget = _narrative_budget(system, overhead)
 
-    def _finish(raw: str | None) -> str | None:
+    def _gate(raw: str | None) -> tuple[str | None, str | None]:
         if not raw:
-            return None
+            return None, None
         return _stored_summary(
             raw,
             narrative,
@@ -779,27 +883,59 @@ def summarize(
             d_tags=d_tags,
             followup_amount=followup_amount,
             followup_letter_date=followup_letter_date,
+            inspection_type=inspection_type,
+            inspection_date=record_date,
+            outcome=outcome,
+            is_complaint=is_complaint,
+            defs=defs,
+            facility=facility,
         )
 
-    if len(narrative) <= budget:
-        return _finish(
-            _complete_summary(
+    def _with_reasons(user_msg: str, reasons: list[str]) -> str:
+        if not reasons:
+            return user_msg
+        lines = "\n".join(f"- {reason}" for reason in reasons)
+        return (
+            user_msg
+            + "\n\nThe previous descriptions were rejected:\n"
+            + lines
+            + "\nFix only those problems. Do not add a count, a date, or a dollar amount."
+        )
+
+    def _describe_until_stored(user_msg: str) -> str | None:
+        reasons: list[str] = []
+        for attempt in range(_GATE_RETRIES + 1):
+            raw = _complete_summary(
                 client,
                 system=system,
-                user_msg=_user_message(
-                    inspection_type,
-                    is_complaint,
-                    outcome,
-                    dementia_contract,
-                    deficiency_count,
-                    record_date,
-                    narrative,
-                    deficiency_instruction,
-                ),
+                user_msg=_with_reasons(user_msg, reasons),
                 state_code=state_code,
                 holds_sdc=holds_sdc,
                 deficiency_count=deficiency_count,
                 narrative=narrative,
+            )
+            text, err = _gate(raw)
+            if text:
+                return text
+            if err is None or err in _NO_RETRY:
+                return None
+            reasons.append(err)
+            if attempt == _GATE_RETRIES:
+                print(f"    held: {err}")
+                return None
+        return None
+
+    if len(narrative) <= budget:
+        return _describe_until_stored(
+            _user_message(
+                inspection_type,
+                is_complaint,
+                outcome,
+                dementia_contract,
+                deficiency_count,
+                record_date,
+                narrative,
+                deficiency_instruction,
             )
         )
     # Long report: every character goes to some chunk. Code merges verbatim quotes,
@@ -820,24 +956,16 @@ def summarize(
     if not merged:
         print("    long report: no verbatim items survived the merge; no summary written")
         return None
-    return _finish(
-        _complete_summary(
-            client,
-            system=system,
-            user_msg=_user_message(
-                inspection_type,
-                is_complaint,
-                outcome,
-                dementia_contract,
-                deficiency_count,
-                record_date,
-                _MERGED_PREFIX + render_items(merged),
-                deficiency_instruction,
-            ),
-            state_code=state_code,
-            holds_sdc=holds_sdc,
-            deficiency_count=deficiency_count,
-            narrative=narrative,
+    return _describe_until_stored(
+        _user_message(
+            inspection_type,
+            is_complaint,
+            outcome,
+            dementia_contract,
+            deficiency_count,
+            record_date,
+            _MERGED_PREFIX + render_items(merged),
+            deficiency_instruction,
         )
     )
 
@@ -942,7 +1070,8 @@ def main() -> None:
                              COALESCE(i.total_deficiency_count, 0),
                              (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
                            ) AS def_count,
-                           i.inspection_date
+                           i.inspection_date,
+                           f.publishable
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -981,7 +1110,8 @@ def main() -> None:
                              COALESCE(i.total_deficiency_count, 0),
                              (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
                            ) AS def_count,
-                           i.inspection_date
+                           i.inspection_date,
+                           f.publishable
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -1021,6 +1151,7 @@ def main() -> None:
             holds_sdc,
             def_count,
             insp_date,
+            publishable,
         ) = row
         if not (raw_narrative or "").strip():
             return insp_id, fac_name, None, "empty"
@@ -1042,6 +1173,8 @@ def main() -> None:
             deficiency_count=int(def_count or 0),
             record_date=str(insp_date) if insp_date else None,
             inspection_id=str(insp_id),
+            published=bool(publishable),
+            facility=fac_name,
         )
         if not summary:
             return insp_id, fac_name, None, "fail"

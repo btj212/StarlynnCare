@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — A finding description is grounded in that finding, and a zero-citation line is fixed text
+
+**Decided:** Each model description must use words from that deficiency's own evidence. Minnesota evidence is the parsed narrative after "not met as evidenced by." Where that marker is missing, sentences that read as the rule are dropped; if nothing remains, the whole span is the evidence. "Six of six" may be omitted. "One of six" may not become an unscoped "staff files." Licensee and the licensing authority are different actors. A date in the header is kept only when it is the inspection row's date. MN-SUBST is not a deficiency. Oregon tags printed in the report are accepted when the deficiency table has none. A gate failure is sent back at most twice; then the row is held and nothing is stored. A published California, Minnesota, or Oregon visit with no deficiencies and a report that says so gets exactly "No deficiencies were cited at this visit." plus the code-built header, with no model call. Texas, a missing report, an unpublished report, and a stub page get no summary and no such line.
+
+**Rejected:** Porting the v6 whole-summary length and sentence caps onto a per-finding summary. Treating statute text before the not-met line as the finding. Writing "0 citations" or "clean record." Calling the model to invent a clean visit.
+
+**Source:** v8 pilot on PR 278. v6 check sites 309 and 314–317 are the dropped length and sentence rules.
+
+---
+
 ## 2026-11-27 — Colorado stores the event key, and a document URL still counts
 
 **Decided:** This corrects the same-day visit-id entry below. `inspections.source_event_id` for Colorado is `raw_data.co_event_key` (for example `23033N|035H13|AL18`), not `co_event_id`. One visit is split by rule set, so `co_event_id` is on two or three rows and the unique index `(source_agency, source_event_id)` rejects it. The backfill writes the key only where `source_event_id` is null, and it stops if that write would duplicate the pair. Illinois and Colorado also qualify on a date, a citation count (zero allowed), and an http(s) source URL, so the Colorado CMS nursing home with a link still passes. A visit id with no URL still passes for those two states. Every other state still needs the URL.
