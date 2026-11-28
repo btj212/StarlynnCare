@@ -16,6 +16,8 @@ Synonyms (description word -> a form that may appear in the span):
   seeing/saw/seen are one lemma. throughout matches "all over". near matches "along".
   present matches "observed". A short plural ("beds") matches the singular.
   Number words match the same digit in the span (one = 1, eighteen = 18).
+  "one hundred twenty" is 120, including next to F. "employee's" and "employees"
+  match "employee". "o'clock" is a time word. "First Aid" is not a person's name.
 
 A Title-Case pair is a person name only when neither word is a documented medical,
 program, or regulatory term: Cardio Pulmonary, Cardiopulmonary Resuscitation,
@@ -99,7 +101,7 @@ a an the of to and or in on for with by at from as is are was were be been being
 this that these those it its their his her they them he she we you your
 not no nor but if then than so do did does done have has had
 out up into over under about after before between during
-its also only per via evidenced
+its also only per via evidenced oclock
 """.split())
 
 _NUM = {
@@ -107,8 +109,15 @@ _NUM = {
     "seven": "7", "eight": "8", "nine": "9", "ten": "10", "eleven": "11",
     "twelve": "12", "thirteen": "13", "fourteen": "14", "fifteen": "15",
     "sixteen": "16", "seventeen": "17", "eighteen": "18", "nineteen": "19",
-    "twenty": "20", "twice": "2",
+    "twenty": "20", "thirty": "30", "forty": "40", "fifty": "50",
+    "sixty": "60", "seventy": "70", "eighty": "80", "ninety": "90",
+    "twice": "2",
 }
+_TENS = {
+    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
+    "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
+}
+_UNIT_WORDS = frozenset({"degree", "degrees", "fahrenheit"})
 _COUNT_WORDS = frozenset(_NUM) | {"all", "every", "none", "twice"}
 _SYNONYM = {
     "became": "turned",
@@ -170,12 +179,28 @@ def v6_site_counts() -> dict[str, int]:
 
 
 def stem(word: str) -> str:
-    w = word.lower().replace("'", "")
+    """"employee's", "employees", and "employee" share one stem.
+
+    The possessive is stripped first. A plural that is just a final "s"
+    (employees) is not an "es" plural (boxes).
+    """
+    w = word.lower()
+    if w.endswith("'s"):
+        w = w[:-2]
+    elif w.endswith("'"):
+        w = w[:-1]
+    else:
+        w = w.replace("'", "")
     if w in _LEMMA:
         return _LEMMA[w]
     if w in _IRREG:
         return _IRREG[w]
+    # "employees" is employee + s. "boxes" is still an "es" plural.
+    if w.endswith("ees") and len(w) >= 6:
+        return w[:-1]
     for suf in ("ly", "ing", "ed", "es", "s"):
+        if suf == "s" and w.endswith("ss"):
+            continue
         if len(w) >= len(suf) + 3 and w.endswith(suf):
             return w[: -len(suf)]
     return w
@@ -258,13 +283,116 @@ def _span_index(span: str) -> tuple[set[str], str]:
     return stems, flat.replace(" ", "")
 
 
+def _token_value(word: str) -> int | None:
+    """A spelled number, including a hyphenated tens-ones pair. Not 'hundred' alone."""
+    w = word.lower().replace("'", "")
+    if w == "twice":
+        return None
+    if w in _TENS:
+        return _TENS[w]
+    if w in _NUM and str(_NUM[w]).isdigit():
+        return int(_NUM[w])
+    if "-" in w:
+        left, right = w.split("-", 1)
+        if left in _TENS and right in _NUM and str(_NUM[right]).isdigit() and int(_NUM[right]) < 10:
+            return _TENS[left] + int(_NUM[right])
+    return None
+
+
+def spelled_number_phrases(text: str) -> list[dict]:
+    """'one hundred twenty degrees' is 120, not the words one and twenty.
+
+    'one forty-four' is 1 and 44. It is not 144: that would need 'hundred'.
+    """
+    tokens = list(re.finditer(r"[A-Za-z][A-Za-z'-]*", text or ""))
+    phrases: list[dict] = []
+    i = 0
+    while i < len(tokens):
+        if _token_value(tokens[i].group(0)) is None:
+            i += 1
+            continue
+        current = 0
+        words: list[str] = []
+        j = i
+        while j < len(tokens):
+            raw = tokens[j].group(0)
+            low = raw.lower().replace("'", "")
+            if low == "hundred":
+                current = (current or 1) * 100
+                words.append(raw)
+                j += 1
+                continue
+            value = _token_value(raw)
+            if value is None:
+                break
+            if current >= 100 and value < 100:
+                current += value
+                words.append(raw)
+                j += 1
+                continue
+            if current == 0:
+                current = value
+                words.append(raw)
+                j += 1
+                if j < len(tokens) and tokens[j].group(0).lower() == "hundred":
+                    continue
+                break
+            break
+        if not words:
+            i += 1
+            continue
+        units: list[str] = []
+        k = j
+        while k < len(tokens) and tokens[k].group(0).lower().replace("'", "") in _UNIT_WORDS:
+            units.append(tokens[k].group(0))
+            k += 1
+        phrases.append({
+            "value": current,
+            "words": [word.lower().replace("'", "") for word in words],
+            "units": [unit.lower().replace("'", "") for unit in units],
+            "text": " ".join(words),
+        })
+        i = k if units else j
+    return phrases
+
+
+def _value_in_text(value: int, evidence: str) -> bool:
+    return re.search(rf"(?<!\d){value}(?!\d)", evidence or "") is not None
+
+
+def _temperature_in_text(value: int, evidence: str) -> bool:
+    if re.search(rf"(?<!\d){value}\s*°?\s*F\b", evidence or "", re.I):
+        return True
+    if _value_in_text(value, evidence) and re.search(r"\bdegrees?\b|\bfahrenheit\b", evidence or "", re.I):
+        return True
+    return False
+
+
+def _phrase_matched(phrase: dict, evidence: str) -> bool:
+    if re.search(rf"\b{re.escape(phrase['text'])}\b", evidence or "", re.I):
+        return True
+    if not _value_in_text(phrase["value"], evidence):
+        return False
+    if phrase["units"] and not _temperature_in_text(phrase["value"], evidence):
+        # The number is in the span. The unit word is a separate tracing question.
+        return True
+    return True
+
+
 def untraced_words(description: str, evidence: str) -> list[str]:
     """Content words in the description that are not in this evidence."""
     stems, joined = _span_index(evidence)
     missing = []
+    traced: set[str] = set()
+    for phrase in spelled_number_phrases(description):
+        if not _phrase_matched(phrase, evidence):
+            continue
+        traced.update(phrase["words"])
+        if not phrase["units"] or _temperature_in_text(phrase["value"], evidence):
+            traced.update(phrase["units"])
     for raw in _tokens(description):
         word = raw.lower().replace("'", "")
-        if word in _STOP or len(word) < 3:
+        if word in traced or word in _STOP or len(word) < 3:
             continue
         if word in _NUM and re.search(rf"\b{_NUM[word]}\b", evidence or ""):
             continue
@@ -397,10 +525,20 @@ def check_deadline(description: str, evidence: str, inspection_date: str | None)
 
 
 def check_number_words(description: str, evidence: str) -> str | None:
+    """A spelled number holds only when that number is not in the span.
+
+    'one hundred twenty' is one number, 120. Its pieces are not checked again
+    as 'one' and 'twenty'. A number that is not in the span still holds.
+    """
     ev = evidence or ""
+    consumed: set[str] = set()
+    for phrase in spelled_number_phrases(description):
+        if not _phrase_matched(phrase, ev):
+            return f"count word '{phrase['text']}' is not in this finding"
+        consumed.update(phrase["words"])
     for word in _tokens(description):
         low = word.lower()
-        if low not in _COUNT_WORDS:
+        if low in consumed or low not in _COUNT_WORDS:
             continue
         if re.search(rf"\b{low}\b", ev, re.I):
             continue
@@ -542,7 +680,7 @@ _NOT_A_NAME = frozenset(
 # Both words must be on this list. A real first-and-last name is not.
 _NAME_OK = frozenset(
     "cardio pulmonary cardiopulmonary resuscitation adult protective long term "
-    "residential care elderly california assisted living".split()
+    "residential care elderly california assisted living first aid".split()
 )
 
 
@@ -557,7 +695,11 @@ def check_person_name(description: str, source: str, facility: str | None) -> st
             continue
         if first.lower() in fac or second.lower() in fac:
             continue
-        if re.search(rf"\b{first.lower()}\b", source or "") or re.search(rf"\b{second.lower()}\b", source or ""):
+        # The report's own words, in either case. "Residency Agreement" is a
+        # document. An inspector's name is still caught by check_inspector_name.
+        if re.search(rf"\b{first.lower()}\b", source or "", re.I) or re.search(
+            rf"\b{second.lower()}\b", source or "", re.I
+        ):
             continue
         return f"possible person name '{first} {second}'"
     return None
@@ -729,6 +871,86 @@ def split_substantiation(defs: list[dict] | None) -> tuple[list[str], list[dict]
     return tags, subst
 
 
+def _content_grams(text: str, size: int) -> set[tuple[str, ...]]:
+    words = [word.lower() for word in re.findall(r"[A-Za-z][A-Za-z'-]*", text or "")]
+    return {tuple(words[i:i + size]) for i in range(max(0, len(words) - size + 1))}
+
+
+_RULE_DUTY = re.compile(r"\b(must|shall)\b|\bSubd\.|§|\bThe licensee of\b", re.I)
+_OBSERVED = re.compile(
+    r"\b(failed to|was observed|were observed|were found|was found|measured|"
+    r"it was determined|citation is|cited for)\b",
+    re.I,
+)
+
+
+def _duty_sentence(sentence: str) -> bool:
+    """A statute or rule duty, not a finding that happens to name Title 22."""
+    if not sentence or not _RULE_DUTY.search(sentence):
+        return False
+    if _OBSERVED.search(sentence):
+        return False
+    return True
+
+
+def rule_as_finding(description: str, evidence: str, source: str) -> str | None:
+    """Rule or statute text presented as something the visit observed.
+
+    A 5-word run that is in a must/shall duty and not in the observation is the
+    rule, not the finding. A finding that quotes Title 22 is not that duty.
+    The reason names a word from that run so a statute leak such as
+    'ombudsman' is visible.
+    """
+    def _split(text: str) -> list[str]:
+        return [sentence for sentence in re.split(r"(?<=[.;])\s+", text or "") if sentence.strip()]
+
+    observation = " ".join(sentence for sentence in _split(evidence) if not _duty_sentence(sentence))
+    rule_bits: list[str] = []
+    for blob in (evidence or "", source or ""):
+        for sentence in _split(blob):
+            if _duty_sentence(sentence):
+                rule_bits.append(sentence)
+    rule_text = " ".join(rule_bits)
+    duty_four = _content_grams(rule_text, 4)
+    observed = _content_grams(observation, 4) - duty_four
+    # A separate sentence that states what was observed is the finding. Quoting
+    # the rule in front of that sentence is not a hold. One sentence that uses
+    # the rule's subject ("the licensee of a memory care community") in place of
+    # the observation is a hold, even if it also borrows a few finding words.
+    for sentence in _split(description):
+        grams = _content_grams(sentence, 4)
+        if (grams & observed) and not (grams & duty_four):
+            return None
+    overlap = _content_grams(description, 5) & _content_grams(" ".join(rule_bits), 5)
+    overlap -= _content_grams(observation, 5)
+    if len(overlap) < 2:
+        return None
+    named: list[str] = []
+    for gram in sorted(overlap):
+        for word in gram:
+            if word in _STOP or len(word) < 5 or word in named:
+                continue
+            named.append(word)
+    if named:
+        return "rule text presented as a finding: " + ", ".join(named)
+    return "rule text presented as a finding"
+
+
+def is_factual_hold(problem: str) -> bool:
+    """A wrong fact holds the row. Punctuation, markdown, and a novel word warn.
+
+    A count, a date, a visit type, a penalty, rule text used as a finding, an
+    invented fact or name, and banned wording stay holds. The message text is
+    the classifier: untraced words and missing punctuation are the warnings.
+    """
+    text = (problem or "").lower()
+    if text.startswith("untraced:"):
+        return False
+    if "punctuation" in text or text.startswith("markdown"):
+        return False
+    return True
+
+
 def ground_problems(
     description: str,
     evidence: str,
@@ -771,6 +993,7 @@ def ground_problems(
         lambda: check_the_state(description, source),
         lambda: check_arrival(description, evidence),
         lambda: check_attributed_count(description, evidence),
+        lambda: rule_as_finding(description, evidence, source),
     ):
         hit = fn()
         if hit:

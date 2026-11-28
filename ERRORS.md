@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — The v10 gate held true drafts and let two factual errors through
+
+**What went wrong:** "one hundred twenty degrees" was rejected against "120F" because the gate looked for the words one and twenty, not the number 120. "employee's" did not match "employee". An OAR cite in the tag was "tag not in the report" even when that visit's row states the rule. "First Aid" was read as a person's name, and "o'clock" as an untraced word. Three descriptions for two tagged rows were rejected even when two of them matched the rows. The header called a kitchen visit a "full survey" because that phrase sits in the rule "the Department shall conduct". A rule's subject ("The licensee of a memory care community") was stored as the finding. On a 25-finding report, one bad description held all 25. Two retries then stored a worse paraphrase.
+
+**What worked instead:** Match a spelled number to the same digits, and keep a hold only when that number is not in the span. One stem for the possessive and the plural. Map an OAR cite onto the single matching row. Warn on punctuation and on a novel non-factual word, and still store. Drop an extra description when the rest map one-to-one. Take the visit type from the body, and say "at this visit" when the body has none. One retry. If it still fails or it is worse, copy the regulator's first sentence for that finding. On a long report, do that per finding.
+
+**Source:** v10 pilot, first-draft gate 9 of 20. The stored factual errors were 4ffcda2c and aa7d1391. The false rejections were 5513a2cb, cf1559fe, a5623f2a, c1a62fce, and e08fd13f. cf1559fe's second draft still holds: it says "One" where finding 0660 says two of two.
+
+---
+
 ## 2026-11-28 — The v9 gate rejected six true drafts and called a complaint a survey
 
 **What went wrong:** The gate compared tags as exact strings, so "C 513" was not "C0513" and "800" was not "0800". A California cite such as section 87507 failed because that sentence is not a tag token. "Cardio Pulmonary" was read as a person's name. "determined" did not match "determination". The digit in LGBTQIA2S+ was read as a count. The zero line read SURVEY from the form header "DATE SURVEY AND PLAN OF CORRECTION" on a complaint that says "investigation of complaint". One 45-finding report came back with 9 tags. The default run also wrote to the database, and the gate never saw the stored deficiency rows.

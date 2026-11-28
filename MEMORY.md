@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — Only a factual miss holds a summary; style misses are warnings
+
+**Decided:** A row is held only for a wrong count, date, visit type, or penalty; rule or statute text presented as the finding; an invented fact, actor, qualifier, or person name; or banned wording. Punctuation, a run-on, length, and a novel non-factual word are warnings. The row still stores, and the warnings are written as JSONL when a log path is set. A spelled number matches the same digits ("one hundred twenty" is 120, including 120F). "employee's", "employees", and "employee" are one stem. An OAR cite in the tag is that row's code when exactly one stored row states the rule. "First Aid" is not a person name. "o'clock" is a time word. Extra descriptions are dropped when the ones that remain map one-to-one onto the D rows; three untagged descriptions for two rows still hold. The visit type comes from the report body, not from a rule, a statute, or a form header. If the body has no visit phrase, the issued line says "at this visit". A factual hold is sent back once. If the retry still holds, or it has more warnings, that finding is copied from the regulator's own first sentence. Above 20 findings the gate and the retry are per finding, so one bad finding does not drop the rest. `--dry-run` stays the default and does not call the model. `--write` is still required to save.
+
+**This narrows** the v9 rule that a gate failure is sent back twice and then nothing is stored, and the v10 rule that any untraced word rejects the row and that one bad long-path description holds every finding. A number that is not in the span still holds. Banned wording still holds.
+
+**Rejected:** Keeping the all-or-nothing long-path gate. Treating "one hundred twenty" as the separate words one and twenty. Inventing "full survey" from a rule that says the Department shall conduct one. Storing a garbled retry that is worse than the rejection.
+
+**Source:** v10 pilot on PR 278, 9 of 20 first drafts, two factual errors in stored drafts (4ffcda2c, aa7d1391). Owner decision: relax the standards so summaries ship.
+
+---
+
 ## 2026-11-28 — Tag shape is not a different tag, and a long visit is one call per finding
 
 **Decided:** Compare tags after removing spaces and leading zeros. "C 513" is "C0513". "800" is "0800". A different number still fails. A California regulation cite counts only when its section, and any subsection it states, is on a stored row for that visit. A blank California code is still a row. A digit inside a token such as LGBTQIA2S+ is allowed only when that exact token is in the finding. A count, a date, and a dollar sign are still rejected. Title-case medical and program phrases (Cardio Pulmonary, Adult Protective, Long Term, Residential Care, Assisted Living) are not person names. A real inspector name still fails. The zero line takes the visit type from the report body. "DATE SURVEY AND PLAN OF CORRECTION" is a form header. If the body has no visit phrase, the line says "at this visit" and names no type. `main()` does not write unless `--write` is passed, and it passes the deficiency rows into the gate. A visit with more than 20 findings gets one model call per finding, on that finding's own narrative. Haiku is $1.00 in and $5.00 out per million tokens. On the 45-finding report a call is about 1,500 input tokens and 80 output tokens, about $0.0019.

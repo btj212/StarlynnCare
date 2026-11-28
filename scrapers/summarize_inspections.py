@@ -46,9 +46,12 @@ from _extractive_merge import EXTRACT_SYSTEM_PROMPT, merge_items, parse_items, r
 from _summary_assemble import (
     assemble_summary,
     build_header,
+    description_problems,
     latest_assessed_penalty,
     parse_descriptions,
+    regulator_sentence,
 )
+from _summary_ground import evidence_text, is_factual_hold
 from mn_defs import tag_codes
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
@@ -682,6 +685,7 @@ def _stored_summary(
     is_complaint: bool = False,
     defs: list[dict] | None = None,
     facility: str | None = None,
+    notes: list[str] | None = None,
 ) -> tuple[str | None, str | None]:
     """Turn the model's JSON into a header plus gated descriptions.
 
@@ -719,6 +723,7 @@ def _stored_summary(
         outcome=outcome,
         facility=facility,
         defs=defs,
+        notes=notes,
     )
     if err or not text:
         print(f"    rejected summary: {err or 'nothing to store'}")
@@ -741,7 +746,7 @@ def _stored_summary(
     return text, None
 
 
-_GATE_RETRIES = 2
+_GATE_RETRIES = 1
 _NO_RETRY = {"nothing to store", "model did not return finding descriptions"}
 _ZERO_LINE = "No deficiencies were cited at this visit."
 # Above this many findings, one description call kept only a handful of tags
@@ -774,6 +779,94 @@ def _jobs_over_limit(narrative: str, defs: list[dict] | None) -> list[tuple[str,
     return jobs
 
 
+def append_warning_record(path: str | None, record: dict) -> None:
+    """One JSON object per stored row, so a dry-run log can show the warnings."""
+    line = json.dumps(record, ensure_ascii=False)
+    print(f"    warnings: {line}")
+    if not path:
+        return
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write(line + "\n")
+
+
+def _split_problems(problems: list[str]) -> tuple[list[str], list[str]]:
+    holds: list[str] = []
+    warns: list[str] = []
+    for problem in problems:
+        if is_factual_hold(problem):
+            holds.append(problem)
+        else:
+            warns.append(problem)
+    return holds, warns
+
+
+def _regulator_for_span(span: str, row: dict | None, state_code: str) -> str:
+    """Copy the regulator's sentence for one finding. California uses the deficiency text."""
+    state = (state_code or "").upper()
+    if state == "CA" and row and str(row.get("description") or "").strip():
+        return regulator_sentence(str(row["description"]), row=row)
+    if state == "MN":
+        evidence, _how = evidence_text(span)
+        return regulator_sentence(evidence or span, row=row)
+    return regulator_sentence(span, row=row)
+
+
+def _regulator_summary(
+    narrative: str,
+    *,
+    state_code: str,
+    defs: list[dict] | None,
+    d_tags: list[str] | None,
+    descriptions: list[dict] | None,
+    inspection_type: str | None,
+    inspection_date: str | None,
+    outcome: str | None,
+    followup_amount: str | None,
+    followup_letter_date: str | None,
+) -> str | None:
+    """Header plus the regulator's own wording, one sentence per finding."""
+    from _summary_ground import deficiency_rows, mn_evidence, tag_span
+
+    rows, _subst = deficiency_rows(defs)
+    sentences: list[str] = []
+    if rows:
+        for row in rows:
+            code = "" if row.get("code") is None else str(row.get("code")).strip()
+            span = (row.get("inspector_narrative") or "").strip()
+            if len(span) < 40:
+                span = (mn_evidence(narrative, code) or tag_span(narrative, code) or span)
+            sentences.append(_regulator_for_span(span, row, state_code))
+    else:
+        tags = [item.get("tag") for item in (descriptions or []) if item.get("tag")]
+        if not tags and d_tags:
+            tags = list(d_tags)
+        if not tags:
+            sentences.append(_regulator_for_span(narrative, None, state_code))
+        else:
+            for tag in tags:
+                span = mn_evidence(narrative, tag) or tag_span(narrative, tag) or narrative
+                sentences.append(_regulator_for_span(span, None, state_code))
+    sentences = [sentence for sentence in sentences if sentence]
+    if not sentences:
+        return None
+    if followup_amount and followup_letter_date:
+        penalty = None
+    else:
+        penalty = latest_assessed_penalty(narrative)
+    header = build_header(
+        state_code=state_code,
+        source=narrative,
+        finding_count=len(sentences),
+        penalty=penalty,
+        followup_amount=followup_amount,
+        followup_letter_date=followup_letter_date,
+        inspection_date=inspection_date,
+        inspection_type=inspection_type,
+        outcome=outcome,
+    )
+    return " ".join(part for part in (header, *sentences) if part and part.strip()).strip() or None
+
+
 def _describe_each_finding(
     client: anthropic.Anthropic,
     jobs: list[tuple[str, str]],
@@ -794,9 +887,56 @@ def _describe_each_finding(
     followup_letter_date: str | None,
     defs: list[dict] | None,
     facility: str | None,
+    warning_log: str | None = None,
+    inspection_id: str | None = None,
 ) -> str | None:
-    """One model call per finding, on that finding's own span, then one gate."""
-    collected: list[dict] = []
+    """One call per finding. A bad finding is retried once, then copied from the report.
+
+    The other findings are kept. One failure does not hold the row.
+    """
+    rows_by_code: dict[str, dict] = {}
+    for row in defs or []:
+        code = "" if row.get("code") is None else str(row.get("code")).strip()
+        if code:
+            rows_by_code[code] = row
+    pieces: list[str] = []
+    warnings: list[str] = []
+
+    def _grade(description: str, span: str) -> tuple[list[str], list[str]]:
+        if (state_code or "").upper() == "MN":
+            evidence, how = evidence_text(span)
+        else:
+            evidence, how = span, "tag span"
+        problems = description_problems(
+            description,
+            narrative,
+            state_code,
+            evidence=evidence or span,
+            how=how,
+            inspection_date=record_date,
+            inspection_type=inspection_type,
+            defs=defs,
+            facility=facility,
+        )
+        return _split_problems(problems)
+
+    def _one_call(user_msg: str, span: str) -> tuple[str, list[str], list[str]]:
+        raw = _complete_summary(
+            client,
+            system=system,
+            user_msg=user_msg,
+            state_code=state_code,
+            holds_sdc=holds_sdc,
+            deficiency_count=1,
+            narrative=span,
+        )
+        parsed = parse_descriptions(raw or "")
+        if not parsed:
+            return "", ["model did not return finding descriptions"], []
+        description = parsed[0]["description"]
+        holds, warns = _grade(description, span)
+        return description, holds, warns
+
     for code, span in jobs:
         user = _user_message(
             inspection_type,
@@ -809,44 +949,45 @@ def _describe_each_finding(
             deficiency_instruction,
         )
         user = user + "\n\nThis call covers one finding only. Tag: " + code + ". Reply with a JSON list of one object."
-        parsed = None
-        for _attempt in range(_GATE_RETRIES + 1):
-            raw = _complete_summary(
-                client,
-                system=system,
-                user_msg=user,
-                state_code=state_code,
-                holds_sdc=holds_sdc,
-                deficiency_count=1,
-                narrative=span,
+        description, holds, warns = _one_call(user, span)
+        if holds:
+            reason = holds[0]
+            again, holds2, warns2 = _one_call(
+                user + "\n\nThe previous description was rejected:\n- " + reason
+                + "\nFix only that problem. Do not add a count, a date, or a dollar amount.",
+                span,
             )
-            parsed = parse_descriptions(raw or "")
-            if parsed:
-                break
-        if not parsed:
-            print("    held: model did not return finding descriptions")
-            return None
-        collected.append({"tag": code, "description": parsed[0]["description"]})
-    text, err = _stored_summary(
-        json.dumps(collected),
-        narrative,
+            if again and not holds2 and len(warns2) <= len(warns):
+                description, warns = again, warns2
+            else:
+                description = _regulator_for_span(span, rows_by_code.get(code), state_code)
+                warns = [f"fallback to regulator wording: {code}"]
+                print(f"    fallback: {code}: {holds2[0] if holds2 else reason}")
+        if description:
+            pieces.append(description)
+        warnings.extend(warns)
+    if not pieces:
+        print("    held: nothing to store")
+        return None
+    if followup_amount and followup_letter_date:
+        penalty = None
+    else:
+        penalty = latest_assessed_penalty(narrative)
+    header = build_header(
         state_code=state_code,
-        holds_sdc=holds_sdc,
-        deficiency_count=deficiency_count,
-        d_tags=d_tags,
+        source=narrative,
+        finding_count=len(pieces),
+        penalty=penalty,
         followup_amount=followup_amount,
         followup_letter_date=followup_letter_date,
-        inspection_type=inspection_type,
         inspection_date=record_date,
+        inspection_type=inspection_type,
         outcome=outcome,
-        is_complaint=is_complaint,
-        defs=defs,
-        facility=facility,
     )
-    if text:
-        return text
-    print(f"    held: {err}")
-    return None
+    text = " ".join(part for part in (header, *pieces) if part and part.strip()).strip()
+    if warnings:
+        append_warning_record(warning_log, {"id": inspection_id, "warnings": warnings})
+    return text or None
 
 
 def _is_stub_or_error(narrative: str) -> bool:
@@ -919,6 +1060,7 @@ def summarize(
     published: bool = False,
     defs: list[dict] | None = None,
     facility: str | None = None,
+    warning_log: str | None = None,
 ) -> str | None:
     if not (narrative or "").strip():
         return None
@@ -995,9 +1137,11 @@ def summarize(
             followup_letter_date=followup_letter_date,
             defs=defs,
             facility=facility,
+            warning_log=warning_log,
+            inspection_id=inspection_id,
         )
 
-    def _gate(raw: str | None) -> tuple[str | None, str | None]:
+    def _gate(raw: str | None, notes: list[str]) -> tuple[str | None, str | None]:
         if not raw:
             return None, None
         return _stored_summary(
@@ -1015,6 +1159,7 @@ def summarize(
             is_complaint=is_complaint,
             defs=defs,
             facility=facility,
+            notes=notes,
         )
 
     def _with_reasons(user_msg: str, reasons: list[str]) -> str:
@@ -1029,8 +1174,9 @@ def summarize(
         )
 
     def _describe_until_stored(user_msg: str) -> str | None:
-        reasons: list[str] = []
-        for attempt in range(_GATE_RETRIES + 1):
+        """One retry after a factual hold. A worse retry is replaced by the report's words."""
+
+        def _attempt(reasons: list[str]) -> tuple[str | None, str | None, list[str], list[dict] | None]:
             raw = _complete_summary(
                 client,
                 system=system,
@@ -1040,16 +1186,44 @@ def summarize(
                 deficiency_count=deficiency_count,
                 narrative=narrative,
             )
-            text, err = _gate(raw)
-            if text:
-                return text
-            if err is None or err in _NO_RETRY:
-                return None
-            reasons.append(err)
-            if attempt == _GATE_RETRIES:
-                print(f"    held: {err}")
-                return None
-        return None
+            parsed = parse_descriptions(raw or "")
+            notes: list[str] = []
+            text, err = _gate(raw, notes)
+            return text, err, notes, parsed
+
+        text, err, notes, parsed = _attempt([])
+        if not parsed or err in _NO_RETRY:
+            return None
+        if text and not err:
+            if notes:
+                append_warning_record(warning_log, {"id": inspection_id, "warnings": notes})
+            return text
+        text2, err2, notes2, parsed2 = _attempt([err or "rejected"])
+        if text2 and not err2 and len(notes2) <= len(notes):
+            if notes2:
+                append_warning_record(warning_log, {"id": inspection_id, "warnings": notes2})
+            return text2
+        fallback = _regulator_summary(
+            narrative,
+            state_code=state_code,
+            defs=defs,
+            d_tags=d_tags,
+            descriptions=parsed2 or parsed,
+            inspection_type=inspection_type,
+            inspection_date=record_date,
+            outcome=outcome,
+            followup_amount=followup_amount,
+            followup_letter_date=followup_letter_date,
+        )
+        if not fallback:
+            print(f"    held: {err2 or err}")
+            return None
+        print(f"    fallback: {err2 or err}")
+        append_warning_record(
+            warning_log,
+            {"id": inspection_id, "warnings": ["fallback to regulator wording"]},
+        )
+        return fallback
 
     if len(narrative) <= budget:
         return _describe_until_stored(

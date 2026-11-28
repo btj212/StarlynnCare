@@ -475,7 +475,13 @@ def test_description_gate() -> None:
         "penalty": None,
     }
 
-    def run(description: str, tags: list[dict] | None = None, count: int = 1, d_tags: list[str] | None = None):
+    def run(
+        description: str,
+        tags: list[dict] | None = None,
+        count: int = 1,
+        d_tags: list[str] | None = None,
+        notes: list[str] | None = None,
+    ):
         payload = tags if tags is not None else [{"tag": "0510", "description": description}]
         text, err = asm.assemble_summary(
             state_code="MN",
@@ -484,6 +490,7 @@ def test_description_gate() -> None:
             d_tags=["0510"] if d_tags is None else d_tags,
             finding_count=count,
             penalty=None,
+            notes=notes,
         )
         return text, err
 
@@ -500,6 +507,8 @@ def test_description_gate() -> None:
     assert "resident or staff identifier" in asm.description_problems("Resident #2 missed a meal.", source, "MN")
     assert run("This was a licensing survey.")[0] is None
     assert run("The licensee failed to post the hours.", count=2)[0] is None
+    # An extra tag that matches no row is dropped. The matching sentence stores.
+    extra_notes: list[str] = []
     extra, extra_err = run(
         "",
         tags=[
@@ -507,10 +516,15 @@ def test_description_gate() -> None:
             {"tag": "0999", "description": "The licensee failed to keep a log."},
         ],
         count=1,
+        notes=extra_notes,
     )
-    assert extra is None and extra_err
+    assert extra_err is None and extra and "post the hours" in extra
+    assert "keep a log" not in extra
+    assert any("dropped extra" in note for note in extra_notes)
     missing, missing_err = run("", tags=[], count=1)
     assert missing is None and missing_err
+    # A second sentence for the same row is the extra. The first one stores.
+    dup_notes: list[str] = []
     dup, dup_err = run(
         "",
         tags=[
@@ -518,8 +532,11 @@ def test_description_gate() -> None:
             {"tag": "0510", "description": "The licensee failed to post the hours again."},
         ],
         count=1,
+        notes=dup_notes,
     )
-    assert dup is None and dup_err
+    assert dup_err is None and dup and "post the hours." in dup
+    assert "again" not in dup
+    assert any("dropped extra" in note for note in dup_notes)
     del base
 
 
@@ -532,7 +549,7 @@ def _json_client(payload: str) -> types.SimpleNamespace:
 
 
 def test_mocked_model_bad_description_stores_nothing() -> None:
-    """A digit, an extra tag, or a missing tag returns nothing. A clean reply is stored."""
+    """A wrong count falls back to the report. An extra tag is dropped. An empty reply stores nothing."""
     source = (
         "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
         "0510 not met as evidenced by the licensee failed to post the hours."
@@ -554,11 +571,13 @@ def test_mocked_model_bad_description_stores_nothing() -> None:
     assert "March 10, 2024" in good
     assert "$" not in good
     assert "licensing survey" not in good.lower()
-    assert run(json.dumps([{"tag": "0510", "description": "The licensee failed to post 3 hours."}])) is None
-    assert run(json.dumps([
+    digit = run(json.dumps([{"tag": "0510", "description": "The licensee failed to post 3 hours."}]))
+    assert digit and "post the hours" in digit and "3 hours" not in digit
+    extra = run(json.dumps([
         {"tag": "0510", "description": "The licensee failed to post the hours."},
         {"tag": "0999", "description": "The licensee failed to keep a log."},
-    ])) is None
+    ]))
+    assert extra and "post the hours" in extra and "keep a log" not in extra
     assert run(json.dumps([])) is None
 
 
@@ -617,6 +636,7 @@ def _gate(row: dict, descriptions: list[dict], **kwargs):
         inspection_type=row.get("inspection_type"),
         defs=kwargs.pop("defs", None),
         facility=row.get("facility"),
+        notes=kwargs.pop("notes", None),
     )
 
 
@@ -641,7 +661,9 @@ def test_grounding_catches_the_pilot_errors() -> None:
     ]
     text, err = _gate(fdd, bad_fdd)
     assert text is None
-    assert err and "punctuation" in err
+    # Missing punctuation only warns. The row still holds because "staff files"
+    # widens "one out of six".
+    assert err and "one out of six" in err
     evidence, _how = asm._evidence_for(fdd["narrative"], None, [])
     tb_problems = asm.description_problems(
         bad_fdd[1]["description"], fdd["narrative"], "CA",
@@ -811,7 +833,7 @@ def test_oregon_tags_and_minnesota_substantiation() -> None:
 
 
 def test_rejection_retry_then_hold() -> None:
-    """A gate failure is sent back once. A row that still fails is held and nothing is stored."""
+    """A factual hold is sent back once. If the retry still fails, the report's sentence is stored."""
     import io
     from contextlib import redirect_stdout
 
@@ -857,10 +879,10 @@ def test_rejection_retry_then_hold() -> None:
             types.SimpleNamespace(messages=bad), "survey", False, None, source,
             state_code="MN", deficiency_count=1, d_tags=["0510"], record_date="2024-03-10",
         )
-    assert held is None
-    assert len(bad.calls) == 3
-    assert "held:" in buf.getvalue()
-    assert "digit or dollar sign" in bad.calls[2]["messages"][0]["content"]
+    assert held and "post the hours" in held and "3 hours" not in held
+    assert len(bad.calls) == 2
+    assert "fallback:" in buf.getvalue()
+    assert "digit or dollar sign" in bad.calls[1]["messages"][0]["content"]
 
 
 def test_forced_chunk_merge_on_long_row() -> None:
@@ -1223,6 +1245,200 @@ def test_header_omits_a_date_that_disagrees() -> None:
         state_code="MN", source=source, finding_count=1, penalty=None, inspection_date="2024-08-07",
     )
     assert "August 7, 2024" in kept
+
+
+def _v10(prefix: str) -> dict:
+    if not hasattr(_v10, "rows"):
+        _v10.rows = json.loads((ROOT / "scripts" / "testdata" / "pilot_rows_v10.json").read_text())
+    return next(row for row in _v10.rows if row["id"].startswith(prefix))
+
+
+def _v10_descriptions(prefix: str, index: int = 0) -> list[dict]:
+    if not hasattr(_v10_descriptions, "drafts"):
+        _v10_descriptions.drafts = json.loads(
+            (ROOT / "scripts" / "testdata" / "pilot_drafts_v10.json").read_text()
+        )
+    parsed = asm.parse_descriptions(_v10_descriptions.drafts[prefix][index])
+    assert parsed, prefix
+    return parsed
+
+
+def test_v11_false_rejections_store_and_factual_misses_hold() -> None:
+    """A spelled number, a possessive, an OAR cite, and an extra tag now store.
+
+    A number that is not in the finding still holds. cf1559fe's second draft
+    still holds because it says "One" where finding 0660 says two of two.
+    Three untagged descriptions for two rows (c2add82e) still hold.
+    """
+    from _summary_ground import stem
+
+    assert stem("employee's") == stem("employees") == stem("employee")
+
+    hot = _v10("5513a2cb")
+    notes: list[str] = []
+    text, err = _gate(hot, _v10_descriptions("5513a2cb", 0), defs=hot["defs"], notes=notes)
+    assert err is None and text and "one hundred twenty" in text and "Fahrenheit" in text
+    missed, missed_err = asm.assemble_summary(
+        state_code="CA",
+        source="Multiple taps observed to provide water above 98F.",
+        descriptions=[{"tag": None, "description": "Multiple taps observed to provide water above one hundred twenty degrees Fahrenheit."}],
+        d_tags=None,
+        finding_count=1,
+        penalty=None,
+    )
+    assert missed is None and missed_err and "one hundred twenty" in missed_err
+
+    staff = _v10("cf1559fe")
+    draft0, draft0_err = _gate(staff, _v10_descriptions("cf1559fe", 0), defs=staff["defs"])
+    assert draft0 is None and draft0_err
+    second = _v10_descriptions("cf1559fe", 1)
+    one_row = [item for item in staff["defs"] if str(item.get("code")) == "0650"]
+    kept, kept_err = _gate(
+        staff, [second[0]], defs=one_row, finding_count=1, d_tags=["0650"],
+    )
+    assert kept_err is None and kept and "employee" in kept
+    whole, whole_err = _gate(staff, second, defs=staff["defs"])
+    assert whole is None and whole_err and "One" in whole_err
+
+    owner = _v10("a5623f2a")
+    fired, fired_err = _gate(owner, _v10_descriptions("a5623f2a", 0), defs=owner["defs"])
+    assert fired_err is None and fired and "fire drills" in fired
+
+    home = _v10("c1a62fce")
+    first, first_err = _gate(home, _v10_descriptions("c1a62fce", 0), penalty=None)
+    assert first_err is None and first and "First Aid" in first
+    assert "dinner at evening" not in first and "at morning" not in first
+    clock, clock_err = asm.assemble_summary(
+        state_code="OR",
+        source="Dinner was listed as 5:00 pm and Breakfast at 8:00 am.",
+        descriptions=[{"tag": None, "description": "Dinner was listed at five o'clock and breakfast at eight o'clock."}],
+        d_tags=None,
+        finding_count=1,
+        penalty=None,
+    )
+    assert clock_err is None and clock and "five o'clock" in clock
+
+    plans = _v10("e08fd13f")
+    extra_notes: list[str] = []
+    kept_plans, plans_err = _gate(
+        plans, _v10_descriptions("e08fd13f", 0), penalty=None, notes=extra_notes,
+    )
+    assert plans_err is None and kept_plans
+    assert "has not been rewritten" not in kept_plans
+    assert any("dropped extra" in note for note in extra_notes)
+
+    kitchen = _v10("4ffcda2c")
+    visit, visit_err = _gate(kitchen, _v10_descriptions("4ffcda2c", 0), defs=kitchen["defs"])
+    assert visit_err is None and visit
+    assert "full survey" not in visit.lower()
+    assert "at this visit" in visit
+
+    memory = _v10("aa7d1391")
+    rule, rule_err = _gate(memory, _v10_descriptions("aa7d1391", 0), penalty=None)
+    assert rule is None and rule_err and "licensee" in rule_err
+
+
+def test_v11_retry_falls_back_per_finding_and_warnings_are_logged() -> None:
+    """One bad finding is retried once, then copied from the report. Warnings are JSONL."""
+    import tempfile
+
+    home = _v10("c1a62fce")
+    garbled = _v10_descriptions("c1a62fce", 2)
+    garbled[1] = {
+        "tag": garbled[1]["tag"],
+        "description": "Meal times were ninety hours apart, with dinner at evening and breakfast at morning.",
+    }
+
+    class _Worse:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def create(self, **kw):
+            self.calls += 1
+            if self.calls == 1:
+                text = json.dumps([{
+                    "tag": "V6214",
+                    "description": "Meal times were 3 hours apart.",
+                }])
+            else:
+                text = json.dumps(garbled)
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text=text)])
+
+    client = _Worse()
+    stored = si.summarize(
+        types.SimpleNamespace(messages=client),
+        home["inspection_type"],
+        False,
+        None,
+        home["narrative"],
+        state_code=home["state"],
+        deficiency_count=home["tdc"],
+        record_date=str(home["inspection_date"]),
+        facility=home.get("facility"),
+    )
+    assert client.calls == 2
+    assert stored and "dinner at evening" not in stored
+    assert "CPR and certification" not in stored
+    assert "5:00" in stored or "First Aid" in stored
+
+    long_row = _v10("b70b2853")
+    calls: list[dict] = []
+
+    class _Each:
+        def create(self, **kw):
+            calls.append(kw)
+            user = kw["messages"][0]["content"]
+            if "Tag: 01060" in user:
+                sentence = "The reading was one forty-four G point fifty-four."
+            else:
+                sentence = "The observation was recorded."
+            return types.SimpleNamespace(content=[types.SimpleNamespace(
+                text=json.dumps([{"tag": None, "description": sentence}])
+            )])
+
+    out = si.summarize(
+        types.SimpleNamespace(messages=_Each()),
+        long_row["inspection_type"],
+        bool(long_row["is_complaint"]),
+        long_row.get("outcome"),
+        long_row["narrative"],
+        state_code=long_row["state"],
+        deficiency_count=long_row["tdc"],
+        record_date=str(long_row["inspection_date"]),
+        defs=long_row["defs"],
+        facility=long_row.get("facility"),
+    )
+    assert out and "forty-four" not in out.lower()
+    assert out.count("The observation was recorded.") == 24
+    assert "25 correction orders" in out
+    assert len(calls) == 26
+
+    source = (
+        "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+        "0510 not met as evidenced by the licensee failed to post the hours."
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = f"{tmp}/warnings.jsonl"
+        summary = si.summarize(
+            _json_client(json.dumps([{
+                "tag": "0510",
+                "description": "The licensee failed to post the hours",
+            }])),
+            "survey",
+            False,
+            None,
+            source,
+            state_code="MN",
+            deficiency_count=1,
+            d_tags=["0510"],
+            record_date="2024-03-10",
+            inspection_id="row-1",
+            warning_log=path,
+        )
+        assert summary and "post the hours" in summary
+        line = json.loads(open(path).read().strip().splitlines()[-1])
+        assert line["id"] == "row-1"
+        assert any("punctuation" in warning for warning in line["warnings"])
 
 
 if __name__ == "__main__":

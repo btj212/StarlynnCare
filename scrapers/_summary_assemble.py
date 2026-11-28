@@ -14,10 +14,12 @@ import re
 
 from _extractive_merge import norm_tag, tag_key, tag_pattern
 from _summary_ground import (
+    _RULE_SENT,
     check_outcome,
     deficiency_rows,
     ground_problems,
     header_date_allowed,
+    is_factual_hold,
     mn_evidence,
     tag_span,
 )
@@ -126,16 +128,53 @@ _FORM_HEADER = re.compile(
 )
 
 
-def visit_type_as_written(text: str, inspection_type: str | None = None) -> str | None:
-    """The report body's own visit wording. A form header is not the visit.
+def _visit_body(text: str) -> str:
+    """Report wording, without form headers or rule and statute sentences.
 
-    "DATE SURVEY AND PLAN OF CORRECTION" is a form label. "Initiated an investigation
-    of complaint" is a complaint investigation. When the body has no visit phrase,
-    the result is None and the zero line does not name a type.
+    A rule can say 'full survey' ('does not have a full survey, the Department
+    shall conduct'). That is not the visit. A sentence that says the agency
+    completed, conducted, or initiated the visit is kept.
     """
     body = _FORM_HEADER.sub(" ", text or "")
-    if re.search(r"\b(?:investigation of complaint|complaint investigation)\b", body, re.I):
+    kept = []
+    for sentence in re.split(r"(?<=[.;])\s+", body):
+        if not sentence:
+            continue
+        announced = re.search(
+            r"\b(completed|conducted|initiated)\b.{0,60}\b(survey|investigation|re-?licens)",
+            sentence,
+            re.I,
+        )
+        if _RULE_SENT.search(sentence) and not announced:
+            continue
+        kept.append(sentence)
+    return " ".join(kept)
+
+
+def _phrase_hit(phrase: str, body: str) -> str | None:
+    for match in re.finditer(r"\b" + phrase + r"\b", body, re.I):
+        if phrase.lower() == "survey":
+            tail = body[match.end(): match.end() + 12]
+            if re.match(r"\s+plan\b", tail, re.I):
+                continue
+        return match.group(0)
+    return None
+
+
+def visit_type_as_written(text: str, inspection_type: str | None = None) -> str | None:
+    """The report body's own visit wording. A form header or a rule is not the visit.
+
+    "DATE SURVEY AND PLAN OF CORRECTION" is a form label. "Initiated an investigation
+    of complaint" is a complaint investigation. "kitchen survey plan of correction"
+    is not a visit type. When the body has no visit phrase, the result is None and
+    the issued line says "at this visit".
+    """
+    # The complaint phrase is the visit even when the form's "must" sits in the
+    # same undivided block. Rule text is dropped only for the other phrases.
+    opened = _FORM_HEADER.sub(" ", text or "")
+    if re.search(r"\b(?:investigation of complaint|complaint investigation)\b", opened, re.I):
         return "complaint investigation"
+    body = _visit_body(text)
     kind = (inspection_type or "").lower()
     preferred = []
     if "re-licen" in kind or "relicen" in kind:
@@ -145,13 +184,13 @@ def visit_type_as_written(text: str, inspection_type: str | None = None) -> str 
     if "complaint" in kind:
         preferred.append(r"complaint investigation")
     for hint in preferred:
-        match = re.search(r"\b" + hint + r"\b", body, re.I)
-        if match:
-            return match.group(0)
+        hit = _phrase_hit(hint, body)
+        if hit:
+            return hit
     for phrase in _VISIT_PHRASES:
-        match = re.search(r"\b" + re.escape(phrase) + r"\b", body, re.I)
-        if match:
-            return match.group(0)
+        hit = _phrase_hit(re.escape(phrase), body)
+        if hit:
+            return hit
     return None
 
 
@@ -276,7 +315,11 @@ def build_header(
     elif agency and visit:
         sentences.append(f"{_cap(agency)} completed a {visit}.")
     if finding_count > 0 and agency:
-        issued = f"issued {finding_count} {_plural(noun, finding_count)}."
+        issued = f"issued {finding_count} {_plural(noun, finding_count)}"
+        # No visit phrase in the report body. Do not borrow one from a rule.
+        if not visit:
+            issued += " at this visit"
+        issued += "."
         if sentences:
             sentences.append(f"It {issued}")
         else:
@@ -419,11 +462,24 @@ def description_problems(
     return problems
 
 
-def _evidence_for(source: str, tag: str | None, tags: list[str]) -> tuple[str, str]:
+def _evidence_for(
+    source: str,
+    tag: str | None,
+    tags: list[str],
+    rows: list[dict] | None = None,
+) -> tuple[str, str]:
     narr = mn_evidence(source, tag) if tag else None
     if narr:
         return narr, "MN finding narrative after the not-met marker"
     span = tag_span(source, tag, tags) if tag else None
+    if rows and tag and (span is None or len(span) < 40):
+        from _extractive_merge import tag_key as _key
+        for row in rows:
+            if _key(row.get("code")) != _key(tag):
+                continue
+            stored = (row.get("inspector_narrative") or "").strip()
+            if len(stored) >= 40:
+                return stored, "deficiency narrative"
     if span is None:
         return source or "", "whole report; this description has no tag boundary"
     # The tag block is the finding. Oregon prints the rule and the observation in
@@ -471,6 +527,157 @@ def _tag_in_source(tag: str, source: str) -> bool:
     return re.search(pattern, source or "", re.I) is not None
 
 
+def _oar_code(tag: str | None, rows: list[dict]) -> str | None:
+    """An OAR cite in the tag is that row's code when exactly one row states it.
+
+    norm_tag drops the hyphens, so 'OAR 411-054-0090' becomes the digits
+    4110540090. The row description still contains that rule number.
+    """
+    compact = norm_tag(tag) or ""
+    match = re.search(r"OAR(\d{10})", compact)
+    if not match:
+        return None
+    digits = match.group(1)
+    hits: list[str] = []
+    for row in rows:
+        blob = re.sub(
+            r"[\s\-]",
+            "",
+            " ".join(str(row.get(key) or "") for key in ("code", "description", "inspector_narrative")),
+        ).upper()
+        if digits in blob:
+            code = "" if row.get("code") is None else str(row.get("code")).strip()
+            if code and code not in hits:
+                hits.append(code)
+    if len(hits) == 1:
+        return hits[0]
+    return None
+
+
+def _fit_descriptions(
+    descriptions: list[dict],
+    wanted: list[str] | None,
+    rows: list[dict],
+) -> tuple[list[dict] | None, str | None, str | None]:
+    """Keep one description per D row. Drop extras that do not map.
+
+    A tag, or an OAR cite that matches one row, claims that row. A second
+    description for the same row is dropped. Null tags fill leftover rows
+    only when their count equals the holes. Three untagged descriptions for
+    two rows cannot be mapped, so the row holds.
+    Returns (items, drop warning, error).
+    """
+    if wanted is None:
+        return descriptions, None, None
+    wanted_keys = [tag_key(tag) for tag in wanted]
+    buckets: dict[str, list[dict]] = {key: [] for key in wanted_keys if key}
+    unmatched: list[dict] = []
+    nulls: list[dict] = []
+    for item in descriptions:
+        tag = item.get("tag")
+        if not tag:
+            nulls.append(item)
+            continue
+        key = tag_key(tag)
+        if key not in buckets:
+            code = _oar_code(tag, rows)
+            mapped = tag_key(code) if code else None
+            if mapped in buckets:
+                key = mapped
+                item = {**item, "tag": norm_tag(code)}
+            else:
+                unmatched.append(item)
+                continue
+        buckets[key].append(item)
+    chosen: list[dict | None] = []
+    holes: list[int] = []
+    dropped = 0
+    for key in wanted_keys:
+        group = buckets.get(key) or []
+        if group:
+            chosen.append(group[0])
+            dropped += len(group) - 1
+        else:
+            holes.append(len(chosen))
+            chosen.append(None)
+    if len(nulls) != len(holes):
+        if not holes and (nulls or unmatched or dropped):
+            dropped += len(nulls) + len(unmatched)
+        else:
+            return None, None, "description count does not match D rows"
+    else:
+        for slot, item in zip(holes, nulls):
+            chosen[slot] = item
+        dropped += len(unmatched)
+    if any(item is None for item in chosen):
+        return None, None, "description count does not match D rows"
+    warning = "dropped extra description" if dropped else None
+    return [item for item in chosen if item is not None], warning, None
+
+
+def _collapse_extra_tags(
+    descriptions: list[dict],
+    finding_count: int,
+) -> tuple[list[dict] | None, str | None, str | None]:
+    """No D-row table: keep the first description of each report tag.
+
+    Untagged extras are dropped only when the tagged ones already cover every
+    row. All-null extras do not map onto rows, so they hold.
+    """
+    if len(descriptions) == finding_count:
+        return descriptions, None, None
+    if len(descriptions) < finding_count:
+        return None, None, "description count does not match D rows"
+    order: list[str] = []
+    by_tag: dict[str, dict] = {}
+    nulls: list[dict] = []
+    dropped = 0
+    for item in descriptions:
+        tag = item.get("tag")
+        if not tag:
+            nulls.append(item)
+            continue
+        key = tag_key(tag) or tag
+        if key in by_tag:
+            dropped += 1
+            continue
+        by_tag[key] = item
+        order.append(key)
+    kept = [by_tag[key] for key in order]
+    if len(kept) == finding_count:
+        return kept, "dropped extra description", None
+    if len(kept) < finding_count and len(nulls) == finding_count - len(kept):
+        warning = "dropped extra description" if dropped else None
+        return kept + nulls, warning, None
+    return None, None, "description count does not match D rows"
+
+
+def regulator_sentence(text: str, *, row: dict | None = None) -> str:
+    """The regulator's own first sentence. Not a paraphrase, and not cut mid-word.
+
+    Rule sentences are skipped so an Oregon block yields the observation.
+    When no sentence boundary is present, the stored deficiency description
+    is copied as written.
+    """
+    cleaned = re.sub(r"\s+", " ", text or "").strip()
+    kept: list[str] = []
+    for sentence in re.split(r"(?<=[.;])\s+", cleaned):
+        if sentence and not _RULE_SENT.search(sentence):
+            kept.append(sentence.strip())
+    blob = " ".join(kept).strip()
+    match = re.match(r"^(.+?[.!?])(?:\s|$)", blob)
+    if match:
+        sentence = match.group(1).strip()
+        if sentence[-1:] not in ".!?":
+            sentence += "."
+        return sentence
+    if row and str(row.get("description") or "").strip():
+        return re.sub(r"\s+", " ", str(row["description"])).strip()
+    if cleaned and cleaned[-1:] not in ".!?":
+        return cleaned + "."
+    return cleaned
+
+
 def assemble_summary(
     *,
     state_code: str,
@@ -486,10 +693,12 @@ def assemble_summary(
     outcome: str | None = None,
     facility: str | None = None,
     defs: list[dict] | None = None,
+    notes: list[str] | None = None,
 ) -> tuple[str | None, str | None]:
     """Header plus one description per deficiency row, in row order.
 
-    Returns (summary, error). error is set when nothing may be stored.
+    Returns (summary, error). error is set when a fact is wrong. A style miss
+    is appended to notes and the row still stores.
 
     When d_tags is None the report's own tags are accepted (Oregon rows often have
     no deficiency-table tags). A tag still has to appear in the report, or be null,
@@ -497,6 +706,8 @@ def assemble_summary(
     """
     real_defs = defs
     cite_rows: list[dict] | None = None
+    plain_rows: list[dict] = []
+    style: list[str] = []
     if defs:
         rows, _subst = deficiency_rows(defs)
         if rows or _subst:
@@ -504,38 +715,37 @@ def assemble_summary(
             codes = ["" if row.get("code") is None else str(row.get("code")).strip() for row in rows]
             if rows and all(_plain_tag(code) for code in codes):
                 d_tags = codes
+                plain_rows = rows
             else:
                 # A blank California code is still a row. A regulation cite is not a tag key.
                 d_tags = None
                 cite_rows = rows
+    if not descriptions:
+        return None, "model did not return finding descriptions"
     if d_tags is not None:
         wanted = [norm_tag(tag) for tag in d_tags]
         if any(tag is None for tag in wanted):
             return None, "D-row tag missing"
         if len(wanted) != finding_count:
             return None, "D-row count does not match the record count"
-        if len(descriptions) != len(wanted):
-            return None, "description count does not match D rows"
         wanted_keys = [tag_key(tag) for tag in wanted]
         if any(key is None for key in wanted_keys) or len(wanted_keys) != len(set(wanted_keys)):
             return None, "duplicate tag"
-        used: list[str | None] = []
-        for item in descriptions:
-            if not item["tag"]:
-                used.append(None)
-                continue
-            key = tag_key(item["tag"])
-            if key not in wanted_keys or key in used:
-                return None, "duplicate tag" if key in used else "tag not in the report"
-            used.append(key)
-        ordered_items = descriptions
+        ordered_items, drop, fit_err = _fit_descriptions(descriptions, wanted, plain_rows)
+        if fit_err or not ordered_items:
+            return None, fit_err or "description count does not match D rows"
+        if drop:
+            style.append(drop)
         count = len(wanted)
         span_tags = [tag for tag in wanted if tag]
     else:
-        if len(descriptions) != finding_count:
-            return None, "description count does not match D rows"
+        ordered_items, drop, fit_err = _collapse_extra_tags(descriptions, finding_count)
+        if fit_err or not ordered_items:
+            return None, fit_err or "description count does not match D rows"
+        if drop:
+            style.append(drop)
         seen: set[str] = set()
-        for index, item in enumerate(descriptions, start=1):
+        for index, item in enumerate(ordered_items, start=1):
             tag = item["tag"]
             if not tag:
                 continue
@@ -549,17 +759,17 @@ def assemble_summary(
             if tag_key(tag) in seen:
                 return None, "duplicate tag"
             seen.add(tag_key(tag) or tag)
-        ordered_items = descriptions
         count = finding_count
         span_tags = [
-            item["tag"] for item in descriptions
+            item["tag"] for item in ordered_items
             if item["tag"] and not re.fullmatch(r"[1-9]\d?", item["tag"])
         ]
+    holds: list[str] = []
     for index, item in enumerate(ordered_items, start=1):
         tag = item["tag"]
         if tag and re.fullmatch(r"[1-9]\d?", tag) and int(tag) == index:
             tag = None
-        evidence, how = _evidence_for(source, tag, span_tags)
+        evidence, how = _evidence_for(source, tag, span_tags, plain_rows or cite_rows)
         problems = description_problems(
             item["description"],
             source,
@@ -571,8 +781,15 @@ def assemble_summary(
             defs=real_defs,
             facility=facility,
         )
-        if problems:
-            return None, problems[0]
+        for problem in problems:
+            if is_factual_hold(problem):
+                holds.append(problem)
+            else:
+                style.append(problem)
+    if notes is not None:
+        notes.extend(style)
+    if holds:
+        return None, holds[0]
     if outcome is None and defs:
         for item in defs:
             code = str(item.get("code") or "").upper().replace(" ", "").replace("-", "")
