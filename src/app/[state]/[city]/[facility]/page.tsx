@@ -198,6 +198,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           reviewCount: profile.reviews.length,
           agency: profile.cfg.agencyShort,
           lastInspected: lastInspectedLabel,
+          heldCount: profile.totals.allTimeDeficiencies,
+          olderCitation: profile.totals.olderCitation,
+          lastCitationDate: profile.totals.lastCitationAllTime,
+          earliestInspectionDate: profile.totals.earliestInspectionDate,
+          basisRecorded: profile.memoryCareBasis.recorded,
+          severityValue:
+            (profile.snapshot?.peer_set.n ?? 0) >= 10
+              ? profile.snapshot?.metrics.severity.value ?? null
+              : null,
+          severityPeerMedian:
+            (profile.snapshot?.peer_set.n ?? 0) >= 10
+              ? profile.snapshot?.metrics.severity.peer_median ?? null
+              : null,
+          windowMonths: profile.cfg.inspectionWindowMonths,
         }),
   );
 

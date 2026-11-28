@@ -1,4 +1,6 @@
 import { canonicalFor } from "@/lib/seo/canonical";
+import { weightedCitationsPerBedPhrase } from "@/lib/facility/pageCopy";
+import { REGULATOR_ABBR } from "@/lib/seo/meta";
 import { getServiceClient } from "@/lib/supabase/server";
 import { formatFacilityName } from "@/lib/facility/displayName";
 
@@ -11,17 +13,6 @@ const STATE_SLUG: Record<string, string> = {
   UT: "utah",
   IL: "illinois",
   PA: "pennsylvania",
-};
-
-const STATE_NAME: Record<string, string> = {
-  CA: "California",
-  OR: "Oregon",
-  WA: "Washington",
-  MN: "Minnesota",
-  TX: "Texas",
-  UT: "Utah",
-  IL: "Illinois",
-  PA: "Pennsylvania",
 };
 
 export type WatchWelcomeDigest = {
@@ -42,8 +33,8 @@ export type WatchWelcomeDigest = {
 
 type SnapshotRow = {
   metrics: {
-    severity: { percentile: number | null };
-    frequency: { percentile: number | null };
+    severity: { value?: number | null; percentile?: number | null; peer_median?: number | null };
+    frequency: { percentile?: number | null };
   };
   grade: { composite_percentile: number } | null;
   peer_set: { n: number };
@@ -52,7 +43,6 @@ type SnapshotRow = {
 type InspectionRow = {
   inspection_date: string;
   inspection_type: string;
-  total_deficiency_count: number | null;
   is_complaint: boolean | null;
 };
 
@@ -74,40 +64,20 @@ function fmtInspectionLabel(insp: InspectionRow): string {
   return type;
 }
 
-function ordinalSuffix(n: number): string {
-  const v = n % 100;
-  if (v >= 11 && v <= 13) return "th";
-  const d = n % 10;
-  if (d === 1) return "st";
-  if (d === 2) return "nd";
-  if (d === 3) return "rd";
-  return "th";
-}
-
-function severityRankLine(snapshot: SnapshotRow | null, stateCode: string): string {
-  if (!snapshot) {
-    return "Peer comparison unavailable for this facility.";
-  }
-  const state = STATE_NAME[stateCode] ?? stateCode;
-  const composite = snapshot?.grade?.composite_percentile ?? null;
-  const severityPct = snapshot?.metrics.severity.percentile ?? null;
-
-  if (composite !== null && composite >= 50) {
-    const topPct = Math.max(1, 100 - Math.round(composite));
-    return `Ranks in the top ${topPct}% among ${state} memory care peers (36-month window).`;
-  }
-  if (severityPct !== null && severityPct < 50) {
-    return `Ranks in the bottom ${Math.max(1, Math.round(severityPct))}% on citation severity among ${state} peers.`;
-  }
-  if (composite !== null) {
-    const rounded = Math.round(composite);
-    return `Ranks in the ${rounded}${ordinalSuffix(rounded)} percentile among ${state} peers.`;
-  }
-  return `Compared against ${snapshot?.peer_set.n ?? 0} ${state} peers with similar bed count.`;
+export function severityRankLine(snapshot: SnapshotRow | null, stateCode: string): string {
+  if (!snapshot || (snapshot.peer_set?.n ?? 0) < 10) return "";
+  return (
+    weightedCitationsPerBedPhrase({
+      value: snapshot.metrics.severity.value,
+      peerMedian: snapshot.metrics.severity.peer_median,
+      agencyShort: REGULATOR_ABBR[stateCode] ?? "state",
+      windowMonths: 36,
+    }) ?? ""
+  );
 }
 
 function quietPeriodLine(lastDate: string | null): string {
-  if (!lastDate) return "No inspections on record in our database.";
+  if (!lastDate) return "No inspections in the records we hold.";
   const last = new Date(lastDate + "T12:00:00");
   const now = new Date();
   const days = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
@@ -116,19 +86,14 @@ function quietPeriodLine(lastDate: string | null): string {
     return `Last state activity: ${formatted} (${days} day${days === 1 ? "" : "s"} ago).`;
   }
   const months = Math.round(days / 30);
-  return `No new state activity since ${formatted} — about ${months} month${months === 1 ? "" : "s"} of quiet on the public record.`;
+  return `No new state activity since ${formatted} — about ${months} month${months === 1 ? "" : "s"} of quiet in the public file.`;
 }
 
 function recentEventsText(inspections: InspectionRow[]): string {
-  if (inspections.length === 0) return "No inspections on record.";
+  if (inspections.length === 0) return "No inspections in the records we hold.";
   return inspections
     .slice(0, 3)
-    .map((insp) => {
-      const defs = insp.total_deficiency_count ?? 0;
-      const finding =
-        defs === 0 ? "no findings cited" : `${defs} finding${defs === 1 ? "" : "s"} cited`;
-      return `• ${fmtDate(insp.inspection_date)} — ${fmtInspectionLabel(insp)} (${finding})`;
-    })
+    .map((insp) => `• ${fmtDate(insp.inspection_date)} — ${fmtInspectionLabel(insp)}`)
     .join("\n");
 }
 
@@ -158,7 +123,7 @@ export async function buildWatchWelcomeDigest(
 
   const { data: inspections, error: inspErr } = await supabase
     .from("inspections")
-    .select("inspection_date, inspection_type, total_deficiency_count, is_complaint")
+    .select("inspection_date, inspection_type, is_complaint")
     .eq("facility_id", facilityId)
     .order("inspection_date", { ascending: false })
     .limit(5);
@@ -169,7 +134,6 @@ export async function buildWatchWelcomeDigest(
 
   const inspRows = (inspections ?? []) as InspectionRow[];
   const last = inspRows[0] ?? null;
-  const totalDefs = inspRows.reduce((s, i) => s + (i.total_deficiency_count ?? 0), 0);
 
   const { data: snapshotRaw } = await supabase.rpc("facility_snapshot", {
     p_facility_id: facilityId,
@@ -182,7 +146,7 @@ export async function buildWatchWelcomeDigest(
 
   const displayName = formatFacilityName(facility.name);
   const recordSummary = last
-    ? `${displayName} has ${totalDefs} citation${totalDefs === 1 ? "" : "s"} on record across recent inspections.`
+    ? `${displayName}: recent inspections are listed below.`
     : `${displayName} is on your watch list.`;
 
   return {

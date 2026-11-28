@@ -205,7 +205,7 @@ const sentence = buildFacilityRecordSentence({
 });
 assert.equal(
   sentence,
-  "5 ADHS citations on record in the last 3 years, last inspected Sep 2024, license AL11370C.",
+  "5 citations in the last 3 years, last inspected Sep 2024, license AL11370C.",
 );
 
 const none = buildFacilityRecordSentence({
@@ -229,7 +229,9 @@ const desc = buildFacilityDescription({
   lastInspected: null,
 });
 assert.equal(/review/i.test(desc), false);
-assert.match(desc, /no OR DHS inspection on record/);
+assert.match(desc, /no OR DHS inspection is in the records we hold/);
+assert.doesNotMatch(desc, /\bon record\b/);
+assert.doesNotMatch(desc, /\bTop \d/);
 
 const answer = buildFacilityDirectAnswer({
   name: "Brookdale Tanque Verde",

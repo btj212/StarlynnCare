@@ -65,9 +65,10 @@ import {
   postedMonthToIsoDay,
   resolveProfileVisits,
 } from "@/lib/facility/inspectionPrecision";
-import type { DatePrecision } from "@/lib/format/formatRecordDate";
+import { formatRecordDate, type DatePrecision } from "@/lib/format/formatRecordDate";
 import { seriousFindingCounts } from "@/lib/facility/seriousFindings";
 import { freshenTourQuestions } from "@/lib/facility/tourQuestions";
+import { newestCitedDate } from "@/lib/facility/pageCopy";
 import type { Facility, Deficiency, DataDepth, InspectionVisibilityTier } from "@/lib/types";
 import { finalizeJsonLd, type GateInspection } from "@/lib/quality/gate";
 import type { StateProfileConfig, Rule } from "@/lib/states/profileConfig";
@@ -306,7 +307,14 @@ export interface FacilityProfile {
     other: number;
     /** Substantiated complaints with no deficiency rows. Not added to the CA headline. */
     substantiatedWithoutRows: number;
+    /** Newest deficiency row inside the rendered window. */
     lastCitation: string | null;
+    /** Newest deficiency row in the bounded inspection list, any year. */
+    lastCitationAllTime: string | null;
+    /** A deficiency row exists on a visit older than the 3-year window. */
+    olderCitation: boolean;
+    /** Oldest inspection we hold. Set when that list has no deficiency row. */
+    earliestInspectionDate: string | null;
   };
   /** Released state enforcement flag. Pending Tier 1 is not public. */
   complianceFlag: ComplianceFlag | null;
@@ -506,6 +514,11 @@ type ProfileInspectionBundle = {
   windowTypeB: number;
   allTimeDeficiencies: number;
   substantiatedWithoutRows: number;
+  /** Deficiency rows on visits older than the window. A head count, not a row fetch. */
+  olderCitationCount: number;
+  /** Newest older visit that has a deficiency row. Null when the window already has one. */
+  olderCitationDate: string | null;
+  earliestInspectionDate: string | null;
 };
 
 function withPrecision(row: Omit<InspectionRow, "datePrecision">): InspectionRow {
@@ -536,6 +549,9 @@ async function fetchInspectionsAndDeficiencies(
     windowTypeB: 0,
     allTimeDeficiencies: 0,
     substantiatedWithoutRows: 0,
+    olderCitationCount: 0,
+    olderCitationDate: null,
+    earliestInspectionDate: null,
   };
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return empty;
@@ -616,6 +632,64 @@ async function fetchInspectionsAndDeficiencies(
     deficiencyHead(windowIds, "Type B"),
     deficiencyHead(allIds, null),
   ]);
+
+  const olderCitationCount = Math.max(0, allTimeDeficiencies - windowDeficiencies);
+  let olderCitationDate: string | null = null;
+  // Only the pages whose window has no deficiency row need the older date.
+  // Walk the light list newest-first, in bounded chunks, and stop at the first
+  // chunk that has a deficiency row. Do not embed facilities or order by a join.
+  if (windowDeficiencies === 0 && olderCitationCount > 0) {
+    const olderRows = light.filter((row) => !inspectionInProfileWindow(row.inspection_date, today));
+    for (const chunk of chunkIds(olderRows, ID_CHUNK)) {
+      const cited = new Set<string>();
+      for (let from = 0; ; from += INSPECTION_PAGE) {
+        const { data, error } = await db
+          .from("deficiencies")
+          .select("inspection_id")
+          .in(
+            "inspection_id",
+            chunk.map((row) => row.id),
+          )
+          .order("id", { ascending: true })
+          .range(from, from + INSPECTION_PAGE - 1);
+        if (error) {
+          console.error("[loadFacilityProfile] older citation date:", error.message);
+          break;
+        }
+        const page = (data ?? []) as Array<{ inspection_id: string }>;
+        for (const row of page) cited.add(row.inspection_id);
+        if (page.length < INSPECTION_PAGE) break;
+      }
+      const hit = newestCitedDate(chunk, cited);
+      if (hit) {
+        olderCitationDate = hit.inspection_date;
+        break;
+      }
+    }
+  }
+
+  let earliestInspectionDate: string | null = null;
+  if (allTimeDeficiencies === 0 && light.length > 0) {
+    if ((lightData ?? []).length >= LIGHT_LIST_CAP) {
+      const { data, error } = await db
+        .from("inspections")
+        .select("inspection_date")
+        .eq("facility_id", facilityId)
+        .lte("inspection_date", today)
+        .order("inspection_date", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(1);
+      if (error) {
+        console.error("[loadFacilityProfile] earliest inspection:", error.message);
+        earliestInspectionDate = light[light.length - 1]?.inspection_date ?? null;
+      } else {
+        const row = ((data ?? []) as Array<{ inspection_date?: string }>)[0];
+        earliestInspectionDate = row?.inspection_date ?? light[light.length - 1]?.inspection_date ?? null;
+      }
+    } else {
+      earliestInspectionDate = light[light.length - 1]?.inspection_date ?? null;
+    }
+  }
 
   const substantiatedIds = light
     .filter(
@@ -746,6 +820,9 @@ async function fetchInspectionsAndDeficiencies(
     windowDeficiencies,
     allTimeDeficiencies,
     substantiatedWithoutRows,
+    olderCitationCount,
+    olderCitationDate,
+    earliestInspectionDate,
   };
 }
 
@@ -1037,6 +1114,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const lastCitation =
     bundle.walkInspections.find((row) => (deficienciesByInspection.get(row.id) ?? []).length > 0)
       ?.inspection_date ?? null;
+  const lastCitationAllTime = lastCitation ?? bundle.olderCitationDate;
+  const olderCitation = bundle.olderCitationCount > 0;
 
   // Per-state config — WA nursing homes get CMS/F-tag config
   const cfg = getStateProfileConfig(state.code, profileFacilityType(facility));
@@ -1058,13 +1137,8 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
   const timeline = deriveTimeline(degradedSnapshot);
   const scopeSeverityGrid = deriveScopeSeverityGrid(degradedSnapshot);
   const rulesCards = deriveRulesCards(cfg, deficiencies, bundle.walkInspections);
-  const tourQuestions = freshenTourQuestions(
-    (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [],
-    {
-      serious: seriousFindingCounts(deficiencies, cfg.formatSeverityTag).reduce((sum, s) => sum + s.count, 0),
-      deficiencies: totalDeficiencies,
-    },
-  );
+  const storedTourQuestions =
+    (facility.content as { tour_questions?: string[] } | null)?.tour_questions?.filter((q) => q.trim()) ?? [];
 
   // Photos — use the gallery array (photo_urls) when populated; fall back to legacy photo_url.
   // User-attributed Google Places photos ("© Google · {photographer}") are suppressed:
@@ -1178,6 +1252,18 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
     }),
     ...(licenseRecordUrl ? { sourceUrl: licenseRecordUrl } : {}),
   };
+  const visitForTour = latestVisit;
+  const tourQuestions = freshenTourQuestions(storedTourQuestions, {
+    agencyShort: cfg.agencyShort,
+    stateCode: facility.state_code,
+    lastVisitLabel: visitForTour
+      ? formatRecordDate(visitForTour.date, visitForTour.precision)
+      : null,
+    lastVisitIsComplaint: visitForTour?.isComplaint ?? false,
+    complaintsInWindow: bundle.windowComplaints,
+    windowCitations: totalDeficiencies,
+    basisRecorded: careBasis.recorded,
+  });
   const faqName = facilityDisplayName(facility);
   const faqPairs = buildFacilityFaqPairs({
     facilityName: faqName,
@@ -1211,6 +1297,15 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
       (degradedSnapshot?.peer_set.n ?? 0) >= 10
         ? degradedSnapshot?.grade?.composite_percentile ?? null
         : null,
+    severityValue:
+      (degradedSnapshot?.peer_set.n ?? 0) >= 10
+        ? degradedSnapshot?.metrics.severity.value ?? null
+        : null,
+    severityPeerMedian:
+      (degradedSnapshot?.peer_set.n ?? 0) >= 10
+        ? degradedSnapshot?.metrics.severity.peer_median ?? null
+        : null,
+    peerWindowMonths: cfg.inspectionWindowMonths,
     memoryCareLabel: careBasis.label,
     servesMemoryCare:
       facility.state_code === "WA"
@@ -1255,6 +1350,19 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
         inspectionCount: citationSummary.inspections,
         lastInspectionDate: reviewedOn,
         regulatorAbbr: cfg.agencyShort,
+        heldCount: bundle.allTimeDeficiencies,
+        olderCitation,
+        lastCitationDate: lastCitationAllTime,
+        earliestInspectionDate: bundle.earliestInspectionDate,
+        severityValue:
+          (degradedSnapshot?.peer_set.n ?? 0) >= 10
+            ? degradedSnapshot?.metrics.severity.value ?? null
+            : null,
+        severityPeerMedian:
+          (degradedSnapshot?.peer_set.n ?? 0) >= 10
+            ? degradedSnapshot?.metrics.severity.peer_median ?? null
+            : null,
+        windowMonths: cfg.inspectionWindowMonths,
       },
       memoryCare: careBasis,
     }),
@@ -1308,6 +1416,9 @@ export const loadFacilityProfile = cache(async function loadFacilityProfile(para
       other: citationSummary.other,
       substantiatedWithoutRows: citationSummary.substantiatedWithoutRows,
       lastCitation,
+      lastCitationAllTime,
+      olderCitation,
+      earliestInspectionDate: bundle.earliestInspectionDate,
     },
     complianceFlag,
     hiddenOlderCount,

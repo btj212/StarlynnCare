@@ -6,6 +6,16 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — Facility citation copy uses deficiency rows and names the window
+
+**Decided:** A facility page says "<N> citations in the last 3 years". When a deficiency row is older than that window, it adds "Last citation <Mon D, YYYY>" from the newest cited inspection in the bounded list. When the rows we hold have no citation, it says "No citations in the <agency> records we hold since <earliest inspection we hold>". "licensed memory care home" is printed only when `memoryCareBasis().recorded` is true. Stored tour questions that contain a date, a digit, a number word, or a zero/none claim are dropped at render and replaced from the live profile. Peer copy is the weighted-citations-per-bed value against the peer median, with the agency and the 36-month window. The percentile math is unchanged and is not printed on these surfaces. Texas still does not say "0 citations" or "clean record" when nothing was published.
+
+**Rejected:** Calling a window of zero "no citations on record" or "None on record". Using `inspections.total_deficiency_count` for that sentence. An unbounded fetch, or a `facilities!inner` embed with ORDER BY and LIMIT, to find the older citation. Printing "does not offer memory care" when the basis is missing.
+
+**Source:** `/cursor/stores/bot/reviews/page-copy-accuracy-diagnosis-2026-11-27.md`. Sunrise at Yorba Linda, license 306002568, Type B 87465(a)(9) on 2022-10-18. No database write.
+
+---
+
 ## 2026-11-28 — Paged reads sort by id, and a Pennsylvania nursing home is facility_type "Nursing Home"
 
 **Decided:** The three paged reads in `loadStateMemoryCareStats` order by `id` before `.range()`, so a page of 1,000 cannot skip or repeat the next row. California's "tagged Type A" FAQ and JSON-LD sentence uses the same Type A head count as the headline. Pennsylvania nursing homes are the rows whose `facility_type` is `Nursing Home` (73 publishable rows also have `wa_facility_type` `NH`). Personal care leaves `facility_type` null. The CMS directory insert writes both values; the profile config follows `facility_type`.
