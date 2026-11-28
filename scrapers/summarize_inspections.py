@@ -51,7 +51,15 @@ from _summary_assemble import (
     parse_descriptions,
     regulator_sentence,
 )
-from _summary_ground import evidence_text, is_factual_hold
+from _summary_ground import (
+    evidence_text,
+    is_factual_hold,
+    is_regulation_text,
+    or_real_tag_count,
+    rank_by_severity,
+    tag_dump_problem,
+    visit_type_conflict,
+)
 from mn_defs import tag_codes
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
@@ -749,6 +757,10 @@ def _stored_summary(
 _GATE_RETRIES = 1
 _NO_RETRY = {"nothing to store", "model did not return finding descriptions"}
 _ZERO_LINE = "No deficiencies were cited at this visit."
+_MISSING = object()
+# Header plus finding sentences plus the zero-citation line. One closing
+# sentence replaces the findings that do not fit. The report text is not cut.
+_SUMMARY_SENTENCES = 6
 # Above this many findings, one description call kept only a handful of tags
 # (45 findings came back as 9). 16 still uses the chunk merge, which the
 # Traditions report covers, so the cutoff stays above 16.
@@ -789,6 +801,158 @@ def append_warning_record(path: str | None, record: dict) -> None:
         handle.write(line + "\n")
 
 
+def _sentences(text: str) -> list[str]:
+    return [part.strip() for part in re.split(r"(?<=[.!?])\s+", (text or "").strip()) if part.strip()]
+
+
+def cap_summary(text: str) -> str:
+    """About six sentences. The header stays, and the remainder is stated exactly.
+
+    Whole sentences only. A summary that already fits is returned unchanged,
+    including the zero-citation line.
+    """
+    parts = _sentences(text)
+    if len(parts) <= _SUMMARY_SENTENCES:
+        return " ".join(parts) if parts else (text or "")
+    kept = parts[: _SUMMARY_SENTENCES - 1]
+    omitted = len(parts) - len(kept)
+    noun = "finding" if omitted == 1 else "findings"
+    return " ".join(kept + [f"The report lists {omitted} further {noun}."])
+
+
+def _finding_block(text: str, state_code: str) -> str | None:
+    """A fallback that is the rule, or a tag dump, holds the row. Minnesota rule text does not."""
+    if tag_dump_problem(text):
+        return "tag or metadata dump"
+    if (state_code or "").upper() in {"CA", "OR"} and is_regulation_text(text):
+        return "rule text presented as a finding"
+    return None
+
+
+def _hold(warning_log: str | None, inspection_id: str | None, reason: str) -> None:
+    print(f"    held: {reason}")
+    append_warning_record(warning_log, {"id": inspection_id, "warnings": [f"held: {reason}"]})
+
+
+def _db_has_penalty(value: object) -> bool:
+    if value is None or value is _MISSING or isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return value > 0
+    try:
+        return float(str(value).replace(",", "").replace("$", "")) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def _guess_header(
+    text: str,
+    *,
+    state_code: str,
+    source: str,
+    finding_count: int,
+    inspection_date: str | None,
+    inspection_type: str | None,
+    outcome: str | None,
+    followup_amount: str | None,
+    followup_letter_date: str | None,
+    defs: list[dict] | None,
+) -> str | None:
+    """The code header when it is a prefix of text, so finding sentences can be reordered."""
+    if not text:
+        return None
+    from _summary_ground import deficiency_rows
+
+    counts = [finding_count]
+    if defs:
+        rows, _subst = deficiency_rows(defs)
+        counts.append(len(rows))
+        real = _real_rows(defs)
+        if real is not None:
+            counts.append(len(real))
+    penalties: list[str | None] = [None]
+    if not (followup_amount and followup_letter_date):
+        penalties.append(latest_assessed_penalty(source))
+    seen: set[tuple[int, str | None]] = set()
+    best: str | None = None
+    for count in counts:
+        for penalty in penalties:
+            key = (count, penalty)
+            if key in seen:
+                continue
+            seen.add(key)
+            header = build_header(
+                state_code=state_code,
+                source=source,
+                finding_count=count,
+                penalty=penalty,
+                followup_amount=followup_amount,
+                followup_letter_date=followup_letter_date,
+                inspection_date=inspection_date,
+                inspection_type=inspection_type,
+                outcome=outcome,
+            )
+            if header and text.startswith(header) and (best is None or len(header) > len(best)):
+                best = header
+    return best
+
+
+def _real_rows(defs: list[dict] | None) -> list[dict] | None:
+    if not defs:
+        return None
+    from _summary_ground import deficiency_rows
+
+    rows, _subst = deficiency_rows(defs)
+    return [
+        row for row in rows
+        if not re.fullmatch(r"[A-Z]0000", str(row.get("code") or "").strip())
+    ]
+
+
+def _with_severity_order(text: str, header: str | None, defs: list[dict] | None) -> str:
+    """Put the most serious findings first when the header is a known prefix."""
+    if not header or not text.startswith(header):
+        return text
+    findings = rank_by_severity(_sentences(text[len(header):]), _real_rows(defs))
+    return " ".join(part for part in (header.strip(), *findings) if part).strip()
+
+
+def _release(
+    text: str | None,
+    *,
+    is_complaint: bool,
+    inspection_type: str | None,
+    db_penalty: object,
+    followup_amount: str | None,
+    defs: list[dict] | None,
+    warning_log: str | None,
+    inspection_id: str | None,
+    header: str | None = None,
+) -> str | None:
+    """Visit and penalty checks, then the sentence cap. A hold stores nothing."""
+    if not text:
+        return None
+    text = _with_severity_order(text, header, defs)
+    opened = " ".join(
+        sentence for sentence in _sentences(text)[:4] if "completed a" in sentence.lower()
+    )
+    conflict = visit_type_conflict(
+        opened, is_complaint=is_complaint, inspection_type=inspection_type,
+    ) if opened else None
+    if conflict:
+        _hold(warning_log, inspection_id, conflict)
+        return None
+    if (
+        db_penalty is not _MISSING
+        and not followup_amount
+        and not _db_has_penalty(db_penalty)
+        and "$" in text
+    ):
+        _hold(warning_log, inspection_id, "dollar penalty absent from the record")
+        return None
+    return cap_summary(text)
+
+
 def _split_problems(problems: list[str]) -> tuple[list[str], list[str]]:
     holds: list[str] = []
     warns: list[str] = []
@@ -823,6 +987,7 @@ def _regulator_summary(
     outcome: str | None,
     followup_amount: str | None,
     followup_letter_date: str | None,
+    blocked: list[str] | None = None,
 ) -> str | None:
     """Header plus the regulator's own wording, one sentence per finding."""
     from _summary_ground import deficiency_rows, mn_evidence, tag_span
@@ -849,6 +1014,12 @@ def _regulator_summary(
     sentences = [sentence for sentence in sentences if sentence]
     if not sentences:
         return None
+    for sentence in sentences:
+        why = _finding_block(sentence, state_code)
+        if why:
+            if blocked is not None:
+                blocked.append(why)
+            return None
     if followup_amount and followup_letter_date:
         penalty = None
     else:
@@ -892,7 +1063,8 @@ def _describe_each_finding(
 ) -> str | None:
     """One call per finding. A bad finding is retried once, then copied from the report.
 
-    The other findings are kept. One failure does not hold the row.
+    A California or Oregon fallback that is rule text, or any tag dump, holds the row.
+    Any other single failure does not.
     """
     rows_by_code: dict[str, dict] = {}
     for row in defs or []:
@@ -900,7 +1072,9 @@ def _describe_each_finding(
         if code:
             rows_by_code[code] = row
     pieces: list[str] = []
+    piece_rows: list[dict] = []
     warnings: list[str] = []
+    blocked: str | None = None
 
     def _grade(description: str, span: str) -> tuple[list[str], list[str]]:
         if (state_code or "").upper() == "MN":
@@ -961,14 +1135,22 @@ def _describe_each_finding(
                 description, warns = again, warns2
             else:
                 description = _regulator_for_span(span, rows_by_code.get(code), state_code)
+                why = _finding_block(description, state_code)
+                if why:
+                    blocked = why
                 warns = [f"fallback to regulator wording: {code}"]
                 print(f"    fallback: {code}: {holds2[0] if holds2 else reason}")
         if description:
             pieces.append(description)
+            piece_rows.append(rows_by_code.get(code) or {})
         warnings.extend(warns)
+    if blocked:
+        _hold(warning_log, inspection_id, blocked)
+        return None
     if not pieces:
         print("    held: nothing to store")
         return None
+    pieces = rank_by_severity(pieces, piece_rows)
     if followup_amount and followup_letter_date:
         penalty = None
     else:
@@ -1061,9 +1243,34 @@ def summarize(
     defs: list[dict] | None = None,
     facility: str | None = None,
     warning_log: str | None = None,
+    db_penalty: object = _MISSING,
 ) -> str | None:
     if not (narrative or "").strip():
         return None
+
+    def _finish(text: str | None) -> str | None:
+        return _release(
+            text,
+            is_complaint=is_complaint,
+            inspection_type=inspection_type,
+            db_penalty=db_penalty,
+            followup_amount=followup_amount,
+            defs=defs,
+            warning_log=warning_log,
+            inspection_id=inspection_id,
+            header=_guess_header(
+                text or "",
+                state_code=state_code,
+                source=narrative,
+                finding_count=deficiency_count,
+                inspection_date=record_date,
+                inspection_type=inspection_type,
+                outcome=outcome,
+                followup_amount=followup_amount,
+                followup_letter_date=followup_letter_date,
+                defs=defs,
+            ),
+        )
     if deficiency_count == 0 and not d_tags:
         # The fixed line is only for a published, non-Texas report that says so.
         # Texas, a stub, and an unpublished report that says nothing was cited
@@ -1079,12 +1286,23 @@ def summarize(
         published=published,
         d_tags=d_tags,
     ):
-        return _zero_citation_summary(
+        return _finish(_zero_citation_summary(
             narrative,
             state_code=state_code,
             inspection_type=inspection_type,
             inspection_date=record_date,
-        )
+        ))
+    if (state_code or "").upper() == "OR" and defs:
+        defs = _real_rows(defs) or []
+    if (state_code or "").upper() == "OR":
+        source_count = or_real_tag_count(narrative)
+        if source_count is not None and source_count != int(deficiency_count or 0):
+            _hold(
+                warning_log,
+                inspection_id,
+                f"source tag count {source_count} does not match the record count {deficiency_count}",
+            )
+            return None
     if model_name() is None:
         print("ERROR: MODEL_PROFILE is not set to a profile in model_config.json")
         return None
@@ -1118,7 +1336,7 @@ def summarize(
     budget = _narrative_budget(system, overhead)
     jobs = _jobs_over_limit(narrative, defs)
     if jobs:
-        return _describe_each_finding(
+        return _finish(_describe_each_finding(
             client,
             jobs,
             system=system,
@@ -1139,7 +1357,7 @@ def summarize(
             facility=facility,
             warning_log=warning_log,
             inspection_id=inspection_id,
-        )
+        ))
 
     def _gate(raw: str | None, notes: list[str]) -> tuple[str | None, str | None]:
         if not raw:
@@ -1197,12 +1415,13 @@ def summarize(
         if text and not err:
             if notes:
                 append_warning_record(warning_log, {"id": inspection_id, "warnings": notes})
-            return text
+            return _finish(text)
         text2, err2, notes2, parsed2 = _attempt([err or "rejected"])
         if text2 and not err2 and len(notes2) <= len(notes):
             if notes2:
                 append_warning_record(warning_log, {"id": inspection_id, "warnings": notes2})
-            return text2
+            return _finish(text2)
+        reasons: list[str] = []
         fallback = _regulator_summary(
             narrative,
             state_code=state_code,
@@ -1214,7 +1433,11 @@ def summarize(
             outcome=outcome,
             followup_amount=followup_amount,
             followup_letter_date=followup_letter_date,
+            blocked=reasons,
         )
+        if reasons:
+            _hold(warning_log, inspection_id, reasons[0])
+            return None
         if not fallback:
             print(f"    held: {err2 or err}")
             return None
@@ -1223,7 +1446,7 @@ def summarize(
             warning_log,
             {"id": inspection_id, "warnings": ["fallback to regulator wording"]},
         )
-        return fallback
+        return _finish(fallback)
 
     if len(narrative) <= budget:
         return _describe_until_stored(
@@ -1406,7 +1629,8 @@ def main(argv=None, *, connect=None, summarize_fn=None) -> None:
                              (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
                            ) AS def_count,
                            i.inspection_date,
-                           f.publishable
+                           f.publishable,
+                           i.civil_money_penalty_total
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -1446,7 +1670,8 @@ def main(argv=None, *, connect=None, summarize_fn=None) -> None:
                              (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
                            ) AS def_count,
                            i.inspection_date,
-                           f.publishable
+                           f.publishable,
+                           i.civil_money_penalty_total
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -1488,6 +1713,7 @@ def main(argv=None, *, connect=None, summarize_fn=None) -> None:
             def_count,
             insp_date,
             publishable,
+            db_penalty,
         ) = row
         if not (raw_narrative or "").strip():
             return insp_id, fac_name, None, "empty"
@@ -1510,6 +1736,7 @@ def main(argv=None, *, connect=None, summarize_fn=None) -> None:
             published=bool(publishable),
             facility=fac_name,
             defs=defs_by_id.get(insp_id),
+            db_penalty=db_penalty,
         )
         if not summary:
             return insp_id, fac_name, None, "fail"

@@ -325,7 +325,9 @@ def test_long_report_counts_equal_d_rows() -> None:
     assert "licensing survey" not in out.lower()
     assert "$" not in out
     assert "June" not in out and "July" not in out  # form boilerplate is not the survey date
-    assert out.count(_SAFE_DESCRIPTION) == 16
+    # The stored summary is capped at about six sentences. The header keeps the true total.
+    assert out.count(_SAFE_DESCRIPTION) == 3
+    assert "The report lists 13 further findings." in out
     final_user = summary_calls[0]["messages"][0]["content"]
     assert f"Cited deficiencies on file: {d_rows}" in final_user
     tag_lines = [line for line in final_user.splitlines() if line.startswith("- tag ")]
@@ -925,8 +927,9 @@ def test_forced_chunk_merge_on_long_row() -> None:
         delivered.append(user[start:end])
     assert "".join(delivered) == narrative
     assert out
-    assert out.count(_SAFE_DESCRIPTION) == len(codes)
     assert "7 correction orders" in out
+    assert out.count(_SAFE_DESCRIPTION) == 3
+    assert "The report lists 4 further findings." in out
     final_user = summary_calls[0]["messages"][0]["content"]
     tags = [line.split(":", 1)[0][len("- tag "):] for line in final_user.splitlines() if line.startswith("- tag ")]
     assert tags == list(dict.fromkeys(tags))
@@ -1136,7 +1139,7 @@ def test_v10_dry_run_is_the_default_and_defs_are_passed() -> None:
                 "id-1", "survey", False, None,
                 "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
                 "0800 not met as evidenced by the licensee failed to post the hours of operation.",
-                "Home", "MN", False, 1, "2024-03-10", True,
+                "Home", "MN", False, 1, "2024-03-10", True, None,
             )]
 
         def __enter__(self):
@@ -1186,7 +1189,8 @@ def test_v10_dry_run_is_the_default_and_defs_are_passed() -> None:
 def test_v10_many_findings_are_one_call_each() -> None:
     """da8830a7 has 45 findings. Each call sees that finding's narrative, and no tag is dropped.
 
-    The cutoff is 20 because a 16-finding report already survives the chunk merge.
+    The report wording is a complaint investigation and the row is not a complaint, so nothing
+    is stored. The cutoff is 20 because a 16-finding report already survives the chunk merge.
     """
     assert si.PER_FINDING_LIMIT == 20
     row = _v9("da8830a7")
@@ -1219,10 +1223,9 @@ def test_v10_many_findings_are_one_call_each() -> None:
         defs=row["defs"],
         facility=row.get("facility"),
     )
-    assert out, "45 findings should store"
+    # The report's own wording is a complaint investigation, and the row is not a complaint.
+    assert out is None
     assert len(calls) == 45
-    assert "45 correction orders" in out
-    assert out.count("failed to.") == 45
     users = [call["messages"][0]["content"] for call in calls]
     assert not any("Report part" in user for user in users)
     for item in row["defs"]:
@@ -1376,10 +1379,10 @@ def test_v11_retry_falls_back_per_finding_and_warnings_are_logged() -> None:
         record_date=str(home["inspection_date"]),
         facility=home.get("facility"),
     )
+    # The retry still fails, and the regulator sentence for this report is the
+    # severity block, so the row is held instead of storing that dump.
     assert client.calls == 2
-    assert stored and "dinner at evening" not in stored
-    assert "CPR and certification" not in stored
-    assert "5:00" in stored or "First Aid" in stored
+    assert stored is None
 
     long_row = _v10("b70b2853")
     calls: list[dict] = []
@@ -1409,8 +1412,9 @@ def test_v11_retry_falls_back_per_finding_and_warnings_are_logged() -> None:
         facility=long_row.get("facility"),
     )
     assert out and "forty-four" not in out.lower()
-    assert out.count("The observation was recorded.") == 24
     assert "25 correction orders" in out
+    assert len(si._sentences(out)) <= 6
+    assert "The report lists 23 further findings." in out
     assert len(calls) == 26
 
     source = (
@@ -1439,6 +1443,284 @@ def test_v11_retry_falls_back_per_finding_and_warnings_are_logged() -> None:
         line = json.loads(open(path).read().strip().splitlines()[-1])
         assert line["id"] == "row-1"
         assert any("punctuation" in warning for warning in line["warnings"])
+
+
+def _last_warning(path: str) -> dict:
+    return json.loads(open(path).read().strip().splitlines()[-1])
+
+
+def test_v12_rule_text_dumps_and_oregon_counts() -> None:
+    """A rule-text fallback, a tag dump, and a mismatched Oregon count hold the row.
+
+    An Oregon report whose only extra tag is the C0000 placeholder keeps the database count.
+    """
+    import tempfile
+
+    rule = "(a) Disinfectants, cleaning solutions and poisons shall be stored in a locked compartment."
+    narrative = "Licensing Program Analyst conducted the annual inspection at the home. " + rule
+    with tempfile.TemporaryDirectory() as tmp:
+        path = f"{tmp}/warnings.jsonl"
+        out = si.summarize(
+            _json_client(json.dumps([{"tag": None, "description": rule}])),
+            "inspection",
+            False,
+            None,
+            narrative,
+            state_code="CA",
+            deficiency_count=1,
+            defs=[{
+                "code": None,
+                "description": rule,
+                "inspector_narrative": narrative,
+            }],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="ca-rule",
+        )
+        assert out is None
+        assert "rule text" in _last_warning(path)["warnings"][0]
+
+        fire = "87202 FIRE CLEARANCE. All facilities shall maintain a fire clearance approved by the city."
+        fire_narrative = "Licensing Program Analyst conducted the annual inspection at the home. " + fire
+        out = si.summarize(
+            _json_client(json.dumps([{"tag": None, "description": fire}])),
+            "inspection",
+            False,
+            None,
+            fire_narrative,
+            state_code="CA",
+            deficiency_count=1,
+            defs=[{
+                "code": None,
+                "description": fire,
+                "inspector_narrative": fire_narrative,
+            }],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="ca-fire",
+        )
+        assert out is None
+        assert "rule text" in _last_warning(path)["warnings"][0]
+
+    oregon_rule = (
+        "Residents have the right to refuse treatment. "
+        "The facility must provide meals each day at the home."
+    )
+    held = si.summarize(
+        _json_client(json.dumps([{"tag": None, "description": "Residents have the right to refuse treatment."}])),
+        "State Licensure",
+        False,
+        None,
+        oregon_rule,
+        state_code="OR",
+        deficiency_count=1,
+        record_date="2024-03-10",
+    )
+    assert held is None
+
+    source = (
+        "Inspection type(s): State Licensure. Deficiencies cited: 3. "
+        "C0000: Initial Comments. "
+        "C0240: The facility failed to keep the kitchen clean. "
+        "C0455: The facility failed to record the meal."
+    )
+    good = [
+        {"tag": "C0240", "description": "The facility failed to keep the kitchen clean."},
+        {"tag": "C0455", "description": "The facility failed to record the meal."},
+    ]
+    stored = si.summarize(
+        _json_client(json.dumps(good)),
+        "State Licensure",
+        False,
+        None,
+        source,
+        state_code="OR",
+        deficiency_count=2,
+        record_date="2024-03-10",
+    )
+    assert stored and "2 violations" in stored and "3 violations" not in stored
+
+    called = {"n": 0}
+
+    class _Boom:
+        def create(self, **kw):
+            called["n"] += 1
+            raise AssertionError("model should not be called when the counts disagree")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = f"{tmp}/warnings.jsonl"
+        missed = si.summarize(
+            types.SimpleNamespace(messages=_Boom()),
+            "State Licensure",
+            False,
+            None,
+            source,
+            state_code="OR",
+            deficiency_count=1,
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="or-count",
+        )
+        assert missed is None and called["n"] == 0
+        assert _last_warning(path)["warnings"][0] == (
+            "held: source tag count 2 does not match the record count 1"
+        )
+
+        dump = "Severity Level: 3 Scope: L3 Widespread Visits: 1."
+        dump_narrative = "Licensing Program Analyst conducted the annual inspection at the home. " + dump
+        dumped = si.summarize(
+            _json_client(json.dumps([{"tag": None, "description": dump}])),
+            "inspection",
+            False,
+            None,
+            dump_narrative,
+            state_code="CA",
+            deficiency_count=1,
+            defs=[{
+                "code": None,
+                "description": dump,
+                "inspector_narrative": dump_narrative,
+            }],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="dump",
+        )
+        assert dumped is None
+        assert "tag or metadata dump" in _last_warning(path)["warnings"][0]
+
+
+def test_v12_visit_penalty_length_and_minnesota_fallback() -> None:
+    """A contradictory visit or a fine the database does not have holds the row.
+
+    Twelve findings stay inside about six sentences, the header still says 12, and the
+    closing sentence states the exact remainder. A Minnesota 'failed to' fallback still stores.
+    The zero-citation line is unchanged.
+    """
+    import tempfile
+
+    complaint = (
+        "On March 10, 2024, the Minnesota Department of Health completed a complaint investigation. "
+        "0510 not met as evidenced by the licensee failed to post the hours."
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = f"{tmp}/warnings.jsonl"
+        held = si.summarize(
+            _json_client(json.dumps([{
+                "tag": "0510",
+                "description": "The licensee failed to post the hours.",
+            }])),
+            "standard",
+            False,
+            None,
+            complaint,
+            state_code="MN",
+            deficiency_count=1,
+            d_tags=["0510"],
+            record_date="2024-03-10",
+            warning_log=path,
+            inspection_id="visit",
+        )
+        assert held is None
+        assert "complaint investigation" in _last_warning(path)["warnings"][0]
+
+        fine = (
+            "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+            "The total amount you are assessed is $6,000. "
+            "0510 not met as evidenced by the licensee failed to post the hours."
+        )
+        fined = si.summarize(
+            _json_client(json.dumps([{
+                "tag": "0510",
+                "description": "The licensee failed to post the hours.",
+            }])),
+            "survey",
+            False,
+            None,
+            fine,
+            state_code="MN",
+            deficiency_count=1,
+            d_tags=["0510"],
+            record_date="2024-03-10",
+            db_penalty=None,
+            warning_log=path,
+            inspection_id="fine",
+        )
+        assert fined is None
+        assert "dollar penalty" in _last_warning(path)["warnings"][0]
+
+    codes = [f"{510 + i:04d}" for i in range(12)]
+    narrative = (
+        "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+        + " ".join(
+            f"{code} not met as evidenced by the licensee failed to post the hours."
+            for code in codes
+        )
+    )
+    described = [
+        {"tag": code, "description": "The licensee failed to post the hours."}
+        for code in codes
+    ]
+    summary = si.summarize(
+        _json_client(json.dumps(described)),
+        "survey",
+        False,
+        None,
+        narrative,
+        state_code="MN",
+        deficiency_count=12,
+        d_tags=codes,
+        record_date="2024-03-10",
+    )
+    assert summary and "12 correction orders" in summary
+    assert len(si._sentences(summary)) <= 6
+    kept = summary.count("The licensee failed to post the hours.")
+    match = re.search(r"The report lists (\d+) further findings\.", summary)
+    assert match and int(match.group(1)) + kept == 12
+
+    fallback = si.summarize(
+        _json_client(json.dumps([{
+            "tag": "0510",
+            "description": "The licensee failed to post 9 hours.",
+        }])),
+        "survey",
+        False,
+        None,
+        (
+            "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+            "0510 not met as evidenced by the licensee failed to post the hours."
+        ),
+        state_code="MN",
+        deficiency_count=1,
+        d_tags=["0510"],
+        record_date="2024-03-10",
+    )
+    assert fallback and "failed to" in fallback and "9" not in fallback
+    assert "further finding" not in fallback
+
+    zero_narrative = (
+        "On March 10, 2024, the California Department of Social Services completed a full survey. "
+        "No deficiencies were cited during this visit at the home."
+    )
+    zero = si.summarize(
+        _json_client("[]"),
+        "survey",
+        False,
+        None,
+        zero_narrative,
+        state_code="CA",
+        deficiency_count=0,
+        published=True,
+        record_date="2024-03-10",
+    )
+    unchanged = si._zero_citation_summary(
+        zero_narrative,
+        state_code="CA",
+        inspection_type="survey",
+        inspection_date="2024-03-10",
+    )
+    assert zero == unchanged
+    assert zero and "No deficiencies were cited at this visit." in zero
+    assert "further finding" not in zero
 
 
 if __name__ == "__main__":

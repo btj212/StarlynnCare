@@ -936,6 +936,155 @@ def rule_as_finding(description: str, evidence: str, source: str) -> str | None:
     return "rule text presented as a finding"
 
 
+_FINDING_ACT = re.compile(
+    r"\b(failed to|did not|was observed|were observed|staff stated|record review|"
+    r"based on observation|based on interview|it was determined|were found|was found)\b",
+    re.I,
+)
+_RULE_OPEN = re.compile(r"^(?:section\s+\d{4,}\b|\([A-Za-z0-9]{1,3}\))", re.I)
+_MODAL_RULE = re.compile(r"\b(?:shall|must|have the right|is required to)\b", re.I)
+_REG_SUBJECT = re.compile(r"\b(?:87202|87203|87303|87411)\b|\bOAR\s*411-", re.I)
+_TAG_DUMP = re.compile(r"Severity Level|Scope:|Visits:", re.I)
+_TAG_CODE = re.compile(r"\b[A-Z]{1,3}\d{4}\b")
+_OR_TAG = re.compile(r"(?<![A-Za-z0-9])([A-Z]\d{4})(?!\d)")
+
+
+def is_regulation_text(text: str) -> bool:
+    """A finding that is the rule, not what the visit observed.
+
+    A subsection marker, a Section number, a duty (shall, must, have the right,
+    is required to), or a regulation number used as the subject. A sentence that
+    says what happened (failed to, did not, was observed, staff stated, record
+    review) is the finding.
+    """
+    cleaned = re.sub(r"\s+", " ", text or "").strip()
+    if not cleaned:
+        return False
+    sentences = [part.strip() for part in re.split(r"(?<=[.;])\s+", cleaned) if part.strip()]
+    if not sentences:
+        return False
+    if any(_FINDING_ACT.search(sentence) for sentence in sentences):
+        return False
+    rule_sentences = 0
+    other = 0
+    for sentence in sentences:
+        if (
+            _RULE_OPEN.match(sentence)
+            or _MODAL_RULE.search(sentence)
+            or _REG_SUBJECT.search(sentence)
+        ):
+            rule_sentences += 1
+        else:
+            other += 1
+    # A quote of the rule followed by the observation is not "mainly" the rule.
+    return rule_sentences > other
+
+
+def regulation_as_finding(description: str, state_code: str) -> str | None:
+    """California and Oregon only. Minnesota keeps the narrower rule-text check."""
+    if (state_code or "").upper() not in {"CA", "OR"}:
+        return None
+    if is_regulation_text(description):
+        return "rule text presented as a finding"
+    return None
+
+
+def tag_dump_problem(text: str) -> str | None:
+    """A severity block, a bare tag list, or a line that is mostly codes."""
+    raw = text or ""
+    if _TAG_DUMP.search(raw):
+        return "tag or metadata dump"
+    tags = _TAG_CODE.findall(raw)
+    prose = [
+        word for word in re.findall(r"\b[A-Za-z]{4,}\b", raw)
+        if not _TAG_CODE.fullmatch(word)
+    ]
+    if tags and len(prose) < 3 and (len(tags) >= 2 or not prose):
+        return "tag or metadata dump"
+    tokens = re.findall(r"\S+", raw)
+    if not tokens:
+        return None
+    non_prose = 0
+    for token in tokens:
+        if re.search(r"\d", token) or re.fullmatch(r"[^A-Za-z0-9]+", token):
+            non_prose += 1
+    if non_prose / len(tokens) > 0.4:
+        return "tag or metadata dump"
+    return None
+
+
+def or_real_tag_count(source: str) -> int | None:
+    """Oregon tags printed in the report, skipping initial-comment placeholders.
+
+    C0000, F0000, M0000, and any other letter-plus-0000 tag is not a finding.
+    None means the report does not print that tag list, so there is nothing to
+    compare with the database count.
+    """
+    seen: list[str] = []
+    for match in _OR_TAG.finditer(source or ""):
+        tag = match.group(1)
+        if tag not in seen:
+            seen.append(tag)
+    if not seen:
+        return None
+    return sum(1 for tag in seen if not re.fullmatch(r"[A-Z]0000", tag))
+
+
+def visit_type_conflict(
+    header: str,
+    *,
+    is_complaint: bool,
+    inspection_type: str | None,
+) -> str | None:
+    """The header visit phrase has to agree with the inspection row."""
+    text = header or ""
+    kind = (inspection_type or "").lower()
+    if re.search(r"\bcomplaint investigation\b", text, re.I):
+        if not is_complaint and "complaint" not in kind:
+            return "visit type contradicts the record: complaint investigation"
+    if re.search(r"\bre-?visit\b", text, re.I):
+        if not re.search(r"re-?visit|follow-?up|follow up", kind):
+            return "visit type contradicts the record: revisit"
+    return None
+
+
+def _seriousness(row: dict) -> tuple[int, int, int, int]:
+    blob = " ".join(
+        str(row.get(key) or "") for key in ("class", "description", "inspector_narrative")
+    )
+    severity = 0
+    match = re.search(r"Severity Level:\s*(\d+)", blob, re.I)
+    if match:
+        severity = int(match.group(1))
+    scope = 0
+    if re.search(r"\bwidespread\b", blob, re.I):
+        scope = 3
+    elif re.search(r"\bpattern\b", blob, re.I):
+        scope = 2
+    elif re.search(r"\bisolated\b", blob, re.I):
+        scope = 1
+    return (
+        1 if row.get("ij") else 0,
+        1 if re.search(r"\btype\s*a\b", blob, re.I) else 0,
+        severity,
+        scope,
+    )
+
+
+def rank_by_severity(texts: list[str], rows: list[dict] | None) -> list[str]:
+    """Most serious first when severity or scope is known. Otherwise source order."""
+    if not rows or len(rows) != len(texts):
+        return texts
+    keys = [_seriousness(row) for row in rows]
+    if not any(any(part) for part in keys):
+        return texts
+    order = sorted(
+        range(len(texts)),
+        key=lambda index: (-keys[index][0], -keys[index][1], -keys[index][2], -keys[index][3], index),
+    )
+    return [texts[index] for index in order]
+
+
 def is_factual_hold(problem: str) -> bool:
     """A wrong fact holds the row. Punctuation, markdown, and a novel word warn.
 
@@ -994,6 +1143,8 @@ def ground_problems(
         lambda: check_arrival(description, evidence),
         lambda: check_attributed_count(description, evidence),
         lambda: rule_as_finding(description, evidence, source),
+        lambda: regulation_as_finding(description, state_code),
+        lambda: tag_dump_problem(description),
     ):
         hit = fn()
         if hit:
