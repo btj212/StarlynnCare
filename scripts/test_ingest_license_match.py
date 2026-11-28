@@ -28,6 +28,9 @@ if str(SCRAPERS) not in sys.path:
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# The retired Oregon module exits on import unless this is set. See its guard.
+os.environ["STARLYNN_ALLOW_OR_DHS_IMPORT"] = "1"
+
 import _license_match
 import az_adhs_directory_ingest as az_adhs
 import mn_alrc_ingest
@@ -304,6 +307,7 @@ class _ReviewTempMixin:
             Path(self._review_dir.name) / "review.jsonl",
         )
         self._review_patch.start()
+        _license_match.discard_review_log()
 
     def tearDown(self) -> None:
         self._review_patch.stop()
@@ -912,33 +916,94 @@ class ReviewFixTests(_ReviewTempMixin, unittest.TestCase):
         self.assertFalse(reuse_identity(rec, idmap, ["0000050133", rec["license_number"]]))
         self.assertEqual(rec["slug"], "new-slug")
 
-    def test_mn_alrc_license_matches_an_mdh_hfid(self) -> None:
-        """Live MN licenses are ALRC:n. The MDH number n must find that row and leave ALRC:n stored."""
-        existing = {
-            "id": "mn-alrc-15",
+    def test_alrc_id_does_not_match_an_mdh_hfid(self) -> None:
+        """ALRC:1 is Ecumen Worthington the Meadows. MDH HFID 1 is a different home.
+        None of the ALRC numbers are MDH HFIDs, so the two must not merge."""
+        mdh = {
+            "id": "mdh-1",
             "state_code": "MN",
-            "name": "Old Home",
-            "slug": "old-home-15",
-            "city_slug": "duluth",
-            "license_number": "ALRC:15",
+            "name": "Some Other Home",
+            "slug": "some-other-home-1",
+            "city_slug": "worthington",
+            "license_number": "1",
+            "external_id": "0000000001",
+            "publishable": True,
+            "created_at": "2020-01-01",
+        }
+        conn = FakeConn([mdh])
+        with conn.cursor() as cur:
+            idmap = load_identity_map(cur, "MN")
+        rec = {
+            "state_code": "MN",
+            "name": "Ecumen Worthington the Meadows",
+            "license_number": "ALRC:1",
+            "slug": "ecumen-worthington-the-meadows-mn1",
+            "city_slug": "worthington",
+        }
+        before = dict(rec)
+        self.assertFalse(
+            reuse_identity(rec, idmap, ["MN-ALDC-ecumen-worthington", "ALRC:1"])
+        )
+        self.assertEqual(rec, before)
+
+        alrc = {
+            "id": "alrc-ecumen",
+            "state_code": "MN",
+            "name": "Ecumen Worthington the Meadows",
+            "slug": "ecumen-worthington-the-meadows",
+            "city_slug": "worthington",
+            "license_number": "ALRC:1",
             "external_id": None,
             "publishable": True,
             "created_at": "2020-01-01",
         }
-        incoming = {
+        conn2 = FakeConn([alrc])
+        for hfid in ("1", "0000000001", "20011"):
+            incoming = {
+                "state_code": "MN",
+                "name": "Different HFID Home",
+                "slug": f"different-hfid-home-{hfid}",
+                "city_slug": "minneapolis",
+                "license_number": hfid,
+            }
+            self.assertFalse(
+                reuse_identity(dict(incoming), load_identity_map(conn2.cursor(), "MN"), [hfid])
+            )
+        mn_mdh_directory_ingest.upsert_facilities(conn2, [{
             "state_code": "MN",
-            "name": "New Home",
-            "slug": "new-home-0000000015",
+            "name": "Different HFID Home",
+            "slug": "different-hfid-home-1",
             "city_slug": "minneapolis",
-            "license_number": "0000000015",
+            "license_number": "0000000001",
+        }])
+        self.assertEqual(len(conn2.rows), 2)
+        self.assertEqual(conn2.rows[0]["license_number"], "ALRC:1")
+        self.assertEqual(conn2.rows[0]["name"], "Ecumen Worthington the Meadows")
+
+    def test_all_zero_or_id_does_not_match_the_placeholder(self) -> None:
+        """Incoming 0 is not the stored placeholder 000000. All-zero ids stay verbatim."""
+        row = {
+            "id": "or-zero",
+            "state_code": "OR",
+            "name": "Placeholder",
+            "slug": "placeholder-000000",
+            "city_slug": "portland",
+            "license_number": "000000",
+            "external_id": "000000",
+            "created_at": "1",
+            "publishable": False,
         }
-        conn = FakeConn([existing])
-        mn_mdh_directory_ingest.upsert_facilities(conn, [incoming])
-        self.assertEqual(len(conn.rows), 1)
-        self.assertEqual(conn.rows[0]["slug"], "old-home-15")
-        self.assertEqual(conn.rows[0]["city_slug"], "duluth")
-        self.assertEqual(conn.rows[0]["license_number"], "ALRC:15")
-        self.assertEqual(conn.rows[0]["name"], "New Home")
+        conn = FakeConn([row])
+        with conn.cursor() as cur:
+            idmap = load_identity_map(cur, "OR")
+        for raw in ("0", "00", "000", "0000"):
+            rec = {"license_number": raw, "slug": "incoming", "city_slug": "portland"}
+            self.assertFalse(reuse_identity(rec, idmap, [raw]), raw)
+            self.assertEqual(rec["slug"], "incoming", raw)
+        same = {"license_number": "000000", "slug": "other", "city_slug": "other"}
+        self.assertTrue(reuse_identity(same, idmap, ["000000"], keep_stored_license=True))
+        self.assertEqual(same["slug"], "placeholder-000000")
+        self.assertEqual(same["license_number"], "000000")
 
     def test_field_diff_is_written_only_after_the_update_succeeds(self) -> None:
         """A review line describes a write that happened. A failed write leaves no field diff."""
@@ -977,13 +1042,16 @@ class ReviewFixTests(_ReviewTempMixin, unittest.TestCase):
         self.assertEqual(conn.rows[0]["name"], "Old")
 
     def test_retired_or_dhs_exits_on_import(self) -> None:
-        """Importing the retired Oregon script stops, the way it did before this PR.
-        The unit tests are allowed to import it; a normal import is not."""
+        """Importing the retired Oregon script stops unless STARLYNN_ALLOW_OR_DHS_IMPORT=1.
+        Running the file still exits even when that variable is set."""
+        env = os.environ.copy()
+        env.pop("STARLYNN_ALLOW_OR_DHS_IMPORT", None)
         proc = subprocess.run(
             [sys.executable, "-c", "import or_dhs_ltc_directory_ingest"],
             cwd=SCRAPERS,
             capture_output=True,
             text=True,
+            env=env,
         )
         self.assertEqual(proc.returncode, 1)
         self.assertIn("retired", proc.stderr.lower())
@@ -991,6 +1059,7 @@ class ReviewFixTests(_ReviewTempMixin, unittest.TestCase):
             [sys.executable, str(SCRAPERS / "or_dhs_ltc_directory_ingest.py")],
             capture_output=True,
             text=True,
+            env=os.environ.copy(),
         )
         self.assertEqual(script.returncode, 1)
         self.assertIn("retired", script.stderr.lower())

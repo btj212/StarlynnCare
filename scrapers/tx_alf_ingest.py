@@ -498,6 +498,8 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
             writing.append(r)
         if writing:
             cur.executemany(UPSERT_SQL, writing)
+    conn.commit()
+    with conn.cursor() as cur:
         record_protected_diffs(cur, "TX", writing, PRESERVE_ON_UPDATE)
     report_review_log()
 

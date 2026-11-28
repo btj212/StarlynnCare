@@ -24,6 +24,8 @@ from typing import Any, Iterable
 REVIEW_LOG_PATH = Path(__file__).resolve().parent / "out" / "directory_publish_review.jsonl"
 RUN_ID = uuid.uuid4().hex
 _review_count = 0
+# Held until flush_review_log, which the ingests call only after commit.
+_pending: list[tuple[Path, dict[str, Any]]] = []
 
 
 class IdentityIndex:
@@ -39,10 +41,10 @@ def comparison_keys(raw: Any) -> list[str]:
     """Forms of a regulator ID that may be compared. Empty for a synthetic key.
 
     Leading zeros are a comparison alias only. The stored value is never rewritten
-    here. ALRC:<digits> compares equal to the digits with leading zeros removed,
-    which is how an MDH HFID (0000000015) meets a live MN license (ALRC:15).
-    Letter IDs such as 50M133 are compared verbatim, so they do not meet a
-    zero-padded number.
+    here. An all-zero ID (0, 000000) is compared verbatim, so it does not meet a
+    different all-zero placeholder. ALRC:n is a DHS report-card id, not an MDH
+    HFID, and is not turned into a bare number. Letter IDs such as 50M133 are
+    compared verbatim, so they do not meet a zero-padded number.
     """
     if raw is None:
         return []
@@ -53,16 +55,10 @@ def comparison_keys(raw: Any) -> list[str]:
     if upper.startswith("MN-ALDC-"):
         return []
     keys = [upper]
-    numeric: str | None = None
-    if upper.startswith("ALRC:"):
-        rest = upper.split(":", 1)[1]
-        if rest.isdigit():
-            numeric = rest
-    elif upper.isdigit():
-        numeric = upper
-    if numeric is not None:
-        bare = numeric.lstrip("0") or "0"
-        if bare not in keys:
+    if upper.isdigit():
+        bare = upper.lstrip("0") or "0"
+        # "0" would join every all-zero placeholder (incoming 0 vs stored 000000).
+        if bare != "0" and bare not in keys:
             keys.append(bare)
     return keys
 
@@ -208,18 +204,41 @@ def load_review_index(
 
 
 def _append(entries: list[dict[str, Any]], *, path: Path | None = None) -> int:
-    global _review_count
+    """Queue review lines. The file is written by flush_review_log after commit."""
     if not entries:
         return 0
     now = datetime.now(timezone.utc).isoformat()
     dest = path or REVIEW_LOG_PATH
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    with dest.open("a", encoding="utf-8") as fh:
-        for item in entries:
-            stamped = {"run_id": RUN_ID, "timestamp": now, **item}
-            fh.write(json.dumps(stamped, default=str) + "\n")
-    _review_count += len(entries)
+    for item in entries:
+        _pending.append((dest, {"run_id": RUN_ID, "timestamp": now, **item}))
     return len(entries)
+
+
+def discard_review_log() -> None:
+    """Drop queued lines. Used when the commit did not happen."""
+    _pending.clear()
+
+
+def flush_review_log() -> int:
+    """Write queued lines. Call only after the database commit has succeeded."""
+    global _review_count
+    if not _pending:
+        print(f"  review log: {REVIEW_LOG_PATH} (0 entries, run_id={RUN_ID})")
+        return 0
+    by_dest: dict[Path, list[dict[str, Any]]] = {}
+    for dest, item in _pending:
+        by_dest.setdefault(dest, []).append(item)
+    _pending.clear()
+    written = 0
+    for dest, items in by_dest.items():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with dest.open("a", encoding="utf-8") as fh:
+            for item in items:
+                fh.write(json.dumps(item, default=str) + "\n")
+        written += len(items)
+    _review_count += written
+    print(f"  review log: {REVIEW_LOG_PATH} ({written} entries, run_id={RUN_ID})")
+    return written
 
 
 def note_protected_diffs(
@@ -229,10 +248,10 @@ def note_protected_diffs(
     *,
     path: Path | None = None,
 ) -> int:
-    """Append each difference on an existing row. Inserts (no index hit) are skipped.
+    """Queue each difference on an existing row. Inserts (no index hit) are skipped.
 
-    Call this only after the database write has succeeded. The entry describes
-    a value that was left in place.
+    The line is written by flush_review_log after commit. It describes a value
+    that was left in place.
     """
     diffs: list[dict[str, Any]] = []
     for rec in rows:
@@ -286,5 +305,5 @@ def note_kept_external_id(rec: dict[str, Any]) -> None:
 
 
 def report_review_log() -> None:
-    """Print where the review notes went. Called at the end of a directory run."""
-    print(f"  review log: {REVIEW_LOG_PATH} ({_review_count} entries, run_id={RUN_ID})")
+    """Write the queued review notes. Call this only after commit."""
+    flush_review_log()

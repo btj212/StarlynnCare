@@ -36,6 +36,7 @@ SCRAPERS_DIR = Path(__file__).resolve().parent
 if str(SCRAPERS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRAPERS_DIR))
 from _license_match import (
+    discard_review_log,
     load_identity_map,
     load_review_index,
     note_protected_diffs,
@@ -263,6 +264,8 @@ def main() -> int:
             idmap = load_identity_map(cur, "MN")
             review_index = load_review_index(cur, "MN", PRESERVE_ON_UPDATE)
 
+    committed = False
+    written_records: list[dict[str, Any]] = []
     try:
         for row in excel_rows:
             name_key = row["name"].strip().lower()
@@ -326,17 +329,22 @@ def main() -> int:
             if result == "conflict":
                 stats["skipped"] += 1
             else:
-                note_protected_diffs(review_index, [record], PRESERVE_ON_UPDATE)
+                written_records.append(record)
                 stats["upserted"] += 1
 
         if conn_ctx:
             conn_ctx.commit()
+            committed = True
+            # Diffs use the pre-update snapshot. The file is written after commit.
+            note_protected_diffs(review_index, written_records, PRESERVE_ON_UPDATE)
     finally:
         if conn_ctx:
             conn_ctx.close()
 
-    if not args.dry_run:
+    if committed:
         report_review_log()
+    else:
+        discard_review_log()
     print(f"\nDone: upserted={stats['upserted']}, "
           f"skipped={stats['skipped']}, "
           f"no_addr={stats['no_addr']}")

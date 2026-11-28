@@ -6,8 +6,8 @@
 # See scripts/or_overnight_run.sh for the replacement orchestration.
 #
 # Original content preserved below for reference.
-# Importing this module exits, as it used to. The unit tests that import it on
-# purpose (test_ingest_license_match, test_pr280_adhoc) are the exception.
+# Importing this module exits, as it used to. Set STARLYNN_ALLOW_OR_DHS_IMPORT=1
+# to import it for tests. Running the file still exits.
 # ─────────────────────────────────────────────────────────────────────────────
 #!/usr/bin/env python3
 """
@@ -312,6 +312,9 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
         db_rows = [{k: v for k, v in r.items() if not str(k).startswith("_")} for r in writing]
         if db_rows:
             cur.executemany(OR_UPSERT_SQL, db_rows)
+    # The review file is written only after this commit succeeds.
+    conn.commit()
+    with conn.cursor() as cur:
         record_protected_diffs(cur, "OR", writing, PRESERVE_ON_UPDATE)
     report_review_log()
 
@@ -358,16 +361,14 @@ def main() -> int:
     return 0
 
 
-def _retire_unless_unit_test() -> None:
-    """Exit on import, unless a unit test imported this retired module on purpose."""
-    import inspect
+def _retire_unless_allowed() -> None:
+    """Exit on import unless STARLYNN_ALLOW_OR_DHS_IMPORT=1.
 
-    if __name__ != "__main__":
-        allowed = ("test_ingest_license_match", "test_pr280_adhoc")
-        for frame in inspect.stack():
-            blob = f"{frame.frame.f_globals.get('__name__', '')} {frame.filename}"
-            if any(token in blob for token in allowed):
-                return
+    Running this file always exits. The check is at the bottom of the module
+    because a statement above `from __future__ import annotations` is a syntax error.
+    """
+    if __name__ != "__main__" and os.environ.get("STARLYNN_ALLOW_OR_DHS_IMPORT") == "1":
+        return
     print(
         "ERROR: or_dhs_ltc_directory_ingest.py is retired. "
         "Run or_providers_ingest.py instead.",
@@ -377,4 +378,4 @@ def _retire_unless_unit_test() -> None:
     raise SystemExit(1)
 
 
-_retire_unless_unit_test()
+_retire_unless_allowed()

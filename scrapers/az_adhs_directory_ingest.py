@@ -507,6 +507,10 @@ def upsert_batch(
                 cur.execute(f"ROLLBACK TO SAVEPOINT {sp}")
                 print(f"  ERROR {rec.get('external_id')}: {exc}", flush=True)
                 errors += 1
+    # Review lines are written only after this commit. A row that errored above
+    # (including a successor with no stored FACID) is not in `written`.
+    conn.commit()
+    with conn.cursor() as cur:
         record_protected_diffs(cur, "AZ", written, PRESERVE_ON_UPDATE)
     report_review_log()
     return success, errors

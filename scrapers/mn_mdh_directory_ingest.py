@@ -339,8 +339,9 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
         idmap = load_identity_map(cur, "MN")
         writing: list[dict[str, Any]] = []
         for r in rows:
-            # Live MN licenses are ALRC:n. Compare that to the MDH number, and
-            # write the stored license back so the padded HFID does not replace it.
+            # ALRC:n is not an MDH HFID. Do not run this script against live MN
+            # rows; it would insert a duplicate for each home. A real HFID hit
+            # still keeps the stored license.
             if reuse_identity(
                 r,
                 idmap,
@@ -351,6 +352,8 @@ def upsert_facilities(conn: psycopg.Connection, rows: list[dict[str, Any]]) -> N
             writing.append(r)
         if writing:
             cur.executemany(MN_UPSERT_SQL, writing)
+    conn.commit()
+    with conn.cursor() as cur:
         record_protected_diffs(cur, "MN", writing, PRESERVE_ON_UPDATE)
     report_review_log()
 
