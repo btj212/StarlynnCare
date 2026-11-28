@@ -8,6 +8,16 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — The v9 gate rejected six true drafts and called a complaint a survey
+
+**What went wrong:** The gate compared tags as exact strings, so "C 513" was not "C0513" and "800" was not "0800". A California cite such as section 87507 failed because that sentence is not a tag token. "Cardio Pulmonary" was read as a person's name. "determined" did not match "determination". The digit in LGBTQIA2S+ was read as a count. The zero line read SURVEY from the form header "DATE SURVEY AND PLAN OF CORRECTION" on a complaint that says "investigation of complaint". One 45-finding report came back with 9 tags. The default run also wrote to the database, and the gate never saw the stored deficiency rows.
+
+**What worked instead:** Compare a letter prefix plus the number with leading zeros removed. A regulation cite has to match a stored row for that visit. Allow the documented lemmas and the medical and program phrases. Allow a mixed token only when that exact token is in the finding. Take the visit type from the body, and say "at this visit" when the body has none. Above 20 findings, one call per finding on that finding's narrative. Writing requires `--write`.
+
+**Source:** v9 pilot, 4 of 20. The stored error was 1f13c4d3. The false rejections were 83ab8c41, 68459116, 25c72326, c3a8bb6e, 81ab14f4, and 08a32406.
+
+---
+
 ## 2026-11-28 — The v8 description gate stored five findings that were not in the source
 
 **What went wrong:** The gate checked digits, tags, and a few banned phrases. It did not check that a description's words came from that finding. A TB line about one of six staff files was stored as if it were every file. A 125-degree water reading gained "above the regulatory limit." A document due after the visit was stored as missed. An ombudsman sentence from the rule was stored as the finding. "Reviewed by the LLA" was stored as "reviewed by the licensee." Oregon rows were rejected because no deficiency-table tags were passed. Minnesota complaint rows were rejected because an MN-SUBST substantiation row was counted as a deficiency.

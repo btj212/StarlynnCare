@@ -6,6 +6,18 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — Tag shape is not a different tag, and a long visit is one call per finding
+
+**Decided:** Compare tags after removing spaces and leading zeros. "C 513" is "C0513". "800" is "0800". A different number still fails. A California regulation cite counts only when its section, and any subsection it states, is on a stored row for that visit. A blank California code is still a row. A digit inside a token such as LGBTQIA2S+ is allowed only when that exact token is in the finding. A count, a date, and a dollar sign are still rejected. Title-case medical and program phrases (Cardio Pulmonary, Adult Protective, Long Term, Residential Care, Assisted Living) are not person names. A real inspector name still fails. The zero line takes the visit type from the report body. "DATE SURVEY AND PLAN OF CORRECTION" is a form header. If the body has no visit phrase, the line says "at this visit" and names no type. `main()` does not write unless `--write` is passed, and it passes the deficiency rows into the gate. A visit with more than 20 findings gets one model call per finding, on that finding's own narrative. Haiku is $1.00 in and $5.00 out per million tokens. On the 45-finding report a call is about 1,500 input tokens and 80 output tokens, about $0.0019.
+
+**This narrows** the v9 rule that drops rule sentences when a span has no not-met marker. Oregon prints the rule and the observation in the same tag block, and that drop rejected a true quote of the rule. Minnesota evidence is still the parser text after the marker. It also narrows the partial-count rule: the count is required when the description's main clause names the counted group. A clause quoted after "stating that" does not have to repeat it. "One out of six" staff files still cannot become an unscoped "staff files."
+
+**Rejected:** Calling the cutoff 12, which would have taken the 16-finding Traditions report off the chunk merge that already keeps every tag. Treating "800" and "0810" as the same tag. Letting a cite through when that visit has no matching stored row.
+
+**Source:** v9 pilot on PR 278, 4 of 20. Rows 83ab8c41, 68459116, 25c72326, c3a8bb6e, 81ab14f4, 08a32406, 1f13c4d3, da8830a7.
+
+---
+
 ## 2026-11-28 — A finding description is grounded in that finding, and a zero-citation line is fixed text
 
 **Decided:** Each model description must use words from that deficiency's own evidence. Minnesota evidence is the parsed narrative after "not met as evidenced by." Where that marker is missing, sentences that read as the rule are dropped; if nothing remains, the whole span is the evidence. "Six of six" may be omitted. "One of six" may not become an unscoped "staff files." Licensee and the licensing authority are different actors. A date in the header is kept only when it is the inspection row's date. MN-SUBST is not a deficiency. Oregon tags printed in the report are accepted when the deficiency table has none. A gate failure is sent back at most twice; then the row is held and nothing is stored. A published California, Minnesota, or Oregon visit with no deficiencies and a report that says so gets exactly "No deficiencies were cited at this visit." plus the code-built header, with no model call. Texas, a missing report, an unpublished report, and a stub page get no summary and no such line.

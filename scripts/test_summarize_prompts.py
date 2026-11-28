@@ -967,6 +967,250 @@ def test_zero_citation_line_is_code_only() -> None:
     )
 
 
+def _v9(prefix: str) -> dict:
+    if not hasattr(_v9, "rows"):
+        _v9.rows = json.loads((ROOT / "scripts" / "testdata" / "pilot_rows_v9.json").read_text())
+    return next(row for row in _v9.rows if row["id"].startswith(prefix))
+
+
+def _v9_raw(prefix: str, index: int = 0) -> str:
+    if not hasattr(_v9_raw, "drafts"):
+        _v9_raw.drafts = json.loads((ROOT / "scripts" / "testdata" / "pilot_drafts_v9.json").read_text())
+    return _v9_raw.drafts[prefix][index]
+
+
+def _gate_v9(prefix: str, index: int = 0):
+    """The real draft, with the deficiency rows main() now passes in."""
+    row = _v9(prefix)
+    return asm.assemble_summary(
+        state_code=row["state"],
+        source=row["narrative"],
+        descriptions=asm.parse_descriptions(_v9_raw(prefix, index)),
+        d_tags=None,
+        finding_count=row["tdc"],
+        penalty=None,
+        inspection_date=row.get("inspection_date"),
+        inspection_type=row.get("inspection_type"),
+        defs=row.get("defs"),
+        facility=row.get("facility"),
+    )
+
+
+def test_v10_false_rejections_now_pass() -> None:
+    """The six drafts the v9 gate rejected for shape, not for a false fact, are stored.
+
+    81ab14f4's passing draft is the second one: "determined" and the source's
+    "determination" are the same word. The first draft still says "two", and that
+    count is not in the finding.
+    """
+    for prefix in ("83ab8c41", "68459116", "25c72326", "c3a8bb6e", "08a32406"):
+        text, err = _gate_v9(prefix)
+        assert err is None and text, (prefix, err)
+    text, err = _gate_v9("81ab14f4", 1)
+    assert err is None and text, err
+    assert "determined" in text.lower()
+    early, early_err = _gate_v9("81ab14f4", 0)
+    assert early is None and early_err and "two" in early_err
+
+
+def test_v10_shape_rules_still_reject_a_real_miss() -> None:
+    """A different number, a cite from another visit, a name, or a digit still fails."""
+    wrong_number, wrong_err = asm.assemble_summary(
+        state_code="MN",
+        source="0800 not met as evidenced by the licensee failed to post the hours.",
+        descriptions=[{"tag": "0810", "description": "The licensee failed to post the hours."}],
+        d_tags=["0800"],
+        finding_count=1,
+        penalty=None,
+    )
+    assert wrong_number is None and wrong_err
+
+    cited = _v9("68459116")
+    foreign, foreign_err = asm.assemble_summary(
+        state_code="CA",
+        source=cited["narrative"],
+        descriptions=[{"tag": "87411(a)", "description": "The licensee failed to offer a refund."}],
+        d_tags=None,
+        finding_count=1,
+        penalty=None,
+        defs=cited["defs"],
+        facility=cited.get("facility"),
+    )
+    assert foreign is None and foreign_err and "cite" in foreign_err
+
+    named, named_err = asm.assemble_summary(
+        state_code="CA",
+        source=cited["narrative"],
+        descriptions=[{"tag": None, "description": "Grace Donato reviewed the admission agreement."}],
+        d_tags=None,
+        finding_count=1,
+        penalty=None,
+        defs=cited["defs"],
+        facility=cited.get("facility"),
+    )
+    assert named is None and named_err and "Grace" in named_err
+
+    training = _v9("08a32406")
+    patio = asm.tag_span(training["narrative"], "V6313", ["V5759", "V6313"])
+    course = asm.tag_span(training["narrative"], "V5759", ["V5759", "V6313"])
+    assert patio and "LGBTQIA2S+" not in patio
+    assert asm.digit_problem("The back patio needs LGBTQIA2S+ training.", patio)
+    assert asm.digit_problem("The provider completed LGBTQIA2S+ training.", course) is None
+    assert asm.digit_problem(
+        "The licensee failed to care for 2 residents.",
+        "The licensee failed to care for 2 residents.",
+    )
+    assert asm.digit_problem("A fine of $500 was listed.", course)
+
+
+def test_v10_zero_line_uses_the_body_not_the_form_header() -> None:
+    """1f13c4d3 is a complaint. The only 'SURVEY' is the form header, so it is not the visit."""
+    row = _v9("1f13c4d3")
+    old = "The Minnesota Department of Health completed a SURVEY. No deficiencies were cited at this visit."
+    assert "survey" in old.lower()
+    assert asm.visit_type_as_written("DATE SURVEY AND PLAN OF CORRECTION") is None
+    assert asm.visit_type_as_written(row["narrative"], "complaint") == "complaint investigation"
+    out = si.summarize(
+        None,
+        row["inspection_type"],
+        True,
+        None,
+        row["narrative"],
+        state_code="MN",
+        deficiency_count=0,
+        published=True,
+        record_date=str(row["inspection_date"]),
+    )
+    assert out and "survey" not in out.lower()
+    assert "complaint investigation" in out.lower()
+    assert "No deficiencies were cited at this visit." in out
+    assert "0 citations" not in out and "clean record" not in out.lower()
+    # The old line names a visit the body does not name.
+    assert out != old
+
+
+def test_v10_dry_run_is_the_default_and_defs_are_passed() -> None:
+    """Nothing is written unless --write is set. The gate receives the deficiency rows."""
+    writes: list[str] = []
+    seen: dict = {}
+
+    class _Cursor:
+        def __init__(self):
+            self.sql = ""
+            self.rowcount = 1
+
+        def execute(self, sql, params=None):
+            self.sql = sql
+            if "UPDATE inspections" in sql:
+                writes.append(sql)
+
+        def fetchall(self):
+            if "immediate_jeopardy" in self.sql:
+                return [(
+                    "id-1", "0800", "Type B", False, "the rule",
+                    "the licensee failed to post the hours of operation.", None,
+                )]
+            return [(
+                "id-1", "survey", False, None,
+                "On March 10, 2024, the Minnesota Department of Health completed a full survey. "
+                "0800 not met as evidenced by the licensee failed to post the hours of operation.",
+                "Home", "MN", False, 1, "2024-03-10", True,
+            )]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    class _Conn:
+        def cursor(self):
+            return _Cursor()
+
+        def commit(self):
+            return None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    def connect(_url):
+        return _Conn()
+
+    def summarize_fn(*args, **kwargs):
+        seen["defs"] = kwargs.get("defs")
+        return "The licensee failed to post the hours."
+
+    saved = si.DATABASE_URL
+    si.DATABASE_URL = "postgres://example"
+    try:
+        for argv in ([], ["--dry-run"], ["--write", "--dry-run"]):
+            writes.clear()
+            si.main(argv, connect=connect, summarize_fn=summarize_fn)
+            assert writes == [], argv
+        writes.clear()
+        seen.clear()
+        si.main(["--write"], connect=connect, summarize_fn=summarize_fn)
+        assert len(writes) == 1
+        assert seen["defs"][0]["code"] == "0800"
+        assert seen["defs"][0]["class"] == "Type B"
+        assert seen["defs"][0]["ij"] is False
+    finally:
+        si.DATABASE_URL = saved
+
+
+def test_v10_many_findings_are_one_call_each() -> None:
+    """da8830a7 has 45 findings. Each call sees that finding's narrative, and no tag is dropped.
+
+    The cutoff is 20 because a 16-finding report already survives the chunk merge.
+    """
+    assert si.PER_FINDING_LIMIT == 20
+    row = _v9("da8830a7")
+    assert len(row["defs"]) == 45
+    calls: list[dict] = []
+
+    class _Messages:
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            user = kwargs["messages"][0]["content"]
+            if "the licensee failed to" in user.lower():
+                sentence = "The licensee failed to."
+            else:
+                sentence = "The facility failed to."
+            return types.SimpleNamespace(content=[types.SimpleNamespace(
+                text=json.dumps([{"tag": None, "description": sentence}])
+            )])
+
+    client = types.SimpleNamespace(messages=_Messages())
+    out = si.summarize(
+        client,
+        row["inspection_type"],
+        bool(row["is_complaint"]),
+        row.get("outcome"),
+        row["narrative"],
+        state_code=row["state"],
+        deficiency_count=row["tdc"],
+        record_date=str(row["inspection_date"]),
+        published=bool(row["publishable"]),
+        defs=row["defs"],
+        facility=row.get("facility"),
+    )
+    assert out, "45 findings should store"
+    assert len(calls) == 45
+    assert "45 correction orders" in out
+    assert out.count("failed to.") == 45
+    users = [call["messages"][0]["content"] for call in calls]
+    assert not any("Report part" in user for user in users)
+    for item in row["defs"]:
+        narrative = item["inspector_narrative"]
+        matched = [user for user in users if f"Tag: {item['code']}" in user]
+        assert len(matched) == 1, item["code"]
+        assert narrative in matched[0]
+        assert len(narrative) > 100
+
+
 def test_header_omits_a_date_that_disagrees() -> None:
     """The report date is used only when it is the inspection row's date."""
     source = "On August 7, 2024, the Minnesota Department of Health completed a standard survey."

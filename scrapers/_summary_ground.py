@@ -12,7 +12,14 @@ Synonyms (description word -> a form that may appear in the span):
   became/turned, timeframe/time frame. "direct-care" matches "direct" and "care".
   A possessive ("employee's") matches the same noun. "staff member" adds no fact
   beyond "staff". "specified timeframe" matches "required time frame".
+  determined/determination/determine are one lemma. review/reviewed/reviewing are one lemma.
+  seeing/saw/seen are one lemma. throughout matches "all over". near matches "along".
+  present matches "observed". A short plural ("beds") matches the singular.
   Number words match the same digit in the span (one = 1, eighteen = 18).
+
+A Title-Case pair is a person name only when neither word is a documented medical,
+program, or regulatory term: Cardio Pulmonary, Cardiopulmonary Resuscitation,
+Adult Protective, Long Term, Residential Care, Assisted Living, Elderly California.
 
 Actors that must not be swapped: licensee, facility, staff, administrator, LLA /
 licensing authority, Department, surveyor.
@@ -92,7 +99,7 @@ a an the of to and or in on for with by at from as is are was were be been being
 this that these those it its their his her they them he she we you your
 not no nor but if then than so do did does done have has had
 out up into over under about after before between during
-its also only per via
+its also only per via evidenced
 """.split())
 
 _NUM = {
@@ -103,8 +110,28 @@ _NUM = {
     "twenty": "20", "twice": "2",
 }
 _COUNT_WORDS = frozenset(_NUM) | {"all", "every", "none", "twice"}
-_SYNONYM = {"became": "turned", "turned": "became", "timeframe": "time frame"}
+_SYNONYM = {
+    "became": "turned",
+    "turned": "became",
+    "timeframe": "time frame",
+    "throughout": "all over",
+    "near": "along",
+    "present": "observed",
+}
 _IRREG = {"found": "find", "failed": "fail", "left": "leave", "kept": "keep", "met": "meet"}
+_LEMMA = {
+    "determine": "determine",
+    "determined": "determine",
+    "determining": "determine",
+    "determination": "determine",
+    "review": "review",
+    "reviewed": "review",
+    "reviewing": "review",
+    "see": "see",
+    "saw": "see",
+    "seen": "see",
+    "seeing": "see",
+}
 _EVIDENCE = re.compile(
     r"this (?:mn |minnesota |licensure )?requirement is not met as evidenced by:?|"
     r"this rule is not met as evidenced by:?",
@@ -144,10 +171,12 @@ def v6_site_counts() -> dict[str, int]:
 
 def stem(word: str) -> str:
     w = word.lower().replace("'", "")
+    if w in _LEMMA:
+        return _LEMMA[w]
     if w in _IRREG:
         return _IRREG[w]
-    for suf in ("ing", "ed", "es", "s"):
-        if len(w) > len(suf) + 3 and w.endswith(suf):
+    for suf in ("ly", "ing", "ed", "es", "s"):
+        if len(w) >= len(suf) + 3 and w.endswith(suf):
             return w[: -len(suf)]
     return w
 
@@ -172,31 +201,39 @@ def evidence_text(span: str) -> tuple[str, str]:
 
 
 def tag_span(narrative: str, tag: str, tags: list[str] | None = None) -> str | None:
-    """Text from this tag to the next tag, using the same tag tokens the report prints."""
+    """Text from this tag to the next tag. Spaces and leading zeros still count.
+
+    "Refer to: C 513" sits at the end of the finding, so that finding's lead-in
+    is part of the span.
+    """
+    from _extractive_merge import tag_key, tag_pattern
+
     if not tag or not narrative:
         return None
-    wanted = str(tag).upper()
-    others = [str(t).upper() for t in (tags or []) if t and str(t).upper() != wanted]
-    # MN prints 0550 as "0 550" or "0550". OR prints A1415.
-    if re.fullmatch(r"0\d{3,4}", wanted):
-        body = wanted[1:] if wanted.startswith("0") else wanted
-        pat = rf"(?<![A-Z0-9])0\s*{re.escape(body)}(?![0-9])"
-    else:
-        pat = rf"(?<![A-Z0-9]){re.escape(wanted)}(?![A-Z0-9])"
+    pat = tag_pattern(tag)
+    if not pat:
+        return None
     match = re.search(pat, narrative, re.I)
     if not match:
         return None
+    wanted = tag_key(tag)
     end = len(narrative)
-    for other in others:
-        if re.fullmatch(r"0\d{3,4}", other):
-            body = other[1:]
-            opat = rf"(?<![A-Z0-9])0\s*{re.escape(body)}(?![0-9])"
-        else:
-            opat = rf"(?<![A-Z0-9]){re.escape(other)}(?![A-Z0-9])"
+    for other in tags or []:
+        if not other or tag_key(other) == wanted:
+            continue
+        opat = tag_pattern(other)
+        if not opat:
+            continue
         nxt = re.search(opat, narrative[match.end():], re.I)
         if nxt:
             end = min(end, match.end() + nxt.start())
-    return narrative[match.start():end]
+    start = match.start()
+    before = narrative[:start]
+    if re.search(r"refer to:\s*$", before[-40:], re.I):
+        lead = re.search(r"Based on [\s\S]{0,1500}$", before)
+        if lead:
+            start = lead.start()
+    return narrative[start:end]
 
 
 def _tokens(text: str) -> list[str]:
@@ -206,7 +243,14 @@ def _tokens(text: str) -> list[str]:
 def _span_index(span: str) -> tuple[set[str], str]:
     flat = re.sub(r"[^A-Za-z0-9\s]", " ", span or "").lower()
     flat = re.sub(r"\s+", " ", flat)
-    stems = {stem(w) for w in flat.split() if w}
+    stems: set[str] = set()
+    for word in flat.split():
+        if not word:
+            continue
+        stems.add(stem(word))
+        # "LGBTQIA2S+" is one token in the span and two letter-runs in the description.
+        for part in re.findall(r"[a-z]{3,}", word):
+            stems.add(stem(part))
     for word, alt in _SYNONYM.items():
         if alt.replace(" ", "") in flat.replace(" ", "") or word in flat:
             stems.add(stem(word))
@@ -282,8 +326,19 @@ def quantifier_problem(description: str, evidence: str) -> str | None:
         if left_n is not None and right_n is not None and left_n == right_n:
             continue  # six out of six is the whole set
         topic = ev[match.end(): match.end() + 90]
-        topic_words = {w for w in _tokens(topic) if w.lower() not in _GENERIC and w.lower() not in _STOP and len(w) >= 3}
-        desc_words = {w.lower() for w in _tokens(description)}
+        nouns = [
+            w.lower() for w in _tokens(topic)
+            if w.lower() not in _GENERIC and w.lower() not in _STOP and len(w) >= 3
+        ]
+        if not nouns:
+            continue
+        # The counted group is the first noun ("residents", "proof"). A clause
+        # quoted after "stating that" can mention that group without widening it.
+        main = re.split(r"\bstating that\b", low, maxsplit=1)[0]
+        if not re.search(rf"\b{re.escape(nouns[0])}\b", main):
+            continue
+        topic_words = set(nouns)
+        desc_words = {w.lower() for w in _tokens(main)}
         if not topic_words & desc_words:
             continue
         if _same_scope(description, match.group(0)):
@@ -484,14 +539,21 @@ _NOT_A_NAME = frozenset(
     "licensor analyst facility january february march april may june july august september "
     "october november december recordkeeping emergency certification plan the".split()
 )
+# Both words must be on this list. A real first-and-last name is not.
+_NAME_OK = frozenset(
+    "cardio pulmonary cardiopulmonary resuscitation adult protective long term "
+    "residential care elderly california assisted living".split()
+)
 
 
 def check_person_name(description: str, source: str, facility: str | None) -> str | None:
-    """Two consecutive capitalized words that are not a role or the facility name."""
+    """Two consecutive capitalized words that are not a role, a term, or the facility name."""
     fac = set(re.findall(r"[a-z']+", (facility or "").lower()))
     for match in re.finditer(r"\b([A-Z][a-z]{2,})\s+([A-Z][a-z]{2,})\b", description or ""):
         first, second = match.group(1), match.group(2)
         if first.lower() in _NOT_A_NAME or second.lower() in _NOT_A_NAME:
+            continue
+        if first.lower() in _NAME_OK and second.lower() in _NAME_OK:
             continue
         if first.lower() in fac or second.lower() in fac:
             continue
@@ -625,16 +687,31 @@ def header_date_allowed(written: str | None, inspection_date: str | None) -> boo
 
 def mn_evidence(source: str, tag: str | None) -> str | None:
     """The MN parser's finding narrative: text after 'not met as evidenced by', statute excluded."""
-    from _extractive_merge import norm_tag
+    from _extractive_merge import tag_key
     import mn_defs
 
-    code = norm_tag(tag)
-    if not code or not re.fullmatch(r"0\d{3,4}", code):
+    code = tag_key(tag)
+    if not code or not re.fullmatch(r"\d{3,5}", code):
         return None
     for rec in mn_defs.parse(source or ""):
-        if norm_tag(rec.get("code")) == code and rec.get("inspector_narrative"):
+        if tag_key(rec.get("code")) == code and rec.get("inspector_narrative"):
             return rec["inspector_narrative"]
     return None
+
+
+def deficiency_rows(defs: list[dict] | None) -> tuple[list[dict], list[dict]]:
+    """Deficiency rows, including a row whose code is blank. MN-SUBST is separate."""
+    rows: list[dict] = []
+    subst: list[dict] = []
+    for item in defs or []:
+        code = item.get("code")
+        text = "" if code is None else str(code).strip()
+        compact = re.sub(r"[\s\-]", "", text).upper()
+        if compact in {"MNSUBST", "MNSUBSTANT"}:
+            subst.append(item)
+            continue
+        rows.append(item)
+    return rows, subst
 
 
 def split_substantiation(defs: list[dict] | None) -> tuple[list[str], list[dict]]:

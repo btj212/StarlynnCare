@@ -1,8 +1,10 @@
 """Code-built summary header plus a gate on model-written finding descriptions.
 
 The model never supplies a count, a date, a visit type, or a penalty. Those come from
-the report text and the deficiency rows. A description that contains a digit, a dollar
-sign, or a tag that is not on the deficiency rows is not stored.
+the report text and the deficiency rows. A dollar sign, a date, or a count is not stored.
+A digit inside a token such as LGBTQIA2S+ is kept only when that exact token is in the
+finding's span. Tags are compared with spaces and leading zeros removed. A California
+regulation cite counts only when it matches a stored row for this visit.
 """
 
 from __future__ import annotations
@@ -10,14 +12,13 @@ from __future__ import annotations
 import json
 import re
 
-from _extractive_merge import norm_tag
+from _extractive_merge import norm_tag, tag_key, tag_pattern
 from _summary_ground import (
     check_outcome,
-    evidence_text,
+    deficiency_rows,
     ground_problems,
     header_date_allowed,
     mn_evidence,
-    split_substantiation,
     tag_span,
 )
 
@@ -116,12 +117,25 @@ def _cap(text: str) -> str:
     return text[0].upper() + text[1:]
 
 
-def visit_type_as_written(text: str, inspection_type: str | None = None) -> str | None:
-    """The report's own visit wording. Never our label unless that phrase is in the text.
+_FORM_HEADER = re.compile(
+    r"DATE\s+SURVEY\s+AND\s+PLAN\s+OF\s+CORRECTION|"
+    r"STATEMENT\s+OF\s+DEFICIENCIES|"
+    r"STATE\s+FORM|"
+    r"FORM\s+APPROVED",
+    re.I,
+)
 
-    When the inspection row says re-licensure or change of owner, that phrase wins over
-    a stray "survey" ("reviewed during survey").
+
+def visit_type_as_written(text: str, inspection_type: str | None = None) -> str | None:
+    """The report body's own visit wording. A form header is not the visit.
+
+    "DATE SURVEY AND PLAN OF CORRECTION" is a form label. "Initiated an investigation
+    of complaint" is a complaint investigation. When the body has no visit phrase,
+    the result is None and the zero line does not name a type.
     """
+    body = _FORM_HEADER.sub(" ", text or "")
+    if re.search(r"\b(?:investigation of complaint|complaint investigation)\b", body, re.I):
+        return "complaint investigation"
     kind = (inspection_type or "").lower()
     preferred = []
     if "re-licen" in kind or "relicen" in kind:
@@ -131,11 +145,11 @@ def visit_type_as_written(text: str, inspection_type: str | None = None) -> str 
     if "complaint" in kind:
         preferred.append(r"complaint investigation")
     for hint in preferred:
-        match = re.search(r"\b" + hint + r"\b", text or "", re.I)
+        match = re.search(r"\b" + hint + r"\b", body, re.I)
         if match:
             return match.group(0)
     for phrase in _VISIT_PHRASES:
-        match = re.search(r"\b" + re.escape(phrase) + r"\b", text or "", re.I)
+        match = re.search(r"\b" + re.escape(phrase) + r"\b", body, re.I)
         if match:
             return match.group(0)
     return None
@@ -304,6 +318,58 @@ def parse_descriptions(raw: str) -> list[dict] | None:
     return out
 
 
+_COUNT_AFTER = re.compile(
+    r"\s+(?:residents?|items?|hours?|days?|staff|people|persons?|times?)\b",
+    re.I,
+)
+_CITE_PHRASE = re.compile(
+    r"\b(?:Title|Division|Div\.|Chapter|Chapt\.|Article|Section|Sec\.|§)\s*\d+\b",
+    re.I,
+)
+_DATE_IN_TEXT = re.compile(
+    r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)"
+    r"\s+\d{1,2},?\s+\d{4}\b|\b\d{1,2}/\d{1,2}/\d{2,4}\b",
+    re.I,
+)
+_MIXED_TOKEN = re.compile(
+    r"[A-Za-z][A-Za-z0-9+\-]*\d[A-Za-z0-9+\-]*|\d+[A-Za-z][A-Za-z0-9+\-]*"
+)
+
+
+def digit_problem(description: str, evidence: str | None) -> str | None:
+    """A count, a date, or a dollar sign is rejected.
+
+    A token that mixes letters and digits is kept only when that exact token is in
+    this finding's span. A regulation phrase such as "Title 22" is kept when the
+    same phrase is in the span.
+    """
+    if not description:
+        return None
+    if "$" in description or _DATE_IN_TEXT.search(description):
+        return "digit or dollar sign"
+    mixed: list[tuple[int, int]] = []
+    for match in _MIXED_TOKEN.finditer(description):
+        mixed.append(match.span())
+        token = match.group(0)
+        if not evidence or not re.search(
+            rf"(?<![A-Za-z0-9]){re.escape(token)}(?![A-Za-z0-9])",
+            evidence,
+            re.I,
+        ):
+            return "digit or dollar sign"
+    for match in re.finditer(r"\d+", description):
+        if any(start <= match.start() < end for start, end in mixed):
+            continue
+        if _COUNT_AFTER.match(description[match.end(): match.end() + 24]):
+            return "digit or dollar sign"
+        window = description[max(0, match.start() - 24): match.end() + 8]
+        cite = _CITE_PHRASE.search(window)
+        if cite and evidence and re.search(re.escape(cite.group(0)), evidence, re.I):
+            continue
+        return "digit or dollar sign"
+    return None
+
+
 def description_problems(
     description: str,
     source: str,
@@ -318,8 +384,9 @@ def description_problems(
 ) -> list[str]:
     """Hard failures in the model-written sentence. The code-built header is not passed here."""
     problems: list[str] = []
-    if re.search(r"[0-9]", description) or "$" in description:
-        problems.append("digit or dollar sign")
+    digit = digit_problem(description, evidence if evidence is not None else source)
+    if digit:
+        problems.append(digit)
     if _REPORT_SAYS.search(description):
         problems.append("the report says")
     if _IDENT.search(description):
@@ -358,12 +425,50 @@ def _evidence_for(source: str, tag: str | None, tags: list[str]) -> tuple[str, s
         return narr, "MN finding narrative after the not-met marker"
     span = tag_span(source, tag, tags) if tag else None
     if span is None:
-        span = source or ""
-        how = "whole report; this description has no tag boundary"
-    else:
-        how = ""
-    evidence, boundary = evidence_text(span)
-    return evidence, how or boundary
+        return source or "", "whole report; this description has no tag boundary"
+    # The tag block is the finding. Oregon prints the rule and the observation in
+    # that same block, and the v9 cut dropped the rule the description quoted.
+    # Minnesota still uses the parser text after the not-met marker, above.
+    return span, "tag span"
+
+
+def _plain_tag(code: str) -> bool:
+    if not code or "(" in code or ")" in code:
+        return False
+    key = tag_key(code)
+    return bool(key and re.fullmatch(r"[A-Z]*\d+", key))
+
+
+def _is_reg_cite(tag: str | None) -> bool:
+    if not tag:
+        return False
+    if re.search(r"\d{4,5}\s*\(", tag):
+        return True
+    return bool(re.search(r"\d{4,5}", tag) and re.search(r"\b(?:SEC\.|SECTION|TITLE)\b", tag, re.I))
+
+
+def _cite_matches(tag: str, rows: list[dict]) -> bool:
+    """The section number, and any subsection the model states, is on one stored row."""
+    sections = re.findall(r"\d{4,5}", tag or "")
+    if not sections:
+        return False
+    subs = [part.upper() for part in re.findall(r"\([A-Za-z0-9]+\)", tag or "")]
+    hits = 0
+    for row in rows:
+        code = str(row.get("code") or "")
+        if sections[0] not in re.findall(r"\d{4,5}", code):
+            continue
+        if subs and not all(part in code.upper() for part in subs):
+            continue
+        hits += 1
+    return hits == 1
+
+
+def _tag_in_source(tag: str, source: str) -> bool:
+    pattern = tag_pattern(tag)
+    if not pattern:
+        return False
+    return re.search(pattern, source or "", re.I) is not None
 
 
 def assemble_summary(
@@ -391,24 +496,39 @@ def assemble_summary(
     or be the 1-based index of that description. MN-SUBST rows are not deficiency tags.
     """
     real_defs = defs
+    cite_rows: list[dict] | None = None
     if defs:
-        real_tags, _subst = split_substantiation(defs)
-        if real_tags or _subst:
-            d_tags = real_tags
-            finding_count = len(real_tags)
+        rows, _subst = deficiency_rows(defs)
+        if rows or _subst:
+            finding_count = len(rows)
+            codes = ["" if row.get("code") is None else str(row.get("code")).strip() for row in rows]
+            if rows and all(_plain_tag(code) for code in codes):
+                d_tags = codes
+            else:
+                # A blank California code is still a row. A regulation cite is not a tag key.
+                d_tags = None
+                cite_rows = rows
     if d_tags is not None:
         wanted = [norm_tag(tag) for tag in d_tags]
         if any(tag is None for tag in wanted):
             return None, "D-row tag missing"
         if len(wanted) != finding_count:
             return None, "D-row count does not match the record count"
-        got = [item["tag"] for item in descriptions]
-        if len(got) != len(set(got)):
-            return None, "duplicate tag"
-        if set(got) != set(wanted) or len(got) != len(wanted):
+        if len(descriptions) != len(wanted):
             return None, "description count does not match D rows"
-        by_tag = {item["tag"]: item["description"] for item in descriptions}
-        ordered_items = [{"tag": tag, "description": by_tag[tag]} for tag in wanted]
+        wanted_keys = [tag_key(tag) for tag in wanted]
+        if any(key is None for key in wanted_keys) or len(wanted_keys) != len(set(wanted_keys)):
+            return None, "duplicate tag"
+        used: list[str | None] = []
+        for item in descriptions:
+            if not item["tag"]:
+                used.append(None)
+                continue
+            key = tag_key(item["tag"])
+            if key not in wanted_keys or key in used:
+                return None, "duplicate tag" if key in used else "tag not in the report"
+            used.append(key)
+        ordered_items = descriptions
         count = len(wanted)
         span_tags = [tag for tag in wanted if tag]
     else:
@@ -421,11 +541,14 @@ def assemble_summary(
                 continue
             if re.fullmatch(r"[1-9]\d?", tag) and int(tag) == index:
                 continue
-            if not re.search(rf"(?<![A-Za-z0-9]){re.escape(tag)}(?![A-Za-z0-9])", source or "", re.I):
+            if cite_rows is not None and _is_reg_cite(tag):
+                if not _cite_matches(tag, cite_rows):
+                    return None, "regulation cite does not match this visit"
+            elif not _tag_in_source(tag, source or ""):
                 return None, "tag not in the report"
-            if tag in seen:
+            if tag_key(tag) in seen:
                 return None, "duplicate tag"
-            seen.add(tag)
+            seen.add(tag_key(tag) or tag)
         ordered_items = descriptions
         count = finding_count
         span_tags = [

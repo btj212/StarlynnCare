@@ -30,6 +30,36 @@ def norm_tag(t):
     if re.fullmatch(r"0{2}\d{3}", s): s = "0" + s[2:]    # MN layout B prints 00470 for 0470
     return s or None
 
+
+def tag_key(t):
+    """Compare key: letter prefix plus the number with leading zeros removed.
+
+    "C 513" and "C0513" are the same key. "800" and "0800" are the same key.
+    A different number is a different key. The stored tag text is still norm_tag.
+    """
+    s = norm_tag(t)
+    if not s:
+        return None
+    match = re.fullmatch(r"([A-Z]*)(\d+)", s)
+    if not match:
+        return s
+    num = match.group(2).lstrip("0") or "0"
+    return match.group(1) + num
+
+
+def tag_pattern(t):
+    """A source may print the tag with spaces or extra leading zeros."""
+    key = tag_key(t)
+    if not key:
+        return None
+    match = re.fullmatch(r"([A-Z]*)(\d+)", key)
+    if not match:
+        return rf"(?<![A-Za-z0-9]){re.escape(key)}(?![A-Za-z0-9])"
+    prefix, num = match.group(1), match.group(2)
+    if prefix:
+        return rf"(?<![A-Za-z0-9]){prefix}\s*0*{re.escape(num)}(?![0-9])"
+    return rf"(?<![A-Za-z0-9])0*{re.escape(num)}(?![0-9])"
+
 def parse_items(raw):
     """Parse the model's JSON array; tolerate a fenced block or text around it. Bad output -> []."""
     if not raw: return []

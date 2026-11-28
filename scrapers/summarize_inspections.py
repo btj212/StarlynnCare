@@ -9,9 +9,10 @@ sentence plain-English summaries that families can read at a glance, stored in
 inspections.narrative_summary.
 
 Usage:
-    python summarize_inspections.py                 # process all unsummarized
+    python summarize_inspections.py                 # dry run: print only, write nothing
+    python summarize_inspections.py --dry-run       # same as the default
+    python summarize_inspections.py --write         # save narrative_summary
     python summarize_inspections.py --smoke         # first 3 records only
-    python summarize_inspections.py --dry-run       # print output, no DB writes
     python summarize_inspections.py --refetch       # re-generate existing summaries
     python summarize_inspections.py --facility-id X # one facility only
 
@@ -743,6 +744,109 @@ def _stored_summary(
 _GATE_RETRIES = 2
 _NO_RETRY = {"nothing to store", "model did not return finding descriptions"}
 _ZERO_LINE = "No deficiencies were cited at this visit."
+# Above this many findings, one description call kept only a handful of tags
+# (45 findings came back as 9). 16 still uses the chunk merge, which the
+# Traditions report covers, so the cutoff stays above 16.
+PER_FINDING_LIMIT = 20
+# One finding call sends that finding's narrative. On the 45-finding report the
+# mean narrative is 3,310 characters: about 1,100 tokens at 3 characters per
+# token, plus about 400 tokens of prompt. Haiku is $1.00 per million input
+# tokens and $5.00 per million output tokens (scrapers/model_config.json).
+# One sentence back is about 80 tokens. About $0.0019 per finding call.
+
+
+def _jobs_over_limit(narrative: str, defs: list[dict] | None) -> list[tuple[str, str]] | None:
+    """One (tag, span) per finding when there are more than PER_FINDING_LIMIT rows."""
+    from _summary_ground import deficiency_rows, mn_evidence
+
+    rows, _subst = deficiency_rows(defs)
+    if len(rows) <= PER_FINDING_LIMIT:
+        return None
+    jobs: list[tuple[str, str]] = []
+    for row in rows:
+        code = "" if row.get("code") is None else str(row.get("code")).strip()
+        span = (row.get("inspector_narrative") or "").strip()
+        if len(span) < 40:
+            span = (mn_evidence(narrative, code) or "").strip()
+        if len(span) < 40 or not code:
+            return None
+        jobs.append((code, span))
+    return jobs
+
+
+def _describe_each_finding(
+    client: anthropic.Anthropic,
+    jobs: list[tuple[str, str]],
+    *,
+    system: str,
+    inspection_type: str,
+    is_complaint: bool,
+    outcome: str | None,
+    dementia_contract: str,
+    record_date: str | None,
+    deficiency_instruction: str,
+    state_code: str,
+    holds_sdc: bool,
+    narrative: str,
+    deficiency_count: int,
+    d_tags: list[str] | None,
+    followup_amount: str | None,
+    followup_letter_date: str | None,
+    defs: list[dict] | None,
+    facility: str | None,
+) -> str | None:
+    """One model call per finding, on that finding's own span, then one gate."""
+    collected: list[dict] = []
+    for code, span in jobs:
+        user = _user_message(
+            inspection_type,
+            is_complaint,
+            outcome,
+            dementia_contract,
+            1,
+            record_date,
+            span,
+            deficiency_instruction,
+        )
+        user = user + "\n\nThis call covers one finding only. Tag: " + code + ". Reply with a JSON list of one object."
+        parsed = None
+        for _attempt in range(_GATE_RETRIES + 1):
+            raw = _complete_summary(
+                client,
+                system=system,
+                user_msg=user,
+                state_code=state_code,
+                holds_sdc=holds_sdc,
+                deficiency_count=1,
+                narrative=span,
+            )
+            parsed = parse_descriptions(raw or "")
+            if parsed:
+                break
+        if not parsed:
+            print("    held: model did not return finding descriptions")
+            return None
+        collected.append({"tag": code, "description": parsed[0]["description"]})
+    text, err = _stored_summary(
+        json.dumps(collected),
+        narrative,
+        state_code=state_code,
+        holds_sdc=holds_sdc,
+        deficiency_count=deficiency_count,
+        d_tags=d_tags,
+        followup_amount=followup_amount,
+        followup_letter_date=followup_letter_date,
+        inspection_type=inspection_type,
+        inspection_date=record_date,
+        outcome=outcome,
+        is_complaint=is_complaint,
+        defs=defs,
+        facility=facility,
+    )
+    if text:
+        return text
+    print(f"    held: {err}")
+    return None
 
 
 def _is_stub_or_error(narrative: str) -> bool:
@@ -870,6 +974,28 @@ def summarize(
         deficiency_instruction,
     )
     budget = _narrative_budget(system, overhead)
+    jobs = _jobs_over_limit(narrative, defs)
+    if jobs:
+        return _describe_each_finding(
+            client,
+            jobs,
+            system=system,
+            inspection_type=inspection_type,
+            is_complaint=is_complaint,
+            outcome=outcome,
+            dementia_contract=dementia_contract,
+            record_date=record_date,
+            deficiency_instruction=deficiency_instruction,
+            state_code=state_code,
+            holds_sdc=holds_sdc,
+            narrative=narrative,
+            deficiency_count=deficiency_count,
+            d_tags=d_tags,
+            followup_amount=followup_amount,
+            followup_letter_date=followup_letter_date,
+            defs=defs,
+            facility=facility,
+        )
 
     def _gate(raw: str | None) -> tuple[str | None, str | None]:
         if not raw:
@@ -975,10 +1101,42 @@ def summarize(
 # ---------------------------------------------------------------------------
 
 
-def main() -> None:
+def _defs_by_inspection(cur, inspection_ids: list) -> dict:
+    """Stored deficiency rows. Columns already on deficiencies. No new names."""
+    if not inspection_ids:
+        return {}
+    cur.execute(
+        """
+        SELECT inspection_id, code, class, immediate_jeopardy,
+               description, inspector_narrative, status
+        FROM deficiencies
+        WHERE inspection_id = ANY(%s)
+        ORDER BY code
+        """,
+        (list(inspection_ids),),
+    )
+    grouped: dict = {}
+    for insp_id, code, klass, ij, description, narrative, status in cur.fetchall():
+        grouped.setdefault(insp_id, []).append({
+            "code": code,
+            "class": klass,
+            "ij": bool(ij),
+            "description": description,
+            "inspector_narrative": narrative,
+            "status": status,
+        })
+    return grouped
+
+
+def main(argv=None, *, connect=None, summarize_fn=None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke", action="store_true", help="Process first 3 records only")
     parser.add_argument("--dry-run", action="store_true", help="Print summaries, no DB writes")
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="Save narrative_summary. Without this flag nothing is written.",
+    )
     parser.add_argument("--refetch", action="store_true", help="Re-generate existing summaries")
     parser.add_argument("--facility-id", help="Only process inspections for this facility UUID")
     parser.add_argument(
@@ -1003,21 +1161,24 @@ def main() -> None:
         default=None,
         help="Max inspections to summarize this run.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    do_write = bool(args.write) and not args.dry_run
+    summarize_fn = summarize_fn or summarize
+    connect = connect or psycopg.connect
 
     if model_name() is None:
         print("ERROR: set MODEL_PROFILE to a profile in scrapers/model_config.json. There is no default.")
         sys.exit(1)
-    if not ANTHROPIC_API_KEY and not args.dry_run:
+    if do_write and summarize_fn is summarize and not ANTHROPIC_API_KEY:
         print("ERROR: ANTHROPIC_API_KEY not set in .env.local")
         sys.exit(1)
     if not DATABASE_URL:
         print("ERROR: DATABASE_URL not set in .env.local")
         sys.exit(1)
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if not args.dry_run else None
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if do_write and summarize_fn is summarize else None
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             params: list = []
             if args.state.upper() == "CO":
@@ -1120,6 +1281,7 @@ def main() -> None:
                     params,
                 )
             rows = cur.fetchall()
+            defs_by_id = _defs_by_inspection(cur, [row[0] for row in rows])
 
     print(f"Records to summarize: {len(rows)}")
     if not rows:
@@ -1158,11 +1320,9 @@ def main() -> None:
         narrative = clean_narrative(raw_narrative)
         if not narrative:
             return insp_id, fac_name, None, "empty"
-        if args.dry_run:
+        if not do_write:
             return insp_id, fac_name, narrative[:150], "dry"
-        if client is None:
-            return insp_id, fac_name, None, "fail"
-        summary = summarize(
+        summary = summarize_fn(
             client,
             insp_type or "visit",
             bool(is_complaint),
@@ -1175,12 +1335,13 @@ def main() -> None:
             inspection_id=str(insp_id),
             published=bool(publishable),
             facility=fac_name,
+            defs=defs_by_id.get(insp_id),
         )
         if not summary:
             return insp_id, fac_name, None, "fail"
         return insp_id, fac_name, summary, "ok"
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with connect(DATABASE_URL) as conn:
         def _record(result):
             nonlocal processed, succeeded, failed
             insp_id, fac_name, summary, status = result
