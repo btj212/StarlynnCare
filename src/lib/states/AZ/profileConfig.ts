@@ -12,9 +12,7 @@ export function azFormatSeverityTag(d: Deficiency): { label: string; tone: Sever
   if (isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
   if ((d.severity ?? 0) >= 4 || d.immediate_jeopardy) {
     const raw = (d.state_severity_raw ?? "").toLowerCase();
-    return raw.includes("enforcement")
-      ? { label: "Enforcement", tone: "warn" }
-      : { label: "High Risk", tone: "warn" };
+    return raw.includes("enforcement") ? { label: "Enforcement", tone: "warn" } : null;
   }
   const code = d.code;
   if (code) return { label: code.slice(0, 16), tone: "info" };

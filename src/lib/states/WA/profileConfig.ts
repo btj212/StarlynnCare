@@ -1,13 +1,18 @@
 import type { StateProfileConfig } from "@/lib/states/profileConfig";
 import type { Deficiency } from "@/lib/types";
 import type { SeverityTone } from "@/lib/states/profileConfig";
-import { CMS_IJ_LABEL, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
+import { CMS_IJ_LABEL, isCmsFTag, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
+import { topTierLabel } from "@/lib/states/severityScale";
 
-// ─── ALF / AFH / ESF: DSHS-based severity ────────────────────────────────────
+// ─── ALF / AFH / ESF: DSHS Type A / B / C. Type A is the top tier. ───────────
 
 function waFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone } | null {
-  if (isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
-  const raw = d.state_severity_raw ?? d.class;
+  const top = topTierLabel("WA", d);
+  if (top) return top;
+  const raw = (d.state_severity_raw ?? d.class ?? "").trim();
+  if (/^type\s*b$/i.test(raw)) return { label: "Type B", tone: "warn" };
+  if (/^type\s*c$/i.test(raw)) return { label: "Type C", tone: "info" };
+  if (isCmsFTag(d.code) && isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
   if (!raw) return null;
   return { label: raw, tone: "info" };
 }

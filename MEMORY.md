@@ -6,6 +6,40 @@ Format per entry: **decision**, why it was made, what was rejected, source. Newe
 
 ---
 
+## 2026-11-28 — Paged reads sort by id, and a Pennsylvania nursing home is facility_type "Nursing Home"
+
+**Decided:** The three paged reads in `loadStateMemoryCareStats` order by `id` before `.range()`, so a page of 1,000 cannot skip or repeat the next row. California's "tagged Type A" FAQ and JSON-LD sentence uses the same Type A head count as the headline. Pennsylvania nursing homes are the rows whose `facility_type` is `Nursing Home` (73 publishable rows also have `wa_facility_type` `NH`). Personal care leaves `facility_type` null. The CMS directory insert writes both values; the profile config follows `facility_type`.
+
+**Rejected:** Treating a severity index of 0.0 as "clean record." The May 11, 2026 cost study scored Sunrise at Yorba Linda at 0.0, and the current CDSS record has a Type B citation from an October 18, 2022 visit.
+
+**Source:** Re-review `/cursor/stores/bot/reviews/pr277_rereview_20261127.md`. Read-only SQL on `fwvrupjgwvvzqiutwwdg`. No database write.
+
+---
+
+## 2026-11-28 — State walks and profile headlines are counted, not joined
+
+**Decided:** `loadStateMemoryCareStats` and `loadCaResearchCorpus` keep one promise per process for the day. A null result is dropped so the next call tries again. The newest inspection date is the max `inspection_date` already read while counting homes with an inspection. Window counts and the California research corpus use published facility ids in chunks and `count: "exact", head: true`. A profile renders the newest 25 visits. The headline, the last-citation date, and the 90-day severe line use those exact counts, and the severe line can read one later page when the newest 25 have no deficiency row. The full record page loads the window 100 visits at a time. No schema, index, or RPC was added.
+
+**Rejected:** Raising the anon `statement_timeout`, adding an index, or adding a `state_memory_care_stats` RPC. Those were diagnosis only. Caching a failed walk. Computing the headline from the 25 rendered rows. Embedding `facilities!inner` or `inspections!inner`, which PostgREST plans as a lateral join and which timed out under the 3-second anon cap.
+
+**Source:** `/cursor/stores/bot/reviews/build-timeout-diagnosis-2026-11-27.md`. Preview of main, not this branch, failed static generation. Read-only. No database write.
+
+---
+
+## 2026-11-28 — A Washington inspection is not a complaint, and a California citation is a row
+
+**Decided:** On a Washington profile, "Last inspection" is the newest non-complaint inspection row, or the newest posted PDF only when `doc_type` is `inspection`. A complaint investigation is its own line. The page does not use `facilities.last_inspection_date` for that headline, because the column can hold a complaint month. `wa_latest_posted_report` still returns one PDF. When that PDF is an investigation, an older inspection month in `wa_pdf_inventory` stays hidden until the function can take a document type. California headline counts are the Type A and Type B deficiency rows whose parent visit is in the three-year window. A substantiated complaint with no rows is not added. The window phrase is always shown for California. Inspections and their deficiencies are paged. A phone is shown only when it has 10 digits, or 11 with a leading 1. Otherwise the cell says "Not on file" and links the regulator record. Oregon license links go to `/Providers/Details/{license}`. A compliance-banner link uses the state's short regulator name (CDSS in California, DSHS in Washington). No phone numbers and no Oakmont banner row were written.
+
+**Rejected:** Scraping phones or the CDSS TSO block during render. Writing the 82 Oregon phones or the Oakmont flag in this change. Calling a complaint the last inspection. Keeping the 50-inspection cap. Labeling every banner link "DSHS".
+
+**Source:** Read-only SQL on project `fwvrupjgwvvzqiutwwdg`, 2026-11-28. CDSS facility `345002797` still returned `ActionType` "Revocation Action Pending" with `CaseClosed` false and `STATUS` "Licensed".
+
+A facility page does not link to a lead-gen directory (`senioradvisor.com`, `caring.com`, `aplaceformom.com`, `seniorly.com`, and the same kind of host). That URL is not the home's website. A listed price may still name the directory, without a link, and the cost card does not print a "Source" label when that name is not a link.
+
+Severity sentences use the regulator's own terms, and only when that profile's rows carry the scale. California Type A, Illinois Type 1, Oregon Level 4, Colorado Level E, Minnesota Level 3 or 4 (SS G–L), Utah High or Extreme, Washington assisted living Type A, Missouri Class I, and a CMS J–L grid (Washington, Colorado, and Pennsylvania nursing homes). Pennsylvania personal care, Arizona, and Texas do not get the sentence. "None are tagged …" is printed only when every citation in the window has a scale value. This corrects the same-day sentence that left Minnesota, Utah, Washington assisted living, and Missouri off the scale. The twelve Minnesota homes that lost the line had SS G or SS I, so Level 3 stays on that line with Level 4.
+
+---
+
 ## 2026-11-27 — Colorado stores the event key, and a document URL still counts
 
 **Decided:** This corrects the same-day visit-id entry below. `inspections.source_event_id` for Colorado is `raw_data.co_event_key` (for example `23033N|035H13|AL18`), not `co_event_id`. One visit is split by rule set, so `co_event_id` is on two or three rows and the unique index `(source_agency, source_event_id)` rejects it. The backfill writes the key only where `source_event_id` is null, and it stops if that write would duplicate the pair. Illinois and Colorado also qualify on a date, a citation count (zero allowed), and an http(s) source URL, so the Colorado CMS nursing home with a link still passes. A visit id with no URL still passes for those two states. Every other state still needs the URL.

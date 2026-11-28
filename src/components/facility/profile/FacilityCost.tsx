@@ -81,20 +81,25 @@ export function FacilityCost({
         )}
         {cost && (
           <p className="mt-4 font-[family-name:var(--font-mono)] text-[11px] tracking-[0.06em] text-ink-4">
-            Source:{" "}
-            {cost.sources.map((s, index) => (
-              <span key={s.label}>
-                {index > 0 && ", "}
-                {s.url ? (
-                  <a href={s.url} target="_blank" rel="noopener noreferrer nofollow" className="underline underline-offset-2">
-                    {s.label}
-                  </a>
-                ) : (
-                  s.label
-                )}
-              </span>
-            ))}{" "}
-            · Checked {formatDate(cost.checked)} · Listed prices change; this is not a quote
+            {cost.sources.some((source) => source.url) ? (
+              <>
+                Source:{" "}
+                {cost.sources.map((s, index) => (
+                  <span key={s.label}>
+                    {index > 0 && ", "}
+                    {s.url ? (
+                      <a href={s.url} target="_blank" rel="noopener noreferrer nofollow" className="underline underline-offset-2">
+                        {s.label}
+                      </a>
+                    ) : (
+                      s.label
+                    )}
+                  </span>
+                ))}{" "}
+                ·{" "}
+              </>
+            ) : null}
+            Checked {formatDate(cost.checked)} · Listed prices change; this is not a quote
           </p>
         )}
       </div>

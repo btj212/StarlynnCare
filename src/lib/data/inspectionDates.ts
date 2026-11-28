@@ -53,8 +53,16 @@ export function latestInspectionByFacility(
   return out;
 }
 
-const ID_CHUNK = 80;
+export const ID_CHUNK = 80;
 const PAGE = 1000;
+
+export function chunkIds<T>(ids: readonly T[], size = ID_CHUNK): T[][] {
+  if (ids.length === 0) return [];
+  const width = size > 0 ? size : ids.length;
+  const out: T[][] = [];
+  for (let i = 0; i < ids.length; i += width) out.push(ids.slice(i, i + width));
+  return out;
+}
 
 /**
  * Max usable inspection_date per facility, from inspection rows.
@@ -64,28 +72,50 @@ const PAGE = 1000;
 export async function loadLatestInspectionDates(
   supabase: SupabaseClient,
   facilityIds?: string[],
+  options?: { excludeComplaints?: boolean },
 ): Promise<Map<string, string>> {
   const today = todayIsoDate();
+  const excludeComplaints = options?.excludeComplaints === true;
   if (facilityIds) {
     if (facilityIds.length === 0) return new Map();
-    return loadDatesForIds(supabase, facilityIds, today);
+    return loadDatesForIds(supabase, facilityIds, today, excludeComplaints);
   }
-  return loadDatesFromInspectionTable(supabase, today);
+  return loadDatesFromInspectionTable(supabase, today, excludeComplaints);
+}
+
+type DatedInspectionRow = {
+  facility_id: string;
+  inspection_date: string | null;
+  is_complaint?: boolean | null;
+};
+
+function rememberInspectionDate(
+  out: Map<string, string>,
+  row: DatedInspectionRow,
+  today: string,
+  excludeComplaints: boolean,
+): void {
+  if (excludeComplaints && row.is_complaint) return;
+  const next = latestInspectionDate([out.get(row.facility_id) ?? null, row.inspection_date], today);
+  if (next) out.set(row.facility_id, next);
 }
 
 async function loadDatesForIds(
   supabase: SupabaseClient,
   facilityIds: string[],
   today: string,
+  excludeComplaints: boolean,
 ): Promise<Map<string, string>> {
   const out = new Map<string, string>();
-  for (let i = 0; i < facilityIds.length; i += ID_CHUNK) {
-    const chunk = facilityIds.slice(i, i + ID_CHUNK);
+  const columns = excludeComplaints
+    ? "facility_id, inspection_date, is_complaint"
+    : "facility_id, inspection_date";
+  for (const chunk of chunkIds(facilityIds)) {
     let from = 0;
     for (;;) {
       const { data, error } = await supabase
         .from("inspections")
-        .select("facility_id, inspection_date")
+        .select(columns)
         .in("facility_id", chunk)
         .lte("inspection_date", today)
         .not("inspection_date", "is", null)
@@ -94,17 +124,8 @@ async function loadDatesForIds(
         console.error("[inspectionDates] id chunk failed:", error.message);
         break;
       }
-      const page = (data ?? []) as Array<{
-        facility_id: string;
-        inspection_date: string | null;
-      }>;
-      for (const row of page) {
-        const next = latestInspectionDate(
-          [out.get(row.facility_id) ?? null, row.inspection_date],
-          today,
-        );
-        if (next) out.set(row.facility_id, next);
-      }
+      const page = (data ?? []) as unknown as DatedInspectionRow[];
+      for (const row of page) rememberInspectionDate(out, row, today, excludeComplaints);
       if (page.length < PAGE) break;
       from += PAGE;
     }
@@ -115,12 +136,16 @@ async function loadDatesForIds(
 async function loadDatesFromInspectionTable(
   supabase: SupabaseClient,
   today: string,
+  excludeComplaints: boolean,
 ): Promise<Map<string, string>> {
   const out = new Map<string, string>();
+  const columns = excludeComplaints
+    ? "facility_id, inspection_date, is_complaint"
+    : "facility_id, inspection_date";
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
       .from("inspections")
-      .select("facility_id, inspection_date")
+      .select(columns)
       .lte("inspection_date", today)
       .not("inspection_date", "is", null)
       .range(from, from + PAGE - 1);
@@ -128,17 +153,8 @@ async function loadDatesFromInspectionTable(
       console.error("[inspectionDates] table page failed:", error.message);
       break;
     }
-    const page = (data ?? []) as Array<{
-      facility_id: string;
-      inspection_date: string | null;
-    }>;
-    for (const row of page) {
-      const next = latestInspectionDate(
-        [out.get(row.facility_id) ?? null, row.inspection_date],
-        today,
-      );
-      if (next) out.set(row.facility_id, next);
-    }
+    const page = (data ?? []) as unknown as DatedInspectionRow[];
+    for (const row of page) rememberInspectionDate(out, row, today, excludeComplaints);
     if (page.length < PAGE) break;
   }
   return out;

@@ -19,7 +19,20 @@ import { licensedCity } from "@/lib/facility/licensedCity";
 import { dshsFormsUrl } from "@/lib/facility/complianceFlag";
 import { displayWaLicense, priorWaDshsFormsUrl, priorWaLicenseFromSlug } from "@/lib/facility/waPriorLicense";
 import { agencyLabelForInspection } from "@/lib/states/profileConfig";
-import { citationCountPhrase } from "@/lib/facility/citationWindow";
+import {
+  caTypeDistributionSentence,
+  citationCountPhrase,
+  selectMostRecentSevereFinding,
+} from "@/lib/facility/citationWindow";
+import { parsePhone } from "@/lib/facility/phone";
+import { linkableFacilityUrl } from "@/lib/facility/aggregatorLink";
+import { regulatorPublishesSeverityScale } from "@/lib/states/severityScale";
+import {
+  TEXAS_RECENT_RESULTS,
+  texasRecentResultsUnpublished,
+  texasRegulatorRecordUrl,
+} from "@/lib/facility/texasRecord";
+import { todayIsoDate } from "@/lib/data/inspectionDates";
 import { WaMcSignalBadges } from "./WaMcSignalBadges";
 import { OrMcSignalBadges } from "./OrMcSignalBadges";
 import { FacilityMemoryCareBasis } from "./FacilityMemoryCareBasis";
@@ -161,29 +174,27 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
         ? `More weighted citations per bed than ${100 - (sevPct ?? 0)}% of similar-size peers.`
         : "About average on weighted citations per bed for similar-size peers.";
 
-  // Detect the most recent severe finding (sev ≥ 3 or IJ) within the last 90 days
-  const cutoffStr = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 90);
-    return d.toISOString().split("T")[0];
-  })();
-  const recentSevereFinding: { date: string; def: DeficiencyRow; tag: { label: string; tone: string } | null } | null = (() => {
-    for (const insp of inspections) {
-      if (insp.inspection_date < cutoffStr) break;
-      const defs = deficienciesByInspection.get(insp.id) ?? [];
-      const severe = defs.find(
-        (d) => d.immediate_jeopardy || (d.severity !== null && d.severity >= 3),
-      );
-      if (severe) {
-        return {
-          date: insp.inspection_date,
-          def: severe,
-          tag: cfg.formatSeverityTag(severe as unknown as Deficiency),
-        };
-      }
-    }
-    return null;
-  })();
+  // Most recent severe finding within 90 days. California uses Type A only.
+  const recentSevere = regulatorPublishesSeverityScale(
+    facility.state_code,
+    cfg.scopeSeverityScale,
+  )
+    ? selectMostRecentSevereFinding({
+        stateCode: facility.state_code,
+        scope: cfg.scopeSeverityScale,
+        inspections: profile.recordInspections,
+        deficienciesByInspection,
+        today: todayIsoDate(),
+      })
+    : null;
+  const recentSevereFinding: { date: string; def: DeficiencyRow; tag: { label: string; tone: string } | null } | null =
+    recentSevere
+      ? {
+          date: recentSevere.date,
+          def: recentSevere.deficiency,
+          tag: cfg.formatSeverityTag(recentSevere.deficiency as unknown as Deficiency),
+        }
+      : null;
 
   const copy: string = (() => {
     const beds = facility.beds ? `A ${facility.beds}-bed` : "A";
@@ -193,6 +204,12 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
           ? "CMS nursing home"
           : "CDPHE assisted living residence"
         : (SHORT_CATEGORY_LABEL[facility.care_category] ?? "care facility");
+    if (texasRecentResultsUnpublished(facility.state_code, totals.inspections, totals.deficiencies)) {
+      return `${beds} ${licType}. ${TEXAS_RECENT_RESULTS}`;
+    }
+    if (facility.state_code === "TX" && totals.deficiencies === 0) {
+      return `${beds} ${licType}. HHSC has not published a citation count for this home in the last 3 years.`;
+    }
     const citLabel = citationCountPhrase({
       count: totals.deficiencies,
       agencyShort: cfg.agencyShort,
@@ -201,13 +218,17 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
     return `${beds} ${licType} with ${citLabel}.`;
   })();
 
-  const lastVisit = profile.latestVisit;
+  const lastVisit = profile.latestInspection;
+  const complaintLabel =
+    facility.state_code === "WA" && profile.latestComplaint
+      ? formatRecordDate(profile.latestComplaint.date, profile.latestComplaint.precision)
+      : null;
   const lastInsp = inspections[0] ?? null;
+  // Do not fall back to the newest window row. On a Washington page that row
+  // can be a complaint, and the complaint is printed on its own line.
   const lastInspFormatted = lastVisit
     ? formatRecordDate(lastVisit.date, lastVisit.precision)
-    : lastInsp?.inspection_date
-      ? formatRecordDate(lastInsp.inspection_date, lastInsp.datePrecision)
-      : null;
+    : null;
   const lastInspCited =
     lastVisit && lastInsp && lastVisit.date === lastInsp.inspection_date
       ? (lastInsp.total_deficiency_count ?? 0) > 0
@@ -286,7 +307,27 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
           </div>
         )}
 
-        {lastInspFormatted && (
+        {complaintLabel ? (
+          <div className="hidden md:flex mt-5 justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em]">
+            <span className="flex flex-col gap-1">
+              {recentSevereFinding ? (
+                <span className="text-rust">
+                  Most recent severe finding ·{" "}
+                  {new Date(recentSevereFinding.date + "T12:00:00").toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })}
+                  {recentSevereFinding.def.code ? ` · ${cfg.citationPrefix}${recentSevereFinding.def.code}` : ""}
+                  {recentSevereFinding.tag ? ` · ${recentSevereFinding.tag.label}` : ""}
+                </span>
+              ) : lastInspFormatted ? (
+                <span className="text-white/60">
+                  Last inspection · {lastInspFormatted}
+                  {lastInspCited == null ? "" : lastInspCited ? " · cited" : " · no findings"}
+                </span>
+              ) : null}
+              <span className="text-white/60">Last complaint investigation · {complaintLabel}</span>
+            </span>
+            <span className="text-white/60">Source · {lastInsp ? agencyLabelForInspection(lastInsp, cfg).short : cfg.agencyShort}</span>
+          </div>
+        ) : lastInspFormatted ? (
           <div className="hidden md:flex mt-5 justify-between border-t border-white/15 pt-3.5 font-[family-name:var(--font-mono)] text-[10.5px] tracking-[0.06em]">
             {recentSevereFinding ? (
               <span className="text-rust">
@@ -304,7 +345,7 @@ function VerdictCard({ profile }: { profile: FacilityProfile }) {
             )}
             <span className="text-white/60">Source · {lastInsp ? agencyLabelForInspection(lastInsp, cfg).short : cfg.agencyShort}</span>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -314,10 +355,8 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   const { facility, state } = profile;
   const isMc = MC_CATEGORIES.includes(facility.care_category) || facility.serves_memory_care;
   const addr = formatAddr(facility);
-  const website = facility.website?.trim() || null;
-  const phone = facility.phone
-    ? facility.phone.replace(/\D/g, "").replace(/^1?(\d{3})(\d{3})(\d{4})$/, "($1) $2-$3")
-    : null;
+  const website = linkableFacilityUrl(facility.website);
+  const phone = parsePhone(facility.phone);
   const legalName = formatFacilityName(facility.name);
   const displayName = facilityDisplayName(facility);
   const aliases = facilityAliases(facility);
@@ -327,11 +366,15 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
   // human-readable narrative line to lift even when it overrides our meta.
   // Same date as the "Last inspection" header: inspections rows plus, for WA,
   // the latest posted PDF month.
-  const lastVisit = profile.latestVisit;
+  const lastVisit = profile.latestInspection;
   const lastInspectedLabel = lastVisit
     ? formatRecordDate(lastVisit.date, lastVisit.precision)
     : null;
   const lastInspectionDate = lastVisit?.date ?? null;
+  const lastComplaintInvestigated =
+    facility.state_code === "WA" && profile.latestComplaint
+      ? formatRecordDate(profile.latestComplaint.date, profile.latestComplaint.precision)
+      : null;
   const checkedOn = facility.state_records_checked_at?.slice(0, 10) ?? null;
   const noReportsPosted =
     facility.state_code === "WA" &&
@@ -355,6 +398,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         lastInspected: lastInspectedLabel,
         regulatorAbbr: profile.cfg.agencyShort,
         licenseNumber: facility.license_number,
+        stateCode: facility.state_code,
       });
   const snippet = noReportsPosted
     ? `${displayName} has no DSHS reports posted as of ${checkedOn}.`
@@ -370,6 +414,7 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
         frequencyPercentile: reportableRank == null ? null : profile.snapshot?.metrics.frequency.percentile ?? null,
         repeatsPercentile: reportableRank == null ? null : profile.snapshot?.metrics.repeats.percentile ?? null,
         citationCount: profile.totals.deficiencies,
+        inspectionCount: profile.totals.inspections,
         lastInspectionDate,
         lastInspected: lastInspectedLabel,
         variant: "prose",
@@ -435,6 +480,29 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               lastInspected={lastInspectedLabel}
               inspectionCount={profile.totals.inspections}
               citationCount={profile.totals.deficiencies}
+              complaintCount={facility.state_code === "WA" ? profile.windowComplaints : 0}
+              lastComplaintInvestigated={lastComplaintInvestigated}
+              distribution={
+                facility.state_code === "CA"
+                  ? caTypeDistributionSentence(profile.totals.typeA, profile.totals.typeB, profile.totals.other) || null
+                  : null
+              }
+              texasRecordUrl={
+                texasRecentResultsUnpublished(
+                  facility.state_code,
+                  profile.totals.inspections,
+                  profile.totals.deficiencies,
+                )
+                  ? texasRegulatorRecordUrl()
+                  : undefined
+              }
+              zeroCitationNote={
+                facility.state_code === "TX" &&
+                profile.totals.deficiencies === 0 &&
+                profile.totals.inspections > 0
+                  ? "HHSC has not published a citation count for this home in the last 3 years."
+                  : null
+              }
             />
             {profile.waMcSignals ? <WaMcSignalBadges signals={profile.waMcSignals} /> : null}
             {profile.orMcSignals ? <OrMcSignalBadges signals={profile.orMcSignals} /> : null}
@@ -565,10 +633,10 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
               {/* Phone — visible on mobile only; desktop shows in address line below */}
               {phone && (
                 <a
-                  href={`tel:${facility.phone}`}
+                  href={`tel:${phone.tel}`}
                   className="fp-tag rounded-full border border-clearing-rule-2 bg-clearing-card px-3 py-[5px] font-[family-name:var(--font-sans)] text-[12px] font-medium text-ink-3 transition-colors hover:text-ink md:hidden"
                 >
-                  {phone}
+                  {phone.display}
                 </a>
               )}
             </div>
@@ -587,10 +655,10 @@ export function FacilityHero({ profile }: { profile: FacilityProfile }) {
                 )}
                 {phone && (
                   <a
-                    href={`tel:${facility.phone}`}
+                    href={`tel:${phone.tel}`}
                     className="hidden font-[family-name:var(--font-sans)] text-[13px] not-italic tracking-[0.02em] text-ink-3 transition-colors hover:text-ink md:inline"
                   >
-                    {phone}
+                    {phone.display}
                   </a>
                 )}
                 {website && (

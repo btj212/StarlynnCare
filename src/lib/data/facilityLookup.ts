@@ -255,6 +255,7 @@ export async function lookupFacilities(
   const lastInspByFac = await loadLatestInspectionDates(
     supabase,
     homes.map((home) => home.id),
+    { excludeComplaints: input.stateCode.toUpperCase() === "WA" },
   );
   const cutoff = seriousCitationCutoff();
   const matches: FacilityLookupMatch[] = [];

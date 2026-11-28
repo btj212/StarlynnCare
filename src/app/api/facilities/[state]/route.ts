@@ -123,7 +123,7 @@ export async function GET(
       for (;;) {
         const { data: inspData } = await supabase
           .from("inspections")
-          .select("facility_id, inspection_date, total_deficiency_count")
+          .select("facility_id, inspection_date, total_deficiency_count, is_complaint")
           .in("facility_id", chunk)
           .lte("inspection_date", today)
           .range(from, from + 999);
@@ -131,12 +131,15 @@ export async function GET(
           facility_id: string;
           inspection_date: string | null;
           total_deficiency_count: number | null;
+          is_complaint?: boolean | null;
         }>;
         for (const insp of page) {
-          inspDateRows.push({
-            facility_id: insp.facility_id,
-            inspection_date: insp.inspection_date,
-          });
+          if (!(stateInfo.code === "WA" && insp.is_complaint)) {
+            inspDateRows.push({
+              facility_id: insp.facility_id,
+              inspection_date: insp.inspection_date,
+            });
+          }
           defByFac.set(
             insp.facility_id,
             (defByFac.get(insp.facility_id) ?? 0) + (insp.total_deficiency_count ?? 0),

@@ -22,6 +22,7 @@ import { profileRobotsNoindex } from "@/lib/quality/gate";
 import { buildFacilityReportsTitle, clipMetaDescription } from "@/lib/seo/meta";
 import { buildBreadcrumbList, buildWebPageWithReviewer } from "@/lib/seo/schema";
 import { stateFromSlug } from "@/lib/states";
+import { OlderVisits, VISIBLE_VISITS } from "@/components/facility/profile/OlderVisits";
 
 export const revalidate = 3600;
 export const maxDuration = 60;
@@ -43,7 +44,7 @@ function hasPrintableFindings(profile: FacilityProfile): boolean {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { state: stateSlug, city: citySlug, facility: facilitySlug } = await params;
   const state = stateFromSlug(stateSlug);
-  const result = await loadFacilityProfile({ stateSlug, regionSlug: citySlug, facilitySlug });
+  const result = await loadFacilityProfile({ stateSlug, regionSlug: citySlug, facilitySlug, detail: "full" });
   if (!state || !isProfile(result)) {
     return { title: "Inspection reports | StarlynnCare", robots: { index: false, follow: true } };
   }
@@ -92,7 +93,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function FacilityInspectionsPage({ params }: PageProps) {
   const { state: stateSlug, city: regionSlug, facility: facilitySlug } = await params;
-  const result = await loadFacilityProfile({ stateSlug, regionSlug, facilitySlug });
+  const result = await loadFacilityProfile({ stateSlug, regionSlug, facilitySlug, detail: "full" });
 
   if (typeof result === "object" && result !== null && "kind" in result && result.kind === "redirect") {
     const canonicalCity = result.canonicalCitySlug ?? regionSlug;
@@ -186,7 +187,7 @@ export default async function FacilityInspectionsPage({ params }: PageProps) {
                 }
               />
               <div className="space-y-6">
-                {inspections.map((insp) => {
+                {inspections.slice(0, VISIBLE_VISITS).map((insp) => {
                   const defs = deficienciesByInspection.get(insp.id) ?? [];
                   return (
                     <section
@@ -211,6 +212,33 @@ export default async function FacilityInspectionsPage({ params }: PageProps) {
                     </section>
                   );
                 })}
+                <OlderVisits count={Math.max(0, inspections.length - VISIBLE_VISITS)}>
+                  {inspections.slice(VISIBLE_VISITS).map((insp) => {
+                    const defs = deficienciesByInspection.get(insp.id) ?? [];
+                    return (
+                      <section
+                        key={insp.id}
+                        id={`inspection-${insp.id}`}
+                        className="scroll-mt-28 rounded-[18px] border border-clearing-rule-2 bg-clearing-card px-5 py-5 shadow-[var(--shadow-card)] md:px-7"
+                      >
+                        <h2 className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                          <span className="font-[family-name:var(--font-mono)] text-[12px] tracking-[0.04em] text-ink-2">
+                            {formatInspectionListDate(insp.inspection_date, insp.datePrecision)}
+                          </span>
+                          <span className="font-[family-name:var(--font-display)] text-[22px] leading-[1.2] text-ink">
+                            {visitKindLabel(insp)}
+                          </span>
+                          <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] text-ink-3">
+                            {defs.length === 0
+                              ? "No findings"
+                              : `${defs.length} ${defs.length === 1 ? "finding" : "findings"}`}
+                          </span>
+                        </h2>
+                        <InspectionFullText insp={insp} defs={defs} cfg={cfg} />
+                      </section>
+                    );
+                  })}
+                </OlderVisits>
               </div>
             </>
           )}

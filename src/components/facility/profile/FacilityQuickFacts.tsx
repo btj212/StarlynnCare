@@ -1,18 +1,13 @@
 import type { FacilityProfile } from "@/lib/facility/loadFacilityProfile";
 import { formatFacilityName } from "@/lib/facility/displayName";
+import { missingPhoneRecordLabel, parsePhone } from "@/lib/facility/phone";
+import { texasRecentResultsUnpublished } from "@/lib/facility/texasRecord";
 import { formatRecordDate } from "@/lib/format/formatRecordDate";
+import { regulatorLicensePageFor } from "@/lib/seo/schema";
 
 function fmt(iso: string | null | undefined): string {
   if (!iso) return "—";
   return formatRecordDate(iso, "month");
-}
-
-function formatPhone(raw: string | null): string | null {
-  if (!raw) return null;
-  const digits = raw.replace(/\D/g, "");
-  const m = digits.match(/^1?(\d{3})(\d{3})(\d{4})$/);
-  if (!m) return raw;
-  return `(${m[1]}) ${m[2]}-${m[3]}`;
 }
 
 function QfCell({ label, children }: { label: string; children: React.ReactNode }) {
@@ -30,11 +25,22 @@ function QfCell({ label, children }: { label: string; children: React.ReactNode 
 
 export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
   const { facility, totals } = profile;
-  const lastInspDate = profile.latestVisit?.date ?? facility.last_inspection_date;
-  const lastInspLabel = profile.latestVisit
-    ? formatRecordDate(profile.latestVisit.date, profile.latestVisit.precision)
-    : fmt(lastInspDate);
-  const phone = formatPhone(facility.phone);
+  const isWa = facility.state_code === "WA";
+  const inspection = profile.latestInspection;
+  const lastInspLabel = inspection
+    ? formatRecordDate(inspection.date, inspection.precision)
+    : isWa
+      ? "Not on file"
+      : fmt(facility.last_inspection_date);
+  const complaintLabel =
+    isWa && profile.latestComplaint
+      ? formatRecordDate(profile.latestComplaint.date, profile.latestComplaint.precision)
+      : null;
+  const phone = parsePhone(facility.phone);
+  const phoneRecordUrl = phone
+    ? null
+    : regulatorLicensePageFor(facility.state_code, facility.license_number);
+  const phoneRecordLabel = phone ? null : missingPhoneRecordLabel(facility.state_code);
 
   return (
     <div className="border-y border-clearing-rule bg-clearing-tint">
@@ -45,9 +51,20 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
           </QfCell>
           <QfCell label="Last inspection">
             <span className="text-[22px]">{lastInspLabel ?? "—"}</span>
+            {complaintLabel ? (
+              <span className="mt-1 block font-[family-name:var(--font-sans)] text-[12px] font-medium leading-snug text-ink-3">
+                Last complaint investigation {complaintLabel}
+              </span>
+            ) : null}
           </QfCell>
           <QfCell label="Last citation">
-            <span className="text-[22px]">{totals.lastCitation ? fmt(totals.lastCitation) : "None on record"}</span>
+            <span className="text-[22px]">
+              {totals.lastCitation
+                ? fmt(totals.lastCitation)
+                : texasRecentResultsUnpublished(facility.state_code, totals.inspections, totals.deficiencies)
+                  ? "Not published"
+                  : "None on record"}
+            </span>
           </QfCell>
           <QfCell label="Operated by">
             <span className="font-[family-name:var(--font-sans)] text-[15px] font-medium leading-snug">
@@ -59,13 +76,25 @@ export function FacilityQuickFacts({ profile }: { profile: FacilityProfile }) {
           <QfCell label="Phone">
             {phone ? (
               <a
-                href={`tel:${facility.phone}`}
+                href={`tel:${phone.tel}`}
                 className="font-[family-name:var(--font-sans)] text-[15px] font-medium leading-snug text-teal underline-offset-2 hover:underline"
               >
-                {phone}
+                {phone.display}
               </a>
             ) : (
-              <span className="font-[family-name:var(--font-sans)] text-[15px] text-ink-3">—</span>
+              <span className="flex flex-col gap-1">
+                <span className="font-[family-name:var(--font-sans)] text-[15px] text-ink-3">Not on file</span>
+                {phoneRecordUrl && phoneRecordLabel ? (
+                  <a
+                    href={phoneRecordUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-[family-name:var(--font-sans)] text-[12px] font-medium leading-snug text-teal underline underline-offset-2"
+                  >
+                    {phoneRecordLabel}
+                  </a>
+                ) : null}
+              </span>
             )}
           </QfCell>
         </div>

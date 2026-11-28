@@ -1,6 +1,12 @@
 import { peerRankPhrase } from "@/lib/seo/rankPhrase";
 import { careSettingCopy, peerSetPhrase } from "@/lib/city-hub/careSetting";
 import { azDirectedCareLicense } from "@/lib/facility/azDirectedCare";
+import {
+  TEXAS_RECENT_RESULTS,
+  texasRecentResultsSentence,
+  texasRecentResultsUnpublished,
+  texasRegulatorRecordUrl,
+} from "@/lib/facility/texasRecord";
 
 /**
  * Clip meta descriptions for `<meta name="description">` and matching OG/Twitter fields.
@@ -212,14 +218,18 @@ export function buildFacilityTitle(input: {
   const year = lastInspectionDate?.slice(0, 4) ?? null;
   const inspected = shortMonthYear(lastInspectionDate);
   const citationHook =
-    inspections > 0 && citationCount != null
+    inspections > 0 && citationCount != null && !(input.stateCode === "TX" && citationCount === 0)
       ? citationCount === 0
         ? "no citations"
         : countLabel(citationCount, "citation", "citations")
       : null;
   const facts: string[] = [];
   if (inspections > 0) facts.push(countLabel(inspections, "inspection", "inspections"));
-  if (citationCount != null && inspections > 0) {
+  if (
+    citationCount != null &&
+    inspections > 0 &&
+    !(input.stateCode === "TX" && citationCount === 0)
+  ) {
     facts.push(countLabel(citationCount, "citation", "citations"));
   }
   if (reviews > 0) facts.push("reviews");
@@ -334,11 +344,24 @@ export function buildFacilityRecordSentence(input: {
   lastInspected: string | null;
   regulatorAbbr: string;
   licenseNumber: string | null;
+  stateCode?: string | null;
 }): string | null {
+  if (
+    input.stateCode &&
+    texasRecentResultsUnpublished(input.stateCode, input.inspectionCount, input.citationCount)
+  ) {
+    return texasRecentResultsSentence(texasRegulatorRecordUrl());
+  }
   if (input.inspectionCount < 1) {
     return input.licenseNumber
       ? `No ${input.regulatorAbbr} inspection is on record. License ${input.licenseNumber}.`
       : null;
+  }
+  if (input.stateCode === "TX" && input.citationCount === 0) {
+    const parts = ["HHSC has not published a citation count for this home in the last 3 years"];
+    if (input.lastInspected) parts.push(`last inspected ${input.lastInspected}`);
+    if (input.licenseNumber) parts.push(`license ${input.licenseNumber}`);
+    return `${parts.join(", ")}.`;
   }
   const cite =
     input.citationCount === 1
@@ -377,10 +400,16 @@ export function buildFacilityDescription(f: {
   /** Pre-formatted month+year string, e.g. "Apr 2026" */
   lastInspected: string | null;
 }): string {
-  const citations =
-    (f.inspectionCount ?? 1) < 1
+  const unpublished =
+    f.stateCode != null &&
+    texasRecentResultsUnpublished(f.stateCode, f.inspectionCount ?? 0, f.citationCount);
+  const citations = unpublished
+    ? TEXAS_RECENT_RESULTS
+      : (f.inspectionCount ?? 1) < 1
       ? `no ${f.agency} inspection on record`
-      : f.citationCount === 0
+      : f.stateCode === "TX" && f.citationCount === 0
+        ? "HHSC has not published a citation count for this home in the last 3 years"
+        : f.citationCount === 0
         ? `no ${f.agency} citations on record in the last 3 years`
         : f.citationCount === 1
           ? `1 ${f.agency} citation on record in the last 3 years`
@@ -431,6 +460,8 @@ export interface FacilitySnippetArgs {
   repeatsPercentile?: number | null;
   /** Total deficiencies on record. */
   citationCount: number;
+  /** Inspections in the profile window. Used so Texas does not call an empty window clean. */
+  inspectionCount?: number;
   /** Most recent inspection date as ISO yyyy-mm-dd. */
   lastInspectionDate: string | null;
   /** Pre-formatted last-inspected label. When set, used instead of shortMonthYear. */
@@ -516,8 +547,15 @@ export function buildFacilitySnippet(args: FacilitySnippetArgs): string {
     }
   }
 
-  const citeFrag =
-    citationCount > 0
+  const citeFrag = texasRecentResultsUnpublished(
+    stateCode,
+    args.inspectionCount ?? 1,
+    citationCount,
+  )
+    ? TEXAS_RECENT_RESULTS
+    : stateCode === "TX" && citationCount === 0
+      ? "HHSC has not published a citation count for this home in the last 3 years"
+      : citationCount > 0
       ? `${citationCount} ${reg} citation${citationCount === 1 ? "" : "s"} on record`
       : `no ${reg} citations on record`;
 
@@ -574,8 +612,15 @@ export function buildFacilityDirectAnswer(input: {
   const inspected = input.lastInspected ? ` Last inspected ${input.lastInspected}.` : "";
 
   let record: string;
-  if (input.inspectionCount < 1) {
+  if (
+    input.stateCode &&
+    texasRecentResultsUnpublished(input.stateCode, input.inspectionCount, input.citationCount)
+  ) {
+    record = texasRecentResultsSentence(texasRegulatorRecordUrl());
+  } else if (input.inspectionCount < 1) {
     record = `No ${input.regulatorAbbr} inspection is on file yet.`;
+  } else if (input.stateCode === "TX" && input.citationCount === 0) {
+    record = "HHSC has not published a citation count for this home in the last 3 years.";
   } else if (input.citationCount === 0) {
     record = `${input.inspectionCount} ${input.regulatorAbbr} ${input.inspectionCount === 1 ? "inspection is" : "inspections are"} on file from the last 3 years, with no citations in that window.`;
   } else {

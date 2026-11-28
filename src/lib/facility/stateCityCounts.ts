@@ -3,6 +3,7 @@ import { cityHubPageExists, facilityListedInSitemap } from "@/lib/seo/indexabili
 import { displayCityName } from "@/lib/resolveListingRegion";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
+import { collectInPages } from "@/lib/data/pageSelect";
 
 export type StateCityCount = { slug: string; name: string; count: number };
 
@@ -49,14 +50,17 @@ async function listedCountByCity(
   const inspFac = new Map<string, string>();
   for (let ci = 0; ci < ids.length; ci += INSP_CHUNK) {
     const chunk = ids.slice(ci, ci + INSP_CHUNK);
-    const { data, error } = await supabase
-      .from("inspections")
-      .select("id, facility_id")
-      .in("facility_id", chunk)
-      .lte("inspection_date", todayIsoDate())
-      .limit(5000);
-    if (error) break;
-    for (const i of (data ?? []) as Array<{ id: string; facility_id: string }>) {
+    const page = await collectInPages<{ id: string; facility_id: string }>((from, to) =>
+      supabase
+        .from("inspections")
+        .select("id, facility_id")
+        .in("facility_id", chunk)
+        .lte("inspection_date", todayIsoDate())
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    if (page.error) break;
+    for (const i of page.rows) {
       inspFac.set(i.id, i.facility_id);
       inspCount.set(i.facility_id, (inspCount.get(i.facility_id) ?? 0) + 1);
     }
@@ -66,13 +70,16 @@ async function listedCountByCity(
   const inspIds = [...inspFac.keys()];
   for (let ci = 0; ci < inspIds.length; ci += INSP_CHUNK) {
     const chunk = inspIds.slice(ci, ci + INSP_CHUNK);
-    const { data, error } = await supabase
-      .from("deficiencies")
-      .select("inspection_id")
-      .in("inspection_id", chunk)
-      .limit(5000);
-    if (error) break;
-    for (const d of (data ?? []) as Array<{ inspection_id: string }>) {
+    const page = await collectInPages<{ inspection_id: string }>((from, to) =>
+      supabase
+        .from("deficiencies")
+        .select("inspection_id")
+        .in("inspection_id", chunk)
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    if (page.error) break;
+    for (const d of page.rows) {
       const fid = inspFac.get(d.inspection_id);
       if (fid) withDef.add(fid);
     }

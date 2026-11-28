@@ -1,43 +1,29 @@
 import type { StateProfileConfig, SeverityTone } from "@/lib/states/profileConfig";
 import type { Deficiency } from "@/lib/types";
-import { CMS_IJ_LABEL, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
+import { CMS_IJ_LABEL, cmsScopeLetter, isCmsImmediateJeopardy } from "@/lib/states/cmsImmediateJeopardy";
+import { topTierLabel } from "@/lib/states/severityScale";
 
 /**
- * Utah severity taxonomy (§5.2 of UT methodology brief).
- *
- * UT does not publish a numerical severity scale. We map enforcement outcomes:
- *   4 / IJ  — License suspension/revocation, Immediate Jeopardy, substantiated abuse
- *   3       — Civil penalty ≥ $500, admission ban, on-site monitoring
- *   2       — Civil penalty < $500 or moderate citation cluster
- *   1       — Citation / Plan of Correction, no penalty
- *
- * NF records from CMS use the federal A-L scope-severity matrix stored as severity_int.
+ * Utah assisted living publishes risk levels Low, Moderate, High, and Extreme.
+ * High and Extreme are the top tier. Nursing homes use CMS letters.
+ * The stored integer is not that scale: Extreme is sometimes stored as 1.
  */
 function utFormatSeverityTag(d: Deficiency): { label: string; tone: SeverityTone } | null {
-  if (isCmsImmediateJeopardy(d)) return { label: CMS_IJ_LABEL, tone: "danger" };
+  const top = topTierLabel("UT", d);
+  if (top) return top;
+  const letter = cmsScopeLetter(d);
+  if (letter) {
+    const tone: SeverityTone = "GHI".includes(letter) ? "warn" : "DEF".includes(letter) ? "info" : "mute";
+    return { label: `CMS ${letter}`, tone };
+  }
   const raw = d.state_severity_raw ?? d.class;
   const lower = (raw ?? "").toLowerCase();
   if (lower.includes("revocation")) return { label: "Revocation", tone: "danger" };
   if (lower.includes("suspension")) return { label: "Suspension", tone: "danger" };
-  if (d.severity !== undefined && d.severity !== null) {
-    if (d.severity >= 4) return { label: "Serious", tone: "danger" };
-    if (d.severity === 3) return { label: "Serious", tone: "warn" };
-    if (d.severity === 2) return { label: "Moderate", tone: "info" };
-    if (d.severity === 1) return { label: "Standard", tone: "mute" };
-  }
-  if (raw) {
-    if (lower.includes("immediate jeopardy")) {
-      return { label: "Serious", tone: "danger" };
-    }
-    if (lower.includes("admission ban") || lower.includes("monitoring")) {
-      return { label: "Serious", tone: "warn" };
-    }
-    if (lower.includes("penalty") || lower.includes("fine")) {
-      return { label: "Moderate", tone: "info" };
-    }
-    return { label: raw, tone: "mute" };
-  }
-  return null;
+  if (lower === "moderate") return { label: "Moderate", tone: "warn" };
+  if (lower === "low") return { label: "Low", tone: "info" };
+  if (!raw || lower.includes("immediate jeopardy")) return null;
+  return { label: raw, tone: "mute" };
 }
 
 export const utProfileConfig: StateProfileConfig = {

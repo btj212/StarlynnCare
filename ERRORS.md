@@ -8,6 +8,40 @@ The OR pipeline learnings doc (`docs/OR_PIPELINE_LEARNINGS.md`) is the canonical
 
 ---
 
+## 2026-11-28 — A `.range()` page with no `order` skips or repeats the next thousand rows
+
+**What went wrong:** Three walks in `loadStateMemoryCareStats` paged with `.range(from, from + 999)` and never called `.order()`. PostgREST can return a different thousand rows on the next page. California has more than 1,000 publishable homes, so `/data` could drop or double a home. The same gap made the FAQ "tagged Type A" sentence count only the newest 25 visits.
+
+**What worked instead:** `.order("id")` on each of those reads, and the California tagged sentence uses the Type A head count.
+
+**Source:** Re-review of PR 277 at head `0d074ee`. No database write.
+
+---
+
+## 2026-11-28 — `facilities!inner` newest and oldest queries hit the 3-second cap
+
+**What went wrong:** A preview build of main failed while generating pages. The anon role has `statement_timeout` of 3 seconds. `newestInspection` and the inspection-window oldest query selected `facilities!inner(...)` and ordered by date with `limit 1`. PostgREST turns that into a lateral join that sorts inspections for the state. California and Texas newest, and Illinois oldest, were the lines that canceled. `loadStateMemoryCareStats` was also uncached, so one build repeated that walk about ten times. `.limit(5000)` does not raise PostgREST's max-rows, so a dense deficiency page can stop at 1000.
+
+**What worked instead:** Read published facility ids, then count with `.in("facility_id", chunk)` and `head: true`. Take the newest date from the inspection rows that count already reads. Memoize the successful walk for the process and drop the promise when it returns null. Page any select that would have asked for more than 1000 rows. Do not add an index or change the timeout.
+
+**Source:** `/cursor/stores/bot/reviews/build-timeout-diagnosis-2026-11-27.md`. No database write.
+
+---
+
+## 2026-11-28 — A complaint was printed as the last inspection, and California counts stopped at 50
+
+**What went wrong:** `latestVisit` was the newest visit of any kind, so a Washington complaint investigation was the "Last inspection" date. `fetchInspectionsAndDeficiencies` used `.limit(50)`, so a home with more visits in the window said "across 50 inspections". The headline added substantiated complaints that had no deficiency rows, which made the California total higher than Type A plus Type B. The phone cell was a dash when the database had no number, and a short digit string would have been shown as typed. Every compliance-banner link said "DSHS".
+
+**What worked instead:** Keep `latestVisit` for "any visit", and print `latestInspection` separately from `latestComplaint` on Washington pages. Page the inspection and deficiency reads. For California, the headline is the deficiency rows in the window, and the three-year phrase stays even when nothing is older. Show a phone only after it parses to 10 digits; otherwise say "Not on file" and link the regulator record. Label the banner link from the state regulator.
+
+**Source:** Live profiles and read-only SQL on project `fwvrupjgwvvzqiutwwdg`, 2026-11-27 and 2026-11-28. The California rebuild was still inserting rows (`deficiencies.created_at` moving, `poc_deadline` still on 14 rows at the first check).
+
+Pennsylvania pages for Elm Terrace, Spring Mill Pointe, Sunrise of Lafayette Hill, and Symphony Square linked to SeniorAdvisor or Caring.com from the cost source, not from `facilities.website` (that column is null). Treating the link as the home's website was the wrong fix. Drop the link when the host is a directory, and do not leave a "Source" label with nothing to click. The price paragraph still names the directory.
+
+A first pass also treated Minnesota, Utah, Washington assisted living, and Missouri as if they had no severity scale, and it printed "None are tagged …" for Oregon, Illinois, and Colorado homes whose rows do not store one. Minnesota uses SS letters (144G.31, top tier J–L). Utah uses Low/Moderate/High/Extreme. Washington assisted living uses DSHS Type A/B/C. Missouri uses Class I/II/III. Pennsylvania nursing homes use the CMS grid; personal care does not. The negative sentence waits until every in-window citation has a scale value. Texas with nothing in the three-year window must not say "0 citations" or "clean record"; it says Health and Human Services has not published recent results and links the HHSC search.
+
+---
+
 ## 2026-11-27 — Colorado event ids and the Washington recount update were not writable
 
 **What went wrong:** `backfill_co_inspection_gate.py --apply` copied `raw_data.co_event_id` into `source_event_id`. 318 of those ids are on 2–3 rows each (646 rows), one per rule set, so the unique index `(source_agency, source_event_id)` would reject the write. `recount_wa_citation_counts.py --apply` joined `facilities` on `i.facility_id` inside `FROM` before the inspection being updated was in scope, and Postgres rejected that. `inspectionQualifies` for Illinois and Colorado accepted only the visit-id route, so a Colorado CMS nursing home with a real link and no visit id failed.

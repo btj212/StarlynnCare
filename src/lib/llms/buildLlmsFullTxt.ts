@@ -90,6 +90,7 @@ export async function buildLlmsFullTxtBody(
     const derivedDates = await loadLatestInspectionDates(
       supabase,
       candidateRows.map((f) => f.id),
+      { excludeComplaints: true },
     );
     const baseRows = candidateRows
       .map((f) => ({ ...f, last_inspection_date: derivedDates.get(f.id) ?? null }))

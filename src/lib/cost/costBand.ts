@@ -10,6 +10,8 @@
  * Memory care costs more than assisted living, so the two are never mixed.
  */
 
+import { linkableFacilityUrl } from "@/lib/facility/aggregatorLink";
+
 const STEP = 500;
 const MIN_WIDTH = 1000;
 /** A city range needs this many homes with a labeled memory care price. */
@@ -75,7 +77,7 @@ function build(
     band,
     sources: used.map((row) => ({
       label: SOURCE_LABEL[row.source] ?? row.source,
-      url: row.source_url,
+      url: linkableFacilityUrl(row.source_url),
     })),
     checked: used.map((row) => row.fetched_at.slice(0, 10)).sort().at(-1) ?? "",
   };

@@ -169,9 +169,13 @@ export default async function CACostVsQualityPage() {
             relationship families would intuitively expect is reversed.
           </p>
           <p>
-            By the inverse measure, several lower-cost facilities post
-            consistently clean records — Sunrise at Yorba Linda is one
-            example. We do not publish a single &ldquo;best value&rdquo; list
+            By the inverse measure, the May 11, 2026 study scored Sunrise at
+            Yorba Linda at a severity index of 0.0. That index divides CDSS
+            severity weights by beds for deficiency dates from January 1,
+            2021, in the data loaded for the study. A score of 0.0 is not a
+            finding that the home has no citations. The current CDSS record
+            includes a Type B citation (87465(a)(9)) from an October 18, 2022
+            visit. We do not publish a single &ldquo;best value&rdquo; list
             because the calculation depends on what families weight; instead
             we surface the four independent signals on each facility profile.
           </p>

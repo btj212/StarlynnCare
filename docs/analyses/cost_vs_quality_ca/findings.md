@@ -6,7 +6,7 @@
 - **Highest avg citation severity county**: Contra Costa (index=4.44)
 - **Same county?**: NO — San Francisco vs Contra Costa
 - **Worst value facility**: Araville Residential Care Home Ii (San Bruno) — price tier 97%, severity 9.7
-- **Best value example (clean + affordable)**: Sunrise at Yorba Linda
+- **Lowest severity-index example in that study (index 0.0, not a claim of zero citations)**: Sunrise at Yorba Linda
 - **Data basis**: County-level Genworth 2024 medians; 5 direct measurements pending (all NULL in DB)
 - **Total facilities analyzed**: 484 CA publishable facilities
 

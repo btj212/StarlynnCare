@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { tryPublicSupabaseClient } from "@/lib/supabase/server";
+import { collectInPages } from "@/lib/data/pageSelect";
 
 /**
  * Live California research corpus. The May 2026 papers analyzed 484 homes;
@@ -40,69 +41,98 @@ export function formatSharePct(part: number, whole: number): number {
   return Math.round((part / whole) * 1000) / 10;
 }
 
-function isDementiaStatute(code: string | null): boolean {
-  if (!code) return false;
-  return /87705|87706/.test(code);
+const FACILITY_CHUNK = 80;
+const INSPECTION_CHUNK = 150;
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
-export const loadCaResearchCorpus = cache(async function loadCaResearchCorpus(): Promise<CaResearchCorpus | null> {
+async function headCount(
+  query: PromiseLike<{ count: number | null; error: { message: string } | null }>,
+): Promise<number | null> {
+  const { count, error } = await query;
+  if (error || count == null) return null;
+  return count;
+}
+
+async function loadCaResearchCorpusUncached(): Promise<CaResearchCorpus | null> {
   const supabase = tryPublicSupabaseClient();
   if (!supabase) return null;
 
-  const ids: string[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase
+  const homes = await collectInPages<{ id: string }>((from, to) =>
+    supabase
       .from("facilities")
       .select("id")
       .eq("publishable", true)
       .eq("state_code", "CA")
-      .range(from, from + 999);
-    if (error) {
-      console.error("[caResearchCorpus] homes:", error.message);
-      return null;
-    }
-    const page = ((data ?? []) as Array<{ id: string }>).map((r) => r.id);
-    ids.push(...page);
-    if (page.length < 1000) break;
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
+  if (homes.error) {
+    console.error("[caResearchCorpus] homes:", homes.error);
+    return null;
   }
-
-  const inspIds: string[] = [];
-  for (let i = 0; i < ids.length; i += 80) {
-    const chunk = ids.slice(i, i + 80);
-    let from = 0;
-    for (;;) {
-      const { data, error } = await supabase
-        .from("inspections")
-        .select("id")
-        .in("facility_id", chunk)
-        .range(from, from + 999);
-      if (error) {
-        console.error("[caResearchCorpus] inspections:", error.message);
-        return null;
-      }
-      const page = (data ?? []) as Array<{ id: string }>;
-      inspIds.push(...page.map((r) => r.id));
-      if (page.length < 1000) break;
-      from += 1000;
-    }
-  }
+  const ids = homes.rows.map((row) => row.id);
 
   let deficiencies = 0;
   let dementiaStatute = 0;
-  for (let i = 0; i < inspIds.length; i += 150) {
-    const chunk = inspIds.slice(i, i + 150);
-    const { data, error } = await supabase
-      .from("deficiencies")
-      .select("code")
-      .in("inspection_id", chunk)
-      .limit(5000);
-    if (error) {
-      console.error("[caResearchCorpus] deficiencies:", error.message);
+  for (const facilityChunk of chunk(ids, FACILITY_CHUNK)) {
+    const inspections = await collectInPages<{ id: string }>((from, to) =>
+      supabase
+        .from("inspections")
+        .select("id")
+        .in("facility_id", facilityChunk)
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    if (inspections.error) {
+      console.error("[caResearchCorpus] inspections:", inspections.error);
       return null;
     }
-    for (const row of (data ?? []) as Array<{ code: string | null }>) {
-      deficiencies += 1;
-      if (isDementiaStatute(row.code)) dementiaStatute += 1;
+    for (const inspectionChunk of chunk(
+      inspections.rows.map((row) => row.id),
+      INSPECTION_CHUNK,
+    )) {
+      const [total, statute87705, statute87706, both] = await Promise.all([
+        headCount(
+          supabase
+            .from("deficiencies")
+            .select("id", { count: "exact", head: true })
+            .in("inspection_id", inspectionChunk),
+        ),
+        headCount(
+          supabase
+            .from("deficiencies")
+            .select("id", { count: "exact", head: true })
+            .in("inspection_id", inspectionChunk)
+            .like("code", "%87705%"),
+        ),
+        headCount(
+          supabase
+            .from("deficiencies")
+            .select("id", { count: "exact", head: true })
+            .in("inspection_id", inspectionChunk)
+            .like("code", "%87706%"),
+        ),
+        headCount(
+          supabase
+            .from("deficiencies")
+            .select("id", { count: "exact", head: true })
+            .in("inspection_id", inspectionChunk)
+            .like("code", "%87705%")
+            .like("code", "%87706%"),
+        ),
+      ]);
+      if (total == null || statute87705 == null || statute87706 == null || both == null) {
+        console.error("[caResearchCorpus] deficiencies: count failed");
+        return null;
+      }
+      deficiencies += total;
+      // A code that contains both statute numbers is in both counts. Subtract it once.
+      dementiaStatute += statute87705 + statute87706 - both;
     }
   }
 
@@ -115,4 +145,17 @@ export const loadCaResearchCorpus = cache(async function loadCaResearchCorpus():
     source: CA_RESEARCH_SOURCE,
     window: CA_RESEARCH_WINDOW,
   };
+}
+
+let corpusPromise: Promise<CaResearchCorpus | null> | null = null;
+
+export const loadCaResearchCorpus = cache(function loadCaResearchCorpus(): Promise<CaResearchCorpus | null> {
+  if (!corpusPromise) {
+    const pending = loadCaResearchCorpusUncached().then((result) => {
+      if (result == null && corpusPromise === pending) corpusPromise = null;
+      return result;
+    });
+    corpusPromise = pending;
+  }
+  return corpusPromise;
 });

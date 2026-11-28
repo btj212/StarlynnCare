@@ -3,6 +3,7 @@ import type { Region } from "@/lib/regions";
 import { quoteHomesOnPage } from "@/lib/city-hub/dedupe";
 import { facilityListedInSitemap } from "@/lib/seo/indexability";
 import { todayIsoDate } from "@/lib/data/inspectionDates";
+import { collectInPages } from "@/lib/data/pageSelect";
 import {
   belongsOnCityPage,
   paOverrideOrFilter,
@@ -198,18 +199,21 @@ export async function loadRegionHubSummary(
   let recordCheckIncomplete = false;
   for (let ci = 0; ci < facilityIds.length; ci += INSP_CHUNK) {
     const chunk = facilityIds.slice(ci, ci + INSP_CHUNK);
-    const { data: inspRows, error: inspErr } = await supabase
-      .from("inspections")
-      .select("id, facility_id")
-      .in("facility_id", chunk)
-      .lte("inspection_date", todayIsoDate())
-      .limit(5000);
-    if (inspErr) {
-      console.error("[loadRegionHubSummary] inspections:", inspErr.message);
+    const inspPage = await collectInPages<{ id: string; facility_id: string }>((from, to) =>
+      supabase
+        .from("inspections")
+        .select("id, facility_id")
+        .in("facility_id", chunk)
+        .lte("inspection_date", todayIsoDate())
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    if (inspPage.error) {
+      console.error("[loadRegionHubSummary] inspections:", inspPage.error);
       recordCheckIncomplete = true;
       break;
     }
-    for (const i of (inspRows ?? []) as Array<{ id: string; facility_id: string }>) {
+    for (const i of inspPage.rows) {
       inspFacMap.set(i.id, i.facility_id);
       inspCountByFac.set(i.facility_id, (inspCountByFac.get(i.facility_id) ?? 0) + 1);
     }
@@ -221,17 +225,20 @@ export async function loadRegionHubSummary(
   const CHUNK = 150;
   for (let ci = 0; ci < inspIds.length; ci += CHUNK) {
     const chunk = inspIds.slice(ci, ci + CHUNK);
-    const { data: defRows, error: defErr } = await supabase
-      .from("deficiencies")
-      .select("inspection_id")
-      .in("inspection_id", chunk)
-      .limit(5000);
-    if (defErr) {
-      console.error("[loadRegionHubSummary] deficiencies:", defErr.message);
+    const defPage = await collectInPages<{ inspection_id: string }>((from, to) =>
+      supabase
+        .from("deficiencies")
+        .select("inspection_id")
+        .in("inspection_id", chunk)
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    if (defPage.error) {
+      console.error("[loadRegionHubSummary] deficiencies:", defPage.error);
       recordCheckIncomplete = true;
       break;
     }
-    for (const d of (defRows ?? []) as Array<{ inspection_id: string }>) {
+    for (const d of defPage.rows) {
       const fid = inspFacMap.get(d.inspection_id);
       if (fid) {
         facilitiesWithAnyDef.add(fid);

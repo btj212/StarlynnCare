@@ -20,6 +20,10 @@ import { buildFacilitySnippet } from "@/lib/seo/meta";
 import { formatFacilityName } from "@/lib/facility/displayName";
 import { facilityAliases, facilityDisplayName } from "@/lib/facility/aliases";
 import { regulatorFor } from "@/lib/states/regulators";
+import { parsePhone } from "@/lib/facility/phone";
+import { linkableFacilityUrl } from "@/lib/facility/aggregatorLink";
+import { regulatorPublishesSeverityScale, seriousTermWhenNone } from "@/lib/states/severityScale";
+import { texasRecentResultsSentence, texasRecentResultsUnpublished, texasRegulatorRecordUrl } from "@/lib/facility/texasRecord";
 import type { MemoryCareBasis } from "@/lib/facility/memoryCareBasis";
 import {
   CONFIRMED_ACCEPTS_JSONLD,
@@ -43,6 +47,8 @@ export type FacilitySchemaExtras = {
   percentile?: number | null;
   /** Total deficiencies on record. */
   citationCount?: number;
+  /** Inspections inside the profile window. Texas uses this to avoid a zero-citation claim. */
+  inspectionCount?: number;
   /** ISO yyyy-mm-dd of last non-complaint inspection. */
   lastInspectionDate?: string | null;
   /** Profile regulator. Colorado nursing homes are CMS, not the state CDPHE abbreviation. */
@@ -70,7 +76,7 @@ export function cdssLicensePageFor(
  *
  * - CA → CDSS FacDetail deep link
  * - TX → HHSC LTC Online Search portal (LTC Search; users paste license number)
- * - OR → Oregon DHS LTC Licensing portal
+ * - OR → Oregon DHS provider record (`/Providers/Details/{license}`)
  * - WA → Washington DSHS ALF Public Lookup
  * - MN → Minnesota MDH Licensed/Certified Provider lookup
  */
@@ -84,6 +90,8 @@ export function regulatorLicensePageFor(
   switch (code) {
     case "CA":
       return cdssLicensePageFor(lic);
+    case "OR":
+      return `https://ltclicensing.oregon.gov/Providers/Details/${encodeURIComponent(lic)}`;
     default:
       return regulatorFor(code)?.portalUrl ?? null;
   }
@@ -140,6 +148,16 @@ function facilityDescription(
   // LocalBusiness/MedicalOrganization graph node carries the same differentiator
   // we put in the SERP snippet. Knowledge-panel & AI Overview surfaces lift from here.
   if (
+    texasRecentResultsUnpublished(
+      facility.state_code,
+      extras?.inspectionCount ?? 0,
+      extras?.citationCount ?? 0,
+    )
+  ) {
+    return texasRecentResultsSentence(texasRegulatorRecordUrl());
+  }
+
+  if (
     extras &&
     (extras.percentile != null ||
       (extras.citationCount ?? 0) > 0 ||
@@ -191,7 +209,8 @@ export function buildLocalBusinessForFacility(
   const sameAs: string[] = [];
   const regulatorUrl = regulatorLicensePageFor(state.code, facility.license_number);
   if (regulatorUrl) sameAs.push(regulatorUrl);
-  if (facility.website?.trim()) sameAs.push(facility.website.trim());
+  const website = linkableFacilityUrl(facility.website);
+  if (website) sameAs.push(website);
 
   const additionalProperty: object[] = [];
   if (facility.license_number)
@@ -289,7 +308,7 @@ export function buildLocalBusinessForFacility(
         },
       }
     : {};
-  const telephone = facility.phone?.trim() || "";
+  const telephone = parsePhone(facility.phone)?.display ?? "";
 
   return {
     "@context": "https://schema.org",
@@ -929,6 +948,11 @@ export type FacilityFaqInput = {
   facilityName: string;
   stateName: string;
   stateCode: string;
+  /**
+   * When set, overrides the state default. Washington nursing homes pass
+   * true because they use the CMS grid. Washington assisted living does not.
+   */
+  publishesSeverityScale?: boolean;
   pageUrl: string;
   inspectionCount: number;
   deficiencyCount: number;
@@ -940,7 +964,28 @@ export type FacilityFaqInput = {
   lastInspectionIsComplaint: boolean;
   /** WA DSHS often posts a month, not a day. */
   lastInspectionPrecision?: DatePrecision;
+  /**
+   * Washington only. Newest complaint investigation, kept off the inspection
+   * question. Other states omit it.
+   */
+  lastComplaintDate?: string | null;
+  lastComplaintPrecision?: DatePrecision;
   seriousFindings: Array<{ label: string; count: number }>;
+  /**
+   * California only. Exact Type A rows in the window, from the same head
+   * count as the headline. When set, the tagged sentence does not use
+   * `seriousFindings`, which may be only the newest 25 visits.
+   */
+  classTypeACount?: number;
+  /**
+   * True only when every in-window citation carries the state's scale.
+   * A "None are tagged" sentence needs this. A positive count does not.
+   */
+  severityFullyMeasured?: boolean;
+  /** CMS or CDPHE grid, when this home uses one. Personal-care pages omit it. */
+  severityScope?: "cms" | "cdphe" | null;
+  /** Washington complaint investigations inside the window. Other states omit it. */
+  complaintCount?: number;
   percentile: number | null;
   memoryCareLabel: string;
   /**
@@ -1000,21 +1045,28 @@ function joinOr(items: string[]): string {
   return `${items.slice(0, -1).join(", ")}, or ${items[items.length - 1]}`;
 }
 
-function seriousTermWhenNone(stateCode: string): string {
-  if (stateCode === "CA") return "Type A";
-  if (stateCode === "IL") return "Type 1";
-  if (stateCode === "PA") return "a severe finding";
-  if (stateCode === "AZ") return "a high-risk finding";
-  if (stateCode === "CO") return "Level E";
-  return "a serious finding";
-}
-
 function seriousSentence(
   findings: Array<{ label: string; count: number }>,
   stateCode: string,
+  publishesSeverityScale: boolean | undefined,
+  fullyMeasured: boolean | undefined,
+  scope: "cms" | "cdphe" | null | undefined,
+  classTypeACount?: number,
 ): string {
+  const allowed = publishesSeverityScale ?? regulatorPublishesSeverityScale(stateCode, scope);
+  if (!allowed) return "";
+  if (stateCode.toUpperCase() === "CA" && classTypeACount != null) {
+    if (classTypeACount === 0) {
+      if (!fullyMeasured) return "";
+      return `None are tagged ${seriousTermWhenNone(stateCode, scope)}.`;
+    }
+    return `${classTypeACount} ${classTypeACount === 1 ? "is" : "are"} tagged Type A.`;
+  }
   const total = findings.reduce((sum, finding) => sum + finding.count, 0);
-  if (total === 0) return `None are tagged ${seriousTermWhenNone(stateCode)}.`;
+  if (total === 0) {
+    if (!fullyMeasured) return "";
+    return `None are tagged ${seriousTermWhenNone(stateCode, scope)}.`;
+  }
   const labels = [...new Set(findings.map((finding) => proseTag(finding.label)))];
   return `${total} ${total === 1 ? "is" : "are"} tagged ${joinOr(labels)}.`;
 }
@@ -1056,25 +1108,54 @@ export function buildFacilityFaqPairs(input: FacilityFaqInput): FacilityFaqPair[
     });
   }
 
-  if (input.inspectionCount > 0) {
+  if (input.stateCode === "WA" && input.lastComplaintDate) {
+    const precision = input.lastComplaintPrecision ?? "month";
+    const date = formatRecordDate(input.lastComplaintDate, precision);
+    pairs.push({
+      q: `When was the most recent DSHS complaint investigation at ${name}?`,
+      a: `The most recent DSHS complaint investigation report posted for ${name} is dated ${date}. A complaint investigation responds to a complaint. It is not a routine inspection.`,
+    });
+  }
+
+  if (
+    texasRecentResultsUnpublished(input.stateCode, input.inspectionCount, input.deficiencyCount)
+  ) {
+    pairs.push({
+      q: `Has ${name} published inspection results?`,
+      a: texasRecentResultsSentence(input.licenseUrl ?? texasRegulatorRecordUrl()),
+    });
+  } else if (input.inspectionCount > 0 || (input.complaintCount ?? 0) > 0) {
     const defWord = input.deficiencyCount === 1 ? "deficiency" : "deficiencies";
     const inspWord = input.inspectionCount === 1 ? "inspection" : "inspections";
     const window = input.countsCoverThreeYears ? " in the last three years" : "";
+    const complaints = input.complaintCount ?? 0;
+    const complaintPhrase =
+      complaints > 0
+        ? ` and ${complaints} complaint ${complaints === 1 ? "investigation" : "investigations"}`
+        : "";
     const cited =
-      input.deficiencyCount === 0
-        ? `No. ${name} has no ${input.regulatorAbbr} citations${window}.`
-        : `Yes. ${name} has ${input.deficiencyCount} ${defWord} from ${input.regulatorAbbr}${window}.`;
+      input.stateCode === "TX" && input.deficiencyCount === 0
+        ? "HHSC has not published a citation count for this home in the last 3 years."
+        : input.deficiencyCount === 0
+          ? `No. ${name} has no ${input.regulatorAbbr} citations${window}.`
+          : `Yes. ${name} has ${input.deficiencyCount} ${defWord} from ${input.regulatorAbbr}${window}.`;
+    const severity = seriousSentence(
+      input.seriousFindings,
+      input.stateCode,
+      input.publishesSeverityScale,
+      input.severityFullyMeasured,
+      input.severityScope,
+      input.classTypeACount,
+    );
     pairs.push({
       q: `Has ${name} been cited by ${input.regulatorAbbr}?`,
-      a:
-        input.deficiencyCount > 0
-          ? `${cited} ${seriousSentence(input.seriousFindings, input.stateCode)}`
-          : cited,
+      a: input.deficiencyCount > 0 && severity ? `${cited} ${severity}` : cited,
     });
-    let answer = `${name} has ${input.deficiencyCount} ${defWord} across ${input.inspectionCount} ${inspWord}${window}.`;
-    if (input.deficiencyCount > 0) {
-      answer += ` ${seriousSentence(input.seriousFindings, input.stateCode)}`;
-    }
+    let answer =
+      input.stateCode === "TX" && input.deficiencyCount === 0
+        ? "HHSC has not published a citation count for this home in the last 3 years."
+        : `${name} has ${input.deficiencyCount} ${defWord} across ${input.inspectionCount} ${inspWord}${complaintPhrase}${window}.`;
+    if (input.deficiencyCount > 0 && severity) answer += ` ${severity}`;
     pairs.push({
       q: `How many citations does ${name} have?`,
       a: answer,

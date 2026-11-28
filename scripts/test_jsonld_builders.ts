@@ -74,7 +74,7 @@ assert.equal(types.includes("LocalBusiness"), true);
 assert.equal(local.name, "Legacy House of Mesa");
 assert.equal(local.legalName, "Legacy Retirement Residence");
 assert.equal(local.alternateName, "Legacy Retirement Residence");
-assert.equal(local.telephone, "4805550100");
+assert.equal(local.telephone, "(480) 555-0100");
 assert.equal(local.identifier?.value, "AL0001");
 assert.equal(local.identifier?.propertyID, "ADHS license");
 assert.equal(local.address["@type"], "PostalAddress");
