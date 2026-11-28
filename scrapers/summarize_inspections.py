@@ -49,6 +49,36 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 MODEL = "claude-haiku-4-5-20251001"  # fast + cheap for summarization
 TODAY = date.today().strftime("%B %d, %Y")
 
+# claude-haiku-4-5 accepts 200_000 tokens. A report that fits is one call.
+# A longer report is split below; these numbers never discard text.
+_MODEL_CONTEXT_TOKENS = 200_000
+_OUTPUT_TOKENS = 300  # same as max_tokens on the request
+_CONTEXT_SLACK_TOKENS = 2_000
+_CHARS_PER_TOKEN = 3
+
+# Line-start markers for a new finding. The marker stays with the text after
+# it, so a split does not cut a finding that itself fits in one call.
+_FINDING_BOUNDARY = re.compile(
+    r"(?im)^[ \t]*(?="
+    r"deficienc(?:y|ies)\b"
+    r"|violations?\b"
+    r"|citations?\b"
+    r"|findings?\b"
+    r"|(?:tag\s+)?f-?\d{3,4}\b"
+    r"|section\s+cited\b"
+    r")"
+)
+
+# Used only inside one finding (or a report with no finding markers) that is
+# still larger than the context window. Paragraphs first, then lines,
+# sentences, and words. A hard cut is only for a single token with no break.
+_OVERFLOW_SPLITS = (
+    r"(\n[ \t]*\n)",
+    r"(\n)",
+    r"((?<=[.!?])[ \t]+)",
+    r"([ \t]+)",
+)
+
 # ---------------------------------------------------------------------------
 # Page-number strip (mirrors the UI-side fix)
 # ---------------------------------------------------------------------------
@@ -364,48 +394,145 @@ Write a 2-3 sentence plain-English summary for families.
 # ---------------------------------------------------------------------------
 
 
-def summarize(
-    client: anthropic.Anthropic,
+def _break_on(text: str, separator: str) -> list[str]:
+    """Split text and keep every character. Each separator stays with the next piece."""
+    parts = re.split(separator, text)
+    if len(parts) == 1:
+        return [text]
+    pieces: list[str] = []
+    if parts[0]:
+        pieces.append(parts[0])
+    index = 1
+    while index < len(parts):
+        sep = parts[index]
+        rest = parts[index + 1] if index + 1 < len(parts) else ""
+        pieces.append(sep + rest)
+        index += 2
+    return pieces
+
+
+def _finding_segments(text: str) -> list[str] | None:
+    cuts = [match.start() for match in _FINDING_BOUNDARY.finditer(text) if match.start() > 0]
+    if not cuts:
+        return None
+    pieces: list[str] = []
+    previous = 0
+    for start in cuts:
+        pieces.append(text[previous:start])
+        previous = start
+    pieces.append(text[previous:])
+    return pieces
+
+
+def _split_oversized(text: str, budget: int, pattern_index: int = 0) -> list[str]:
+    """Break one piece that is larger than one call. Does not drop characters."""
+    if len(text) <= budget:
+        return [text]
+    if pattern_index >= len(_OVERFLOW_SPLITS):
+        return [text[i : i + budget] for i in range(0, len(text), budget)]
+    parts = _break_on(text, _OVERFLOW_SPLITS[pattern_index])
+    if len(parts) == 1:
+        return _split_oversized(text, budget, pattern_index + 1)
+    chunks: list[str] = []
+    buf = ""
+    for part in parts:
+        if len(part) > budget:
+            if buf:
+                chunks.append(buf)
+                buf = ""
+            chunks.extend(_split_oversized(part, budget, pattern_index + 1))
+            continue
+        if buf and len(buf) + len(part) > budget:
+            chunks.append(buf)
+            buf = part
+        else:
+            buf += part
+    if buf:
+        chunks.append(buf)
+    return chunks
+
+
+def _pack(segments: list[str], budget: int) -> list[str]:
+    chunks: list[str] = []
+    buf = ""
+    for segment in segments:
+        if len(segment) > budget:
+            if buf:
+                chunks.append(buf)
+                buf = ""
+            chunks.extend(_split_oversized(segment, budget))
+            continue
+        if buf and len(buf) + len(segment) > budget:
+            chunks.append(buf)
+            buf = segment
+        else:
+            buf += segment
+    if buf:
+        chunks.append(buf)
+    return chunks
+
+
+def _chunks_for_model(text: str, budget: int) -> list[str]:
+    """Pieces that each fit in one model call. Joining them returns text."""
+    if budget < 1:
+        raise ValueError("narrative budget must be positive")
+    if len(text) <= budget:
+        return [text]
+    segments = _finding_segments(text)
+    if segments is None:
+        segments = _break_on(text, _OVERFLOW_SPLITS[0])
+    chunks = _pack(segments, budget)
+    if "".join(chunks) != text:
+        raise RuntimeError("report split dropped text")
+    return chunks
+
+
+def _narrative_budget(system: str, template_overhead: str) -> int:
+    reserved = _OUTPUT_TOKENS + _CONTEXT_SLACK_TOKENS
+    used = (len(system) + len(template_overhead)) // _CHARS_PER_TOKEN
+    room = _MODEL_CONTEXT_TOKENS - reserved - used
+    if room < 1:
+        room = 1
+    return room * _CHARS_PER_TOKEN
+
+
+def _user_message(
     inspection_type: str,
     is_complaint: bool,
     outcome: str | None,
+    dementia_contract: str,
+    deficiency_count: int,
+    record_date: str | None,
     narrative: str,
-    *,
-    state_code: str = "CA",
-    holds_sdc: bool = False,
-    deficiency_count: int = 0,
-    record_date: str | None = None,
-) -> str | None:
-    if not (narrative or "").strip():
-        return None
-    if state_code.upper() == "WA":
-        dementia_contract = "yes" if holds_sdc else "no"
-    else:
-        dementia_contract = "n/a"
-    if deficiency_count > 0:
-        deficiency_instruction = (
-            "This visit has cited deficiencies on file. Do not say no deficiencies "
-            "were cited, that the home was in compliance, that findings were "
-            "unspecified, or that the report does not say whether anything was cited."
-        )
-    else:
-        deficiency_instruction = ""
-    user_msg = USER_TEMPLATE.format(
+    deficiency_instruction: str,
+) -> str:
+    return USER_TEMPLATE.format(
         inspection_type=inspection_type or "visit",
         is_complaint="Yes" if is_complaint else "No",
         outcome=outcome or "N/A",
         dementia_contract=dementia_contract,
         deficiency_count=deficiency_count,
         record_date=record_date or "unknown",
-        narrative=narrative[:6000],  # stay well within context
+        narrative=narrative,
         deficiency_instruction=deficiency_instruction,
     )
-    system = SYSTEM_PROMPTS_BY_STATE.get(state_code.upper(), SYSTEM_PROMPT_GENERIC)
+
+
+def _complete_summary(
+    client: anthropic.Anthropic,
+    *,
+    system: str,
+    user_msg: str,
+    state_code: str,
+    holds_sdc: bool,
+    deficiency_count: int,
+    narrative: str,
+) -> str | None:
     for attempt in range(5):
         try:
             resp = client.messages.create(
                 model=MODEL,
-                max_tokens=300,
+                max_tokens=_OUTPUT_TOKENS,
                 system=system,
                 messages=[{"role": "user", "content": user_msg}],
             )
@@ -444,6 +571,80 @@ def summarize(
             print(f"    Claude error: {e}")
             return None
     return None
+
+
+def summarize(
+    client: anthropic.Anthropic,
+    inspection_type: str,
+    is_complaint: bool,
+    outcome: str | None,
+    narrative: str,
+    *,
+    state_code: str = "CA",
+    holds_sdc: bool = False,
+    deficiency_count: int = 0,
+    record_date: str | None = None,
+) -> str | None:
+    if not (narrative or "").strip():
+        return None
+    if state_code.upper() == "WA":
+        dementia_contract = "yes" if holds_sdc else "no"
+    else:
+        dementia_contract = "n/a"
+    if deficiency_count > 0:
+        deficiency_instruction = (
+            "This visit has cited deficiencies on file. Do not say no deficiencies "
+            "were cited, that the home was in compliance, that findings were "
+            "unspecified, or that the report does not say whether anything was cited."
+        )
+    else:
+        deficiency_instruction = ""
+    system = SYSTEM_PROMPTS_BY_STATE.get(state_code.upper(), SYSTEM_PROMPT_GENERIC)
+    overhead = _user_message(
+        inspection_type,
+        is_complaint,
+        outcome,
+        dementia_contract,
+        deficiency_count,
+        record_date,
+        "",
+        deficiency_instruction,
+    )
+    chunks = _chunks_for_model(narrative, _narrative_budget(system, overhead))
+    parts: list[str] = []
+    for chunk in chunks:
+        text = _complete_summary(
+            client,
+            system=system,
+            user_msg=_user_message(
+                inspection_type,
+                is_complaint,
+                outcome,
+                dementia_contract,
+                deficiency_count,
+                record_date,
+                chunk,
+                deficiency_instruction,
+            ),
+            state_code=state_code,
+            holds_sdc=holds_sdc,
+            deficiency_count=deficiency_count,
+            narrative=narrative,
+        )
+        if not text:
+            return None
+        parts.append(text)
+    if len(parts) == 1:
+        return parts[0]
+    combined = " ".join(parts)
+    if reject_false_clean_visit(
+        combined,
+        deficiency_count=deficiency_count,
+        source_text=narrative,
+    ):
+        print("    rejected clean-visit claim on a cited inspection")
+        return None
+    return combined
 
 
 # ---------------------------------------------------------------------------
