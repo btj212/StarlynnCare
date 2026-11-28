@@ -72,9 +72,9 @@ def clean_narrative(raw: str) -> str:
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = f"""You summarize California CDSS inspection and complaint reports for a senior care
-transparency website. Today is {TODAY}.
+transparency website.
 
-Your summaries are read by families researching memory care facilities — write for them, not for
+Your summaries are read by families — write for them, not for
 regulators. Use plain English. Avoid jargon, acronyms (LPA, RCFE, ADL, etc.), and regulatory
 citation numbers unless they are the key fact.
 
@@ -92,20 +92,23 @@ Rules:
 6. Do NOT invent facts not in the source text.
 7. Do NOT name specific residents (R1, R2), staff (S1, S2), or inspector names.
 8. Do NOT use phrases like "the report states" or "according to the document". Just state the facts.
-9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
+9. Dates on or before the record date given with each report are real; do not call them future events.
+10. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_TX = f"""You summarize Texas HHSC LTCR assisted living inspection findings for families.
-Today is {TODAY}.
 
-Texas ALF license Types A/B/C describe facility capability — not California-style deficiency "Type A/B".
 Describe what the inspection narrative says factually. Same audience rules as CA summaries:
-plain English, no evaluative hype words, no invented facts, 2-3 sentences."""
+plain English, no evaluative hype words, no invented facts, 2-3 sentences.
+
+Rules:
+1. Dates on or before the record date given with each report are real; do not call them future events.
+2. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_OR = f"""You summarize Oregon DHS Long-Term Care Licensing inspection and complaint
-findings for families researching memory care. Today is {TODAY}.
+findings for families.
 
-Oregon facilities are licensed as Assisted Living Facilities (ALFs) or Residential Care Facilities
-(RCFs) under ORS ch. 443. Memory care communities additionally hold a DHS Memory Care Endorsement.
 Oregon does NOT use California-style "Type A/Type B" deficiency labels — describe findings using
 the regulator's own terminology when present (e.g. "licensing violation", "complaint substantiated").
 
@@ -120,12 +123,14 @@ Rules:
 6. Do NOT invent facts not in the source text.
 7. Do NOT name specific residents (R1, R2), staff (S1, S2), or inspector names.
 8. Do NOT use phrases like "the report states" or "according to the document". Just state the facts.
-9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
+9. Dates on or before the record date given with each report are real; do not call them future events.
+10. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_WA = f"""You summarize Washington DSHS Residential Care Services inspection and
-investigation findings for families. Today is {TODAY}.
+investigation findings for families.
 
-Washington licenses Assisted Living Facilities (ALFs) and Adult Family Homes. A Specialized
+A Specialized
 Dementia Care (SDC) contract is a separate DSHS Medicaid overlay. Most homes do not hold it.
 A clean inspection does not mean the home has an SDC contract.
 
@@ -145,14 +150,15 @@ Rules:
 6. Do NOT invent facts not in the source text.
 7. Do NOT name specific residents, staff, or inspectors.
 8. Do NOT use "the report states" / "according to the document". Just state the facts.
-9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events.
-10. Do NOT claim the visit verified a dementia contract the home does not hold."""
+9. Dates on or before the record date given with each report are real; do not call them future events.
+10. Do NOT claim the visit verified a dementia contract the home does not hold.
+11. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_MN = f"""You summarize Minnesota MDH (Department of Health) inspection and complaint
-findings for families researching memory care. Today is {TODAY}.
+findings for families.
 
-Minnesota memory care is licensed under Minnesota Statutes ch. 144G as "Assisted Living Facility
-with Dementia Care." Findings come from MDH licensing surveys and complaint investigations.
+Findings come from MDH licensing surveys and complaint investigations.
 Minnesota does NOT use California-style "Type A/Type B" deficiency labels — use MDH's own
 terminology when present (e.g. "correction order", "fine assessed", "complaint findings").
 
@@ -165,13 +171,14 @@ Rules:
 6. Do NOT invent facts not in the source text.
 7. Do NOT name specific residents, staff, or inspectors.
 8. Do NOT use "the report states" / "according to the document". Just state the facts.
-9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
+9. Dates on or before the record date given with each report are real; do not call them future events.
+10. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_UT = f"""You summarize Utah DLBC (Division of Licensing and Background Checks)
-inspection findings for families researching memory care. Today is {TODAY}.
+inspection findings for families.
 
-Utah memory care is licensed as Type I or Type II Assisted Living Facilities under Utah Admin.
-Code R432-270. Findings come from DLBC licensing inspections and complaint investigations.
+Findings come from DLBC licensing inspections and complaint investigations.
 Utah does NOT use California-style "Type A/Type B" deficiency labels — use DLBC's own terminology
 (e.g. "noncompliance cited", "correction verified", "civil penalty assessed", "Low/Moderate/High/
 Critical noncompliance level").
@@ -194,13 +201,14 @@ Rules:
 6. Do NOT invent facts not in the source text.
 7. Do NOT name specific residents, staff, or inspectors.
 8. Do NOT use "the report states" / "according to the document". Just state the facts.
-9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
+9. Dates on or before the record date given with each report are real; do not call them future events.
+10. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_IL = f"""You summarize Illinois IDPH (Department of Public Health) Division of Assisted
-Living inspection and complaint findings for families researching memory care. Today is {TODAY}.
+Living inspection and complaint findings for families.
 
-Illinois memory care facilities are licensed as Assisted Living Establishments (ALEs) or Shared
-Housing Establishments (SHEs) under 77 Ill. Adm. Code Part 295. Violations are classified as
+Violations are classified as
 Type 1 (most severe), Type 2, or Type 3 — not California-style "Type A/Type B". There are no
 federal F-tags in Illinois ALE/SHE inspections.
 
@@ -225,14 +233,15 @@ Rules:
 6. Do NOT invent facts not in the source text.
 7. Do NOT name specific residents, staff, or inspectors.
 8. Do NOT use "the report states" / "according to the document". Just state the facts.
-9. Dates that appear to be in 2025 or 2026 are real — do not flag them as future events."""
+9. Dates on or before the record date given with each report are real; do not call them future events.
+10. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 # Map state code to system prompt — explicit branching keeps prompt selection auditable.
 SYSTEM_PROMPT_CO = f"""You summarize Colorado CDPHE assisted-living inspection and complaint
-findings for families researching memory care. Today is {TODAY}.
+findings for families.
 
-These homes are assisted living residences under 6 CCR 1011-1 Chapter 7. Findings use
-Colorado Level A through E. Level E is immediate jeopardy. Do not call these California
+Findings use Colorado Level A through E. Level E is immediate jeopardy. Do not call these California
 Type A or Type B citations, and do not call them CMS F-tags.
 
 The text is the inspector's citation or survey comment. A short outcome such as
@@ -248,12 +257,14 @@ Rules:
 6. Do NOT invent facts not in the source text.
 7. Do NOT name specific residents, staff, or inspectors.
 8. Do NOT use "the report states" or "according to the document".
-9. Dates in 2025 or 2026 are real. Do not call them future events."""
+9. Dates on or before the record date given with each report are real; do not call them future events.
+10. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_PA = f"""You summarize Pennsylvania Department of Human Services inspection and complaint
-findings for families researching memory care. Today is {TODAY}.
+findings for families.
 
-These records cover personal care homes and assisted living residences. The text may be
+The text may be
 the inspector's narrative, or it may only be the requirement the survey cited. If the
 text is a requirement, say that requirement was cited. Do not describe an incident that
 is not written in the text. Do not mention California, Title 22, or CDSS.
@@ -264,10 +275,12 @@ Rules:
 3. Do NOT invent facts not in the source text.
 4. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
 5. Do NOT name specific residents, staff, or inspectors.
-6. Dates in 2025 or 2026 are real. Do not call them future events."""
+6. Dates on or before the record date given with each report are real; do not call them future events.
+7. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_AZ = f"""You summarize Arizona Department of Health Services assisted-living inspection
-and complaint findings for families researching memory care. Today is {TODAY}.
+and complaint findings for families.
 
 The text may be an inspector's account ("based on observation") or a quotation of an
 Arizona administrative rule. If it is a rule, say the survey cited that requirement.
@@ -280,10 +293,12 @@ Rules:
 3. Do NOT invent facts not in the source text.
 4. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
 5. Do NOT name specific residents, staff, or inspectors.
-6. Dates in 2025 or 2026 are real. Do not call them future events."""
+6. Dates on or before the record date given with each report are real; do not call them future events.
+7. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPT_MO = f"""You summarize Missouri Department of Health and Senior Services inspection and
-complaint findings for families researching memory care. Today is {TODAY}.
+complaint findings for families.
 
 Use only the text provided. Do not say the home has a memory-care designation unless the
 text says that. Do not cite 19 CSR 30-86.047 or section 198.510 unless those citations
@@ -295,10 +310,11 @@ Rules:
 3. Do NOT invent facts not in the source text.
 4. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
 5. Do NOT name specific residents, staff, or inspectors.
-6. Dates in 2025 or 2026 are real. Do not call them future events."""
+6. Dates on or before the record date given with each report are real; do not call them future events.
+7. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
-SYSTEM_PROMPT_GENERIC = f"""You summarize a state inspection or complaint record for families researching
-memory care. Today is {TODAY}.
+SYSTEM_PROMPT_GENERIC = f"""You summarize a state inspection or complaint record for families.
 
 Use only the text provided. If the text is a regulation the survey cited, say that
 requirement was cited. Do not describe an incident that is not written in the text.
@@ -311,7 +327,9 @@ Rules:
 3. Do NOT invent facts not in the source text.
 4. Do NOT use evaluative adjectives ("serious", "alarming", "concerning", "egregious", and similar).
 5. Do NOT name specific residents, staff, or inspectors.
-6. Dates in 2025 or 2026 are real. Do not call them future events."""
+6. Dates on or before the record date given with each report are real; do not call them future events.
+7. Anything a resident, family member, or staff member said, reported, or told the inspector must be
+   attributed to that person (e.g. "the resident said", "staff told the analyst"). Never state it as fact."""
 
 SYSTEM_PROMPTS_BY_STATE = {
     "CA": SYSTEM_PROMPT,
@@ -332,6 +350,7 @@ Is complaint: {is_complaint}
 Outcome (if complaint): {outcome}
 DSHS dementia contract: {dementia_contract}
 Cited deficiencies on file: {deficiency_count}
+Record date (state database): {record_date}
 
 Narrative:
 {narrative}
@@ -355,6 +374,7 @@ def summarize(
     state_code: str = "CA",
     holds_sdc: bool = False,
     deficiency_count: int = 0,
+    record_date: str | None = None,
 ) -> str | None:
     if not (narrative or "").strip():
         return None
@@ -376,6 +396,7 @@ def summarize(
         outcome=outcome or "N/A",
         dementia_contract=dementia_contract,
         deficiency_count=deficiency_count,
+        record_date=record_date or "unknown",
         narrative=narrative[:6000],  # stay well within context
         deficiency_instruction=deficiency_instruction,
     )
@@ -521,7 +542,8 @@ def main() -> None:
                            GREATEST(
                              COALESCE(i.total_deficiency_count, 0),
                              (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
-                           ) AS def_count
+                           ) AS def_count,
+                           i.inspection_date
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -559,7 +581,8 @@ def main() -> None:
                            GREATEST(
                              COALESCE(i.total_deficiency_count, 0),
                              (SELECT count(*)::int FROM deficiencies d WHERE d.inspection_id = i.id)
-                           ) AS def_count
+                           ) AS def_count,
+                           i.inspection_date
                     FROM inspections i
                     JOIN facilities f ON f.id = i.facility_id
                     WHERE {" AND ".join(where_parts)}
@@ -598,6 +621,7 @@ def main() -> None:
             st_code,
             holds_sdc,
             def_count,
+            insp_date,
         ) = row
         if not (raw_narrative or "").strip():
             return insp_id, fac_name, None, "empty"
@@ -617,6 +641,7 @@ def main() -> None:
             state_code=st_code or "CA",
             holds_sdc=bool(holds_sdc),
             deficiency_count=int(def_count or 0),
+            record_date=str(insp_date) if insp_date else None,
         )
         if not summary:
             return insp_id, fac_name, None, "fail"
